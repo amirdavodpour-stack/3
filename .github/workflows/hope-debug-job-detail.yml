@@ -8,35 +8,65 @@ on:
       - test-results/debug-job-detail-trigger.txt
 
 permissions:
-  contents: read
+  contents: write
+
+env:
+  BRANCH: hope/full-stack-hardening-2026-09-17
 
 jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout exact working branch
+        uses: actions/checkout@v5
         with:
-          ref: hope/full-stack-hardening-2026-09-17
-      - uses: subosito/flutter-action@v2
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.47.2
           channel: stable
           cache: true
-      - run: flutter pub get
-      - name: Add temporary widget diagnostics
+      - name: Flutter dependencies
+        run: flutter pub get
+      - name: Analyze current production source
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('test/features/marketplace/job_detail_page_test.dart')
-          s=p.read_text()
-          s=s.replace("    expect(find.text('Mission budget'), findsOneWidget);", "    final lv = tester.renderObject<RenderBox>(find.byType(ListView).first);\n    print('DEBUG listview size=' + lv.size.toString());\n    print('DEBUG metric tiles=' + find.byType(MetricTile).evaluate().length.toString());\n    print('DEBUG hero clips=' + find.byType(ClipRRect).evaluate().length.toString());\n    print('DEBUG mission budget texts=' + find.text('Mission budget').evaluate().length.toString());\n    print('DEBUG job detail page=' + find.byType(JobDetailPage).evaluate().length.toString());\n    print('DEBUG exceptions=' + (tester.takeException()?.toString() ?? 'none'));\n    expect(find.text('Mission budget'), findsOneWidget);")
-          s=s.replace("    expect(find.text('Monthly pay'), findsOneWidget);", "    print('DEBUG job listview size=' + tester.renderObject<RenderBox>(find.byType(ListView).first).size.toString());\n    print('DEBUG job metric tiles=' + find.byType(MetricTile).evaluate().length.toString());\n    print('DEBUG monthly pay texts=' + find.text('Monthly pay').evaluate().length.toString());\n    print('DEBUG exceptions=' + (tester.takeException()?.toString() ?? 'none'));\n    expect(find.text('Monthly pay'), findsOneWidget);")
-          s=s.replace("    expect(find.text('Forwarded candidates'), findsOneWidget);", "    print('DEBUG candidate scroll offset=' + tester.state<ScrollableState>(find.byType(Scrollable).first).position.pixels.toString());\n    print('DEBUG candidate max offset=' + tester.state<ScrollableState>(find.byType(Scrollable).first).position.maxScrollExtent.toString());\n    print('DEBUG candidate future=' + find.text('Forwarded candidates').evaluate().length.toString());\n    print('DEBUG candidate anonymous=' + find.text('Anonymous candidate').evaluate().length.toString());\n    print('DEBUG exceptions=' + (tester.takeException()?.toString() ?? 'none'));\n    expect(find.text('Forwarded candidates'), findsOneWidget);")
-          s=s.replace("import 'package:flutter/material.dart';", "import 'package:flutter/material.dart';")
-          s=s.replace("import 'package:hope_mobile/features/marketplace/job_detail_page.dart';", "import 'package:hope_mobile/features/marketplace/job_detail_page.dart';\nimport 'package:hope_mobile/core/ui/components.dart';")
-          p.write_text(s)
-          PY
-      - name: Run job detail diagnostics
-        run: flutter test --no-pub test/features/marketplace/job_detail_page_test.dart --reporter expanded
+          flutter analyze --no-fatal-warnings --no-fatal-infos 2>&1 | tee /tmp/job-detail-analyze.log
+      - name: Run exact unresolved job-detail test and persist result
+        shell: bash
+        run: |
+          set +e
+          mkdir -p test-results
+          flutter test --no-pub test/features/marketplace/job_detail_page_test.dart --reporter expanded > /tmp/job-detail-test.log 2>&1
+          rc=$?
+          {
+            echo "# Job Detail Verification"
+            echo
+            echo "Branch: ${BRANCH}"
+            echo "Commit: $(git rev-parse HEAD)"
+            echo
+            echo "## Analyzer"
+            echo '```text'
+            cat /tmp/job-detail-analyze.log
+            echo '```'
+            echo
+            echo "## Flutter test"
+            echo "Exit code: $rc"
+            echo '```text'
+            cat /tmp/job-detail-test.log
+            echo '```'
+          } > test-results/job-detail-verification.md
+          echo "TEST_EXIT=$rc" >> test-results/job-detail-verification.md
+          exit 0
+      - name: Persist verification checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'HOPE CI'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add test-results/job-detail-verification.md
+          git commit -m '[CI-DIAGNOSTIC] persist post-layout job detail verification' || true
+          git push origin HEAD:${BRANCH}
