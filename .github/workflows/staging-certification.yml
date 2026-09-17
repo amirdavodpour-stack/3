@@ -90,6 +90,14 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Install adb for runtime preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y adb
+          adb version
+
       - name: Backend install
         working-directory: backend
         run: npm ci
