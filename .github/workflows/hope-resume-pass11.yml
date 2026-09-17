@@ -15,9 +15,7 @@ env:
 
 jobs:
   unresolved-regressions:
-    if: >-
-      github.event.pull_request.head.ref == 'hope/full-stack-hardening-2026-09-17' &&
-      !startsWith(github.event.pull_request.head.sha, '')
+    if: github.event.pull_request.head.ref == 'hope/full-stack-hardening-2026-09-17'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact working branch
@@ -63,27 +61,22 @@ jobs:
               else:
                   print(f'no-op {path}: {old!r}')
 
-          # Preserve the already-validated home navigation test contract.
           replace_all('test/features/home/home_page_navigation_test.dart',
                       "find.byTooltip('Menu')",
                       "find.byTooltip('More menu')")
 
-          # Preserve the already-validated date-picker interaction contract.
           replace_once(
               'test/features/marketplace/create_job_page_test.dart',
               "    await tester.enterText(\n        find.widgetWithText(TextField, 'Application deadline'), '2026-09-30');",
               "    await tester.tap(find.widgetWithText(TextField, 'Application deadline'));\n    await tester.pumpAndSettle();\n    expect(find.byType(DatePickerDialog), findsOneWidget);\n    await tester.tap(find.text('30').last);\n    await tester.pumpAndSettle();\n    if (find.text('OK').evaluate().isNotEmpty) {\n      await tester.tap(find.text('OK').last);\n      await tester.pumpAndSettle();\n    }",
           )
 
-          # Real production defect found in Pass 9: the English ARB used a
-          # dollar-prefixed literal rather than a gen-l10n placeholder.
           replace_once(
               'lib/l10n/app_en.arb',
               '"copy_value_irr_ed45261": "$value TOMAN"',
               '"copy_value_irr_ed45261": "{value} TOMAN"',
           )
 
-          # Category option and filter chip intentionally share a label.
           replace_once(
               'test/features/marketplace/jobs_page_test.dart',
               "expect(find.text('طراحی'), findsOneWidget); // category option in sheet",
@@ -105,8 +98,6 @@ jobs:
               "await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));",
           )
 
-          # The finance CTA is in Scaffold.bottomNavigationBar, so the test
-          # should tap it directly rather than scroll the body to it.
           replace_all(
               'test/features/marketplace/job_detail_page_test.dart',
               "find.text('View transaction')",
@@ -118,8 +109,6 @@ jobs:
               "    await tester.tap(find.text('View financial flow'));",
           )
 
-          # Keep the job lifecycle visible on the transaction surface if the
-          # previous safe hardening commit is not present in this checkout.
           p = Path('lib/features/transactions/transaction_widgets.part.dart')
           text = p.read_text(encoding='utf-8')
           if "job.status ?? 'UNKNOWN'" not in text:
@@ -132,8 +121,6 @@ jobs:
           else:
               print('transaction lifecycle already persisted')
 
-          # Preserve the PremiumPanel Material fix if a stale checkout ever
-          # lacks it; this is the actual fix for the prior ListTile assertion.
           p = Path('lib/core/ui/premium_components.dart')
           text = p.read_text(encoding='utf-8')
           if 'child: Material(type: MaterialType.transparency, child: child),' not in text:
@@ -153,6 +140,7 @@ jobs:
           PY
 
           flutter gen-l10n
+
           dart format \
             lib/core/ui/premium_components.dart \
             lib/features/transactions/transaction_widgets.part.dart \
