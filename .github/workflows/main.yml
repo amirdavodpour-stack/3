@@ -105,5 +105,5 @@ jobs:
         with:
           name: hope-main-evidence-${{ github.run_id }}
           path: |
-            backend/docs/audit/evidence/*.json
+            docs/audit/evidence/*.json
           if-no-files-found: warn
