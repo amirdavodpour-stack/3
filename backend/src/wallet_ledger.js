@@ -117,7 +117,7 @@ async function postEntry(client, { walletId, entryType, direction, amount: value
     INSERT INTO wallet_entries(wallet_id,entry_type,direction,amount,currency,reference_type,reference_id,financial_operation_id,metadata,balance_after)
     VALUES($1,$2,$3,$4,'TOMAN',$5,$6,$7,$8::jsonb,$9)
     RETURNING *
-  `, [walletId, entryType, direction, value, referenceType, referenceId, operationId, JSON.stringify(metadata), balanceAfter]);
+  `, [walletId, entryType, direction, value, referenceType, referenceId, operationId, JSON.stringify(metadata, (_key, item) => typeof item === 'bigint' ? item.toString() : item), balanceAfter]);
   return rows[0];
 }
 
