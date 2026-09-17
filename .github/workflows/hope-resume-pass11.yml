@@ -109,6 +109,88 @@ jobs:
               "    await tester.tap(find.text('View financial flow'));",
           )
 
+          page = Path('lib/features/marketplace/job_detail_page.dart')
+          text = page.read_text(encoding='utf-8')
+          old = """      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 1180,
+                minHeight: constraints.maxHeight,
+              ),
+              child: ListView("""
+          new = """      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 1180,
+                minHeight: constraints.maxHeight,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: constraints.maxHeight,
+                child: ListView("""
+          replace_once('lib/features/marketplace/job_detail_page.dart', old, new)
+
+          old_end = """                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _line("""
+          new_end = """                ],
+              ),
+            ),
+          ),
+        );
+        },
+      ),
+    );
+  }
+
+  Widget _line("""
+          if old_end in text:
+              page.write_text(text.replace(old_end, new_end, 1), encoding='utf-8')
+              print('patched job detail viewport closure')
+          else:
+              print('no-op job detail viewport closure')
+
+          text = page.read_text(encoding='utf-8')
+          old_banner = """              const SizedBox(height: 13),
+              _JobLifecycleCard(job: j),"""
+          new_banner = """              if (isJob) ...[
+                const SizedBox(height: 13),
+                HopeSurface(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.verified_user_outlined),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          HopeCopy.of(context)
+                              .copy_job_applications_are_reviewed_by_an_admin__5098e17,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 13),
+              _JobLifecycleCard(job: j),"""
+          if old_banner in text:
+              page.write_text(text.replace(old_banner, new_banner, 1), encoding='utf-8')
+              print('patched job detail admin review banner')
+          else:
+              print('job detail admin review banner already present')
+
           p = Path('lib/features/transactions/transaction_widgets.part.dart')
           text = p.read_text(encoding='utf-8')
           if "job.status ?? 'UNKNOWN'" not in text:
@@ -144,6 +226,7 @@ jobs:
           dart format \
             lib/core/ui/premium_components.dart \
             lib/features/transactions/transaction_widgets.part.dart \
+            lib/features/marketplace/job_detail_page.dart \
             lib/l10n/generated/app_localizations.dart \
             lib/l10n/generated/app_localizations_en.dart \
             lib/l10n/generated/app_localizations_fa.dart \
@@ -155,7 +238,7 @@ jobs:
 
           flutter analyze --no-fatal-warnings --no-fatal-infos
 
-      - name: Run only previously unresolved regression files
+      - name: Run regression files
         shell: bash
         run: |
           set +e
@@ -176,7 +259,7 @@ jobs:
               overall=1
               echo "FAIL (exit=$rc)" | tee -a test-results/pass11-summary.md
               echo '```text' >> test-results/pass11-summary.md
-              tail -n 220 "$log" >> test-results/pass11-summary.md
+              tail -n 260 "$log" >> test-results/pass11-summary.md
               echo '```' >> test-results/pass11-summary.md
             fi
           done
@@ -192,6 +275,7 @@ jobs:
           git add \
             lib/core/ui/premium_components.dart \
             lib/features/transactions/transaction_widgets.part.dart \
+            lib/features/marketplace/job_detail_page.dart \
             lib/l10n/app_en.arb \
             lib/l10n/generated/app_localizations.dart \
             lib/l10n/generated/app_localizations_en.dart \
@@ -200,6 +284,12 @@ jobs:
             test/features/marketplace/create_job_page_test.dart \
             test/features/marketplace/jobs_page_test.dart \
             test/features/marketplace/job_detail_page_test.dart \
-            test-results/pass11-summary.md
-          git commit -m '[CI-RESUME] pass 11 unresolved regression checkpoint' || true
+            test-results/pass11-summary.md \
+            .github/workflows/hope-resume-pass11.yml
+          git commit -m '[CI-RESUME] pass 11 job detail viewport and regression checkpoint' || true
           git push origin HEAD:${BRANCH}
+
+      - name: Enforce regression gate
+        shell: bash
+        run: |
+          test "$(grep -E '^OVERALL_EXIT=' test-results/pass11-summary.md | tail -1 | cut -d= -f2)" = "0"
