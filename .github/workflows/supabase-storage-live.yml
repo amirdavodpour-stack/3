@@ -22,6 +22,7 @@ jobs:
       S3_INTEGRATION: '1'
       S3_REQUIRE_LIVE: '1'
       S3_REQUIRE_HTTPS: '1'
+      S3_EXPECT_BUCKET_RESTRICTIONS: '1'
       S3_FORCE_PATH_STYLE: 'true'
     steps:
       - name: Checkout
@@ -38,6 +39,6 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Validate live Supabase S3 integration
+      - name: Validate live Supabase S3 integration and bucket restrictions
         working-directory: backend
         run: node tests/s3-integration.test.mjs
