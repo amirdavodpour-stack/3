@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 const base = String(process.env.STAGING_BASE_URL || '').replace(/\/$/, '');
 assert.ok(base.startsWith('https://'), 'STAGING_BASE_URL must use HTTPS.');
 const metricsToken = String(process.env.STAGING_METRICS_TOKEN || '').trim();
-assert.ok(!metricsToken || metricsToken.length >= 24, 'STAGING_METRICS_TOKEN, when provided, must be at least 24 characters.');
+assert.ok(metricsToken, 'STAGING_METRICS_TOKEN is required for the protected /metrics endpoint.');
+assert.ok(metricsToken.length >= 24, 'STAGING_METRICS_TOKEN must be at least 24 characters.');
 
 async function get(path, headers = {}) {
   const response = await fetch(`${base}${path}`, { headers: { accept: 'application/json', ...headers } });
@@ -17,7 +18,7 @@ for (const endpoint of ['/live', '/ready', '/health']) {
   assert.equal(result.response.status, 200, `${endpoint} returned ${result.response.status}: ${JSON.stringify(result.body)}`);
 }
 
-const metrics = await get('/metrics', metricsToken ? { 'X-Metrics-Token': metricsToken } : {});
+const metrics = await get('/metrics', { 'X-Metrics-Token': metricsToken });
 assert.equal(metrics.response.status, 200, `metrics returned ${metrics.response.status}`);
 const data = metrics.body?.data ?? metrics.body;
 assert.ok(data && typeof data === 'object', 'metrics payload missing');
@@ -39,7 +40,7 @@ assert.equal(data.health?.database?.status, 'ok', `database health is not ok: ${
 
 console.log(JSON.stringify({
   status: 'PASS',
-  metricsAuth: metricsToken ? 'configured' : 'public-runtime',
+  metricsAuth: 'configured',
   recentHealth: data.recentHealth,
   latency: data.latency,
   outbox: { processed: data.outboxProcessed, failed: data.outboxFailed },
