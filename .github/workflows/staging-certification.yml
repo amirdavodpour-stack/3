@@ -1,6 +1,9 @@
 name: Staging certification
 
 on:
+  push:
+    branches:
+      - hope/full-stack-hardening-2026-09-17
   workflow_call:
     secrets:
       STAGING_BASE_URL:
