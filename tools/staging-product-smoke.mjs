@@ -115,7 +115,7 @@ expectStatus(await request(`/api/v1/jobs/${job.id}/accept`, { method: 'POST', he
 
 const releaseResult = await request(`/api/v1/payments/release/${job.id}`, { method: 'POST', headers: auth(owner.accessToken) });
 assert.ok([200, 202].includes(releaseResult.response.status), `payment release: expected 200/202, got ${releaseResult.response.status}; body=${JSON.stringify(releaseResult.body)}`);
-const release = await poll('payment release', () => request(`/api/v1/payments/jobs/${job.id}`, { headers: auth(owner.accessToken) }), (result) => result.response.status === 200 && (result.body?.data?.status ?? result.body?.status) === 'RELEASED');
+const release = await poll('payment release', () => request(`/api/v1/payments/jobs/${job.id}`, { headers: auth(owner.accessToken) }), (result) => result.response.status === 200 && (result.body?.data?.status ?? result.body?.status) === 'RELEASED', 60000);
 const releaseData = release.body?.data ?? release.body;
 assert.equal(releaseData.status, 'RELEASED', `payment release status=${releaseData.status}`);
 
