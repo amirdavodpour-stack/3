@@ -6,7 +6,11 @@ export const INTERNAL_CURRENCY = 'TOMAN';
 export const MAX_AMOUNT = 9_000_000_000_000_000n;
 
 function amount(value, { allowZero = false } = {}) {
-  const raw = String(value ?? '').trim();
+  let raw = String(value ?? '').trim();
+  // PostgreSQL NUMERIC(18,2) round-trips integer TOMAN values as strings such
+  // as "165.00". Normalize only zero-fraction decimals; genuine TOMAN
+  // fractions remain invalid by design.
+  if (/^\d+\.0+$/.test(raw)) raw = raw.slice(0, raw.indexOf('.'));
   if (!/^\d+$/.test(raw)) throw Object.assign(new Error('INVALID_AMOUNT'), { code: 'INVALID_AMOUNT' });
   const parsed = BigInt(raw);
   if ((allowZero ? parsed < 0n : parsed <= 0n) || parsed > MAX_AMOUNT) {
@@ -238,60 +242,57 @@ export async function postInternalPaymentRefundWithClient(client, {
   const operation = await createOperation(client, { type: 'REFUND', actorType: 'USER', actorId: payerId, idempotencyKey: key });
   const { rows } = await client.query(`UPDATE wallet_accounts SET locked_balance=locked_balance-$2,available_balance=available_balance+$3,updated_at=NOW() WHERE id=$1 RETURNING *`, [lockedPayer.id, payout, charge]);
   await client.query(`UPDATE wallet_holds SET status='CANCELLED',released_at=NOW() WHERE id=$1`, [hold.id]);
-  const entry = await postEntry(client, { walletId: rows[0].id, entryType: 'REFUND', direction: 'CREDIT', amount: charge, referenceType: 'PAYMENT_REFUND', referenceId: paymentId, operationId: operation.id, metadata: { providerPayout: payout, platformFee: fee }, balanceAfter: rows[0].available_balance });
-  await postJournal(client, { operationId: operation.id, journalType: 'REFUND', referenceType: 'PAYMENT_REFUND', referenceId: paymentId, entries: [
-    { account: 'ESCROW_LIABILITY', debit: payout }, { account: 'PLATFORM_FEE_REVENUE', debit: fee }, { account: 'CUSTOMER_WALLET_LIABILITY', credit: charge },
+  const entry = await postEntry(client, { walletId: rows[0].id, entryType:'REFUND', direction:'CREDIT', amount:charge, referenceType:'PAYMENT_REFUND', referenceId:paymentId, operationId:operation.id, metadata:{ providerPayout:payout, platformFee:fee }, balanceAfter:rows[0].available_balance });
+  await postJournal(client, { operationId:operation.id, journalType:'REFUND', referenceType:'PAYMENT_REFUND', referenceId:paymentId, entries:[
+    { account:'ESCROW_LIABILITY', debit:payout }, { account:'PLATFORM_FEE_REVENUE', debit:fee }, { account:'CUSTOMER_WALLET_LIABILITY', credit:charge },
   ] });
-  await finishOperation(client, operation.id);
-  const result = { operationId: operation.id, entry, wallet: rows[0], currency: INTERNAL_CURRENCY };
-  await completeIdempotency(client, { principalId: actorId, operation: 'REFUND', key, resourceType: 'financial_operation', resourceId: operation.id, responseBody: result });
+  await finishOperation(client,operation.id);
+  const result={operationId:operation.id,entry,wallet:rows[0],currency:INTERNAL_CURRENCY};
+  await completeIdempotency(client,{principalId:actorId,operation:'REFUND',key,resourceType:'financial_operation',resourceId:operation.id,responseBody:result});
   return result;
 }
 
-export async function creditWallet({ userId, amount: rawAmount, idempotencyKey, referenceType = 'WALLET_TOP_UP', referenceId = null, metadata = {}, actorId = userId }) {
-  const value = amount(rawAmount); const key = String(idempotencyKey || '').trim(); if (!key) throw new Error('IDEMPOTENCY_KEY_REQUIRED');
+export async function creditWallet({ userId, amount: value, idempotencyKey, referenceType='WALLET_TOP_UP', referenceId=null, metadata={}, actorId=userId }) {
+  const credit = amount(value);
+  const key = String(idempotencyKey || '').trim(); if (!key) throw new Error('IDEMPOTENCY_KEY_REQUIRED');
   return withSqlTransaction(async (client) => {
-    const idem = await beginIdempotency(client, { principalId: actorId, operation: 'TOP_UP', key, requestHash: `${userId}:${value}:${referenceType}:${referenceId}` });
+    const idem = await beginIdempotency(client, { principalId: actorId, operation:'CREDIT', key, requestHash:`${userId}:${credit}:${referenceType}:${referenceId || ''}` });
     if (idem.existing) return JSON.parse(idem.existing.response_body);
-    const wallet = await ensureWalletForUser(userId, client); assertActive(wallet);
-    const [locked] = await lockWallets(client, [wallet.id]);
-    assertActive(locked);
-    const operation = await createOperation(client, { type: 'TOP_UP', actorType: actorId === userId ? 'USER' : 'ADMIN', actorId, idempotencyKey: key });
-    const { rows } = await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,updated_at=NOW() WHERE id=$1 RETURNING *`, [locked.id, value]);
-    const entry = await postEntry(client, { walletId: locked.id, entryType: 'TOP_UP', direction: 'CREDIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: rows[0].available_balance });
-    await postJournal(client, { operationId: operation.id, journalType: 'TOP_UP', referenceType, referenceId: referenceId || operation.id, entries: [
-      { account: 'PLATFORM_CASH', debit: value }, { account: 'CUSTOMER_WALLET_LIABILITY', credit: value },
-    ] });
-    await finishOperation(client, operation.id);
-    const result = { operationId: operation.id, entry, wallet: rows[0], currency: INTERNAL_CURRENCY };
-    await completeIdempotency(client, { principalId: actorId, operation: 'TOP_UP', key, resourceType: 'financial_operation', resourceId: operation.id, responseBody: result });
+    const wallet = await ensureWalletForUser(userId, client);
+    assertReceivable(wallet);
+    const [locked] = await lockWallets(client,[wallet.id]);
+    assertReceivable(locked);
+    const operation=await createOperation(client,{type:'CREDIT',actorType:'USER',actorId,idempotencyKey:key});
+    const { rows }=await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,updated_at=NOW() WHERE id=$1 RETURNING *`,[locked.id,credit]);
+    const entry=await postEntry(client,{walletId:locked.id,entryType:'CREDIT',direction:'CREDIT',amount:credit,referenceType,referenceId,operationId:operation.id,metadata,balanceAfter:rows[0].available_balance});
+    await postJournal(client,{operationId:operation.id,journalType:'CREDIT',referenceType,referenceId,entries:[{account:'PLATFORM_FUNDING',debit:credit},{account:'CUSTOMER_WALLET_LIABILITY',credit}]});
+    await finishOperation(client,operation.id);
+    const result={operationId:operation.id,entry,wallet:rows[0],currency:INTERNAL_CURRENCY};
+    await completeIdempotency(client,{principalId:actorId,operation:'CREDIT',key,resourceType:'financial_operation',resourceId:operation.id,responseBody:result});
     return result;
   });
 }
 
-export async function transferAvailable({ sourceUserId, destinationUserId, amount: rawAmount, idempotencyKey, referenceType = 'WALLET_TRANSFER', referenceId = null, metadata = {} }) {
-  const value = amount(rawAmount); const key = String(idempotencyKey || '').trim(); if (!key) throw new Error('IDEMPOTENCY_KEY_REQUIRED');
-  if (sourceUserId === destinationUserId) throw Object.assign(new Error('SELF_TRANSFER_NOT_ALLOWED'), { code: 'SELF_TRANSFER_NOT_ALLOWED' });
-  return withSqlTransaction(async (client) => {
-    const idem = await beginIdempotency(client, { principalId: sourceUserId, operation: 'TRANSFER', key, requestHash: `${destinationUserId}:${value}:${referenceType}:${referenceId}` });
-    if (idem.existing) return JSON.parse(idem.existing.response_body);
-    const source = await ensureWalletForUser(sourceUserId, client); const destination = await ensureWalletForUser(destinationUserId, client);
-    assertActive(source); assertActive(destination);
-    const [lockedSource, lockedDestination] = await lockWallets(client, [source.id, destination.id]);
-    assertActive(lockedSource);
-    assertActive(lockedDestination);
-    if (BigInt(String(lockedSource.available_balance)) < value) throw Object.assign(new Error('INSUFFICIENT_FUNDS'), { code: 'INSUFFICIENT_FUNDS' });
-    const operation = await createOperation(client, { type: 'TRANSFER', actorType: 'USER', actorId: sourceUserId, idempotencyKey: key });
-    const { rows: sourceRows } = await client.query(`UPDATE wallet_accounts SET available_balance=available_balance-$2,updated_at=NOW() WHERE id=$1 RETURNING *`, [lockedSource.id, value]);
-    const { rows: destinationRows } = await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,updated_at=NOW() WHERE id=$1 RETURNING *`, [lockedDestination.id, value]);
-    const sourceEntry = await postEntry(client, { walletId: lockedSource.id, entryType: 'TRANSFER', direction: 'DEBIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: sourceRows[0].available_balance });
-    const destinationEntry = await postEntry(client, { walletId: lockedDestination.id, entryType: 'TRANSFER', direction: 'CREDIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: destinationRows[0].available_balance });
-    await postJournal(client, { operationId: operation.id, journalType: 'TRANSFER', referenceType, referenceId: referenceId || operation.id, entries: [
-      { account: 'CUSTOMER_WALLET_LIABILITY', debit: value }, { account: 'CUSTOMER_WALLET_LIABILITY', credit: value },
-    ] });
-    await finishOperation(client, operation.id);
-    const result = { operationId: operation.id, entries: [sourceEntry, destinationEntry], sourceWallet: sourceRows[0], destinationWallet: destinationRows[0], currency: INTERNAL_CURRENCY };
-    await completeIdempotency(client, { principalId: sourceUserId, operation: 'TRANSFER', key, resourceType: 'financial_operation', resourceId: operation.id, responseBody: result });
+export async function transferAvailable({ sourceUserId, destinationUserId, amount: value, idempotencyKey, referenceType='WALLET_TRANSFER', referenceId=null, metadata={} }) {
+  const transfer = amount(value);
+  if (sourceUserId === destinationUserId) throw Object.assign(new Error('SELF_TRANSFER_NOT_ALLOWED'),{code:'SELF_TRANSFER_NOT_ALLOWED'});
+  const key=String(idempotencyKey||'').trim(); if(!key)throw new Error('IDEMPOTENCY_KEY_REQUIRED');
+  return withSqlTransaction(async(client)=>{
+    const idem=await beginIdempotency(client,{principalId:sourceUserId,operation:'TRANSFER',key,requestHash:`${sourceUserId}:${destinationUserId}:${transfer}`});
+    if(idem.existing)return JSON.parse(idem.existing.response_body);
+    const source=await ensureWalletForUser(sourceUserId,client); const destination=await ensureWalletForUser(destinationUserId,client);
+    assertActive(source); assertReceivable(destination);
+    const [lockedSource,lockedDestination]=await lockWallets(client,[source.id,destination.id]);
+    if(BigInt(String(lockedSource.available_balance))<transfer)throw Object.assign(new Error('INSUFFICIENT_FUNDS'),{code:'INSUFFICIENT_FUNDS'});
+    const operation=await createOperation(client,{type:'TRANSFER',actorType:'USER',actorId:sourceUserId,idempotencyKey:key});
+    const {rows:sourceRows}=await client.query(`UPDATE wallet_accounts SET available_balance=available_balance-$2,updated_at=NOW() WHERE id=$1 RETURNING *`,[lockedSource.id,transfer]);
+    const {rows:destinationRows}=await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,updated_at=NOW() WHERE id=$1 RETURNING *`,[lockedDestination.id,transfer]);
+    const sourceEntry=await postEntry(client,{walletId:sourceRows[0].id,entryType:'TRANSFER_OUT',direction:'DEBIT',amount:transfer,referenceType,referenceId,operationId:operation.id,metadata,balanceAfter:sourceRows[0].available_balance});
+    const destinationEntry=await postEntry(client,{walletId:destinationRows[0].id,entryType:'TRANSFER_IN',direction:'CREDIT',amount:transfer,referenceType,referenceId,operationId:operation.id,metadata,balanceAfter:destinationRows[0].available_balance});
+    await postJournal(client,{operationId:operation.id,journalType:'TRANSFER',referenceType,referenceId,entries:[{account:'CUSTOMER_WALLET_LIABILITY',debit:transfer},{account:'CUSTOMER_WALLET_LIABILITY',credit:transfer}]});
+    await finishOperation(client,operation.id);
+    const result={operationId:operation.id,sourceWallet:sourceRows[0],destinationWallet:destinationRows[0],entries:[sourceEntry,destinationEntry],currency:INTERNAL_CURRENCY};
+    await completeIdempotency(client,{principalId:sourceUserId,operation:'TRANSFER',key,resourceType:'financial_operation',resourceId:operation.id,responseBody:result});
     return result;
   });
 }
