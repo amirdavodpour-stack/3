@@ -1,0 +1,980 @@
+name: HOPE Complete Full-Stack Diagnosis
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hope-diagnosis-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagnosis:
+    name: Full Stack Diagnosis
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      CI: true
+      TZ: UTC
+      DIAG_DIR: diagnosis-output
+
+    steps:
+
+      # ==========================================================
+      # 1. CHECKOUT
+      # ==========================================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ==========================================================
+      # 2. BASE ENVIRONMENT
+      # ==========================================================
+
+      - name: Collect environment
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/environment"
+
+          {
+            echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "repository=$GITHUB_REPOSITORY"
+            echo "ref=$GITHUB_REF"
+            echo "sha=$GITHUB_SHA"
+            echo "runner=$RUNNER_OS"
+            echo "runner_arch=$RUNNER_ARCH"
+          } > "$DIAG_DIR/environment/metadata.txt"
+
+          {
+            echo "===== OS ====="
+            uname -a
+            cat /etc/os-release || true
+
+            echo
+            echo "===== CPU ====="
+            nproc
+
+            echo
+            echo "===== MEMORY ====="
+            free -h || true
+
+            echo
+            echo "===== DISK ====="
+            df -h || true
+
+            echo
+            echo "===== NODE ====="
+            node --version || true
+            npm --version || true
+
+            echo
+            echo "===== JAVA ====="
+            java -version 2>&1 || true
+
+            echo
+            echo "===== GRADLE ====="
+            gradle --version 2>&1 || true
+
+            echo
+            echo "===== GIT ====="
+            git --version
+            git status --short
+
+          } > "$DIAG_DIR/environment/system.txt"
+
+      # ==========================================================
+      # 3. PROJECT STRUCTURE
+      # ==========================================================
+
+      - name: Inventory repository
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/structure"
+
+          {
+            echo "===== ROOT ====="
+            find . -maxdepth 2 \
+              -not -path './.git*' \
+              -print | sort
+
+            echo
+            echo "===== SOURCE FILES ====="
+            find . \
+              -type f \
+              -not -path './.git/*' \
+              -not -path './build/*' \
+              -not -path './.dart_tool/*' \
+              -not -path './node_modules/*' \
+              | sort
+
+          } > "$DIAG_DIR/structure/repository-tree.txt"
+
+          {
+            echo "===== FILE COUNTS ====="
+
+            printf "Dart: "
+            find . -type f -name '*.dart' \
+              -not -path './.git/*' | wc -l
+
+            printf "Java/Kotlin: "
+            find . -type f \
+              \( -name '*.java' -o -name '*.kt' \) \
+              -not -path './.git/*' | wc -l
+
+            printf "JS/TS: "
+            find . -type f \
+              \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.ts' \) \
+              -not -path './.git/*' \
+              -not -path './node_modules/*' | wc -l
+
+            printf "Tests: "
+            find . -type f \
+              \( -name '*_test.dart' -o -name '*.test.js' -o -name '*.spec.js' -o -name '*.test.ts' -o -name '*.spec.ts' \) \
+              -not -path './.git/*' | wc -l
+
+          } > "$DIAG_DIR/structure/file-counts.txt"
+
+      # ==========================================================
+      # 4. PROJECT CONFIGURATION SNAPSHOT
+      # ==========================================================
+
+      - name: Collect project configuration
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/config"
+
+          for file in \
+            pubspec.yaml \
+            pubspec.lock \
+            package.json \
+            package-lock.json \
+            yarn.lock \
+            pnpm-lock.yaml \
+            .nvmrc \
+            .java-version \
+            analysis_options.yaml \
+            Makefile \
+            docker-compose.yml \
+            docker-compose.yaml
+          do
+            if [[ -f "$file" ]]; then
+              cp "$file" "$DIAG_DIR/config/$(basename "$file")"
+            fi
+          done
+
+          if [[ -d android ]]; then
+            find android \
+              -maxdepth 3 \
+              -type f \
+              \( \
+                -name 'build.gradle' \
+                -o -name 'build.gradle.kts' \
+                -o -name 'settings.gradle' \
+                -o -name 'settings.gradle.kts' \
+                -o -name 'gradle.properties' \
+                -o -name 'gradle-wrapper.properties' \
+              \) \
+              -print \
+              > "$DIAG_DIR/config/android-gradle-files.txt"
+          fi
+
+      # ==========================================================
+      # 5. NODE / BACKEND
+      # ==========================================================
+
+      - name: Backend dependency installation
+        if: ${{ hashFiles('package.json') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/backend"
+
+          if [[ -f package-lock.json ]]; then
+            npm ci --no-audit --no-fund \
+              > "$DIAG_DIR/backend/npm-install.log" 2>&1
+            echo $? > "$DIAG_DIR/backend/npm-install.exit"
+          else
+            npm install --no-audit --no-fund \
+              > "$DIAG_DIR/backend/npm-install.log" 2>&1
+            echo $? > "$DIAG_DIR/backend/npm-install.exit"
+          fi
+
+      - name: Backend package inspection
+        if: ${{ hashFiles('package.json') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/backend"
+
+          npm run 2>&1 \
+            > "$DIAG_DIR/backend/npm-scripts.txt"
+
+          npm ls --all \
+            > "$DIAG_DIR/backend/npm-dependency-tree.txt" 2>&1
+
+          npm outdated \
+            > "$DIAG_DIR/backend/npm-outdated.txt" 2>&1
+
+      - name: Backend tests
+        if: ${{ hashFiles('package.json') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/backend/tests"
+
+          if npm run test --if-present \
+              > "$DIAG_DIR/backend/tests/npm-test.log" 2>&1
+          then
+            echo 0 > "$DIAG_DIR/backend/tests/npm-test.exit"
+          else
+            echo $? > "$DIAG_DIR/backend/tests/npm-test.exit"
+          fi
+
+          if npm run test:unit --if-present \
+              > "$DIAG_DIR/backend/tests/unit-test.log" 2>&1
+          then
+            echo 0 > "$DIAG_DIR/backend/tests/unit-test.exit"
+          else
+            echo $? > "$DIAG_DIR/backend/tests/unit-test.exit"
+          fi
+
+          if npm run test:integration --if-present \
+              > "$DIAG_DIR/backend/tests/integration-test.log" 2>&1
+          then
+            echo 0 > "$DIAG_DIR/backend/tests/integration-test.exit"
+          else
+            echo $? > "$DIAG_DIR/backend/tests/integration-test.exit"
+          fi
+
+          if npm run test:e2e --if-present \
+              > "$DIAG_DIR/backend/tests/e2e-test.log" 2>&1
+          then
+            echo 0 > "$DIAG_DIR/backend/tests/e2e-test.exit"
+          else
+            echo $? > "$DIAG_DIR/backend/tests/e2e-test.exit"
+          fi
+
+      # ==========================================================
+      # 6. FLUTTER SETUP
+      # ==========================================================
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter environment
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/flutter"
+
+          flutter --version \
+            > "$DIAG_DIR/flutter/flutter-version.txt" 2>&1
+
+          flutter doctor -v \
+            > "$DIAG_DIR/flutter/flutter-doctor.txt" 2>&1
+
+          dart --version \
+            > "$DIAG_DIR/flutter/dart-version.txt" 2>&1
+
+      # ==========================================================
+      # 7. FLUTTER DEPENDENCIES
+      # ==========================================================
+
+      - name: Flutter dependency resolution
+        if: ${{ hashFiles('pubspec.yaml') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/flutter"
+
+          flutter pub get \
+            > "$DIAG_DIR/flutter/pub-get.log" 2>&1
+
+          echo $? > "$DIAG_DIR/flutter/pub-get.exit"
+
+          flutter pub deps \
+            > "$DIAG_DIR/flutter/pub-deps.txt" 2>&1
+
+          flutter pub outdated \
+            > "$DIAG_DIR/flutter/pub-outdated.txt" 2>&1
+
+      # ==========================================================
+      # 8. DART STATIC ANALYSIS
+      # ==========================================================
+
+      - name: Flutter analyze
+        if: ${{ hashFiles('pubspec.yaml') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/flutter/analyze"
+
+          flutter analyze --no-fatal-infos \
+            > "$DIAG_DIR/flutter/analyze/flutter-analyze.log" 2>&1
+
+          echo $? > "$DIAG_DIR/flutter/analyze/flutter-analyze.exit"
+
+          flutter analyze --no-fatal-infos --format machine \
+            > "$DIAG_DIR/flutter/analyze/flutter-analyze.machine" 2>&1
+
+          echo $? > "$DIAG_DIR/flutter/analyze/flutter-analyze-machine.exit"
+
+      # ==========================================================
+      # 9. FLUTTER UNIT / WIDGET TESTS
+      # ==========================================================
+
+      - name: Flutter tests
+        if: ${{ hashFiles('pubspec.yaml') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/flutter/tests"
+
+          flutter test \
+            > "$DIAG_DIR/flutter/tests/flutter-test.log" 2>&1
+
+          echo $? > "$DIAG_DIR/flutter/tests/flutter-test.exit"
+
+      # ==========================================================
+      # 10. FLUTTER COVERAGE
+      # ==========================================================
+
+      - name: Flutter coverage
+        if: ${{ hashFiles('pubspec.yaml') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/flutter/coverage"
+
+          flutter test --coverage \
+            > "$DIAG_DIR/flutter/coverage/coverage-test.log" 2>&1
+
+          echo $? > "$DIAG_DIR/flutter/coverage/coverage-test.exit"
+
+          if [[ -f coverage/lcov.info ]]; then
+            cp coverage/lcov.info \
+              "$DIAG_DIR/flutter/coverage/lcov.info"
+          fi
+
+      # ==========================================================
+      # 11. INTEGRATION TEST DISCOVERY
+      # ==========================================================
+
+      - name: Integration test inventory
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/integration"
+
+          find integration_test test \
+            -type f \
+            2>/dev/null \
+            | sort \
+            > "$DIAG_DIR/integration/test-files.txt"
+
+          grep -RniE \
+            'integration|e2e|api|http|dio|supabase|wallet|ledger|payment|job|auth|refresh' \
+            integration_test test \
+            2>/dev/null \
+            > "$DIAG_DIR/integration/test-domain-signals.txt" || true
+
+      # ==========================================================
+      # 12. TARGETED DOMAIN TEST DISCOVERY
+      # ==========================================================
+
+      - name: Financial and critical-path test discovery
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/domains"
+
+          grep -RniE \
+            'wallet|ledger|balance|transaction|transfer|withdraw|top.?up|payment|payout|refund|release|lock|fund|approve|job|lifecycle|idempot|double.?spend|toman|تومان' \
+            . \
+            --include='*.dart' \
+            --include='*.js' \
+            --include='*.ts' \
+            --include='*.json' \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.dart_tool \
+            --exclude-dir=build \
+            > "$DIAG_DIR/domains/financial-signals.txt" || true
+
+          grep -RniE \
+            'auth|login|logout|refresh|token|session|401|403|authorization' \
+            . \
+            --include='*.dart' \
+            --include='*.js' \
+            --include='*.ts' \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.dart_tool \
+            --exclude-dir=build \
+            > "$DIAG_DIR/domains/auth-signals.txt" || true
+
+          grep -RniE \
+            'api|http|dio|graphql|rest|endpoint|baseUrl|baseURL|supabase' \
+            . \
+            --include='*.dart' \
+            --include='*.js' \
+            --include='*.ts' \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.dart_tool \
+            --exclude-dir=build \
+            > "$DIAG_DIR/domains/api-signals.txt" || true
+
+      # ==========================================================
+      # 13. ANDROID / GRADLE
+      # ==========================================================
+
+      - name: Android Gradle diagnosis
+        if: ${{ hashFiles('android/**') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/android"
+
+          cd android
+
+          if [[ -x ./gradlew ]]; then
+            ./gradlew --version \
+              > "../$DIAG_DIR/android/gradle-version.txt" 2>&1
+
+            ./gradlew tasks --all \
+              > "../$DIAG_DIR/android/gradle-tasks.txt" 2>&1
+
+            ./gradlew test \
+              > "../$DIAG_DIR/android/gradle-test.log" 2>&1
+
+            echo $? > "../$DIAG_DIR/android/gradle-test.exit"
+
+            ./gradlew lint \
+              > "../$DIAG_DIR/android/gradle-lint.log" 2>&1
+
+            echo $? > "../$DIAG_DIR/android/gradle-lint.exit"
+
+          else
+            echo "gradlew not executable or missing" \
+              > "../$DIAG_DIR/android/gradle-bootstrap-error.txt"
+          fi
+
+          cd ..
+
+      # ==========================================================
+      # 14. FLUTTER BUILD DIAGNOSIS
+      # ==========================================================
+
+      - name: Flutter build diagnosis
+        if: ${{ hashFiles('pubspec.yaml') != '' }}
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/build"
+
+          flutter build apk --debug \
+            > "$DIAG_DIR/build/flutter-apk-debug.log" 2>&1
+
+          echo $? > "$DIAG_DIR/build/flutter-apk-debug.exit"
+
+          flutter build appbundle --debug \
+            > "$DIAG_DIR/build/flutter-aab-debug.log" 2>&1
+
+          echo $? > "$DIAG_DIR/build/flutter-aab-debug.exit"
+
+      # ==========================================================
+      # 15. SOURCE ERROR EXTRACTION
+      # ==========================================================
+
+      - name: Extract compiler and runtime signals
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/errors"
+
+          SEARCH_ROOTS=(
+            "$DIAG_DIR"
+          )
+
+          grep -RniE \
+            '(^|[^0-9])(error|exception|fatal|failed|failure|undefined|not found|missing|invalid|type .* is not|compile failed|build failed|assertion failed)' \
+            "${SEARCH_ROOTS[@]}" \
+            --include='*.log' \
+            --include='*.txt' \
+            --include='*.machine' \
+            > "$DIAG_DIR/errors/all-error-signals.txt" || true
+
+          grep -RniE \
+            'duplicate|already defined|ambiguous|conflicting declaration' \
+            "$DIAG_DIR" \
+            --include='*.log' \
+            --include='*.txt' \
+            --include='*.machine' \
+            > "$DIAG_DIR/errors/duplicate-symbols.txt" || true
+
+          grep -RniE \
+            'null|nullable|late|type .* is not a subtype|cast|NoSuchMethod|RangeError|StateError' \
+            "$DIAG_DIR" \
+            --include='*.log' \
+            --include='*.txt' \
+            > "$DIAG_DIR/errors/runtime-type-null-errors.txt" || true
+
+          grep -RniE \
+            '401|403|404|409|422|429|500|502|503|504' \
+            "$DIAG_DIR" \
+            --include='*.log' \
+            --include='*.txt' \
+            > "$DIAG_DIR/errors/http-errors.txt" || true
+
+      # ==========================================================
+      # 16. SECURITY SIGNALS
+      # ==========================================================
+
+      - name: Security diagnosis
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/security"
+
+          grep -RniE \
+            'password|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|private[_-]?key|client[_-]?secret' \
+            . \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.dart_tool \
+            --exclude-dir=build \
+            --exclude='*.lock' \
+            > "$DIAG_DIR/security/secret-signals.txt" || true
+
+          grep -RniE \
+            'TODO|FIXME|HACK|XXX|TEMP' \
+            . \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.dart_tool \
+            --exclude-dir=build \
+            > "$DIAG_DIR/security/code-todos.txt" || true
+
+          if [[ -f package-lock.json || -f package.json ]]; then
+            npm audit --json \
+              > "$DIAG_DIR/security/npm-audit.json" 2>&1 || true
+          fi
+
+          if [[ -f pubspec.lock ]]; then
+            flutter pub deps \
+              > "$DIAG_DIR/security/flutter-dependencies.txt" 2>&1 || true
+          fi
+
+      # ==========================================================
+      # 17. ARCHITECTURE SIGNALS
+      # ==========================================================
+
+      - name: Architecture diagnosis
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/architecture"
+
+          grep -RniE \
+            'class |abstract class |enum |typedef |mixin ' \
+            lib backend \
+            2>/dev/null \
+            > "$DIAG_DIR/architecture/types.txt" || true
+
+          grep -RniE \
+            'extends |implements |with ' \
+            lib backend \
+            2>/dev/null \
+            > "$DIAG_DIR/architecture/inheritance.txt" || true
+
+          grep -RniE \
+            'http|dio|client|repository|service|provider|controller|bloc|cubit|riverpod|notifier|state' \
+            lib backend \
+            2>/dev/null \
+            > "$DIAG_DIR/architecture/layer-signals.txt" || true
+
+      # ==========================================================
+      # 18. GIT / CHANGE CONTEXT
+      # ==========================================================
+
+      - name: Git context
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/git"
+
+          git status --short \
+            > "$DIAG_DIR/git/status.txt"
+
+          git log -20 --oneline --decorate \
+            > "$DIAG_DIR/git/recent-commits.txt"
+
+          git diff HEAD \
+            > "$DIAG_DIR/git/working-tree.diff" 2>&1 || true
+
+      # ==========================================================
+      # 19. MACHINE-READABLE RESULT MATRIX
+      # ==========================================================
+
+      - name: Build result matrix
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/results"
+
+          {
+            echo "{"
+            echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
+            echo "  \"repository\": \"$GITHUB_REPOSITORY\","
+            echo "  \"sha\": \"$GITHUB_SHA\","
+
+            echo "  \"flutter\": {"
+
+            if [[ -f "$DIAG_DIR/flutter/analyze/flutter-analyze.exit" ]]; then
+              echo -n "    \"analyze_exit\": "
+              cat "$DIAG_DIR/flutter/analyze/flutter-analyze.exit"
+              echo ","
+            else
+              echo "    \"analyze_exit\": null,"
+            fi
+
+            if [[ -f "$DIAG_DIR/flutter/tests/flutter-test.exit" ]]; then
+              echo -n "    \"test_exit\": "
+              cat "$DIAG_DIR/flutter/tests/flutter-test.exit"
+              echo ","
+            else
+              echo "    \"test_exit\": null,"
+            fi
+
+            if [[ -f "$DIAG_DIR/flutter/coverage/coverage-test.exit" ]]; then
+              echo -n "    \"coverage_test_exit\": "
+              cat "$DIAG_DIR/flutter/coverage/coverage-test.exit"
+            else
+              echo "    \"coverage_test_exit\": null"
+            fi
+
+            echo
+            echo "  },"
+
+            echo "  \"backend\": {"
+
+            if [[ -f "$DIAG_DIR/backend/tests/npm-test.exit" ]]; then
+              echo -n "    \"test_exit\": "
+              cat "$DIAG_DIR/backend/tests/npm-test.exit"
+            else
+              echo "    \"test_exit\": null"
+            fi
+
+            echo
+            echo "  },"
+
+            echo "  \"android\": {"
+
+            if [[ -f "$DIAG_DIR/android/gradle-test.exit" ]]; then
+              echo -n "    \"gradle_test_exit\": "
+              cat "$DIAG_DIR/android/gradle-test.exit"
+            else
+              echo "    \"gradle_test_exit\": null"
+            fi
+
+            echo
+            echo "  },"
+
+            echo "  \"build\": {"
+
+            if [[ -f "$DIAG_DIR/build/flutter-apk-debug.exit" ]]; then
+              echo -n "    \"apk_debug_exit\": "
+              cat "$DIAG_DIR/build/flutter-apk-debug.exit"
+            else
+              echo "    \"apk_debug_exit\": null"
+            fi
+
+            echo
+            echo "  }"
+
+            echo "}"
+
+          } > "$DIAG_DIR/results/result-matrix.json"
+
+      # ==========================================================
+      # 20. ROOT CAUSE CANDIDATE GENERATOR
+      # ==========================================================
+
+      - name: Generate root cause candidates
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p "$DIAG_DIR/root-cause"
+
+          OUT="$DIAG_DIR/root-cause/ROOT-CAUSE-CANDIDATES.md"
+
+          {
+            echo "# HOPE Root Cause Candidates"
+            echo
+            echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            echo "This file contains evidence-derived candidates."
+            echo "It is not a claim that every signal is an independent root cause."
+            echo
+
+            echo "## 1. Flutter Analyze"
+            echo
+            if [[ -s "$DIAG_DIR/flutter/analyze/flutter-analyze.log" ]]; then
+              sed -n '1,300p' \
+                "$DIAG_DIR/flutter/analyze/flutter-analyze.log"
+            else
+              echo "No Flutter analyze output."
+            fi
+
+            echo
+            echo "## 2. Flutter Tests"
+            echo
+            if [[ -s "$DIAG_DIR/flutter/tests/flutter-test.log" ]]; then
+              sed -n '1,300p' \
+                "$DIAG_DIR/flutter/tests/flutter-test.log"
+            else
+              echo "No Flutter test output."
+            fi
+
+            echo
+            echo "## 3. Backend Tests"
+            echo
+            if [[ -s "$DIAG_DIR/backend/tests/npm-test.log" ]]; then
+              sed -n '1,300p' \
+                "$DIAG_DIR/backend/tests/npm-test.log"
+            else
+              echo "No backend test output."
+            fi
+
+            echo
+            echo "## 4. Android / Gradle"
+            echo
+            if [[ -s "$DIAG_DIR/android/gradle-test.log" ]]; then
+              sed -n '1,300p' \
+                "$DIAG_DIR/android/gradle-test.log"
+            else
+              echo "No Gradle test output."
+            fi
+
+            echo
+            echo "## 5. Build"
+            echo
+            if [[ -s "$DIAG_DIR/build/flutter-apk-debug.log" ]]; then
+              sed -n '1,300p' \
+                "$DIAG_DIR/build/flutter-apk-debug.log"
+            else
+              echo "No APK build output."
+            fi
+
+            echo
+            echo "## 6. Error Signals"
+            echo
+            if [[ -s "$DIAG_DIR/errors/all-error-signals.txt" ]]; then
+              sed -n '1,500p' \
+                "$DIAG_DIR/errors/all-error-signals.txt"
+            else
+              echo "No extracted error signals."
+            fi
+
+            echo
+            echo "## 7. HTTP Signals"
+            echo
+            if [[ -s "$DIAG_DIR/errors/http-errors.txt" ]]; then
+              sed -n '1,300p' \
+                "$DIAG_DIR/errors/http-errors.txt"
+            else
+              echo "No HTTP error signals."
+            fi
+
+            echo
+            echo "## 8. Financial Core Signals"
+            echo
+            if [[ -s "$DIAG_DIR/domains/financial-signals.txt" ]]; then
+              sed -n '1,500p' \
+                "$DIAG_DIR/domains/financial-signals.txt"
+            else
+              echo "No financial signals."
+            fi
+
+            echo
+            echo "## 9. Authentication Signals"
+            echo
+            if [[ -s "$DIAG_DIR/domains/auth-signals.txt" ]]; then
+              sed -n '1,500p' \
+                "$DIAG_DIR/domains/auth-signals.txt"
+            else
+              echo "No authentication signals."
+            fi
+
+            echo
+            echo "## 10. API Signals"
+            echo
+            if [[ -s "$DIAG_DIR/domains/api-signals.txt" ]]; then
+              sed -n '1,500p' \
+                "$DIAG_DIR/domains/api-signals.txt"
+            else
+              echo "No API signals."
+            fi
+
+          } > "$OUT"
+
+      # ==========================================================
+      # 21. FINAL SUMMARY
+      # ==========================================================
+
+      - name: Generate final diagnosis summary
+        shell: bash
+        run: |
+          set +e
+
+          {
+            echo "# HOPE Complete Diagnosis"
+            echo
+            echo "## Repository"
+            echo "- Repository: $GITHUB_REPOSITORY"
+            echo "- SHA: $GITHUB_SHA"
+            echo "- Ref: $GITHUB_REF"
+            echo "- Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+
+            echo "## Execution Matrix"
+            echo
+            echo '```text'
+
+            printf "Flutter analyze: "
+            [[ -f "$DIAG_DIR/flutter/analyze/flutter-analyze.exit" ]] \
+              && cat "$DIAG_DIR/flutter/analyze/flutter-analyze.exit" \
+              || echo "NOT_RUN"
+
+            printf "Flutter tests:   "
+            [[ -f "$DIAG_DIR/flutter/tests/flutter-test.exit" ]] \
+              && cat "$DIAG_DIR/flutter/tests/flutter-test.exit" \
+              || echo "NOT_RUN"
+
+            printf "Backend tests:   "
+            [[ -f "$DIAG_DIR/backend/tests/npm-test.exit" ]] \
+              && cat "$DIAG_DIR/backend/tests/npm-test.exit" \
+              || echo "NOT_RUN"
+
+            printf "Gradle tests:    "
+            [[ -f "$DIAG_DIR/android/gradle-test.exit" ]] \
+              && cat "$DIAG_DIR/android/gradle-test.exit" \
+              || echo "NOT_RUN"
+
+            printf "APK build:       "
+            [[ -f "$DIAG_DIR/build/flutter-apk-debug.exit" ]] \
+              && cat "$DIAG_DIR/build/flutter-apk-debug.exit" \
+              || echo "NOT_RUN"
+
+            echo '```'
+            echo
+
+            echo "## Diagnostic Areas"
+            echo
+            echo "- Flutter static analysis"
+            echo "- Flutter unit/widget tests"
+            echo "- Flutter coverage"
+            echo "- Backend tests"
+            echo "- Backend dependencies"
+            echo "- Android / Gradle"
+            echo "- APK build"
+            echo "- Integration-test inventory"
+            echo "- API signals"
+            echo "- Authentication signals"
+            echo "- Financial / Wallet / Ledger signals"
+            echo "- Job/payment lifecycle signals"
+            echo "- Security signals"
+            echo "- Architecture signals"
+            echo "- Compiler/runtime error extraction"
+            echo "- Git/change context"
+            echo
+
+            echo "## Important"
+            echo
+            echo "Exit codes and logs are preserved separately."
+            echo "A skipped or unavailable tool is not classified as PASS."
+            echo "Evidence must be correlated before fixing source code."
+
+          } > "$DIAG_DIR/DIAGNOSIS-SUMMARY.md"
+
+      # ==========================================================
+      # 22. GITHUB SUMMARY
+      # ==========================================================
+
+      - name: Publish GitHub summary
+        if: always()
+        shell: bash
+        run: |
+          set +e
+
+          cat "$DIAG_DIR/DIAGNOSIS-SUMMARY.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # ==========================================================
+      # 23. PACKAGE EVERYTHING
+      # ==========================================================
+
+      - name: Package complete diagnosis
+        if: always()
+        shell: bash
+        run: |
+          set +e
+
+          mkdir -p artifacts
+
+          tar \
+            --exclude='artifacts' \
+            -czf artifacts/HOPE-COMPLETE-FULL-STACK-DIAGNOSIS.tar.gz \
+            "$DIAG_DIR"
+
+          (
+            cd "$DIAG_DIR"
+            find . -type f -print0 \
+              | sort -z \
+              | xargs -0 sha256sum
+          ) > "$DIAG_DIR/SHA256SUMS.txt"
+
+      # ==========================================================
+      # 24. UPLOAD SINGLE ARTIFACT
+      # ==========================================================
+
+      - name: Upload complete diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HOPE-COMPLETE-FULL-STACK-DIAGNOSIS
+          path: |
+            diagnosis-output/
+            artifacts/HOPE-COMPLETE-FULL-STACK-DIAGNOSIS.tar.gz
+          if-no-files-found: error
+          retention-days: 14
