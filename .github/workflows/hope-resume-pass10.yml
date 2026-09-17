@@ -33,53 +33,85 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get
 
-      - name: Apply only unfinished fixes
+      - name: Reconcile only unfinished/persistence fixes
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
-          def replace_once(path: str, old: str, new: str):
+          def replace_if_present(path: str, old: str, new: str):
               p = Path(path)
               text = p.read_text(encoding='utf-8')
-              if old not in text:
-                  raise SystemExit(f'expected text not found: {path}: {old!r}')
-              p.write_text(text.replace(old, new, 1), encoding='utf-8')
-              print(f'patched: {path}')
+              if old in text:
+                  p.write_text(text.replace(old, new, 1), encoding='utf-8')
+                  print(f'patched: {path}')
+              else:
+                  print(f'preserved/no-op: {path}')
 
-          # Real localization defect: `$value` was treated as literal text in
-          # English generated output. Flutter gen-l10n expects `{value}` for a
-          # named placeholder.
-          replace_once(
+          def replace_all_if_present(path: str, old: str, new: str):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count:
+                  p.write_text(text.replace(old, new), encoding='utf-8')
+                  print(f'patched: {path} ({count} occurrences)')
+              else:
+                  print(f'preserved/no-op: {path}')
+
+          # Persist the already-validated home test contract fix from Pass 9.
+          replace_all_if_present(
+              'test/features/home/home_page_navigation_test.dart',
+              "find.byTooltip('Menu')",
+              "find.byTooltip('More menu')",
+          )
+
+          # Persist the already-validated real date-picker interaction contract.
+          replace_if_present(
+              'test/features/marketplace/create_job_page_test.dart',
+              "    await tester.enterText(\n        find.widgetWithText(TextField, 'Application deadline'), '2026-09-30');",
+              "    await tester.tap(find.widgetWithText(TextField, 'Application deadline'));\n    await tester.pumpAndSettle();\n    expect(find.byType(DatePickerDialog), findsOneWidget);\n    await tester.tap(find.text('30').last);\n    await tester.pumpAndSettle();\n    if (find.text('OK').evaluate().isNotEmpty) {\n      await tester.tap(find.text('OK').last);\n      await tester.pumpAndSettle();\n    }",
+          )
+
+          # Real production localization defect: `$value` was literal text in
+          # the English ARB and therefore generated as literal `$value TOMAN`.
+          replace_if_present(
               'lib/l10n/app_en.arb',
               '"copy_value_irr_ed45261": "$value TOMAN"',
               '"copy_value_irr_ed45261": "{value} TOMAN"',
           )
 
-          # Category picker: the same localized category label is legitimately
-          # visible in both the filter ActionChip and the modal option.
-          replace_once(
+          # Category picker tests must distinguish the ActionChip from the
+          # identical localized category option inside the modal ListTile.
+          replace_if_present(
               'test/features/marketplace/jobs_page_test.dart',
-              "    await tester.tap(find.text('همه حوزه‌ها'));\n    await tester.pumpAndSettle();\n    expect(find.text('طراحی'), findsOneWidget); // category option in sheet\n    await tester.tap(find.text('طراحی'));",
-              "    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));\n    await tester.pumpAndSettle();\n    expect(find.widgetWithText(ListTile, 'طراحی'), findsOneWidget); // category option in sheet\n    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));",
+              "    expect(find.text('طراحی'), findsOneWidget); // category option in sheet",
+              "    expect(find.widgetWithText(ListTile, 'طراحی'), findsOneWidget); // category option in sheet",
+          )
+          replace_if_present(
+              'test/features/marketplace/jobs_page_test.dart',
+              "    await tester.tap(find.text('طراحی'));",
+              "    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));",
+          )
+          replace_if_present(
+              'test/features/marketplace/jobs_page_test.dart',
+              "    await tester.tap(find.widgetWithText(ListTile, 'طراحی')); // reopen picker via updated chip",
+              "    await tester.tap(find.widgetWithText(ActionChip, 'طراحی')); // reopen picker via updated chip",
+          )
+          replace_if_present(
+              'test/features/marketplace/jobs_page_test.dart',
+              "    await tester.tap(find.text('همه حوزه‌ها'));",
+              "    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));",
           )
 
-          replace_once(
-              'test/features/marketplace/jobs_page_test.dart',
-              "    await tester.tap(find.text('همه حوزه‌ها'));\n    await tester.pumpAndSettle();\n    await tester.tap(find.text('طراحی'));\n    await tester.pumpAndSettle();\n\n    await tester.tap(find.text('طراحی')); // reopen picker via updated chip\n    await tester.pumpAndSettle();\n    await tester.tap(find.text('همه حوزه‌ها'));",
-              "    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));\n    await tester.pumpAndSettle();\n    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));\n    await tester.pumpAndSettle();\n\n    await tester.tap(find.widgetWithText(ActionChip, 'طراحی')); // reopen picker via updated chip\n    await tester.pumpAndSettle();\n    await tester.tap(find.widgetWithText(ListTile, 'همه حوزه‌ها'));",
-          )
-
-          # The finance action is rendered in Scaffold.bottomNavigationBar, so
-          # scrolling the body to it is incorrect and can generate hit-test
-          # failures. Tap the always-visible CTA directly.
-          replace_once(
+          # Job detail CTA is in Scaffold.bottomNavigationBar; it should be
+          # addressed directly rather than scrolling the body to it.
+          replace_all_if_present(
               'test/features/marketplace/job_detail_page_test.dart',
               "find.text('View transaction')",
               "find.text('View financial flow')",
           )
-          replace_once(
+          replace_if_present(
               'test/features/marketplace/job_detail_page_test.dart',
               "    await tester.scrollUntilVisible(find.text('View financial flow'), 150);\n    await tester.pumpAndSettle();\n    await tester.tap(find.text('View financial flow'));",
               "    await tester.tap(find.text('View financial flow'));",
@@ -91,12 +123,15 @@ jobs:
             lib/l10n/generated/app_localizations.dart \
             lib/l10n/generated/app_localizations_en.dart \
             lib/l10n/generated/app_localizations_fa.dart \
+            test/features/home/home_page_navigation_test.dart \
+            test/features/transactions/transaction_page_test.dart \
             test/features/marketplace/jobs_page_test.dart \
-            test/features/marketplace/job_detail_page_test.dart
+            test/features/marketplace/job_detail_page_test.dart \
+            test/features/marketplace/create_job_page_test.dart
 
           flutter analyze --no-fatal-warnings --no-fatal-infos
 
-      - name: Run only the unfinished regression files
+      - name: Run only the three previously unfinished regression files
         shell: bash
         run: |
           set +e
@@ -124,7 +159,7 @@ jobs:
           echo "OVERALL_EXIT=$overall" | tee -a test-results/pass10-summary.md
           exit 0
 
-      - name: Persist unfinished fixes without re-triggering diagnostics
+      - name: Persist reconciled changes without self-trigger loop
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -136,6 +171,9 @@ jobs:
             lib/l10n/generated/app_localizations.dart \
             lib/l10n/generated/app_localizations_en.dart \
             lib/l10n/generated/app_localizations_fa.dart \
+            test/features/home/home_page_navigation_test.dart \
+            test/features/marketplace/create_job_page_test.dart \
+            test/features/transactions/transaction_page_test.dart \
             test/features/marketplace/jobs_page_test.dart \
             test/features/marketplace/job_detail_page_test.dart \
             test-results/pass10-summary.md
