@@ -29,6 +29,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Validate API_BASE_URL secret
+        if: ${{ github.event_name != 'pull_request' }}
         shell: bash
         run: |
           set -euo pipefail
