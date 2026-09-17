@@ -95,6 +95,9 @@ export const config = {
   s3Prefix: process.env.S3_PREFIX || 'uploads',
   s3ServerSideEncryption: process.env.S3_SERVER_SIDE_ENCRYPTION || 'AES256',
   uploadIntentTtlSeconds: positiveIntegerEnv('UPLOAD_INTENT_TTL_SECONDS', 300, { min: 30, max: 86400 }),
+  uploadOrphanGraceSeconds: positiveIntegerEnv('UPLOAD_ORPHAN_GRACE_SECONDS', 3600, { min: 60, max: 7 * 86400 }),
+  uploadCleanupIntervalMs: positiveIntegerEnv('UPLOAD_CLEANUP_INTERVAL_MS', 15 * 60 * 1000, { min: 30 * 1000, max: 24 * 60 * 60 * 1000 }),
+  uploadCleanupBatchSize: positiveIntegerEnv('UPLOAD_CLEANUP_BATCH_SIZE', 100, { min: 1, max: 1000 }),
   notificationEmailUrl: process.env.NOTIFICATION_EMAIL_URL || '',
   notificationPushUrl: process.env.NOTIFICATION_PUSH_URL || '',
   notificationProviderToken: process.env.NOTIFICATION_PROVIDER_TOKEN || '',
@@ -140,7 +143,7 @@ if (process.env.NODE_ENV === 'production') {
   if (config.paymentProvider === 'webhook') {
     if (!config.paymentProviderToken || config.paymentProviderToken.length < 24) throw new Error('PAYMENT_PROVIDER_TOKEN must be set and sufficiently long in production');
     for (const [name, value] of Object.entries({ PAYMENT_PROVIDER_CREATE_URL: config.paymentProviderCreateUrl, PAYMENT_PROVIDER_RELEASE_URL: config.paymentProviderReleaseUrl, PAYMENT_PROVIDER_REFUND_URL: config.paymentProviderRefundUrl })) {
-      if (!value.startsWith('https://')) throw new Error(`${name} must use HTTPS in production`);
+      if (!value.startsWith('https://')) throw new Error(`${name} must use HTTPS`);
     }
     if (!config.paymentWebhookSecret || config.paymentWebhookSecret.length < 24) throw new Error('PAYMENT_WEBHOOK_SECRET must be set and sufficiently long in production');
   }
