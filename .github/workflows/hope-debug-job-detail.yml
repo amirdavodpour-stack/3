@@ -14,8 +14,6 @@ permissions:
 env:
   BRANCH: hope/full-stack-hardening-2026-09-17
 
-auto_cancel: false
-
 jobs:
   verify-current:
     runs-on: ubuntu-latest
