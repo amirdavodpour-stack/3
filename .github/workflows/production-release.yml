@@ -127,7 +127,7 @@ jobs:
       - name: Flutter test gate
         run: flutter test --no-pub
 
-      - name: Prepare production keystore
+      - name: Configure production keystore
         id: keystore_prepare
         shell: bash
         run: |
