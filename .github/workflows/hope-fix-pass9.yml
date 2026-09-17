@@ -14,7 +14,7 @@ env:
 jobs:
   fix-and-verify:
     if: >-
-      !startsWith(github.event.head_commit.message, '[CI-RESUME]') &&
+      !startsWith(github.event.head_commit.message, '[CI-FIX]') &&
       !startsWith(github.event.head_commit.message, '[CI-DIAGNOSTIC]')
     runs-on: ubuntu-latest
     steps:
@@ -23,17 +23,14 @@ jobs:
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.47.2
           channel: stable
           cache: true
-
       - name: Flutter dependencies
         run: flutter pub get
-
       - name: Apply production and test-contract fixes
         shell: bash
         run: |
@@ -42,137 +39,69 @@ jobs:
           from pathlib import Path
           import re
 
-          def replace_once(path: str, old: str, new: str):
-              p = Path(path)
-              text = p.read_text(encoding='utf-8')
-              if old not in text:
-                  raise SystemExit(f'expected text not found: {path}: {old!r}')
+          def replace_once(path, old, new):
+              p = Path(path); text = p.read_text(encoding='utf-8')
+              if old not in text: raise SystemExit(f'expected text not found: {path}: {old!r}')
               p.write_text(text.replace(old, new, 1), encoding='utf-8')
-              print(f'patched: {path}')
 
-          # Preserve the already-validated production hardening from pass 8.
           p = Path('lib/core/ui/premium_components.dart')
           text = p.read_text(encoding='utf-8')
-          text, n = re.subn(
-              r'final heroHeight = compact\s*\? height\.clamp\(300\.0, 420\.0\)\.toDouble\(\)\s*: height;',
-              'final heroHeight = compact\n        ? height.clamp(300.0, 420.0).toDouble()\n        : (height < 320 ? 320.0 : height);',
-              text,
-              count=1,
-          )
-          if n == 0 and '(height < 320 ? 320.0 : height)' not in text:
-              raise SystemExit('PremiumHero hardening site not found')
-          text, n = re.subn(
-              r'(?m)^\s*child: child,\s*$',
-              '      child: Material(type: MaterialType.transparency, child: child),',
-              text,
-              count=1,
-          )
-          if n == 0 and 'child: Material(type: MaterialType.transparency, child: child),' not in text:
-              raise SystemExit('PremiumPanel Material site not found')
+          text, n = re.subn(r'final heroHeight = compact\s*\? height\.clamp\(300\.0, 420\.0\)\.toDouble\(\)\s*: height;', 'final heroHeight = compact\n        ? height.clamp(300.0, 420.0).toDouble()\n        : (height < 320 ? 320.0 : height);', text, count=1)
+          if n == 0 and '(height < 320 ? 320.0 : height)' not in text: raise SystemExit('PremiumHero hardening site not found')
+          text, n = re.subn(r'(?m)^\s*child: child,\s*$', '      child: Material(type: MaterialType.transparency, child: child),', text, count=1)
+          if n == 0 and 'child: Material(type: MaterialType.transparency, child: child),' not in text: raise SystemExit('PremiumPanel Material site not found')
           p.write_text(text, encoding='utf-8')
 
-          # Home drawer tests must target the real tooltip exposed by the feed.
           p = Path('test/features/home/home_page_navigation_test.dart')
-          text = p.read_text(encoding='utf-8')
-          text = text.replace("find.byTooltip('Menu')", "find.byTooltip('More menu')")
+          text = p.read_text(encoding='utf-8').replace("find.byTooltip('Menu')", "find.byTooltip('More menu')")
           p.write_text(text, encoding='utf-8')
 
-          # Transaction amount is formatted by the production money component.
-          replace_once(
-              'test/features/transactions/transaction_page_test.dart',
-              "    expect(find.text('1000000 TOMAN'), findsOneWidget);",
-              "    expect(find.byWidgetPredicate((widget) {\n      if (widget is! Text || widget.data == null) return false;\n      return widget.data!.replaceAll(',', '') == '1000000 TOMAN';\n    }), findsOneWidget);",
-          )
+          replace_once('test/features/transactions/transaction_page_test.dart', "    expect(find.text('1000000 TOMAN'), findsOneWidget);", "    expect(find.byWidgetPredicate((widget) {\n      if (widget is! Text || widget.data == null) return false;\n      return widget.data!.replaceAll(',', '') == '1000000 TOMAN';\n    }), findsOneWidget);")
 
-          # Category picker and selected chip legitimately share the label.
           p = Path('test/features/marketplace/jobs_page_test.dart')
           text = p.read_text(encoding='utf-8')
           text = text.replace("expect(find.text('طراحی'), findsOneWidget); // category option in sheet", "expect(find.widgetWithText(ListTile, 'طراحی'), findsOneWidget); // category option in sheet")
           text = text.replace("await tester.tap(find.text('طراحی'));", "await tester.tap(find.widgetWithText(ListTile, 'طراحی'));")
-          text = text.replace("await tester.tap(find.text('همه حوزه‌ها'));", "await tester.tap(find.widgetWithText(ListTile, 'همه حوزه‌ها'));")
-          # The second طراحی tap is the selected filter chip, not the sheet row.
           text = text.replace("await tester.tap(find.widgetWithText(ListTile, 'طراحی')); // reopen picker via updated chip", "await tester.tap(find.widgetWithText(ActionChip, 'طراحی')); // reopen picker via updated chip")
+          text = text.replace("await tester.tap(find.text('همه حوزه‌ها'));", "await tester.tap(find.widgetWithText(ListTile, 'همه حوزه‌ها'));")
           p.write_text(text, encoding='utf-8')
 
-          # Current product wording is "View financial flow".
           p = Path('test/features/marketplace/job_detail_page_test.dart')
-          text = p.read_text(encoding='utf-8')
-          text = text.replace("find.text('View transaction')", "find.text('View financial flow')")
-          # Use ensureVisible rather than dragUntilVisible; the old helper can
-          # attempt to drag a scrollable beneath an obscuring app surface.
+          text = p.read_text(encoding='utf-8').replace("find.text('View transaction')", "find.text('View financial flow')")
           text = re.sub(r'await tester\.scrollUntilVisible\(([^\n]+),\s*150\);', r'await tester.ensureVisible(\1);', text)
           p.write_text(text, encoding='utf-8')
 
-          # Deadline is a read-only field and must be driven through the picker.
           p = Path('test/features/marketplace/create_job_page_test.dart')
           text = p.read_text(encoding='utf-8')
           old = "    await tester.enterText(\n        find.widgetWithText(TextField, 'Application deadline'), '2026-09-30');"
           new = "    await tester.tap(find.widgetWithText(TextField, 'Application deadline'));\n    await tester.pumpAndSettle();\n    expect(find.byType(DatePickerDialog), findsOneWidget);\n    await tester.tap(find.text('30').last);\n    await tester.pumpAndSettle();\n    if (find.text('OK').evaluate().isNotEmpty) {\n      await tester.tap(find.text('OK').last);\n      await tester.pumpAndSettle();\n    }"
-          if old in text:
-              text = text.replace(old, new, 1)
-          else:
-              raise SystemExit('Application deadline direct-entry test site not found')
-          p.write_text(text, encoding='utf-8')
+          if old not in text: raise SystemExit('Application deadline direct-entry site not found')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
-
-          dart format \
-            lib/core/ui/premium_components.dart \
-            test/features/home/home_page_navigation_test.dart \
-            test/features/transactions/transaction_page_test.dart \
-            test/features/marketplace/jobs_page_test.dart \
-            test/features/marketplace/job_detail_page_test.dart \
-            test/features/marketplace/create_job_page_test.dart
-
+          dart format lib/core/ui/premium_components.dart test/features/home/home_page_navigation_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/jobs_page_test.dart test/features/marketplace/job_detail_page_test.dart test/features/marketplace/create_job_page_test.dart
           flutter analyze --no-fatal-warnings --no-fatal-infos
-
       - name: Run focused regression suite
         shell: bash
         run: |
           set +e
           mkdir -p test-results
           : > test-results/pass9-summary.md
-          tests=(
-            test/features/home/home_page_navigation_test.dart
-            test/features/profile/profile_page_test.dart
-            test/features/transactions/transaction_page_test.dart
-            test/features/marketplace/jobs_page_test.dart
-            test/features/marketplace/job_detail_page_test.dart
-            test/features/marketplace/create_job_page_test.dart
-            test/core/router/app_routes_test.dart
-          )
+          tests=(test/features/home/home_page_navigation_test.dart test/features/profile/profile_page_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/jobs_page_test.dart test/features/marketplace/job_detail_page_test.dart test/features/marketplace/create_job_page_test.dart test/core/router/app_routes_test.dart)
           overall=0
           for t in "${tests[@]}"; do
-            slug=$(echo "$t" | tr '/.' '__')
-            log="test-results/${slug}.log"
+            slug=$(echo "$t" | tr '/.' '__'); log="test-results/${slug}.log"
             echo "### $t" | tee -a test-results/pass9-summary.md
-            flutter test --no-pub "$t" >"$log" 2>&1
-            rc=$?
-            if [ "$rc" -eq 0 ]; then
-              echo PASS | tee -a test-results/pass9-summary.md
-            else
-              overall=1
-              echo "FAIL (exit=$rc)" | tee -a test-results/pass9-summary.md
-              echo '```text' >> test-results/pass9-summary.md
-              tail -n 220 "$log" >> test-results/pass9-summary.md
-              echo '```' >> test-results/pass9-summary.md
-            fi
+            flutter test --no-pub "$t" >"$log" 2>&1; rc=$?
+            if [ "$rc" -eq 0 ]; then echo PASS | tee -a test-results/pass9-summary.md; else overall=1; echo "FAIL (exit=$rc)" | tee -a test-results/pass9-summary.md; echo '```text' >> test-results/pass9-summary.md; tail -n 220 "$log" >> test-results/pass9-summary.md; echo '```' >> test-results/pass9-summary.md; fi
           done
           echo "OVERALL_EXIT=$overall" | tee -a test-results/pass9-summary.md
           exit 0
-
       - name: Commit focused fixes and verification
         shell: bash
         run: |
           set -Eeuo pipefail
           git config user.name 'HOPE CI'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add \
-            lib/core/ui/premium_components.dart \
-            test/features/home/home_page_navigation_test.dart \
-            test/features/transactions/transaction_page_test.dart \
-            test/features/marketplace/jobs_page_test.dart \
-            test/features/marketplace/job_detail_page_test.dart \
-            test/features/marketplace/create_job_page_test.dart \
-            test-results/pass9-summary.md
+          git add lib/core/ui/premium_components.dart test/features/home/home_page_navigation_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/jobs_page_test.dart test/features/marketplace/job_detail_page_test.dart test/features/marketplace/create_job_page_test.dart test-results/pass9-summary.md
           git commit -m '[CI-FIX] focused Flutter regression fixes' || true
           git push origin HEAD:${BRANCH}
