@@ -27,7 +27,7 @@ function isSupabaseS3Endpoint(endpoint) {
   if (!endpoint) return false;
   try {
     const url = new URL(endpoint);
-    return /(^|\.)supabase\.co$/i.test(url.hostname)
+    return url.hostname.toLowerCase().endsWith('.supabase.co')
       && url.pathname.replace(/\/+$/, '').endsWith('/storage/v1/s3');
   } catch {
     return false;
