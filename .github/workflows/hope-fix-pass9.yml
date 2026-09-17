@@ -15,7 +15,9 @@ jobs:
   fix-and-verify:
     if: >-
       !startsWith(github.event.head_commit.message, '[CI-FIX]') &&
-      !startsWith(github.event.head_commit.message, '[CI-DIAGNOSTIC]')
+      !startsWith(github.event.head_commit.message, '[CI-DIAGNOSTIC]') &&
+      !startsWith(github.event.head_commit.message, '[CI-VERIFY]') &&
+      !startsWith(github.event.head_commit.message, '[CI-CLEANUP]')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout working branch
