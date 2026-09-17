@@ -1,0 +1,574 @@
+name: HOPE Bootstrap Source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hope-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    name: Bootstrap latest valid source archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+
+      # ==========================================================
+      # CHECKOUT
+      # ==========================================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      # ==========================================================
+      # BOOTSTRAP
+      # ==========================================================
+
+      - name: Detect, validate and install source archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          REPO_ROOT="${GITHUB_WORKSPACE}"
+          WORK_DIR="${RUNNER_TEMP}/hope-bootstrap"
+
+          rm -rf "$WORK_DIR"
+          mkdir -p "$WORK_DIR"
+
+          echo "============================================================"
+          echo " HOPE UNIVERSAL SOURCE BOOTSTRAP"
+          echo "============================================================"
+          echo
+
+          # ------------------------------------------------------
+          # Find all ZIP files
+          # ------------------------------------------------------
+
+          echo "Searching for ZIP archives..."
+
+          mapfile -d '' ZIP_FILES < <(
+            find "$REPO_ROOT" \
+              -type f \
+              -iname "*.zip" \
+              -not -path "$REPO_ROOT/.git/*" \
+              -not -path "$REPO_ROOT/.github/*" \
+              -print0
+          )
+
+          ZIP_COUNT="${#ZIP_FILES[@]}"
+
+          echo "ZIP archives found: $ZIP_COUNT"
+          echo
+
+          if [[ "$ZIP_COUNT" -eq 0 ]]; then
+            echo "ERROR: No ZIP archive was found."
+            echo
+            echo "Place the source archive anywhere inside the repository"
+            echo "and run this workflow again."
+            exit 1
+          fi
+
+          # ------------------------------------------------------
+          # Candidate inspection
+          # ------------------------------------------------------
+
+          SELECTED_ZIP=""
+          SELECTED_SCORE=-1
+
+          echo "Inspecting ZIP candidates..."
+          echo
+
+          for ZIP in "${ZIP_FILES[@]}"; do
+
+            echo "------------------------------------------------------------"
+            echo "Candidate:"
+            echo "  ${ZIP#$REPO_ROOT/}"
+
+            CANDIDATE_DIR="$WORK_DIR/candidate-$(basename "$ZIP" | tr -cd '[:alnum:]_-')"
+
+            rm -rf "$CANDIDATE_DIR"
+            mkdir -p "$CANDIDATE_DIR"
+
+            # ----------------------------------------------------
+            # Integrity
+            # ----------------------------------------------------
+
+            if ! unzip -t "$ZIP" >/dev/null 2>&1; then
+              echo "  Result: INVALID ZIP"
+              continue
+            fi
+
+            echo "  ZIP integrity: OK"
+
+            # ----------------------------------------------------
+            # Inspect ZIP listing
+            # ----------------------------------------------------
+
+            ZIP_LIST="$WORK_DIR/zip-list.txt"
+
+            unzip -Z1 "$ZIP" > "$ZIP_LIST"
+
+            # ----------------------------------------------------
+            # Reject obvious non-source archives
+            # ----------------------------------------------------
+
+            if grep -Eqi '(^|/)(node_modules|\.git|\.dart_tool|build|dist|coverage)/' "$ZIP_LIST"; then
+              echo "  Contains generated/dependency directories."
+            fi
+
+            # ----------------------------------------------------
+            # Score archive based on actual project contents
+            # ----------------------------------------------------
+
+            SCORE=0
+
+            # Flutter project
+            if grep -Eqi '(^|/)pubspec\.yaml$' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 100))
+              echo "  +100 pubspec.yaml"
+            fi
+
+            # Flutter source
+            if grep -Eqi '(^|/)lib/' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 50))
+              echo "  +50 lib/"
+            fi
+
+            # Android
+            if grep -Eqi '(^|/)android/' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 30))
+              echo "  +30 android/"
+            fi
+
+            # Flutter tests
+            if grep -Eqi '(^|/)test/' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 20))
+              echo "  +20 test/"
+            fi
+
+            # Integration tests
+            if grep -Eqi '(^|/)integration_test/' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 20))
+              echo "  +20 integration_test/"
+            fi
+
+            # Backend
+            if grep -Eqi '(^|/)backend/' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 40))
+              echo "  +40 backend/"
+            fi
+
+            # Tools
+            if grep -Eqi '(^|/)tools/' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 15))
+              echo "  +15 tools/"
+            fi
+
+            # GitHub workflows
+            if grep -Eqi '(^|/)\.github/workflows/' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 10))
+              echo "  +10 GitHub workflows"
+            fi
+
+            # Certification
+            if grep -Eqi 'certification|certificate' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 15))
+              echo "  +15 certification"
+            fi
+
+            # Scorecards
+            if grep -Eqi 'scorecard|scorecards' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 15))
+              echo "  +15 scorecards"
+            fi
+
+            # README / project metadata
+            if grep -Eqi '(^|/)(README|CHANGELOG|LICENSE)' "$ZIP_LIST"; then
+              SCORE=$((SCORE + 5))
+              echo "  +5 project metadata"
+            fi
+
+            echo "  TOTAL SCORE: $SCORE"
+
+            # ----------------------------------------------------
+            # Select highest-quality archive
+            # ----------------------------------------------------
+
+            if [[ "$SCORE" -gt "$SELECTED_SCORE" ]]; then
+              SELECTED_SCORE="$SCORE"
+              SELECTED_ZIP="$ZIP"
+            fi
+
+            echo
+
+          done
+
+          # ------------------------------------------------------
+          # Validate selection
+          # ------------------------------------------------------
+
+          if [[ -z "$SELECTED_ZIP" ]]; then
+            echo "ERROR: No usable source archive found."
+            exit 1
+          fi
+
+          echo "============================================================"
+          echo " SELECTED SOURCE ARCHIVE"
+          echo "============================================================"
+          echo
+          echo "Archive:"
+          echo "  ${SELECTED_ZIP#$REPO_ROOT/}"
+          echo
+          echo "Score:"
+          echo "  $SELECTED_SCORE"
+          echo
+
+          # A valid HOPE source must at minimum contain pubspec.yaml.
+          if [[ "$SELECTED_SCORE" -lt 100 ]]; then
+            echo "ERROR: No valid Flutter project archive detected."
+            echo
+            echo "The archive must contain at least:"
+            echo "  pubspec.yaml"
+            echo
+            exit 1
+          fi
+
+          # ------------------------------------------------------
+          # Extract selected archive
+          # ------------------------------------------------------
+
+          EXTRACT_DIR="$WORK_DIR/extracted"
+
+          mkdir -p "$EXTRACT_DIR"
+
+          echo "Extracting selected archive..."
+
+          unzip -q "$SELECTED_ZIP" -d "$EXTRACT_DIR"
+
+          echo "Extraction: OK"
+          echo
+
+          # ------------------------------------------------------
+          # Detect actual source root
+          # ------------------------------------------------------
+
+          shopt -s nullglob dotglob
+
+          SOURCE_ROOT="$EXTRACT_DIR"
+
+          TOP_LEVEL_ITEMS=("$EXTRACT_DIR"/*)
+
+          if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 1 ]] &&
+             [[ -d "${TOP_LEVEL_ITEMS[0]}" ]]; then
+
+            POSSIBLE_ROOT="${TOP_LEVEL_ITEMS[0]}"
+
+            if [[ -f "$POSSIBLE_ROOT/pubspec.yaml" ]] ||
+               [[ -d "$POSSIBLE_ROOT/lib" ]]; then
+
+              SOURCE_ROOT="$POSSIBLE_ROOT"
+
+            fi
+          fi
+
+          echo "Detected source root:"
+          echo "  ${SOURCE_ROOT#$WORK_DIR/}"
+          echo
+
+          # ------------------------------------------------------
+          # Recursive root discovery
+          # ------------------------------------------------------
+
+          if [[ ! -f "$SOURCE_ROOT/pubspec.yaml" ]]; then
+
+            echo "Searching recursively for pubspec.yaml..."
+
+            PUBSPEC_PATH="$(
+              find "$EXTRACT_DIR" \
+                -type f \
+                -name "pubspec.yaml" \
+                -not -path '*/.git/*' \
+                | head -n 1
+            )"
+
+            if [[ -n "$PUBSPEC_PATH" ]]; then
+              SOURCE_ROOT="$(dirname "$PUBSPEC_PATH")"
+            fi
+          fi
+
+          if [[ ! -f "$SOURCE_ROOT/pubspec.yaml" ]]; then
+            echo
+            echo "ERROR: Could not locate pubspec.yaml."
+            exit 1
+          fi
+
+          echo "Final source root:"
+          echo "  ${SOURCE_ROOT#$WORK_DIR/}"
+          echo
+
+          # ------------------------------------------------------
+          # Security validation
+          # ------------------------------------------------------
+
+          echo "Validating extracted paths..."
+
+          while IFS= read -r -d '' ITEM; do
+
+            RELATIVE="${ITEM#"$SOURCE_ROOT"/}"
+
+            [[ "$ITEM" == "$SOURCE_ROOT" ]] && continue
+
+            case "$RELATIVE" in
+              ..|../*|*/../*|*/..)
+                echo
+                echo "ERROR: Path traversal detected:"
+                echo "  $RELATIVE"
+                exit 1
+                ;;
+            esac
+
+            if [[ "$RELATIVE" == /* ]]; then
+              echo
+              echo "ERROR: Absolute path detected:"
+              echo "  $RELATIVE"
+              exit 1
+            fi
+
+          done < <(
+            find "$SOURCE_ROOT" \
+              -mindepth 1 \
+              -print0
+          )
+
+          echo "Path validation: OK"
+          echo
+
+          # ------------------------------------------------------
+          # Source structure validation
+          # ------------------------------------------------------
+
+          echo "Validating project structure..."
+
+          REQUIRED_ERRORS=0
+
+          if [[ -f "$SOURCE_ROOT/pubspec.yaml" ]]; then
+            echo "  [OK] pubspec.yaml"
+          else
+            echo "  [ERROR] pubspec.yaml"
+            REQUIRED_ERRORS=$((REQUIRED_ERRORS + 1))
+          fi
+
+          if [[ -d "$SOURCE_ROOT/lib" ]]; then
+            echo "  [OK] lib/"
+          else
+            echo "  [ERROR] lib/"
+            REQUIRED_ERRORS=$((REQUIRED_ERRORS + 1))
+          fi
+
+          if [[ -d "$SOURCE_ROOT/android" ]]; then
+            echo "  [OK] android/"
+          else
+            echo "  [WARN] android/"
+          fi
+
+          if [[ -d "$SOURCE_ROOT/backend" ]]; then
+            echo "  [OK] backend/"
+          else
+            echo "  [INFO] backend/"
+          fi
+
+          if [[ -d "$SOURCE_ROOT/test" ]]; then
+            echo "  [OK] test/"
+          else
+            echo "  [INFO] test/"
+          fi
+
+          if [[ -d "$SOURCE_ROOT/integration_test" ]]; then
+            echo "  [OK] integration_test/"
+          else
+            echo "  [INFO] integration_test/"
+          fi
+
+          if [[ "$REQUIRED_ERRORS" -ne 0 ]]; then
+            echo
+            echo "ERROR: Source archive validation failed."
+            exit 1
+          fi
+
+          echo
+
+          # ------------------------------------------------------
+          # Statistics
+          # ------------------------------------------------------
+
+          FILE_COUNT="$(
+            find "$SOURCE_ROOT" \
+              -type f \
+              | wc -l \
+              | tr -d ' '
+          )"
+
+          DIR_COUNT="$(
+            find "$SOURCE_ROOT" \
+              -type d \
+              | wc -l \
+              | tr -d ' '
+          )"
+
+          echo "Source statistics:"
+          echo "  Files:       $FILE_COUNT"
+          echo "  Directories: $DIR_COUNT"
+          echo
+
+          # ------------------------------------------------------
+          # Install
+          # ------------------------------------------------------
+
+          echo "Installing source..."
+
+          rsync \
+            -a \
+            --exclude='.git/' \
+            "$SOURCE_ROOT/" \
+            "$REPO_ROOT/"
+
+          echo "Installation: OK"
+          echo
+
+          # ------------------------------------------------------
+          # Remove ALL source ZIPs
+          #
+          # This makes the repository clean even if old ZIPs exist.
+          # ------------------------------------------------------
+
+          echo "Removing source archives..."
+
+          find "$REPO_ROOT" \
+            -type f \
+            -iname "*.zip" \
+            -not -path "$REPO_ROOT/.git/*" \
+            -delete
+
+          echo "ZIP cleanup: OK"
+          echo
+
+          # ------------------------------------------------------
+          # Verify no ZIP remains
+          # ------------------------------------------------------
+
+          REMAINING_ZIPS="$(
+            find "$REPO_ROOT" \
+              -type f \
+              -iname "*.zip" \
+              -not -path "$REPO_ROOT/.git/*" \
+              -print
+          )"
+
+          if [[ -n "$REMAINING_ZIPS" ]]; then
+            echo "ERROR: ZIP files still remain:"
+            echo "$REMAINING_ZIPS"
+            exit 1
+          fi
+
+          echo "No ZIP archives remain in working tree."
+          echo
+
+          # ------------------------------------------------------
+          # Verify installed project
+          # ------------------------------------------------------
+
+          echo "Final project verification..."
+
+          [[ -f "$REPO_ROOT/pubspec.yaml" ]] \
+            && echo "  [OK] pubspec.yaml"
+
+          [[ -d "$REPO_ROOT/lib" ]] \
+            && echo "  [OK] lib/"
+
+          [[ -d "$REPO_ROOT/android" ]] \
+            && echo "  [OK] android/"
+
+          [[ -d "$REPO_ROOT/backend" ]] \
+            && echo "  [OK] backend/"
+
+          [[ -d "$REPO_ROOT/test" ]] \
+            && echo "  [OK] test/"
+
+          [[ -d "$REPO_ROOT/integration_test" ]] \
+            && echo "  [OK] integration_test/"
+
+          [[ -d "$REPO_ROOT/tools" ]] \
+            && echo "  [OK] tools/"
+
+          [[ -d "$REPO_ROOT/.github/workflows" ]] \
+            && echo "  [OK] .github/workflows/"
+
+          echo
+
+          # ------------------------------------------------------
+          # Git status
+          # ------------------------------------------------------
+
+          echo "============================================================"
+          echo " GIT STATUS"
+          echo "============================================================"
+          echo
+
+          git status --short
+
+          echo
+          echo "============================================================"
+          echo " SOURCE BOOTSTRAP READY"
+          echo "============================================================"
+
+      # ==========================================================
+      # COMMIT
+      # ==========================================================
+
+      - name: Commit bootstrapped source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes detected."
+            exit 0
+          fi
+
+          git commit \
+            -m "Bootstrap latest valid HOPE source archive"
+
+      # ==========================================================
+      # PUSH
+      # ==========================================================
+
+      - name: Push source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          BRANCH="${GITHUB_REF_NAME}"
+
+          echo "Pushing:"
+          echo "  origin/$BRANCH"
+          echo
+
+          git push origin "HEAD:$BRANCH"
+
+          echo
+          echo "============================================================"
+          echo " HOPE BOOTSTRAP SUCCESS"
+          echo "============================================================"
