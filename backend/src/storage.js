@@ -23,6 +23,24 @@ function retryable(error) {
   return Boolean(error && (RETRYABLE_S3_ERRORS.has(error.name) || error?.$metadata?.httpStatusCode === 429 || error?.$metadata?.httpStatusCode >= 500));
 }
 
+function isSupabaseS3Endpoint(endpoint) {
+  if (!endpoint) return false;
+  try {
+    const url = new URL(endpoint);
+    return /(^|\.)supabase\.co$/i.test(url.hostname)
+      && url.pathname.replace(/\/+$/, '').endsWith('/storage/v1/s3');
+  } catch {
+    return false;
+  }
+}
+
+function s3ServerSideEncryption() {
+  // Supabase Storage's S3 PutObject API does not support x-amz-server-side-encryption.
+  // Keep SSE available for compatible generic S3 providers while omitting it for Supabase.
+  if (isSupabaseS3Endpoint(config.s3Endpoint)) return undefined;
+  return config.s3ServerSideEncryption || undefined;
+}
+
 class LocalStorage {
   async put(file) {
     await fs.mkdir(config.storageDir, { recursive:true });
@@ -60,11 +78,11 @@ class S3Storage {
   }
   async put(file) {
     const stat = await fs.stat(file.path);
-    await this.send(new PutObjectCommand({ Bucket:this.bucket, Key:file.key, Body:createReadStream(file.path), ContentLength:stat.size, ContentType:file.contentType, ServerSideEncryption:config.s3ServerSideEncryption || undefined }), 'PUT');
+    await this.send(new PutObjectCommand({ Bucket:this.bucket, Key:file.key, Body:createReadStream(file.path), ContentLength:stat.size, ContentType:file.contentType, ServerSideEncryption:s3ServerSideEncryption() }), 'PUT');
     return { key:file.key };
   }
   async presignPut({ key, contentType, expiresIn }) {
-    const command = new PutObjectCommand({ Bucket:this.bucket, Key:key, ContentType:contentType, ServerSideEncryption:config.s3ServerSideEncryption || undefined });
+    const command = new PutObjectCommand({ Bucket:this.bucket, Key:key, ContentType:contentType, ServerSideEncryption:s3ServerSideEncryption() });
     return { key, url:await getSignedUrl(this.client, command, { expiresIn }), contentType, expiresIn, mode:'s3' };
   }
   async head({ key }) {
