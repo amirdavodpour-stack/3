@@ -13,9 +13,11 @@ async function get(path, headers = {}) {
   return { response, body };
 }
 
+const healthChecks = {};
 for (const endpoint of ['/live', '/ready', '/health']) {
   const result = await get(endpoint);
   assert.equal(result.response.status, 200, `${endpoint} returned ${result.response.status}: ${JSON.stringify(result.body)}`);
+  healthChecks[endpoint] = result;
 }
 
 const metrics = await get('/metrics', { 'X-Metrics-Token': metricsToken });
@@ -36,7 +38,8 @@ assert.ok(data.recentHealth.errorRate5xx <= max5xxRate, `recent 5xx rate ${data.
 assert.ok(data.recentHealth.slowRequestRate <= maxSlowRate, `recent slow request rate ${data.recentHealth.slowRequestRate} > ${maxSlowRate}`);
 assert.ok(Number(data.latency?.p95 ?? Infinity) <= maxP95Ms, `p95 ${data.latency?.p95} > ${maxP95Ms}`);
 assert.ok(Number(data.latency?.p99 ?? Infinity) <= maxP99Ms, `p99 ${data.latency?.p99} > ${maxP99Ms}`);
-assert.equal(data.health?.database?.status, 'ok', `database health is not ok: ${JSON.stringify(data.health?.database)}`);
+const database = healthChecks['/health'].body?.database;
+assert.equal(database?.status, 'ok', `database health is not ok: ${JSON.stringify(database)}`);
 
 console.log(JSON.stringify({
   status: 'PASS',
@@ -44,5 +47,5 @@ console.log(JSON.stringify({
   recentHealth: data.recentHealth,
   latency: data.latency,
   outbox: { processed: data.outboxProcessed, failed: data.outboxFailed },
-  database: data.health?.database,
+  database,
 }));
