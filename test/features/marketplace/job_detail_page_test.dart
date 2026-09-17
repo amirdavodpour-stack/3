@@ -275,7 +275,8 @@ void main() {
       userId: 'u1',
     );
 
-    final scrollable = tester.state<ScrollableState>(find.byType(Scrollable).first);
+    final scrollable =
+        tester.state<ScrollableState>(find.byType(Scrollable).first);
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pumpAndSettle();
     expect(find.text('Forwarded candidates'), findsOneWidget);
