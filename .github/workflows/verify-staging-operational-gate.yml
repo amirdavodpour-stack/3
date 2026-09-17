@@ -1,0 +1,28 @@
+name: Verify staging operational gate
+on:
+  push:
+    branches:
+      - hope/operational-gate-verify-2026-09-17
+  pull_request:
+    branches:
+      - Main
+permissions:
+  contents: read
+jobs:
+  operational-gate:
+    name: Staging operational gate only
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      STAGING_BASE_URL: https://v2hope-production-7e9e.up.railway.app
+      STAGING_METRICS_TOKEN: ${{ secrets.STAGING_METRICS_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run operational gate
+        working-directory: backend
+        run: node ../tools/staging-operational-gate.mjs
