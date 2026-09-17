@@ -58,7 +58,13 @@ const now = () => new Date().toISOString();
 // Load category metadata once at composition time. In PostgreSQL runtime this
 // keeps view helpers independent from db.collection while preserving the
 // in-memory category behavior used by the explicit legacy test runtime.
-const appLegacy = createAppLegacyAdapter({ db });
+// The legacy adapter touches db.collection directly, which is unavailable in
+// production. Only construct it when DATABASE_URL is unset (i.e. the
+// in-memory/test runtime), so PostgreSQL composition never calls into it.
+let appLegacy = null;
+if (!process.env.DATABASE_URL) {
+  appLegacy = createAppLegacyAdapter({ db });
+}
 const viewCategories = process.env.DATABASE_URL ? await repo.listCategories() : appLegacy.categories();
 
 const sessionLegacy = createSessionLegacyAdapter({ db });
@@ -134,7 +140,7 @@ const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, re
 const {
   getProvider, categoryBy, publicUser, authUserView, categoryView, buildOfferCountMap,
   offerCountFor, jobView, paymentView, relatedJob, enforceJobState, createAudit,
-} = createAppViewHelpers({ repo, config, getUserById, now, HttpError, env: process.env, categories: viewCategories, id: appLegacy.id, legacy: { providers: appLegacy.findProvidersForView(), offers: appLegacy.findOffersForView(), insertAudit: appLegacy.insertAudit } });
+} = createAppViewHelpers({ repo, config, getUserById, now, HttpError, env: process.env, categories: viewCategories, id: process.env.DATABASE_URL ? db.id : appLegacy.id, legacy: process.env.DATABASE_URL ? { providers: null, offers: null, insertAudit: null } : { providers: appLegacy.findProvidersForView(), offers: appLegacy.findOffersForView(), insertAudit: appLegacy.insertAudit } });
 const jobLegacy = createJobLegacyAdapter({ db, categoryBy, relatedJob, findUser, publicUser, now });
 
 const authRoutes = createAuthRoutes({
@@ -143,7 +149,7 @@ const authRoutes = createAuthRoutes({
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH, logEvent, stringField,
   id: db.id, legacy: authLegacy,
 });
-const providerRoutes = createProviderRoutes({ authUser, getProvider, publicUser, repo, sendJson, HttpError, now, id: appLegacy.id, insertProvider: appLegacy.insertProvider, legacy: { jobs: appLegacy.jobs() } });
+const providerRoutes = createProviderRoutes({ authUser, getProvider, publicUser, repo, sendJson, HttpError, now, id: process.env.DATABASE_URL ? db.id : appLegacy.id, insertProvider: process.env.DATABASE_URL ? null : appLegacy.insertProvider, legacy: process.env.DATABASE_URL ? { jobs: null } : { jobs: appLegacy.jobs() } });
 const paymentRoutes = createPaymentRoutes({
   authUser, readBody, readRawBody, sendJson, HttpError, config, repo, getJob, enforceJobState, paymentUseCases,
   readIdempotencyKey, requireFields, enumField, paymentView, relatedJob, withTransaction, createAudit, calculatePaymentBreakdown,
