@@ -1,424 +1,1036 @@
-name: HOPE Bootstrap Source
+name: HOPE Complete Full-Stack Test
 
 on:
   workflow_dispatch:
 
+  # Optional automatic validation on pushes.
+  # Remove this block if you only want manual execution.
+  push:
+    branches:
+      - main
+
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: hope-bootstrap
-  cancel-in-progress: false
+  group: hope-full-stack-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  TZ: UTC
+  FLUTTER_VERSION: "3.47.2"
+  NODE_VERSION: "24"
+  JAVA_VERSION: "17"
+  TEST_DIR: "test-results"
 
 jobs:
-  bootstrap:
-    name: Install HOPE source archive
+
+  # ============================================================
+  # 1. ENVIRONMENT + STRUCTURE
+  # ============================================================
+
+  environment:
+    name: Environment & Structure
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    outputs:
+      has_flutter: ${{ steps.detect.outputs.has_flutter }}
+      has_backend: ${{ steps.detect.outputs.has_backend }}
+      has_android: ${{ steps.detect.outputs.has_android }}
+      has_tests: ${{ steps.detect.outputs.has_tests }}
+      has_integration: ${{ steps.detect.outputs.has_integration }}
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect project components
+        id: detect
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          mkdir -p "$TEST_DIR"
+
+          HAS_FLUTTER=false
+          HAS_BACKEND=false
+          HAS_ANDROID=false
+          HAS_TESTS=false
+          HAS_INTEGRATION=false
+
+          [[ -f pubspec.yaml ]] && HAS_FLUTTER=true
+          [[ -d backend ]] && HAS_BACKEND=true
+          [[ -d android ]] && HAS_ANDROID=true
+          [[ -d test ]] && HAS_TESTS=true
+          [[ -d integration_test ]] && HAS_INTEGRATION=true
+
+          echo "has_flutter=$HAS_FLUTTER" >> "$GITHUB_OUTPUT"
+          echo "has_backend=$HAS_BACKEND" >> "$GITHUB_OUTPUT"
+          echo "has_android=$HAS_ANDROID" >> "$GITHUB_OUTPUT"
+          echo "has_tests=$HAS_TESTS" >> "$GITHUB_OUTPUT"
+          echo "has_integration=$HAS_INTEGRATION" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "# HOPE Test Environment"
+            echo
+            echo "## Git"
+            echo "- SHA: \`$(git rev-parse HEAD)\`"
+            echo "- Branch: \`${GITHUB_REF_NAME}\`"
+            echo
+            echo "## Components"
+            echo "- Flutter: $HAS_FLUTTER"
+            echo "- Backend: $HAS_BACKEND"
+            echo "- Android: $HAS_ANDROID"
+            echo "- Tests: $HAS_TESTS"
+            echo "- Integration tests: $HAS_INTEGRATION"
+            echo
+            echo "## Repository structure"
+            echo '```text'
+            find . \
+              -maxdepth 2 \
+              -type d \
+              -not -path './.git*' \
+              -not -path './build*' \
+              | sort
+            echo '```'
+          } > "$TEST_DIR/environment.md"
+
+      - name: Upload environment report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-test-environment
+          path: test-results/
+          if-no-files-found: ignore
+
+  # ============================================================
+  # 2. FLUTTER ANALYZE
+  # ============================================================
+
+  flutter_analyze:
+    name: Flutter Analyze
+    needs: environment
+    if: needs.environment.outputs.has_flutter == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
 
-      # ==========================================================
-      # 1. CHECKOUT
-      # ==========================================================
-
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          fetch-depth: 0
-          persist-credentials: true
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
 
-      # ==========================================================
-      # 2. FIND + VALIDATE + EXTRACT + INSTALL
-      # ==========================================================
+      - name: Flutter version
+        run: flutter --version
 
-      - name: Extract and install source archive
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Analyze
+        shell: bash
+        run: |
+          set -o pipefail
+
+          mkdir -p "$TEST_DIR"
+
+          flutter analyze --no-fatal-infos \
+            2>&1 | tee "$TEST_DIR/flutter-analyze.log"
+
+      - name: Upload analyze result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-flutter-analyze
+          path: test-results/
+          if-no-files-found: ignore
+
+  # ============================================================
+  # 3. FLUTTER UNIT / WIDGET TESTS
+  # ============================================================
+
+  flutter_tests:
+    name: Flutter Tests
+    needs: environment
+    if: needs.environment.outputs.has_flutter == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Run Flutter tests
+        shell: bash
+        run: |
+          set -o pipefail
+
+          mkdir -p "$TEST_DIR"
+
+          flutter test \
+            --no-pub \
+            --reporter expanded \
+            2>&1 | tee "$TEST_DIR/flutter-test.log"
+
+      - name: Generate coverage
+        if: always()
+        shell: bash
+        run: |
+          set -o pipefail
+
+          flutter test \
+            --no-pub \
+            --coverage \
+            2>&1 | tee "$TEST_DIR/flutter-coverage.log"
+
+      - name: Upload Flutter tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-flutter-tests
+          path: |
+            test-results/
+            coverage/
+          if-no-files-found: ignore
+
+  # ============================================================
+  # 4. BACKEND TESTS
+  # ============================================================
+
+  backend_tests:
+    name: Backend Tests
+    needs: environment
+    if: needs.environment.outputs.has_backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Backend dependency check
+        working-directory: backend
+        run: |
+          npm ci
+
+      - name: Backend package scripts
+        working-directory: backend
+        run: |
+          npm run
+
+      - name: Run backend test suite
+        working-directory: backend
+        shell: bash
+        run: |
+          set -o pipefail
+
+          mkdir -p "../$TEST_DIR"
+
+          if npm run test --if-present \
+            2>&1 | tee "../$TEST_DIR/backend-test.log"; then
+
+            echo "Backend tests completed successfully."
+
+          else
+
+            echo "Backend test suite FAILED."
+            exit 1
+
+          fi
+
+      - name: Run PostgreSQL tests if available
+        working-directory: backend
+        shell: bash
+        run: |
+          set -o pipefail
+
+          if npm run test:postgres --if-present \
+            2>&1 | tee "../$TEST_DIR/backend-postgres.log"; then
+
+            echo "PostgreSQL test completed."
+
+          else
+
+            echo "PostgreSQL test FAILED."
+            exit 1
+
+          fi
+
+      - name: Run S3 tests if available
+        working-directory: backend
+        shell: bash
+        run: |
+          set -o pipefail
+
+          if npm run test:s3 --if-present \
+            2>&1 | tee "../$TEST_DIR/backend-s3.log"; then
+
+            echo "S3 test completed."
+
+          else
+
+            echo "S3 test FAILED."
+            exit 1
+
+          fi
+
+      - name: Upload backend results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-backend-tests
+          path: test-results/
+          if-no-files-found: ignore
+
+  # ============================================================
+  # 5. BACKEND STATIC / SECURITY SIGNALS
+  # ============================================================
+
+  backend_quality:
+    name: Backend Quality & Security
+    needs: environment
+    if: needs.environment.outputs.has_backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend
+        working-directory: backend
+        run: npm ci
+
+      - name: npm audit
+        working-directory: backend
+        shell: bash
+        run: |
+          set -o pipefail
+
+          mkdir -p "../$TEST_DIR"
+
+          npm audit \
+            --audit-level=high \
+            2>&1 | tee "../$TEST_DIR/npm-audit.log"
+
+      - name: Backend syntax check
+        working-directory: backend
         shell: bash
         run: |
           set -Eeuo pipefail
 
-          REPO_ROOT="${GITHUB_WORKSPACE}"
-          WORK_DIR="${RUNNER_TEMP}/hope-bootstrap"
-          EXTRACT_DIR="${WORK_DIR}/extracted"
+          mkdir -p "../$TEST_DIR"
 
-          rm -rf "$WORK_DIR"
-          mkdir -p "$EXTRACT_DIR"
+          find . \
+            -type f \
+            \( -name "*.js" -o -name "*.mjs" -o -name "*.cjs" \) \
+            -not -path './node_modules/*' \
+            -print0 \
+          | while IFS= read -r -d '' FILE; do
+              echo "Checking: $FILE"
+              node --check "$FILE"
+            done \
+          2>&1 | tee "../$TEST_DIR/backend-syntax.log"
 
-          echo "============================================================"
-          echo " HOPE SOURCE BOOTSTRAP"
-          echo "============================================================"
-          echo
-          echo "Repository:"
-          echo "  $REPO_ROOT"
-          echo
+      - name: Upload backend quality
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-backend-quality
+          path: test-results/
+          if-no-files-found: ignore
 
-          # ------------------------------------------------------
-          # Locate ZIP
-          # ------------------------------------------------------
+  # ============================================================
+  # 6. FINANCIAL CORE SOURCE AUDIT
+  # ============================================================
 
-          echo "Searching for source archive..."
-          echo
+  financial_core:
+    name: Financial Core Verification
+    needs: environment
+    if: needs.environment.outputs.has_backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
 
-          mapfile -d '' ZIP_CANDIDATES < <(
-            find "$REPO_ROOT" \
-              -type f \
-              -iname "*.zip" \
-              -not -path "$REPO_ROOT/.git/*" \
-              -not -path "$REPO_ROOT/.github/*" \
-              -print0
-          )
+    steps:
 
-          ZIP_COUNT="${#ZIP_CANDIDATES[@]}"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-          echo "ZIP files found: $ZIP_COUNT"
-          echo
+      - name: Verify financial architecture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
 
-          if [[ "$ZIP_COUNT" -eq 0 ]]; then
-            echo "ERROR: No ZIP source archive found."
-            exit 1
-          fi
+          mkdir -p "$TEST_DIR"
 
-          if [[ "$ZIP_COUNT" -gt 1 ]]; then
-            echo "ERROR: Multiple ZIP files found."
+          REPORT="$TEST_DIR/financial-core.md"
+
+          {
+            echo "# Financial Core Verification"
             echo
-            printf '  %s\n' "${ZIP_CANDIDATES[@]}"
+
+            echo "## Wallet / Ledger"
             echo
-            echo "Keep exactly one project source ZIP in the repository."
-            exit 1
-          fi
 
-          ZIP_FILE="${ZIP_CANDIDATES[0]}"
-
-          echo "Selected source archive:"
-          echo "  ${ZIP_FILE#$REPO_ROOT/}"
-          echo
-
-          # ------------------------------------------------------
-          # ZIP integrity
-          # ------------------------------------------------------
-
-          echo "Checking ZIP integrity..."
-
-          unzip -t "$ZIP_FILE"
-
-          echo
-          echo "ZIP integrity: OK"
-          echo
-
-          # ------------------------------------------------------
-          # Extract
-          # ------------------------------------------------------
-
-          echo "Extracting archive..."
-
-          unzip -q "$ZIP_FILE" -d "$EXTRACT_DIR"
-
-          echo "Extraction: OK"
-          echo
-
-          # ------------------------------------------------------
-          # Detect archive root
-          # ------------------------------------------------------
-
-          echo "Detecting archive structure..."
-
-          shopt -s nullglob dotglob
-
-          TOP_LEVEL_ITEMS=("$EXTRACT_DIR"/*)
-
-          if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 0 ]]; then
-            echo "ERROR: Archive is empty."
-            exit 1
-          fi
-
-          SOURCE_ROOT="$EXTRACT_DIR"
-
-          # Support:
-          #
-          # ZIP
-          # └── project/
-          #     ├── pubspec.yaml
-          #     ├── lib/
-          #     └── backend/
-          #
-          # as well as:
-          #
-          # ZIP
-          # ├── pubspec.yaml
-          # ├── lib/
-          # └── backend/
-
-          if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 1 ]] &&
-             [[ -d "${TOP_LEVEL_ITEMS[0]}" ]]; then
-
-            POSSIBLE_ROOT="${TOP_LEVEL_ITEMS[0]}"
-
-            INNER_ITEMS=("$POSSIBLE_ROOT"/*)
-
-            if [[ "${#INNER_ITEMS[@]}" -gt 0 ]]; then
-              SOURCE_ROOT="$POSSIBLE_ROOT"
-            fi
-          fi
-
-          echo "Detected source root:"
-          echo "  ${SOURCE_ROOT#$WORK_DIR/}"
-          echo
-
-          # ------------------------------------------------------
-          # Validate archive paths
-          # ------------------------------------------------------
-
-          echo "Validating extracted paths..."
-
-          while IFS= read -r -d '' ITEM; do
-
-            [[ "$ITEM" == "$SOURCE_ROOT" ]] && continue
-
-            RELATIVE="${ITEM#"$SOURCE_ROOT"/}"
-
-            case "$RELATIVE" in
-              ..|../*|*/../*|*/..)
-                echo
-                echo "ERROR: Unsafe path detected:"
-                echo "  $RELATIVE"
-                exit 1
-                ;;
-            esac
-
-            if [[ "$RELATIVE" == /* ]]; then
-              echo
-              echo "ERROR: Absolute path detected:"
-              echo "  $RELATIVE"
-              exit 1
-            fi
-
-          done < <(
-            find "$SOURCE_ROOT" \
-              -mindepth 1 \
-              -print0
-          )
-
-          echo "Path validation: OK"
-          echo
-
-          # ------------------------------------------------------
-          # Source statistics
-          # ------------------------------------------------------
-
-          FILE_COUNT="$(
-            find "$SOURCE_ROOT" \
+            find backend lib \
               -type f \
-              | wc -l \
-              | tr -d ' '
-          )"
+              \( \
+                -iname "*wallet*" \
+                -o -iname "*ledger*" \
+                -o -iname "*transaction*" \
+                -o -iname "*payment*" \
+                -o -iname "*payout*" \
+              \) \
+              2>/dev/null \
+              | sort \
+              | while read -r FILE; do
+                  echo "- \`$FILE\`"
+                done
 
-          DIR_COUNT="$(
-            find "$SOURCE_ROOT" \
-              -type d \
-              | wc -l \
-              | tr -d ' '
-          )"
+            echo
+            echo "## Financial state-machine signals"
+            echo
 
-          echo "Archive statistics:"
-          echo "  Files:       $FILE_COUNT"
-          echo "  Directories: $DIR_COUNT"
-          echo
+            grep -RniE \
+              "FUND|PAY|LOCK|COMPLETE|APPROVE|REFUND|RELEASE|PAYOUT|HOLD|PENDING|FAILED" \
+              backend \
+              --exclude-dir=node_modules \
+              2>/dev/null \
+              | head -n 500 || true
 
-          # ------------------------------------------------------
-          # Verify this is actually HOPE source
-          # ------------------------------------------------------
+            echo
+            echo "## Idempotency signals"
+            echo
 
-          echo "Checking project structure..."
-          echo
+            grep -RniE \
+              "idempot|request.?id|operation.?id|dedup|unique.*transaction" \
+              backend \
+              --exclude-dir=node_modules \
+              2>/dev/null \
+              | head -n 300 || true
 
-          if [[ -f "$SOURCE_ROOT/pubspec.yaml" ]]; then
-            echo "  [OK] pubspec.yaml"
-          else
-            echo "  [ERROR] pubspec.yaml missing"
-            exit 1
-          fi
+            echo
+            echo "## Concurrency / transaction signals"
+            echo
 
-          if [[ -d "$SOURCE_ROOT/lib" ]]; then
-            echo "  [OK] lib/"
-          else
-            echo "  [ERROR] lib/ missing"
-            exit 1
-          fi
+            grep -RniE \
+              "transaction|BEGIN|COMMIT|ROLLBACK|FOR UPDATE|atomic|lock" \
+              backend \
+              --exclude-dir=node_modules \
+              2>/dev/null \
+              | head -n 300 || true
 
-          if [[ -d "$SOURCE_ROOT/android" ]]; then
-            echo "  [OK] android/"
-          else
-            echo "  [WARN] android/ missing"
-          fi
+          } > "$REPORT"
 
-          if [[ -d "$SOURCE_ROOT/backend" ]]; then
-            echo "  [OK] backend/"
-          else
-            echo "  [INFO] backend/ not present"
-          fi
+      - name: Upload financial report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-financial-core
+          path: test-results/
+          if-no-files-found: ignore
 
-          if [[ -d "$SOURCE_ROOT/test" ]]; then
-            echo "  [OK] test/"
-          else
-            echo "  [INFO] test/ not present"
-          fi
+  # ============================================================
+  # 7. ANDROID / GRADLE TESTS
+  # ============================================================
 
-          if [[ -d "$SOURCE_ROOT/integration_test" ]]; then
-            echo "  [OK] integration_test/"
-          else
-            echo "  [INFO] integration_test/ not present"
-          fi
+  android_tests:
+    name: Android Gradle Tests
+    needs: environment
+    if: needs.environment.outputs.has_android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
-          echo
+    steps:
 
-          # ------------------------------------------------------
-          # Install source
-          # ------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
 
-          echo "Installing source into repository root..."
-          echo
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
 
-          rsync \
-            -a \
-            --exclude='.git/' \
-            "$SOURCE_ROOT/" \
-            "$REPO_ROOT/"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
 
-          echo
-          echo "Source installation: OK"
-          echo
+      - name: Flutter pub get
+        run: flutter pub get
 
-          # ------------------------------------------------------
-          # Remove ZIP
-          # ------------------------------------------------------
+      - name: Gradle test
+        working-directory: android
+        shell: bash
+        run: |
+          set -o pipefail
 
-          echo "Removing source archive..."
+          mkdir -p "../$TEST_DIR"
 
-          rm -f "$ZIP_FILE"
+          chmod +x ./gradlew
 
-          if [[ -e "$ZIP_FILE" ]]; then
-            echo "ERROR: Failed to remove ZIP."
-            exit 1
-          fi
+          ./gradlew test \
+            2>&1 | tee "../$TEST_DIR/gradle-test.log"
 
-          echo "Source archive removed: OK"
-          echo
+      - name: Gradle lint
+        working-directory: android
+        shell: bash
+        run: |
+          set -o pipefail
 
-          # ------------------------------------------------------
-          # Verify installed source
-          # ------------------------------------------------------
+          mkdir -p "../$TEST_DIR"
 
-          echo "Post-install verification:"
-          echo
+          chmod +x ./gradlew
 
-          [[ -f "$REPO_ROOT/pubspec.yaml" ]] \
-            && echo "  [OK] Flutter project"
+          ./gradlew lint \
+            2>&1 | tee "../$TEST_DIR/gradle-lint.log"
 
-          [[ -d "$REPO_ROOT/lib" ]] \
-            && echo "  [OK] Flutter source"
+      - name: Upload Android tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-android-tests
+          path: test-results/
+          if-no-files-found: ignore
 
-          [[ -d "$REPO_ROOT/android" ]] \
-            && echo "  [OK] Android project"
+  # ============================================================
+  # 8. DEBUG APK
+  # ============================================================
 
-          [[ -d "$REPO_ROOT/backend" ]] \
-            && echo "  [OK] Backend"
+  android_apk:
+    name: Debug APK Build
+    needs:
+      - environment
+      - flutter_analyze
+      - flutter_tests
+    if: always() && needs.environment.outputs.has_flutter == 'true' && needs.environment.outputs.has_android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
 
-          [[ -d "$REPO_ROOT/test" ]] \
-            && echo "  [OK] Flutter tests"
+    steps:
 
-          [[ -d "$REPO_ROOT/integration_test" ]] \
-            && echo "  [OK] Integration tests"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-          [[ -d "$REPO_ROOT/tools" ]] \
-            && echo "  [OK] tools/"
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
 
-          [[ -d "$REPO_ROOT/.github/workflows" ]] \
-            && echo "  [OK] GitHub workflows"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
 
-          echo
+      - name: Pub get
+        run: flutter pub get
 
-          # ------------------------------------------------------
-          # Important certification / scorecard preservation check
-          # ------------------------------------------------------
+      - name: Build debug APK
+        shell: bash
+        run: |
+          set -o pipefail
 
-          echo "Checking certification / scorecard files..."
+          mkdir -p "$TEST_DIR"
 
-          CERT_FOUND=0
+          flutter build apk \
+            --debug \
+            --verbose \
+            2>&1 | tee "$TEST_DIR/flutter-apk-build.log"
 
-          if find "$REPO_ROOT" \
+      - name: Locate APK
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          find build/app/outputs/apk \
+            -type f \
+            -name "*.apk" \
+            -print
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-debug-apk
+          path: |
+            build/app/outputs/apk/**/*.apk
+            test-results/
+          if-no-files-found: ignore
+
+  # ============================================================
+  # 9. DEBUG AAB
+  # ============================================================
+
+  android_aab:
+    name: Debug AAB Build
+    needs:
+      - environment
+      - flutter_analyze
+      - flutter_tests
+    if: always() && needs.environment.outputs.has_flutter == 'true' && needs.environment.outputs.has_android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build debug AAB
+        shell: bash
+        run: |
+          set -o pipefail
+
+          mkdir -p "$TEST_DIR"
+
+          flutter build appbundle \
+            --debug \
+            --verbose \
+            2>&1 | tee "$TEST_DIR/flutter-aab-build.log"
+
+      - name: Locate AAB
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          find build/app/outputs/bundle \
+            -type f \
+            -name "*.aab" \
+            -print
+
+      - name: Upload AAB
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-debug-aab
+          path: |
+            build/app/outputs/bundle/**/*.aab
+            test-results/
+          if-no-files-found: ignore
+
+  # ============================================================
+  # 10. INTEGRATION TESTS
+  # ============================================================
+
+  integration_tests:
+    name: Flutter Integration Tests
+    needs: environment
+    if: needs.environment.outputs.has_integration == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Install Android SDK components
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "emulator" \
+            "system-images;android-35;google_apis;x86_64"
+
+      - name: Create emulator
+        shell: bash
+        run: |
+          echo "no" | avdmanager create avd \
+            --force \
+            --name hope-api35 \
+            --package "system-images;android-35;google_apis;x86_64" \
+            --device "pixel_2"
+
+      - name: Start emulator
+        shell: bash
+        run: |
+          nohup emulator \
+            -avd hope-api35 \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -gpu swiftshader_indirect \
+            > "$RUNNER_TEMP/emulator.log" 2>&1 &
+
+          adb wait-for-device
+
+          timeout 180 bash -c '
+            until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q "1"; do
+              sleep 2
+            done
+          '
+
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+
+      - name: Run integration tests
+        shell: bash
+        run: |
+          set -o pipefail
+
+          mkdir -p "$TEST_DIR"
+
+          flutter test \
+            --no-pub \
+            integration_test \
+            -d emulator-5554 \
+            2>&1 | tee "$TEST_DIR/integration-test.log"
+
+      - name: Upload integration results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-integration-tests
+          path: |
+            test-results/
+            ${{ runner.temp }}/emulator.log
+          if-no-files-found: ignore
+
+  # ============================================================
+  # 11. CERTIFICATION / RELEASE GATES
+  # ============================================================
+
+  certification:
+    name: Certification & Release Gates
+    needs: environment
+    if: needs.environment.outputs.has_flutter == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Detect certification scripts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          mkdir -p "$TEST_DIR"
+
+          {
+            echo "# Certification Discovery"
+            echo
+
+            find . \
               -type f \
               \( \
                 -iname "*certification*" \
-                -o \
-                -iname "*scorecard*" \
+                -o -iname "*scorecard*" \
+                -o -iname "*release*gate*" \
               \) \
-              -not -path "$REPO_ROOT/.git/*" \
-              | grep -q .; then
+              -not -path './.git/*' \
+              -not -path './build/*' \
+              | sort
 
-            CERT_FOUND=1
-            echo "  [OK] Certification / scorecard artifacts detected"
+            echo
+            echo "## tools/"
+            if [[ -d tools ]]; then
+              find tools -maxdepth 2 -type f | sort
+            else
+              echo "tools/ not found"
+            fi
 
-          else
+          } > "$TEST_DIR/certification-discovery.md"
 
-            echo "  [INFO] No certification / scorecard filename detected"
-
-          fi
-
-          echo
-
-          # ------------------------------------------------------
-          # Show git changes
-          # ------------------------------------------------------
-
-          echo "============================================================"
-          echo " GIT STATUS"
-          echo "============================================================"
-          echo
-
-          git status --short
-
-          echo
-          echo "Bootstrap installation finished."
-
-      # ==========================================================
-      # 3. COMMIT
-      # ==========================================================
-
-      - name: Commit bootstrapped source
+      - name: Run certification workflow scripts when present
         shell: bash
         run: |
           set -Eeuo pipefail
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p "$TEST_DIR"
 
-          git add -A
+          FAILED=0
 
-          if git diff --cached --quiet; then
-            echo "No changes detected."
-            exit 0
+          # Known project certification scripts.
+          if [[ -f tools/ci-android-toolchain.sh ]]; then
+            echo "Running tools/ci-android-toolchain.sh"
+
+            bash tools/ci-android-toolchain.sh \
+              2>&1 | tee "$TEST_DIR/ci-android-toolchain.log" \
+              || FAILED=1
           fi
 
-          git commit \
-            -m "Bootstrap HOPE source from project archive"
+          if [[ -f tools/build_apk_debug.sh ]]; then
+            echo "Running tools/build_apk_debug.sh"
 
-      # ==========================================================
-      # 4. PUSH
-      # ==========================================================
+            bash tools/build_apk_debug.sh \
+              2>&1 | tee "$TEST_DIR/build-apk-debug-script.log" \
+              || FAILED=1
+          fi
 
-      - name: Push bootstrapped source
+          if [[ "$FAILED" -ne 0 ]]; then
+            echo "Certification script failure detected."
+            exit 1
+          fi
+
+      - name: Upload certification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-certification
+          path: test-results/
+          if-no-files-found: ignore
+
+  # ============================================================
+  # 12. FINAL GATE
+  # ============================================================
+
+  final_gate:
+    name: HOPE Final Test Gate
+    needs:
+      - environment
+      - flutter_analyze
+      - flutter_tests
+      - backend_tests
+      - backend_quality
+      - financial_core
+      - android_tests
+      - android_apk
+      - android_aab
+      - integration_tests
+      - certification
+
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+
+      - name: Evaluate all gates
         shell: bash
         run: |
           set -Eeuo pipefail
 
-          BRANCH="${GITHUB_REF_NAME}"
+          echo "============================================================"
+          echo " HOPE FINAL TEST GATE"
+          echo "============================================================"
+          echo
 
-          echo "Pushing changes..."
-          echo "Branch: $BRANCH"
+          echo "Environment:       ${{ needs.environment.result }}"
+          echo "Flutter Analyze:   ${{ needs.flutter_analyze.result }}"
+          echo "Flutter Tests:     ${{ needs.flutter_tests.result }}"
+          echo "Backend Tests:     ${{ needs.backend_tests.result }}"
+          echo "Backend Quality:   ${{ needs.backend_quality.result }}"
+          echo "Financial Core:    ${{ needs.financial_core.result }}"
+          echo "Android Tests:     ${{ needs.android_tests.result }}"
+          echo "APK Build:         ${{ needs.android_apk.result }}"
+          echo "AAB Build:         ${{ needs.android_aab.result }}"
+          echo "Integration:       ${{ needs.integration_tests.result }}"
+          echo "Certification:     ${{ needs.certification.result }}"
+          echo
 
-          git push origin "HEAD:$BRANCH"
+          FAILED=0
+
+          check_required() {
+            NAME="$1"
+            RESULT="$2"
+
+            if [[ "$RESULT" == "success" ]]; then
+              echo "[PASS] $NAME"
+            else
+              echo "[FAIL] $NAME -> $RESULT"
+              FAILED=1
+            fi
+          }
+
+          check_optional() {
+            NAME="$1"
+            RESULT="$2"
+
+            case "$RESULT" in
+              success)
+                echo "[PASS] $NAME"
+                ;;
+              skipped)
+                echo "[SKIP] $NAME"
+                ;;
+              *)
+                echo "[FAIL] $NAME -> $RESULT"
+                FAILED=1
+                ;;
+            esac
+          }
+
+          check_required \
+            "Environment" \
+            "${{ needs.environment.result }}"
+
+          check_required \
+            "Flutter Analyze" \
+            "${{ needs.flutter_analyze.result }}"
+
+          check_required \
+            "Flutter Tests" \
+            "${{ needs.flutter_tests.result }}"
+
+          check_optional \
+            "Backend Tests" \
+            "${{ needs.backend_tests.result }}"
+
+          check_optional \
+            "Backend Quality" \
+            "${{ needs.backend_quality.result }}"
+
+          check_optional \
+            "Financial Core" \
+            "${{ needs.financial_core.result }}"
+
+          check_optional \
+            "Android Tests" \
+            "${{ needs.android_tests.result }}"
+
+          check_optional \
+            "APK Build" \
+            "${{ needs.android_apk.result }}"
+
+          check_optional \
+            "AAB Build" \
+            "${{ needs.android_aab.result }}"
+
+          check_optional \
+            "Integration Tests" \
+            "${{ needs.integration_tests.result }}"
+
+          check_optional \
+            "Certification" \
+            "${{ needs.certification.result }}"
 
           echo
+
+          if [[ "$FAILED" -ne 0 ]]; then
+            echo "============================================================"
+            echo " HOPE FINAL GATE: FAILED"
+            echo "============================================================"
+            exit 1
+          fi
+
           echo "============================================================"
-          echo " HOPE BOOTSTRAP COMPLETED SUCCESSFULLY"
+          echo " HOPE FINAL GATE: PASSED"
           echo "============================================================"
+
+      - name: Generate final summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "# HOPE Full-Stack Test Result"
+            echo
+            echo "| Gate | Result |"
+            echo "|---|---|"
+            echo "| Environment | ${{ needs.environment.result }} |"
+            echo "| Flutter Analyze | ${{ needs.flutter_analyze.result }} |"
+            echo "| Flutter Tests | ${{ needs.flutter_tests.result }} |"
+            echo "| Backend Tests | ${{ needs.backend_tests.result }} |"
+            echo "| Backend Quality | ${{ needs.backend_quality.result }} |"
+            echo "| Financial Core | ${{ needs.financial_core.result }} |"
+            echo "| Android Tests | ${{ needs.android_tests.result }} |"
+            echo "| APK | ${{ needs.android_apk.result }} |"
+            echo "| AAB | ${{ needs.android_aab.result }} |"
+            echo "| Integration | ${{ needs.integration_tests.result }} |"
+            echo "| Certification | ${{ needs.certification.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
