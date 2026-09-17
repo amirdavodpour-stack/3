@@ -53,31 +53,104 @@ Analyzing 3...
    info • Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check • lib/features/wallet/wallet_page.dart:183:28 • use_build_context_synchronously
    info • Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check • lib/features/wallet/wallet_page.dart:204:28 • use_build_context_synchronously
 
-19 issues found. (ran in 10.3s)
+19 issues found. (ran in 10.1s)
 ```
 
 ## flutter test
 test_exit=1
 ```text
 00:00 +0: loading /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart
-test/features/marketplace/job_detail_page_test.dart:232:54: Error: Undefined name 'MetricTile'.
-    print('DEBUG mission metric tiles: ${find.byType(MetricTile).evaluate().length}');
-                                                     ^^^^^^^^^^
-test/features/marketplace/job_detail_page_test.dart:250:50: Error: Undefined name 'MetricTile'.
-    print('DEBUG job metric tiles: ${find.byType(MetricTile).evaluate().length}');
-                                                 ^^^^^^^^^^
-00:00 +0 -1: loading /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart [E]
-  Failed to load "/home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart":
-  Compilation failed for testPath=/home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart: test/features/marketplace/job_detail_page_test.dart:232:54: Error: Undefined name 'MetricTile'.
-      print('DEBUG mission metric tiles: ${find.byType(MetricTile).evaluate().length}');
-                                                       ^^^^^^^^^^
-  test/features/marketplace/job_detail_page_test.dart:250:50: Error: Undefined name 'MetricTile'.
-      print('DEBUG job metric tiles: ${find.byType(MetricTile).evaluate().length}');
-                                                   ^^^^^^^^^^
-  .
-00:00 +0 -1: Some tests failed.
+00:00 +0: mission details render pricing, duration and transaction entry
+DEBUG mission list size: Size(900.0, 0.0)
+DEBUG mission scrollables: 1
+DEBUG mission text: [Mission details]
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Mission budget": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:238:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 238
+The test description was:
+  mission details render pricing, duration and transaction entry
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -1: mission details render pricing, duration and transaction entry [E]
+  Test failed. See exception logs above.
+  The test description was: mission details render pricing, duration and transaction entry
+  
+00:01 +0 -1: job details render monthly pay, deadline and admin banner
+DEBUG job list size: Size(900.0, 0.0)
+DEBUG job text: [Job details]
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Monthly pay": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:255:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 255
+The test description was:
+  job details render monthly pay, deadline and admin banner
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -2: job details render monthly pay, deadline and admin banner [E]
+  Test failed. See exception logs above.
+  The test description was: job details render monthly pay, deadline and admin banner
+  
+00:01 +0 -2: owner job with forwarded candidates renders candidate actions
+DEBUG owner list size: Size(900.0, 0.0)
+DEBUG owner candidate text: []
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
+#2      WidgetController.ensureVisible (package:flutter_test/src/controller.dart:2389:32)
+#3      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:285:18)
+<asynchronous suspension>
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  owner job with forwarded candidates renders candidate actions
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -3: owner job with forwarded candidates renders candidate actions [E]
+  Test failed. See exception logs above.
+  The test description was: owner job with forwarded candidates renders candidate actions
+  
+00:01 +0 -3: non-owner never sees the candidate pipeline
+00:01 +1 -3: owner mission opens the transaction route intent
+00:01 +2 -3: Some tests failed.
 
 Failing tests:
-  /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart: loading /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart
+  /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart: job details render monthly pay, deadline and admin banner
+  /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart: mission details render pricing, duration and transaction entry
+  /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart: owner job with forwarded candidates renders candidate actions
 ```
 JOB_DETAIL_TEST_EXIT=1
