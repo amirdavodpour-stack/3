@@ -7,10 +7,10 @@ const envExample = fs.readFileSync(new URL('../.env.example', import.meta.url), 
 
 test('Supabase S3 integration does not send unsupported PutObject SSE headers', () => {
   assert.match(storage, /function isSupabaseS3Endpoint\(/);
-  assert.match(storage, /function s3ServerSideEncryption\(/);
+  assert.match(storage, /url\.hostname\.toLowerCase\(\)\.endsWith\('\.supabase\.co'\)/);
   assert.match(storage, /if \(isSupabaseS3Endpoint\(config\.s3Endpoint\)\) return undefined;/);
   assert.match(storage, /ServerSideEncryption:s3ServerSideEncryption\(\)/);
-  assert.match(storage, /S3 endpoint.*storage\/v1\/s3|Supabase Storage's S3 PutObject API/i);
+  assert.match(storage, /Supabase Storage's S3 PutObject API does not support x-amz-server-side-encryption/i);
 });
 
 test('Supabase S3 staging configuration is documented without credentials', () => {
