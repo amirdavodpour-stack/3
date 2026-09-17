@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  check-all:
+  contract:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,7 +23,16 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
-      - name: Run backend check-all
+      - name: Run backend contract gate
         working-directory: backend
         shell: bash
-        run: npm run check:all
+        run: |
+          set -o pipefail
+          npm run test:contract 2>&1 | tee "$RUNNER_TEMP/contract.log"
+      - name: Upload contract log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-backend-contract-gate-${{ github.run_id }}
+          path: ${{ runner.temp }}/contract.log
+          if-no-files-found: error
