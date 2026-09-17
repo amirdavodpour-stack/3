@@ -127,7 +127,7 @@ class PremiumPanel extends StatelessWidget {
             : HopeV2Shadows.card,
       ),
       padding: padding,
-      child: Material(type: MaterialType.transparency, child: child),
+      child: child,
     );
     return semanticLabel == null
         ? panel
@@ -158,9 +158,7 @@ class PremiumHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final heroHeight = compact
-        ? height.clamp(300.0, 420.0).toDouble()
-        : (height < 320 ? 320.0 : height);
+    final heroHeight = compact ? height.clamp(300.0, 420.0).toDouble() : height;
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
     return Semantics(
@@ -380,3 +378,78 @@ class PremiumTag extends StatelessWidget {
       label: label,
       container: true,
       child: Container(
+        constraints: const BoxConstraints(minHeight: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+          border: Border.all(
+            color: inverse ? Colors.white24 : base.withValues(alpha: .08),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              ExcludeSemantics(child: Icon(icon, size: 14, color: foreground)),
+              const SizedBox(width: 5),
+            ],
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumSearchBar extends StatelessWidget {
+  const PremiumSearchBar({
+    super.key,
+    required this.hint,
+    required this.onChanged,
+    this.onFilter,
+  });
+
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final VoidCallback? onFilter;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        textField: true,
+        label: hint,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(HopeV2Radii.lg),
+              boxShadow: Theme.of(context).brightness == Brightness.dark
+                  ? const []
+                  : const [
+                      BoxShadow(
+                        color: Color(0x081B1638),
+                        blurRadius: 18,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+            ),
+            child: SearchField(
+              onChanged: onChanged,
+              onFilter: onFilter,
+              hint: hint,
+            ),
+          ),
+        ),
+      );
+}
