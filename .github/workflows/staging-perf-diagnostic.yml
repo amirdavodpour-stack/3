@@ -31,6 +31,7 @@ jobs:
           mkdir -p artifacts/perf-diagnostic
           node > artifacts/perf-diagnostic/staging-perf-diagnostic.json <<'NODE'
           import fs from 'node:fs/promises';
+          import https from 'node:https';
           import { performance } from 'node:perf_hooks';
 
           const baseUrl = String(process.env.STAGING_BASE_URL || '').replace(/\/$/, '');
@@ -48,6 +49,8 @@ jobs:
               const response = await fetch(`${baseUrl}${endpoint}`, {
                 headers: { 'Cache-Control': 'no-cache' },
               });
+              // Consume the body so the connection can be reused deterministically.
+              await response.arrayBuffer();
               return {
                 endpoint,
                 latencyMs: performance.now() - started,
@@ -65,14 +68,40 @@ jobs:
             }
           }
 
-          async function runMixed(totalRequests, concurrency) {
+          function nativeRequest(endpoint, agent) {
+            return new Promise((resolve) => {
+              const started = performance.now();
+              const request = https.request(`${baseUrl}${endpoint}`, {
+                method: 'GET',
+                agent,
+                headers: { 'Cache-Control': 'no-cache' },
+              }, (response) => {
+                response.resume();
+                response.on('end', () => resolve({
+                  endpoint,
+                  latencyMs: performance.now() - started,
+                  status: response.statusCode || 0,
+                }));
+              });
+              request.setTimeout(20000, () => request.destroy(new Error('timeout')));
+              request.on('error', (error) => resolve({
+                endpoint,
+                latencyMs: performance.now() - started,
+                status: 0,
+                error: error?.message || String(error),
+              }));
+              request.end();
+            });
+          }
+
+          async function runMixed(totalRequests, concurrency, requestFn) {
             const results = [];
             let next = 0;
             async function worker() {
               while (true) {
                 const index = next++;
                 if (index >= totalRequests) return;
-                results.push(await fetchOne(endpoints[index % endpoints.length]));
+                results.push(await requestFn(endpoints[index % endpoints.length]));
               }
             }
             const started = performance.now();
@@ -127,7 +156,10 @@ jobs:
 
           const warmup = [];
           for (const endpoint of endpoints) warmup.push(await fetchOne(endpoint));
-          const mixed = await runMixed(500, 50);
+          const mixed = await runMixed(500, 50, fetchOne);
+          const nativeAgent = new https.Agent({ keepAlive: true, maxSockets: 50, maxFreeSockets: 50 });
+          const nativeMixed = await runMixed(500, 50, (endpoint) => nativeRequest(endpoint, nativeAgent));
+          nativeAgent.destroy();
           const curlTimingSamples = [];
           for (const endpoint of endpoints) {
             for (let i = 0; i < 3; i += 1) curlTimingSamples.push(await curlTiming(endpoint));
@@ -151,11 +183,12 @@ jobs:
           }
 
           const report = {
-            schemaVersion: 2,
+            schemaVersion: 3,
             target: baseUrl,
             workload: { endpoints, totalRequests: 500, concurrency: 50 },
             warmup,
-            mixed,
+            fetchMixed: mixed,
+            nativeHttpsMixed: nativeMixed,
             curlTimingSamples,
             metricsSamples,
           };
