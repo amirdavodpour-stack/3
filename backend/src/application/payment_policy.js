@@ -21,7 +21,14 @@ export function paymentAmountForJob(job) {
   const candidate = job.kind === 'JOB'
     ? (job.monthlySalary || job.budgetMax || job.budgetMin)
     : (job.budgetMax || job.budgetMin);
-  const raw = String(candidate ?? '').trim();
+  let raw = String(candidate ?? '').trim();
+
+  // PostgreSQL NUMERIC(18,2) values are returned by node-postgres as strings,
+  // so an integer TOMAN amount such as 150 can round-trip to "150.00".
+  // Normalize only zero-fraction decimal strings; fractional TOMAN values
+  // remain invalid by design.
+  if (/^\d+\.0+$/.test(raw)) raw = raw.slice(0, raw.indexOf('.'));
+
   if (!/^\d+$/.test(raw) || raw === '0') {
     throw new HttpError(400, 'INVALID_AMOUNT', 'Job budget is invalid');
   }
