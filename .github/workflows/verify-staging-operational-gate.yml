@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - hope/operational-gate-verify-2026-09-17
+  pull_request:
+    branches:
+      - Main
 permissions:
   contents: read
 jobs:
