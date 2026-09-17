@@ -36,7 +36,10 @@ jobs:
           cache: true
 
       - name: Verify Flutter lockfile
-        run: bash tools/verify-pubspec-lock-fresh.sh
+        run: |
+          set -euo pipefail
+          [[ "${API_BASE_URL_STAGING:-}" =~ ^https://[^[:space:]]+$ ]] || { echo 'API_BASE_URL_STAGING must use https:// and contain no whitespace.' >&2; exit 1; }
+          bash tools/verify-pubspec-lock-fresh.sh
 
       - name: Flutter dependencies
         run: flutter pub get --enforce-lockfile
