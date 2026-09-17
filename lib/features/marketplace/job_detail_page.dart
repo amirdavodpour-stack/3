@@ -27,6 +27,7 @@ class JobDetailPage extends StatefulWidget {
 class _JobDetailPageState extends State<JobDetailPage> {
   bool loading = false;
   String? _candidateBusyId;
+  // Contract guard: _candidateBusyId == candidate.id
   late final JobDetailController _controller;
   Future<List<HopeCandidate>>? _candidatesFuture;
 
