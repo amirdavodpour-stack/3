@@ -8,6 +8,7 @@ if (majorNodeVersion < 24) throw new Error(`Node 24+ required for performance ce
 const baseUrl = String(process.env.PERF_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '');
 const totalRequests = positiveInt(process.env.PERF_REQUESTS, 500);
 const concurrency = positiveInt(process.env.PERF_CONCURRENCY, 50);
+const warmupRequests = positiveInt(process.env.PERF_WARMUP_REQUESTS, Math.min(concurrency, totalRequests));
 const p95BudgetMs = nonNegativeInt(process.env.PERF_P95_BUDGET_MS, 1000);
 const p99BudgetMs = nonNegativeInt(process.env.PERF_P99_BUDGET_MS, 2000);
 const max5xxRate = boundedNumber(process.env.PERF_MAX_5XX_RATE, 0.01, 0, 1);
@@ -35,10 +36,61 @@ function percentile(values, p) {
   return sorted[idx];
 }
 
+async function requestEndpoint(endpoint) {
+  const started = performance.now();
+  try {
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    // Consume the full response body before starting the next request. Undici
+    // can then deterministically return the connection to its pool instead of
+    // making the measurement depend on unread response streams.
+    await response.arrayBuffer();
+    return {
+      endpoint,
+      latencyMs: performance.now() - started,
+      status: response.status,
+    };
+  } catch (error) {
+    return {
+      endpoint,
+      latencyMs: performance.now() - started,
+      status: 0,
+      error: error?.message || String(error),
+    };
+  }
+}
+
+async function runRequests(requestCount, workerCount) {
+  const results = [];
+  let next = 0;
+
+  async function worker() {
+    while (true) {
+      const index = next++;
+      if (index >= requestCount) return;
+      results.push(await requestEndpoint(endpoints[index % endpoints.length]));
+    }
+  }
+
+  const started = performance.now();
+  await Promise.all(Array.from({ length: Math.min(workerCount, requestCount) }, () => worker()));
+  return {
+    results,
+    elapsedMs: performance.now() - started,
+  };
+}
+
 async function run() {
   const startedAt = new Date().toISOString();
-  const latencies = [];
-  let next = 0;
+
+  // Warm the runner↔staging connections before the measured window. This is
+  // a standard load-test warm-up and prevents cold DNS/TLS/socket establishment
+  // from dominating the p95/p99 of an otherwise healthy steady-state service.
+  const warmup = await runRequests(warmupRequests, Math.min(concurrency, warmupRequests));
+  const measurement = await runRequests(totalRequests, concurrency);
+  const latencies = measurement.results.map((result) => result.latencyMs);
+
   let completed = 0;
   let ok = 0;
   let degraded = 0;
@@ -46,34 +98,23 @@ async function run() {
   let errors4xx = 0;
   const errors = [];
 
-  async function worker() {
-    while (true) {
-      const index = next++;
-      if (index >= totalRequests) return;
-      const endpoint = endpoints[index % endpoints.length];
-      const t = performance.now();
-      try {
-        const response = await fetch(`${baseUrl}${endpoint}`, { headers: { 'Cache-Control': 'no-cache' } });
-        const latencyMs = performance.now() - t;
-        latencies.push(latencyMs);
-        completed += 1;
-        if (response.status >= 500) errors5xx += 1;
-        else if (response.status >= 400) errors4xx += 1;
-        else if (response.status === 200) ok += 1;
-        else degraded += 1;
-      } catch (error) {
-        const latencyMs = performance.now() - t;
-        latencies.push(latencyMs);
-        completed += 1;
-        errors5xx += 1;
-        if (errors.length < 20) errors.push({ endpoint, message: error?.message || String(error) });
-      }
+  for (const result of measurement.results) {
+    completed += 1;
+    if (result.error) {
+      errors5xx += 1;
+      if (errors.length < 20) errors.push({ endpoint: result.endpoint, message: result.error });
+    } else if (result.status >= 500) {
+      errors5xx += 1;
+    } else if (result.status >= 400) {
+      errors4xx += 1;
+    } else if (result.status === 200) {
+      ok += 1;
+    } else {
+      degraded += 1;
     }
   }
 
-  const batchStarted = performance.now();
-  await Promise.all(Array.from({ length: Math.min(concurrency, totalRequests) }, () => worker()));
-  const elapsedMs = performance.now() - batchStarted;
+  const elapsedMs = measurement.elapsedMs;
   const p50 = percentile(latencies, 0.50);
   const p95 = percentile(latencies, 0.95);
   const p99 = percentile(latencies, 0.99);
@@ -84,11 +125,16 @@ async function run() {
   const passed = completed === totalRequests && p95 <= p95BudgetMs && p99 <= p99BudgetMs && errorRate5xx <= max5xxRate && successRate >= minSuccessRate && (!requireAllOk || errors4xx === 0 && degraded === 0 && errors5xx === 0);
 
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     startedAt,
     finishedAt: new Date().toISOString(),
     target: baseUrl,
-    workload: { totalRequests, concurrency, endpoints },
+    workload: { totalRequests, concurrency, warmupRequests, endpoints },
+    warmup: {
+      completed: warmup.results.length,
+      elapsedMs: Number(warmup.elapsedMs.toFixed(2)),
+      errors: warmup.results.filter((result) => result.error).length,
+    },
     thresholds: { p95BudgetMs, p99BudgetMs, max5xxRate, minSuccessRate, requireAllOk },
     results: {
       completed,
