@@ -76,8 +76,10 @@ test('real S3-compatible storage supports upload, head, and signature validation
   assert.ok(head.size > 0);
   await storage.validateObject({ key, contentType:'application/pdf' });
   const signed = await storage.presignPut({ key:'ci/s3-integration/presigned.pdf', contentType:'application/pdf', expiresIn:60 });
-  if (process.env.S3_REQUIRE_HTTPS === '1') assert.match(signed.url, /^https:\/\//);
-  else assert.match(signed.url, /http:\/\/127\.0\.0\.1:9000/);
+  const signedUrl = new URL(signed.url);
+  const configuredEndpoint = new URL(process.env.S3_ENDPOINT);
+  assert.equal(signedUrl.origin, configuredEndpoint.origin);
+  if (process.env.S3_REQUIRE_HTTPS === '1') assert.equal(signedUrl.protocol, 'https:');
   assert.equal(signed.mode, 's3');
   const payload = Buffer.from('%PDF-1.7\nHOPE PRESIGNED CI\n');
   const uploadResponse = await fetch(signed.url, { method:'PUT', headers:{'content-type':'application/pdf'}, body:payload });
