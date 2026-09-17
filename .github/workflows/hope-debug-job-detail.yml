@@ -73,13 +73,13 @@ jobs:
           test = Path('test/features/marketplace/job_detail_page_test.dart')
           text = test.read_text(encoding='utf-8')
           first = """    await _pump(tester, job: _job());\n    expect(find.text('Mission details'), findsOneWidget);"""
-          first_new = """    await _pump(tester, job: _job());\n    print('DEBUG mission list size: ${tester.getSize(find.byType(ListView).first)}');\n    print('DEBUG mission scrollables: ${find.byType(Scrollable).evaluate().length}');\n    print('DEBUG mission metric tiles: ${find.byType(MetricTile).evaluate().length}');\n    print('DEBUG mission text: ${tester.widgetList<Text>(find.byType(Text)).map((w) => w.data).whereType<String>().where((s) => s.contains('Mission') || s.contains('budget') || s.contains('Duration')).toList()}');\n    expect(find.text('Mission details'), findsOneWidget);"""
+          first_new = """    await _pump(tester, job: _job());\n    print('DEBUG mission list size: ${tester.getSize(find.byType(ListView).first)}');\n    print('DEBUG mission scrollables: ${find.byType(Scrollable).evaluate().length}');\n    print('DEBUG mission text: ${tester.widgetList<Text>(find.byType(Text)).map((w) => w.data).whereType<String>().where((s) => s.contains('Mission') || s.contains('budget') || s.contains('Duration')).toList()}');\n    expect(find.text('Mission details'), findsOneWidget);"""
           if first not in text:
               raise SystemExit('mission insertion point not found')
           text = text.replace(first, first_new, 1)
 
           second = """    await _pump(tester, job: _job(kind: 'JOB'));\n    expect(find.text('Job details'), findsOneWidget);"""
-          second_new = """    await _pump(tester, job: _job(kind: 'JOB'));\n    print('DEBUG job list size: ${tester.getSize(find.byType(ListView).first)}');\n    print('DEBUG job metric tiles: ${find.byType(MetricTile).evaluate().length}');\n    print('DEBUG job text: ${tester.widgetList<Text>(find.byType(Text)).map((w) => w.data).whereType<String>().where((s) => s.contains('Job') || s.contains('Monthly') || s.contains('2026-09-30')).toList()}');\n    expect(find.text('Job details'), findsOneWidget);"""
+          second_new = """    await _pump(tester, job: _job(kind: 'JOB'));\n    print('DEBUG job list size: ${tester.getSize(find.byType(ListView).first)}');\n    print('DEBUG job text: ${tester.widgetList<Text>(find.byType(Text)).map((w) => w.data).whereType<String>().where((s) => s.contains('Job') || s.contains('Monthly') || s.contains('2026-09-30')).toList()}');\n    expect(find.text('Job details'), findsOneWidget);"""
           if second not in text:
               raise SystemExit('job insertion point not found')
           text = text.replace(second, second_new, 1)
