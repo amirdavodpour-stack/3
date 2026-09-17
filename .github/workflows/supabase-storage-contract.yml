@@ -29,6 +29,8 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Run Supabase Storage contract
+      - name: Syntax and storage hardening contracts
         working-directory: backend
-        run: node --test tests/supabase-storage-contract.test.mjs
+        run: |
+          npm run check
+          node --test tests/supabase-storage-contract.test.mjs tests/storage-hardening-contract.test.mjs
