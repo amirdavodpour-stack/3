@@ -54,8 +54,9 @@ jobs:
           api-level: 35
           arch: x86_64
           profile: pixel_2
+          # reactivecircus/android-emulator-runner executes this under /usr/bin/sh.
+          # Keep the script POSIX-sh compatible; do not use bash-only pipefail.
           script: |
-            set -euo pipefail
             flutter test --no-pub integration_test/runtime/app_smoke_test.dart --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" --dart-define=CI_DEVICE_INTEGRATION=true
 
       - name: Runtime gate - device certification
