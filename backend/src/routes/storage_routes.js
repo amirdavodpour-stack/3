@@ -2,18 +2,37 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 
+const MIME_EXTENSIONS = new Map([
+  ['application/pdf', new Set(['.pdf'])],
+  ['image/png', new Set(['.png'])],
+  ['image/jpeg', new Set(['.jpg', '.jpeg'])],
+  ['image/webp', new Set(['.webp'])],
+  ['text/plain', new Set(['.txt', '.text', '.log'])],
+]);
+
+function validateFilenameForContentType(filename, contentType) {
+  const extension = path.extname(filename).toLowerCase();
+  if (!extension) return;
+  const allowed = MIME_EXTENSIONS.get(contentType);
+  if (!allowed || !allowed.has(extension)) {
+    throw new HttpError(415, 'FILENAME_TYPE_MISMATCH', 'Filename extension does not match the declared content type');
+  }
+}
+
 export function createStorageRoutes({ authUser, storage, config, readBody, readMultipartSingleFile, requireFields, stringField, sendJson, HttpError, repo, legacy, id, now, logEvent }) {
   async function storageRoutes(req, res, parts) {
     const user = await authUser(req);
     if (req.method === 'POST' && parts[1] === 'upload') {
       const file = await readMultipartSingleFile(req);
       try {
+        validateFilenameForContentType(file.filename, String(file.contentType || '').toLowerCase());
         await storage.put(file);
       } finally {
         try { await fs.promises.unlink(file.path); } catch {}
       }
-      const data = { key: file.key, filename: file.filename, contentType: file.contentType, size: file.size, uploadedBy: user.id, createdAt: now() };
-      const uploadDraft = { id: id(), storageKey: file.key, uploadedBy: user.id, contentType: file.contentType, size: file.size, createdAt: now() };
+      const contentType = String(file.contentType || '').toLowerCase();
+      const data = { key: file.key, filename: file.filename, contentType, size: file.size, uploadedBy: user.id, createdAt: now() };
+      const uploadDraft = { id: id(), storageKey: file.key, uploadedBy: user.id, contentType, size: file.size, createdAt: now() };
       try {
         if (process.env.DATABASE_URL) await repo.insertUpload(uploadDraft); else legacy.insertUpload(uploadDraft);
       } catch (error) {
@@ -26,12 +45,13 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
       const body = await readBody(req); requireFields(body, ['filename', 'contentType']);
       const filename = stringField(body.filename, 'filename', { min: 1, max: 255, required: true });
       const contentType = stringField(body.contentType, 'contentType', { min: 1, max: 100, required: true }).toLowerCase();
-      if (!['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain'].includes(contentType)) throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported content type');
+      if (!MIME_EXTENSIONS.has(contentType)) throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported content type');
+      validateFilenameForContentType(filename, contentType);
       const safeName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 180) || 'upload';
       const key = `${config.s3Prefix}/${crypto.randomUUID()}-${safeName}`;
       try {
-        const result = await storage.presignPut({ key, contentType, expiresIn: 300 });
-        const intentDraft = { id: id(), storageKey: key, uploadedBy: user.id, contentType, expiresAt: new Date(Date.now() + 300 * 1000).toISOString(), createdAt: now() };
+        const result = await storage.presignPut({ key, contentType, expiresIn: config.uploadIntentTtlSeconds });
+        const intentDraft = { id: id(), storageKey: key, uploadedBy: user.id, contentType, expiresAt: new Date(Date.now() + config.uploadIntentTtlSeconds * 1000).toISOString(), createdAt: now() };
         const intent = process.env.DATABASE_URL ? await repo.createUploadIntent(intentDraft) : legacy.createIntent(intentDraft);
         return sendJson(res, 200, { ...result, intentId: intent.id, uploadedBy: user.id });
       } catch (error) {
@@ -44,6 +64,8 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
       const key = stringField(body.key, 'key', { min: 1, max: 1024, required: true });
       const filename = stringField(body.filename, 'filename', { min: 1, max: 255, required: true });
       const contentType = stringField(body.contentType, 'contentType', { min: 1, max: 100, required: true }).toLowerCase();
+      if (!MIME_EXTENSIONS.has(contentType)) throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported content type');
+      validateFilenameForContentType(filename, contentType);
       if (process.env.DATABASE_URL) {
         const existing = await repo.findUploadByKey(key);
         if (existing) {
