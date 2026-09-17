@@ -32,15 +32,21 @@ test('Supabase Storage RLS prevents cross-user reads/updates and enforces owner-
     assert.equal(Number(own.rows[0].count), 1, 'owner must be able to read own private object metadata');
 
     await client.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: otherId, role: 'authenticated' })]);
-    await assert.rejects(
-      () => client.query(
-        `insert into storage.objects(id,bucket_id,name,owner_id,metadata)
-         values ($1,'v2hope-private',$2,$3,'{"mimetype":"text/plain","size":4}'::jsonb)`,
-        [otherObjectId, `${ownerId}/rls-ci-${otherObjectId}.txt`, otherId],
-      ),
-      /row-level security|permission denied/i,
-      'other user must not insert into another user folder',
-    );
+    await client.query('SAVEPOINT cross_user_insert');
+    try {
+      await assert.rejects(
+        () => client.query(
+          `insert into storage.objects(id,bucket_id,name,owner_id,metadata)
+           values ($1,'v2hope-private',$2,$3,'{"mimetype":"text/plain","size":4}'::jsonb)`,
+          [otherObjectId, `${ownerId}/rls-ci-${otherObjectId}.txt`, otherId],
+        ),
+        /row-level security|permission denied/i,
+        'other user must not insert into another user folder',
+      );
+    } finally {
+      await client.query('ROLLBACK TO SAVEPOINT cross_user_insert');
+      await client.query('RELEASE SAVEPOINT cross_user_insert');
+    }
 
     const correctFolderInsert = await client.query(
       `insert into storage.objects(id,bucket_id,name,owner_id,metadata)
