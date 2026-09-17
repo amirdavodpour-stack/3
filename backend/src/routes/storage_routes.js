@@ -10,22 +10,23 @@ const MIME_EXTENSIONS = new Map([
   ['text/plain', new Set(['.txt', '.text', '.log'])],
 ]);
 
-function validateFilenameForContentType(filename, contentType) {
-  const extension = path.extname(filename).toLowerCase();
-  if (!extension) return;
-  const allowed = MIME_EXTENSIONS.get(contentType);
-  if (!allowed || !allowed.has(extension)) {
-    throw new HttpError(415, 'FILENAME_TYPE_MISMATCH', 'Filename extension does not match the declared content type');
-  }
-}
-
 export function createStorageRoutes({ authUser, storage, config, readBody, readMultipartSingleFile, requireFields, stringField, sendJson, HttpError, repo, legacy, id, now, logEvent }) {
+  function validateFilenameForContentType(filename, contentType) {
+    const extension = path.extname(filename).toLowerCase();
+    if (!extension) return;
+    const allowed = MIME_EXTENSIONS.get(contentType);
+    if (!allowed || !allowed.has(extension)) {
+      throw new HttpError(415, 'FILENAME_TYPE_MISMATCH', 'Filename extension does not match the declared content type');
+    }
+  }
+
   async function storageRoutes(req, res, parts) {
     const user = await authUser(req);
     if (req.method === 'POST' && parts[1] === 'upload') {
       const file = await readMultipartSingleFile(req);
       try {
-        validateFilenameForContentType(file.filename, String(file.contentType || '').toLowerCase());
+        const contentType = String(file.contentType || '').toLowerCase();
+        validateFilenameForContentType(file.filename, contentType);
         await storage.put(file);
       } finally {
         try { await fs.promises.unlink(file.path); } catch {}
