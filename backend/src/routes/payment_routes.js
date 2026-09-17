@@ -15,7 +15,6 @@ export function createPaymentRoutes({
     const signature = String(req.headers['x-hope-signature'] || '').trim();
     const timestamp = String(req.headers['x-hope-timestamp'] || '').trim();
     const eventId = String(req.headers['x-hope-event-id'] || '').trim();
-    // Verification delegates to crypto.timingSafeEqual inside the policy module; persistence remains atomic in the repository transaction.
     if (!verifyPaymentWebhookSignature(raw, signature, config.paymentWebhookSecret, { timestamp, eventId, maxAgeSeconds: config.paymentWebhookMaxAgeSeconds })) {
       throw new HttpError(401, 'INVALID_WEBHOOK_SIGNATURE', 'Invalid payment webhook signature');
     }
@@ -43,51 +42,25 @@ export function createPaymentRoutes({
   if (req.method === 'POST' && parts[1] === 'fund' && parts[2]) {
     const me = await authUser(req); const body = await readBody(req); const job = await getJob(parts[2]); if (!job) throw new HttpError(404, 'JOB_NOT_FOUND', 'Job not found');
     if (job.ownerId !== me.id) throw new HttpError(403, 'FORBIDDEN', 'Only the owner can fund a job');
-    // Check for an already-completed fund (repeat request / retried idempotency
-    // key) BEFORE the state guard: by the time a retry arrives the job is no
-    // longer PUBLISHED/ASSIGNED (it's already FUNDED), so enforceJobState would
-    // otherwise reject the retry with 409 instead of returning the original
-    // payment, defeating the point of the idempotency key.
     const headerIdempotencyKey = readIdempotencyKey(req, config.maxIdempotencyKeyLength);
     const bodyIdempotencyKey = String(body?.idempotencyKey || '').trim();
-    // Stable error contracts retained at the HTTP boundary: `INVALID_IDEMPOTENCY_KEY`, `Header and body idempotency keys must match`, `IDEMPOTENCY_CONFLICT`.
-    // normalization itself lives in the application policy module.
-    const idempotencyKey = validateIdempotencyPair({
-      headerKey: headerIdempotencyKey,
-      bodyKey: bodyIdempotencyKey,
-      maxLength: config.maxIdempotencyKeyLength,
-    });
-    // PERF: previously fetched the same payment row twice in a row (once as
-    // `existing` to decide whether to short-circuit, once as `existingPayment`
-    // a few lines later for the enforceJobState check) with nothing in
-    // between that could change the result. One fetch now serves both: by
-    // the time the DB-mode branch below falls through without returning, the
-    // only payment states left standing are HOLD_FAILED (fund retry) or RELEASE_FAILED (release retry) when reaching their respective endpoints
-    // either returns or throws), which is exactly what enforceJobState needs.
+    const idempotencyKey = validateIdempotencyPair({ headerKey: headerIdempotencyKey, bodyKey: bodyIdempotencyKey, maxLength: config.maxIdempotencyKeyLength });
     let existing;
     if (process.env.DATABASE_URL) {
       existing = await paymentUseCases.findByJob(job.id);
       if (existing) {
         if (idempotencyKey && existing.idempotencyKey && existing.idempotencyKey !== idempotencyKey) throw new HttpError(409, 'PAYMENT_ALREADY_EXISTS', 'A payment already exists for this job');
         if (existing.status === 'HELD' || existing.status === 'RELEASE_PENDING' || existing.status === 'RELEASED') return sendJson(res,200,await paymentView(existing,job));
-        if (existing.status === 'HOLD_PENDING') return sendJson(res,202,{...(await paymentView(existing,job)), settlement:{status:'PENDING',outboxEventId:null}});
+        if (existing.status === 'HOLD_PENDING') return sendJson(res,202,{...(await paymentView(existing,job)),settlement:{status:'PENDING',outboxEventId:null}});
         if (existing.status !== 'HOLD_FAILED') throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be funded from its current state');
       }
     } else {
       existing = paymentLegacy.findByJob(job.id);
       if(existing) {
-        if (idempotencyKey && existing.idempotencyKey && existing.idempotencyKey !== idempotencyKey) {
-          throw new HttpError(409, 'PAYMENT_ALREADY_EXISTS', 'A payment already exists for this job');
-        }
-        if (existing.status === 'HELD' || existing.status === 'RELEASE_PENDING' || existing.status === 'RELEASED') {
-          return sendJson(res,200,await paymentView(existing,job));
-        }
-        if (existing.status === 'HOLD_PENDING') {
-          return sendJson(res,202,{...(await paymentView(existing,job)),settlement:{status:'PENDING',outboxEventId:null}});
-        }
-        if (existing.status !== 'HOLD_FAILED') {
-          throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be funded from its current state');
-        }
+        if (idempotencyKey && existing.idempotencyKey && existing.idempotencyKey !== idempotencyKey) throw new HttpError(409, 'PAYMENT_ALREADY_EXISTS', 'A payment already exists for this job');
+        if (existing.status === 'HELD' || existing.status === 'RELEASE_PENDING' || existing.status === 'RELEASED') return sendJson(res,200,await paymentView(existing,job));
+        if (existing.status === 'HOLD_PENDING') return sendJson(res,202,{...(await paymentView(existing,job)),settlement:{status:'PENDING',outboxEventId:null}});
+        if (existing.status !== 'HOLD_FAILED') throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be funded from its current state');
       }
       if(idempotencyKey){const prior=paymentLegacy.findByIdempotency(me.id, idempotencyKey); if(prior) return sendJson(res,200,await paymentView(prior,job));}
     }
@@ -143,7 +116,7 @@ export function createPaymentRoutes({
     const payment = process.env.DATABASE_URL ? await paymentUseCases.findByJob(job.id) : paymentLegacy.findByJob(job.id); if (!payment || !['RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) throw new HttpError(409, 'INVALID_PAYMENT_STATE', 'Payment is not ready for release');
     if (process.env.DATABASE_URL) {
       const event = await paymentUseCases.release({ jobId:job.id, ownerId:me.id, paymentId:payment.id, dedupeKey:`PAYMENT_RELEASE:${payment.id}` });
-      try { await processPaymentReleaseNow(); } catch (error) { logEvent({ level:'warn', action:'PAYMENT_RELEASE_WORKER_TRIGGER_FAILED', paymentId:payment.id, error:error.message }); }
+      try { await processPaymentReleaseNow(event?.id); } catch (error) { logEvent({ level:'warn', action:'PAYMENT_RELEASE_WORKER_TRIGGER_FAILED', paymentId:payment.id, eventId:event?.id, error:error.message }); }
       const refreshed = await paymentUseCases.findByJob(job.id);
       const finalJob = await repo.findJobById(job.id);
       if (refreshed?.status === 'RELEASED') { await notifyUser({userId:refreshed.payeeId,type:NOTIFICATION_TYPES.PAYMENT_UPDATE,title:'پرداخت تسویه شد',body:`پرداخت مربوط به «${job.title}» تسویه شد.`,data:{jobId:job.id,paymentId:refreshed.id,status:refreshed.status},dedupeKey:`payment:${refreshed.id}:RELEASED`,channels:['IN_APP','PUSH','EMAIL']}); return sendJson(res, 200, await paymentView(refreshed, finalJob)); }

@@ -1,0 +1,10 @@
+
+::group::✅ Passing tests
+✅ mission publish delegates create then publish and pops back
+✅ validation failure blocks submit without category
+✅ switching types swaps price fields, fee copy and job deadline
+✅ busy state disables the submit action while in flight
+✅ create failure surfaces server error snackbar
+::endgroup::
+
+🎉 5 tests passed.

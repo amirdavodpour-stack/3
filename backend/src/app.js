@@ -134,7 +134,14 @@ const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, re
 const {
   getProvider, categoryBy, publicUser, authUserView, categoryView, buildOfferCountMap,
   offerCountFor, jobView, paymentView, relatedJob, enforceJobState, createAudit,
-} = createAppViewHelpers({ repo, config, getUserById, now, HttpError, env: process.env, categories: viewCategories, id: appLegacy.id, legacy: { providers: appLegacy.findProvidersForView(), offers: appLegacy.findOffersForView(), insertAudit: appLegacy.insertAudit } });
+} = createAppViewHelpers({
+  repo, config, getUserById, now, HttpError, env: process.env, categories: viewCategories, id: appLegacy.id,
+  legacy: {
+    providers: process.env.DATABASE_URL ? [] : appLegacy.findProvidersForView(),
+    offers: process.env.DATABASE_URL ? [] : appLegacy.findOffersForView(),
+    insertAudit: appLegacy.insertAudit,
+  },
+});
 const jobLegacy = createJobLegacyAdapter({ db, categoryBy, relatedJob, findUser, publicUser, now });
 
 const authRoutes = createAuthRoutes({
@@ -143,7 +150,7 @@ const authRoutes = createAuthRoutes({
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH, logEvent, stringField,
   id: db.id, legacy: authLegacy,
 });
-const providerRoutes = createProviderRoutes({ authUser, getProvider, publicUser, repo, sendJson, HttpError, now, id: appLegacy.id, insertProvider: appLegacy.insertProvider, legacy: { jobs: appLegacy.jobs() } });
+const providerRoutes = createProviderRoutes({ authUser, getProvider, publicUser, repo, sendJson, HttpError, now, id: appLegacy.id, insertProvider: appLegacy.insertProvider, legacy: { jobs: process.env.DATABASE_URL ? [] : appLegacy.jobs() } });
 const paymentRoutes = createPaymentRoutes({
   authUser, readBody, readRawBody, sendJson, HttpError, config, repo, getJob, enforceJobState, paymentUseCases,
   readIdempotencyKey, requireFields, enumField, paymentView, relatedJob, withTransaction, createAudit, calculatePaymentBreakdown,

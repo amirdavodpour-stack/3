@@ -66,17 +66,22 @@ class _Notifications implements NotificationRepository {
       const HopeNotificationPage(items: [], unreadCount: 0);
   @override
   Future<HopeNotification> markRead(String id) async => HopeNotification(
-      id: id,
-      type: 'x',
-      title: 't',
-      body: 'b',
-      createdAt: null,
-      readAt: 'now');
+      id: id, type: 'x', title: 't', body: 'b', createdAt: null, readAt: 'now');
   @override
-  Future<HopeNotificationPreferences> getPreferences() async => const HopeNotificationPreferences(inApp: true, push: true, email: true, jobAlerts: true, applicationUpdates: true, paymentUpdates: true, marketing: false);
+  Future<HopeNotificationPreferences> getPreferences() async =>
+      const HopeNotificationPreferences(
+          inApp: true,
+          push: true,
+          email: true,
+          jobAlerts: true,
+          applicationUpdates: true,
+          paymentUpdates: true,
+          marketing: false);
 
   @override
-  Future<HopeNotificationPreferences> updatePreferences(Map<String, bool> patch) async => getPreferences();
+  Future<HopeNotificationPreferences> updatePreferences(
+          Map<String, bool> patch) async =>
+      getPreferences();
 
   @override
   Future<int> markAllRead() async => 0;
@@ -85,7 +90,6 @@ class _Notifications implements NotificationRepository {
 
   @override
   Future<void> disableDevice(String id) async {}
-
 }
 
 class _ProfileRepo implements ProfileRepository {
@@ -168,7 +172,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Menu'));
+    await tester.tap(find.byTooltip('More menu'));
     await tester.pumpAndSettle();
     expect(find.text('Your professional path'), findsOneWidget);
     // A non-admin member sees notifications but no admin panel.
@@ -182,7 +186,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true, admin: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Menu'));
+    await tester.tap(find.byTooltip('More menu'));
     await tester.pumpAndSettle();
     expect(find.text('Admin panel'), findsOneWidget);
   });
@@ -192,19 +196,18 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Menu'));
+    await tester.tap(find.byTooltip('More menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Notifications'));
     await tester.pumpAndSettle();
     expect(find.byType(NotificationsPage), findsOneWidget);
   });
 
-  testWidgets('drawer language toggle switches the app locale',
-      (tester) async {
+  testWidgets('drawer language toggle switches the app locale', (tester) async {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Menu'));
+    await tester.tap(find.byTooltip('More menu'));
     await tester.pumpAndSettle();
     expect(find.text('Language: English'), findsOneWidget);
     await tester.tap(find.text('Language: English'));

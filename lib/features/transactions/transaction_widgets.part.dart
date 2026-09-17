@@ -21,36 +21,41 @@ extension on _TransactionPageState {
               child: Row(
                 children: [
                   for (var i = 0; i < en.length; i++) ...[
-                Expanded(
-                  child: Column(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: i <= current
-                              ? AppColors.success
-                              : Theme.of(context).dividerColor.withValues(alpha: .45),
-                        ),
-                        child: Icon(
-                          i <= current ? Icons.check_rounded : Icons.circle_outlined,
-                          size: 16,
-                          color: i <= current ? Colors.white : AppColors.muted,
-                        ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: i <= current
+                                  ? AppColors.success
+                                  : Theme.of(context)
+                                      .dividerColor
+                                      .withValues(alpha: .45),
+                            ),
+                            child: Icon(
+                              i <= current
+                                  ? Icons.check_rounded
+                                  : Icons.circle_outlined,
+                              size: 16,
+                              color:
+                                  i <= current ? Colors.white : AppColors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _t(fa[i], en[i]),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _t(fa[i], en[i]),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
                   ],
                 ],
               ),
@@ -115,7 +120,8 @@ extension on _TransactionPageState {
       ));
     }
     if (job?.status == 'COMPLETED' &&
-        (paymentStatus == 'RELEASE_PENDING' || paymentStatus == 'RELEASE_FAILED') &&
+        (paymentStatus == 'RELEASE_PENDING' ||
+            paymentStatus == 'RELEASE_FAILED') &&
         owner) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => action('release'),
@@ -130,7 +136,8 @@ extension on _TransactionPageState {
         child: Row(children: [
           const Icon(Icons.check_circle_rounded, color: AppColors.success),
           const SizedBox(width: 9),
-          Expanded(child: Text(_t(
+          Expanded(
+              child: Text(_t(
             'این چرخه مالی با موفقیت تسویه شده است.',
             'This financial cycle is fully settled.',
           ))),
@@ -190,23 +197,33 @@ extension on _TransactionPageState {
               Row(children: [
                 const HopeMark(size: 38),
                 const Spacer(),
-                StatusPill(
-                    _statusLabel(status),
-                    color: _statusColor(status),
-                    icon: _statusIcon(status))
+                StatusPill(_statusLabel(status),
+                    color: _statusColor(status), icon: _statusIcon(status))
               ]),
               const SizedBox(height: 20),
-              if (job != null)
+              if (job != null) ...[
                 Text(job.title,
                     style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: StatusPill(
+                    job.status ?? 'UNKNOWN',
+                    color: AppColors.muted,
+                    icon: Icons.work_history_outlined,
+                  ),
+                ),
+              ],
               const SizedBox(height: 6),
               Row(
                 children: [
                   Expanded(
                     child: Text(
                       payment?.id == null
-                          ? _t('پرداخت هنوز ساخته نشده', 'Payment has not been created yet')
-                          : _t('شناسه پرداخت: ${payment!.id}', 'Payment ID: ${payment!.id}'),
+                          ? _t('پرداخت هنوز ساخته نشده',
+                              'Payment has not been created yet')
+                          : _t('شناسه پرداخت: ${payment!.id}',
+                              'Payment ID: ${payment!.id}'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall,
@@ -230,7 +247,10 @@ extension on _TransactionPageState {
                               style: Theme.of(context).textTheme.bodyMedium)),
                       Text(_statusLabel(status),
                           textAlign: TextAlign.end,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800))
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800))
                     ]),
                     if (status == 'NO_TRANSACTION') ...[
                       const SizedBox(height: 8),
@@ -247,7 +267,8 @@ extension on _TransactionPageState {
                       Align(
                         alignment: AlignmentDirectional.centerStart,
                         child: Text(
-                          HopeCopy.of(context).copy_payment_has_been_settled_f8f8f83,
+                          HopeCopy.of(context)
+                              .copy_payment_has_been_settled_f8f8f83,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
