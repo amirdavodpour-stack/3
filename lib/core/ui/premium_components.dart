@@ -155,6 +155,53 @@ class PremiumHero extends StatelessWidget {
   final double height;
   final String? semanticLabel;
 
+  Widget _imageFallback(BuildContext context, Object error, StackTrace? stack) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [
+            scheme.primary,
+            scheme.secondary,
+            scheme.surfaceContainerHighest,
+          ],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            right: -56,
+            top: -64,
+            child: ExcludeSemantics(
+              child: Container(
+                width: 230,
+                height: 230,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withValues(alpha: .16)),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 24,
+            top: 24,
+            child: ExcludeSemantics(
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                size: 48,
+                color: Colors.white.withValues(alpha: .86),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final compact =
@@ -178,7 +225,11 @@ class PremiumHero extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             ExcludeSemantics(
-              child: Image.asset(image, fit: BoxFit.cover),
+              child: Image.asset(
+                image,
+                fit: BoxFit.cover,
+                errorBuilder: _imageFallback,
+              ),
             ),
             DecoratedBox(
               decoration: BoxDecoration(
