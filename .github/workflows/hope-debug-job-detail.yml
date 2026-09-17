@@ -1,4 +1,4 @@
-name: HOPE Restore And Verify Job Detail
+name: HOPE Verify Current Job Detail
 
 on:
   push:
@@ -6,17 +6,18 @@ on:
       - hope/full-stack-hardening-2026-09-17
     paths:
       - test-results/debug-job-detail-trigger.txt
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 env:
   BRANCH: hope/full-stack-hardening-2026-09-17
-  SOURCE_COMMIT: 388293d40fefcc772ce0659e47cc19c3d872668a
 
 jobs:
-  restore-and-verify:
+  verify-current:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout exact working branch
         uses: actions/checkout@v5
@@ -31,56 +32,27 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Restore only job detail source from known-good checkpoint and reapply layout fix
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git checkout "${SOURCE_COMMIT}" -- lib/features/marketplace/job_detail_page.dart
-          python3 - <<'PY'
-          from pathlib import Path
+      - name: Flutter dependencies
+        run: flutter pub get
 
-          p = Path('lib/features/marketplace/job_detail_page.dart')
-          text = p.read_text(encoding='utf-8')
-
-          old_open = """      body: Center(\n        child: ConstrainedBox(\n          constraints: const BoxConstraints(maxWidth: 1180),\n          child: ListView(\n"""
-          new_open = """      body: LayoutBuilder(\n        builder: (context, constraints) {\n          return Center(\n            child: ConstrainedBox(\n              constraints: BoxConstraints(\n                maxWidth: 1180,\n                minHeight: constraints.maxHeight,\n              ),\n              child: ListView(\n"""
-          if old_open not in text:
-              raise SystemExit('job detail body opening checkpoint not found')
-          text = text.replace(old_open, new_open, 1)
-
-          old_close = """        ],\n        ),\n      ),\n    ),\n    );\n  }\n"""
-          new_close = """        ],\n              ),\n            ),\n          );\n        },\n      ),\n    );\n  }\n"""
-          if old_close not in text:
-              raise SystemExit('job detail body closing checkpoint not found')
-          text = text.replace(old_close, new_close, 1)
-          p.write_text(text, encoding='utf-8')
-          print('restored known-good job detail source and reapplied only LayoutBuilder fix')
-          PY
-
-          dart format lib/features/marketplace/job_detail_page.dart
-
-      - name: Analyze restored production source
+      - name: Analyze current production source
         shell: bash
         run: |
           set +e
-          flutter pub get >/tmp/job-detail-pub.log 2>&1
-          pub_rc=$?
           flutter analyze --no-fatal-warnings --no-fatal-infos >/tmp/job-detail-analyze.log 2>&1
-          analyze_rc=$?
+          rc=$?
           {
-            echo "# Job Detail Restore Verification"
+            echo '# Current Job Detail Verification'
             echo
             echo "Branch: ${BRANCH}"
-            echo "Source restored from: ${SOURCE_COMMIT}"
-            echo "pub_get_exit=${pub_rc}"
-            echo "analyze_exit=${analyze_rc}"
+            echo "Analyze exit=${rc}"
             echo
             echo '## flutter analyze'
             echo '```text'
             cat /tmp/job-detail-analyze.log
             echo '```'
-          } > test-results/job-detail-restore-verification.md
-          exit "$analyze_rc"
+          } > test-results/job-detail-current-verification.md
+          exit "$rc"
 
       - name: Run exact unresolved job-detail regression test
         shell: bash
@@ -90,23 +62,23 @@ jobs:
           rc=$?
           {
             echo
-            echo "## flutter test"
+            echo '## flutter test'
             echo "test_exit=${rc}"
             echo '```text'
             cat /tmp/job-detail-test.log
             echo '```'
-          } >> test-results/job-detail-restore-verification.md
-          printf 'JOB_DETAIL_TEST_EXIT=%s\n' "$rc" >> test-results/job-detail-restore-verification.md
+          } >> test-results/job-detail-current-verification.md
+          printf 'JOB_DETAIL_TEST_EXIT=%s\n' "$rc" >> test-results/job-detail-current-verification.md
           echo "JOB_DETAIL_TEST_EXIT=$rc"
           exit 0
 
-      - name: Persist restored source and verification checkpoint
+      - name: Persist current verification checkpoint
         if: always()
         shell: bash
         run: |
           set -Eeuo pipefail
           git config user.name 'HOPE CI'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add lib/features/marketplace/job_detail_page.dart test-results/job-detail-restore-verification.md
-          git commit -m '[CI-FIX] restore job detail source and persist layout verification' || true
+          git add test-results/job-detail-current-verification.md
+          git commit -m '[CI-DIAGNOSTIC] persist current job detail regression output' || true
           git push origin HEAD:${BRANCH}
