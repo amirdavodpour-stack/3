@@ -10,6 +10,8 @@ const cleanupWorker = read('src/storage_cleanup_worker.js');
 const server = read('src/server.js');
 const config = read('src/config.js');
 const envExample = read('.env.example');
+const liveWorkflow = read('../.github/workflows/supabase-storage-live.yml');
+const rlsIntegration = read('tests/supabase-storage-rls.test.mjs');
 
 for (const name of ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain']) {
   test(`storage route allows declared MIME type: ${name}`, () => {
@@ -69,4 +71,11 @@ test('storage cleanup settings are bounded and documented', () => {
 test('application upload path remains private-by-default and not public-bucket directed', () => {
   assert.match(envExample, /Do not point S3_BUCKET at v2hope-public/);
   assert.match(envExample, /v2hope-private = private application uploads/);
+});
+
+test('Supabase live S3 certification stays isolated from the Railway application database', () => {
+  assert.doesNotMatch(liveWorkflow, /STAGING_DATABASE_URL|SUPABASE_STORAGE_RLS_INTEGRATION|DATABASE_URL:/);
+  assert.match(rlsIntegration, /SUPABASE_STORAGE_DATABASE_URL/);
+  assert.doesNotMatch(rlsIntegration, /delete from storage\.objects/);
+  assert.match(rlsIntegration, /v2hope_private_delete_own_objects/);
 });
