@@ -15,18 +15,26 @@ export async function listJobViews({ status, userId = null, kind = null, visibil
   if(categoryId){ params.push(categoryId); const i=params.length; where += ` AND (j.category_id::text=$${i} OR c.slug=$${i})`; }
   if(search){ params.push(`%${String(search).trim()}%`); const i=params.length; where += ` AND (j.title ILIKE $${i} OR j.description ILIKE $${i} OR j.city ILIKE $${i} OR c.name ILIKE $${i} OR c.name_en ILIKE $${i})`; }
   const { rows } = await requirePool().query(
-    `SELECT j.*, c.name AS category_name,
+    `WITH filtered_jobs AS (
+       SELECT j.id
+         FROM jobs j
+         JOIN categories c ON c.id=j.category_id
+        WHERE ${where}
+        ORDER BY j.updated_at DESC, j.id DESC
+        LIMIT 100
+     )
+     SELECT j.*, c.name AS category_name,
             ou.display_name AS owner_display_name, ou.role AS owner_role,
             pu.display_name AS provider_display_name, pu.role AS provider_role,
             COUNT(o.id)::int AS offer_count
-       FROM jobs j
+       FROM filtered_jobs f
+       JOIN jobs j ON j.id=f.id
        JOIN categories c ON c.id=j.category_id
        JOIN users ou ON ou.id=j.owner_id
        LEFT JOIN users pu ON pu.id=j.provider_id
        LEFT JOIN offers o ON o.job_id=j.id
-      WHERE ${where}
       GROUP BY j.id,c.name,c.slug,ou.display_name,ou.role,pu.display_name,pu.role
-      ORDER BY j.updated_at DESC`, params);
+      ORDER BY j.updated_at DESC, j.id DESC`, params);
   return rows.map(r=>({
     job:jobFromRow(r),
     category:r.category_name,
