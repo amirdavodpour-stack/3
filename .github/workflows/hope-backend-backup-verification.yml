@@ -1,0 +1,38 @@
+name: HOPE Backend Backup Verification
+
+on:
+  push:
+    branches:
+      - hope/full-stack-hardening-2026-09-17
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Node.js 24
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Run backup contracts
+        working-directory: backend
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:backup 2>&1 | tee "$RUNNER_TEMP/backup.log"
+      - name: Upload backup log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-backup-verification-${{ github.run_id }}
+          path: ${{ runner.temp }}/backup.log
+          if-no-files-found: error
