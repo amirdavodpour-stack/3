@@ -40,9 +40,14 @@ if (integrationEnabled && !s3ImportError) {
   }
 }
 const runS3Integration = integrationEnabled && !s3ImportError && endpointReachable;
+const enforceBucketRestrictions = process.env.S3_EXPECT_BUCKET_RESTRICTIONS === '1';
 const tmp = runS3Integration ? await fsp.mkdtemp(path.join(os.tmpdir(), 'hope-s3-')) : null;
 const filePath = tmp ? path.join(tmp, 'sample.pdf') : null;
+const forbiddenPath = tmp ? path.join(tmp, 'forbidden.bin') : null;
+const oversizedPath = tmp ? path.join(tmp, 'oversized.pdf') : null;
 if (filePath) await fsp.writeFile(filePath, Buffer.from('%PDF-1.7\nHOPE CI\n'));
+if (forbiddenPath) await fsp.writeFile(forbiddenPath, Buffer.from('HOPE FORBIDDEN CONTENT\n'));
+if (oversizedPath && enforceBucketRestrictions) await fsp.writeFile(oversizedPath, Buffer.alloc(10 * 1024 * 1024 + 1, 0x41));
 
 const client = !s3ImportError ? new S3Client({
   region: process.env.S3_REGION,
@@ -55,7 +60,12 @@ const storage = runS3Integration ? (await import('../src/storage.js')).storage :
 const key = 'ci/s3-integration/sample.pdf';
 
 after(async () => {
-  if (client) { try { await client.send(new DeleteObjectCommand({ Bucket:process.env.S3_BUCKET, Key:key })); } catch {} client.destroy(); }
+  if (client) {
+    for (const cleanupKey of [key, 'ci/s3-integration/presigned.pdf', 'ci/s3-integration/forbidden.bin', 'ci/s3-integration/oversized.pdf']) {
+      try { await client.send(new DeleteObjectCommand({ Bucket:process.env.S3_BUCKET, Key:cleanupKey })); } catch {}
+    }
+    client.destroy();
+  }
   if (tmp) await fsp.rm(tmp, { recursive:true, force:true });
 });
 
@@ -90,6 +100,20 @@ test('real S3-compatible storage supports upload, head, and signature validation
   await storage.validateObject({ key:'ci/s3-integration/presigned.pdf', contentType:'application/pdf' });
   await client.send(new DeleteObjectCommand({ Bucket:process.env.S3_BUCKET, Key:'ci/s3-integration/presigned.pdf' }));
   await assert.rejects(() => storage.head({ key:'ci/s3-integration/presigned.pdf' }));
+
+  if (enforceBucketRestrictions) {
+    await assert.rejects(
+      () => storage.put({ path:forbiddenPath, key:'ci/s3-integration/forbidden.bin', contentType:'application/octet-stream' }),
+      /S3_PUT_FAILED/,
+      'bucket MIME allowlist must reject unsupported content types',
+    );
+    await assert.rejects(
+      () => storage.put({ path:oversizedPath, key:'ci/s3-integration/oversized.pdf', contentType:'application/pdf' }),
+      /S3_PUT_FAILED/,
+      'bucket size limit must reject objects above 10 MiB',
+    );
+  }
+
   await client.send(new DeleteObjectCommand({ Bucket:process.env.S3_BUCKET, Key:key }));
   await assert.rejects(() => storage.head({ key }));
 });
