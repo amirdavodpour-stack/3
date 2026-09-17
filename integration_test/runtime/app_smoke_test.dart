@@ -31,6 +31,11 @@ Future<void> _pump(WidgetTester tester) async {
   await settings.load();
   final auth = AuthController(_SmokeAuthRepository(), SecureStore());
   auth.continueAsGuest();
+  // The production entrypoint awaits session restoration before runApp. This
+  // integration test injects AuthController directly, so mark the test state
+  // initialized explicitly to exercise the real guest home surface rather
+  // than the transient branded loading screen.
+  auth.initialized = true;
   await tester.pumpWidget(MultiProvider(
     providers: [
       ChangeNotifierProvider<HopeSettingsController>.value(value: settings),
