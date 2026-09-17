@@ -7,6 +7,12 @@ on:
     paths:
       - '.github/workflows/device-integration.yml'
       - 'integration_test/runtime/app_smoke_test.dart'
+  pull_request:
+    branches:
+      - Main
+    paths:
+      - '.github/workflows/device-integration.yml'
+      - 'integration_test/runtime/app_smoke_test.dart'
   workflow_dispatch:
   workflow_call:
     secrets:
@@ -28,7 +34,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.4.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '24'
           cache: npm
