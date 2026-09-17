@@ -1,0 +1,82 @@
+name: HOPE Full Flutter Verification
+
+on:
+  push:
+    branches:
+      - hope/full-stack-hardening-2026-09-17
+    paths:
+      - test-results/full-flutter-verification-trigger.txt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hope-full-flutter-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: '3.47.2'
+
+jobs:
+  flutter-full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact working branch
+        uses: actions/checkout@v5
+        with:
+          ref: hope/full-stack-hardening-2026-09-17
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze current source
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Run complete Flutter test suite
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results
+          set +e
+          flutter test --no-pub --reporter expanded 2>&1 | tee test-results/full-flutter-verification.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          {
+            echo '# HOPE Full Flutter Verification'
+            echo
+            echo "Branch: hope/full-stack-hardening-2026-09-17"
+            echo "Commit: $(git rev-parse HEAD)"
+            echo "Flutter: $(flutter --version | head -n 1)"
+            echo "Test exit code: ${rc}"
+            echo
+            if [[ "$rc" -eq 0 ]]; then
+              echo 'RESULT: PASS'
+            else
+              echo 'RESULT: FAIL'
+              echo
+              echo '## Failure tail'
+              echo '```text'
+              tail -n 260 test-results/full-flutter-verification.log
+              echo '```'
+            fi
+          } > test-results/full-flutter-verification-summary.md
+          cat test-results/full-flutter-verification-summary.md
+          exit "$rc"
+
+      - name: Upload verification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hope-full-flutter-verification-${{ github.run_id }}
+          path: test-results/full-flutter-verification*
+          if-no-files-found: error
