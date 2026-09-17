@@ -224,7 +224,7 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('mission details render pricing, duration and transaction entry',
+  testWidgets('mission details render pricing, duration and action entry',
       (tester) async {
     await _pump(tester, job: _job());
     expect(find.text('Mission details'), findsOneWidget);
@@ -235,7 +235,7 @@ void main() {
     expect(find.text('Mission budget'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.text('Duration'), findsOneWidget);
-    expect(find.text('View financial flow'), findsOneWidget);
+    expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
 
