@@ -87,10 +87,10 @@ The test description was: selecting a category filters the list and shows its lo
 ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
 The following assertion was thrown running a test:
 The finder "Found 2 widgets with text "طراحی": [
+  Text("طراحی", dependencies: [DefaultSelectionStyle, DefaultTextStyle, MediaQuery]),
   Text("طراحی", inherit: true, color: Color(alpha: 1.0000, red: 0.4196, green: 0.4039, blue: 0.5020,
 colorSpace: ColorSpace.sRGB), size: 11.0, weight: 900, overflow: ellipsis, maxLines: 2,
 dependencies: [DefaultSelectionStyle, DefaultTextStyle, MediaQuery]),
-  Text("طراحی", dependencies: [DefaultSelectionStyle, DefaultTextStyle, MediaQuery]),
 ]" (used in a call to "tap()") ambiguously found multiple matching widgets. The "tap()" method needs
 a single target.
 
@@ -98,7 +98,7 @@ When the exception was thrown, this was the stack:
 #0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2100:7)
 #1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
 #2      WidgetController.tap (package:flutter_test/src/controller.dart:1080:7)
-#3      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/jobs_page_test.dart:272:18)
+#3      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/jobs_page_test.dart:275:18)
 <asynchronous suspension>
 #4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>

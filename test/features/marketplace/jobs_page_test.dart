@@ -269,7 +269,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('طراحی'));
+    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('طراحی')); // reopen picker via updated chip
