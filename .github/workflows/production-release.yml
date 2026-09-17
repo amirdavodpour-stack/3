@@ -73,7 +73,7 @@ jobs:
           [ -n "$VERSION" ] || { echo 'Application version is missing.' >&2; exit 1; }
           [ "$TAG" = "v$VERSION" ] || { echo "Release tag $TAG does not match application version v$VERSION" >&2; exit 1; }
 
-      - name: Confirm production release
+      - name: Require explicit release confirmation
         shell: bash
         env:
           CONFIRM: ${{ inputs.CONFIRM }}
