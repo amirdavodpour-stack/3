@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - '.github/workflows/staging-perf-diagnostic.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/staging-perf-diagnostic.yml'
   workflow_dispatch:
 
 permissions:
@@ -113,7 +116,7 @@ jobs:
                 status: response.status,
                 instanceId: response.headers.get('x-instance-id') || null,
                 route: body?.routes?.['GET /api/v1/jobs'] || null,
-                slowestRoute: Object.entries(body?.slowestRoutes || {})[0] || null,
+                slowestRoutes: body?.slowestRoutes || null,
                 latency: body?.latency || null,
                 recentHealth: body?.recentHealth || null,
               });
