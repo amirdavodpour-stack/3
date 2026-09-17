@@ -8,6 +8,7 @@ import '../../core/application/application_registry_context.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/marketplace/application.dart';
 import '../../core/marketplace/job.dart';
+import '../../core/marketplace/job_detail_controller.dart';
 import '../../core/marketplace/job_detail_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
@@ -103,21 +104,24 @@ class _JobDetailPageState extends State<JobDetailPage> {
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () {
-                  Navigator.pop(context, [resume.text.trim(), skills.text.trim()]);
+                  Navigator.pop(
+                    context,
+                    [resume.text.trim(), skills.text.trim()],
+                  );
                 },
                 icon: const Icon(Icons.send_rounded),
-                label: Text(HopeCopy.of(context).copy_submit_application_43b8707),
+                label: Text(
+                  HopeCopy.of(context).copy_submit_application_43b8707,
+                ),
               ),
             ],
           ),
         ),
       );
-
       final submittedResume = resume.text.trim();
       final submittedSkills = skills.text.trim();
       resume.dispose();
       skills.dispose();
-
       if (values == null) return;
       if (submittedResume.length < 10) {
         if (mounted) {
@@ -145,8 +149,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(apiErrorMessage(e,
-                fallback:
-                    HopeCopy.of(context).copy_operation_failed_eb38c4c)),
+                fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c)),
           ));
         }
       } finally {
@@ -212,14 +215,18 @@ class _JobDetailPageState extends State<JobDetailPage> {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () => Navigator.pop(context, [price.text, message.text]),
+              onPressed: () => Navigator.pop(
+                context,
+                [price.text, message.text],
+              ),
               child: Text(HopeCopy.of(context).copy_send_offer_8aa1351),
             ),
           ],
         ),
       ),
     );
-    final submittedPrice = result?.isNotEmpty == true ? result![0] : price.text;
+    final submittedPrice =
+        result?.isNotEmpty == true ? result![0] : price.text;
     final submittedMessage =
         result != null && result.length > 1 ? result[1] : message.text;
     price.dispose();
@@ -266,7 +273,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
     setState(() => _candidateBusyId = candidateId);
     try {
       await _controller.candidateAction(candidateId, action);
-      if (mounted) setState(() => _candidatesFuture = _controller.candidatesFuture);
+      if (mounted) {
+        setState(() => _candidatesFuture = _controller.candidatesFuture);
+      }
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -283,9 +292,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
     if (selected.length < 2) return;
     try {
       final result = await context.read<JobDetailRepository>().compareCandidates(
-        widget.job.id,
-        selected.map((c) => c.id).toList(),
-      );
+            widget.job.id,
+            selected.map((c) => c.id).toList(),
+          );
       if (!context.mounted) return;
       final rows = (result['candidates'] is List)
           ? (result['candidates'] as List)
@@ -316,8 +325,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      _t('متقاضی ناشناس', 'Anonymous candidate'),
-                                      style: Theme.of(ctx).textTheme.titleSmall,
+                                      _t(
+                                          'متقاضی ناشناس', 'Anonymous candidate'),
+                                      style: Theme.of(ctx)
+                                          .textTheme
+                                          .titleSmall,
                                     ),
                                     const SizedBox(height: 5),
                                     Text('${row['skills'] ?? '—'}'),
@@ -330,7 +342,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                     const SizedBox(height: 5),
                                     Text(
                                       '${row['status'] ?? '—'}',
-                                      style: Theme.of(ctx).textTheme.bodySmall,
+                                      style: Theme.of(ctx)
+                                          .textTheme
+                                          .bodySmall,
                                     ),
                                   ],
                                 ),
@@ -391,7 +405,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
             child: Text(_t('لغو', 'Cancel')),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, reason.text.trim().length >= 3),
+            onPressed: () =>
+                Navigator.pop(ctx, reason.text.trim().length >= 3),
             child: Text(_t('ارسال گزارش', 'Submit report')),
           ),
         ],
@@ -425,8 +440,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final j = widget.job;
     final isJob = j.isJob;
     final visibility = j.visibility;
-    final currentUserId = context.read<AuthController?>()?.user?['id']?.toString();
-    final isOwner = currentUserId != null && currentUserId == j.ownerId?.toString();
+    final currentUserId =
+        context.read<AuthController?>()?.user?['id']?.toString();
+    final isOwner =
+        currentUserId != null && currentUserId == j.ownerId?.toString();
     final isProvider =
         currentUserId != null && currentUserId == j.providerId?.toString();
     final canViewFinance = isOwner || isProvider;
@@ -453,8 +470,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     : canViewFinance
                         ? _t('مشاهده وضعیت مالی', 'View financial flow')
                         : isJob
-                            ? HopeCopy.of(context).copy_apply_for_this_job_3a75a03
-                            : HopeCopy.of(context).copy_offer_for_mission_ced8d4c,
+                            ? HopeCopy.of(context)
+                                .copy_apply_for_this_job_3a75a03
+                            : HopeCopy.of(context)
+                                .copy_offer_for_mission_ced8d4c,
                 child: FilledButton.icon(
                   onPressed: loading
                       ? null
@@ -641,7 +660,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           _line(
                             context,
                             Icons.event_outlined,
-                            HopeCopy.of(context).copy_application_deadline_0a6c25c,
+                            HopeCopy.of(context)
+                                .copy_application_deadline_0a6c25c,
                             j.applicationDeadline ?? '—',
                           ),
                         ],
@@ -670,14 +690,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     FutureBuilder<List<HopeCandidate>>(
                       future: _candidatesFuture,
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: Center(
                               child: SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2.2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                ),
                               ),
                             ),
                           );
@@ -692,16 +715,18 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    HopeCopy.of(context).copy_operation_failed_eb38c4c,
-                                    style:
-                                        Theme.of(context).textTheme.bodyMedium,
+                                    HopeCopy.of(context)
+                                        .copy_operation_failed_eb38c4c,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium,
                                   ),
                                 ),
                                 IconButton(
-                                  tooltip:
-                                      HopeCopy.of(context).copy_retry_49f3eba,
+                                  tooltip: HopeCopy.of(context).copy_retry_49f3eba,
                                   onPressed: () => setState(() {
-                                    _candidatesFuture = _controller.candidatesFuture;
+                                    _candidatesFuture =
+                                        _controller.candidatesFuture;
                                   }),
                                   icon: const Icon(Icons.refresh_rounded),
                                 ),
@@ -711,7 +736,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         }
                         final list =
                             snapshot.data ?? const <HopeCandidate>[];
-
                         if (list.isEmpty) {
                           return HopeSurface(
                             padding: const EdgeInsets.all(16),
@@ -724,7 +748,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             ),
                           );
                         }
-
                         return HopeSurface(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -743,10 +766,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   ),
                                   if (list.length >= 2)
                                     OutlinedButton.icon(
-                                      onPressed: () => _compareCandidates(list),
+                                      onPressed: () =>
+                                          _compareCandidates(list),
                                       icon: const Icon(
-                                          Icons.compare_arrows_rounded,
-                                          size: 18),
+                                        Icons.compare_arrows_rounded,
+                                        size: 18,
+                                      ),
                                       label: Text(_t('مقایسه', 'Compare')),
                                     ),
                                 ],
@@ -755,7 +780,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                               ...list.map<Widget>((candidate) {
                                 final status = candidate.status;
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: 9),
+                                  padding:
+                                      const EdgeInsets.only(bottom: 9),
                                   child: HopeSurface(
                                     padding: const EdgeInsets.all(12),
                                     child: Column(
@@ -765,7 +791,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                         Row(
                                           children: [
                                             const HopeIconTile(
-                                                Icons.person_search_rounded),
+                                              Icons.person_search_rounded,
+                                            ),
                                             const SizedBox(width: 9),
                                             Expanded(
                                               child: Text(
@@ -811,15 +838,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                         height: 14,
                                                         child:
                                                             CircularProgressIndicator(
-                                                                strokeWidth: 2),
+                                                                strokeWidth:
+                                                                    2),
                                                       )
                                                     : const Icon(
                                                         Icons.forum_outlined,
                                                         size: 18,
                                                       ),
                                                 label: Text(
-                                                    HopeCopy.of(context)
-                                                        .copy_interview_9734f37),
+                                                  HopeCopy.of(context)
+                                                      .copy_interview_9734f37,
+                                                ),
                                               ),
                                             if (status == 'INTERVIEW')
                                               OutlinedButton.icon(
@@ -835,14 +864,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                         height: 14,
                                                         child:
                                                             CircularProgressIndicator(
-                                                                strokeWidth: 2),
+                                                                strokeWidth:
+                                                                    2),
                                                       )
                                                     : const Icon(
                                                         Icons.request_quote_outlined,
                                                         size: 18,
                                                       ),
-                                                label: Text(HopeCopy.of(context)
-                                                    .copy_offer_cc3327c),
+                                                label: Text(
+                                                  HopeCopy.of(context)
+                                                      .copy_offer_cc3327c,
+                                                ),
                                               ),
                                             if (status == 'OFFERED')
                                               FilledButton.icon(
@@ -858,14 +890,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                         height: 14,
                                                         child:
                                                             CircularProgressIndicator(
-                                                                strokeWidth: 2),
+                                                                strokeWidth:
+                                                                    2),
                                                       )
                                                     : const Icon(
                                                         Icons.verified_rounded,
                                                         size: 18,
                                                       ),
-                                                label: Text(HopeCopy.of(context)
-                                                    .copy_hire_36ed063),
+                                                label: Text(
+                                                  HopeCopy.of(context)
+                                                      .copy_hire_36ed063,
+                                                ),
                                               ),
                                           ],
                                         ),
@@ -898,25 +933,25 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.account_balance_wallet_rounded),
+                              const Icon(
+                                  Icons.account_balance_wallet_rounded),
                               const SizedBox(width: 9),
                               Expanded(
                                 child: Text(
                                   _t('وضعیت مالی این کار',
                                       'Financial state for this work'),
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 7),
-                          Text(
-                            _t(
-                              'تأمین وجه، نگهداری، تحویل، تأیید و تسویه را از یک مسیر دنبال کنید.',
-                              'Track funding, hold, delivery, approval, and settlement from one flow.',
-                            ),
-                          ),
+                          Text(_t(
+                            'تأمین وجه، نگهداری، تحویل، تأیید و تسویه را از یک مسیر دنبال کنید.',
+                            'Track funding, hold, delivery, approval, and settlement from one flow.',
+                          )),
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
                             onPressed: () => Navigator.push(
@@ -929,9 +964,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                               ),
                             ),
                             icon: const Icon(Icons.open_in_new_rounded),
-                            label: Text(
-                              HopeCopy.of(context).copy_view_transaction_a91f1e6,
-                            ),
+                            label: Text(HopeCopy.of(context)
+                                .copy_view_transaction_a91f1e6),
                           ),
                         ],
                       ),
