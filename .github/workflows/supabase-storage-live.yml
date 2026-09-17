@@ -39,6 +39,12 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Verify staging application bucket contract
+        run: |
+          test "$S3_BUCKET" = "v2hope-private"
+          test "$S3_ENDPOINT" = "https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3"
+          test "$S3_REGION" = "eu-west-1"
+
       - name: Validate live Supabase S3 integration and bucket restrictions
         working-directory: backend
         run: node tests/s3-integration.test.mjs
