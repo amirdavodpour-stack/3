@@ -1,283 +1,147 @@
-#!/usr/bin/env bash
-
-set -Eeuo pipefail
-
-###############################################################################
-# HOPE Repository Bootstrap
-#
-# Purpose:
-#   Locate the project ZIP inside the repository, extract it, and synchronize
-#   its complete contents into the repository root.
-#
-# Usage:
-#   ./bootstrap.sh
-#
-# Optional:
-#   ZIP_NAME="HOPE-V8-clean-source-with-certification-scorecards.zip" ./bootstrap.sh
-###############################################################################
-
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$SCRIPT_DIR"
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
+name: HOPE Bootstrap
 
-ZIP_NAME="${ZIP_NAME:-}"
+on:
+  workflow_dispatch:
 
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hope-bootstrap.XXXXXX")"
+permissions:
+  contents: write
 
-cleanup() {
-    rm -rf "$TMP_DIR"
-}
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
 
-trap cleanup EXIT
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-log() {
-    printf '\n[%s] %s\n' "BOOTSTRAP" "$*"
-}
+      - name: Find and extract source ZIP
+        shell: bash
+        run: |
+          set -Eeuo pipefail
 
-fail() {
-    printf '\n[BOOTSTRAP ERROR] %s\n' "$*" >&2
-    exit 1
-}
+          REPO_ROOT="$GITHUB_WORKSPACE"
+          TMP_DIR="$(mktemp -d)"
 
-# ---------------------------------------------------------------------------
-# Repository validation
-# ---------------------------------------------------------------------------
+          cleanup() {
+            rm -rf "$TMP_DIR"
+          }
 
-cd "$REPO_ROOT"
+          trap cleanup EXIT
 
-if [[ ! -d "$REPO_ROOT/.git" ]]; then
-    fail "Repository root not found: $REPO_ROOT"
-fi
+          echo "Repository: $REPO_ROOT"
 
-log "Repository root: $REPO_ROOT"
+          echo "Searching for ZIP..."
 
-# ---------------------------------------------------------------------------
-# Locate ZIP
-# ---------------------------------------------------------------------------
+          mapfile -d '' ZIP_CANDIDATES < <(
+            find "$REPO_ROOT" \
+              -type f \
+              -iname "*.zip" \
+              -not -path "$REPO_ROOT/.git/*" \
+              -print0
+          )
 
-log "Searching for project ZIP..."
+          if [[ "${#ZIP_CANDIDATES[@]}" -eq 0 ]]; then
+            echo "ERROR: No ZIP file found."
+            exit 1
+          fi
 
-ZIP_FILE=""
+          if [[ "${#ZIP_CANDIDATES[@]}" -gt 1 ]]; then
+            echo "Multiple ZIP files found:"
+            printf ' - %s\n' "${ZIP_CANDIDATES[@]#$REPO_ROOT/}"
+            echo
+            echo "Set ZIP_NAME to select the intended archive."
+            exit 1
+          fi
 
-if [[ -n "$ZIP_NAME" ]]; then
-    while IFS= read -r -d '' candidate; do
-        ZIP_FILE="$candidate"
-        break
-    done < <(
-        find "$REPO_ROOT" \
-            -type f \
-            -name "$ZIP_NAME" \
-            -not -path "$REPO_ROOT/.git/*" \
-            -print0
-    )
+          ZIP_FILE="${ZIP_CANDIDATES[0]}"
 
-    [[ -n "$ZIP_FILE" ]] || fail "ZIP '$ZIP_NAME' was not found."
-else
-    mapfile -d '' ZIP_CANDIDATES < <(
-        find "$REPO_ROOT" \
-            -type f \
-            \( -iname "*.zip" \) \
-            -not -path "$REPO_ROOT/.git/*" \
-            -print0
-    )
+          echo "Using:"
+          echo "  ${ZIP_FILE#$REPO_ROOT/}"
 
-    if [[ "${#ZIP_CANDIDATES[@]}" -eq 0 ]]; then
-        fail "No ZIP file was found inside the repository."
-    fi
+          echo "Checking ZIP integrity..."
 
-    if [[ "${#ZIP_CANDIDATES[@]}" -gt 1 ]]; then
-        echo
-        echo "Multiple ZIP files were found:"
-        echo
+          unzip -t "$ZIP_FILE" >/dev/null
 
-        for i in "${!ZIP_CANDIDATES[@]}"; do
-            printf '  [%d] %s\n' "$((i + 1))" "${ZIP_CANDIDATES[$i]#$REPO_ROOT/}"
-        done
+          EXTRACT_DIR="$TMP_DIR/extracted"
 
-        echo
-        fail "Set ZIP_NAME to explicitly select the project ZIP."
-    fi
+          mkdir -p "$EXTRACT_DIR"
 
-    ZIP_FILE="${ZIP_CANDIDATES[0]}"
-fi
+          echo "Extracting..."
 
-log "Using ZIP:"
-log "  ${ZIP_FILE#$REPO_ROOT/}"
+          unzip -q "$ZIP_FILE" -d "$EXTRACT_DIR"
 
-# ---------------------------------------------------------------------------
-# ZIP integrity check
-# ---------------------------------------------------------------------------
+          shopt -s nullglob dotglob
 
-log "Checking ZIP integrity..."
+          TOP_LEVEL_ITEMS=("$EXTRACT_DIR"/*)
 
-unzip -t "$ZIP_FILE" >/dev/null \
-    || fail "ZIP integrity check failed."
+          if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 0 ]]; then
+            echo "ERROR: ZIP is empty."
+            exit 1
+          fi
 
-# ---------------------------------------------------------------------------
-# Extract
-# ---------------------------------------------------------------------------
+          SOURCE_ROOT="$EXTRACT_DIR"
 
-EXTRACT_DIR="$TMP_DIR/extracted"
+          # Detect an unnecessary single top-level directory.
+          if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 1 && -d "${TOP_LEVEL_ITEMS[0]}" ]]; then
+            INNER_ITEMS=("${TOP_LEVEL_ITEMS[0]}"/*)
 
-mkdir -p "$EXTRACT_DIR"
+            if [[ "${#INNER_ITEMS[@]}" -gt 0 ]]; then
+              SOURCE_ROOT="${TOP_LEVEL_ITEMS[0]}"
+            fi
+          fi
 
-log "Extracting ZIP..."
+          echo "Source root:"
+          echo "  ${SOURCE_ROOT#$TMP_DIR/}"
 
-unzip -q "$ZIP_FILE" -d "$EXTRACT_DIR" \
-    || fail "ZIP extraction failed."
+          echo "Validating archive paths..."
 
-# ---------------------------------------------------------------------------
-# Detect archive layout
-# ---------------------------------------------------------------------------
+          while IFS= read -r -d '' path; do
+            relative="${path#$SOURCE_ROOT/}"
 
-log "Analyzing archive layout..."
-
-shopt -s nullglob dotglob
-
-TOP_LEVEL_ITEMS=("$EXTRACT_DIR"/*)
-
-if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 0 ]]; then
-    fail "ZIP is empty."
-fi
-
-SOURCE_ROOT="$EXTRACT_DIR"
-
-# Detect the common case:
-#
-# archive.zip
-#   └── project/
-#       ├── lib/
-#       ├── backend/
-#       └── pubspec.yaml
-#
-# In that case we want project/*, not project/ itself.
-if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 1 && -d "${TOP_LEVEL_ITEMS[0]}" ]]; then
-    POSSIBLE_ROOT="${TOP_LEVEL_ITEMS[0]}"
-
-    INNER_ITEMS=("$POSSIBLE_ROOT"/*)
-
-    if [[ "${#INNER_ITEMS[@]}" -gt 0 ]]; then
-        SOURCE_ROOT="$POSSIBLE_ROOT"
-    fi
-fi
-
-log "Archive source root:"
-log "  ${SOURCE_ROOT#$TMP_DIR/}"
-
-# ---------------------------------------------------------------------------
-# Safety validation
-# ---------------------------------------------------------------------------
-
-log "Validating archive paths..."
-
-while IFS= read -r -d '' file; do
-    relative="${file#$SOURCE_ROOT/}"
-
-    if [[ "$relative" == "../"* || "$relative" == *"/../"* ]]; then
-        fail "Unsafe archive path detected: $relative"
-    fi
-
-    if [[ "$relative" == /* ]]; then
-        fail "Absolute archive path detected: $relative"
-    fi
-done < <(find "$SOURCE_ROOT" -print0)
-
-# ---------------------------------------------------------------------------
-# Synchronize archive contents into repository root
-# ---------------------------------------------------------------------------
-
-log "Synchronizing archive contents into repository root..."
-
-# rsync is preferred because it correctly handles:
-#   - hidden files
-#   - directories
-#   - executable permissions
-#   - timestamps
-#   - nested structures
-#
-# IMPORTANT:
-#   --delete is intentionally NOT used.
-#
-# This means files already present in main but not present in the ZIP are
-# NOT deleted. This protects the repository from accidental source loss.
-
-if command -v rsync >/dev/null 2>&1; then
-
-    rsync -a \
-        --exclude='.git/' \
-        "$SOURCE_ROOT/" \
-        "$REPO_ROOT/"
-
-else
-
-    log "rsync unavailable; using cp fallback."
-
-    cp -a "$SOURCE_ROOT"/. "$REPO_ROOT"/
-fi
-
-# ---------------------------------------------------------------------------
-# Never leave the bootstrap ZIP inside the resulting source tree
-# ---------------------------------------------------------------------------
-
-log "Removing bootstrap ZIP from repository working tree..."
-
-rm -f "$ZIP_FILE"
-
-# ---------------------------------------------------------------------------
-# Verification
-# ---------------------------------------------------------------------------
-
-log "Running post-bootstrap verification..."
-
-if [[ ! -f "$REPO_ROOT/pubspec.yaml" ]]; then
-    log "WARNING: pubspec.yaml was not found."
-fi
-
-if [[ -d "$REPO_ROOT/lib" ]]; then
-    log "Flutter source detected."
-fi
-
-if [[ -d "$REPO_ROOT/test" ]]; then
-    log "Flutter tests detected."
-fi
-
-if [[ -d "$REPO_ROOT/integration_test" ]]; then
-    log "Integration tests detected."
-fi
-
-if [[ -d "$REPO_ROOT/backend" ]]; then
-    log "Backend source detected."
-fi
-
-# ---------------------------------------------------------------------------
-# Git status
-# ---------------------------------------------------------------------------
-
-log "Bootstrap completed."
-
-echo
-echo "============================================================"
-echo " HOPE BOOTSTRAP COMPLETE"
-echo "============================================================"
-echo
-echo "Repository:"
-echo "  $REPO_ROOT"
-echo
-echo "Source:"
-echo "  ${SOURCE_ROOT#$TMP_DIR/}"
-echo
-echo "ZIP:"
-echo "  $(basename "$ZIP_FILE")"
-echo
-echo "Git status:"
-echo "------------------------------------------------------------"
-
-git status --short
-
-echo
-echo "============================================================"
-echo " The ZIP contents have been placed into repository root."
-echo "============================================================"
+            if [[ "$relative" == ../* || "$relative" == */../* ]]; then
+              echo "ERROR: Unsafe path detected: $relative"
+              exit 1
+            fi
+
+            if [[ "$relative" == /* ]]; then
+              echo "ERROR: Absolute path detected: $relative"
+              exit 1
+            fi
+          done < <(find "$SOURCE_ROOT" -print0)
+
+          echo "Copying source into repository root..."
+
+          if command -v rsync >/dev/null 2>&1; then
+            rsync -a \
+              --exclude='.git/' \
+              "$SOURCE_ROOT/" \
+              "$REPO_ROOT/"
+          else
+            cp -a "$SOURCE_ROOT"/. "$REPO_ROOT"/
+          fi
+
+          echo "Removing ZIP from repository working tree..."
+
+          rm -f "$ZIP_FILE"
+
+          echo
+          echo "Bootstrap completed."
+
+          echo
+          echo "Repository status:"
+          git status --short
+
+      - name: Commit bootstrapped source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Bootstrap source from project archive"
+          git push
