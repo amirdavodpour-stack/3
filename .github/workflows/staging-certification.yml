@@ -47,7 +47,7 @@ jobs:
     name: Staging certification
     runs-on: ubuntu-latest
     outputs:
-      certification_run_id: ${{ steps.certification_status.outputs.certification_run_id }}
+      certification_run_id: ${{ github.run_id }}
       certification_status: ${{ steps.certification_status.outputs.certification_status }}
       certification_sha: ${{ steps.certification_status.outputs.certification_sha }}
       certification_attempt: ${{ steps.certification_status.outputs.certification_attempt }}
@@ -98,7 +98,7 @@ jobs:
         run: bash tools/verify-pubspec-lock-fresh.sh
 
       - name: Staging external integration gate
-        id: external_workflow
+        id: provider_integration
         shell: bash
         run: |
           set -euo pipefail
@@ -217,7 +217,7 @@ jobs:
         run: bash tools/build_apk_debug.sh
 
       - name: DR restore drill
-        id: dr_restore
+        id: dr_drill
         shell: bash
         env:
           SOURCE_DATABASE_URL: ${{ env.DATABASE_URL }}
@@ -235,7 +235,7 @@ jobs:
         if: ${{ always() }}
         working-directory: backend
         env:
-          GATE_RESULT: ${{ steps.dr_restore.outcome == 'success' && 'pass' || 'fail' }}
+          GATE_RESULT: ${{ steps.dr_drill.outcome == 'success' && 'pass' || 'fail' }}
         run: |
           CI=true node tools/write-evidence.mjs \
             --gate dr_restore \
@@ -286,7 +286,7 @@ jobs:
 
       - name: Staging operational gate
         id: operational_gate
-        if: ${{ always() && steps.product_workflow.outcome == 'success' && steps.notification_delivery.outcome == 'success' && steps.dr_restore.outcome == 'success' }}
+        if: ${{ always() && steps.provider_integration.outcome == 'success' && steps.notification_delivery.outcome == 'success' && steps.dr_drill.outcome == 'success' }}
         working-directory: backend
         env:
           STAGING_BASE_URL: ${{ env.STAGING_BASE_URL }}
@@ -301,14 +301,14 @@ jobs:
           set -euo pipefail
           status=PASS
           for result in \
-            "${{ steps.external_workflow.outcome }}" \
+            "${{ steps.provider_integration.outcome }}" \
             "${{ steps.product_workflow.outcome }}" \
             "${{ steps.notification_delivery.outcome }}" \
             "${{ steps.postgres_runtime.outcome }}" \
             "${{ steps.s3_runtime.outcome }}" \
             "${{ steps.perf_gate.outcome }}" \
             "${{ steps.android_quality.outcome }}" \
-            "${{ steps.dr_restore.outcome }}" \
+            "${{ steps.dr_drill.outcome }}" \
             "${{ steps.emulator_certification.outcome }}" \
             "${{ steps.operational_gate.outcome }}"; do
             [ "$result" = success ] || status=BLOCKED
@@ -320,7 +320,7 @@ jobs:
           printf 'certification_status=%s\ncertification_run_id=%s\ncertification_sha=%s\ncertification_attempt=%s\n' "$status" "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_RUN_ATTEMPT"
           # Production consumes jobs.staging-certification.outputs.certification_run_id from this reusable job output.
 
-      - name: Upload staging evidence
+      - name: Upload staging certification evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
