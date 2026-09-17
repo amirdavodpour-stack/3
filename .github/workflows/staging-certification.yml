@@ -91,6 +91,9 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Runtime certification preflight
+        run: bash tools/runtime-certification-preflight.sh
+
       - name: Verify Flutter lockfile
         run: bash tools/verify-pubspec-lock-fresh.sh
 
@@ -102,7 +105,7 @@ jobs:
           [ -n "${STAGING_BASE_URL:-}" ] || { echo 'STAGING_BASE_URL secret is required.' >&2; exit 1; }
           [[ "$STAGING_BASE_URL" =~ ^https://[^[:space:]]+$ ]] || { echo 'STAGING_BASE_URL must use HTTPS and contain no whitespace.' >&2; exit 1; }
           curl --fail --silent --show-error --retry 3 --retry-connrefused --max-time 20 "$STAGING_BASE_URL/live" >/tmp/staging-live.json
-          node -e "const u=process.env.PAYMENT_PROVIDER_CREATE_URL;if(!u)throw new Error('PAYMENT_PROVIDER_CREATE_URL is required for staging external integration'); if(!/^https:\\/\\//.test(u))throw new Error('PAYMENT_PROVIDER_CREATE_URL must use HTTPS'); console.log('payment provider endpoint configured:', new URL(u).origin)"
+          node -e "const u=process.env.PAYMENT_PROVIDER_CREATE_URL;if(!u)throw new Error('PAYMENT_PROVIDER_CREATE_URL is required for staging external integration');new URL(u);if(!u.startsWith('https://'))throw new Error('PAYMENT_PROVIDER_CREATE_URL must use HTTPS');console.log('payment provider endpoint configured:',new URL(u).origin)"
 
       - name: Staging product workflow
         id: product_workflow
@@ -237,7 +240,7 @@ jobs:
             --gate dr_restore \
             --command 'bash backend/scripts/dr-restore-drill.sh' \
             --result "$GATE_RESULT" \
-            --artifact "$DRILL_EVIDENCE_FILE"
+            --artifact "$RUNNER_TEMP/hope-dr-restore-evidence.txt"
 
       - name: Android emulator certification
         id: emulator_certification
@@ -321,7 +324,7 @@ jobs:
           name: hope-staging-certification-evidence-${{ github.run_id }}
           path: |
             docs/audit/evidence/*.json
-            perf-smoke.json
+            backend/perf-smoke.json
             ${{ runner.temp }}/hope-dr-restore-evidence.txt
             ${{ runner.temp }}/staging-notification-delivery.log
           if-no-files-found: warn
