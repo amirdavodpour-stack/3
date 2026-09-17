@@ -1,0 +1,76 @@
+name: Device integration certification
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      API_BASE_URL_STAGING:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  device-certification:
+    name: Android device certification
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL_STAGING: ${{ secrets.API_BASE_URL_STAGING }}
+      CI_DEVICE_INTEGRATION: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Verify Flutter lockfile
+        run: bash tools/verify-pubspec-lock-fresh.sh
+
+      - name: Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Android emulator certification
+        id: emulator_certification
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          API_BASE_URL_STAGING: ${{ env.API_BASE_URL_STAGING }}
+          CI_DEVICE_INTEGRATION: 'true'
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          script: |
+            set -euo pipefail
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" --dart-define=CI_DEVICE_INTEGRATION=true
+
+      - name: Runtime gate - device certification
+        id: device_certification_evidence
+        if: ${{ always() }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.emulator_certification.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate device_certification \
+            --command 'flutter test --no-pub integration_test/runtime/app_smoke_test.dart' \
+            --result "$GATE_RESULT"
+
+      - name: Upload device evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-device-certification-${{ github.run_id }}
+          path: docs/audit/evidence/device_certification.json
+          if-no-files-found: warn
