@@ -61,17 +61,18 @@ test_exit=1
 ```text
 00:00 +0: loading /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart
 00:00 +0: mission details render pricing, duration and transaction entry
-DEBUG mission list size: Size(900.0, 0.0)
-DEBUG mission scrollables: 1
-DEBUG mission text: [Mission details]
+DEBUG mission scaffold size: Size(900.0, 3400.0)
+DEBUG mission list size: Size(900.0, 3270.0)
+DEBUG mission bottom size: Size(900.0, 74.0)
+DEBUG mission text: [Mission, Mission budget, Duration, Mission details]
 ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
 The following TestFailure was thrown running a test:
 Expected: exactly one matching candidate
-  Actual: _TextWidgetFinder:<Found 0 widgets with text "Mission budget": []>
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "View financial flow": []>
    Which: means none were found but one was expected
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:238:5)
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:242:5)
 <asynchronous suspension>
 #5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
@@ -81,7 +82,7 @@ When the exception was thrown, this was the stack:
 (elided one frame from package:stack_trace)
 
 This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 238
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 242
 The test description was:
   mission details render pricing, duration and transaction entry
 ════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -90,67 +91,19 @@ The test description was:
   The test description was: mission details render pricing, duration and transaction entry
   
 00:01 +0 -1: job details render monthly pay, deadline and admin banner
-DEBUG job list size: Size(900.0, 0.0)
-DEBUG job text: [Job details]
-══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following TestFailure was thrown running a test:
-Expected: exactly one matching candidate
-  Actual: _TextWidgetFinder:<Found 0 widgets with text "Monthly pay": []>
-   Which: means none were found but one was expected
-
-When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:255:5)
-<asynchronous suspension>
-#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
-<asynchronous suspension>
-#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
-<asynchronous suspension>
-<asynchronous suspension>
-(elided one frame from package:stack_trace)
-
-This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 255
-The test description was:
-  job details render monthly pay, deadline and admin banner
-════════════════════════════════════════════════════════════════════════════════════════════════════
-00:01 +0 -2: job details render monthly pay, deadline and admin banner [E]
-  Test failed. See exception logs above.
-  The test description was: job details render monthly pay, deadline and admin banner
-  
-00:01 +0 -2: owner job with forwarded candidates renders candidate actions
-DEBUG owner list size: Size(900.0, 0.0)
-DEBUG owner candidate text: []
-══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following StateError was thrown running a test:
-Bad state: No element
-
-When the exception was thrown, this was the stack:
-#0      Iterable.single (dart:core/iterable.dart:694:25)
-#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
-#2      WidgetController.ensureVisible (package:flutter_test/src/controller.dart:2389:32)
-#3      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:285:18)
-<asynchronous suspension>
-#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
-<asynchronous suspension>
-#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
-<asynchronous suspension>
-<asynchronous suspension>
-(elided one frame from package:stack_trace)
-
-The test description was:
-  owner job with forwarded candidates renders candidate actions
-════════════════════════════════════════════════════════════════════════════════════════════════════
-00:01 +0 -3: owner job with forwarded candidates renders candidate actions [E]
-  Test failed. See exception logs above.
-  The test description was: owner job with forwarded candidates renders candidate actions
-  
-00:01 +0 -3: non-owner never sees the candidate pipeline
-00:01 +1 -3: owner mission opens the transaction route intent
-00:01 +2 -3: Some tests failed.
+DEBUG job scaffold size: Size(900.0, 3400.0)
+DEBUG job list size: Size(900.0, 3270.0)
+DEBUG job bottom size: Size(900.0, 74.0)
+DEBUG job text: [Job, Monthly pay, 2026-09-30, Job applications are reviewed by an admin first. Employers receive the resume and professional information of selected candidates, not their identity details., Job details]
+00:01 +1 -1: owner job with forwarded candidates renders candidate actions
+DEBUG owner scaffold size: Size(900.0, 3400.0)
+DEBUG owner list size: Size(900.0, 3270.0)
+DEBUG owner candidate text: [Forwarded candidates, Anonymous candidate, Forwarded, Interview, Anonymous candidate, Hire]
+00:01 +2 -1: non-owner never sees the candidate pipeline
+00:01 +3 -1: owner mission opens the transaction route intent
+00:01 +4 -1: Some tests failed.
 
 Failing tests:
-  /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart: job details render monthly pay, deadline and admin banner
   /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart: mission details render pricing, duration and transaction entry
-  /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart: owner job with forwarded candidates renders candidate actions
 ```
 JOB_DETAIL_TEST_EXIT=1
