@@ -18,7 +18,7 @@ Expected: exactly one matching candidate
    Which: means none were found but one was expected
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:239:5)
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:235:5)
 <asynchronous suspension>
 #5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
@@ -28,7 +28,7 @@ When the exception was thrown, this was the stack:
 (elided one frame from package:stack_trace)
 
 This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 239
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 235
 The test description was:
   mission details render pricing, duration and transaction entry
 ════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -44,7 +44,7 @@ Expected: exactly one matching candidate
    Which: means none were found but one was expected
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:258:5)
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:250:5)
 <asynchronous suspension>
 #5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
@@ -54,7 +54,7 @@ When the exception was thrown, this was the stack:
 (elided one frame from package:stack_trace)
 
 This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 258
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 250
 The test description was:
   job details render monthly pay, deadline and admin banner
 ════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -64,23 +64,22 @@ The test description was: job details render monthly pay, deadline and admin ban
 ::endgroup::
 ::group::❌ owner job with forwarded candidates renders candidate actions (failed)
 ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following TestFailure was thrown running a test:
-Expected: exactly one matching candidate
-  Actual: _TextWidgetFinder:<Found 0 widgets with text "Forwarded candidates": []>
-   Which: means none were found but one was expected
+The following StateError was thrown running a test:
+Bad state: No element
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:290:5)
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
+#2      WidgetController.ensureVisible (package:flutter_test/src/controller.dart:2389:32)
+#3      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:278:18)
 <asynchronous suspension>
-#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
-#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
 <asynchronous suspension>
 <asynchronous suspension>
 (elided one frame from package:stack_trace)
 
-This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 290
 The test description was:
   owner job with forwarded candidates renders candidate actions
 ════════════════════════════════════════════════════════════════════════════════════════════════════
