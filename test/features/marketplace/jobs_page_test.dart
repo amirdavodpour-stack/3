@@ -27,9 +27,6 @@ class _Repo implements MarketplaceRepository {
     job('shiraz1', 'طراحی در شیراز', 'MISSION', 'شیراز'),
   ];
 
-  // Two distinct categories, mirroring the real catalog: the picker hands
-  // back `slug`, while jobs carry both `categoryId` (the slug, for this
-  // app's own create flow) and `category` (the localized display name).
   HopeCategory get techCategory => const HopeCategory(
         id: 'tech',
         slug: 'tech',
@@ -94,10 +91,6 @@ class _Repo implements MarketplaceRepository {
     String? categoryId,
   }) async {
     calls.add('jobs:${city ?? 'ALL'}:$personalizedRecommendations');
-    // Mirrors the real backend: `/jobs/recommended` (personalized) never
-    // filters by city -- city there only feeds distance/location scoring
-    // -- while the plain `/jobs` listing does an *exact* match when a city
-    // is given, and returns everything when it isn't.
     if (personalizedRecommendations || city == null) return _allJobs;
     return _allJobs.where((j) => (j.city ?? '') == city).toList();
   }
@@ -114,9 +107,6 @@ Future<void> _pump(WidgetTester tester, _Repo repo,
     {HopeSettingsController? settings}) async {
   HopeSettingsController resolvedSettings;
   if (settings != null) {
-    // Caller already called `SharedPreferences.setMockInitialValues`,
-    // constructed, and configured this controller (e.g. to flip
-    // personalizedRecommendations off) before handing it to us.
     resolvedSettings = settings;
   } else {
     SharedPreferences.setMockInitialValues({});
@@ -145,11 +135,6 @@ Future<void> _pump(WidgetTester tester, _Repo repo,
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-// The visibility chip labels ("عمومی"/"تخصصی") are the exact same strings
-// shown on every job card's own status badge, so a bare `find.text(...)` is
-// ambiguous as soon as more than one matching card is on screen.
-// `find.widgetWithText(ChoiceChip, ...)` scopes the search to the filter
-// chip itself.
 Finder _choiceChip(String label) => find.widgetWithText(ChoiceChip, label);
 
 void main() {
@@ -189,8 +174,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(_choiceChip('ماموریت‌ها'));
     await tester.pumpAndSettle();
-    expect(find.text('طراحی اپ'), findsOneWidget); // MISSION
-    expect(find.text('استخدام Flutter'), findsNothing); // JOB
+    expect(find.text('طراحی اپ'), findsOneWidget);
+    expect(find.text('استخدام Flutter'), findsNothing);
   });
 
   testWidgets('kind chip narrows the list to jobs only', (tester) async {
@@ -199,8 +184,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(_choiceChip('شغل‌ها'));
     await tester.pumpAndSettle();
-    expect(find.text('استخدام Flutter'), findsOneWidget); // JOB
-    expect(find.text('طراحی اپ'), findsNothing); // MISSION
+    expect(find.text('استخدام Flutter'), findsOneWidget);
+    expect(find.text('طراحی اپ'), findsNothing);
   });
 
   testWidgets('visibility chip narrows the list to specialized only',
@@ -210,17 +195,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(_choiceChip('تخصصی'));
     await tester.pumpAndSettle();
-    expect(find.text('همکاری تخصصی'), findsOneWidget); // SPECIALIZED
-    expect(find.text('طراحی اپ'), findsNothing); // PUBLIC
+    expect(find.text('همکاری تخصصی'), findsOneWidget);
+    expect(find.text('طراحی اپ'), findsNothing);
   });
 
   testWidgets('visibility chip toggles from specialized back to public',
       (tester) async {
-    // Note: there is no "all visibilities" chip in the UI (unlike kind,
-    // which has one) -- once a specific visibility is picked, the only way
-    // back is to pick the other specific one. This test documents the
-    // actual, more limited behavior rather than a reset-to-all that the UI
-    // doesn't offer.
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
@@ -241,20 +221,14 @@ void main() {
     await _pump(tester, repo);
     await tester.pumpAndSettle();
 
-    // Open the category picker via the chip showing the default "all
-    // fields" label, and pick the "design" category by its localized name.
-    await tester.tap(find.text('همه حوزه‌ها'));
+    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
-    expect(find.text('طراحی'), findsOneWidget); // category option in sheet
-    await tester.tap(find.text('طراحی'));
+    expect(find.widgetWithText(ListTile, 'طراحی'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    // The chip must show the localized category name, not the raw slug
-    // ("design") that the picker hands back internally.
-    expect(find.text('طراحی'), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'طراحی'), findsOneWidget);
     expect(find.text('design'), findsNothing);
-
-    // Only the job tagged with the "design" category should remain.
     expect(find.text('طراحی گرافیک'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
     expect(find.text('استخدام Flutter'), findsNothing);
@@ -266,20 +240,17 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('همه حوزه‌ها'));
+    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('طراحی'));
+    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('طراحی')); // reopen picker via updated chip
+    await tester.tap(find.widgetWithText(ActionChip, 'طراحی'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('همه حوزه‌ها'));
+    await tester.tap(find.widgetWithText(ListTile, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
 
     expect(find.text('طراحی اپ'), findsOneWidget);
-    // The list is lazy; the design card sits below the fold of the default
-    // 800x600 test surface, so scroll it into view before asserting it is
-    // present again after the filter was cleared.
     await tester.scrollUntilVisible(find.text('طراحی گرافیک'), 200,
         scrollable: find.byType(Scrollable).first);
     expect(find.text('طراحی گرافیک'), findsOneWidget);
@@ -294,25 +265,13 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final settings = HopeSettingsController();
     await settings.load();
-    // Force the non-personalized `/jobs` path, where the server applies an
-    // exact-match city filter -- the bug only manifested there.
     await settings.setPersonalizedRecommendations(false);
     await _pump(tester, repo, settings: settings);
     await tester.pumpAndSettle();
 
-    // Default city is تهران, so the شیراز-only job isn't shown yet.
     expect(find.text('طراحی در شیراز'), findsNothing);
-
-    // Tap the city chip by its label: the ActionChip avatar icon sits at
-    // the chip edge, where the computed tap offset does not hit-test
-    // reliably on the default test surface.
     await tester.tap(find.widgetWithText(ActionChip, 'اطراف تهران'));
     await tester.pumpAndSettle();
-    // "همه" is the last row of the city sheet and sits below the fold of
-    // the visible area. Scroll the sheet's own scrollable (the sheet is
-    // rendered on top, so its Scrollable is the last one in the tree) to
-    // build the row, then bring it fully into view before tapping (a
-    // built-but-off-screen row still fails the tap hit test).
     await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'همه'), 200,
         scrollable: find.byType(Scrollable).last);
     await tester.ensureVisible(find.widgetWithText(ListTile, 'همه'));
@@ -321,8 +280,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('طراحی اپ'), findsOneWidget);
-    // After clearing the city filter every city's jobs are listed; the
-    // شیراز card is below the fold, so scroll to it before asserting.
     await tester.scrollUntilVisible(find.text('طراحی در شیراز'), 200,
         scrollable: find.byType(Scrollable).first);
     expect(find.text('طراحی در شیراز'), findsOneWidget);
@@ -346,12 +303,10 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'شیراز'));
     await tester.pumpAndSettle();
 
-    expect(find.text('کار آنلاین'), findsOneWidget); // online job
-    expect(find.text('طراحی اپ'), findsNothing); // تهران-only job
-    // The شیراز card is below the fold of the lazy list; scroll it into
-    // view before asserting it is present.
+    expect(find.text('کار آنلاین'), findsOneWidget);
+    expect(find.text('طراحی اپ'), findsNothing);
     await tester.scrollUntilVisible(find.text('طراحی در شیراز'), 200,
         scrollable: find.byType(Scrollable).first);
-    expect(find.text('طراحی در شیراز'), findsOneWidget); // شیراز job
+    expect(find.text('طراحی در شیراز'), findsOneWidget);
   });
 }

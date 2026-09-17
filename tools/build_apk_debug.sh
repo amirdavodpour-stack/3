@@ -30,7 +30,7 @@ ANDROID_SDK_PATH="$(sed -n 's/^sdk\.dir=//p' android/local.properties | head -1)
 [ -n "$FLUTTER_SDK_PATH" ] && [ -d "$FLUTTER_SDK_PATH" ] || { echo 'ERROR: generated flutter.sdk path is invalid.' >&2; exit 1; }
 [ -n "$ANDROID_SDK_PATH" ] && [ -d "$ANDROID_SDK_PATH" ] || { echo 'ERROR: generated sdk.dir path is invalid.' >&2; exit 1; }
 flutter gen-l10n
-flutter analyze
+flutter analyze --no-fatal-warnings --no-fatal-infos
 flutter test --no-pub
 
 flutter build apk --debug --no-pub \

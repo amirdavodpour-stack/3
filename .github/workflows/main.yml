@@ -1,0 +1,109 @@
+name: Main CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Backend and Flutter quality
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Validate API_BASE_URL secret
+        if: ${{ github.event_name != 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "${API_BASE_URL:-}" ] || { echo 'API_BASE_URL secret is required.' >&2; exit 1; }
+          [[ "$API_BASE_URL" =~ ^https://[^[:space:]]+$ ]] || {
+            echo 'API_BASE_URL contains whitespace or is malformed; API_BASE_URL must use HTTPS.' >&2
+            exit 1
+          }
+
+      - name: Backend install
+        working-directory: backend
+        run: npm ci
+
+      - name: Backend static check
+        working-directory: backend
+        run: npm run check
+
+      - name: Runtime gate - npm audit
+        id: npm_audit_gate
+        working-directory: backend
+        shell: bash
+        run: |
+          set -u
+          result=pass
+          npm audit --audit-level=high || result=fail
+          CI=true node tools/write-evidence.mjs \
+            --gate npm_audit \
+            --command 'npm audit --audit-level=high' \
+            --result "$result"
+          if [ "$result" != pass ]; then
+            status=1
+          else
+            status=0
+          fi
+          exit "$status"
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Verify Flutter lockfile
+        shell: bash
+        run: bash tools/verify-pubspec-lock-fresh.sh
+
+      - name: Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Flutter static and test gate
+        id: flutter_gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter analyze --no-fatal-warnings --no-fatal-infos
+          flutter test --no-pub
+
+      - name: Runtime gate - flutter toolchain
+        id: flutter_runtime_evidence
+        if: ${{ always() }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.flutter_gate.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate flutter_toolchain \
+            --command 'flutter analyze --no-fatal-warnings --no-fatal-infos && flutter test --no-pub' \
+            --result "$GATE_RESULT"
+
+      - name: Upload main evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-main-evidence-${{ github.run_id }}
+          path: |
+            docs/audit/evidence/*.json
+          if-no-files-found: warn

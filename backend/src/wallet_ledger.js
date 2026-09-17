@@ -6,7 +6,11 @@ export const INTERNAL_CURRENCY = 'TOMAN';
 export const MAX_AMOUNT = 9_000_000_000_000_000n;
 
 function amount(value, { allowZero = false } = {}) {
-  const raw = String(value ?? '').trim();
+  let raw = String(value ?? '').trim();
+  // PostgreSQL NUMERIC(18,2) round-trips integer TOMAN values as strings such
+  // as "165.00". Normalize only zero-fraction decimals; genuine TOMAN
+  // fractions remain invalid by design.
+  if (/^\d+\.0+$/.test(raw)) raw = raw.slice(0, raw.indexOf('.'));
   if (!/^\d+$/.test(raw)) throw Object.assign(new Error('INVALID_AMOUNT'), { code: 'INVALID_AMOUNT' });
   const parsed = BigInt(raw);
   if ((allowZero ? parsed < 0n : parsed <= 0n) || parsed > MAX_AMOUNT) {
@@ -113,7 +117,7 @@ async function postEntry(client, { walletId, entryType, direction, amount: value
     INSERT INTO wallet_entries(wallet_id,entry_type,direction,amount,currency,reference_type,reference_id,financial_operation_id,metadata,balance_after)
     VALUES($1,$2,$3,$4,'TOMAN',$5,$6,$7,$8::jsonb,$9)
     RETURNING *
-  `, [walletId, entryType, direction, value, referenceType, referenceId, operationId, JSON.stringify(metadata), balanceAfter]);
+  `, [walletId, entryType, direction, value, referenceType, referenceId, operationId, JSON.stringify(metadata, (_key, item) => typeof item === 'bigint' ? item.toString() : item), balanceAfter]);
   return rows[0];
 }
 
@@ -134,18 +138,21 @@ async function postJournal(client, { operationId, journalType, referenceType, re
 }
 
 async function lockWallets(client, ids) {
-  const uniqueIds = [...new Set(ids)].sort();
+  const requestedIds = [...new Set(ids)];
+  const lockIds = [...requestedIds].sort();
   const { rows } = await client.query(`
     SELECT * FROM wallet_accounts WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE
-  `, [uniqueIds]);
+  `, [lockIds]);
   const byId = new Map(rows.map((row) => [row.id, row]));
-  return uniqueIds.map((id) => byId.get(id));
+  // Lock in deterministic ID order to avoid deadlocks, but return wallets in
+  // the caller's semantic order so [payer, worker] can never be swapped.
+  return requestedIds.map((id) => byId.get(id));
 }
 
 async function getActiveHold(client, paymentId) {
   const { rows } = await client.query(`
     SELECT * FROM wallet_holds
-    WHERE reference_type='PAYMENT' AND reference_id=$1 AND status='ACTIVE'
+    WHERE reference_id=$1 AND hold_type='JOB_PAYMENT' AND status='ACTIVE'
     ORDER BY created_at DESC,id DESC LIMIT 1 FOR UPDATE
   `, [paymentId]);
   return rows[0] || null;
@@ -200,7 +207,10 @@ export async function postInternalPaymentReleaseWithClient(client, {
   assertActive(lockedPayer);
   assertReceivable(lockedWorker);
   const hold = await getActiveHold(client, paymentId);
-  if (!hold || BigInt(String(hold.amount)) !== payout || hold.wallet_id !== lockedPayer.id) throw Object.assign(new Error('ACTIVE_HOLD_NOT_FOUND'), { code: 'ACTIVE_HOLD_NOT_FOUND' });
+  if (!hold) throw Object.assign(new Error(`ACTIVE_HOLD_NOT_FOUND:${paymentId}`), { code: 'ACTIVE_HOLD_NOT_FOUND' });
+  const holdAmount = amount(hold.amount);
+  if (holdAmount !== payout) throw Object.assign(new Error(`ACTIVE_HOLD_AMOUNT_MISMATCH:${hold.amount}:${payout}`), { code: 'ACTIVE_HOLD_AMOUNT_MISMATCH' });
+  if (String(hold.wallet_id) !== String(lockedPayer.id)) throw Object.assign(new Error(`ACTIVE_HOLD_WALLET_MISMATCH:${hold.wallet_id}:${lockedPayer.id}`), { code: 'ACTIVE_HOLD_WALLET_MISMATCH' });
   if (BigInt(String(lockedPayer.locked_balance)) < payout) throw Object.assign(new Error('INSUFFICIENT_LOCKED_FUNDS'), { code: 'INSUFFICIENT_LOCKED_FUNDS' });
 
   const operation = await createOperation(client, { type: 'RELEASE', actorType: 'SYSTEM', actorId, idempotencyKey: key });
@@ -285,7 +295,7 @@ export async function transferAvailable({ sourceUserId, destinationUserId, amoun
     const { rows: sourceRows } = await client.query(`UPDATE wallet_accounts SET available_balance=available_balance-$2,updated_at=NOW() WHERE id=$1 RETURNING *`, [lockedSource.id, value]);
     const { rows: destinationRows } = await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,updated_at=NOW() WHERE id=$1 RETURNING *`, [lockedDestination.id, value]);
     const sourceEntry = await postEntry(client, { walletId: lockedSource.id, entryType: 'TRANSFER', direction: 'DEBIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: sourceRows[0].available_balance });
-    const destinationEntry = await postEntry(client, { walletId: lockedDestination.id, entryType: 'TRANSFER', direction: 'CREDIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: destinationRows[0].available_balance });
+    const destinationEntry = await postEntry(client, { walletId: destinationRows[0].id, entryType: 'TRANSFER', direction: 'CREDIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: destinationRows[0].available_balance });
     await postJournal(client, { operationId: operation.id, journalType: 'TRANSFER', referenceType, referenceId: referenceId || operation.id, entries: [
       { account: 'CUSTOMER_WALLET_LIABILITY', debit: value }, { account: 'CUSTOMER_WALLET_LIABILITY', credit: value },
     ] });

@@ -885,7 +885,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String copy_value_irr_ed45261(Object value) {
-    return '\$value TOMAN';
+    return '$value TOMAN';
   }
 
   @override

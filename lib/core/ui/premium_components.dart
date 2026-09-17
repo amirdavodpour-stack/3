@@ -28,7 +28,7 @@ class PremiumPageFrame extends StatelessWidget {
           constraints: BoxConstraints(maxWidth: maxWidth),
           child: Padding(
             padding: padding.copyWith(bottom: padding.bottom + bottomInset),
-            child: child,
+            child: Material(type: MaterialType.transparency, child: child),
           ),
         ),
       ),
@@ -127,7 +127,7 @@ class PremiumPanel extends StatelessWidget {
             : HopeV2Shadows.card,
       ),
       padding: padding,
-      child: child,
+      child: Material(type: MaterialType.transparency, child: child),
     );
     return semanticLabel == null
         ? panel
@@ -157,8 +157,11 @@ class PremiumHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final heroHeight = compact ? height.clamp(300.0, 420.0).toDouble() : height;
+    final compact =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final heroHeight = compact
+        ? height.clamp(300.0, 420.0).toDouble()
+        : (height < 320 ? 320.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
     return Semantics(
@@ -199,7 +202,8 @@ class PremiumHero extends StatelessWidget {
                   height: 210,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: .10)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: .10)),
                   ),
                 ),
               ),
@@ -237,12 +241,14 @@ class PremiumHero extends StatelessWidget {
                       const SizedBox(height: HopeV2Spacing.sm),
                       Text(
                         message,
-                        style: const TextStyle(color: Colors.white70, height: 1.48),
+                        style: const TextStyle(
+                            color: Colors.white70, height: 1.48),
                       ),
                       if (action != null) ...[
                         const SizedBox(height: HopeV2Spacing.lg),
                         ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+                          constraints: const BoxConstraints(
+                              minHeight: HopeV2Touch.minimum),
                           child: action!,
                         ),
                       ],

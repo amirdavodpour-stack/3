@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 
 const base = String(process.env.STAGING_BASE_URL || '').replace(/\/$/, '');
 assert.ok(base.startsWith('https://'), 'STAGING_BASE_URL must use HTTPS.');
-const metricsToken = String(process.env.STAGING_METRICS_TOKEN || '');
-assert.ok(metricsToken.length >= 24, 'STAGING_METRICS_TOKEN must be provided.');
+const metricsToken = String(process.env.STAGING_METRICS_TOKEN || '').trim();
+assert.ok(metricsToken, 'STAGING_METRICS_TOKEN is required for the protected /metrics endpoint.');
+assert.ok(metricsToken.length >= 24, 'STAGING_METRICS_TOKEN must be at least 24 characters.');
 
 async function get(path, headers = {}) {
   const response = await fetch(`${base}${path}`, { headers: { accept: 'application/json', ...headers } });
@@ -39,6 +40,7 @@ assert.equal(data.health?.database?.status, 'ok', `database health is not ok: ${
 
 console.log(JSON.stringify({
   status: 'PASS',
+  metricsAuth: 'configured',
   recentHealth: data.recentHealth,
   latency: data.latency,
   outbox: { processed: data.outboxProcessed, failed: data.outboxFailed },

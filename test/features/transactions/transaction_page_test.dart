@@ -53,19 +53,19 @@ class _FakeTx implements TransactionRepository {
   @override
   Future<HopeJob> startJob(String jobId) {
     calls.add('start:$jobId');
-    return Future.value(_job(jobId, 'IN_PROGRESS'));
+    return Future.value(_job(jobId, 'IN_PROGRESS', providerId: 'u1'));
   }
 
   @override
   Future<HopeJob> deliverJob(String jobId) {
     calls.add('deliver:$jobId');
-    return Future.value(_job(jobId, 'IN_PROGRESS'));
+    return Future.value(_job(jobId, 'IN_PROGRESS', providerId: 'u1'));
   }
 
   @override
   Future<HopeJob> acceptJob(String jobId) {
     calls.add('accept:$jobId');
-    return Future.value(_job(jobId, 'COMPLETED'));
+    return Future.value(_job(jobId, 'COMPLETED', providerId: 'u1'));
   }
 
   @override
@@ -98,7 +98,8 @@ class _FakeTx implements TransactionRepository {
       });
 }
 
-HopeJob _job(String id, String status) => HopeJob.fromMap({
+HopeJob _job(String id, String status, {String? providerId}) =>
+    HopeJob.fromMap({
       'id': id,
       'title': 'Design landing page',
       'description': 'Deliver a landing page.',
@@ -106,6 +107,7 @@ HopeJob _job(String id, String status) => HopeJob.fromMap({
       'kind': 'MISSION',
       'status': status,
       'ownerId': 'u1',
+      'providerId': providerId,
       'visibility': 'PUBLIC',
       'budgetMin': '1000000',
       'budgetMax': '1500000',
@@ -196,12 +198,18 @@ void main() {
         'status': 'HELD',
         'amount': 1000000,
         'providerRef': 'ref-1',
-        'job': _job('j1', 'FUNDED').toMap(),
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
       }));
-    await _pump(tester, repo);
+    await _pump(tester, repo, ownerId: 'u1');
 
     expect(find.text('FUNDED'), findsWidgets);
-    expect(find.text('1000000 TOMAN'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) {
+        if (widget is! Text || widget.data == null) return false;
+        return widget.data!.replaceAll(',', '') == '1000000 TOMAN';
+      }),
+      findsOneWidget,
+    );
     expect(find.text('Design landing page'), findsOneWidget);
     expect(find.text('Start work'), findsOneWidget);
     await tester.ensureVisible(find.text('Start work'));

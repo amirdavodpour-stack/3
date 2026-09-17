@@ -57,7 +57,7 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
     }
     const fees = breakdown || calculatePaymentBreakdown(job.kind || (job.jobType === 'FIXED' ? 'MISSION' : 'JOB'), amount);
     const placeholderRef = `PENDING:${id}`;
-    const {rows}=await client.query(`INSERT INTO payments(id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,fee_policy_version,currency,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'HOLD_PENDING',$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$16,$17) RETURNING *`, [id,jobId,payerId,payeeId,amount,placeholderRef,idempotencyKey || null,fees.baseAmount,fees.employerFee,fees.workerFee,fees.platformFee,fees.employerCharge,fees.providerPayout,fees.policyVersion,fees.currency,createdAt,job.status]);
+    const {rows}=await client.query(`INSERT INTO payments(id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,fee_policy_version,currency,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'HOLD_PENDING',$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$16) RETURNING *`, [id,jobId,payerId,payeeId,amount,placeholderRef,idempotencyKey || null,fees.baseAmount,fees.employerFee,fees.workerFee,fees.platformFee,fees.employerCharge,fees.providerPayout,fees.policyVersion,fees.currency,createdAt]);
     const {rows:job2}=await client.query(`UPDATE jobs SET status='FUNDED',updated_at=$2,provider_id=COALESCE(provider_id,$3) WHERE id=$1 RETURNING *`, [jobId,createdAt,payeeId]);
     if (config.paymentProvider !== 'internal') {
       const journalId = crypto.randomUUID();
