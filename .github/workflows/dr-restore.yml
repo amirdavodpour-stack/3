@@ -16,6 +16,33 @@ jobs:
   dr-restore:
     name: DR restore drill
     runs-on: ubuntu-latest
+    services:
+      source-db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: hope
+          POSTGRES_PASSWORD: hope
+          POSTGRES_DB: hope_source
+        ports:
+          - 54321:5432
+        options: >-
+          --health-cmd "pg_isready -U hope -d hope_source"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+      drill-db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: hope
+          POSTGRES_PASSWORD: hope
+          POSTGRES_DB: hope_drill
+        ports:
+          - 54322:5432
+        options: >-
+          --health-cmd "pg_isready -U hope -d hope_drill"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
     env:
       SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
       DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
@@ -34,6 +61,18 @@ jobs:
       - name: Backend install
         working-directory: backend
         run: npm ci
+
+      - name: Migrate isolated source service
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://hope:hope@127.0.0.1:54321/hope_source
+        run: npm run migrate
+
+      - name: Migrate isolated drill service
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://hope:hope@127.0.0.1:54322/hope_drill
+        run: npm run migrate
 
       - name: DR restore drill
         id: dr_restore
@@ -58,7 +97,7 @@ jobs:
 
       - name: Upload DR evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
         with:
           name: hope-dr-restore-${{ github.run_id }}
           path: docs/audit/evidence/dr_restore.json
