@@ -7,9 +7,6 @@ on:
         description: 'Type RELEASE to continue'
         required: true
         type: string
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: read
@@ -84,6 +81,15 @@ jobs:
           set -euo pipefail
           printf 'CONFIRM:-%s\n' "$CONFIRM"
           [ "$CONFIRM" = 'RELEASE' ] || { echo 'Production release requires explicit CONFIRM=RELEASE.' >&2; exit 1; }
+
+      - name: Validate production API base URL
+        shell: bash
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
+        run: |
+          set -euo pipefail
+          [ -n "${API_BASE_URL:-}" ] || { echo 'Production API_BASE_URL secret is required.' >&2; exit 1; }
+          [[ "$API_BASE_URL" =~ ^https://[^[:space:]]+$ ]] || { echo 'Production API_BASE_URL must use HTTPS and contain no whitespace.' >&2; exit 1; }
 
       - name: Validate production environment
         working-directory: backend
@@ -212,7 +218,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp artifacts/SHA256SUMS.txt SHA256SUMS.txt
           sha256sum "${{ steps.artifact_meta.outputs.apk }}" release-manifest.json > SHA256SUMS.txt
 
       - name: Attest release APK provenance
@@ -230,7 +235,7 @@ jobs:
             SHA256SUMS.txt
             release-manifest.json
             backend/sbom.json
-            backend/docs/audit/evidence/android_build.json
+            docs/audit/evidence/android_build.json
           if-no-files-found: warn
 
       - name: Cleanup production keystore
