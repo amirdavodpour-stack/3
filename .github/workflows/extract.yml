@@ -1,0 +1,289 @@
+name: HOPE Bootstrap From Latest ZIP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    name: Extract Latest ZIP Into Main
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ============================================================
+      # 1. CHECKOUT MAIN WITH PAT
+      # ============================================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: amirdavodpour-stack/2
+          ref: main
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0
+
+      # ============================================================
+      # 2. FIND LATEST ZIP
+      # ============================================================
+
+      - name: Find latest ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Searching for ZIP files..."
+
+          ZIP_FILE="$(
+            find . \
+              -type f \
+              -iname '*.zip' \
+              -not -path './.git/*' \
+              -printf '%T@ %p\n' \
+              | sort -nr \
+              | awk 'NR==1 {sub(/^[^ ]+ /, ""); print; exit}'
+          )"
+
+          if [ -z "${ZIP_FILE}" ]; then
+            echo "ERROR: No ZIP file found."
+            exit 1
+          fi
+
+          echo "Latest ZIP:"
+          echo "${ZIP_FILE}"
+
+          echo "ZIP_FILE=${ZIP_FILE}" >> "$GITHUB_ENV"
+
+      # ============================================================
+      # 3. PREPARE TEMP DIRECTORY
+      # ============================================================
+
+      - name: Prepare extraction directory
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf /tmp/hope-bootstrap
+          mkdir -p /tmp/hope-bootstrap
+
+      # ============================================================
+      # 4. EXTRACT ZIP
+      # ============================================================
+
+      - name: Extract latest ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Extracting:"
+          echo "${ZIP_FILE}"
+
+          unzip -q "${ZIP_FILE}" -d /tmp/hope-bootstrap
+
+          echo
+          echo "Extraction completed."
+
+          echo
+          echo "Top extracted files:"
+
+          find /tmp/hope-bootstrap \
+            -maxdepth 3 \
+            -type f \
+            -print \
+            > /tmp/hope-extracted-files.txt
+
+          sed -n '1,100p' /tmp/hope-extracted-files.txt
+
+          echo
+          echo "Total extracted files:"
+          wc -l < /tmp/hope-extracted-files.txt
+
+      # ============================================================
+      # 5. FIND FLUTTER PROJECT ROOT
+      # ============================================================
+
+      - name: Detect Flutter project root
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PROJECT_ROOT="$(
+            find /tmp/hope-bootstrap \
+              -type f \
+              -name 'pubspec.yaml' \
+              -print \
+              | awk 'NR==1 {print; exit}' \
+              | xargs -r dirname
+          )"
+
+          if [ -z "${PROJECT_ROOT}" ]; then
+            echo "ERROR: pubspec.yaml not found."
+            echo
+            echo "Extracted files:"
+            find /tmp/hope-bootstrap \
+              -maxdepth 4 \
+              -type f \
+              -print \
+              > /tmp/hope-all-files.txt
+
+            sed -n '1,300p' /tmp/hope-all-files.txt
+
+            exit 1
+          fi
+
+          echo "Detected Flutter project:"
+          echo "${PROJECT_ROOT}"
+
+          echo "PROJECT_ROOT=${PROJECT_ROOT}" >> "$GITHUB_ENV"
+
+      # ============================================================
+      # 6. SHOW PROJECT CONTENT
+      # ============================================================
+
+      - name: Inspect project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Project root:"
+          echo "${PROJECT_ROOT}"
+
+          echo
+          echo "Project files:"
+
+          find "${PROJECT_ROOT}" \
+            -maxdepth 2 \
+            -type f \
+            -print \
+            > /tmp/hope-project-files.txt
+
+          sed -n '1,300p' /tmp/hope-project-files.txt
+
+      # ============================================================
+      # 7. CLEAN MAIN
+      # ============================================================
+
+      - name: Clean main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Cleaning repository working tree..."
+
+          find . \
+            -mindepth 1 \
+            -maxdepth 1 \
+            ! -name '.git' \
+            -exec rm -rf {} +
+
+          echo "Main branch cleaned."
+
+      # ============================================================
+      # 8. COPY PROJECT INTO MAIN
+      # ============================================================
+
+      - name: Copy project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Copying project from:"
+          echo "${PROJECT_ROOT}"
+
+          cp -a "${PROJECT_ROOT}/." .
+
+          echo
+          echo "Project copied successfully."
+
+          if [ ! -f pubspec.yaml ]; then
+            echo "ERROR: pubspec.yaml missing after copy."
+            exit 1
+          fi
+
+      # ============================================================
+      # 9. REMOVE ZIP FILES
+      # ============================================================
+
+      - name: Remove ZIP files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          find . \
+            -type f \
+            -iname '*.zip' \
+            -not -path './.git/*' \
+            -delete
+
+          echo "ZIP files removed from repository tree."
+
+      # ============================================================
+      # 10. VERIFY FINAL PROJECT
+      # ============================================================
+
+      - name: Verify final project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "===== FINAL ROOT ====="
+          ls -la
+
+          echo
+          echo "===== PUBSPEC ====="
+          ls -lh pubspec.yaml
+
+          echo
+          echo "===== GIT STATUS ====="
+          git status --short
+
+      # ============================================================
+      # 11. CONFIGURE GIT
+      # ============================================================
+
+      - name: Configure Git
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # ============================================================
+      # 12. COMMIT
+      # ============================================================
+
+      - name: Commit project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit \
+            -m "Bootstrap HOPE project from latest ZIP"
+
+      # ============================================================
+      # 13. PUSH TO MAIN
+      # ============================================================
+
+      - name: Push to main
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git push origin HEAD:main
+
+          echo
+          echo "=========================================="
+          echo "BOOTSTRAP COMPLETED SUCCESSFULLY"
+          echo "=========================================="
+
+          git log -1 --oneline
