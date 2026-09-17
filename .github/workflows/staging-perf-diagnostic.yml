@@ -4,9 +4,6 @@ on:
   push:
     paths:
       - '.github/workflows/staging-perf-diagnostic.yml'
-  pull_request:
-    paths:
-      - '.github/workflows/staging-perf-diagnostic.yml'
   workflow_dispatch:
 
 permissions:
@@ -17,8 +14,8 @@ jobs:
     name: Staging performance diagnostic
     runs-on: ubuntu-latest
     env:
-      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
-      STAGING_METRICS_TOKEN: ${{ secrets.STAGING_METRICS_TOKEN }}
+      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://v2hope-production-7e9e.up.railway.app' }}
+      STAGING_METRICS_TOKEN: ${{ secrets.STAGING_METRICS_TOKEN || secrets.METRICS_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
