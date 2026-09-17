@@ -3,7 +3,6 @@ name: Main CI
 on:
   push:
     branches:
-      - hope/full-stack-hardening-2026-09-17
       - main
   pull_request:
   workflow_dispatch:
