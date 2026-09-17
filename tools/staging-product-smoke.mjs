@@ -47,6 +47,16 @@ const providerRegistration = await register(providerEmail, 'Staging Provider');
 const provider = expectStatus(providerRegistration, 201, 'provider registration');
 assert.ok(provider.accessToken, 'provider access token missing');
 
+// Funding a job consumes the customer's internal TOMAN balance. The staging
+// environment exposes an explicitly gated internal-provider top-up endpoint;
+// seed the owner with enough balance to cover the job's employer charge.
+const topUp = await request('/wallet/top-up', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${owner.accessToken}` },
+  body: JSON.stringify({ amount: 200, idempotencyKey: `staging-topup-${stamp}` }),
+});
+expectStatus(topUp, 200, 'owner wallet top-up');
+
 const categories = await request('/categories');
 const categoryList = expectStatus(categories, 200, 'categories');
 assert.ok(Array.isArray(categoryList) && categoryList.length > 0, 'no staging categories available');
@@ -108,7 +118,7 @@ assert.equal(releaseData.status, 'RELEASED', `payment release status=${releaseDa
 
 console.log(JSON.stringify({
   status: 'PASS',
-  workflow: 'auth -> job -> publish -> offer -> accept -> fund -> start -> evidence -> deliver -> accept -> release',
+  workflow: 'auth -> wallet top-up -> job -> publish -> offer -> accept -> fund -> start -> evidence -> deliver -> accept -> release',
   jobId: job.id,
   offerId: offer.id,
   paymentStatus: releaseData.status,
