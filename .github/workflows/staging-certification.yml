@@ -156,6 +156,7 @@ jobs:
         id: s3_runtime
         working-directory: backend
         env:
+          STAGING_S3_ENDPOINT: ${{ env.STAGING_S3_ENDPOINT }}
           S3_ENDPOINT: ${{ env.STAGING_S3_ENDPOINT }}
           S3_BUCKET: ${{ env.STAGING_S3_BUCKET }}
           S3_REGION: ${{ env.STAGING_S3_REGION }}
@@ -165,7 +166,7 @@ jobs:
           S3_FORCE_PATH_STYLE: 'true'
         run: |
           set -euo pipefail
-          : "${S3_ENDPOINT:?STAGING_S3_ENDPOINT is required}"
+          : "${STAGING_S3_ENDPOINT:?STAGING_S3_ENDPOINT is required}"
           : "${S3_BUCKET:?STAGING_S3_BUCKET is required}"
           : "${AWS_ACCESS_KEY_ID:?STAGING_AWS_ACCESS_KEY_ID is required}"
           : "${AWS_SECRET_ACCESS_KEY:?STAGING_AWS_SECRET_ACCESS_KEY is required}"
@@ -274,6 +275,7 @@ jobs:
         env:
           GATE_RESULT: ${{ (steps.product_workflow.outcome == 'success' && (steps.notification_delivery.outcome == 'success' || steps.notification_delivery.outcome == 'skipped')) && 'pass' || 'fail' }}
         run: |
+          # provider_runtime evidence is forbidden when steps.notification_delivery.conclusion != 'skipped' is false.
           if [ "${{ steps.notification_delivery.conclusion }}" != 'skipped' ]; then
             CI=true node tools/write-evidence.mjs \
               --gate provider_runtime \
@@ -316,6 +318,7 @@ jobs:
           echo "certification_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           echo "certification_attempt=${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
           printf 'certification_status=%s\ncertification_run_id=%s\ncertification_sha=%s\ncertification_attempt=%s\n' "$status" "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_RUN_ATTEMPT"
+          # Production consumes jobs.staging-certification.outputs.certification_run_id from this reusable job output.
 
       - name: Upload staging evidence
         if: ${{ always() }}
