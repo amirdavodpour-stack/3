@@ -1,4 +1,4 @@
-# HOPE Release Checklist — v4.0.20
+# HOPE v4.0.20 Release Checklist
 
 ## Engineering baseline
 
@@ -28,6 +28,12 @@
 - [ ] Signed APK verification uses `apksigner verify --verbose`.
 - [ ] SBOM, SHA256SUMS, release manifest, and build provenance are generated.
 - [ ] Production keystore material is removed after the build, even on failure.
+
+## Recovery and evidence
+
+- [ ] Backup uses `backend/scripts/backup.sh`.
+- [ ] Restore uses `backend/scripts/restore.sh`.
+- [ ] DR evidence is produced by an actual restore drill and tied to a CI run.
 
 ## Post-release / future gates
 
