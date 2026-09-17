@@ -1,4 +1,4 @@
-# HOPE V2 Design System Specification
+# HOPE V2 Design System Specification — Premium Max
 
 ## Product language
 
