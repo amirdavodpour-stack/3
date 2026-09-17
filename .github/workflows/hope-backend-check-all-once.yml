@@ -1,0 +1,29 @@
+name: HOPE Backend Check All Once
+
+on:
+  push:
+    branches:
+      - hope/full-stack-hardening-2026-09-17
+
+permissions:
+  contents: read
+
+jobs:
+  check-all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Node.js 24
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Run backend check-all
+        working-directory: backend
+        shell: bash
+        run: npm run check:all
