@@ -352,7 +352,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final selected = candidates.take(5).toList(growable: false);
     if (selected.length < 2) return;
     try {
-      // The backend comparison route is nested under a candidate segment.
       final result = await context
           .read<JobDetailRepository>()
           .compareCandidates(widget.job.id, selected.map((c) => c.id).toList());
@@ -523,6 +522,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
           child: Center(
+            heightFactor: 1,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
               child: Semantics(
