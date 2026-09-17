@@ -138,12 +138,15 @@ async function postJournal(client, { operationId, journalType, referenceType, re
 }
 
 async function lockWallets(client, ids) {
-  const uniqueIds = [...new Set(ids)].sort();
+  const requestedIds = [...new Set(ids)];
+  const lockIds = [...requestedIds].sort();
   const { rows } = await client.query(`
     SELECT * FROM wallet_accounts WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE
-  `, [uniqueIds]);
+  `, [lockIds]);
   const byId = new Map(rows.map((row) => [row.id, row]));
-  return uniqueIds.map((id) => byId.get(id));
+  // Lock in deterministic ID order to avoid deadlocks, but return wallets in
+  // the caller's semantic order so [payer, worker] can never be swapped.
+  return requestedIds.map((id) => byId.get(id));
 }
 
 async function getActiveHold(client, paymentId) {
