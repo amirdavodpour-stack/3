@@ -43,6 +43,18 @@ test -s "$APK" || { echo "ERROR: expected debug APK was not produced: $APK" >&2;
 APK_SIZE="$(stat -c '%s' "$APK" 2>/dev/null || stat -f '%z' "$APK")"
 test "$APK_SIZE" -gt 1000000 || { echo "ERROR: debug APK is implausibly small: $APK_SIZE bytes" >&2; exit 1; }
 
+# Hosted runners do not guarantee Android command-line tools are on PATH.
+# Resolve the APK verifier from the exact SDK that Flutter generated in
+# android/local.properties so certification is independent of runner PATH.
+AAPT_PATH="$(find "$ANDROID_SDK_PATH/build-tools" -mindepth 2 -maxdepth 2 -type f -name aapt -perm -111 -print 2>/dev/null | sort -V | tail -1 || true)"
+if [ -n "$AAPT_PATH" ]; then
+  export PATH="$(dirname "$AAPT_PATH"):$PATH"
+fi
+if [ -x "$ANDROID_SDK_PATH/cmdline-tools/latest/bin/apkanalyzer" ]; then
+  export PATH="$ANDROID_SDK_PATH/cmdline-tools/latest/bin:$PATH"
+fi
+hash -r 2>/dev/null || true
+
 VERSION="$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml)"
 VERSION_NAME="${VERSION%%+*}"
 VERSION_CODE="${VERSION##*+}"
