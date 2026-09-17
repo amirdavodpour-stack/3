@@ -1,15 +1,19 @@
-name: HOPE Backend Check All Once
+name: HOPE Backend Check All Resume
 
 on:
-  push:
+  pull_request:
     branches:
-      - hope/full-stack-hardening-2026-09-17
+      - main
+    types:
+      - synchronize
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  contract:
+  check-all-resume:
+    name: Backend check-all resume from backup
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,16 +27,35 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
-      - name: Run backend contract gate
+      - name: Resume backend check-all from test:backup
+        id: backend_tail
         working-directory: backend
         shell: bash
         run: |
+          set -euo pipefail
           set -o pipefail
-          npm run test:contract 2>&1 | tee "$RUNNER_TEMP/contract.log"
-      - name: Upload contract log
+          {
+            echo '=== RESUME: test:backup ==='
+            npm run test:backup
+            echo '=== RESUME: test:staging-contract ==='
+            npm run test:staging-contract
+            echo '=== RESUME: test:e2e ==='
+            npm run test:e2e
+            echo '=== RESUME: test:provider ==='
+            npm run test:provider
+            echo '=== RESUME: test:failure-injection ==='
+            npm run test:failure-injection
+            echo '=== RESUME: test:postgres ==='
+            npm run test:postgres
+            echo '=== RESUME: property/security/release tests ==='
+            NODE_ENV=test node --test tests/sbom-contract.test.mjs tests/property-workflow.test.mjs tests/property-security.test.mjs tests/e2e-state-guard.test.mjs tests/wave10-release-security.test.mjs
+            echo '=== RESUME: toolchain contract ==='
+            npm run check:toolchain-contract
+          } 2>&1 | tee "$RUNNER_TEMP/backend-check-all-resume.log"
+      - name: Upload resumed check-all log
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: hope-backend-contract-gate-${{ github.run_id }}
-          path: ${{ runner.temp }}/contract.log
+          name: hope-backend-check-all-resume-${{ github.run_id }}
+          path: ${{ runner.temp }}/backend-check-all-resume.log
           if-no-files-found: error
