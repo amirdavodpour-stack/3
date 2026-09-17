@@ -24,6 +24,24 @@ export async function createUploadIntent(intent) {
 export async function findUploadIntentForUpdate(key,client= requirePool()) {
   const {rows}=await client.query(`SELECT * FROM upload_intents WHERE storage_key=$1 FOR UPDATE`,[key]); const r=rows[0]; return r?{id:r.id,storageKey:r.storage_key,uploadedBy:r.uploaded_by,contentType:r.content_type,expiresAt:r.expires_at?.toISOString?.() ?? r.expires_at,createdAt:r.created_at?.toISOString?.() ?? r.created_at}:null;
 }
+export async function listExpiredUploadIntents({ cutoffIso, limit = 100 } = {}) {
+  const cutoff = cutoffIso || new Date().toISOString();
+  const boundedLimit = Math.max(1, Math.min(1000, Number(limit) || 100));
+  const { rows } = await requirePool().query(
+    `SELECT id, storage_key, expires_at
+       FROM upload_intents
+      WHERE expires_at < $1
+      ORDER BY expires_at ASC, id ASC
+      LIMIT $2`,
+    [cutoff, boundedLimit],
+  );
+  return rows.map((row) => ({ id: row.id, storageKey: row.storage_key, expiresAt: row.expires_at?.toISOString?.() ?? row.expires_at }));
+}
+export async function deleteUploadIntents(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return 0;
+  const { rowCount } = await requirePool().query(`DELETE FROM upload_intents WHERE id = ANY($1::uuid[])`, [ids]);
+  return Number(rowCount || 0);
+}
 export async function completeUploadAtomic({intentId,key,userId,contentType,size,createdAt}) {
   return withSqlTransaction(async(client)=>{
     const {rows:ir}=await client.query(`SELECT * FROM upload_intents WHERE id=$1 AND storage_key=$2 FOR UPDATE`,[intentId,key]); const i=ir[0];
