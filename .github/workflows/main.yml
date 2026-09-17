@@ -107,3 +107,35 @@ jobs:
           path: |
             docs/audit/evidence/*.json
           if-no-files-found: warn
+
+  staging-performance:
+    name: Staging performance smoke
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'Main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.4.0
+        with:
+          node-version: '24'
+
+      - name: Staging performance smoke
+        working-directory: backend
+        env:
+          PERF_BASE_URL: https://v2hope-production-7e9e.up.railway.app
+          PERF_REQUESTS: '500'
+          PERF_CONCURRENCY: '50'
+          PERF_P95_BUDGET_MS: '500'
+          PERF_P99_BUDGET_MS: '1000'
+          PERF_MAX_5XX_RATE: '0.01'
+        run: node ../tools/perf-smoke.mjs
+
+      - name: Upload performance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-staging-performance-${{ github.run_id }}
+          path: backend/perf-smoke.json
+          if-no-files-found: warn
