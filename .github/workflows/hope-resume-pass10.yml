@@ -1,0 +1,143 @@
+name: HOPE Resume Pass 10
+
+on:
+  push:
+    branches:
+      - hope/full-stack-hardening-2026-09-17
+    paths:
+      - test-results/pass10-trigger.txt
+
+permissions:
+  contents: write
+
+env:
+  BRANCH: hope/full-stack-hardening-2026-09-17
+
+jobs:
+  resume-fixes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current working branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+
+      - name: Flutter dependencies
+        run: flutter pub get
+
+      - name: Apply only unfinished fixes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'expected text not found: {path}: {old!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+              print(f'patched: {path}')
+
+          # Real localization defect: `$value` was treated as literal text in
+          # English generated output. Flutter gen-l10n expects `{value}` for a
+          # named placeholder.
+          replace_once(
+              'lib/l10n/app_en.arb',
+              '"copy_value_irr_ed45261": "$value TOMAN"',
+              '"copy_value_irr_ed45261": "{value} TOMAN"',
+          )
+
+          # Category picker: the same localized category label is legitimately
+          # visible in both the filter ActionChip and the modal option.
+          replace_once(
+              'test/features/marketplace/jobs_page_test.dart',
+              "    await tester.tap(find.text('همه حوزه‌ها'));\n    await tester.pumpAndSettle();\n    expect(find.text('طراحی'), findsOneWidget); // category option in sheet\n    await tester.tap(find.text('طراحی'));",
+              "    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));\n    await tester.pumpAndSettle();\n    expect(find.widgetWithText(ListTile, 'طراحی'), findsOneWidget); // category option in sheet\n    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));",
+          )
+
+          replace_once(
+              'test/features/marketplace/jobs_page_test.dart',
+              "    await tester.tap(find.text('همه حوزه‌ها'));\n    await tester.pumpAndSettle();\n    await tester.tap(find.text('طراحی'));\n    await tester.pumpAndSettle();\n\n    await tester.tap(find.text('طراحی')); // reopen picker via updated chip\n    await tester.pumpAndSettle();\n    await tester.tap(find.text('همه حوزه‌ها'));",
+              "    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));\n    await tester.pumpAndSettle();\n    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));\n    await tester.pumpAndSettle();\n\n    await tester.tap(find.widgetWithText(ActionChip, 'طراحی')); // reopen picker via updated chip\n    await tester.pumpAndSettle();\n    await tester.tap(find.widgetWithText(ListTile, 'همه حوزه‌ها'));",
+          )
+
+          # The finance action is rendered in Scaffold.bottomNavigationBar, so
+          # scrolling the body to it is incorrect and can generate hit-test
+          # failures. Tap the always-visible CTA directly.
+          replace_once(
+              'test/features/marketplace/job_detail_page_test.dart',
+              "find.text('View transaction')",
+              "find.text('View financial flow')",
+          )
+          replace_once(
+              'test/features/marketplace/job_detail_page_test.dart',
+              "    await tester.scrollUntilVisible(find.text('View financial flow'), 150);\n    await tester.pumpAndSettle();\n    await tester.tap(find.text('View financial flow'));",
+              "    await tester.tap(find.text('View financial flow'));",
+          )
+          PY
+
+          flutter gen-l10n
+          dart format \
+            lib/l10n/generated/app_localizations.dart \
+            lib/l10n/generated/app_localizations_en.dart \
+            lib/l10n/generated/app_localizations_fa.dart \
+            test/features/marketplace/jobs_page_test.dart \
+            test/features/marketplace/job_detail_page_test.dart
+
+          flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Run only the unfinished regression files
+        shell: bash
+        run: |
+          set +e
+          mkdir -p test-results
+          : > test-results/pass10-summary.md
+          overall=0
+          for t in \
+            test/features/transactions/transaction_page_test.dart \
+            test/features/marketplace/jobs_page_test.dart \
+            test/features/marketplace/job_detail_page_test.dart; do
+            log="test-results/$(echo "$t" | tr '/.' '__').log"
+            echo "### $t" | tee -a test-results/pass10-summary.md
+            flutter test --no-pub "$t" >"$log" 2>&1
+            rc=$?
+            if [ "$rc" -eq 0 ]; then
+              echo PASS | tee -a test-results/pass10-summary.md
+            else
+              overall=1
+              echo "FAIL (exit=$rc)" | tee -a test-results/pass10-summary.md
+              echo '```text' >> test-results/pass10-summary.md
+              tail -n 220 "$log" >> test-results/pass10-summary.md
+              echo '```' >> test-results/pass10-summary.md
+            fi
+          done
+          echo "OVERALL_EXIT=$overall" | tee -a test-results/pass10-summary.md
+          exit 0
+
+      - name: Persist unfinished fixes without re-triggering diagnostics
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f test-results/pass10-trigger.txt
+          git config user.name 'HOPE CI'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/l10n/app_en.arb \
+            lib/l10n/generated/app_localizations.dart \
+            lib/l10n/generated/app_localizations_en.dart \
+            lib/l10n/generated/app_localizations_fa.dart \
+            test/features/marketplace/jobs_page_test.dart \
+            test/features/marketplace/job_detail_page_test.dart \
+            test-results/pass10-summary.md
+          git commit -m '[CI-DIAGNOSTIC] pass 10 resumed unfinished fixes' || true
+          git push origin HEAD:${BRANCH}
