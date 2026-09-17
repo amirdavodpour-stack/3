@@ -53,7 +53,7 @@ Analyzing 3...
    info • Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check • lib/features/wallet/wallet_page.dart:183:28 • use_build_context_synchronously
    info • Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check • lib/features/wallet/wallet_page.dart:204:28 • use_build_context_synchronously
 
-19 issues found. (ran in 10.1s)
+19 issues found. (ran in 10.0s)
 ```
 
 ## flutter test
@@ -61,6 +61,8 @@ test_exit=1
 ```text
 00:00 +0: loading /home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart
 00:00 +0: mission details render pricing, duration and transaction entry
+DEBUG mission scrollables: 1
+DEBUG mission text: [Mission details]
 ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
 The following TestFailure was thrown running a test:
 Expected: exactly one matching candidate
@@ -68,7 +70,7 @@ Expected: exactly one matching candidate
    Which: means none were found but one was expected
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:235:5)
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:237:5)
 <asynchronous suspension>
 #5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
@@ -78,15 +80,17 @@ When the exception was thrown, this was the stack:
 (elided one frame from package:stack_trace)
 
 This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 235
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 237
 The test description was:
   mission details render pricing, duration and transaction entry
 ════════════════════════════════════════════════════════════════════════════════════════════════════
-00:00 +0 -1: mission details render pricing, duration and transaction entry [E]
+00:01 +0 -1: mission details render pricing, duration and transaction entry [E]
   Test failed. See exception logs above.
   The test description was: mission details render pricing, duration and transaction entry
   
-00:00 +0 -1: job details render monthly pay, deadline and admin banner
+00:01 +0 -1: job details render monthly pay, deadline and admin banner
+DEBUG job scrollables: 1
+DEBUG job text: [Job details]
 ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
 The following TestFailure was thrown running a test:
 Expected: exactly one matching candidate
@@ -94,7 +98,7 @@ Expected: exactly one matching candidate
    Which: means none were found but one was expected
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:250:5)
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:254:5)
 <asynchronous suspension>
 #5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
@@ -104,7 +108,7 @@ When the exception was thrown, this was the stack:
 (elided one frame from package:stack_trace)
 
 This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 250
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 254
 The test description was:
   job details render monthly pay, deadline and admin banner
 ════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -113,6 +117,8 @@ The test description was:
   The test description was: job details render monthly pay, deadline and admin banner
   
 00:01 +0 -2: owner job with forwarded candidates renders candidate actions
+DEBUG owner scrollables: 1
+DEBUG candidate text: []
 ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
 The following StateError was thrown running a test:
 Bad state: No element
@@ -121,7 +127,7 @@ When the exception was thrown, this was the stack:
 #0      Iterable.single (dart:core/iterable.dart:694:25)
 #1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
 #2      WidgetController.ensureVisible (package:flutter_test/src/controller.dart:2389:32)
-#3      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:278:18)
+#3      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:284:18)
 <asynchronous suspension>
 #4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
