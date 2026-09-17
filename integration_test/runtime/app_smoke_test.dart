@@ -40,7 +40,12 @@ Future<void> _pump(WidgetTester tester) async {
     ],
     child: const WorkMarketplaceApp(),
   ));
-  await tester.pumpAndSettle();
+
+  // The home shell intentionally contains an indefinitely repeating skeleton
+  // shimmer while asynchronous discovery is pending. `pumpAndSettle()` can
+  // therefore wait forever on an actual device even though the app is healthy.
+  // Advance the frame clock without requiring global animation quiescence.
+  await tester.pump(const Duration(milliseconds: 500));
 }
 
 void main() {
