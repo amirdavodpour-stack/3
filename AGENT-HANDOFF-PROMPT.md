@@ -24,3 +24,7 @@ Resume work from the current branch checkpoint; do not restart completed phases 
 ## Release decision boundary
 
 A release candidate requires source checks, backend contracts, Flutter verification, staging certification, device certification, and production artifact verification to be independently observed. Passing documentation is not a substitute for execution evidence.
+
+## Current hardening checkpoint
+
+The backend contract suite is the active verification gate after the Flutter checkpoint. Treat its latest real GitHub Actions run as the source of truth for remaining backend/CI failures; do not reuse an older failing run after source changes.
