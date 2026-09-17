@@ -38,7 +38,13 @@ test('storage cleanup worker deletes the object before deleting its DB intent', 
   assert.match(cleanupWorker, /await storageBackend\.delete\(\{ key: intent\.storageKey \}\)/);
   assert.match(cleanupWorker, /cleanedIds\.push\(intent\.id\)/);
   assert.match(cleanupWorker, /deleteUploadIntents\(cleanedIds\)/);
-  assert.match(cleanupWorker, /UPLOAD_ORPHAN_GRACE_SECONDS/); // documented through config contract below
+});
+
+test('storage cleanup worker is database-gated and bounded by configuration', () => {
+  assert.match(cleanupWorker, /if \(!process\.env\.DATABASE_URL\) return/);
+  assert.match(cleanupWorker, /graceSeconds = config\.uploadOrphanGraceSeconds/);
+  assert.match(cleanupWorker, /limit = config\.uploadCleanupBatchSize/);
+  assert.match(cleanupWorker, /config\.uploadCleanupIntervalMs/);
 });
 
 test('server starts and stops the storage cleanup worker', () => {
