@@ -17,6 +17,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
+
       # ==========================================================
       # 1. CHECKOUT
       # ==========================================================
@@ -28,24 +29,20 @@ jobs:
           persist-credentials: true
 
       # ==========================================================
-      # 2. BOOTSTRAP
+      # 2. FIND + VALIDATE + EXTRACT + INSTALL
       # ==========================================================
 
       - name: Extract and install source archive
         shell: bash
-        env:
-          ZIP_NAME: HOPE-V8-clean-source-with-certification-scorecards.zip
         run: |
           set -Eeuo pipefail
 
           REPO_ROOT="${GITHUB_WORKSPACE}"
           WORK_DIR="${RUNNER_TEMP}/hope-bootstrap"
+          EXTRACT_DIR="${WORK_DIR}/extracted"
 
           rm -rf "$WORK_DIR"
-          mkdir -p "$WORK_DIR"
-
-          ZIP_FILE=""
-          EXTRACT_DIR="$WORK_DIR/extracted"
+          mkdir -p "$EXTRACT_DIR"
 
           echo "============================================================"
           echo " HOPE SOURCE BOOTSTRAP"
@@ -54,60 +51,53 @@ jobs:
           echo "Repository:"
           echo "  $REPO_ROOT"
           echo
-          echo "Expected archive:"
-          echo "  $ZIP_NAME"
+
+          # ------------------------------------------------------
+          # Locate ZIP
+          # ------------------------------------------------------
+
+          echo "Searching for source archive..."
           echo
-
-          # ------------------------------------------------------
-          # Locate exact archive
-          # ------------------------------------------------------
-
-          echo "Searching for archive..."
 
           mapfile -d '' ZIP_CANDIDATES < <(
             find "$REPO_ROOT" \
               -type f \
-              -name "$ZIP_NAME" \
+              -iname "*.zip" \
               -not -path "$REPO_ROOT/.git/*" \
+              -not -path "$REPO_ROOT/.github/*" \
               -print0
           )
 
-          if [[ "${#ZIP_CANDIDATES[@]}" -eq 0 ]]; then
-            echo
-            echo "ERROR: Archive not found."
-            echo
-            echo "Files matching *.zip:"
-            find "$REPO_ROOT" \
-              -type f \
-              -iname "*.zip" \
-              -not -path "$REPO_ROOT/.git/*" \
-              -print \
-              || true
+          ZIP_COUNT="${#ZIP_CANDIDATES[@]}"
 
-            echo
-            echo "If the ZIP is not committed to the repository,"
-            echo "this bootstrap workflow cannot access it."
+          echo "ZIP files found: $ZIP_COUNT"
+          echo
+
+          if [[ "$ZIP_COUNT" -eq 0 ]]; then
+            echo "ERROR: No ZIP source archive found."
             exit 1
           fi
 
-          if [[ "${#ZIP_CANDIDATES[@]}" -gt 1 ]]; then
+          if [[ "$ZIP_COUNT" -gt 1 ]]; then
+            echo "ERROR: Multiple ZIP files found."
             echo
-            echo "ERROR: Multiple copies of the expected archive were found:"
             printf '  %s\n' "${ZIP_CANDIDATES[@]}"
+            echo
+            echo "Keep exactly one project source ZIP in the repository."
             exit 1
           fi
 
           ZIP_FILE="${ZIP_CANDIDATES[0]}"
 
-          echo "Archive found:"
+          echo "Selected source archive:"
           echo "  ${ZIP_FILE#$REPO_ROOT/}"
           echo
 
           # ------------------------------------------------------
-          # Validate ZIP
+          # ZIP integrity
           # ------------------------------------------------------
 
-          echo "Validating ZIP integrity..."
+          echo "Checking ZIP integrity..."
 
           unzip -t "$ZIP_FILE"
 
@@ -116,10 +106,8 @@ jobs:
           echo
 
           # ------------------------------------------------------
-          # Extract to temporary directory
+          # Extract
           # ------------------------------------------------------
-
-          mkdir -p "$EXTRACT_DIR"
 
           echo "Extracting archive..."
 
@@ -145,16 +133,20 @@ jobs:
 
           SOURCE_ROOT="$EXTRACT_DIR"
 
-          # If archive contains exactly one directory:
+          # Support:
           #
-          # archive.zip
-          # └── hope_clean_work/
+          # ZIP
+          # └── project/
           #     ├── pubspec.yaml
           #     ├── lib/
-          #     ├── backend/
-          #     └── ...
+          #     └── backend/
           #
-          # use that directory as source root.
+          # as well as:
+          #
+          # ZIP
+          # ├── pubspec.yaml
+          # ├── lib/
+          # └── backend/
 
           if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 1 ]] &&
              [[ -d "${TOP_LEVEL_ITEMS[0]}" ]]; then
@@ -168,24 +160,22 @@ jobs:
             fi
           fi
 
-          echo "Source root:"
+          echo "Detected source root:"
           echo "  ${SOURCE_ROOT#$WORK_DIR/}"
           echo
 
           # ------------------------------------------------------
-          # Security validation
+          # Validate archive paths
           # ------------------------------------------------------
 
-          echo "Checking extracted paths..."
+          echo "Validating extracted paths..."
 
           while IFS= read -r -d '' ITEM; do
 
-            RELATIVE="${ITEM#"$SOURCE_ROOT"/}"
-
-            # Root itself is not an archive entry.
             [[ "$ITEM" == "$SOURCE_ROOT" ]] && continue
 
-            # Reject traversal.
+            RELATIVE="${ITEM#"$SOURCE_ROOT"/}"
+
             case "$RELATIVE" in
               ..|../*|*/../*|*/..)
                 echo
@@ -195,7 +185,6 @@ jobs:
                 ;;
             esac
 
-            # Reject absolute paths.
             if [[ "$RELATIVE" == /* ]]; then
               echo
               echo "ERROR: Absolute path detected:"
@@ -213,7 +202,7 @@ jobs:
           echo
 
           # ------------------------------------------------------
-          # Statistics
+          # Source statistics
           # ------------------------------------------------------
 
           FILE_COUNT="$(
@@ -236,102 +225,87 @@ jobs:
           echo
 
           # ------------------------------------------------------
-          # Required source detection
+          # Verify this is actually HOPE source
           # ------------------------------------------------------
 
-          echo "Checking expected project structure..."
-
-          REQUIRED_FOUND=0
+          echo "Checking project structure..."
+          echo
 
           if [[ -f "$SOURCE_ROOT/pubspec.yaml" ]]; then
             echo "  [OK] pubspec.yaml"
-            REQUIRED_FOUND=$((REQUIRED_FOUND + 1))
           else
-            echo "  [WARN] pubspec.yaml not found"
+            echo "  [ERROR] pubspec.yaml missing"
+            exit 1
           fi
 
           if [[ -d "$SOURCE_ROOT/lib" ]]; then
             echo "  [OK] lib/"
-            REQUIRED_FOUND=$((REQUIRED_FOUND + 1))
           else
-            echo "  [WARN] lib/ not found"
+            echo "  [ERROR] lib/ missing"
+            exit 1
           fi
 
           if [[ -d "$SOURCE_ROOT/android" ]]; then
             echo "  [OK] android/"
-            REQUIRED_FOUND=$((REQUIRED_FOUND + 1))
           else
-            echo "  [WARN] android/ not found"
+            echo "  [WARN] android/ missing"
           fi
 
           if [[ -d "$SOURCE_ROOT/backend" ]]; then
             echo "  [OK] backend/"
-            REQUIRED_FOUND=$((REQUIRED_FOUND + 1))
           else
-            echo "  [INFO] backend/ not found"
+            echo "  [INFO] backend/ not present"
           fi
 
           if [[ -d "$SOURCE_ROOT/test" ]]; then
             echo "  [OK] test/"
-            REQUIRED_FOUND=$((REQUIRED_FOUND + 1))
           else
-            echo "  [INFO] test/ not found"
+            echo "  [INFO] test/ not present"
+          fi
+
+          if [[ -d "$SOURCE_ROOT/integration_test" ]]; then
+            echo "  [OK] integration_test/"
+          else
+            echo "  [INFO] integration_test/ not present"
           fi
 
           echo
 
-          if [[ "$REQUIRED_FOUND" -lt 2 ]]; then
-            echo
-            echo "ERROR: Archive does not look like the expected HOPE source."
-            echo "Refusing to install."
-            exit 1
-          fi
-
           # ------------------------------------------------------
-          # Install
+          # Install source
           # ------------------------------------------------------
 
           echo "Installing source into repository root..."
           echo
 
-          if command -v rsync >/dev/null 2>&1; then
-
-            rsync \
-              -a \
-              --exclude='.git/' \
-              "$SOURCE_ROOT/" \
-              "$REPO_ROOT/"
-
-          else
-
-            cp -a \
-              "$SOURCE_ROOT"/. \
-              "$REPO_ROOT/"
-
-          fi
+          rsync \
+            -a \
+            --exclude='.git/' \
+            "$SOURCE_ROOT/" \
+            "$REPO_ROOT/"
 
           echo
-          echo "Installation: OK"
+          echo "Source installation: OK"
           echo
 
           # ------------------------------------------------------
-          # Remove source ZIP
+          # Remove ZIP
           # ------------------------------------------------------
 
-          echo "Removing source archive from repository..."
+          echo "Removing source archive..."
 
           rm -f "$ZIP_FILE"
 
           if [[ -e "$ZIP_FILE" ]]; then
-            echo "ERROR: Could not remove source ZIP."
+            echo "ERROR: Failed to remove ZIP."
             exit 1
           fi
 
-          echo "Archive removed: OK"
+          echo "Source archive removed: OK"
           echo
 
           # ------------------------------------------------------
-          # Verify project
+          # Verify installed source
           # ------------------------------------------------------
 
           echo "Post-install verification:"
@@ -343,31 +317,57 @@ jobs:
           [[ -d "$REPO_ROOT/lib" ]] \
             && echo "  [OK] Flutter source"
 
+          [[ -d "$REPO_ROOT/android" ]] \
+            && echo "  [OK] Android project"
+
+          [[ -d "$REPO_ROOT/backend" ]] \
+            && echo "  [OK] Backend"
+
           [[ -d "$REPO_ROOT/test" ]] \
             && echo "  [OK] Flutter tests"
 
           [[ -d "$REPO_ROOT/integration_test" ]] \
             && echo "  [OK] Integration tests"
 
-          [[ -d "$REPO_ROOT/backend" ]] \
-            && echo "  [OK] Backend"
+          [[ -d "$REPO_ROOT/tools" ]] \
+            && echo "  [OK] tools/"
 
-          [[ -d "$REPO_ROOT/android" ]] \
-            && echo "  [OK] Android"
+          [[ -d "$REPO_ROOT/.github/workflows" ]] \
+            && echo "  [OK] GitHub workflows"
 
-          # Preserve certification / scorecards if supplied by archive.
-          if [[ -d "$REPO_ROOT/.github/workflows" ]]; then
-            echo "  [OK] GitHub workflows"
-          fi
+          echo
 
-          if [[ -d "$REPO_ROOT/tools" ]]; then
-            echo "  [OK] tools/"
+          # ------------------------------------------------------
+          # Important certification / scorecard preservation check
+          # ------------------------------------------------------
+
+          echo "Checking certification / scorecard files..."
+
+          CERT_FOUND=0
+
+          if find "$REPO_ROOT" \
+              -type f \
+              \( \
+                -iname "*certification*" \
+                -o \
+                -iname "*scorecard*" \
+              \) \
+              -not -path "$REPO_ROOT/.git/*" \
+              | grep -q .; then
+
+            CERT_FOUND=1
+            echo "  [OK] Certification / scorecard artifacts detected"
+
+          else
+
+            echo "  [INFO] No certification / scorecard filename detected"
+
           fi
 
           echo
 
           # ------------------------------------------------------
-          # Git status
+          # Show git changes
           # ------------------------------------------------------
 
           echo "============================================================"
@@ -378,12 +378,13 @@ jobs:
           git status --short
 
           echo
+          echo "Bootstrap installation finished."
 
       # ==========================================================
       # 3. COMMIT
       # ==========================================================
 
-      - name: Commit installed source
+      - name: Commit bootstrapped source
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -394,12 +395,12 @@ jobs:
           git add -A
 
           if git diff --cached --quiet; then
-            echo "No source changes detected."
+            echo "No changes detected."
             exit 0
           fi
 
           git commit \
-            -m "Bootstrap HOPE source from clean reference archive"
+            -m "Bootstrap HOPE source from project archive"
 
       # ==========================================================
       # 4. PUSH
@@ -412,13 +413,12 @@ jobs:
 
           BRANCH="${GITHUB_REF_NAME}"
 
-          echo "Pushing to:"
-          echo "  origin/$BRANCH"
-          echo
+          echo "Pushing changes..."
+          echo "Branch: $BRANCH"
 
           git push origin "HEAD:$BRANCH"
 
           echo
           echo "============================================================"
-          echo " BOOTSTRAP COMPLETE"
+          echo " HOPE BOOTSTRAP COMPLETED SUCCESSFULLY"
           echo "============================================================"
