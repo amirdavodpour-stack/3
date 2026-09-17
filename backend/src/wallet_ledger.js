@@ -149,7 +149,7 @@ async function lockWallets(client, ids) {
 async function getActiveHold(client, paymentId) {
   const { rows } = await client.query(`
     SELECT * FROM wallet_holds
-    WHERE reference_type='PAYMENT' AND reference_id=$1 AND status='ACTIVE'
+    WHERE reference_id=$1 AND hold_type='JOB_PAYMENT' AND status='ACTIVE'
     ORDER BY created_at DESC,id DESC LIMIT 1 FOR UPDATE
   `, [paymentId]);
   return rows[0] || null;
@@ -204,7 +204,10 @@ export async function postInternalPaymentReleaseWithClient(client, {
   assertActive(lockedPayer);
   assertReceivable(lockedWorker);
   const hold = await getActiveHold(client, paymentId);
-  if (!hold || BigInt(String(hold.amount)) !== payout || hold.wallet_id !== lockedPayer.id) throw Object.assign(new Error('ACTIVE_HOLD_NOT_FOUND'), { code: 'ACTIVE_HOLD_NOT_FOUND' });
+  if (!hold) throw Object.assign(new Error(`ACTIVE_HOLD_NOT_FOUND:${paymentId}`), { code: 'ACTIVE_HOLD_NOT_FOUND' });
+  const holdAmount = amount(hold.amount);
+  if (holdAmount !== payout) throw Object.assign(new Error(`ACTIVE_HOLD_AMOUNT_MISMATCH:${hold.amount}:${payout}`), { code: 'ACTIVE_HOLD_AMOUNT_MISMATCH' });
+  if (String(hold.wallet_id) !== String(lockedPayer.id)) throw Object.assign(new Error(`ACTIVE_HOLD_WALLET_MISMATCH:${hold.wallet_id}:${lockedPayer.id}`), { code: 'ACTIVE_HOLD_WALLET_MISMATCH' });
   if (BigInt(String(lockedPayer.locked_balance)) < payout) throw Object.assign(new Error('INSUFFICIENT_LOCKED_FUNDS'), { code: 'INSUFFICIENT_LOCKED_FUNDS' });
 
   const operation = await createOperation(client, { type: 'RELEASE', actorType: 'SYSTEM', actorId, idempotencyKey: key });
@@ -289,7 +292,7 @@ export async function transferAvailable({ sourceUserId, destinationUserId, amoun
     const { rows: sourceRows } = await client.query(`UPDATE wallet_accounts SET available_balance=available_balance-$2,updated_at=NOW() WHERE id=$1 RETURNING *`, [lockedSource.id, value]);
     const { rows: destinationRows } = await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,updated_at=NOW() WHERE id=$1 RETURNING *`, [lockedDestination.id, value]);
     const sourceEntry = await postEntry(client, { walletId: lockedSource.id, entryType: 'TRANSFER', direction: 'DEBIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: sourceRows[0].available_balance });
-    const destinationEntry = await postEntry(client, { walletId: lockedDestination.id, entryType: 'TRANSFER', direction: 'CREDIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: destinationRows[0].available_balance });
+    const destinationEntry = await postEntry(client, { walletId: destinationRows[0].id, entryType: 'TRANSFER', direction: 'CREDIT', amount: value, referenceType, referenceId, operationId: operation.id, metadata, balanceAfter: destinationRows[0].available_balance });
     await postJournal(client, { operationId: operation.id, journalType: 'TRANSFER', referenceType, referenceId: referenceId || operation.id, entries: [
       { account: 'CUSTOMER_WALLET_LIABILITY', debit: value }, { account: 'CUSTOMER_WALLET_LIABILITY', credit: value },
     ] });
