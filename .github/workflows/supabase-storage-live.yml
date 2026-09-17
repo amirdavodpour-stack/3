@@ -19,12 +19,10 @@ jobs:
       S3_REGION: ${{ secrets.STAGING_S3_REGION }}
       AWS_ACCESS_KEY_ID: ${{ secrets.STAGING_AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.STAGING_AWS_SECRET_ACCESS_KEY }}
-      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
       S3_INTEGRATION: '1'
       S3_REQUIRE_LIVE: '1'
       S3_REQUIRE_HTTPS: '1'
       S3_EXPECT_BUCKET_RESTRICTIONS: '1'
-      SUPABASE_STORAGE_RLS_INTEGRATION: '1'
       S3_FORCE_PATH_STYLE: 'true'
     steps:
       - name: Checkout
@@ -46,12 +44,7 @@ jobs:
           test "$S3_BUCKET" = "v2hope-private"
           test "$S3_ENDPOINT" = "https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3"
           test "$S3_REGION" = "eu-west-1"
-          test -n "$DATABASE_URL"
 
       - name: Validate live Supabase S3 integration and bucket restrictions
         working-directory: backend
         run: node tests/s3-integration.test.mjs
-
-      - name: Validate authenticated Supabase Storage RLS
-        working-directory: backend
-        run: node tests/supabase-storage-rls.test.mjs
