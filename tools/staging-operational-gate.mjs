@@ -38,7 +38,7 @@ assert.ok(data.recentHealth.errorRate5xx <= max5xxRate, `recent 5xx rate ${data.
 assert.ok(data.recentHealth.slowRequestRate <= maxSlowRate, `recent slow request rate ${data.recentHealth.slowRequestRate} > ${maxSlowRate}`);
 assert.ok(Number(data.latency?.p95 ?? Infinity) <= maxP95Ms, `p95 ${data.latency?.p95} > ${maxP95Ms}`);
 assert.ok(Number(data.latency?.p99 ?? Infinity) <= maxP99Ms, `p99 ${data.latency?.p99} > ${maxP99Ms}`);
-const database = healthChecks['/health'].body?.database;
+const database = healthChecks['/health'].body?.data?.database;
 assert.equal(database?.status, 'ok', `database health is not ok: ${JSON.stringify(database)}`);
 
 console.log(JSON.stringify({
