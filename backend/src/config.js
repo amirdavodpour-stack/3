@@ -2,12 +2,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const pubspecText = fs.readFileSync(path.join(projectRoot, 'pubspec.yaml'), 'utf8');
-const hopeVersionMatch = pubspecText.match(/^version:\s*([^\r\n]+)/m);
-export const HOPE_VERSION = hopeVersionMatch?.[1]?.trim()?.split('+', 1)?.[0] || 'unknown';
-
 const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const pubspecPath = path.join(backendRoot, 'pubspec.yaml');
+const packageJsonPath = path.join(backendRoot, 'package.json');
+
+let hopeVersion = 'unknown';
+if (fs.existsSync(pubspecPath)) {
+  const pubspecText = fs.readFileSync(pubspecPath, 'utf8');
+  const hopeVersionMatch = pubspecText.match(/^version:\s*([^\r\n]+)/m);
+  hopeVersion = hopeVersionMatch?.[1]?.trim()?.split('+', 1)?.[0] || 'unknown';
+} else if (fs.existsSync(packageJsonPath)) {
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    hopeVersion = typeof packageJson.version === 'string' ? packageJson.version : 'unknown';
+  } catch {
+    hopeVersion = 'unknown';
+  }
+}
+export const HOPE_VERSION = hopeVersion;
 
 const positiveIntegerEnv = (name, fallback, { min = 1, max = 2147483647 } = {}) => {
   const raw = process.env[name];
