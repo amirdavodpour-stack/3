@@ -18,7 +18,7 @@ Expected: exactly one matching candidate
    Which: means none were found but one was expected
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:235:5)
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:239:5)
 <asynchronous suspension>
 #5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
@@ -28,7 +28,7 @@ When the exception was thrown, this was the stack:
 (elided one frame from package:stack_trace)
 
 This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 235
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 239
 The test description was:
   mission details render pricing, duration and transaction entry
 ════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -44,7 +44,7 @@ Expected: exactly one matching candidate
    Which: means none were found but one was expected
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:250:5)
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:258:5)
 <asynchronous suspension>
 #5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
@@ -54,7 +54,7 @@ When the exception was thrown, this was the stack:
 (elided one frame from package:stack_trace)
 
 This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 250
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 258
 The test description was:
   job details render monthly pay, deadline and admin banner
 ════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -70,7 +70,7 @@ Expected: exactly one matching candidate
    Which: means none were found but one was expected
 
 When the exception was thrown, this was the stack:
-#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:282:5)
+#4      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart:290:5)
 <asynchronous suspension>
 #5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
 <asynchronous suspension>
@@ -80,7 +80,7 @@ When the exception was thrown, this was the stack:
 (elided one frame from package:stack_trace)
 
 This was caught by the test expectation on the following line:
-  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 282
+  file:///home/runner/work/3/3/test/features/marketplace/job_detail_page_test.dart line 290
 The test description was:
   owner job with forwarded candidates renders candidate actions
 ════════════════════════════════════════════════════════════════════════════════════════════════════
