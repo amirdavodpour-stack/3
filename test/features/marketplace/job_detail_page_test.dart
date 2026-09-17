@@ -228,12 +228,13 @@ void main() {
       (tester) async {
     await _pump(tester, job: _job());
     expect(find.text('Mission details'), findsOneWidget);
-    expect(find.text('Design a logo'), findsOneWidget);
+    expect(
+      tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
+      'Design a logo',
+    );
     expect(find.text('Mission budget'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
-    // Duration is mission-only.
     expect(find.text('Duration'), findsOneWidget);
-    // A mission exposes the transaction entry, not the admin-review banner.
     expect(find.text('View financial flow'), findsOneWidget);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
@@ -242,7 +243,10 @@ void main() {
       (tester) async {
     await _pump(tester, job: _job(kind: 'JOB'));
     expect(find.text('Job details'), findsOneWidget);
-    expect(find.text('Flutter developer'), findsOneWidget);
+    expect(
+      tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
+      'Flutter developer',
+    );
     expect(find.text('Monthly pay'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.textContaining('2026-09-30'), findsOneWidget);
@@ -271,6 +275,9 @@ void main() {
       userId: 'u1',
     );
 
+    final scrollable = tester.state<ScrollableState>(find.byType(Scrollable).first);
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+    await tester.pumpAndSettle();
     expect(find.text('Forwarded candidates'), findsOneWidget);
     expect(find.text('Anonymous candidate'), findsNWidgets(2));
     expect(find.text('Flutter'), findsOneWidget);
