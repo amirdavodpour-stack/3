@@ -43,3 +43,5 @@ jobs:
           name: hope-backend-contract-${{ github.run_id }}
           path: ${{ runner.temp }}/backend-fast.log
           if-no-files-found: error
+
+# Verification trigger refresh: run against the post-hardening branch head, not an inherited checkpoint.
