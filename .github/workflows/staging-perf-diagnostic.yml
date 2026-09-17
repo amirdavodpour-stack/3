@@ -37,19 +37,20 @@ jobs:
           if (!/^https:\/\/[^\s]+$/.test(baseUrl)) throw new Error('STAGING_BASE_URL must be an HTTPS URL');
           const metricsToken = String(process.env.STAGING_METRICS_TOKEN || '');
           const endpoints = ['/live', '/health', '/api/v1/jobs'];
-          const requestsPerEndpoint = 60;
-          const concurrency = 20;
 
-          async function one(endpoint) {
+          function percentile(sorted, p) {
+            return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * p) - 1))] || 0;
+          }
+
+          async function fetchOne(endpoint) {
             const started = performance.now();
             try {
               const response = await fetch(`${baseUrl}${endpoint}`, {
                 headers: { 'Cache-Control': 'no-cache' },
               });
-              const latencyMs = performance.now() - started;
               return {
                 endpoint,
-                latencyMs,
+                latencyMs: performance.now() - started,
                 status: response.status,
                 instanceId: response.headers.get('x-instance-id') || null,
               };
@@ -64,54 +65,83 @@ jobs:
             }
           }
 
-          async function runEndpoint(endpoint) {
+          async function runMixed(totalRequests, concurrency) {
             const results = [];
             let next = 0;
             async function worker() {
               while (true) {
                 const index = next++;
-                if (index >= requestsPerEndpoint) return;
-                results.push(await one(endpoint));
+                if (index >= totalRequests) return;
+                results.push(await fetchOne(endpoints[index % endpoints.length]));
               }
             }
+            const started = performance.now();
             await Promise.all(Array.from({ length: concurrency }, () => worker()));
-            const sorted = results.map((r) => r.latencyMs).sort((a, b) => a - b);
-            const percentile = (p) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * p) - 1))] || 0;
-            const statuses = Object.fromEntries(
-              [...new Set(results.map((r) => r.status))].sort((a, b) => a - b).map((status) => [String(status), results.filter((r) => r.status === status).length]),
-            );
-            const instances = Object.fromEntries(
-              [...new Set(results.map((r) => r.instanceId).filter(Boolean))].sort().map((id) => [id, results.filter((r) => r.instanceId === id).length]),
-            );
+            const elapsedMs = performance.now() - started;
+            const latencies = results.map((r) => r.latencyMs).sort((a, b) => a - b);
             return {
-              requests: results.length,
-              statuses,
-              instances,
+              totalRequests,
+              concurrency,
+              elapsedMs: Number(elapsedMs.toFixed(2)),
+              requestsPerSecond: Number(((results.length / elapsedMs) * 1000).toFixed(2)),
+              statuses: Object.fromEntries(
+                [...new Set(results.map((r) => r.status))].sort((a, b) => a - b).map((status) => [String(status), results.filter((r) => r.status === status).length]),
+              ),
               latencyMs: {
-                p50: Number(percentile(0.50).toFixed(2)),
-                p95: Number(percentile(0.95).toFixed(2)),
-                p99: Number(percentile(0.99).toFixed(2)),
-                max: Number(Math.max(...sorted, 0).toFixed(2)),
+                p50: Number(percentile(latencies, 0.50).toFixed(2)),
+                p95: Number(percentile(latencies, 0.95).toFixed(2)),
+                p99: Number(percentile(latencies, 0.99).toFixed(2)),
+                max: Number(Math.max(...latencies, 0).toFixed(2)),
               },
-              errors: results.filter((r) => r.error).slice(0, 10),
+              byEndpoint: Object.fromEntries(endpoints.map((endpoint) => {
+                const values = results.filter((r) => r.endpoint === endpoint).map((r) => r.latencyMs).sort((a, b) => a - b);
+                return [endpoint, {
+                  requests: values.length,
+                  p50: Number(percentile(values, 0.50).toFixed(2)),
+                  p95: Number(percentile(values, 0.95).toFixed(2)),
+                  p99: Number(percentile(values, 0.99).toFixed(2)),
+                  max: Number(Math.max(...values, 0).toFixed(2)),
+                }];
+              })),
+              errors: results.filter((r) => r.error).slice(0, 20),
             };
           }
 
+          async function curlTiming(endpoint) {
+            const { execFile } = await import('node:child_process');
+            const { promisify } = await import('node:util');
+            const exec = promisify(execFile);
+            const url = `${baseUrl}${endpoint}`;
+            try {
+              const { stdout } = await exec('curl', [
+                '--silent', '--show-error', '--output', '/dev/null', '--write-out',
+                '%{http_code} %{time_namelookup} %{time_connect} %{time_appconnect} %{time_starttransfer} %{time_total}',
+                '--max-time', '20', url,
+              ]);
+              const [status, dns, connect, tls, startTransfer, total] = stdout.trim().split(/\s+/).map(Number);
+              return { endpoint, status, dnsMs: dns * 1000, connectMs: connect * 1000, tlsMs: tls * 1000, startTransferMs: startTransfer * 1000, totalMs: total * 1000 };
+            } catch (error) {
+              return { endpoint, error: error?.message || String(error) };
+            }
+          }
+
           const warmup = [];
-          for (const endpoint of endpoints) warmup.push(await one(endpoint));
-          const perEndpoint = {};
-          for (const endpoint of endpoints) perEndpoint[endpoint] = await runEndpoint(endpoint);
+          for (const endpoint of endpoints) warmup.push(await fetchOne(endpoint));
+          const mixed = await runMixed(500, 50);
+          const curlTimingSamples = [];
+          for (const endpoint of endpoints) {
+            for (let i = 0; i < 3; i += 1) curlTimingSamples.push(await curlTiming(endpoint));
+          }
 
           const metricsSamples = [];
           if (metricsToken) {
-            for (let i = 0; i < 12; i += 1) {
+            for (let i = 0; i < 6; i += 1) {
               const response = await fetch(`${baseUrl}/metrics`, {
                 headers: { 'x-metrics-token': metricsToken, 'Cache-Control': 'no-cache' },
               });
               const body = await response.json();
               metricsSamples.push({
                 status: response.status,
-                instanceId: response.headers.get('x-instance-id') || null,
                 route: body?.routes?.['GET /api/v1/jobs'] || null,
                 slowestRoutes: body?.slowestRoutes || null,
                 latency: body?.latency || null,
@@ -121,11 +151,12 @@ jobs:
           }
 
           const report = {
-            schemaVersion: 1,
+            schemaVersion: 2,
             target: baseUrl,
-            workload: { requestsPerEndpoint, concurrency, endpoints },
+            workload: { endpoints, totalRequests: 500, concurrency: 50 },
             warmup,
-            perEndpoint,
+            mixed,
+            curlTimingSamples,
             metricsSamples,
           };
           await fs.writeFile('artifacts/perf-diagnostic/staging-perf-diagnostic.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
