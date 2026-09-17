@@ -1,289 +1,283 @@
-name: HOPE Bootstrap From Latest ZIP
+#!/usr/bin/env bash
 
-on:
-  workflow_dispatch:
+set -Eeuo pipefail
 
-permissions:
-  contents: write
+###############################################################################
+# HOPE Repository Bootstrap
+#
+# Purpose:
+#   Locate the project ZIP inside the repository, extract it, and synchronize
+#   its complete contents into the repository root.
+#
+# Usage:
+#   ./bootstrap.sh
+#
+# Optional:
+#   ZIP_NAME="HOPE-V8-clean-source-with-certification-scorecards.zip" ./bootstrap.sh
+###############################################################################
 
-jobs:
-  bootstrap:
-    name: Extract Latest ZIP Into Main
-    runs-on: ubuntu-latest
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$SCRIPT_DIR"
 
-    steps:
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
 
-      # ============================================================
-      # 1. CHECKOUT MAIN WITH PAT
-      # ============================================================
+ZIP_NAME="${ZIP_NAME:-}"
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          repository: amirdavodpour-stack/2
-          ref: main
-          token: ${{ secrets.PAT_TOKEN }}
-          fetch-depth: 0
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hope-bootstrap.XXXXXX")"
 
-      # ============================================================
-      # 2. FIND LATEST ZIP
-      # ============================================================
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
 
-      - name: Find latest ZIP
-        shell: bash
-        run: |
-          set -euo pipefail
+trap cleanup EXIT
 
-          echo "Searching for ZIP files..."
+log() {
+    printf '\n[%s] %s\n' "BOOTSTRAP" "$*"
+}
 
-          ZIP_FILE="$(
-            find . \
-              -type f \
-              -iname '*.zip' \
-              -not -path './.git/*' \
-              -printf '%T@ %p\n' \
-              | sort -nr \
-              | awk 'NR==1 {sub(/^[^ ]+ /, ""); print; exit}'
-          )"
+fail() {
+    printf '\n[BOOTSTRAP ERROR] %s\n' "$*" >&2
+    exit 1
+}
 
-          if [ -z "${ZIP_FILE}" ]; then
-            echo "ERROR: No ZIP file found."
-            exit 1
-          fi
+# ---------------------------------------------------------------------------
+# Repository validation
+# ---------------------------------------------------------------------------
 
-          echo "Latest ZIP:"
-          echo "${ZIP_FILE}"
+cd "$REPO_ROOT"
 
-          echo "ZIP_FILE=${ZIP_FILE}" >> "$GITHUB_ENV"
+if [[ ! -d "$REPO_ROOT/.git" ]]; then
+    fail "Repository root not found: $REPO_ROOT"
+fi
 
-      # ============================================================
-      # 3. PREPARE TEMP DIRECTORY
-      # ============================================================
+log "Repository root: $REPO_ROOT"
 
-      - name: Prepare extraction directory
-        shell: bash
-        run: |
-          set -euo pipefail
+# ---------------------------------------------------------------------------
+# Locate ZIP
+# ---------------------------------------------------------------------------
 
-          rm -rf /tmp/hope-bootstrap
-          mkdir -p /tmp/hope-bootstrap
+log "Searching for project ZIP..."
 
-      # ============================================================
-      # 4. EXTRACT ZIP
-      # ============================================================
+ZIP_FILE=""
 
-      - name: Extract latest ZIP
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "Extracting:"
-          echo "${ZIP_FILE}"
-
-          unzip -q "${ZIP_FILE}" -d /tmp/hope-bootstrap
-
-          echo
-          echo "Extraction completed."
-
-          echo
-          echo "Top extracted files:"
-
-          find /tmp/hope-bootstrap \
-            -maxdepth 3 \
+if [[ -n "$ZIP_NAME" ]]; then
+    while IFS= read -r -d '' candidate; do
+        ZIP_FILE="$candidate"
+        break
+    done < <(
+        find "$REPO_ROOT" \
             -type f \
-            -print \
-            > /tmp/hope-extracted-files.txt
+            -name "$ZIP_NAME" \
+            -not -path "$REPO_ROOT/.git/*" \
+            -print0
+    )
 
-          sed -n '1,100p' /tmp/hope-extracted-files.txt
-
-          echo
-          echo "Total extracted files:"
-          wc -l < /tmp/hope-extracted-files.txt
-
-      # ============================================================
-      # 5. FIND FLUTTER PROJECT ROOT
-      # ============================================================
-
-      - name: Detect Flutter project root
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          PROJECT_ROOT="$(
-            find /tmp/hope-bootstrap \
-              -type f \
-              -name 'pubspec.yaml' \
-              -print \
-              | awk 'NR==1 {print; exit}' \
-              | xargs -r dirname
-          )"
-
-          if [ -z "${PROJECT_ROOT}" ]; then
-            echo "ERROR: pubspec.yaml not found."
-            echo
-            echo "Extracted files:"
-            find /tmp/hope-bootstrap \
-              -maxdepth 4 \
-              -type f \
-              -print \
-              > /tmp/hope-all-files.txt
-
-            sed -n '1,300p' /tmp/hope-all-files.txt
-
-            exit 1
-          fi
-
-          echo "Detected Flutter project:"
-          echo "${PROJECT_ROOT}"
-
-          echo "PROJECT_ROOT=${PROJECT_ROOT}" >> "$GITHUB_ENV"
-
-      # ============================================================
-      # 6. SHOW PROJECT CONTENT
-      # ============================================================
-
-      - name: Inspect project
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "Project root:"
-          echo "${PROJECT_ROOT}"
-
-          echo
-          echo "Project files:"
-
-          find "${PROJECT_ROOT}" \
-            -maxdepth 2 \
+    [[ -n "$ZIP_FILE" ]] || fail "ZIP '$ZIP_NAME' was not found."
+else
+    mapfile -d '' ZIP_CANDIDATES < <(
+        find "$REPO_ROOT" \
             -type f \
-            -print \
-            > /tmp/hope-project-files.txt
+            \( -iname "*.zip" \) \
+            -not -path "$REPO_ROOT/.git/*" \
+            -print0
+    )
 
-          sed -n '1,300p' /tmp/hope-project-files.txt
+    if [[ "${#ZIP_CANDIDATES[@]}" -eq 0 ]]; then
+        fail "No ZIP file was found inside the repository."
+    fi
 
-      # ============================================================
-      # 7. CLEAN MAIN
-      # ============================================================
+    if [[ "${#ZIP_CANDIDATES[@]}" -gt 1 ]]; then
+        echo
+        echo "Multiple ZIP files were found:"
+        echo
 
-      - name: Clean main branch
-        shell: bash
-        run: |
-          set -euo pipefail
+        for i in "${!ZIP_CANDIDATES[@]}"; do
+            printf '  [%d] %s\n' "$((i + 1))" "${ZIP_CANDIDATES[$i]#$REPO_ROOT/}"
+        done
 
-          echo "Cleaning repository working tree..."
+        echo
+        fail "Set ZIP_NAME to explicitly select the project ZIP."
+    fi
 
-          find . \
-            -mindepth 1 \
-            -maxdepth 1 \
-            ! -name '.git' \
-            -exec rm -rf {} +
+    ZIP_FILE="${ZIP_CANDIDATES[0]}"
+fi
 
-          echo "Main branch cleaned."
+log "Using ZIP:"
+log "  ${ZIP_FILE#$REPO_ROOT/}"
 
-      # ============================================================
-      # 8. COPY PROJECT INTO MAIN
-      # ============================================================
+# ---------------------------------------------------------------------------
+# ZIP integrity check
+# ---------------------------------------------------------------------------
 
-      - name: Copy project
-        shell: bash
-        run: |
-          set -euo pipefail
+log "Checking ZIP integrity..."
 
-          echo "Copying project from:"
-          echo "${PROJECT_ROOT}"
+unzip -t "$ZIP_FILE" >/dev/null \
+    || fail "ZIP integrity check failed."
 
-          cp -a "${PROJECT_ROOT}/." .
+# ---------------------------------------------------------------------------
+# Extract
+# ---------------------------------------------------------------------------
 
-          echo
-          echo "Project copied successfully."
+EXTRACT_DIR="$TMP_DIR/extracted"
 
-          if [ ! -f pubspec.yaml ]; then
-            echo "ERROR: pubspec.yaml missing after copy."
-            exit 1
-          fi
+mkdir -p "$EXTRACT_DIR"
 
-      # ============================================================
-      # 9. REMOVE ZIP FILES
-      # ============================================================
+log "Extracting ZIP..."
 
-      - name: Remove ZIP files
-        shell: bash
-        run: |
-          set -euo pipefail
+unzip -q "$ZIP_FILE" -d "$EXTRACT_DIR" \
+    || fail "ZIP extraction failed."
 
-          find . \
-            -type f \
-            -iname '*.zip' \
-            -not -path './.git/*' \
-            -delete
+# ---------------------------------------------------------------------------
+# Detect archive layout
+# ---------------------------------------------------------------------------
 
-          echo "ZIP files removed from repository tree."
+log "Analyzing archive layout..."
 
-      # ============================================================
-      # 10. VERIFY FINAL PROJECT
-      # ============================================================
+shopt -s nullglob dotglob
 
-      - name: Verify final project
-        shell: bash
-        run: |
-          set -euo pipefail
+TOP_LEVEL_ITEMS=("$EXTRACT_DIR"/*)
 
-          echo "===== FINAL ROOT ====="
-          ls -la
+if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 0 ]]; then
+    fail "ZIP is empty."
+fi
 
-          echo
-          echo "===== PUBSPEC ====="
-          ls -lh pubspec.yaml
+SOURCE_ROOT="$EXTRACT_DIR"
 
-          echo
-          echo "===== GIT STATUS ====="
-          git status --short
+# Detect the common case:
+#
+# archive.zip
+#   └── project/
+#       ├── lib/
+#       ├── backend/
+#       └── pubspec.yaml
+#
+# In that case we want project/*, not project/ itself.
+if [[ "${#TOP_LEVEL_ITEMS[@]}" -eq 1 && -d "${TOP_LEVEL_ITEMS[0]}" ]]; then
+    POSSIBLE_ROOT="${TOP_LEVEL_ITEMS[0]}"
 
-      # ============================================================
-      # 11. CONFIGURE GIT
-      # ============================================================
+    INNER_ITEMS=("$POSSIBLE_ROOT"/*)
 
-      - name: Configure Git
-        shell: bash
-        run: |
-          set -euo pipefail
+    if [[ "${#INNER_ITEMS[@]}" -gt 0 ]]; then
+        SOURCE_ROOT="$POSSIBLE_ROOT"
+    fi
+fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+log "Archive source root:"
+log "  ${SOURCE_ROOT#$TMP_DIR/}"
 
-      # ============================================================
-      # 12. COMMIT
-      # ============================================================
+# ---------------------------------------------------------------------------
+# Safety validation
+# ---------------------------------------------------------------------------
 
-      - name: Commit project
-        shell: bash
-        run: |
-          set -euo pipefail
+log "Validating archive paths..."
 
-          git add -A
+while IFS= read -r -d '' file; do
+    relative="${file#$SOURCE_ROOT/}"
 
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
+    if [[ "$relative" == "../"* || "$relative" == *"/../"* ]]; then
+        fail "Unsafe archive path detected: $relative"
+    fi
 
-          git commit \
-            -m "Bootstrap HOPE project from latest ZIP"
+    if [[ "$relative" == /* ]]; then
+        fail "Absolute archive path detected: $relative"
+    fi
+done < <(find "$SOURCE_ROOT" -print0)
 
-      # ============================================================
-      # 13. PUSH TO MAIN
-      # ============================================================
+# ---------------------------------------------------------------------------
+# Synchronize archive contents into repository root
+# ---------------------------------------------------------------------------
 
-      - name: Push to main
-        shell: bash
-        run: |
-          set -euo pipefail
+log "Synchronizing archive contents into repository root..."
 
-          git push origin HEAD:main
+# rsync is preferred because it correctly handles:
+#   - hidden files
+#   - directories
+#   - executable permissions
+#   - timestamps
+#   - nested structures
+#
+# IMPORTANT:
+#   --delete is intentionally NOT used.
+#
+# This means files already present in main but not present in the ZIP are
+# NOT deleted. This protects the repository from accidental source loss.
 
-          echo
-          echo "=========================================="
-          echo "BOOTSTRAP COMPLETED SUCCESSFULLY"
-          echo "=========================================="
+if command -v rsync >/dev/null 2>&1; then
 
-          git log -1 --oneline
+    rsync -a \
+        --exclude='.git/' \
+        "$SOURCE_ROOT/" \
+        "$REPO_ROOT/"
+
+else
+
+    log "rsync unavailable; using cp fallback."
+
+    cp -a "$SOURCE_ROOT"/. "$REPO_ROOT"/
+fi
+
+# ---------------------------------------------------------------------------
+# Never leave the bootstrap ZIP inside the resulting source tree
+# ---------------------------------------------------------------------------
+
+log "Removing bootstrap ZIP from repository working tree..."
+
+rm -f "$ZIP_FILE"
+
+# ---------------------------------------------------------------------------
+# Verification
+# ---------------------------------------------------------------------------
+
+log "Running post-bootstrap verification..."
+
+if [[ ! -f "$REPO_ROOT/pubspec.yaml" ]]; then
+    log "WARNING: pubspec.yaml was not found."
+fi
+
+if [[ -d "$REPO_ROOT/lib" ]]; then
+    log "Flutter source detected."
+fi
+
+if [[ -d "$REPO_ROOT/test" ]]; then
+    log "Flutter tests detected."
+fi
+
+if [[ -d "$REPO_ROOT/integration_test" ]]; then
+    log "Integration tests detected."
+fi
+
+if [[ -d "$REPO_ROOT/backend" ]]; then
+    log "Backend source detected."
+fi
+
+# ---------------------------------------------------------------------------
+# Git status
+# ---------------------------------------------------------------------------
+
+log "Bootstrap completed."
+
+echo
+echo "============================================================"
+echo " HOPE BOOTSTRAP COMPLETE"
+echo "============================================================"
+echo
+echo "Repository:"
+echo "  $REPO_ROOT"
+echo
+echo "Source:"
+echo "  ${SOURCE_ROOT#$TMP_DIR/}"
+echo
+echo "ZIP:"
+echo "  $(basename "$ZIP_FILE")"
+echo
+echo "Git status:"
+echo "------------------------------------------------------------"
+
+git status --short
+
+echo
+echo "============================================================"
+echo " The ZIP contents have been placed into repository root."
+echo "============================================================"
