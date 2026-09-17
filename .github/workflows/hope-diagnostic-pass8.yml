@@ -11,7 +11,12 @@ permissions:
 
 jobs:
   diagnostic:
-    if: ${{ !startsWith(github.event.head_commit.message || '', '[CI-DIAGNOSTIC]') && !startsWith(github.event.head_commit.message || '', '[CI-AUTOPASS]') }}
+    if: >-
+      !startsWith(github.event.head_commit.message || '', '[CI-DIAGNOSTIC]') &&
+      !startsWith(github.event.head_commit.message || '', '[CI-AUTOPASS]') &&
+      !startsWith(github.event.head_commit.message || '', '[CI-VERIFY]') &&
+      !startsWith(github.event.head_commit.message || '', '[CI-FIX]') &&
+      !startsWith(github.event.head_commit.message || '', '[CI-CLEANUP]')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -50,21 +55,16 @@ jobs:
               p.write_text(new, encoding='utf-8')
               print(f'patched: {path}')
 
-          # Fix the shared hero's fixed-height overflow on desktop/test viewports.
           replace_line(
               'lib/core/ui/premium_components.dart',
               r"^\s*final heroHeight = compact \? height\.clamp\(300\.0, 420\.0\)\.toDouble\(\) : height;\s*$",
               "    final heroHeight = compact\n        ? height.clamp(300.0, 420.0).toDouble()\n        : (height < 320 ? 320.0 : height);",
           )
-
-          # Ensure Material descendants such as ListTile receive a Material surface.
           replace_line(
               'lib/core/ui/premium_components.dart',
               r"^\s*child: child,\s*$",
               "      child: Material(type: MaterialType.transparency, child: child),",
           )
-
-          # Expose the coordinated job lifecycle on the transaction surface.
           replace_line(
               'lib/features/transactions/transaction_widgets.part.dart',
               r"(?ms)^(\s*)if \(job != null\)\n\s*Text\(job\.title,\n\s*style: Theme\.of\(context\)\.textTheme\.headlineSmall\),\n\s*const SizedBox\(height: 6\),$",
