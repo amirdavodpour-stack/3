@@ -1027,7 +1027,7 @@
   "@copy_users_200338b": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_value_irr_ed45261": "$value TOMAN",
+  "copy_value_irr_ed45261": "{value} TOMAN",
   "@copy_value_irr_ed45261": {
     "description": "UI copy migrated from manual bilingual text.",
     "placeholders": {

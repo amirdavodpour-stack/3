@@ -226,8 +226,8 @@ void main() {
     expect(find.textContaining('30% of the candidate'), findsOneWidget);
 
     // JOB published without a deadline is rejected by the dedicated guard.
-    await tester
-        .enterText(find.widgetWithText(TextField, 'Title'), 'Flutter developer');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Title'), 'Flutter developer');
     await tester.enterText(find.widgetWithText(TextField, 'Full description'),
         'Build and ship the mobile application');
     // Child categories are rendered with a '  ↳ ' indent prefix.
@@ -242,8 +242,15 @@ void main() {
     expect(repo.calls, isEmpty);
 
     // With a deadline the job publishes.
-    await tester.enterText(
-        find.widgetWithText(TextField, 'Application deadline'), '2026-09-30');
+    await tester.tap(find.widgetWithText(TextField, 'Application deadline'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+    await tester.tap(find.text('30').last);
+    await tester.pumpAndSettle();
+    if (find.text('OK').evaluate().isNotEmpty) {
+      await tester.tap(find.text('OK').last);
+      await tester.pumpAndSettle();
+    }
     await tester.ensureVisible(find.text('Publish opportunity'));
     await tester.tap(find.text('Publish opportunity'));
     await tester.pumpAndSettle();
@@ -266,12 +273,11 @@ void main() {
     expect(submitArea, findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsWidgets);
 
-    repo.createGate!
-        .complete(HopeJob.fromMap({
-          'id': 'job-new',
-          'title': 'Design a landing page',
-          'status': 'PUBLISHED',
-        }));
+    repo.createGate!.complete(HopeJob.fromMap({
+      'id': 'job-new',
+      'title': 'Design a landing page',
+      'status': 'PUBLISHED',
+    }));
     await tester.pumpAndSettle();
     expect(find.text('Opportunity published.'), findsOneWidget);
     expect(repo.calls, contains('publish:job-new'));

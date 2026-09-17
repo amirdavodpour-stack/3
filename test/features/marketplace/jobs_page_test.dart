@@ -243,10 +243,11 @@ void main() {
 
     // Open the category picker via the chip showing the default "all
     // fields" label, and pick the "design" category by its localized name.
-    await tester.tap(find.text('همه حوزه‌ها'));
+    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
-    expect(find.text('طراحی'), findsOneWidget); // category option in sheet
-    await tester.tap(find.text('طراحی'));
+    expect(find.widgetWithText(ListTile, 'طراحی'),
+        findsOneWidget); // category option in sheet
+    await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
     // The chip must show the localized category name, not the raw slug
@@ -266,14 +267,14 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('همه حوزه‌ها'));
+    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('طراحی'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('طراحی')); // reopen picker via updated chip
     await tester.pumpAndSettle();
-    await tester.tap(find.text('همه حوزه‌ها'));
+    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
 
     expect(find.text('طراحی اپ'), findsOneWidget);
