@@ -1,6 +1,15 @@
 ### test/features/home/home_page_navigation_test.dart
 FAIL (exit=1)
 ```text
+
+::group::❌ member drawer shows account entries and hides admin panel (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+The finder "Found 0 widgets with widget matching predicate: []" (used in a call to "tap()") could
+not find any matching widgets.
+
+When the exception was thrown, this was the stack:
+#0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2095:7)
 #1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
 #2      WidgetController.tap (package:flutter_test/src/controller.dart:1080:7)
 #3      main.<anonymous closure> (file:///home/runner/work/3/3/test/features/home/home_page_navigation_test.dart:171:18)
@@ -97,183 +106,14 @@ Test failed. See exception logs above.
 The test description was: drawer language toggle switches the app locale
 
 ::endgroup::
-::group::❌ bottom navigation switches tabs and shows profile scaffold (failed)
-══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞═════════════════════════════════════════════════════════
-The following assertion was thrown:
-ListTile background color or ink splashes may be invisible.
-The ListTile is wrapped in a DecoratedBox that has a background color. Because ListTile paints its
-background and ink splashes on the nearest Material ancestor, this DecoratedBox will hide those
-effects.
-To fix this, wrap the ListTile in its own Material widget, or remove the background color from the
-intermediate DecoratedBox.
-
-ListTile: ListTile(onTap: Closure: () => void)
-DecoratedBox: DecoratedBox(bg:
-    BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), border: Border.all(BorderSide(color: Color(alpha: 1.0000, red: 0.8980, green: 0.8863, blue: 0.9255, colorSpace: ColorSpace.sRGB))), borderRadius: BorderRadius.circular(22.0),
-      boxShadow: [BoxShadow(Color(alpha: 0.0510, red: 0.1059, green:
-        0.0863, blue: 0.2196, colorSpace: ColorSpace.sRGB), Offset(0.0,
-        12.0), 28.0, 0.0, BlurStyle.normal)]
-      )
-  )
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞═════════════════════════════════════════════════════════
-The following assertion was thrown:
-ListTile background color or ink splashes may be invisible.
-The ListTile is wrapped in a DecoratedBox that has a background color. Because ListTile paints its
-background and ink splashes on the nearest Material ancestor, this DecoratedBox will hide those
-effects.
-To fix this, wrap the ListTile in its own Material widget, or remove the background color from the
-intermediate DecoratedBox.
-
-ListTile: ListTile(onTap: Closure: () => void)
-DecoratedBox: DecoratedBox(bg:
-    BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), border: Border.all(BorderSide(color: Color(alpha: 1.0000, red: 0.8980, green: 0.8863, blue: 0.9255, colorSpace: ColorSpace.sRGB))), borderRadius: BorderRadius.circular(22.0),
-      boxShadow: [BoxShadow(Color(alpha: 0.0510, red: 0.1059, green:
-        0.0863, blue: 0.2196, colorSpace: ColorSpace.sRGB), Offset(0.0,
-        12.0), 28.0, 0.0, BlurStyle.normal)]
-      )
-  )
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞═════════════════════════════════════════════════════════
-The following assertion was thrown:
-ListTile background color or ink splashes may be invisible.
-The ListTile is wrapped in a DecoratedBox that has a background color. Because ListTile paints its
-background and ink splashes on the nearest Material ancestor, this DecoratedBox will hide those
-effects.
-To fix this, wrap the ListTile in its own Material widget, or remove the background color from the
-intermediate DecoratedBox.
-
-ListTile: ListTile(onTap: Closure: () => void)
-DecoratedBox: DecoratedBox(bg:
-    BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), border: Border.all(BorderSide(color: Color(alpha: 1.0000, red: 0.8980, green: 0.8863, blue: 0.9255, colorSpace: ColorSpace.sRGB))), borderRadius: BorderRadius.circular(22.0),
-      boxShadow: [BoxShadow(Color(alpha: 0.0510, red: 0.1059, green:
-        0.0863, blue: 0.2196, colorSpace: ColorSpace.sRGB), Offset(0.0,
-        12.0), 28.0, 0.0, BlurStyle.normal)]
-      )
-  )
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞═════════════════════════════════════════════════════════
-The following assertion was thrown:
-ListTile background color or ink splashes may be invisible.
-The ListTile is wrapped in a DecoratedBox that has a background color. Because ListTile paints its
-background and ink splashes on the nearest Material ancestor, this DecoratedBox will hide those
-effects.
-To fix this, wrap the ListTile in its own Material widget, or remove the background color from the
-intermediate DecoratedBox.
-
-ListTile: ListTile(onTap: Closure: () => void)
-DecoratedBox: DecoratedBox(bg:
-    BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), border: Border.all(BorderSide(color: Color(alpha: 1.0000, red: 0.8980, green: 0.8863, blue: 0.9255, colorSpace: ColorSpace.sRGB))), borderRadius: BorderRadius.circular(22.0),
-      boxShadow: [BoxShadow(Color(alpha: 0.0510, red: 0.1059, green:
-        0.0863, blue: 0.2196, colorSpace: ColorSpace.sRGB), Offset(0.0,
-        12.0), 28.0, 0.0, BlurStyle.normal)]
-      )
-  )
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following message was thrown:
-Multiple exceptions (4) were detected during the running of the current test, and at least one was
-unexpected.
-════════════════════════════════════════════════════════════════════════════════════════════════════
-Test failed. See exception logs above.
-The test description was: bottom navigation switches tabs and shows profile scaffold
-
+::group::✅ Passing tests
+✅ bottom navigation switches tabs and shows profile scaffold
 ::endgroup::
 
-::error::0 tests passed, 5 failed.
+::error::1 test passed, 4 failed.
 ```
 ### test/features/profile/profile_page_test.dart
-FAIL (exit=1)
-```text
-
-::group::✅ Passing tests
-✅ guest profile explains sign-in requirement
-::endgroup::
-::group::❌ authenticated profile displays account and provider data (failed)
-══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞═════════════════════════════════════════════════════════
-The following assertion was thrown:
-ListTile background color or ink splashes may be invisible.
-The ListTile is wrapped in a DecoratedBox that has a background color. Because ListTile paints its
-background and ink splashes on the nearest Material ancestor, this DecoratedBox will hide those
-effects.
-To fix this, wrap the ListTile in its own Material widget, or remove the background color from the
-intermediate DecoratedBox.
-
-ListTile: ListTile(onTap: Closure: () => void)
-DecoratedBox: DecoratedBox(bg:
-    BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), border: Border.all(BorderSide(color: Color(alpha: 1.0000, red: 0.8980, green: 0.8863, blue: 0.9255, colorSpace: ColorSpace.sRGB))), borderRadius: BorderRadius.circular(22.0),
-      boxShadow: [BoxShadow(Color(alpha: 0.0510, red: 0.1059, green:
-        0.0863, blue: 0.2196, colorSpace: ColorSpace.sRGB), Offset(0.0,
-        12.0), 28.0, 0.0, BlurStyle.normal)]
-      )
-  )
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞═════════════════════════════════════════════════════════
-The following assertion was thrown:
-ListTile background color or ink splashes may be invisible.
-The ListTile is wrapped in a DecoratedBox that has a background color. Because ListTile paints its
-background and ink splashes on the nearest Material ancestor, this DecoratedBox will hide those
-effects.
-To fix this, wrap the ListTile in its own Material widget, or remove the background color from the
-intermediate DecoratedBox.
-
-ListTile: ListTile(onTap: Closure: () => void)
-DecoratedBox: DecoratedBox(bg:
-    BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), border: Border.all(BorderSide(color: Color(alpha: 1.0000, red: 0.8980, green: 0.8863, blue: 0.9255, colorSpace: ColorSpace.sRGB))), borderRadius: BorderRadius.circular(22.0),
-      boxShadow: [BoxShadow(Color(alpha: 0.0510, red: 0.1059, green:
-        0.0863, blue: 0.2196, colorSpace: ColorSpace.sRGB), Offset(0.0,
-        12.0), 28.0, 0.0, BlurStyle.normal)]
-      )
-  )
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞═════════════════════════════════════════════════════════
-The following assertion was thrown:
-ListTile background color or ink splashes may be invisible.
-The ListTile is wrapped in a DecoratedBox that has a background color. Because ListTile paints its
-background and ink splashes on the nearest Material ancestor, this DecoratedBox will hide those
-effects.
-To fix this, wrap the ListTile in its own Material widget, or remove the background color from the
-intermediate DecoratedBox.
-
-ListTile: ListTile(onTap: Closure: () => void)
-DecoratedBox: DecoratedBox(bg:
-    BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), border: Border.all(BorderSide(color: Color(alpha: 1.0000, red: 0.8980, green: 0.8863, blue: 0.9255, colorSpace: ColorSpace.sRGB))), borderRadius: BorderRadius.circular(22.0),
-      boxShadow: [BoxShadow(Color(alpha: 0.0510, red: 0.1059, green:
-        0.0863, blue: 0.2196, colorSpace: ColorSpace.sRGB), Offset(0.0,
-        12.0), 28.0, 0.0, BlurStyle.normal)]
-      )
-  )
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞═════════════════════════════════════════════════════════
-The following assertion was thrown:
-ListTile background color or ink splashes may be invisible.
-The ListTile is wrapped in a DecoratedBox that has a background color. Because ListTile paints its
-background and ink splashes on the nearest Material ancestor, this DecoratedBox will hide those
-effects.
-To fix this, wrap the ListTile in its own Material widget, or remove the background color from the
-intermediate DecoratedBox.
-
-ListTile: ListTile(onTap: Closure: () => void)
-DecoratedBox: DecoratedBox(bg:
-    BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), border: Border.all(BorderSide(color: Color(alpha: 1.0000, red: 0.8980, green: 0.8863, blue: 0.9255, colorSpace: ColorSpace.sRGB))), borderRadius: BorderRadius.circular(22.0),
-      boxShadow: [BoxShadow(Color(alpha: 0.0510, red: 0.1059, green:
-        0.0863, blue: 0.2196, colorSpace: ColorSpace.sRGB), Offset(0.0,
-        12.0), 28.0, 0.0, BlurStyle.normal)]
-      )
-  )
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following message was thrown:
-Multiple exceptions (4) were detected during the running of the current test, and at least one was
-unexpected.
-════════════════════════════════════════════════════════════════════════════════════════════════════
-Test failed. See exception logs above.
-The test description was: authenticated profile displays account and provider data
-
-::endgroup::
-
-::error::1 test passed, 1 failed.
-```
+PASS
 ### test/features/transactions/transaction_page_test.dart
 FAIL (exit=1)
 ```text
@@ -404,11 +244,11 @@ To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to 
 
 
 Warning: A call to drag() with finder "Found 1 widget with type "Scrollable": [
-  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#3bd97]], state: ScrollableState#56be3(position: ScrollPositionWithSingleContext#cd5f5(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#1ff6e, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
+  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#90974]], state: ScrollableState#6386b(position: ScrollPositionWithSingleContext#04475(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#e3fe6, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
 ]" derived an Offset (Offset(450.0, 56.0)) that would not hit test on the specified widget.
 Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
-The finder corresponds to this RenderBox: RenderClipRect#fc53c relayoutBoundary=up3
-The hit test result at that offset is: HitTestResult(_RenderInkFeatures#a66ba@Offset(450.0, 56.0), RenderPhysicalModel#25589@Offset(450.0, 56.0), RenderSemanticsAnnotations#860ca@Offset(450.0, 56.0), RenderRepaintBoundary#1e7c3@Offset(450.0, 56.0), RenderIgnorePointer#9ae10@Offset(450.0, 56.0), RenderAnimatedOpacity#1f36e@Offset(450.0, 56.0), RenderAnimatedOpacity#bcf82@Offset(450.0, 56.0), _RenderColoredBox#73047@Offset(450.0, 56.0), RenderAnimatedOpacity#57634@Offset(450.0, 56.0), RenderIgnorePointer#64288@Offset(450.0, 56.0), RenderAnimatedOpacity#6f966@Offset(450.0, 56.0), RenderRepaintBoundary#39626@Offset(450.0, 56.0), RenderSemanticsAnnotations#99828@Offset(450.0, 56.0), RenderOffstage#1d9e8@Offset(450.0, 56.0), RenderSemanticsAnnotations#b52f0@Offset(450.0, 56.0), _RenderTheater#bc940@Offset(450.0, 56.0), RenderAbsorbPointer#86e27@Offset(450.0, 56.0), RenderPointerListener#91d39@Offset(450.0, 56.0), RenderSemanticsAnnotations#94cfb@Offset(450.0, 56.0), RenderCustomPaint#9d8eb@Offset(450.0, 56.0), RenderSemanticsAnnotations#0cb62@Offset(450.0, 56.0), RenderSemanticsAnnotations#3728b@Offset(450.0, 56.0), RenderSemanticsAnnotations#cfcf7@Offset(450.0, 56.0), RenderTapRegionSurface#4a56d@Offset(450.0, 56.0), RenderSemanticsAnnotations#70a3c@Offset(450.0, 56.0), RenderSemanticsAnnotations#e62a1@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#2922b(_ReusableRenderView#a9fa4), HitTestEntry<HitTestTarget>#ba7ed(<AutomatedTestWidgetsFlutterBinding>))
+The finder corresponds to this RenderBox: RenderClipRect#efa00 relayoutBoundary=up3
+The hit test result at that offset is: HitTestResult(_RenderInkFeatures#f8ef4@Offset(450.0, 56.0), RenderPhysicalModel#9ce7e@Offset(450.0, 56.0), RenderSemanticsAnnotations#22954@Offset(450.0, 56.0), RenderRepaintBoundary#0f56a@Offset(450.0, 56.0), RenderIgnorePointer#4b8fe@Offset(450.0, 56.0), RenderAnimatedOpacity#3c5fd@Offset(450.0, 56.0), RenderAnimatedOpacity#7e554@Offset(450.0, 56.0), _RenderColoredBox#7cf40@Offset(450.0, 56.0), RenderAnimatedOpacity#1d121@Offset(450.0, 56.0), RenderIgnorePointer#bcd08@Offset(450.0, 56.0), RenderAnimatedOpacity#f0a57@Offset(450.0, 56.0), RenderRepaintBoundary#940ac@Offset(450.0, 56.0), RenderSemanticsAnnotations#26428@Offset(450.0, 56.0), RenderOffstage#ad470@Offset(450.0, 56.0), RenderSemanticsAnnotations#b9bc7@Offset(450.0, 56.0), _RenderTheater#3688c@Offset(450.0, 56.0), RenderAbsorbPointer#29138@Offset(450.0, 56.0), RenderPointerListener#d4623@Offset(450.0, 56.0), RenderSemanticsAnnotations#fa8f7@Offset(450.0, 56.0), RenderCustomPaint#9e469@Offset(450.0, 56.0), RenderSemanticsAnnotations#43a80@Offset(450.0, 56.0), RenderSemanticsAnnotations#5885f@Offset(450.0, 56.0), RenderSemanticsAnnotations#deed9@Offset(450.0, 56.0), RenderTapRegionSurface#5caa2@Offset(450.0, 56.0), RenderSemanticsAnnotations#15749@Offset(450.0, 56.0), RenderSemanticsAnnotations#95064@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#16365(_ReusableRenderView#fc497), HitTestEntry<HitTestTarget>#22cd0(<AutomatedTestWidgetsFlutterBinding>))
 #0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2165:25)
 #1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
 #2      WidgetController.drag (package:flutter_test/src/controller.dart:1604:7)
@@ -433,11 +273,11 @@ To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to 
 
 
 Warning: A call to drag() with finder "Found 1 widget with type "Scrollable": [
-  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#3bd97]], state: ScrollableState#56be3(position: ScrollPositionWithSingleContext#cd5f5(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#1ff6e, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
+  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#90974]], state: ScrollableState#6386b(position: ScrollPositionWithSingleContext#04475(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#e3fe6, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
 ]" derived an Offset (Offset(450.0, 56.0)) that would not hit test on the specified widget.
 Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
-The finder corresponds to this RenderBox: RenderClipRect#fc53c relayoutBoundary=up3
-The hit test result at that offset is: HitTestResult(_RenderInkFeatures#a66ba@Offset(450.0, 56.0), RenderPhysicalModel#25589@Offset(450.0, 56.0), RenderSemanticsAnnotations#860ca@Offset(450.0, 56.0), RenderRepaintBoundary#1e7c3@Offset(450.0, 56.0), RenderIgnorePointer#9ae10@Offset(450.0, 56.0), RenderAnimatedOpacity#1f36e@Offset(450.0, 56.0), RenderAnimatedOpacity#bcf82@Offset(450.0, 56.0), _RenderColoredBox#73047@Offset(450.0, 56.0), RenderAnimatedOpacity#57634@Offset(450.0, 56.0), RenderIgnorePointer#64288@Offset(450.0, 56.0), RenderAnimatedOpacity#6f966@Offset(450.0, 56.0), RenderRepaintBoundary#39626@Offset(450.0, 56.0), RenderSemanticsAnnotations#99828@Offset(450.0, 56.0), RenderOffstage#1d9e8@Offset(450.0, 56.0), RenderSemanticsAnnotations#b52f0@Offset(450.0, 56.0), _RenderTheater#bc940@Offset(450.0, 56.0), RenderAbsorbPointer#86e27@Offset(450.0, 56.0), RenderPointerListener#91d39@Offset(450.0, 56.0), RenderSemanticsAnnotations#94cfb@Offset(450.0, 56.0), RenderCustomPaint#9d8eb@Offset(450.0, 56.0), RenderSemanticsAnnotations#0cb62@Offset(450.0, 56.0), RenderSemanticsAnnotations#3728b@Offset(450.0, 56.0), RenderSemanticsAnnotations#cfcf7@Offset(450.0, 56.0), RenderTapRegionSurface#4a56d@Offset(450.0, 56.0), RenderSemanticsAnnotations#70a3c@Offset(450.0, 56.0), RenderSemanticsAnnotations#e62a1@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#8e173(_ReusableRenderView#a9fa4), HitTestEntry<HitTestTarget>#06237(<AutomatedTestWidgetsFlutterBinding>))
+The finder corresponds to this RenderBox: RenderClipRect#efa00 relayoutBoundary=up3
+The hit test result at that offset is: HitTestResult(_RenderInkFeatures#f8ef4@Offset(450.0, 56.0), RenderPhysicalModel#9ce7e@Offset(450.0, 56.0), RenderSemanticsAnnotations#22954@Offset(450.0, 56.0), RenderRepaintBoundary#0f56a@Offset(450.0, 56.0), RenderIgnorePointer#4b8fe@Offset(450.0, 56.0), RenderAnimatedOpacity#3c5fd@Offset(450.0, 56.0), RenderAnimatedOpacity#7e554@Offset(450.0, 56.0), _RenderColoredBox#7cf40@Offset(450.0, 56.0), RenderAnimatedOpacity#1d121@Offset(450.0, 56.0), RenderIgnorePointer#bcd08@Offset(450.0, 56.0), RenderAnimatedOpacity#f0a57@Offset(450.0, 56.0), RenderRepaintBoundary#940ac@Offset(450.0, 56.0), RenderSemanticsAnnotations#26428@Offset(450.0, 56.0), RenderOffstage#ad470@Offset(450.0, 56.0), RenderSemanticsAnnotations#b9bc7@Offset(450.0, 56.0), _RenderTheater#3688c@Offset(450.0, 56.0), RenderAbsorbPointer#29138@Offset(450.0, 56.0), RenderPointerListener#d4623@Offset(450.0, 56.0), RenderSemanticsAnnotations#fa8f7@Offset(450.0, 56.0), RenderCustomPaint#9e469@Offset(450.0, 56.0), RenderSemanticsAnnotations#43a80@Offset(450.0, 56.0), RenderSemanticsAnnotations#5885f@Offset(450.0, 56.0), RenderSemanticsAnnotations#deed9@Offset(450.0, 56.0), RenderTapRegionSurface#5caa2@Offset(450.0, 56.0), RenderSemanticsAnnotations#15749@Offset(450.0, 56.0), RenderSemanticsAnnotations#95064@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#50dad(_ReusableRenderView#fc497), HitTestEntry<HitTestTarget>#f364e(<AutomatedTestWidgetsFlutterBinding>))
 #0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2165:25)
 #1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
 #2      WidgetController.drag (package:flutter_test/src/controller.dart:1604:7)
@@ -462,11 +302,11 @@ To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to 
 
 
 Warning: A call to drag() with finder "Found 1 widget with type "Scrollable": [
-  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#3bd97]], state: ScrollableState#56be3(position: ScrollPositionWithSingleContext#cd5f5(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#1ff6e, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
+  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#90974]], state: ScrollableState#6386b(position: ScrollPositionWithSingleContext#04475(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#e3fe6, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
 ]" derived an Offset (Offset(450.0, 56.0)) that would not hit test on the specified widget.
 Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
-The finder corresponds to this RenderBox: RenderClipRect#fc53c relayoutBoundary=up3
-The hit test result at that offset is: HitTestResult(_RenderInkFeatures#a66ba@Offset(450.0, 56.0), RenderPhysicalModel#25589@Offset(450.0, 56.0), RenderSemanticsAnnotations#860ca@Offset(450.0, 56.0), RenderRepaintBoundary#1e7c3@Offset(450.0, 56.0), RenderIgnorePointer#9ae10@Offset(450.0, 56.0), RenderAnimatedOpacity#1f36e@Offset(450.0, 56.0), RenderAnimatedOpacity#bcf82@Offset(450.0, 56.0), _RenderColoredBox#73047@Offset(450.0, 56.0), RenderAnimatedOpacity#57634@Offset(450.0, 56.0), RenderIgnorePointer#64288@Offset(450.0, 56.0), RenderAnimatedOpacity#6f966@Offset(450.0, 56.0), RenderRepaintBoundary#39626@Offset(450.0, 56.0), RenderSemanticsAnnotations#99828@Offset(450.0, 56.0), RenderOffstage#1d9e8@Offset(450.0, 56.0), RenderSemanticsAnnotations#b52f0@Offset(450.0, 56.0), _RenderTheater#bc940@Offset(450.0, 56.0), RenderAbsorbPointer#86e27@Offset(450.0, 56.0), RenderPointerListener#91d39@Offset(450.0, 56.0), RenderSemanticsAnnotations#94cfb@Offset(450.0, 56.0), RenderCustomPaint#9d8eb@Offset(450.0, 56.0), RenderSemanticsAnnotations#0cb62@Offset(450.0, 56.0), RenderSemanticsAnnotations#3728b@Offset(450.0, 56.0), RenderSemanticsAnnotations#cfcf7@Offset(450.0, 56.0), RenderTapRegionSurface#4a56d@Offset(450.0, 56.0), RenderSemanticsAnnotations#70a3c@Offset(450.0, 56.0), RenderSemanticsAnnotations#e62a1@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#44fa7(_ReusableRenderView#a9fa4), HitTestEntry<HitTestTarget>#0deb6(<AutomatedTestWidgetsFlutterBinding>))
+The finder corresponds to this RenderBox: RenderClipRect#efa00 relayoutBoundary=up3
+The hit test result at that offset is: HitTestResult(_RenderInkFeatures#f8ef4@Offset(450.0, 56.0), RenderPhysicalModel#9ce7e@Offset(450.0, 56.0), RenderSemanticsAnnotations#22954@Offset(450.0, 56.0), RenderRepaintBoundary#0f56a@Offset(450.0, 56.0), RenderIgnorePointer#4b8fe@Offset(450.0, 56.0), RenderAnimatedOpacity#3c5fd@Offset(450.0, 56.0), RenderAnimatedOpacity#7e554@Offset(450.0, 56.0), _RenderColoredBox#7cf40@Offset(450.0, 56.0), RenderAnimatedOpacity#1d121@Offset(450.0, 56.0), RenderIgnorePointer#bcd08@Offset(450.0, 56.0), RenderAnimatedOpacity#f0a57@Offset(450.0, 56.0), RenderRepaintBoundary#940ac@Offset(450.0, 56.0), RenderSemanticsAnnotations#26428@Offset(450.0, 56.0), RenderOffstage#ad470@Offset(450.0, 56.0), RenderSemanticsAnnotations#b9bc7@Offset(450.0, 56.0), _RenderTheater#3688c@Offset(450.0, 56.0), RenderAbsorbPointer#29138@Offset(450.0, 56.0), RenderPointerListener#d4623@Offset(450.0, 56.0), RenderSemanticsAnnotations#fa8f7@Offset(450.0, 56.0), RenderCustomPaint#9e469@Offset(450.0, 56.0), RenderSemanticsAnnotations#43a80@Offset(450.0, 56.0), RenderSemanticsAnnotations#5885f@Offset(450.0, 56.0), RenderSemanticsAnnotations#deed9@Offset(450.0, 56.0), RenderTapRegionSurface#5caa2@Offset(450.0, 56.0), RenderSemanticsAnnotations#15749@Offset(450.0, 56.0), RenderSemanticsAnnotations#95064@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#8b8d3(_ReusableRenderView#fc497), HitTestEntry<HitTestTarget>#f6159(<AutomatedTestWidgetsFlutterBinding>))
 #0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2165:25)
 #1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
 #2      WidgetController.drag (package:flutter_test/src/controller.dart:1604:7)
@@ -491,11 +331,11 @@ To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to 
 
 
 Warning: A call to drag() with finder "Found 1 widget with type "Scrollable": [
-  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#3bd97]], state: ScrollableState#56be3(position: ScrollPositionWithSingleContext#cd5f5(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#1ff6e, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
+  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#90974]], state: ScrollableState#6386b(position: ScrollPositionWithSingleContext#04475(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#e3fe6, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
 ]" derived an Offset (Offset(450.0, 56.0)) that would not hit test on the specified widget.
 Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
-The finder corresponds to this RenderBox: RenderClipRect#fc53c relayoutBoundary=up3
-The hit test result at that offset is: HitTestResult(_RenderInkFeatures#a66ba@Offset(450.0, 56.0), RenderPhysicalModel#25589@Offset(450.0, 56.0), RenderSemanticsAnnotations#860ca@Offset(450.0, 56.0), RenderRepaintBoundary#1e7c3@Offset(450.0, 56.0), RenderIgnorePointer#9ae10@Offset(450.0, 56.0), RenderAnimatedOpacity#1f36e@Offset(450.0, 56.0), RenderAnimatedOpacity#bcf82@Offset(450.0, 56.0), _RenderColoredBox#73047@Offset(450.0, 56.0), RenderAnimatedOpacity#57634@Offset(450.0, 56.0), RenderIgnorePointer#64288@Offset(450.0, 56.0), RenderAnimatedOpacity#6f966@Offset(450.0, 56.0), RenderRepaintBoundary#39626@Offset(450.0, 56.0), RenderSemanticsAnnotations#99828@Offset(450.0, 56.0), RenderOffstage#1d9e8@Offset(450.0, 56.0), RenderSemanticsAnnotations#b52f0@Offset(450.0, 56.0), _RenderTheater#bc940@Offset(450.0, 56.0), RenderAbsorbPointer#86e27@Offset(450.0, 56.0), RenderPointerListener#91d39@Offset(450.0, 56.0), RenderSemanticsAnnotations#94cfb@Offset(450.0, 56.0), RenderCustomPaint#9d8eb@Offset(450.0, 56.0), RenderSemanticsAnnotations#0cb62@Offset(450.0, 56.0), RenderSemanticsAnnotations#3728b@Offset(450.0, 56.0), RenderSemanticsAnnotations#cfcf7@Offset(450.0, 56.0), RenderTapRegionSurface#4a56d@Offset(450.0, 56.0), RenderSemanticsAnnotations#70a3c@Offset(450.0, 56.0), RenderSemanticsAnnotations#e62a1@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#c094c(_ReusableRenderView#a9fa4), HitTestEntry<HitTestTarget>#37d1d(<AutomatedTestWidgetsFlutterBinding>))
+The finder corresponds to this RenderBox: RenderClipRect#efa00 relayoutBoundary=up3
+The hit test result at that offset is: HitTestResult(_RenderInkFeatures#f8ef4@Offset(450.0, 56.0), RenderPhysicalModel#9ce7e@Offset(450.0, 56.0), RenderSemanticsAnnotations#22954@Offset(450.0, 56.0), RenderRepaintBoundary#0f56a@Offset(450.0, 56.0), RenderIgnorePointer#4b8fe@Offset(450.0, 56.0), RenderAnimatedOpacity#3c5fd@Offset(450.0, 56.0), RenderAnimatedOpacity#7e554@Offset(450.0, 56.0), _RenderColoredBox#7cf40@Offset(450.0, 56.0), RenderAnimatedOpacity#1d121@Offset(450.0, 56.0), RenderIgnorePointer#bcd08@Offset(450.0, 56.0), RenderAnimatedOpacity#f0a57@Offset(450.0, 56.0), RenderRepaintBoundary#940ac@Offset(450.0, 56.0), RenderSemanticsAnnotations#26428@Offset(450.0, 56.0), RenderOffstage#ad470@Offset(450.0, 56.0), RenderSemanticsAnnotations#b9bc7@Offset(450.0, 56.0), _RenderTheater#3688c@Offset(450.0, 56.0), RenderAbsorbPointer#29138@Offset(450.0, 56.0), RenderPointerListener#d4623@Offset(450.0, 56.0), RenderSemanticsAnnotations#fa8f7@Offset(450.0, 56.0), RenderCustomPaint#9e469@Offset(450.0, 56.0), RenderSemanticsAnnotations#43a80@Offset(450.0, 56.0), RenderSemanticsAnnotations#5885f@Offset(450.0, 56.0), RenderSemanticsAnnotations#deed9@Offset(450.0, 56.0), RenderTapRegionSurface#5caa2@Offset(450.0, 56.0), RenderSemanticsAnnotations#15749@Offset(450.0, 56.0), RenderSemanticsAnnotations#95064@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#e3597(_ReusableRenderView#fc497), HitTestEntry<HitTestTarget>#403f3(<AutomatedTestWidgetsFlutterBinding>))
 #0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2165:25)
 #1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
 #2      WidgetController.drag (package:flutter_test/src/controller.dart:1604:7)
@@ -520,11 +360,11 @@ To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to 
 
 
 Warning: A call to drag() with finder "Found 1 widget with type "Scrollable": [
-  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#3bd97]], state: ScrollableState#56be3(position: ScrollPositionWithSingleContext#cd5f5(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#1ff6e, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
+  Scrollable(axisDirection: down, physics: AlwaysScrollableScrollPhysics, restorationId: null, dependencies: [InheritedCupertinoTheme, MediaQuery, ScrollConfiguration, UnmanagedRestorationScope, _InheritedTheme, _LocalizationsScope-[GlobalKey#90974]], state: ScrollableState#6386b(position: ScrollPositionWithSingleContext#04475(offset: 0.0, range: 0.0..817.4, viewport: 0.0, ScrollableState, AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics, IdleScrollActivity#e3fe6, ScrollDirection.idle), effective physics: AlwaysScrollableScrollPhysics -> ClampingScrollPhysics -> RangeMaintainingScrollPhysics)),
 ]" derived an Offset (Offset(450.0, 56.0)) that would not hit test on the specified widget.
 Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
-The finder corresponds to this RenderBox: RenderClipRect#fc53c relayoutBoundary=up3
-The hit test result at that offset is: HitTestResult(_RenderInkFeatures#a66ba@Offset(450.0, 56.0), RenderPhysicalModel#25589@Offset(450.0, 56.0), RenderSemanticsAnnotations#860ca@Offset(450.0, 56.0), RenderRepaintBoundary#1e7c3@Offset(450.0, 56.0), RenderIgnorePointer#9ae10@Offset(450.0, 56.0), RenderAnimatedOpacity#1f36e@Offset(450.0, 56.0), RenderAnimatedOpacity#bcf82@Offset(450.0, 56.0), _RenderColoredBox#73047@Offset(450.0, 56.0), RenderAnimatedOpacity#57634@Offset(450.0, 56.0), RenderIgnorePointer#64288@Offset(450.0, 56.0), RenderAnimatedOpacity#6f966@Offset(450.0, 56.0), RenderRepaintBoundary#39626@Offset(450.0, 56.0), RenderSemanticsAnnotations#99828@Offset(450.0, 56.0), RenderOffstage#1d9e8@Offset(450.0, 56.0), RenderSemanticsAnnotations#b52f0@Offset(450.0, 56.0), _RenderTheater#bc940@Offset(450.0, 56.0), RenderAbsorbPointer#86e27@Offset(450.0, 56.0), RenderPointerListener#91d39@Offset(450.0, 56.0), RenderSemanticsAnnotations#94cfb@Offset(450.0, 56.0), RenderCustomPaint#9d8eb@Offset(450.0, 56.0), RenderSemanticsAnnotations#0cb62@Offset(450.0, 56.0), RenderSemanticsAnnotations#3728b@Offset(450.0, 56.0), RenderSemanticsAnnotations#cfcf7@Offset(450.0, 56.0), RenderTapRegionSurface#4a56d@Offset(450.0, 56.0), RenderSemanticsAnnotations#70a3c@Offset(450.0, 56.0), RenderSemanticsAnnotations#e62a1@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#829aa(_ReusableRenderView#a9fa4), HitTestEntry<HitTestTarget>#0472a(<AutomatedTestWidgetsFlutterBinding>))
+The finder corresponds to this RenderBox: RenderClipRect#efa00 relayoutBoundary=up3
+The hit test result at that offset is: HitTestResult(_RenderInkFeatures#f8ef4@Offset(450.0, 56.0), RenderPhysicalModel#9ce7e@Offset(450.0, 56.0), RenderSemanticsAnnotations#22954@Offset(450.0, 56.0), RenderRepaintBoundary#0f56a@Offset(450.0, 56.0), RenderIgnorePointer#4b8fe@Offset(450.0, 56.0), RenderAnimatedOpacity#3c5fd@Offset(450.0, 56.0), RenderAnimatedOpacity#7e554@Offset(450.0, 56.0), _RenderColoredBox#7cf40@Offset(450.0, 56.0), RenderAnimatedOpacity#1d121@Offset(450.0, 56.0), RenderIgnorePointer#bcd08@Offset(450.0, 56.0), RenderAnimatedOpacity#f0a57@Offset(450.0, 56.0), RenderRepaintBoundary#940ac@Offset(450.0, 56.0), RenderSemanticsAnnotations#26428@Offset(450.0, 56.0), RenderOffstage#ad470@Offset(450.0, 56.0), RenderSemanticsAnnotations#b9bc7@Offset(450.0, 56.0), _RenderTheater#3688c@Offset(450.0, 56.0), RenderAbsorbPointer#29138@Offset(450.0, 56.0), RenderPointerListener#d4623@Offset(450.0, 56.0), RenderSemanticsAnnotations#fa8f7@Offset(450.0, 56.0), RenderCustomPaint#9e469@Offset(450.0, 56.0), RenderSemanticsAnnotations#43a80@Offset(450.0, 56.0), RenderSemanticsAnnotations#5885f@Offset(450.0, 56.0), RenderSemanticsAnnotations#deed9@Offset(450.0, 56.0), RenderTapRegionSurface#5caa2@Offset(450.0, 56.0), RenderSemanticsAnnotations#15749@Offset(450.0, 56.0), RenderSemanticsAnnotations#95064@Offset(450.0, 56.0), HitTestEntry<HitTestTarget>#4185f(_ReusableRenderView#fc497), HitTestEntry<HitTestTarget>#89b0b(<AutomatedTestWidgetsFlutterBinding>))
 #0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2165:25)
 #1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
 #2      WidgetController.drag (package:flutter_test/src/controller.dart:1604:7)

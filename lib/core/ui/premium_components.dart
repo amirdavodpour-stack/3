@@ -127,7 +127,7 @@ class PremiumPanel extends StatelessWidget {
             : HopeV2Shadows.card,
       ),
       padding: padding,
-      child: child,
+      child: Material(type: MaterialType.transparency, child: child),
     );
     return semanticLabel == null
         ? panel
