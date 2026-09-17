@@ -227,6 +227,10 @@ void main() {
   testWidgets('mission details render pricing, duration and transaction entry',
       (tester) async {
     await _pump(tester, job: _job());
+    final scrollable =
+        tester.state<ScrollableState>(find.byType(Scrollable).first);
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+    await tester.pumpAndSettle();
     expect(find.text('Mission details'), findsOneWidget);
     expect(
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
@@ -242,6 +246,10 @@ void main() {
   testWidgets('job details render monthly pay, deadline and admin banner',
       (tester) async {
     await _pump(tester, job: _job(kind: 'JOB'));
+    final scrollable =
+        tester.state<ScrollableState>(find.byType(Scrollable).first);
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+    await tester.pumpAndSettle();
     expect(find.text('Job details'), findsOneWidget);
     expect(
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,

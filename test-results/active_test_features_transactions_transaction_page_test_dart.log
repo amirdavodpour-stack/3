@@ -1,0 +1,11 @@
+
+::group::✅ Passing tests
+✅ loading then funded payload shows status, amount and start work
+✅ load failure shows retry which recovers
+✅ no-transaction view offers fund payment
+✅ held payment shows refund only to the job owner
+✅ completed and released payment shows settled copy
+✅ financial details section renders fee breakdown rows
+::endgroup::
+
+🎉 6 tests passed.
