@@ -271,31 +271,31 @@ jobs:
           install -d -m 700 "$HOME/.ssh"
           umask 077
           # Normalize the GitHub Secret defensively. Supports raw multiline OpenSSH keys,
-          # literal \\n separators, CRLF, surrounding quotes, and base64-encoded key values.
-          python3 - <<'PY'
-import base64
-import os
+                    # literal \\n separators, CRLF, surrounding quotes, and base64-encoded key values.
+                    python3 - <<'PY'
+          import base64
+          import os
 
-value = os.environ["RAILWAY_SSH_PRIVATE_KEY"].replace("\r", "")
-if "\\n" in value and "\n" not in value:
-    value = value.replace("\\n", "\n")
-value = value.strip()
-if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-    value = value[1:-1].strip()
-if "PRIVATE KEY-----" not in value:
-    try:
-        decoded = base64.b64decode(value, validate=True)
-        value = decoded.decode("utf-8").strip()
-    except Exception:
-        pass
-with open(os.path.expanduser("~/.ssh/id_ed25519"), "w", encoding="utf-8", newline="\n") as f:
-    f.write(value + "\n")
-PY
-          chmod 600 "$HOME/.ssh/id_ed25519"
-          ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > "$HOME/.ssh/id_ed25519.pub"
-          key_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
-          echo "RAILWAY_SSH_KEY_FINGERPRINT=$key_fingerprint"
-          test "$key_fingerprint" = 'SHA256:/Lrb+F+ajiLSfE93dOL7jMsajR7AMlKoSNTLchVjn3w'
+          value = os.environ["RAILWAY_SSH_PRIVATE_KEY"].replace("\r", "")
+          if "\\n" in value and "\n" not in value:
+              value = value.replace("\\n", "\n")
+          value = value.strip()
+          if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+              value = value[1:-1].strip()
+          if "PRIVATE KEY-----" not in value:
+              try:
+                  decoded = base64.b64decode(value, validate=True)
+                  value = decoded.decode("utf-8").strip()
+              except Exception:
+                  pass
+          with open(os.path.expanduser("~/.ssh/id_ed25519"), "w", encoding="utf-8", newline="\n") as f:
+              f.write(value + "\n")
+          PY
+                    chmod 600 "$HOME/.ssh/id_ed25519"
+                    ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > "$HOME/.ssh/id_ed25519.pub"
+                    key_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
+                    echo "RAILWAY_SSH_KEY_FINGERPRINT=$key_fingerprint"
+                    test "$key_fingerprint" = 'SHA256:/Lrb+F+ajiLSfE93dOL7jMsajR7AMlKoSNTLchVjn3w'
           npm install -g --allow-scripts=@railway/cli @railway/cli@5.30.1 >/dev/null
           railway connect Postgres --tunnel-only --port 15432 --project "8c686259-09c6-4609-bbe7-4ea25e769e18" --environment "5a435e97-1e7a-4a5c-952c-19da2f10d955" >"$RUNNER_TEMP/railway-postgres-tunnel.log" 2>&1 &
           echo $! >"$RUNNER_TEMP/railway-postgres-tunnel.pid"
