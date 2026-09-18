@@ -231,6 +231,7 @@ async function main() {
         kind: 'JOB',
         jobType: 'HOURLY',
         budgetType: 'RANGE',
+        duration: 3,
         budgetMin: 1_000_000,
         budgetMax: 2_000_000,
         schedule: 'FULL_TIME',
