@@ -1,0 +1,1 @@
+Trigger-only marker for isolated staging DR recovery, credential-mode retry. No application behavior change.
