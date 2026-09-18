@@ -1,0 +1,59 @@
+name: Staging S3 endpoint diagnosis
+
+on:
+  push:
+    branches:
+      - chore/s3-staging-diagnosis-2026-09-18
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      S3_ENDPOINT: ${{ secrets.STAGING_S3_ENDPOINT }}
+      S3_BUCKET: ${{ secrets.STAGING_S3_BUCKET }}
+      S3_REGION: ${{ secrets.STAGING_S3_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.STAGING_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.STAGING_AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Diagnose configured staging S3 endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${S3_ENDPOINT:?STAGING_S3_ENDPOINT is required}"
+          : "${S3_BUCKET:?STAGING_S3_BUCKET is required}"
+          : "${S3_REGION:?STAGING_S3_REGION is required}"
+          : "${AWS_ACCESS_KEY_ID:?STAGING_AWS_ACCESS_KEY_ID is required}"
+          : "${AWS_SECRET_ACCESS_KEY:?STAGING_AWS_SECRET_ACCESS_KEY is required}"
+
+          endpoint_origin="$(node -e 'const u=new URL(process.env.S3_ENDPOINT); console.log(u.origin)')"
+          endpoint_host="$(node -e 'const u=new URL(process.env.S3_ENDPOINT); console.log(u.hostname)')"
+          endpoint_path="$(node -e 'const u=new URL(process.env.S3_ENDPOINT); console.log(u.pathname)')"
+          echo "S3 endpoint origin: $endpoint_origin"
+          echo "S3 endpoint host: $endpoint_host"
+          echo "S3 endpoint path: $endpoint_path"
+          echo "S3 bucket: $S3_BUCKET"
+          echo "S3 region: $S3_REGION"
+
+          echo '== DNS =='
+          getent hosts "$endpoint_host" || true
+
+          echo '== HTTPS probe =='
+          curl -I -sS -o /dev/null -w 'status=%{http_code} remote_ip=%{remote_ip}\n' --max-time 15 "$endpoint_origin" || true
+
+          echo '== Health-path probe =='
+          curl -sS -o /tmp/s3-health -w 'status=%{http_code} remote_ip=%{remote_ip}\n' --max-time 15             "$S3_ENDPOINT/minio/health/live" || true
+          head -c 500 /tmp/s3-health 2>/dev/null || true
+          echo
+
+          echo '== Expected project endpoint comparison =='
+          expected='https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3'
+          expected_host="$(node -e 'console.log(new URL(process.env.EXPECTED).hostname)' EXPECTED="$expected")"
+          if [ "$S3_ENDPOINT" = "$expected" ]; then
+            echo 'configured endpoint exactly matches repository Supabase staging endpoint'
+          else
+            echo "configured endpoint differs from repository expected endpoint (expected host: $expected_host)"
+          fi
