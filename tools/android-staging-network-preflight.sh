@@ -62,9 +62,22 @@ adb -s "$ADB_SERIAL" wait-for-device
 adb -s "$ADB_SERIAL" remount
 adb -s "$ADB_SERIAL" wait-for-device
 
+# Android's overlayfs documentation allows either stop/start or a reboot after
+# remount to restore framework services before using the writable filesystem.
+# The prior certification showed that the remount can leave wlan0/eth0 down;
+# restart the framework first, then verify that the guest network comes back.
+adb -s "$ADB_SERIAL" shell stop >/tmp/hope-framework-stop.log 2>&1 || {
+  cat /tmp/hope-framework-stop.log >&2 || true
+}
+sleep 2
+adb -s "$ADB_SERIAL" shell start >/tmp/hope-framework-start.log 2>&1 || {
+  cat /tmp/hope-framework-start.log >&2 || true
+}
+sleep 5
+
 # Remounting can restart system services; require a working route before host-file validation.
 NETWORK_READY=false
-for _ in $(seq 1 30); do
+for _ in $(seq 1 45); do
   if adb -s "$ADB_SERIAL" shell "ping -c 1 -W 2 1.1.1.1" >/tmp/hope-android-network-check.log 2>&1; then
     NETWORK_READY=true
     break
@@ -73,7 +86,7 @@ for _ in $(seq 1 30); do
 done
 
 if [ "$NETWORK_READY" != "true" ]; then
-  echo "Android guest has no working network route after overlayfs remount." >&2
+  echo "Android guest has no working network route after overlayfs remount/framework restart." >&2
   cat /tmp/hope-android-network-check.log >&2 || true
   adb -s "$ADB_SERIAL" shell ip addr show >&2 || true
   adb -s "$ADB_SERIAL" shell ip route show >&2 || true
