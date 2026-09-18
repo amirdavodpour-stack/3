@@ -190,7 +190,7 @@ export function createMockPaymentServer({
         if (!paymentId || !['PAYMENT_HELD', 'PAYMENT_RELEASED', 'PAYMENT_REFUNDED'].includes(eventType)) {
           return json(res, 400, { error: 'INVALID_WEBHOOK_EVENT' });
         }
-        if (['PAYMENT_HELD', 'PAYMENT_RELEASED'].includes(eventType) && !providerRef) {
+        if (['PAYMENT_HELD', 'PAYMENT_RELEASED'].includes(eventType) && !requestedProviderRef) {
           return json(res, 400, { error: 'PROVIDER_REF_REQUIRED' });
         }
         try {
@@ -200,7 +200,7 @@ export function createMockPaymentServer({
           return json(res, 500, { error: 'WEBHOOK_TARGET_INVALID' });
         }
         const eventId = String(payload.eventId || crypto.randomUUID()).trim();
-        const body = JSON.stringify({ eventId, eventType, paymentId, providerRef });
+        const body = JSON.stringify({ eventId, eventType, paymentId, providerRef: requestedProviderRef });
         const timestamp = String(Math.floor(Date.now() / 1000));
         const signature = signatureFor(body, webhookSecret, timestamp, eventId);
         const response = await fetch(webhookTargetUrl, {
