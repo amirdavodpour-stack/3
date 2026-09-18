@@ -281,25 +281,39 @@ jobs:
           value = raw.replace("\\n", "\n").strip()
           if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
               value = value[1:-1].strip()
-          if "PRIVATE KEY-----" not in value:
+
+          key_bytes = None
+          if value.startswith("-----BEGIN "):
+              key_bytes = value.encode("utf-8") + b"\n"
+          else:
+              compact = "".join(value.split())
               try:
-                  decoded = base64.b64decode(value, validate=True)
-                  value = decoded.decode("utf-8").replace("\r", "").strip()
+                  decoded = base64.b64decode(compact, validate=True)
+                  if decoded.startswith(b"openssh-key-v1\x00"):
+                      key_bytes = decoded
+                  else:
+                      decoded_text = decoded.decode("utf-8").replace("\r", "").strip()
+                      if decoded_text.startswith("-----BEGIN "):
+                          key_bytes = decoded_text.encode("utf-8") + b"\n"
               except Exception:
                   pass
-          lines = value.split("\n")
-          print(
-              "RAILWAY_SSH_SECRET_DIAGNOSTICS "
-              f"length={len(value)} "
-              f"lines={len(lines)} "
-              f"header_ok={value.startswith('-----BEGIN ')} "
-              f"openssh_header={value.startswith('-----BEGIN OPENSSH PRIVATE KEY-----')} "
-              f"footer_ok={value.endswith('-----END OPENSSH PRIVATE KEY-----')} "
-              f"literal_backslash_n={literal_newlines}"
-          )
-          with open(os.path.expanduser("~/.ssh/id_ed25519"), "w", encoding="utf-8", newline="\n") as f:
-              f.write(value + "\n")
-          PY
+
+          if key_bytes is None:
+              lines = value.split("\n")
+              print(
+                  "RAILWAY_SSH_SECRET_DIAGNOSTICS "
+                  f"length={len(value)} "
+                  f"lines={len(lines)} "
+                  f"header_ok={value.startswith('-----BEGIN ')} "
+                  f"openssh_header={value.startswith('-----BEGIN OPENSSH PRIVATE KEY-----')} "
+                  f"footer_ok={value.endswith('-----END OPENSSH PRIVATE KEY-----')} "
+                  f"literal_backslash_n={literal_newlines} "
+                  "decoded_openssh=false"
+              )
+              raise SystemExit("RAILWAY_SSH_PRIVATE_KEY is not a supported OpenSSH private-key or OpenSSH base64 payload")
+
+          with open(os.path.expanduser("~/.ssh/id_ed25519"), "wb") as f:
+              f.write(key_bytes)
           chmod 600 "$HOME/.ssh/id_ed25519"
           ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > "$HOME/.ssh/id_ed25519.pub"
           key_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
