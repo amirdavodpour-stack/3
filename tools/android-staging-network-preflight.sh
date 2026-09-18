@@ -44,6 +44,14 @@ fi
 
 adb -s "$ADB_SERIAL" wait-for-device
 adb -s "$ADB_SERIAL" remount
+
+# adb remount enables overlayfs/verity state but may explicitly require a reboot
+# before /system becomes writable. Reboot, re-root, and remount before editing hosts.
+adb -s "$ADB_SERIAL" reboot
+adb -s "$ADB_SERIAL" wait-for-device
+adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root-after-remount.log 2>&1
+adb -s "$ADB_SERIAL" wait-for-device
+adb -s "$ADB_SERIAL" remount
 adb -s "$ADB_SERIAL" wait-for-device
 
 IFS=',' read -r -a IP_ARRAY <<< "$IPS"
