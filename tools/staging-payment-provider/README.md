@@ -14,6 +14,10 @@ The operation endpoints require:
 
 - `Authorization: Bearer <PAYMENT_PROVIDER_TOKEN>`
 - `Idempotency-Key: <unique key>`
+- TOMAN integer amounts; create requires a positive amount.
+- Release/refund require the existing `providerRef`.
+
+Idempotency keys are bound to the complete operation request (payment, amount, currency, and provider reference), so reuse with different parameters returns `409 IDEMPOTENCY_CONFLICT`.
 
 The response contract matches `backend/src/payment_provider.js`:
 
@@ -43,3 +47,5 @@ Then call `POST /emit-webhook` with the same provider bearer token.
 
 The emitter uses HOPE's timestamped HMAC format:
 `sha256=HMAC_SHA256(timestamp.eventId.rawBody)`.
+
+The emitter only accepts HTTPS targets; it does not accept an arbitrary HTTP callback.
