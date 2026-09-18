@@ -30,7 +30,7 @@ Production configuration remains fail-closed and does not allow the simulator.
 
 The GitHub Actions payment certification workflow uses a local PostgreSQL 17 service and starts the repository's Mock Payment Provider locally. The backend is configured as `PAYMENT_PROVIDER=webhook`, so the CI path exercises the same provider boundary used for an external PSP, while allowing only loopback HTTP in the explicit test runtime.
 
-The certification directly exercises that running Mock Provider process for create/release/refund, replay/idempotency, authentication, and currency enforcement. A PostgreSQL end-to-end gate then routes real API funding and refund operations through the same webhook adapter and Mock Provider, including the outbox-to-payment-state transition. It then runs the existing real-PostgreSQL marketplace/payment lifecycle suite, the internal wallet/ledger lifecycle coverage, and PostgreSQL invariant checks.
+The certification directly exercises that running Mock Provider process for create/release/refund, replay/idempotency, authentication, and currency enforcement. A PostgreSQL end-to-end gate routes real API funding, job completion/release, and refund operations through the same webhook adapter and Mock Provider, including the outbox-to-payment-state transition. A separate PostgreSQL webhook-callback gate applies a signed `PAYMENT_RELEASED` event through `/payments/webhook`, verifies the `RELEASE_PENDING → RELEASED` and `COMPLETED → SETTLED` transitions, and verifies duplicate-event handling. It then runs the existing real-PostgreSQL marketplace/payment lifecycle suite, the internal wallet/ledger lifecycle coverage, and PostgreSQL invariant checks.
 
 No real PSP credential is required.
 
