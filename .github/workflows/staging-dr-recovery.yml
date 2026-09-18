@@ -137,7 +137,7 @@ jobs:
             cleanup_workspace_key() {
               set +e
               env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
-                railway ssh keys remove --workspace "$workspace_id" --key "$workspace_key_name" >/tmp/hope-dr-key-cleanup.log 2>&1
+                railway ssh keys remove --workspace "$workspace_id" "$workspace_key_name" >/tmp/hope-dr-key-cleanup.log 2>&1
               rc=$?
               if [ "$rc" -eq 0 ]; then
                 echo "Removed ephemeral workspace SSH key: $workspace_key_name"
