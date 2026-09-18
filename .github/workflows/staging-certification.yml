@@ -16,6 +16,8 @@ on:
         required: false
       STAGING_DATABASE_URL:
         required: false
+      SOURCE_DATABASE_PUBLIC_URL:
+        required: false
       SOURCE_DATABASE_URL:
         required: false
       DRILL_DATABASE_URL:
@@ -71,7 +73,7 @@ jobs:
       STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
       STAGING_PAYMENT_PROVIDER: internal
       STAGING_PAYMENT_CURRENCY: TOMAN
-      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.SOURCE_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.SOURCE_DATABASE_PUBLIC_URL || secrets.SOURCE_DATABASE_URL }}
       DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
       STAGING_S3_ENDPOINT: ${{ secrets.STAGING_S3_ENDPOINT }}
       STAGING_S3_BUCKET: ${{ secrets.STAGING_S3_BUCKET }}
@@ -263,6 +265,13 @@ jobs:
           DRILL_EVIDENCE_FILE: ${{ runner.temp }}/hope-dr-restore-evidence.txt
         run: |
           set -euo pipefail
+          case "${SOURCE_DATABASE_URL:-}" in
+            *://*.railway.internal:*)
+              echo 'DR blocked: source database uses Railway private networking; GitHub-hosted runners cannot resolve *.railway.internal.' >&2
+              echo 'Add GitHub secret SOURCE_DATABASE_PUBLIC_URL using the Railway Postgres DATABASE_PUBLIC_URL from TCP Proxy, or replace SOURCE_DATABASE_URL with that public connection string.' >&2
+              exit 1
+              ;;
+          esac
           bash backend/scripts/dr-restore-drill.sh
 
       - name: Runtime gate - dr restore

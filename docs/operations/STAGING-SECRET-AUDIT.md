@@ -7,6 +7,7 @@ Scope: current staging/hardening branch only. Secret values are never stored in 
 - API_BASE_URL_STAGING
 - DRILL_DATABASE_URL
 - SOURCE_DATABASE_URL
+- SOURCE_DATABASE_PUBLIC_URL
 - NOTIFICATION_PROVIDER_TOKEN
 - NOTIFICATION_PUSH_URL
 - STAGING_AWS_ACCESS_KEY_ID
@@ -35,11 +36,11 @@ This staging-only secret was added to Railway because the planned payout webhook
 
 ## NAMING GAP FIXED
 
-staging-certification.yml previously used STAGING_DATABASE_URL, while the canonical current secret is SOURCE_DATABASE_URL. The workflow now accepts:
+staging-certification.yml accepts the public source database secret for GitHub-hosted DR work:
 
-STAGING_DATABASE_URL || SOURCE_DATABASE_URL
+STAGING_DATABASE_URL || SOURCE_DATABASE_PUBLIC_URL || SOURCE_DATABASE_URL
 
-This avoids creating a duplicate database credential solely for naming compatibility.
+GitHub-hosted runners cannot resolve Railway private-network hostnames such as *.railway.internal. SOURCE_DATABASE_PUBLIC_URL must therefore contain the Railway Postgres TCP Proxy/DATABASE_PUBLIC_URL connection string when DR runs from GitHub.
 
 ## FUTURE / NOT REQUIRED NOW
 

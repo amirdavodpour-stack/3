@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   workflow_call:
     secrets:
+      SOURCE_DATABASE_PUBLIC_URL:
+        required: false
       SOURCE_DATABASE_URL:
         required: true
       DRILL_DATABASE_URL:
@@ -18,7 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
+      SOURCE_DATABASE_PUBLIC_URL: ${{ secrets.SOURCE_DATABASE_PUBLIC_URL }}
+      SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_PUBLIC_URL || secrets.SOURCE_DATABASE_URL }}
       DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
       RTO_TARGET_SECONDS: '900'
     steps:
@@ -49,7 +52,14 @@ jobs:
           : "${SOURCE_DATABASE_URL:?SOURCE_DATABASE_URL is required}"
           : "${DRILL_DATABASE_URL:?DRILL_DATABASE_URL is required}"
           test "$SOURCE_DATABASE_URL" != "$DRILL_DATABASE_URL"
-          echo "Source and DR target are distinct."
+          case "$SOURCE_DATABASE_URL" in
+            *://*.railway.internal:*)
+              echo 'SOURCE_DATABASE_URL resolves to Railway private networking and is not reachable from a GitHub-hosted runner.' >&2
+              echo 'Set GitHub secret SOURCE_DATABASE_PUBLIC_URL to the Postgres TCP Proxy connection string (Railway DATABASE_PUBLIC_URL).' >&2
+              exit 1
+              ;;
+          esac
+          echo "Source and DR target are distinct and externally reachable."
 
       - name: DR restore drill
         id: dr_restore
