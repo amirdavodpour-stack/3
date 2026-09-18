@@ -7,6 +7,7 @@ Scope: current staging/hardening branch only. Secret values are never stored in 
 - API_BASE_URL_STAGING
 - DRILL_DATABASE_URL
 - SOURCE_DATABASE_URL
+- RAILWAY_TOKEN (required for GitHub-hosted DR tunnel; must be added to GitHub Actions secrets)
 - SOURCE_DATABASE_PUBLIC_URL
 - NOTIFICATION_PROVIDER_TOKEN
 - NOTIFICATION_PUSH_URL
