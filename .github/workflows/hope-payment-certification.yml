@@ -1,0 +1,99 @@
+name: HOPE Payment Certification
+
+on:
+  push:
+    branches:
+      - feat/staging-ntfy-provider-2026-09-18
+  pull_request:
+    branches:
+      - hope/full-stack-hardening-2026-09-17
+  workflow_dispatch:
+
+concurrency:
+  group: hope-payment-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  payment-certification:
+    name: Payment certification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: hope
+          POSTGRES_PASSWORD: hope
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hope -d hope_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DATABASE_URL: postgresql://hope:hope@127.0.0.1:5432/hope_test
+      NODE_ENV: test
+      PAYMENT_PROVIDER: simulator
+      PAYMENT_CURRENCY: TOMAN
+      PAYMENT_WEBHOOK_SECRET: certification-webhook-secret-32-characters-minimum
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Syntax check payment provider service
+        run: node --check tools/staging-payment-provider/server.mjs
+
+      - name: Run targeted payment certification
+        working-directory: backend
+        run: npm run test:payment-certification
+
+      - name: Run PostgreSQL migrations
+        working-directory: backend
+        run: npm run migrate
+
+      - name: Run PostgreSQL financial invariants
+        working-directory: backend
+        run: npm run test:payment-postgres-invariants
+
+      - name: Run PostgreSQL marketplace/payment lifecycle
+        working-directory: backend
+        env:
+          REQUIRE_INTEGRATION: '1'
+        run: npm run test:postgres
+
+      - name: Generate evidence
+        working-directory: backend
+        if: always()
+        run: |
+          mkdir -p ../artifacts/HOPE_PAYMENT_CERTIFICATION
+          printf '{"workflow":"HOPE Payment Certification","runId":"%s","sha":"%s","status":"%s"}\n' "${{ github.run_id }}" "${{ github.sha }}" "${{ job.status }}" > ../artifacts/HOPE_PAYMENT_CERTIFICATION/summary.json
+          git status --short > ../artifacts/HOPE_PAYMENT_CERTIFICATION/git-status.txt
+          date -u > ../artifacts/HOPE_PAYMENT_CERTIFICATION/timestamp.txt
+          tar -czf ../HOPE-PAYMENT-CERTIFICATION.tar.gz -C ../artifacts HOPE_PAYMENT_CERTIFICATION
+
+      - name: Upload evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HOPE-PAYMENT-CERTIFICATION
+          path: HOPE-PAYMENT-CERTIFICATION.tar.gz
+          if-no-files-found: error
