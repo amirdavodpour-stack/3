@@ -256,6 +256,7 @@ jobs:
           BUILD_PROFILE: pilot
         run: bash tools/build_apk_debug.sh
 
+      # Uses the repository-backed Ed25519 key registered in Railway for GitHub-hosted DR access.
       - name: Start Railway Postgres SSH tunnel for DR
         id: postgres_tunnel
         if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
