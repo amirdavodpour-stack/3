@@ -212,6 +212,26 @@ jobs:
           S3_FORCE_PATH_STYLE: 'true'
         run: |
           set -euo pipefail
+          node <<'NODE'
+          const endpoint = process.env.STAGING_S3_ENDPOINT;
+          const u = new URL(endpoint);
+          const expected = 'https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3';
+          const crypto = await import('node:crypto');
+          const digest = crypto.createHash('sha256').update(endpoint).digest('hex');
+          const expectedDigest = crypto.createHash('sha256').update(expected).digest('hex');
+          console.log('S3 endpoint host:', u.hostname);
+          console.log('S3 endpoint path:', u.pathname);
+          console.log('S3 endpoint matches repository Supabase endpoint:', endpoint === expected);
+          console.log('S3 endpoint sha256:', digest);
+          console.log('Expected endpoint sha256:', expectedDigest);
+          console.log('S3 bucket matches v2hope-private:', process.env.S3_BUCKET === 'v2hope-private');
+          console.log('S3 region matches eu-west-1:', process.env.S3_REGION === 'eu-west-1');
+          NODE
+          s3_host="$(node -e 'console.log(new URL(process.env.STAGING_S3_ENDPOINT).hostname)')"
+          echo 'S3 DNS lookup:'
+          getent hosts "$s3_host" || true
+          echo 'S3 HTTPS reachability probe:'
+          curl -I -sS -o /dev/null -w 'status=%{http_code} remote_ip=%{remote_ip}\\n' --max-time 15 "$STAGING_S3_ENDPOINT" || true
           node tests/s3-integration.test.mjs
 
       - name: Runtime gate - s3
