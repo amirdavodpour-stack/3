@@ -16,33 +16,7 @@ jobs:
   dr-restore:
     name: DR restore drill
     runs-on: ubuntu-latest
-    services:
-      source-db:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: hope
-          POSTGRES_PASSWORD: hope
-          POSTGRES_DB: hope_source
-        ports:
-          - 54321:5432
-        options: >-
-          --health-cmd "pg_isready -U hope -d hope_source"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 12
-      drill-db:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: hope
-          POSTGRES_PASSWORD: hope
-          POSTGRES_DB: hope_drill
-        ports:
-          - 54322:5432
-        options: >-
-          --health-cmd "pg_isready -U hope -d hope_drill"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 12
+    timeout-minutes: 20
     env:
       SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
       DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
@@ -50,6 +24,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup PostgreSQL client
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
 
       - name: Setup Node.js 24
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -62,38 +42,79 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Migrate isolated source service
-        working-directory: backend
-        env:
-          DATABASE_URL: postgresql://hope:hope@127.0.0.1:54321/hope_source
-        run: npm run migrate
-
-      - name: Migrate isolated drill service
-        working-directory: backend
-        env:
-          DATABASE_URL: postgresql://hope:hope@127.0.0.1:54322/hope_drill
-        run: npm run migrate
-
-      - name: DR restore drill
-        id: dr_restore
+      - name: Verify target isolation
         shell: bash
         run: |
           set -euo pipefail
           : "${SOURCE_DATABASE_URL:?SOURCE_DATABASE_URL is required}"
           : "${DRILL_DATABASE_URL:?DRILL_DATABASE_URL is required}"
-          bash backend/scripts/dr-restore-drill.sh
+          test "$SOURCE_DATABASE_URL" != "$DRILL_DATABASE_URL"
+          echo "Source and DR target are distinct."
 
-      - name: Runtime gate - dr restore
+      - name: DR restore drill
+        id: dr_restore
+        shell: bash
+        run: bash backend/scripts/dr-restore-drill.sh
+
+      - name: Validate restored migration state
+        id: migration_state
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DRILL_DATABASE_URL }}
+        run: npm run migrate:status
+
+      - name: Financial integrity probe on restored target
+        id: financial_probe
+        shell: bash
+        env:
+          TARGET_DATABASE_URL: ${{ env.DRILL_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF EXISTS (SELECT 1 FROM wallet_accounts WHERE currency <> 'TOMAN') THEN
+              RAISE EXCEPTION 'DR violation: non-TOMAN wallet currency';
+            END IF;
+            IF EXISTS (SELECT 1 FROM wallet_accounts WHERE available_balance < 0 OR locked_balance < 0) THEN
+              RAISE EXCEPTION 'DR violation: negative wallet balance';
+            END IF;
+            IF EXISTS (
+              SELECT 1
+              FROM journals j
+              LEFT JOIN (
+                SELECT journal_id, COUNT(*) AS entry_count,
+                       COALESCE(SUM(debit),0) AS debit_total,
+                       COALESCE(SUM(credit),0) AS credit_total
+                FROM ledger_entries
+                GROUP BY journal_id
+              ) e ON e.journal_id = j.id
+              WHERE j.status = 'POSTED'
+                AND (COALESCE(e.entry_count,0) = 0 OR e.debit_total <> e.credit_total OR e.debit_total <= 0)
+            ) THEN
+              RAISE EXCEPTION 'DR violation: posted journal is not balanced';
+            END IF;
+            IF EXISTS (
+              SELECT 1 FROM payouts
+              WHERE (status IN ('SUCCEEDED','FAILED') AND completed_at IS NULL)
+                 OR (status NOT IN ('SUCCEEDED','FAILED') AND completed_at IS NOT NULL)
+                 OR (provider_ref IS NOT NULL AND status <> 'SUCCEEDED')
+                 OR (status = 'SUCCEEDED' AND NULLIF(BTRIM(provider_ref),'') IS NULL)
+            ) THEN
+              RAISE EXCEPTION 'DR violation: payout invariant failed';
+            END IF;
+          END $$;
+          SELECT 'DR financial integrity PASS' AS result;
+          SQL
+
+      - name: Runtime gate - DR restore
         id: dr_restore_evidence
         if: ${{ always() }}
         working-directory: backend
         env:
-          GATE_RESULT: ${{ steps.dr_restore.outcome == 'success' && 'pass' || 'fail' }}
+          GATE_RESULT: ${{ steps.dr_restore.outcome == 'success' && steps.migration_state.outcome == 'success' && steps.financial_probe.outcome == 'success' && 'pass' || 'fail' }}
         run: |
-          CI=true node tools/write-evidence.mjs \
-            --gate dr_restore \
-            --command 'bash backend/scripts/dr-restore-drill.sh' \
-            --result "$GATE_RESULT"
+          CI=true node tools/write-evidence.mjs             --gate dr_restore             --command 'bash backend/scripts/dr-restore-drill.sh + migrate:status + financial integrity probe'             --result "$GATE_RESULT"
 
       - name: Upload DR evidence
         if: ${{ always() }}
