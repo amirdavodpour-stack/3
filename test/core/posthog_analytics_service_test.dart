@@ -8,6 +8,87 @@ void main() {
     expect(service.isEnabled, isFalse);
   });
 
+  test('invalid event names are rejected by the capture contract', () {
+    expect(RegExp(r'^[a-z][a-z0-9_]{0,79}
+    final result = PostHogAnalyticsService.sanitizeProperties({
+      'screen': 'wallet',
+      'action': 'view',
+      'status': 'success',
+      'source': 'flutter',
+      'reason': 'session_restore',
+      'amount': 900000,
+      'balance': 1200000,
+      'iban': 'IR000000000000000000000000',
+      'accessToken': 'should-not-leak',
+      'jobId': 'job-123',
+      'email': 'user@example.com',
+      'huge': List.filled(121, 'x').join(),
+    });
+
+    expect(result, {
+      'screen': 'wallet',
+      'action': 'view',
+      'status': 'success',
+      'source': 'flutter',
+      'reason': 'session_restore',
+    });
+  });
+}
+).hasMatch('wallet_viewed'), isTrue);
+    expect(RegExp(r'^[a-z][a-z0-9_]{0,79}
+    final result = PostHogAnalyticsService.sanitizeProperties({
+      'screen': 'wallet',
+      'action': 'view',
+      'status': 'success',
+      'source': 'flutter',
+      'reason': 'session_restore',
+      'amount': 900000,
+      'balance': 1200000,
+      'iban': 'IR000000000000000000000000',
+      'accessToken': 'should-not-leak',
+      'jobId': 'job-123',
+      'email': 'user@example.com',
+      'huge': List.filled(121, 'x').join(),
+    });
+
+    expect(result, {
+      'screen': 'wallet',
+      'action': 'view',
+      'status': 'success',
+      'source': 'flutter',
+      'reason': 'session_restore',
+    });
+  });
+}
+).hasMatch('Wallet Viewed'), isFalse);
+    expect(RegExp(r'^[a-z][a-z0-9_]{0,79}
+    final result = PostHogAnalyticsService.sanitizeProperties({
+      'screen': 'wallet',
+      'action': 'view',
+      'status': 'success',
+      'source': 'flutter',
+      'reason': 'session_restore',
+      'amount': 900000,
+      'balance': 1200000,
+      'iban': 'IR000000000000000000000000',
+      'accessToken': 'should-not-leak',
+      'jobId': 'job-123',
+      'email': 'user@example.com',
+      'huge': List.filled(121, 'x').join(),
+    });
+
+    expect(result, {
+      'screen': 'wallet',
+      'action': 'view',
+      'status': 'success',
+      'source': 'flutter',
+      'reason': 'session_restore',
+    });
+  });
+}
+).hasMatch('wallet-viewed'), isFalse);
+  });
+
   test('sanitizer keeps only low-risk analytics properties', () {
     final result = PostHogAnalyticsService.sanitizeProperties({
       'screen': 'wallet',
