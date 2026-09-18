@@ -23,6 +23,7 @@ if (enabled) {
   process.env.PAYMENT_PROVIDER_REFUND_URL = `http://127.0.0.1:${port}/refund`;
   process.env.PAYMENT_PROVIDER_MAX_ATTEMPTS = '1';
   process.env.PAYMENT_PROVIDER_RETRY_BASE_MS = '0';
+  process.env.OUTBOX_POLL_MS = '60000';
   process.env.AUTH_RATE_LIMIT_MAX = '1000';
   process.env.GENERAL_RATE_LIMIT_MAX = '5000';
 
