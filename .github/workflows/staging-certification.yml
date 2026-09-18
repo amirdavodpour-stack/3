@@ -274,6 +274,19 @@ jobs:
             --result "$GATE_RESULT" \
             --artifact "$RUNNER_TEMP/hope-dr-restore-evidence.txt"
 
+      - name: Resolve staging host for Android guest fallback
+        id: resolve_staging_host
+        shell: bash
+        env:
+          STAGING_BASE_URL: ${{ env.STAGING_BASE_URL }}
+        run: |
+          set -euo pipefail
+          host="$(node -e "console.log(new URL(process.env.STAGING_BASE_URL).hostname)")"
+          ips="$(getent ahostsv4 "$host" | awk '{print $1}' | sort -u | paste -sd, -)"
+          test -n "$ips" || { echo "Runner DNS could not resolve $host." >&2; exit 1; }
+          echo "Resolved $host to $ips"
+          echo "ips=$ips" >> "$GITHUB_OUTPUT"
+
       - name: Android emulator certification
         id: emulator_certification
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
@@ -289,6 +302,8 @@ jobs:
           # The test suite does not require animation state, so keep this optional action step disabled.
           disable-animations: false
           script: |
+            export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
+            bash tools/android-staging-network-preflight.sh
             flutter test --no-pub integration_test/runtime/app_smoke_test.dart --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" --dart-define=CI_DEVICE_INTEGRATION=true
 
       - name: Runtime gate - device certification
