@@ -69,7 +69,11 @@ jobs:
           # The Android guest can inherit unusable DNS on GitHub-hosted Linux
           # runners even when the emulator itself boots successfully. Use explicit
           # public resolvers so the device gate tests the real staging host.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          # GitHub-hosted Linux can lose the emulator ADB settings service immediately after boot.
+          # The test suite does not require animation state, so do not let the action's optional
+          # animation-disabling ADB calls turn a healthy boot into a false-negative certification.
+          disable-animations: false -dns-server 1.1.1.1,8.8.8.8
           # reactivecircus/android-emulator-runner executes this under /usr/bin/sh.
           # Keep the script POSIX-sh compatible; do not use bash-only pipefail.
           script: |
