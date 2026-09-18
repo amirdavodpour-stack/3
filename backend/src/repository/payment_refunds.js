@@ -2,13 +2,9 @@ import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { config } from '../config.js';
-import { fundingJournal, releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown } from '../financial.js';
+import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown } from '../financial.js';
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
-
-function financialNumber(currency, value) {
-  return String(currency || config.paymentCurrency).toUpperCase() === 'TOMAN' ? String(value ?? '0') : Number(value ?? 0);
-}
 
 export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idempotencyKey,createdAt}) {
   return withSqlTransaction(async(client)=>{
@@ -21,7 +17,7 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     const {rows:pr}=await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,[paymentId,jobId]);
     const payment=pr[0]; if(!payment){const e=new Error('PAYMENT_NOT_FOUND');e.code='PAYMENT_NOT_FOUND';throw e;}
     if(payment.status!=='HELD'){const e=new Error('INVALID_PAYMENT_STATE');e.code='INVALID_PAYMENT_STATE';throw e;}
-    const refundCurrency=String(payment.currency || config.paymentCurrency).toUpperCase(); const refundAmount=financialNumber(refundCurrency, amount || payment.amount); if(String(refundAmount)!==String(financialNumber(refundCurrency, payment.amount))){const e=new Error('PARTIAL_REFUND_UNSUPPORTED');e.code='PARTIAL_REFUND_UNSUPPORTED';throw e;}
+    const refundCurrency=String(payment.currency || config.paymentCurrency).toUpperCase(); const refundAmount=normalizeFinancialAmount(refundCurrency, amount || payment.amount); if(String(refundAmount)!==String(normalizeFinancialAmount(refundCurrency, payment.amount))){const e=new Error('PARTIAL_REFUND_UNSUPPORTED');e.code='PARTIAL_REFUND_UNSUPPORTED';throw e;}
     let refundRow = null;
     if (idempotencyKey) {
       const prior = await client.query(`SELECT * FROM refunds WHERE payment_id=$1 AND idempotency_key=$2 FOR UPDATE`, [paymentId, idempotencyKey]);
@@ -59,7 +55,7 @@ export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refun
     const {rows:rr}=await client.query(`SELECT * FROM refunds WHERE id=$1 AND payment_id=$2 FOR UPDATE`,[refundId,paymentId]); const refund=rr[0]; if(!refund)return {completed:false,reason:'REFUND_NOT_FOUND'};
     if(payment.status==='REFUNDED' && refund.status==='REFUNDED'){await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]);return {completed:true,alreadyDone:true};}
     if(payment.status!=='REFUND_PENDING' || refund.status!=='PENDING'){return {completed:false,reason:'INVALID_REFUND_STATE'};}
-    const breakdown={baseAmount:financialNumber(payment.currency,payment.base_amount||payment.amount),employerFee:financialNumber(payment.currency,payment.employer_fee||0),workerFee:financialNumber(payment.currency,payment.worker_fee||0),platformFee:financialNumber(payment.currency,payment.platform_fee||0),employerCharge:financialNumber(payment.currency,payment.employer_charge||payment.amount),providerPayout:financialNumber(payment.currency,payment.provider_payout||payment.amount),currency:payment.currency||config.paymentCurrency,policyVersion:payment.fee_policy_version||'legacy',kind:'JOB'};
+    const breakdown={baseAmount:normalizeFinancialAmount(payment.currency,payment.base_amount||payment.amount),employerFee:normalizeFinancialAmount(payment.currency,payment.employer_fee||0),workerFee:normalizeFinancialAmount(payment.currency,payment.worker_fee||0),platformFee:normalizeFinancialAmount(payment.currency,payment.platform_fee||0),employerCharge:normalizeFinancialAmount(payment.currency,payment.employer_charge||payment.amount),providerPayout:normalizeFinancialAmount(payment.currency,payment.provider_payout||payment.amount),currency:payment.currency||config.paymentCurrency,policyVersion:payment.fee_policy_version||'legacy',kind:'JOB'};
     await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[refundId,providerRef]);
     await client.query(`UPDATE payments SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[paymentId,payment.provider_ref]);
     await client.query(`UPDATE jobs SET status=CASE WHEN provider_id IS NULL THEN 'PUBLISHED' ELSE 'ASSIGNED' END,updated_at=NOW() WHERE id=$1`,[jobId]);
