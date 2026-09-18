@@ -276,18 +276,27 @@ jobs:
           import base64
           import os
 
-          value = os.environ["RAILWAY_SSH_PRIVATE_KEY"].replace("\r", "")
-          if "\\n" in value and "\n" not in value:
-              value = value.replace("\\n", "\n")
-          value = value.strip()
+          raw = os.environ["RAILWAY_SSH_PRIVATE_KEY"].replace("\r", "")
+          literal_newlines = "\\n" in raw
+          value = raw.replace("\\n", "\n").strip()
           if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
               value = value[1:-1].strip()
           if "PRIVATE KEY-----" not in value:
               try:
                   decoded = base64.b64decode(value, validate=True)
-                  value = decoded.decode("utf-8").strip()
+                  value = decoded.decode("utf-8").replace("\r", "").strip()
               except Exception:
                   pass
+          lines = value.split("\n")
+          print(
+              "RAILWAY_SSH_SECRET_DIAGNOSTICS "
+              f"length={len(value)} "
+              f"lines={len(lines)} "
+              f"header_ok={value.startswith('-----BEGIN ')} "
+              f"openssh_header={value.startswith('-----BEGIN OPENSSH PRIVATE KEY-----')} "
+              f"footer_ok={value.endswith('-----END OPENSSH PRIVATE KEY-----')} "
+              f"literal_backslash_n={literal_newlines}"
+          )
           with open(os.path.expanduser("~/.ssh/id_ed25519"), "w", encoding="utf-8", newline="\n") as f:
               f.write(value + "\n")
           PY
