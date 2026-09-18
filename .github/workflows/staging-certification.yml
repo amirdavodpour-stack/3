@@ -1,9 +1,6 @@
 name: Staging certification
 
 on:
-  push:
-    branches:
-      - hope/full-stack-hardening-2026-09-17
   pull_request:
     branches:
       - Main
@@ -44,6 +41,10 @@ on:
       NOTIFICATION_PROVIDER_TOKEN:
         required: false
   workflow_dispatch:
+
+concurrency:
+  group: hope-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
