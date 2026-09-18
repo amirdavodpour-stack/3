@@ -257,11 +257,11 @@ jobs:
         id: posthog_runtime
         shell: bash
         env:
-          POSTHOG_PROJECT_TOKEN: \${{ secrets.POSTHOG_PROJECT_TOKEN }}
-          POSTHOG_HOST: \${{ secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}
+          POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}
         run: |
           set -euo pipefail
-          if [ -z "\${POSTHOG_PROJECT_TOKEN:-}" ]; then
+          if [ -z "${POSTHOG_PROJECT_TOKEN:-}" ]; then
             echo 'configured=false' >> "$GITHUB_OUTPUT"
             echo 'PostHog staging ingestion preflight: SKIPPED (no project token configured)'
             exit 0
@@ -293,10 +293,10 @@ jobs:
 
       - name: Runtime gate - PostHog
         id: posthog_runtime_evidence
-        if: \${{ always() && steps.posthog_runtime.outputs.configured == 'true' }}
+        if: ${{ always() && steps.posthog_runtime.outputs.configured == 'true' }}
         working-directory: backend
         env:
-          GATE_RESULT: \${{ steps.posthog_runtime.outcome == 'success' && 'pass' || 'fail' }}
+          GATE_RESULT: ${{ steps.posthog_runtime.outcome == 'success' && 'pass' || 'fail' }}
         run: |
           CI=true node tools/write-evidence.mjs \
             --gate posthog_runtime \
@@ -306,12 +306,12 @@ jobs:
       - name: Android quality gates
         id: android_quality
         env:
-          API_BASE_URL: \${{ env.STAGING_BASE_URL }}
+          API_BASE_URL: ${{ env.STAGING_BASE_URL }}
           BUILD_PROFILE: pilot
           HOPE_ENV: staging
-          POSTHOG_ENABLED: \${{ secrets.POSTHOG_PROJECT_TOKEN != '' && 'true' || 'false' }}
-          POSTHOG_PROJECT_TOKEN: \${{ secrets.POSTHOG_PROJECT_TOKEN }}
-          POSTHOG_HOST: \${{ secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}
+          POSTHOG_ENABLED: ${{ secrets.POSTHOG_PROJECT_TOKEN != '' && 'true' || 'false' }}
+          POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}
         run: bash tools/build_apk_debug.sh
 
       # Uses the repository-backed Ed25519 key registered in Railway for GitHub-hosted DR access.
