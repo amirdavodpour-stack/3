@@ -5,8 +5,8 @@ import pg from 'pg';
 const enabled = Boolean(process.env.DATABASE_URL);
 const pool = enabled ? new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 3 }) : null;
 
-async function query(sql) {
-  return (await pool.query(sql)).rows;
+async function query(sql, params = []) {
+  return (await pool.query(sql, params)).rows;
 }
 
 test('financial schema invariants hold in PostgreSQL', { skip: !enabled }, async () => {
