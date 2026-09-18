@@ -190,6 +190,9 @@ export function createMockPaymentServer({
         if (!paymentId || !['PAYMENT_HELD', 'PAYMENT_RELEASED', 'PAYMENT_REFUNDED'].includes(eventType)) {
           return json(res, 400, { error: 'INVALID_WEBHOOK_EVENT' });
         }
+        if (!requestedProviderRef || requestedProviderRef.length > 200) {
+          return json(res, 400, { error: 'PROVIDER_REF_REQUIRED' });
+        }
         if (['PAYMENT_HELD', 'PAYMENT_RELEASED'].includes(eventType) && !requestedProviderRef) {
           return json(res, 400, { error: 'PROVIDER_REF_REQUIRED' });
         }
