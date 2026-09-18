@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/staging-ntfy-provider-2026-09-18
+      - chore/staging-dr-recovery-2026-09-18
   pull_request:
     branches:
       - Main
