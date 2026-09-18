@@ -255,13 +255,18 @@ jobs:
 
       - name: PostHog staging ingestion preflight
         id: posthog_runtime
-        if: \${{ secrets.POSTHOG_PROJECT_TOKEN != '' }}
         shell: bash
         env:
           POSTHOG_PROJECT_TOKEN: \${{ secrets.POSTHOG_PROJECT_TOKEN }}
           POSTHOG_HOST: \${{ secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}
         run: |
           set -euo pipefail
+          if [ -z "\${POSTHOG_PROJECT_TOKEN:-}" ]; then
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo 'PostHog staging ingestion preflight: SKIPPED (no project token configured)'
+            exit 0
+          fi
+          echo 'configured=true' >> "$GITHUB_OUTPUT"
           node --input-type=module - <<'NODE'
           const host = (process.env.POSTHOG_HOST || '').replace(/\/+$/, '');
           const token = process.env.POSTHOG_PROJECT_TOKEN || '';
@@ -288,7 +293,7 @@ jobs:
 
       - name: Runtime gate - PostHog
         id: posthog_runtime_evidence
-        if: \${{ always() && steps.posthog_runtime.outcome != 'skipped' }}
+        if: \${{ always() && steps.posthog_runtime.outputs.configured == 'true' }}
         working-directory: backend
         env:
           GATE_RESULT: \${{ steps.posthog_runtime.outcome == 'success' && 'pass' || 'fail' }}
