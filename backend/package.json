@@ -53,6 +53,7 @@
     "test:architecture-layers": "NODE_ENV=test node --test tests/application-layer-contract.test.mjs",
     "test:payment-certification": "NODE_ENV=test node --test tests/payment-provider-integration.test.mjs tests/payment-webhook-policy.test.mjs tests/payment-e2e-phase4.test.mjs tests/payment-architecture-contract.test.mjs tests/payment-mock-provider-contract.test.mjs tests/payment-financial-invariants-contract.test.mjs",
     "test:payment-mock-live": "NODE_ENV=test node --test tests/payment-mock-provider-live-contract.test.mjs",
+    "test:payment-webhook-postgres-e2e": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-webhook-postgres-e2e.test.mjs",
     "test:payment-postgres-invariants": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-financial-invariants-postgres.test.mjs",
     "test:payment-postgres-integration": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-internal-wallet-postgres.test.mjs"
   },
