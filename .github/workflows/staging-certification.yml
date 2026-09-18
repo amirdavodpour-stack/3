@@ -270,7 +270,10 @@ jobs:
           : "${RAILWAY_SSH_PRIVATE_KEY:?RAILWAY_SSH_PRIVATE_KEY is required for the GitHub-hosted DR tunnel}"
           install -d -m 700 "$HOME/.ssh"
           umask 077
-          printf '%s\n' "$RAILWAY_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          # Normalize multiline GitHub Secret input defensively: tolerate CRLF and literal \\n separators.
+          printf '%s' "$RAILWAY_SSH_PRIVATE_KEY" |
+            tr -d '\r' |
+            sed 's/\\\\n/\n/g' > "$HOME/.ssh/id_ed25519"
           chmod 600 "$HOME/.ssh/id_ed25519"
           ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > "$HOME/.ssh/id_ed25519.pub"
           npm install -g --allow-scripts=@railway/cli @railway/cli@5.30.1 >/dev/null
