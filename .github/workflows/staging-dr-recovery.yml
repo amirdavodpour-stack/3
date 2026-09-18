@@ -129,10 +129,25 @@ jobs:
             chmod 600 "$key_file"
             workspace_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
             echo "Generated ephemeral workspace SSH key: $workspace_fingerprint"
+            workspace_key_name="hope-github-actions-dr-$GITHUB_RUN_ID"
             env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
               railway ssh keys add --workspace "$workspace_id" \
-              --key "$HOME/.ssh/id_ed25519.pub" --name "hope-github-actions-dr-$GITHUB_RUN_ID"
+              --key "$HOME/.ssh/id_ed25519.pub" --name "$workspace_key_name"
             echo 'Registered ephemeral SSH key as workspace-owned key.'
+            cleanup_workspace_key() {
+              set +e
+              env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+                railway ssh keys remove --workspace "$workspace_id" --key "$workspace_key_name" >/tmp/hope-dr-key-cleanup.log 2>&1
+              rc=$?
+              if [ "$rc" -eq 0 ]; then
+                echo "Removed ephemeral workspace SSH key: $workspace_key_name"
+              else
+                echo "Warning: could not remove ephemeral workspace SSH key: $workspace_key_name" >&2
+                cat /tmp/hope-dr-key-cleanup.log >&2 || true
+              fi
+              return 0
+            }
+            trap cleanup_workspace_key EXIT
           fi
 
           start_tunnel() {
