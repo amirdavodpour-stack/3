@@ -5,7 +5,11 @@ on:
   workflow_call:
     secrets:
       RAILWAY_TOKEN:
-        required: true
+        required: false
+      RAILWAY_API_TOKEN:
+        required: false
+      RAILWAY_SSH_PRIVATE_KEY:
+        required: false
       SOURCE_DATABASE_URL:
         required: true
       DRILL_DATABASE_URL:
@@ -21,6 +25,8 @@ jobs:
     timeout-minutes: 20
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+      RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}
       SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
       DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
       RTO_TARGET_SECONDS: '900'
@@ -45,30 +51,140 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Start Railway Postgres SSH tunnel
+      # Uses a Railway Project Token when available; falls back to the workspace API token
+      # with a run-scoped workspace SSH key for GitHub-hosted DR access.
+      - name: Start Railway Postgres SSH tunnel for DR
         id: postgres_tunnel
+        if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
         shell: bash
         env:
-          RAILWAY_TOKEN: ${{ env.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          : "${RAILWAY_TOKEN:?RAILWAY_TOKEN is required}"
-          npm install -g @railway/cli@5.30.1 >/dev/null
-          railway connect Postgres --tunnel-only --port 15432 --project "8c686259-09c6-4609-bbe7-4ea25e769e18" --environment "5a435e97-1e7a-4a5c-952c-19da2f10d955" >"$RUNNER_TEMP/railway-postgres-tunnel.log" 2>&1 &
-          echo $! >"$RUNNER_TEMP/railway-postgres-tunnel.pid"
-          for _ in $(seq 1 30); do
-            if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
-              echo 'Railway Postgres SSH tunnel is ready.'
-              exit 0
-            fi
-            if ! kill -0 "$(cat "$RUNNER_TEMP/railway-postgres-tunnel.pid")" 2>/dev/null; then
-              cat "$RUNNER_TEMP/railway-postgres-tunnel.log"
+          : "${RAILWAY_SSH_PRIVATE_KEY:?RAILWAY_SSH_PRIVATE_KEY is required for the GitHub-hosted DR tunnel}"
+
+          RAILWAY_TOKEN="$(printf '%s' "${RAILWAY_TOKEN:-}" | tr -d '\r\n')"
+          RAILWAY_API_TOKEN="$(printf '%s' "${RAILWAY_API_TOKEN:-}" | tr -d '\r\n')"
+          RAILWAY_SSH_PRIVATE_KEY="$(printf '%s' "$RAILWAY_SSH_PRIVATE_KEY" | tr -d '\r')"
+
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          raw_key="$RAILWAY_SSH_PRIVATE_KEY"
+          key_file="$HOME/.ssh/id_ed25519"
+          if printf '%s' "$raw_key" | grep -q -- '-----BEGIN .*PRIVATE KEY-----'; then
+            printf '%s\n' "$raw_key" | sed 's/\\\\n/\n/g' > "$key_file"
+          else
+            compact_key="$(printf '%s' "$raw_key" | tr -d '[:space:]')"
+            decoded_key="$RUNNER_TEMP/railway-dr-key.bin"
+            if ! printf '%s' "$compact_key" | base64 --decode > "$decoded_key" 2>/dev/null; then
+              echo 'RAILWAY_SSH_PRIVATE_KEY is neither an armored private key nor valid base64' >&2
               exit 1
             fi
-            sleep 1
-          done
-          cat "$RUNNER_TEMP/railway-postgres-tunnel.log"
-          exit 1
+            if head -c 15 "$decoded_key" | grep -aq '^openssh-key-v1'; then
+              {
+                printf '%s\n' '-----BEGIN OPENSSH PRIVATE KEY-----'
+                base64 --wrap=64 "$decoded_key"
+                printf '%s\n' '-----END OPENSSH PRIVATE KEY-----'
+              } > "$key_file"
+            else
+              decoded_text="$RUNNER_TEMP/railway-dr-key.txt"
+              tr -d '\r' < "$decoded_key" > "$decoded_text"
+              grep -q -- '-----BEGIN .*PRIVATE KEY-----' "$decoded_text" || { echo 'Decoded Railway SSH secret is not an OpenSSH private key' >&2; exit 1; }
+              cat "$decoded_text" > "$key_file"
+            fi
+          fi
+          chmod 600 "$key_file"
+          ssh-keygen -y -f "$key_file" > "$HOME/.ssh/id_ed25519.pub"
+          key_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
+          echo "RAILWAY_SSH_KEY_FINGERPRINT=$key_fingerprint"
+          test "$key_fingerprint" = 'SHA256:/Lrb+F+ajiLSfE93dOL7jMsajR7AMlKoSNTLchVjn3w'
+
+          npm install -g --allow-scripts=@railway/cli @railway/cli@5.30.1 >/dev/null
+          project_id='8c686259-09c6-4609-bbe7-4ea25e769e18'
+          environment_id='5a435e97-1e7a-4a5c-952c-19da2f10d955'
+          workspace_id='e6af3417-6d75-46e1-b1e3-e1aae3374974'
+
+          tunnel_log="$RUNNER_TEMP/railway-postgres-tunnel.log"
+          tunnel_pid="$RUNNER_TEMP/railway-postgres-tunnel.pid"
+          rm -f "$tunnel_log" "$tunnel_pid"
+
+          project_ok=false
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            env -u RAILWAY_API_TOKEN -u RAILWAY_TOKEN RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+              railway connect Postgres --tunnel-only --port 15432 \
+              --project "$project_id" --environment "$environment_id" \
+              >"$tunnel_log" 2>&1 &
+            echo $! > "$tunnel_pid"
+            for _ in $(seq 1 30); do
+              if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+                project_ok=true
+                echo 'Railway Postgres SSH tunnel is ready (project token auth).'
+                break
+              fi
+              if ! kill -0 "$(cat "$tunnel_pid")" 2>/dev/null; then
+                break
+              fi
+              sleep 1
+            done
+            if [ "$project_ok" != true ]; then
+              cat "$tunnel_log" >&2 || true
+              kill "$(cat "$tunnel_pid")" 2>/dev/null || true
+              rm -f "$tunnel_pid"
+              echo 'Railway project token rejected; trying workspace API-token fallback.'
+            fi
+          fi
+
+          if [ "$project_ok" != true ]; then
+            : "${RAILWAY_API_TOKEN:?RAILWAY_API_TOKEN is required for the workspace fallback}"
+            rm -f "$key_file" "$HOME/.ssh/id_ed25519.pub"
+            ssh-keygen -t ed25519 -N '' -C "hope-github-actions-dr-$GITHUB_RUN_ID" -f "$key_file" >/dev/null
+            chmod 600 "$key_file"
+            workspace_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
+            echo "Generated workspace SSH key: $workspace_fingerprint"
+            workspace_key_name="hope-github-actions-dr-$GITHUB_RUN_ID"
+            env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+              railway ssh keys add --workspace "$workspace_id" \
+              --key "$HOME/.ssh/id_ed25519.pub" --name "$workspace_key_name"
+            echo 'Registered run-scoped workspace SSH key.'
+            cleanup_workspace_key() {
+              set +e
+              env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+                railway ssh keys remove --workspace "$workspace_id" --key "$workspace_key_name" >/tmp/hope-dr-key-cleanup.log 2>&1
+              rc=$?
+              if [ "$rc" -eq 0 ]; then
+                echo "Removed run-scoped workspace SSH key: $workspace_key_name"
+              else
+                echo "Warning: could not remove run-scoped workspace SSH key: $workspace_key_name" >&2
+                cat /tmp/hope-dr-key-cleanup.log >&2 || true
+              fi
+              return 0
+            }
+            # Remove the run-scoped workspace key when the job exits, including failures.
+            trap cleanup_workspace_key EXIT
+
+            rm -f "$tunnel_log" "$tunnel_pid"
+            env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+              railway connect Postgres --tunnel-only --port 15432 \
+              --project "$project_id" --environment "$environment_id" \
+              >"$tunnel_log" 2>&1 &
+            echo $! > "$tunnel_pid"
+            for _ in $(seq 1 30); do
+              if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+                echo 'Railway Postgres SSH tunnel is ready (workspace API token auth).'
+                break
+              fi
+              if ! kill -0 "$(cat "$tunnel_pid")" 2>/dev/null; then
+                cat "$tunnel_log" >&2
+                exit 1
+              fi
+              sleep 1
+            done
+          fi
+
+          pg_isready -h 127.0.0.1 -p 15432
+
 
       - name: Prepare tunneled source URL
         id: tunneled_source
