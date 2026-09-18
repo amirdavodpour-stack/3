@@ -180,7 +180,7 @@ async function main() {
   const owner = expectStatus(
     await request('/auth/register', {
       method: 'POST',
-      body: { email: ownerEmail, password, fullName: 'CI Notification Owner' },
+      body: { email: ownerEmail, password, displayName: 'CI Notification Owner' },
     }),
     201,
     'register owner',
@@ -188,7 +188,7 @@ async function main() {
   const applicant = expectStatus(
     await request('/auth/register', {
       method: 'POST',
-      body: { email: applicantEmail, password, fullName: 'CI Notification Applicant' },
+      body: { email: applicantEmail, password, displayName: 'CI Notification Applicant' },
     }),
     201,
     'register applicant',
