@@ -283,13 +283,29 @@ test('payment webhook callback is applied atomically in PostgreSQL', { skip: !en
   });
   assert.ok(queued?.id);
 
+  const providerRelease = await fetch(mockServerBase + '/release', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer postgres-e2e-mock-provider-token-32-chars',
+      'content-type': 'application/json',
+      'idempotency-key': `webhook-callback-release-${paymentBeforeWebhook.id}`,
+    },
+    body: JSON.stringify({
+      paymentId: paymentBeforeWebhook.id,
+      providerRef: String(paymentBeforeWebhook.provider_ref || paymentBeforeWebhook.providerRef),
+    }),
+  });
+  assert.equal(providerRelease.status, 200);
+  const providerReleaseBody = await providerRelease.json();
+  assert.match(providerReleaseBody.releaseRef, /^MOCK-RELEASE-/);
+
   const eventId = crypto.randomUUID();
   const timestamp = Math.floor(Date.now() / 1000);
   const body = JSON.stringify({
     eventId,
     eventType: 'PAYMENT_RELEASED',
     paymentId: paymentBeforeWebhook.id,
-    providerRef: String(paymentBeforeWebhook.provider_ref || paymentBeforeWebhook.providerRef),
+    providerRef: providerReleaseBody.releaseRef,
   });
   const signature = signTimestampedPayload(Buffer.from(body), process.env.PAYMENT_WEBHOOK_SECRET, timestamp, eventId);
 
