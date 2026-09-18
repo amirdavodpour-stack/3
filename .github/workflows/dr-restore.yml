@@ -54,7 +54,6 @@ jobs:
           set -euo pipefail
           : "${RAILWAY_TOKEN:?RAILWAY_TOKEN is required}"
           npm install -g @railway/cli@5.30.1 >/dev/null
-          railway whoami >/dev/null
           railway connect Postgres --tunnel-only --port 15432 --project "8c686259-09c6-4609-bbe7-4ea25e769e18" --environment "5a435e97-1e7a-4a5c-952c-19da2f10d955" >"$RUNNER_TEMP/railway-postgres-tunnel.log" 2>&1 &
           echo $! >"$RUNNER_TEMP/railway-postgres-tunnel.pid"
           for _ in $(seq 1 30); do
