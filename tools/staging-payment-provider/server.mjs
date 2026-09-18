@@ -69,6 +69,7 @@ export function createMockPaymentServer({
   outcomes = {},
 } = {}) {
   const state = new Map();
+  const holdRefs = new Map();
 
   async function operation(req, res, name) {
     const auth = String(req.headers.authorization || '');
@@ -91,6 +92,9 @@ export function createMockPaymentServer({
     if (currency !== 'TOMAN') return json(res, 400, { error: 'CURRENCY_MUST_BE_TOMAN' });
     if (['release', 'refund'].includes(name) && (!requestedProviderRef || requestedProviderRef.length > 200)) {
       return json(res, 400, { error: 'PROVIDER_REF_REQUIRED' });
+    }
+    if (['release', 'refund'].includes(name) && holdRefs.has(paymentId) && holdRefs.get(paymentId) !== requestedProviderRef) {
+      return json(res, 409, { error: 'PROVIDER_REF_MISMATCH' });
     }
     if (name === 'create' && (!/^\d+$/.test(rawAmount) || BigInt(rawAmount) <= 0n)) {
       return json(res, 400, { error: 'INVALID_AMOUNT' });
@@ -160,6 +164,7 @@ export function createMockPaymentServer({
             currency,
           };
 
+    if (name === 'create') holdRefs.set(paymentId, response.providerRef);
     state.set(key, { requestFingerprint, response });
     return json(res, 200, { ...response, idempotent: false });
   }
