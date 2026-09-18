@@ -37,6 +37,10 @@ test('mock payment provider exposes the HOPE webhook-provider contract', async (
   const conflict = await post('/create', { paymentId: 'different', key: 'idem-1' });
   assert.equal(conflict.status, 409);
 
+  const mismatchedRelease = await post('/release', { key: 'provider-ref-mismatch-release', providerRef: 'MOCK-HOLD-DIFFERENT' });
+  assert.equal(mismatchedRelease.status, 409);
+  assert.equal(mismatchedRelease.body.error, 'PROVIDER_REF_MISMATCH');
+
   const released = await post('/release', { key: 'rel-1', providerRef: created.body.providerRef });
   assert.equal(released.body.amount, '100000');
 
