@@ -42,17 +42,43 @@ if ! adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root.log 2>&1; then
   exit 1
 fi
 
-adb -s "$ADB_SERIAL" wait-for-device
-adb -s "$ADB_SERIAL" remount
+# Follow Android's supported overlayfs sequence: root -> disable-verity -> reboot -> root -> remount.
+adb -s "$ADB_SERIAL" disable-verity >/tmp/hope-disable-verity.log 2>&1 || {
+  cat /tmp/hope-disable-verity.log >&2 || true
+  echo "adb disable-verity failed." >&2
+  exit 1
+}
+cat /tmp/hope-disable-verity.log
 
-# adb remount enables overlayfs/verity state but may explicitly require a reboot
-# before /system becomes writable. Reboot, re-root, and remount before editing hosts.
 adb -s "$ADB_SERIAL" reboot
 adb -s "$ADB_SERIAL" wait-for-device
-adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root-after-remount.log 2>&1
+adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root-after-reboot.log 2>&1 || {
+  cat /tmp/hope-adb-root-after-reboot.log >&2 || true
+  echo "adb root failed after overlayfs reboot." >&2
+  exit 1
+}
+cat /tmp/hope-adb-root-after-reboot.log
 adb -s "$ADB_SERIAL" wait-for-device
 adb -s "$ADB_SERIAL" remount
 adb -s "$ADB_SERIAL" wait-for-device
+
+# Remounting can restart system services; require a working route before host-file validation.
+NETWORK_READY=false
+for _ in $(seq 1 30); do
+  if adb -s "$ADB_SERIAL" shell "ping -c 1 -W 2 1.1.1.1" >/tmp/hope-android-network-check.log 2>&1; then
+    NETWORK_READY=true
+    break
+  fi
+  sleep 2
+done
+
+if [ "$NETWORK_READY" != "true" ]; then
+  echo "Android guest has no working network route after overlayfs remount." >&2
+  cat /tmp/hope-android-network-check.log >&2 || true
+  adb -s "$ADB_SERIAL" shell ip addr show >&2 || true
+  adb -s "$ADB_SERIAL" shell ip route show >&2 || true
+  exit 1
+fi
 
 IFS=',' read -r -a IP_ARRAY <<< "$IPS"
 for ip in "${IP_ARRAY[@]}"; do
