@@ -87,7 +87,7 @@ class PostHogAnalyticsService {
     sanitized['environment'] = 'staging';
     sanitized['releaseChannel'] = 'staging';
     // Prevent anonymous events from creating person profiles.
-    sanitized['$process_person_profile'] = false;
+    sanitized['\$process_person_profile'] = false;
 
     try {
       final host = _host.trim().replaceFirst(RegExp(r'/+$'), '');
