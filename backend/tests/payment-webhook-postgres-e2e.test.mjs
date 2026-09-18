@@ -36,7 +36,7 @@ if (enabled) {
 }
 
 const base = enabled ? `http://127.0.0.1:${appServer.address().port}/api/v1` : '';
-const { findPaymentByJob } = await import('../src/repository.js');
+const { enqueuePaymentRelease, findPaymentByJob } = await import('../src/repository.js');
 const { processPaymentCreateHoldNow, processPaymentRefundNow } = await import('../src/outbox_worker.js');
 
 const drainUntilPaymentStatus = async (jobId, expectedStatus, processNext) => {
