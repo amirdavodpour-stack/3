@@ -5,6 +5,7 @@ import { createMockPaymentServer } from '../../tools/staging-payment-provider/se
 
 const enabled = Boolean(process.env.DATABASE_URL);
 let mockServer;
+let mockServerBase = '';
 let appServer;
 
 if (enabled) {
@@ -13,6 +14,7 @@ if (enabled) {
   });
   await new Promise((resolve) => mockServer.listen(0, '127.0.0.1', resolve));
   const port = mockServer.address().port;
+  mockServerBase = `http://127.0.0.1:${port}`;
 
   process.env.NODE_ENV = 'test';
   process.env.PAYMENT_PROVIDER = 'webhook';
