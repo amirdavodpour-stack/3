@@ -81,7 +81,7 @@ export function createMockPaymentServer({
     const idempotencyKey = String(req.headers['idempotency-key'] || '').trim();
 
     if (!paymentId) return json(res, 400, { error: 'PAYMENT_ID_REQUIRED' });
-    if (!/^\d+$/.test(String(payload.amount ?? '').trim()) || BigInt(String(payload.amount).trim()) <= 0n) {
+    if (name === 'create' && (!/^\d+$/.test(String(payload.amount ?? '').trim()) || BigInt(String(payload.amount).trim()) <= 0n)) {
       return json(res, 400, { error: 'INVALID_AMOUNT' });
     }
     if (!idempotencyKey) return json(res, 400, { error: 'IDEMPOTENCY_KEY_REQUIRED' });
