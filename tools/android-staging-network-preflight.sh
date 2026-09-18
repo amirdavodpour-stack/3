@@ -29,8 +29,9 @@ echo "Android staging network preflight: host=$HOST resolved_ipv4s=$IPS"
 
 adb -s "$ADB_SERIAL" wait-for-device
 
-if adb -s "$ADB_SERIAL" shell "ping -c 1 -W 2 '$HOST'" >/tmp/hope-android-dns-check.log 2>&1; then
+if adb -s "$ADB_SERIAL" shell "host -t A '$HOST'" >/tmp/hope-android-dns-check.log 2>&1; then
   echo "Android guest DNS resolves $HOST."
+  cat /tmp/hope-android-dns-check.log
   exit 0
 fi
 
@@ -100,10 +101,11 @@ for ip in "${IP_ARRAY[@]}"; do
 done
 adb -s "$ADB_SERIAL" shell sync
 
-adb -s "$ADB_SERIAL" shell "ping -c 1 -W 2 '$HOST'" >/tmp/hope-android-host-check.log 2>&1 || {
+adb -s "$ADB_SERIAL" shell "host -t A '$HOST'" >/tmp/hope-android-host-check.log 2>&1 || {
   cat /tmp/hope-android-host-check.log >&2 || true
-  echo "Android guest still cannot reach $HOST after hosts fallback." >&2
+  echo "Android guest still cannot resolve $HOST after hosts fallback." >&2
   exit 1
 }
 
+cat /tmp/hope-android-host-check.log
 echo "Android staging hostname fallback is active for $HOST."
