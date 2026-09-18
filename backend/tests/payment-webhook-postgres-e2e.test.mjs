@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { createMockPaymentServer } from '../../tools/staging-payment-provider/server.mjs';
 
+function signTimestampedPayload(rawBody, secret, timestamp, eventId) {
+  return `sha256=${crypto.createHmac('sha256', secret).update(`${timestamp}.${eventId}.${rawBody.toString()}`).digest('hex')}`;
+}
+
 const enabled = Boolean(process.env.DATABASE_URL);
 let mockServer;
 let mockServerBase = '';
@@ -166,7 +170,7 @@ test('PostgreSQL payment refund uses the webhook provider boundary and commits R
   assert.ok([200, 202].includes(refunded.status));
   const payment = await drainUntilPaymentStatus(job.id, 'REFUNDED', processPaymentRefundNow);
   assert.equal(payment.status, 'REFUNDED');
-  assert.ok(refunded.body.refund);
+  assert.ok(refunded.body.data?.refund);
 });
 
 
@@ -211,7 +215,7 @@ test('PostgreSQL payment release uses the webhook provider boundary and commits 
     headers: { Authorization: `Bearer ${owner.accessToken}` },
   });
   assert.ok([200, 202].includes(released.status));
-  assert.ok(released.body.data?.payment?.status || released.body.payment?.status || released.body.status);
+  assert.ok(['RELEASE_PENDING','RELEASED'].includes(released.body.data?.status));
 
   // The targeted release worker is triggered by the route itself. Poll the
   // payment row so the assertion covers the actual provider -> outbox -> DB
