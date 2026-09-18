@@ -259,7 +259,7 @@ jobs:
         shell: bash
         env:
           POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
-          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://eu.i.posthog.com' }}
         run: |
           set -euo pipefail
           if [ -z "${POSTHOG_PROJECT_TOKEN:-}" ]; then
@@ -269,11 +269,31 @@ jobs:
           fi
           echo 'configured=true' >> "$GITHUB_OUTPUT"
           node --input-type=module - <<'NODE'
-          const host = (process.env.POSTHOG_HOST || '').replace(/\/+$/, '');
+          const rawHost = (process.env.POSTHOG_HOST || '').trim();
           const token = process.env.POSTHOG_PROJECT_TOKEN || '';
-          if (!/^https:\/\/[^[:space:]]+$/.test(host)) throw new Error('POSTHOG_HOST must be an HTTPS URL without whitespace.');
+          if (!rawHost) throw new Error('POSTHOG_HOST is required when PostHog is configured.');
           if (!token) throw new Error('POSTHOG_PROJECT_TOKEN is required.');
-          const response = await fetch(host + '/i/v0/e/', {
+          let parsed;
+          try {
+            parsed = new URL(rawHost);
+          } catch {
+            throw new Error('POSTHOG_HOST must be a valid HTTPS URL.');
+          }
+          if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash) {
+            throw new Error('POSTHOG_HOST must be an HTTPS host URL without credentials, query, or fragment.');
+          }
+          const hostAliases = new Map([
+            ['eu.posthog.com', 'https://eu.i.posthog.com'],
+            ['us.posthog.com', 'https://us.i.posthog.com'],
+          ]);
+          const host = hostAliases.get(parsed.hostname);
+          const resolvedHost = host ?? (parsed.hostname === 'eu.i.posthog.com' || parsed.hostname === 'us.i.posthog.com'
+            ? 'https://' + parsed.hostname
+            : '');
+          if (!resolvedHost) {
+            throw new Error('POSTHOG_HOST must use the PostHog EU/US ingestion host (for example https://eu.i.posthog.com).');
+          }
+          const response = await fetch(resolvedHost + '/i/v0/e/', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
             body: JSON.stringify({
@@ -312,7 +332,7 @@ jobs:
           HOPE_ENV: staging
           POSTHOG_ENABLED: ${{ secrets.POSTHOG_PROJECT_TOKEN != '' && 'true' || 'false' }}
           POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
-          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://eu.i.posthog.com' }}
         run: bash tools/build_apk_debug.sh
 
       # Uses the repository-backed Ed25519 key registered in Railway for GitHub-hosted DR access.
@@ -446,7 +466,7 @@ jobs:
           CI_DEVICE_INTEGRATION: 'true'
           POSTHOG_ENABLED: ${{ secrets.POSTHOG_PROJECT_TOKEN != '' && 'true' || 'false' }}
           POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
-          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://us.i.posthog.com' }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://eu.i.posthog.com' }}
         with:
           api-level: 35
           arch: x86_64
