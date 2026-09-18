@@ -50,7 +50,9 @@
     "test:postgres:isolated": "NODE_ENV=test node tools/run-postgres-isolated.mjs",
     "test:status-integrity": "node ../tools/validate-test-state.mjs",
     "qualification:inventory": "node ../tools/runtime-qualification-inventory.mjs",
-    "test:architecture-layers": "NODE_ENV=test node --test tests/application-layer-contract.test.mjs"
+    "test:architecture-layers": "NODE_ENV=test node --test tests/application-layer-contract.test.mjs",
+    "test:payment-certification": "NODE_ENV=test node --test tests/payment-provider-integration.test.mjs tests/payment-webhook-policy.test.mjs tests/payment-e2e-phase4.test.mjs tests/payment-architecture-contract.test.mjs tests/payment-mock-provider-contract.test.mjs tests/payment-financial-invariants-contract.test.mjs",
+    "test:payment-postgres-invariants": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-financial-invariants-postgres.test.mjs"
   },
   "dependencies": {
     "pg": "^8.16.3",
