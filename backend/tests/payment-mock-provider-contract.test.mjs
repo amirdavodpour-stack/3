@@ -72,6 +72,9 @@ test('mock payment provider validates provider references and integer TOMAN amou
   const missingProviderRef = await post('/release', { key: 'validation-release' });
   assert.equal(missingProviderRef.status, 400);
   assert.equal(missingProviderRef.body.error, 'PROVIDER_REF_REQUIRED');
+  const missingRefundProviderRef = await post('/refund', { key: 'validation-refund-provider' });
+  assert.equal(missingRefundProviderRef.status, 400);
+  assert.equal(missingRefundProviderRef.body.error, 'PROVIDER_REF_REQUIRED');
 
   const negative = await post('/create', { key: 'validation-negative', amount: '-1' });
   assert.equal(negative.status, 400);
