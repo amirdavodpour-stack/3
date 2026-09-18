@@ -124,6 +124,22 @@ jobs:
           sudo apt-get install -y adb
           adb version
 
+      - name: Install PostgreSQL 18 client for DR
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! apt-cache show postgresql-client-18 >/dev/null 2>&1; then
+            sudo install -d -m 0755 /etc/apt/keyrings
+            curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/keyrings/pgdg.asc >/dev/null
+            echo "deb [signed-by=/etc/apt/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo \"$VERSION_CODENAME\")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+            sudo apt-get update -y
+          fi
+          sudo apt-get install -y postgresql-client-18
+          echo '/usr/lib/postgresql/18/bin' >> "$GITHUB_PATH"
+          pg_dump --version
+          pg_restore --version
+          psql --version
+
       - name: Backend install
         working-directory: backend
         run: npm ci
