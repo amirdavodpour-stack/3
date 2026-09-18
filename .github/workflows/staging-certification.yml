@@ -296,8 +296,9 @@ jobs:
         with:
           api-level: 35
           arch: x86_64
+          target: google_apis
           profile: pixel_2
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8 -writable-system
           # GitHub-hosted Linux can lose the emulator ADB settings service immediately after boot.
           # The test suite does not require animation state, so keep this optional action step disabled.
           disable-animations: false
