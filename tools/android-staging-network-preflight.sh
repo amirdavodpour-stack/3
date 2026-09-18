@@ -29,6 +29,23 @@ echo "Android staging network preflight: host=$HOST resolved_ipv4s=$IPS"
 
 adb -s "$ADB_SERIAL" wait-for-device
 
+wait_for_online_device() {
+  for _ in $(seq 1 90); do
+    state="$(adb -s "$ADB_SERIAL" get-state 2>/dev/null || true)"
+    if [ "$state" = "device" ]; then
+      return 0
+    fi
+    adb -s "$ADB_SERIAL" reconnect offline >/dev/null 2>&1 || true
+    adb -s "$ADB_SERIAL" reconnect device >/dev/null 2>&1 || true
+    sleep 2
+  done
+  echo "Android emulator did not become ADB-online in time (state=$(adb -s "$ADB_SERIAL" get-state 2>&1 || true))." >&2
+  adb devices -l >&2 || true
+  exit 1
+}
+
+wait_for_online_device
+
 if adb -s "$ADB_SERIAL" shell "host -t A '$HOST'" >/tmp/hope-android-dns-check.log 2>&1; then
   echo "Android guest DNS resolves $HOST."
   cat /tmp/hope-android-dns-check.log
@@ -53,6 +70,7 @@ cat /tmp/hope-disable-verity.log
 
 adb -s "$ADB_SERIAL" reboot
 adb -s "$ADB_SERIAL" wait-for-device
+wait_for_online_device
 adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root-after-reboot.log 2>&1 || {
   cat /tmp/hope-adb-root-after-reboot.log >&2 || true
   echo "adb root failed after overlayfs reboot." >&2
@@ -60,6 +78,7 @@ adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root-after-reboot.log 2>&1 || {
 }
 cat /tmp/hope-adb-root-after-reboot.log
 adb -s "$ADB_SERIAL" wait-for-device
+wait_for_online_device
 adb -s "$ADB_SERIAL" remount
 adb -s "$ADB_SERIAL" wait-for-device
 
