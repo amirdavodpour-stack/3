@@ -166,6 +166,62 @@ test('PostgreSQL payment refund uses the webhook provider boundary and commits R
   assert.ok(refunded.body.refund);
 });
 
+
+test('PostgreSQL payment release uses the webhook provider boundary and commits RELEASED', { skip: !enabled }, async () => {
+  const owner = await register('webhook-release-owner');
+  const provider = await register('webhook-release-provider');
+  const job = await createFundableMission(owner, provider);
+
+  const funded = await json(`/payments/fund/${job.id}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${owner.accessToken}`,
+      'Idempotency-Key': `webhook-release-fund-${job.id}`,
+    },
+    body: '{}',
+  });
+  assert.ok([201, 202].includes(funded.status));
+  const held = await drainUntilPaymentStatus(job.id, 'HELD', processPaymentCreateHoldNow);
+  assert.match(held.provider_ref || held.providerRef, /^MOCK-HOLD-/);
+
+  const started = await json(`/jobs/${job.id}/start`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${provider.accessToken}` },
+  });
+  assert.equal(started.status, 200);
+
+  const delivered = await json(`/jobs/${job.id}/deliver`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${provider.accessToken}` },
+  });
+  assert.equal(delivered.status, 200);
+
+  const accepted = await json(`/jobs/${job.id}/accept`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${owner.accessToken}` },
+  });
+  assert.equal(accepted.status, 200);
+  assert.equal(accepted.body.data.status, 'COMPLETED');
+
+  const released = await json(`/payments/release/${job.id}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${owner.accessToken}` },
+  });
+  assert.ok([200, 202].includes(released.status));
+  assert.ok(released.body.data?.payment?.status || released.body.payment?.status || released.body.status);
+
+  // The targeted release worker is triggered by the route itself. Poll the
+  // payment row so the assertion covers the actual provider -> outbox -> DB
+  // transition rather than only the HTTP response.
+  let payment = null;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    payment = await findPaymentByJob(job.id);
+    if (payment?.status === 'RELEASED') break;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.equal(payment?.status, 'RELEASED');
+  assert.match(String(payment.release_ref || payment.releaseRef || ''), /^MOCK-RELEASE-/);
+});
 after(async () => {
   if (appServer) await new Promise((resolve) => appServer.close(resolve));
   if (mockServer) await new Promise((resolve) => mockServer.close(resolve));
