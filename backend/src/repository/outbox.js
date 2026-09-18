@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
-import { releaseJournal, payoutJournal } from '../financial.js';
+import { normalizeFinancialAmount, releaseJournal, payoutJournal } from '../financial.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
 import { failPayoutOutboxWithClient } from './payouts.js';
