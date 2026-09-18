@@ -21,7 +21,7 @@ void main() {
       'accessToken': 'should-not-leak',
       'jobId': 'job-123',
       'email': 'user@example.com',
-      'huge': 'x' * 121,
+      'huge': List.filled(121, 'x').join(),
     });
 
     expect(result, {
