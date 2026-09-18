@@ -78,6 +78,12 @@ jobs:
           REQUIRE_INTEGRATION: '1'
         run: npm run test:postgres
 
+      - name: Run PostgreSQL internal wallet and ledger lifecycle
+        working-directory: backend
+        env:
+          REQUIRE_INTEGRATION: '1'
+        run: npm run test:payment-postgres-integration
+
       - name: Run PostgreSQL financial invariants
         working-directory: backend
         run: npm run test:payment-postgres-invariants
