@@ -33,6 +33,17 @@ if (enabled) {
 }
 
 const base = enabled ? `http://127.0.0.1:${appServer.address().port}/api/v1` : '';
+const { findPaymentByJob } = await import('../src/repository.js');
+const { processPaymentCreateHoldNow, processPaymentRefundNow } = await import('../src/outbox_worker.js');
+
+const drainUntilPaymentStatus = async (jobId, expectedStatus, processNext) => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const payment = await findPaymentByJob(jobId);
+    if (payment?.status === expectedStatus) return payment;
+    await processNext();
+  }
+  throw new Error(`PAYMENT_STATUS_DID_NOT_REACH_${expectedStatus}`);
+};
 const json = async (path, options = {}) => {
   const response = await fetch(base + path, {
     ...options,
@@ -118,10 +129,10 @@ test('PostgreSQL payment fund uses the real webhook provider boundary and commit
     body: '{}',
   });
 
-  assert.equal(funded.status, 201);
-  assert.equal(funded.body.data.status, 'HELD');
-  assert.equal(funded.body.data.currency, 'TOMAN');
-  assert.match(funded.body.data.providerRef, /^MOCK-HOLD-/);
+  assert.ok([201, 202].includes(funded.status));
+  const payment = await drainUntilPaymentStatus(job.id, 'HELD', processPaymentCreateHoldNow);
+  assert.equal(payment.currency, 'TOMAN');
+  assert.match(payment.provider_ref || payment.providerRef, /^MOCK-HOLD-/);
 });
 
 test('PostgreSQL payment refund uses the webhook provider boundary and commits REFUNDED', { skip: !enabled }, async () => {
@@ -137,8 +148,8 @@ test('PostgreSQL payment refund uses the webhook provider boundary and commits R
     },
     body: '{}',
   });
-  assert.equal(funded.status, 201);
-  assert.equal(funded.body.data.status, 'HELD');
+  assert.ok([201, 202].includes(funded.status));
+  await drainUntilPaymentStatus(job.id, 'HELD', processPaymentCreateHoldNow);
 
   const refunded = await json(`/payments/refund/${job.id}`, {
     method: 'POST',
@@ -149,8 +160,9 @@ test('PostgreSQL payment refund uses the webhook provider boundary and commits R
     body: '{}',
   });
 
-  assert.equal(refunded.status, 200);
-  assert.equal(refunded.body.data.status, 'REFUNDED');
+  assert.ok([200, 202].includes(refunded.status));
+  const payment = await drainUntilPaymentStatus(job.id, 'REFUNDED', processPaymentRefundNow);
+  assert.equal(payment.status, 'REFUNDED');
   assert.ok(refunded.body.refund);
 });
 
