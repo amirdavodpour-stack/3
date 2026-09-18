@@ -52,9 +52,10 @@ function providerRef(operation, paymentId, idempotencyKey) {
   return `MOCK-${operation.toUpperCase()}-${digest}`;
 }
 
-function configuredOutcome(operation) {
+function configuredOutcome(operation, outcomes) {
+  const override = outcomes?.[operation];
   const specific = process.env[`MOCK_PAYMENT_${operation.toUpperCase()}_OUTCOME`];
-  return String(specific || process.env.MOCK_PAYMENT_OUTCOME || 'SUCCESS').trim().toUpperCase();
+  return String(override || specific || process.env.MOCK_PAYMENT_OUTCOME || 'SUCCESS').trim().toUpperCase();
 }
 
 function signatureFor(raw, secret, timestamp, eventId) {
@@ -65,6 +66,7 @@ export function createMockPaymentServer({
   token = process.env.PAYMENT_PROVIDER_TOKEN || DEFAULT_TOKEN,
   webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET || '',
   webhookTargetUrl = process.env.MOCK_PAYMENT_WEBHOOK_TARGET_URL || '',
+  outcomes = {},
 } = {}) {
   const state = new Map();
 
@@ -79,24 +81,53 @@ export function createMockPaymentServer({
     const paymentId = String(payload.paymentId || '').trim();
     const currency = String(payload.currency || 'TOMAN').trim().toUpperCase();
     const idempotencyKey = String(req.headers['idempotency-key'] || '').trim();
+    const rawAmount = payload.amount == null ? '' : String(payload.amount).trim();
+    const providerRef = String(payload.providerRef || '').trim();
 
-    if (!paymentId) return json(res, 400, { error: 'PAYMENT_ID_REQUIRED' });
-    if (name === 'create' && (!/^\d+$/.test(String(payload.amount ?? '').trim()) || BigInt(String(payload.amount).trim()) <= 0n)) {
+    if (!paymentId || paymentId.length > 100) return json(res, 400, { error: 'INVALID_PAYMENT_ID' });
+    if (!idempotencyKey || idempotencyKey.length > 200 || !/^[A-Za-z0-9._~:-]+$/.test(idempotencyKey)) {
+      return json(res, 400, { error: 'INVALID_IDEMPOTENCY_KEY' });
+    }
+    if (currency !== 'TOMAN') return json(res, 400, { error: 'CURRENCY_MUST_BE_TOMAN' });
+    if (['release', 'refund'].includes(name) && (!providerRef || providerRef.length > 200)) {
+      return json(res, 400, { error: 'PROVIDER_REF_REQUIRED' });
+    }
+    if (name === 'create' && (!/^\d+$/.test(rawAmount) || BigInt(rawAmount) <= 0n)) {
       return json(res, 400, { error: 'INVALID_AMOUNT' });
     }
-    if (!idempotencyKey) return json(res, 400, { error: 'IDEMPOTENCY_KEY_REQUIRED' });
-    if (currency !== 'TOMAN') return json(res, 400, { error: 'CURRENCY_MUST_BE_TOMAN' });
+    if (name !== 'create' && rawAmount && !/^\d+$/.test(rawAmount)) {
+      return json(res, 400, { error: 'INVALID_AMOUNT' });
+    }
+    let amount = rawAmount;
+    if (rawAmount) {
+      try {
+        const integer = BigInt(rawAmount);
+        if (integer > 9_000_000_000_000_000n) return json(res, 400, { error: 'AMOUNT_OUT_OF_RANGE' });
+        amount = integer.toString();
+      } catch {
+        return json(res, 400, { error: 'INVALID_AMOUNT' });
+      }
+    } else if (name !== 'create') {
+      amount = '0';
+    }
 
     const key = `${name}:${idempotencyKey}`;
+    const requestFingerprint = crypto.createHash('sha256').update(JSON.stringify({
+      operation: name,
+      paymentId,
+      amount,
+      currency,
+      providerRef,
+    })).digest('hex');
     const existing = state.get(key);
     if (existing) {
-      if (existing.paymentId !== paymentId || existing.amount !== String(payload.amount)) {
+      if (existing.requestFingerprint !== requestFingerprint) {
         return json(res, 409, { error: 'IDEMPOTENCY_CONFLICT' });
       }
       return json(res, 200, { ...existing.response, idempotent: true });
     }
 
-    const outcome = configuredOutcome(name);
+    const outcome = configuredOutcome(name, outcomes);
     if (!['SUCCESS', 'FAILED', 'UNKNOWN'].includes(outcome)) {
       return json(res, 500, { error: 'INVALID_MOCK_OUTCOME' });
     }
@@ -117,7 +148,7 @@ export function createMockPaymentServer({
             providerRef: String(payload.providerRef || providerRef('hold', paymentId, idempotencyKey)),
             releaseRef: providerRef('release', paymentId, idempotencyKey),
             status: 'RELEASED',
-            amount: String(payload.amount || '0'),
+            amount,
             currency,
           }
         : {
@@ -125,11 +156,11 @@ export function createMockPaymentServer({
             providerRef: String(payload.providerRef || providerRef('hold', paymentId, idempotencyKey)),
             refundRef: providerRef('refund', paymentId, idempotencyKey),
             status: 'REFUNDED',
-            amount: String(payload.amount || '0'),
+            amount,
             currency,
           };
 
-    state.set(key, { paymentId, amount: String(payload.amount), response });
+    state.set(key, { requestFingerprint, response });
     return json(res, 200, { ...response, idempotent: false });
   }
 
