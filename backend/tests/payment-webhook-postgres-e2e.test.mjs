@@ -220,7 +220,12 @@ test('PostgreSQL payment release uses the webhook provider boundary and commits 
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
   assert.equal(payment?.status, 'RELEASED');
-  assert.match(String(payment.release_ref || payment.releaseRef || ''), /^MOCK-RELEASE-/);
+  const settledJob = await json(`/jobs/${job.id}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${owner.accessToken}` },
+  });
+  assert.equal(settledJob.status, 200);
+  assert.equal(settledJob.body.data.status, 'SETTLED');
 });
 after(async () => {
   if (appServer) await new Promise((resolve) => appServer.close(resolve));
