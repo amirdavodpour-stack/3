@@ -1,6 +1,9 @@
 name: HOPE Android Emulator Certification (isolated)
 
 on:
+  push:
+    branches:
+      - chore/android-emulator-cert-2026-09-19
   workflow_dispatch:
 
 concurrency:
