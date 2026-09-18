@@ -37,7 +37,7 @@ else
   export POSTHOG_ENABLED="${POSTHOG_ENABLED:-false}"
   export POSTHOG_PROJECT_TOKEN="${POSTHOG_PROJECT_TOKEN:-}"
 fi
-export POSTHOG_HOST="${POSTHOG_HOST:-https://us.i.posthog.com}"
+export POSTHOG_HOST="${POSTHOG_HOST:-https://eu.i.posthog.com}"
 
 if [ "$POSTHOG_ENABLED" = "true" ]; then
   [ "$HOPE_ENV" = "staging" ] || {
