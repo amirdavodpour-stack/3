@@ -82,14 +82,14 @@ export function createMockPaymentServer({
     const currency = String(payload.currency || 'TOMAN').trim().toUpperCase();
     const idempotencyKey = String(req.headers['idempotency-key'] || '').trim();
     const rawAmount = payload.amount == null ? '' : String(payload.amount).trim();
-    const providerRef = String(payload.providerRef || '').trim();
+    const requestedProviderRef = String(payload.providerRef || '').trim();
 
     if (!paymentId || paymentId.length > 100) return json(res, 400, { error: 'INVALID_PAYMENT_ID' });
     if (!idempotencyKey || idempotencyKey.length > 200 || !/^[A-Za-z0-9._~:-]+$/.test(idempotencyKey)) {
       return json(res, 400, { error: 'INVALID_IDEMPOTENCY_KEY' });
     }
     if (currency !== 'TOMAN') return json(res, 400, { error: 'CURRENCY_MUST_BE_TOMAN' });
-    if (['release', 'refund'].includes(name) && (!providerRef || providerRef.length > 200)) {
+    if (['release', 'refund'].includes(name) && (!requestedProviderRef || requestedProviderRef.length > 200)) {
       return json(res, 400, { error: 'PROVIDER_REF_REQUIRED' });
     }
     if (name === 'create' && (!/^\d+$/.test(rawAmount) || BigInt(rawAmount) <= 0n)) {
@@ -117,7 +117,7 @@ export function createMockPaymentServer({
       paymentId,
       amount,
       currency,
-      providerRef,
+      providerRef: requestedProviderRef,
     })).digest('hex');
     const existing = state.get(key);
     if (existing) {
@@ -139,13 +139,13 @@ export function createMockPaymentServer({
           provider: 'MOCK',
           providerRef: providerRef('hold', paymentId, idempotencyKey),
           status: 'HELD',
-          amount: String(payload.amount),
+          amount,
           currency,
         }
       : name === 'release'
         ? {
             provider: 'MOCK',
-            providerRef: String(payload.providerRef || providerRef('hold', paymentId, idempotencyKey)),
+            providerRef: requestedProviderRef,
             releaseRef: providerRef('release', paymentId, idempotencyKey),
             status: 'RELEASED',
             amount,
@@ -153,7 +153,7 @@ export function createMockPaymentServer({
           }
         : {
             provider: 'MOCK',
-            providerRef: String(payload.providerRef || providerRef('hold', paymentId, idempotencyKey)),
+            providerRef: requestedProviderRef,
             refundRef: providerRef('refund', paymentId, idempotencyKey),
             status: 'REFUNDED',
             amount,
@@ -186,7 +186,7 @@ export function createMockPaymentServer({
         const payload = await readJson(req);
         const paymentId = String(payload.paymentId || '').trim();
         const eventType = String(payload.eventType || '').trim().toUpperCase();
-        const providerRef = String(payload.providerRef || '').trim();
+        const requestedProviderRef = String(payload.providerRef || '').trim();
         if (!paymentId || !['PAYMENT_HELD', 'PAYMENT_RELEASED', 'PAYMENT_REFUNDED'].includes(eventType)) {
           return json(res, 400, { error: 'INVALID_WEBHOOK_EVENT' });
         }
