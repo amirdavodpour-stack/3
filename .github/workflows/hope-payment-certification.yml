@@ -91,6 +91,12 @@ jobs:
           DATABASE_URL: ''
         run: npm run test:payment-certification
 
+      - name: Run live Mock Payment Provider certification
+        working-directory: backend
+        env:
+          MOCK_PROVIDER_BASE_URL: http://127.0.0.1:18080
+        run: npm run test:payment-mock-live
+
       - name: Run PostgreSQL migrations
         working-directory: backend
         run: npm run migrate
