@@ -62,7 +62,7 @@ test('storage cleanup settings are bounded and documented', () => {
     'UPLOAD_ORPHAN_GRACE_SECONDS=3600',
     'UPLOAD_CLEANUP_INTERVAL_MS=900000',
     'UPLOAD_CLEANUP_BATCH_SIZE=100',
-    'S3_BUCKET=v2hope-private',
+    '# S3_BUCKET=v2hope-private',
   ]) {
     assert.match(envExample, new RegExp(`^${marker.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}$`, 'm'));
   }
