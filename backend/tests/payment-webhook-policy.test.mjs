@@ -39,3 +39,23 @@ test('payment webhooks claim the canonical provider event before financial mutat
   assert.match(repo, /TRUE,'PROCESSING'/);
   assert.match(repo, /status\s*=\s*'PROCESSED',\s*processed_at\s*=\s*NOW\(\)/);
 });
+
+
+test('refund webhooks require a provider reference', () => {
+  const requireFields = (body, fields) => {
+    for (const field of fields) assert.ok(body[field] != null, field);
+  };
+  const enumField = (value, allowed) => {
+    const normalized = String(value).toUpperCase();
+    assert.ok(allowed.has(normalized));
+    return normalized;
+  };
+  assert.throws(
+    () => normalizePaymentWebhookBody({
+      eventId: 'refund-event-1',
+      eventType: 'PAYMENT_REFUNDED',
+      paymentId: 'payment-1',
+    }, { requireFields, enumField }),
+    /INVALID_PROVIDER_REF/,
+  );
+});

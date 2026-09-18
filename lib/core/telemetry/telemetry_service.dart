@@ -1,17 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../storage/secure_store.dart';
+import 'posthog_analytics_service.dart';
 
 class TelemetryService {
   TelemetryService(this.store, {required this.baseUrl});
   final SecureStore store;
   final String baseUrl;
+  final PostHogAnalyticsService _posthog = PostHogAnalyticsService();
   static const _anonKey = 'hope.telemetry.anonymous_id';
   static const _consentKey = 'hope.telemetry.consent';
   static const _version =
       String.fromEnvironment('HOPE_VERSION', defaultValue: '0.0.0');
+  static const _environment =
+      String.fromEnvironment('HOPE_ENV', defaultValue: '');
 
   Future<String> _anonymousId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -36,6 +41,11 @@ class TelemetryService {
     }
   }
 
+  String get _releaseChannel {
+    if (_environment.isNotEmpty) return _environment;
+    return kReleaseMode ? 'production' : 'debug';
+  }
+
   Future<bool> get telemetryConsent async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_consentKey) ?? false;
@@ -52,9 +62,17 @@ class TelemetryService {
     try {
       if (!await telemetryConsent) return;
       final token = await store.accessToken;
+      final anonymousId = await _anonymousId();
+
+      unawaited(_posthog.capture(
+        eventName,
+        distinctId: anonymousId,
+        properties: properties,
+      ));
+
       final body = <String, dynamic>{
         'eventName': eventName,
-        'anonymousId': await _anonymousId(),
+        'anonymousId': anonymousId,
         'sessionId': sessionId,
         'appVersion': _version,
         'platform': _platform,
@@ -81,11 +99,19 @@ class TelemetryService {
     try {
       if (!await telemetryConsent) return;
       final token = await store.accessToken;
+      final anonymousId = await _anonymousId();
+
+      unawaited(_posthog.captureError(
+        distinctId: anonymousId,
+        error: error,
+        context: context,
+      ));
+
       final body = <String, dynamic>{
-        'anonymousId': await _anonymousId(),
+        'anonymousId': anonymousId,
         'appVersion': _version,
         'platform': _platform,
-        'releaseChannel': kReleaseMode ? 'production' : 'debug',
+        'releaseChannel': _releaseChannel,
         'fingerprint': fingerprint ?? _fingerprint(error),
         'message': error.toString(),
         'stack': stack.toString(),
