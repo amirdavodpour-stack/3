@@ -10,9 +10,9 @@ The canonical flow is:
 
 ### Staging
 
-Use the free Mock Payment Provider behind `PAYMENT_PROVIDER=webhook` when validating the external-provider boundary.
+The current free live-staging mode remains `PAYMENT_PROVIDER=internal` with `PAYMENT_CURRENCY=TOMAN`; it does not require a real PSP.
 
-Required staging configuration:
+The repository also contains a Mock Payment Provider for certifying the external-provider boundary. When that mode is enabled, use:
 
 ```env
 PAYMENT_PROVIDER=webhook
@@ -30,13 +30,13 @@ Production configuration remains fail-closed and does not allow the simulator.
 
 The GitHub Actions payment certification workflow uses a local PostgreSQL 17 service and starts the repository's Mock Payment Provider locally. The backend is configured as `PAYMENT_PROVIDER=webhook`, so the CI path exercises the same provider boundary used for an external PSP, while allowing only loopback HTTP in the explicit test runtime.
 
-The certification then runs the existing real-PostgreSQL marketplace/payment lifecycle suite, the internal wallet/ledger lifecycle coverage, and PostgreSQL invariant checks.
+The certification directly exercises that running Mock Provider process for create/release/refund, replay/idempotency, authentication, and currency enforcement. It then runs the existing real-PostgreSQL marketplace/payment lifecycle suite, the internal wallet/ledger lifecycle coverage, and PostgreSQL invariant checks.
 
 No real PSP credential is required.
 
 ## Free staging constraint
 
-The Mock Payment Provider is also packaged as a deployable staging helper, but the current Railway workspace has reached its free-plan resource provisioning limit. The existing notification provider service is intentionally not repurposed for payment traffic. Until a resource slot is available, live staging remains on its existing payment configuration and the external-provider boundary is certified through the isolated CI Mock Provider instead.
+The Mock Payment Provider is also packaged as a deployable staging helper, but the current Railway workspace has reached its free-plan resource provisioning limit. The existing notification provider service is intentionally not repurposed for payment traffic. Until a resource slot is available, live staging remains on the internal TOMAN configuration and the external-provider boundary is certified through the isolated CI Mock Provider instead.
 
 ## Financial invariants
 
