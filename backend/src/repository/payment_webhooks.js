@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
-import { fundingJournal, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
+import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient, postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 
@@ -13,10 +13,6 @@ function conflict(code, message) {
   e.status = 409;
   e.message = message;
   return e;
-}
-
-function financialNumber(currency, value) {
-  return String(currency || config.paymentCurrency).toUpperCase() === 'TOMAN' ? String(value ?? '0') : Number(value ?? 0);
 }
 
 export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,providerRef,payload}) {
@@ -60,7 +56,7 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       return {processed:true,duplicate:true,paymentId:duplicate.rows[0]?.payment_id || null};
     }
 
-    const b={baseAmount:financialNumber(p.currency,p.base_amount||p.amount),employerFee:financialNumber(p.currency,p.employer_fee||0),workerFee:financialNumber(p.currency,p.worker_fee||0),platformFee:financialNumber(p.currency,p.platform_fee||0),employerCharge:financialNumber(p.currency,p.employer_charge||p.amount),providerPayout:financialNumber(p.currency,p.provider_payout||p.amount),currency:p.currency||config.paymentCurrency};
+    const b={baseAmount:normalizeFinancialAmount(p.currency,p.base_amount||p.amount),employerFee:normalizeFinancialAmount(p.currency,p.employer_fee||0),workerFee:normalizeFinancialAmount(p.currency,p.worker_fee||0),platformFee:normalizeFinancialAmount(p.currency,p.platform_fee||0),employerCharge:normalizeFinancialAmount(p.currency,p.employer_charge||p.amount),providerPayout:normalizeFinancialAmount(p.currency,p.provider_payout||p.amount),currency:p.currency||config.paymentCurrency};
     if(eventType==='PAYMENT_HELD' && p.status==='HOLD_PENDING') {
       if (config.paymentProvider === 'internal') {
         if (b.currency !== 'TOMAN') throw conflict('INTERNAL_CURRENCY_MISMATCH','Internal payment webhook requires TOMAN');
