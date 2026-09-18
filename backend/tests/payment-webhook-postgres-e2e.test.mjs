@@ -21,6 +21,7 @@ if (enabled) {
   process.env.PAYMENT_PROVIDER_CREATE_URL = `http://127.0.0.1:${port}/create`;
   process.env.PAYMENT_PROVIDER_RELEASE_URL = `http://127.0.0.1:${port}/release`;
   process.env.PAYMENT_PROVIDER_REFUND_URL = `http://127.0.0.1:${port}/refund`;
+  process.env.PAYMENT_WEBHOOK_SECRET = 'postgres-e2e-webhook-secret-32-characters';
   process.env.PAYMENT_PROVIDER_MAX_ATTEMPTS = '1';
   process.env.PAYMENT_PROVIDER_RETRY_BASE_MS = '0';
   process.env.OUTBOX_POLL_MS = '60000';
@@ -226,6 +227,96 @@ test('PostgreSQL payment release uses the webhook provider boundary and commits 
   });
   assert.equal(settledJob.status, 200);
   assert.equal(settledJob.body.data.status, 'SETTLED');
+});
+
+test('payment webhook callback is applied atomically in PostgreSQL', { skip: !enabled }, async () => {
+  const owner = await register('webhook-callback-owner');
+  const provider = await register('webhook-callback-provider');
+  const job = await createFundableMission(owner, provider);
+
+  const funded = await json(`/payments/fund/${job.id}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${owner.accessToken}`,
+      'Idempotency-Key': `webhook-callback-fund-${job.id}`,
+    },
+    body: '{}',
+  });
+  assert.ok([201, 202].includes(funded.status));
+  const held = await drainUntilPaymentStatus(job.id, 'HELD', processPaymentCreateHoldNow);
+
+  const started = await json(`/jobs/${job.id}/start`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${provider.accessToken}` },
+  });
+  assert.equal(started.status, 200);
+  const delivered = await json(`/jobs/${job.id}/deliver`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${provider.accessToken}` },
+  });
+  assert.equal(delivered.status, 200);
+  const accepted = await json(`/jobs/${job.id}/accept`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${owner.accessToken}` },
+  });
+  assert.equal(accepted.status, 200);
+  assert.equal(accepted.body.data.status, 'COMPLETED');
+
+  const paymentBeforeWebhook = await findPaymentByJob(job.id);
+  assert.equal(paymentBeforeWebhook.status, 'RELEASE_PENDING');
+  assert.equal(paymentBeforeWebhook.provider_ref || paymentBeforeWebhook.providerRef, held.provider_ref || held.providerRef);
+
+  const queued = await enqueuePaymentRelease({
+    jobId: job.id,
+    ownerId: owner.user?.id || owner.id,
+    paymentId: paymentBeforeWebhook.id,
+    dedupeKey: `PAYMENT_RELEASE:WEBHOOK_CALLBACK:${paymentBeforeWebhook.id}`,
+  });
+  assert.ok(queued?.id);
+
+  const eventId = crypto.randomUUID();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const body = JSON.stringify({
+    eventId,
+    eventType: 'PAYMENT_RELEASED',
+    paymentId: paymentBeforeWebhook.id,
+    providerRef: String(paymentBeforeWebhook.provider_ref || paymentBeforeWebhook.providerRef),
+  });
+  const signature = signTimestampedPayload(Buffer.from(body), process.env.PAYMENT_WEBHOOK_SECRET, timestamp, eventId);
+
+  const callback = await json('/payments/webhook', {
+    method: 'POST',
+    headers: {
+      'x-hope-signature': signature,
+      'x-hope-timestamp': String(timestamp),
+      'x-hope-event-id': eventId,
+    },
+    body,
+  });
+  assert.equal(callback.status, 200);
+  assert.equal(callback.body.data.processed, true);
+  assert.equal(callback.body.data.duplicate, false);
+
+  const paymentAfterWebhook = await findPaymentByJob(job.id);
+  assert.equal(paymentAfterWebhook.status, 'RELEASED');
+  const settledJob = await json(`/jobs/${job.id}`, {
+    headers: { Authorization: `Bearer ${owner.accessToken}` },
+  });
+  assert.equal(settledJob.status, 200);
+  assert.equal(settledJob.body.data.status, 'SETTLED');
+
+  const duplicate = await json('/payments/webhook', {
+    method: 'POST',
+    headers: {
+      'x-hope-signature': signature,
+      'x-hope-timestamp': String(timestamp),
+      'x-hope-event-id': eventId,
+    },
+    body,
+  });
+  assert.equal(duplicate.status, 200);
+  assert.equal(duplicate.body.data.processed, true);
+  assert.equal(duplicate.body.data.duplicate, true);
 });
 after(async () => {
   if (appServer) await new Promise((resolve) => appServer.close(resolve));
