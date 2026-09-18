@@ -2,6 +2,7 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { createMockPaymentServer } from '../../tools/staging-payment-provider/server.mjs';
+import { requirePool } from '../src/repository/context.js';
 
 function signTimestampedPayload(rawBody, secret, timestamp, eventId) {
   return `sha256=${crypto.createHmac('sha256', secret).update(`${timestamp}.${eventId}.${rawBody.toString()}`).digest('hex')}`;
