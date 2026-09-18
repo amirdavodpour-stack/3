@@ -57,3 +57,5 @@ jobs:
           else
             echo "configured endpoint differs from repository expected endpoint (expected host: $expected_host)"
           fi
+
+# trigger diagnostic execution
