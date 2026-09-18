@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   workflow_call:
     secrets:
-      SOURCE_DATABASE_PUBLIC_URL:
-        required: false
+      RAILWAY_TOKEN:
+        required: true
       SOURCE_DATABASE_URL:
         required: true
       DRILL_DATABASE_URL:
@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      SOURCE_DATABASE_PUBLIC_URL: ${{ secrets.SOURCE_DATABASE_PUBLIC_URL }}
-      SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_PUBLIC_URL || secrets.SOURCE_DATABASE_URL }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
       DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
       RTO_TARGET_SECONDS: '900'
     steps:
@@ -45,6 +45,42 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Start Railway Postgres SSH tunnel
+        id: postgres_tunnel
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ env.RAILWAY_TOKEN }}
+        run: |
+          set -euo pipefail
+          : "${RAILWAY_TOKEN:?RAILWAY_TOKEN is required}"
+          npm install -g @railway/cli@5.30.1 >/dev/null
+          railway whoami >/dev/null
+          railway connect Postgres --tunnel-only --port 15432 --project "8c686259-09c6-4609-bbe7-4ea25e769e18" --environment "5a435e97-1e7a-4a5c-952c-19da2f10d955" >"$RUNNER_TEMP/railway-postgres-tunnel.log" 2>&1 &
+          echo $! >"$RUNNER_TEMP/railway-postgres-tunnel.pid"
+          for _ in $(seq 1 30); do
+            if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+              echo 'Railway Postgres SSH tunnel is ready.'
+              exit 0
+            fi
+            if ! kill -0 "$(cat "$RUNNER_TEMP/railway-postgres-tunnel.pid")" 2>/dev/null; then
+              cat "$RUNNER_TEMP/railway-postgres-tunnel.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/railway-postgres-tunnel.log"
+          exit 1
+
+      - name: Prepare tunneled source URL
+        id: tunneled_source
+        shell: bash
+        env:
+          SOURCE_DATABASE_URL: ${{ env.SOURCE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          source_url="$(node -e 'const u=new URL(process.env.SOURCE_DATABASE_URL); u.hostname="127.0.0.1"; u.port="15432"; process.stdout.write(u.toString())')"
+          echo "SOURCE_DATABASE_TUNNELED_URL=$source_url" >> "$GITHUB_ENV"
+
       - name: Verify target isolation
         shell: bash
         run: |
@@ -52,14 +88,7 @@ jobs:
           : "${SOURCE_DATABASE_URL:?SOURCE_DATABASE_URL is required}"
           : "${DRILL_DATABASE_URL:?DRILL_DATABASE_URL is required}"
           test "$SOURCE_DATABASE_URL" != "$DRILL_DATABASE_URL"
-          case "$SOURCE_DATABASE_URL" in
-            *://*.railway.internal:*)
-              echo 'SOURCE_DATABASE_URL resolves to Railway private networking and is not reachable from a GitHub-hosted runner.' >&2
-              echo 'Set GitHub secret SOURCE_DATABASE_PUBLIC_URL to the Postgres TCP Proxy connection string (Railway DATABASE_PUBLIC_URL).' >&2
-              exit 1
-              ;;
-          esac
-          echo "Source and DR target are distinct and externally reachable."
+          echo "Source and DR target are distinct; source will be reached through the private Railway SSH tunnel."
 
       - name: DR restore drill
         id: dr_restore
