@@ -64,21 +64,23 @@ jobs:
 
       - name: Run targeted payment certification
         working-directory: backend
+        env:
+          DATABASE_URL: ''
         run: npm run test:payment-certification
 
       - name: Run PostgreSQL migrations
         working-directory: backend
         run: npm run migrate
 
-      - name: Run PostgreSQL financial invariants
-        working-directory: backend
-        run: npm run test:payment-postgres-invariants
-
       - name: Run PostgreSQL marketplace/payment lifecycle
         working-directory: backend
         env:
           REQUIRE_INTEGRATION: '1'
         run: npm run test:postgres
+
+      - name: Run PostgreSQL financial invariants
+        working-directory: backend
+        run: npm run test:payment-postgres-invariants
 
       - name: Generate evidence
         working-directory: backend
