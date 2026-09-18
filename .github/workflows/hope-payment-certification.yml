@@ -40,8 +40,12 @@ jobs:
     env:
       DATABASE_URL: postgresql://hope:hope@127.0.0.1:5432/hope_test
       NODE_ENV: test
-      PAYMENT_PROVIDER: simulator
+      PAYMENT_PROVIDER: webhook
       PAYMENT_CURRENCY: TOMAN
+      PAYMENT_PROVIDER_TOKEN: hope-ci-mock-provider-token-32-characters
+      PAYMENT_PROVIDER_CREATE_URL: http://127.0.0.1:18080/create
+      PAYMENT_PROVIDER_RELEASE_URL: http://127.0.0.1:18080/release
+      PAYMENT_PROVIDER_REFUND_URL: http://127.0.0.1:18080/refund
       PAYMENT_WEBHOOK_SECRET: certification-webhook-secret-32-characters-minimum
 
     steps:
@@ -61,6 +65,25 @@ jobs:
 
       - name: Syntax check payment provider service
         run: node --check tools/staging-payment-provider/server.mjs
+
+      - name: Start local Mock Payment Provider
+        working-directory: tools/staging-payment-provider
+        env:
+          PORT: '18080'
+          PAYMENT_PROVIDER_TOKEN: hope-ci-mock-provider-token-32-characters
+        run: |
+          set -euo pipefail
+          node server.mjs > "$RUNNER_TEMP/hope-mock-payment-provider.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/hope-mock-payment-provider.pid"
+          for i in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:18080/health >/tmp/hope-mock-payment-health.json; then
+              cat /tmp/hope-mock-payment-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/hope-mock-payment-provider.log"
+          exit 1
 
       - name: Run targeted payment certification
         working-directory: backend
@@ -87,6 +110,21 @@ jobs:
       - name: Run PostgreSQL financial invariants
         working-directory: backend
         run: npm run test:payment-postgres-invariants
+
+      - name: Capture Mock Payment Provider log
+        if: always()
+        run: |
+          mkdir -p artifacts
+          if [ -f "$RUNNER_TEMP/hope-mock-payment-provider.log" ]; then
+            cp "$RUNNER_TEMP/hope-mock-payment-provider.log" artifacts/hope-mock-payment-provider.log
+          fi
+
+      - name: Stop local Mock Payment Provider
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/hope-mock-payment-provider.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/hope-mock-payment-provider.pid")" 2>/dev/null || true
+          fi
 
       - name: Generate evidence
         working-directory: backend
