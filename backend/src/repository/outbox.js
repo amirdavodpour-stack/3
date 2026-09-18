@@ -5,10 +5,6 @@ import { releaseJournal, payoutJournal } from '../financial.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
 import { failPayoutOutboxWithClient } from './payouts.js';
-function financialNumber(currency, value) {
-  return String(currency || config.paymentCurrency).toUpperCase() === 'TOMAN' ? String(value ?? '0') : Number(value ?? 0);
-}
-
 export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentId, providerRef, actorId, leaseToken }) {
   return withSqlTransaction(async (client) => {
     const { rows: er } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
@@ -26,9 +22,9 @@ export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentI
     }
     if (payment.status !== 'HOLD_PENDING') return { completed:false, reason:'INVALID_PAYMENT_STATE' };
     if (config.paymentProvider === 'internal') {
-      const employerCharge = financialNumber(payment.currency, payment.employer_charge || payment.amount);
-      const providerPayout = financialNumber(payment.currency, payment.provider_payout || payment.amount);
-      const platformFee = financialNumber(payment.currency, payment.platform_fee || 0);
+      const employerCharge = normalizeFinancialAmount(payment.currency, payment.employer_charge || payment.amount);
+      const providerPayout = normalizeFinancialAmount(payment.currency, payment.provider_payout || payment.amount);
+      const platformFee = normalizeFinancialAmount(payment.currency, payment.platform_fee || 0);
       const currency = payment.currency || config.paymentCurrency;
       if (currency !== 'TOMAN') {
         const e = new Error('INTERNAL_CURRENCY_MISMATCH'); e.code = 'INTERNAL_CURRENCY_MISMATCH'; throw e;
@@ -121,7 +117,7 @@ export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, 
       return { completed:true, alreadyDone:true };
     }
     if (payment.status !== 'RELEASE_PENDING') return { completed:false, reason:'INVALID_PAYMENT_STATE' };
-    const breakdown = { baseAmount:financialNumber(payment.currency,payment.base_amount || payment.amount), employerFee:financialNumber(payment.currency,payment.employer_fee || 0), workerFee:financialNumber(payment.currency,payment.worker_fee || 0), platformFee:financialNumber(payment.currency,payment.platform_fee || 0), employerCharge:financialNumber(payment.currency,payment.employer_charge || payment.amount), providerPayout:financialNumber(payment.currency,payment.provider_payout || payment.amount), currency:payment.currency || config.paymentCurrency, policyVersion:payment.fee_policy_version || 'legacy', kind:'JOB' };
+    const breakdown = { baseAmount:normalizeFinancialAmount(payment.currency,payment.base_amount || payment.amount), employerFee:normalizeFinancialAmount(payment.currency,payment.employer_fee || 0), workerFee:normalizeFinancialAmount(payment.currency,payment.worker_fee || 0), platformFee:normalizeFinancialAmount(payment.currency,payment.platform_fee || 0), employerCharge:normalizeFinancialAmount(payment.currency,payment.employer_charge || payment.amount), providerPayout:normalizeFinancialAmount(payment.currency,payment.provider_payout || payment.amount), currency:payment.currency || config.paymentCurrency, policyVersion:payment.fee_policy_version || 'legacy', kind:'JOB' };
     await client.query(`UPDATE payments SET status='RELEASED',updated_at=NOW() WHERE id=$1`, [paymentId]);
     await client.query(`UPDATE jobs SET status='SETTLED',updated_at=NOW() WHERE id=$1`, [jobId]);
     if (config.paymentProvider === 'internal') {
