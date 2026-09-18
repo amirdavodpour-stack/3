@@ -116,6 +116,48 @@ test('mock payment provider supports deterministic success/failure/unknown injec
   }
 });
 
+test('mock provider webhook emitter rejects unsafe targets and invalid required fields', async () => {
+  const unsafeEmitter = createMockPaymentServer({
+    token,
+    webhookSecret: 'mock-webhook-secret-32-characters',
+    webhookTargetUrl: 'http://127.0.0.1:12345/webhook',
+  });
+  await new Promise((resolve) => unsafeEmitter.listen(0, '127.0.0.1', resolve));
+  const unsafeBase = `http://127.0.0.1:${unsafeEmitter.address().port}`;
+  try {
+    const unsafe = await fetch(unsafeBase + '/emit-webhook', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        paymentId: 'payment-unsafe-target',
+        eventType: 'PAYMENT_HELD',
+        providerRef: 'MOCK-HOLD-UNSAFE',
+      }),
+    });
+    assert.equal(unsafe.status, 500);
+    assert.equal((await unsafe.json()).error, 'WEBHOOK_TARGET_MUST_USE_HTTPS');
+
+    const missingRef = await fetch(unsafeBase + '/emit-webhook', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        paymentId: 'payment-missing-ref',
+        eventType: 'PAYMENT_RELEASED',
+      }),
+    });
+    assert.equal(missingRef.status, 400);
+    assert.equal((await missingRef.json()).error, 'PROVIDER_REF_REQUIRED');
+  } finally {
+    await new Promise((resolve) => unsafeEmitter.close(resolve));
+  }
+});
+
 test('mock provider webhook emitter signs the exact HOPE webhook contract', async () => {
   const originalFetch = global.fetch;
   const captured = [];
