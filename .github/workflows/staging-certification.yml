@@ -270,50 +270,41 @@ jobs:
           : "${RAILWAY_SSH_PRIVATE_KEY:?RAILWAY_SSH_PRIVATE_KEY is required for the GitHub-hosted DR tunnel}"
           install -d -m 700 "$HOME/.ssh"
           umask 077
-          # Normalize the GitHub Secret defensively. Supports raw multiline OpenSSH keys,
-          # literal \\n separators, CRLF, surrounding quotes, and base64-encoded key values.
-          python3 - <<'PY'
-          import base64
-          import os
+          # Normalize the GitHub Secret defensively.
+          raw_key="$RAILWAY_SSH_PRIVATE_KEY"
+          raw_key="$(printf '%s' "$raw_key" | tr -d '\r')"
 
-          raw = os.environ["RAILWAY_SSH_PRIVATE_KEY"].replace("\r", "")
-          literal_newlines = "\\n" in raw
-          value = raw.replace("\\n", "\n").strip()
-          if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-              value = value[1:-1].strip()
+          key_file="$HOME/.ssh/id_ed25519"
+          if printf '%s' "$raw_key" | grep -q -- '-----BEGIN .*PRIVATE KEY-----'; then
+            printf '%s\n' "$raw_key" | sed 's/\\\\n/\n/g' > "$key_file"
+          else
+            compact_key="$(printf '%s' "$raw_key" | tr -d '[:space:]')"
+            decoded_key="$RUNNER_TEMP/railway-dr-key.bin"
+            if ! printf '%s' "$compact_key" | base64 --decode > "$decoded_key" 2>/dev/null; then
+              printf '%s\n' "RAILWAY_SSH_PRIVATE_KEY is neither an armored private key nor valid base64" >&2
+              exit 1
+            fi
 
-          key_bytes = None
-          if value.startswith("-----BEGIN "):
-              key_bytes = value.encode("utf-8") + b"\n"
-          else:
-              compact = "".join(value.split())
-              try:
-                  decoded = base64.b64decode(compact, validate=True)
-                  if decoded.startswith(b"openssh-key-v1\x00"):
-                      key_bytes = decoded
-                  else:
-                      decoded_text = decoded.decode("utf-8").replace("\r", "").strip()
-                      if decoded_text.startswith("-----BEGIN "):
-                          key_bytes = decoded_text.encode("utf-8") + b"\n"
-              except Exception:
-                  pass
+            if head -c 15 "$decoded_key" | grep -aq '^openssh-key-v1'; then
+              {
+                printf '%s\n' '-----BEGIN OPENSSH PRIVATE KEY-----'
+                base64 --wrap=64 "$decoded_key"
+                printf '%s\n' '-----END OPENSSH PRIVATE KEY-----'
+              } > "$key_file"
+            else
+              decoded_text="$RUNNER_TEMP/railway-dr-key.txt"
+              if ! tr -d '\r' < "$decoded_key" > "$decoded_text"; then
+                exit 1
+              fi
+              if grep -q -- '-----BEGIN .*PRIVATE KEY-----' "$decoded_text"; then
+                cat "$decoded_text" > "$key_file"
+              else
+                printf '%s\n' "Decoded Railway SSH secret is not an OpenSSH private key" >&2
+                exit 1
+              fi
+            fi
+          fi
 
-          if key_bytes is None:
-              lines = value.split("\n")
-              print(
-                  "RAILWAY_SSH_SECRET_DIAGNOSTICS "
-                  f"length={len(value)} "
-                  f"lines={len(lines)} "
-                  f"header_ok={value.startswith('-----BEGIN ')} "
-                  f"openssh_header={value.startswith('-----BEGIN OPENSSH PRIVATE KEY-----')} "
-                  f"footer_ok={value.endswith('-----END OPENSSH PRIVATE KEY-----')} "
-                  f"literal_backslash_n={literal_newlines} "
-                  "decoded_openssh=false"
-              )
-              raise SystemExit("RAILWAY_SSH_PRIVATE_KEY is not a supported OpenSSH private-key or OpenSSH base64 payload")
-
-          with open(os.path.expanduser("~/.ssh/id_ed25519"), "wb") as f:
-              f.write(key_bytes)
           chmod 600 "$HOME/.ssh/id_ed25519"
           ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > "$HOME/.ssh/id_ed25519.pub"
           key_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
