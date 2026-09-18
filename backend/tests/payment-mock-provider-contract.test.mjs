@@ -38,6 +38,10 @@ test('mock payment provider exposes the HOPE webhook-provider contract', async (
   assert.equal(conflict.status, 409);
 
   const released = await post('/release', { key: 'rel-1', providerRef: created.body.providerRef });
+  assert.equal(released.body.amount, '100000');
+
+  const releaseConflict = await post('/release', { key: 'rel-1', providerRef: 'MOCK-HOLD-DIFFERENT' });
+  assert.equal(releaseConflict.status, 409);
   assert.equal(released.status, 200);
   assert.equal(released.body.status, 'RELEASED');
   assert.ok(released.body.releaseRef);
@@ -62,6 +66,54 @@ test('mock payment provider rejects missing credentials and unsupported currency
     currency: 'USD',
   });
   assert.equal(wrongCurrency.status, 400);
+});
+
+test('mock payment provider validates provider references and integer TOMAN amounts', async () => {
+  const missingProviderRef = await post('/release', { key: 'validation-release' });
+  assert.equal(missingProviderRef.status, 400);
+  assert.equal(missingProviderRef.body.error, 'PROVIDER_REF_REQUIRED');
+
+  const negative = await post('/create', { key: 'validation-negative', amount: '-1' });
+  assert.equal(negative.status, 400);
+
+  const fractional = await post('/create', { key: 'validation-fractional', amount: '10.5' });
+  assert.equal(fractional.status, 400);
+
+  const tooLarge = await post('/create', { key: 'validation-large', amount: '9000000000000001' });
+  assert.equal(tooLarge.status, 400);
+});
+
+test('mock payment provider supports deterministic success/failure/unknown injection', async () => {
+  const cases = [
+    ['create', 'FAILED', 502, 'MOCK_CREATE_FAILED'],
+    ['release', 'FAILED', 502, 'MOCK_RELEASE_FAILED'],
+    ['refund', 'FAILED', 502, 'MOCK_REFUND_FAILED'],
+    ['create', 'UNKNOWN', 504, 'MOCK_CREATE_UNKNOWN'],
+  ];
+  for (const [operation, outcome, status, error] of cases) {
+    const injected = createMockPaymentServer({ token, outcomes: { [operation]: outcome } });
+    await new Promise((resolve) => injected.listen(0, '127.0.0.1', resolve));
+    const url = `http://127.0.0.1:${injected.address().port}/${operation}`;
+    try {
+      const headers = {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'idempotency-key': `failure-${operation}-${outcome}`,
+      };
+      const body = {
+        paymentId: `failure-${operation}-${outcome}`,
+        amount: '100',
+        currency: 'TOMAN',
+        providerRef: 'MOCK-HOLD-FAILURE',
+      };
+      const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+      const json = await response.json();
+      assert.equal(response.status, status);
+      assert.equal(json.error, error);
+    } finally {
+      await new Promise((resolve) => injected.close(resolve));
+    }
+  }
 });
 
 test('mock provider webhook emitter signs the exact HOPE webhook contract', async () => {
