@@ -53,6 +53,7 @@ jobs:
   staging-certification:
     name: Staging certification
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     outputs:
       certification_run_id: ${{ github.run_id }}
       certification_status: ${{ steps.certification_status.outputs.certification_status }}
@@ -279,6 +280,7 @@ jobs:
           api-level: 35
           arch: x86_64
           profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8
           # GitHub-hosted Linux can lose the emulator ADB settings service immediately after boot.
           # The test suite does not require animation state, so keep this optional action step disabled.
           disable-animations: false
