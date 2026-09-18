@@ -7,12 +7,6 @@ import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient
 
 const RELEASE_STATES = new Set(['RELEASE_PENDING', 'RELEASE_FAILED']);
 
-function providerRefMatches(payment, providerRef) {
-  if (!providerRef) return true;
-  if (!payment?.provider_ref) return true;
-  return String(payment.provider_ref) === String(providerRef);
-}
-
 function conflict(code, message) {
   const e = new Error(code);
   e.code = code;
