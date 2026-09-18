@@ -204,6 +204,23 @@ jobs:
           source_url="$(node -e 'const u=new URL(process.env.DATABASE_URL); u.hostname="127.0.0.1"; u.port="15432"; process.stdout.write(u.toString())')"
           echo "SOURCE_DATABASE_TUNNELED_URL=$source_url" >> "$GITHUB_ENV"
 
+      - name: DR schema preflight
+        shell: bash
+        env:
+          SOURCE_DATABASE_URL: ${{ env.SOURCE_DATABASE_TUNNELED_URL }}
+          DRILL_DATABASE_URL: ${{ env.DRILL_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          echo '== Source public tables =='
+          psql "$SOURCE_DATABASE_URL" -Atqc "select table_name from information_schema.tables where table_schema='public' order by table_name;"
+          echo '== Drill public tables before restore =='
+          psql "$DRILL_DATABASE_URL" -Atqc "select table_name from information_schema.tables where table_schema='public' order by table_name;"
+          echo '== Required source tables =='
+          for table in users categories jobs offers payments outbox_events; do
+            exists="$(psql "$SOURCE_DATABASE_URL" -Atqc "select to_regclass('public.' || '$table') is not null;")"
+            echo "$table=$exists"
+          done
+
       - name: DR restore drill
         id: dr_drill
         shell: bash
