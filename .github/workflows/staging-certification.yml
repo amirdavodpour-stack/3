@@ -268,6 +268,9 @@ jobs:
           set -euo pipefail
           : "${RAILWAY_TOKEN:?RAILWAY_TOKEN is required for the GitHub-hosted DR tunnel}"
           : "${RAILWAY_SSH_PRIVATE_KEY:?RAILWAY_SSH_PRIVATE_KEY is required for the GitHub-hosted DR tunnel}"
+          # Normalize CR/LF that may be present in a copied GitHub secret before Railway builds the HTTP header.
+          RAILWAY_TOKEN="$(printf '%s' "$RAILWAY_TOKEN" | tr -d '\r\n')"
+          export RAILWAY_TOKEN
           install -d -m 700 "$HOME/.ssh"
           umask 077
           # Normalize the GitHub Secret defensively.
