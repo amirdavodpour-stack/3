@@ -526,6 +526,14 @@ jobs:
               *) status=BLOCKED ;;
             esac
           done
+
+          # PostHog is optional when no credential is configured, but once the
+          # staging project token exists its ingestion preflight is a required
+          # certification gate.
+          if [ "${{ steps.posthog_runtime.outputs.configured }}" = "true" ] &&              [ "${{ steps.posthog_runtime.outcome }}" != "success" ]; then
+            status=BLOCKED
+          fi
+
           echo "certification_status=$status" >> "$GITHUB_OUTPUT"
           echo "certification_run_id=${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
           echo "certification_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
