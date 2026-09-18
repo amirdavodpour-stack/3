@@ -1,0 +1,104 @@
+name: HOPE Android Emulator Certification (isolated)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: hope-android-emulator-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android-emulator-certification:
+    name: Android emulator certification
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      API_BASE_URL_STAGING: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
+      CI_DEVICE_INTEGRATION: 'true'
+      HOPE_ENV: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Install adb for runtime preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y adb
+          adb version
+
+      - name: Resolve staging host
+        id: resolve_staging_host
+        shell: bash
+        run: |
+          set -euo pipefail
+          host="$(node -e "const u=new URL(process.env.API_BASE_URL_STAGING); if(u.protocol!=='https:') throw new Error('API_BASE_URL_STAGING must use HTTPS'); console.log(u.hostname)")"
+          ips="$(getent ahostsv4 "$host" | awk '{print $1}' | sort -u | paste -sd, -)"
+          test -n "$ips" || { echo "Runner DNS could not resolve $host." >&2; exit 1; }
+          echo "Resolved $host to $ips"
+          echo "ips=$ips" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Flutter dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter pub get --enforce-lockfile
+
+      - name: Android emulator certification
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          API_BASE_URL_STAGING: ${{ env.API_BASE_URL_STAGING }}
+          CI_DEVICE_INTEGRATION: 'true'
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          cores: 4
+          ram-size: 4096M
+          emulator-boot-timeout: 1200
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8 -writable-system
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
+            bash tools/android-staging-network-preflight.sh
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
+              --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
+              --dart-define=CI_DEVICE_INTEGRATION=true \
+              --dart-define=HOPE_ENV=staging
+
+      - name: Emit Android certification evidence
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/audit/evidence
+          cat > docs/audit/evidence/android-emulator-certification.json <<EOF
+          {
+            "workflow": "${{ github.workflow }}",
+            "run_id": "${{ github.run_id }}",
+            "ref": "${{ github.ref_name }}",
+            "sha": "${{ github.sha }}",
+            "result": "${{ job.status }}"
+          }
+          EOF
+
+      - name: Upload Android certification evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
+        with:
+          name: hope-android-emulator-certification-${{ github.run_id }}
+          path: docs/audit/evidence/android-emulator-certification.json
+          if-no-files-found: warn
