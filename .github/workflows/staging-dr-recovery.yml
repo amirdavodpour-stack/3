@@ -142,7 +142,6 @@ jobs:
             echo 'Railway authentication mode: project token'
           else
             echo 'Project-scoped authentication was rejected; retrying the same secret as account/workspace token.'
-            unset RAILWAY_TOKEN
             if ! start_tunnel api; then
               echo 'Railway token was rejected in both supported CI authentication modes.' >&2
               exit 1
