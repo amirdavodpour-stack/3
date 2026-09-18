@@ -55,3 +55,8 @@ The certification gate checks:
 Inbound payment webhooks continue to use the existing timestamped HMAC boundary in `backend/src/application/payment_webhook.js`, with provider events claimed before financial mutation.
 
 The optional Mock Provider webhook emitter uses the exact same signed format and a fixed target URL configured by environment, rather than accepting an arbitrary callback URL.
+
+
+### Provider reference integrity
+
+For an external PAYMENT_RELEASED response, the provider's release reference is distinct from the original hold reference. The release outbox gate now requires releaseRef and persists that value as the settlement's provider_ref; the original payment hold reference remains on the payment record.
