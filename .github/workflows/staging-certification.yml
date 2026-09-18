@@ -7,7 +7,9 @@ on:
   workflow_call:
     secrets:
       STAGING_BASE_URL:
-        required: true
+        required: false
+      API_BASE_URL_STAGING:
+        required: false
       STAGING_DATABASE_URL:
         required: false
       DRILL_DATABASE_URL:
@@ -60,7 +62,7 @@ jobs:
       certification_sha: ${{ steps.certification_status.outputs.certification_sha }}
       certification_attempt: ${{ steps.certification_status.outputs.certification_attempt }}
     env:
-      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://v2hope-production-7e9e.up.railway.app' }}
+      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
       STAGING_PAYMENT_PROVIDER: internal
       STAGING_PAYMENT_CURRENCY: TOMAN
       DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
