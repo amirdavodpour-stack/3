@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - chore/railway-dr-key-cleanup-2026-09-18
+  pull_request:
+    branches:
+      - hope/full-stack-hardening-2026-09-17
 
 permissions:
   contents: read
