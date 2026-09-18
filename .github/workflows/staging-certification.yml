@@ -16,8 +16,8 @@ on:
         required: false
       STAGING_DATABASE_URL:
         required: false
-      SOURCE_DATABASE_PUBLIC_URL:
-        required: false
+      RAILWAY_TOKEN:
+        required: true
       SOURCE_DATABASE_URL:
         required: false
       DRILL_DATABASE_URL:
@@ -73,7 +73,7 @@ jobs:
       STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
       STAGING_PAYMENT_PROVIDER: internal
       STAGING_PAYMENT_CURRENCY: TOMAN
-      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.SOURCE_DATABASE_PUBLIC_URL || secrets.SOURCE_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.SOURCE_DATABASE_URL }}
       DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
       STAGING_S3_ENDPOINT: ${{ secrets.STAGING_S3_ENDPOINT }}
       STAGING_S3_BUCKET: ${{ secrets.STAGING_S3_BUCKET }}
@@ -254,6 +254,43 @@ jobs:
           BUILD_PROFILE: pilot
         run: bash tools/build_apk_debug.sh
 
+      - name: Start Railway Postgres SSH tunnel for DR
+        id: postgres_tunnel
+        if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          set -euo pipefail
+          : "${RAILWAY_TOKEN:?RAILWAY_TOKEN is required for the GitHub-hosted DR tunnel}"
+          npm install -g @railway/cli@5.30.1 >/dev/null
+          railway whoami >/dev/null
+          railway connect Postgres --tunnel-only --port 15432 --project "8c686259-09c6-4609-bbe7-4ea25e769e18" --environment "5a435e97-1e7a-4a5c-952c-19da2f10d955" >"$RUNNER_TEMP/railway-postgres-tunnel.log" 2>&1 &
+          echo $! >"$RUNNER_TEMP/railway-postgres-tunnel.pid"
+          for _ in $(seq 1 30); do
+            if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+              echo 'Railway Postgres SSH tunnel is ready.'
+              break
+            fi
+            if ! kill -0 "$(cat "$RUNNER_TEMP/railway-postgres-tunnel.pid")" 2>/dev/null; then
+              cat "$RUNNER_TEMP/railway-postgres-tunnel.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          pg_isready -h 127.0.0.1 -p 15432
+
+      - name: Prepare tunneled source URL
+        id: tunneled_source
+        if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
+        shell: bash
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          source_url="$(node -e 'const u=new URL(process.env.DATABASE_URL); u.hostname="127.0.0.1"; u.port="15432"; process.stdout.write(u.toString())')"
+          echo "SOURCE_DATABASE_TUNNELED_URL=$source_url" >> "$GITHUB_ENV"
+
       - name: DR restore drill
         id: dr_drill
         if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
@@ -265,14 +302,7 @@ jobs:
           DRILL_EVIDENCE_FILE: ${{ runner.temp }}/hope-dr-restore-evidence.txt
         run: |
           set -euo pipefail
-          case "${SOURCE_DATABASE_URL:-}" in
-            *://*.railway.internal:*)
-              echo 'DR blocked: source database uses Railway private networking; GitHub-hosted runners cannot resolve *.railway.internal.' >&2
-              echo 'Add GitHub secret SOURCE_DATABASE_PUBLIC_URL using the Railway Postgres DATABASE_PUBLIC_URL from TCP Proxy, or replace SOURCE_DATABASE_URL with that public connection string.' >&2
-              exit 1
-              ;;
-          esac
-          bash backend/scripts/dr-restore-drill.sh
+          SOURCE_DATABASE_URL="$SOURCE_DATABASE_TUNNELED_URL" bash backend/scripts/dr-restore-drill.sh
 
       - name: Runtime gate - dr restore
         id: dr_restore_evidence
