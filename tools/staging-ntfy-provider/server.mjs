@@ -1,4 +1,5 @@
 import http from 'node:http';
+import https from 'node:https';
 
 const PORT = Number(process.env.PORT || 8080);
 const PROVIDER_TOKEN = process.env.NOTIFICATION_PROVIDER_TOKEN || '';
@@ -41,20 +42,37 @@ async function publish(payload, idempotencyKey) {
   const title = String(payload.title || 'HOPE staging notification').slice(0, 200);
   const message = String(payload.body || '').slice(0, 4000);
   const data = JSON.stringify(payload.data ?? {});
-  const response = await fetch(NTFY_BASE_URL + '/' + NTFY_TOPIC, {
-    method: 'POST',
-    headers: {
-      'content-type': 'text/plain; charset=utf-8',
-      'X-Title': title,
-      'X-Tags': 'hope,staging',
-      'X-Idempotency-Key': idempotencyKey,
-      'X-Click': 'https://ntfy.sh',
-    },
-    body: message || data,
-    signal: AbortSignal.timeout(10000),
+  const target = new URL(NTFY_BASE_URL + '/' + NTFY_TOPIC);
+
+  // Railway staging has shown intermittent Node/Undici fetch egress failures.
+  // Use the native HTTPS client and force IPv4 for this external hop so the
+  // provider does not fail solely because native fetch selects a bad address.
+  const response = await new Promise((resolve, reject) => {
+    const req = https.request(target, {
+      method: 'POST',
+      family: 4,
+      timeout: 10000,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'X-Title': title,
+        'X-Tags': 'hope,staging',
+        'X-Idempotency-Key': idempotencyKey,
+        'X-Click': 'https://ntfy.sh',
+      },
+    }, (res) => {
+      let raw = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { raw += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode || 0, text: raw }));
+    });
+    req.on('timeout', () => req.destroy(new Error('NTFY_REQUEST_TIMEOUT')));
+    req.on('error', reject);
+    req.end(message || data);
   });
-  const text = await response.text();
-  if (!response.ok) throw new Error('NTFY_HTTP_' + response.status + ':' + text.slice(0, 200));
+
+  if (response.status < 200 || response.status >= 300) {
+    throw new Error('NTFY_HTTP_' + response.status + ':' + response.text.slice(0, 200));
+  }
   return { status: response.status };
 }
 
