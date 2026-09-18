@@ -1,0 +1,193 @@
+name: Staging DR recovery
+
+on:
+  push:
+    branches:
+      - chore/staging-dr-recovery-2026-09-18
+
+permissions:
+  contents: read
+
+jobs:
+  dr-recovery:
+    name: Staging DR recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.SOURCE_DATABASE_URL }}
+      DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pg_dump --version
+          pg_restore --version
+          psql --version
+
+      - name: Start Railway Postgres SSH tunnel for DR
+        id: postgres_tunnel
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          : "${RAILWAY_TOKEN:?RAILWAY_TOKEN is required}"
+          : "${RAILWAY_SSH_PRIVATE_KEY:?RAILWAY_SSH_PRIVATE_KEY is required}"
+
+          RAILWAY_TOKEN="$(printf '%s' "$RAILWAY_TOKEN" | tr -d '\r\n')"
+          RAILWAY_SSH_PRIVATE_KEY="$(printf '%s' "$RAILWAY_SSH_PRIVATE_KEY" | tr -d '\r')"
+
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+
+          raw_key="$RAILWAY_SSH_PRIVATE_KEY"
+          key_file="$HOME/.ssh/id_ed25519"
+
+          if printf '%s' "$raw_key" | grep -q -- '-----BEGIN .*PRIVATE KEY-----'; then
+            printf '%s\n' "$raw_key" | sed 's/\\\\n/\n/g' > "$key_file"
+          else
+            compact_key="$(printf '%s' "$raw_key" | tr -d '[:space:]')"
+            decoded_key="$RUNNER_TEMP/railway-dr-key.bin"
+            if ! printf '%s' "$compact_key" | base64 --decode > "$decoded_key" 2>/dev/null; then
+              echo 'RAILWAY_SSH_PRIVATE_KEY is neither an armored private key nor valid base64' >&2
+              exit 1
+            fi
+
+            if head -c 15 "$decoded_key" | grep -aq '^openssh-key-v1'; then
+              {
+                printf '%s\n' '-----BEGIN OPENSSH PRIVATE KEY-----'
+                base64 --wrap=64 "$decoded_key"
+                printf '%s\n' '-----END OPENSSH PRIVATE KEY-----'
+              } > "$key_file"
+            else
+              decoded_text="$RUNNER_TEMP/railway-dr-key.txt"
+              tr -d '\r' < "$decoded_key" > "$decoded_text"
+              if grep -q -- '-----BEGIN .*PRIVATE KEY-----' "$decoded_text"; then
+                cat "$decoded_text" > "$key_file"
+              else
+                echo 'Decoded Railway SSH secret is not an OpenSSH private key' >&2
+                exit 1
+              fi
+            fi
+          fi
+
+          chmod 600 "$key_file"
+          ssh-keygen -y -f "$key_file" > "$HOME/.ssh/id_ed25519.pub"
+          key_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
+          echo "RAILWAY_SSH_KEY_FINGERPRINT=$key_fingerprint"
+          test "$key_fingerprint" = 'SHA256:/Lrb+F+ajiLSfE93dOL7jMsajR7AMlKoSNTLchVjn3w'
+
+          npm install -g --allow-scripts=@railway/cli @railway/cli@5.30.1 >/dev/null
+
+          project_id='8c686259-09c6-4609-bbe7-4ea25e769e18'
+          environment_id='5a435e97-1e7a-4a5c-952c-19da2f10d955'
+
+          start_tunnel() {
+            local mode="$1"
+            local log_file="$RUNNER_TEMP/railway-postgres-tunnel-${mode}.log"
+            rm -f "$log_file"
+            if [ "$mode" = 'project' ]; then
+              env -u RAILWAY_API_TOKEN RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+                railway connect Postgres --tunnel-only --port 15432 \
+                --project "$project_id" --environment "$environment_id" \
+                >"$log_file" 2>&1 &
+            else
+              env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
+                railway connect Postgres --tunnel-only --port 15432 \
+                --project "$project_id" --environment "$environment_id" \
+                >"$log_file" 2>&1 &
+            fi
+            TUNNEL_PID=$!
+            echo "$TUNNEL_PID" > "$RUNNER_TEMP/railway-postgres-tunnel.pid"
+
+            for _ in $(seq 1 30); do
+              if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+                echo "Railway Postgres SSH tunnel is ready ($mode token auth)."
+                return 0
+              fi
+              if ! kill -0 "$TUNNEL_PID" 2>/dev/null; then
+                echo "Railway $mode-token attempt failed:" >&2
+                cat "$log_file" >&2
+                return 1
+              fi
+              sleep 1
+            done
+
+            echo "Railway $mode-token tunnel did not become ready in 30 seconds:" >&2
+            cat "$log_file" >&2
+            kill "$TUNNEL_PID" 2>/dev/null || true
+            return 1
+          }
+
+          if start_tunnel project; then
+            echo 'Railway authentication mode: project token'
+          else
+            echo 'Project-scoped authentication was rejected; retrying the same secret as account/workspace token.'
+            unset RAILWAY_TOKEN
+            if ! RAILWAY_TOKEN="${{ secrets.RAILWAY_TOKEN }}" start_tunnel api; then
+              echo 'Railway token was rejected in both supported CI authentication modes.' >&2
+              exit 1
+            fi
+            echo 'Railway authentication mode: account/workspace token'
+          fi
+
+          pg_isready -h 127.0.0.1 -p 15432
+
+      - name: Prepare tunneled source URL
+        shell: bash
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          : "${DATABASE_URL:?DATABASE_URL is required}"
+          source_url="$(node -e 'const u=new URL(process.env.DATABASE_URL); u.hostname="127.0.0.1"; u.port="15432"; process.stdout.write(u.toString())')"
+          echo "SOURCE_DATABASE_TUNNELED_URL=$source_url" >> "$GITHUB_ENV"
+
+      - name: DR restore drill
+        id: dr_drill
+        shell: bash
+        env:
+          SOURCE_DATABASE_URL: ${{ env.DATABASE_URL }}
+          DRILL_DATABASE_URL: ${{ env.DRILL_DATABASE_URL }}
+          RTO_TARGET_SECONDS: '900'
+          DRILL_EVIDENCE_FILE: ${{ runner.temp }}/hope-dr-restore-evidence.txt
+        run: |
+          set -euo pipefail
+          : "${SOURCE_DATABASE_TUNNELED_URL:?SOURCE_DATABASE_TUNNELED_URL is required}"
+          SOURCE_DATABASE_URL="$SOURCE_DATABASE_TUNNELED_URL" bash backend/scripts/dr-restore-drill.sh
+
+      - name: Write DR evidence
+        if: ${{ always() && steps.dr_drill.outcome != 'skipped' }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.dr_drill.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate dr_restore \
+            --command 'bash backend/scripts/dr-restore-drill.sh via Railway SSH tunnel' \
+            --result "$GATE_RESULT" \
+            --artifact "$RUNNER_TEMP/hope-dr-restore-evidence.txt"
+
+      - name: Upload DR evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.1.0
+        with:
+          name: hope-staging-dr-recovery-${{ github.run_id }}
+          path: |
+            backend/docs/audit/evidence/*.json
+            docs/audit/evidence/*.json
+            /home/runner/work/_temp/hope-dr-restore-evidence.txt
+          if-no-files-found: warn
