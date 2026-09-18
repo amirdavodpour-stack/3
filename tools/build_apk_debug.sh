@@ -13,6 +13,22 @@ esac
 export BUILD_PROFILE="${BUILD_PROFILE:-pilot}"
 [ "$BUILD_PROFILE" = "pilot" ] || { echo 'ERROR: debug certification uses BUILD_PROFILE=pilot.' >&2; exit 1; }
 
+export HOPE_ENV="${HOPE_ENV:-local}"
+export POSTHOG_ENABLED="${POSTHOG_ENABLED:-false}"
+export POSTHOG_PROJECT_TOKEN="${POSTHOG_PROJECT_TOKEN:-}"
+export POSTHOG_HOST="${POSTHOG_HOST:-https://us.i.posthog.com}"
+
+if [ "$POSTHOG_ENABLED" = "true" ]; then
+  [ "$HOPE_ENV" = "staging" ] || {
+    echo 'ERROR: POSTHOG_ENABLED=true is allowed only with HOPE_ENV=staging.' >&2
+    exit 1
+  }
+  [ -n "$POSTHOG_PROJECT_TOKEN" ] || {
+    echo 'ERROR: POSTHOG_PROJECT_TOKEN is required when PostHog is enabled.' >&2
+    exit 1
+  }
+fi
+
 export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$ROOT/.gradle-debug}"
 bash tools/ci-resource-guard.sh
 export GRADLE_OPTS="${GRADLE_OPTS:--Dorg.gradle.daemon=false -Dorg.gradle.caching=false -Dorg.gradle.configuration-cache=false -Dorg.gradle.vfs.watch=false -Dorg.gradle.parallel=false}"
@@ -36,6 +52,10 @@ flutter test --no-pub
 flutter build apk --debug --no-pub \
   --dart-define=API_BASE_URL="$API_BASE_URL" \
   --dart-define=BUILD_PROFILE="$BUILD_PROFILE" \
+  --dart-define=HOPE_ENV="$HOPE_ENV" \
+  --dart-define=POSTHOG_ENABLED="$POSTHOG_ENABLED" \
+  --dart-define=POSTHOG_PROJECT_TOKEN="$POSTHOG_PROJECT_TOKEN" \
+  --dart-define=POSTHOG_HOST="$POSTHOG_HOST" \
   --verbose
 
 APK="build/app/outputs/flutter-apk/app-debug.apk"
