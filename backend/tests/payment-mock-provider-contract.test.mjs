@@ -64,6 +64,58 @@ test('mock payment provider rejects missing credentials and unsupported currency
   assert.equal(wrongCurrency.status, 400);
 });
 
+test('mock provider webhook emitter signs the exact HOPE webhook contract', async () => {
+  const originalFetch = global.fetch;
+  const captured = [];
+  global.fetch = async (url, options = {}) => {
+    if (String(url).startsWith('https://mock-target.invalid/')) {
+      captured.push({url: String(url), headers: options.headers, body: options.body});
+      return new Response(JSON.stringify({accepted: true}), {status: 200, headers: {'content-type':'application/json'}});
+    }
+    return originalFetch(url, options);
+  };
+
+  const emitter = createMockPaymentServer({
+    token,
+    webhookSecret: 'mock-webhook-secret-32-characters',
+    webhookTargetUrl: 'https://mock-target.invalid/api/v1/payments/webhook',
+  });
+  await new Promise((resolve) => emitter.listen(0, '127.0.0.1', resolve));
+  const emitterBase = `http://127.0.0.1:${emitter.address().port}`;
+
+  try {
+    const response = await fetch(emitterBase + '/emit-webhook', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        paymentId: 'payment-emitter-1',
+        eventType: 'PAYMENT_HELD',
+        providerRef: 'MOCK-HOLD-1',
+        eventId: 'evt-emitter-1',
+      }),
+    });
+    assert.equal(response.status, 200);
+    assert.equal(captured.length, 1);
+
+    const sent = captured[0];
+    assert.equal(sent.headers['x-hope-event-id'], 'evt-emitter-1');
+    assert.match(sent.headers['x-hope-timestamp'], /^\d+$/);
+    assert.match(sent.headers['x-hope-signature'], /^sha256=[a-f0-9]{64}$/);
+    assert.deepEqual(JSON.parse(sent.body), {
+      eventId: 'evt-emitter-1',
+      eventType: 'PAYMENT_HELD',
+      paymentId: 'payment-emitter-1',
+      providerRef: 'MOCK-HOLD-1',
+    });
+  } finally {
+    global.fetch = originalFetch;
+    await new Promise((resolve) => emitter.close(resolve));
+  }
+});
+
 after(async () => {
   await new Promise((resolve) => server.close(resolve));
 });
