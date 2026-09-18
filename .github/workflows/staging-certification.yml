@@ -382,6 +382,7 @@ jobs:
               fi
               return 0
             }
+            # Remove the run-scoped workspace key when the job exits, including failures.
             trap cleanup_workspace_key EXIT
 
             rm -f "$tunnel_log" "$tunnel_pid"
