@@ -51,10 +51,10 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
     if(!pr[0]) throw conflict('PAYMENT_NOT_FOUND','Payment not found');
     const p=pr[0];
 
-    if (!providerRefMatches(p, providerRef) && eventType !== 'PAYMENT_REFUNDED') {
-      throw conflict('PROVIDER_REF_MISMATCH','Webhook provider reference does not match the payment');
-    }
-
+    // Provider references belong to the provider operation being acknowledged:
+    // HOLD uses the hold reference, RELEASE uses a distinct release reference,
+    // and REFUND uses its own refund reference. They must not be compared to the
+    // payment's original hold reference.
     const {rows:insertedEvents}=await client.query(
       `INSERT INTO payment_webhook_events(id,event_id,event_type,payment_id,provider_ref,payload,processed_at,created_at)
        VALUES($1,$2,$3,$4,$5,$6::jsonb,NOW(),NOW())
