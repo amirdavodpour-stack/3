@@ -257,6 +257,7 @@ async function main() {
       body: {
         jobId: job.id,
         coverLetter: 'Automated staging-certification notification-delivery probe.',
+        resumeText: 'Automated CI notification-delivery canary resume.',
       },
     }),
     201,
