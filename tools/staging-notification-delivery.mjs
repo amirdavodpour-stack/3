@@ -104,7 +104,10 @@ function expectStatus(res, expected, what) {
     expected,
     `${what}: expected HTTP ${expected}, got ${res.status} — ${res.text.slice(0, 400)}`,
   );
-  return res.json;
+  // HOPE HTTP responses are consistently envelope-shaped as { data }.
+  // Return the resource payload so the staging canary exercises the same
+  // contract as the existing product smoke gate.
+  return res.json?.data ?? res.json;
 }
 
 async function readMetrics(label) {
