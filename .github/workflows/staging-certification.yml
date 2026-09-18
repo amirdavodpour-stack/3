@@ -298,8 +298,8 @@ jobs:
           # The test suite does not require animation state, so keep this optional action step disabled.
           disable-animations: false
           script: |
-            STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}" \
-              bash tools/android-staging-network-preflight.sh
+            export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
+            bash tools/android-staging-network-preflight.sh
             flutter test --no-pub integration_test/runtime/app_smoke_test.dart --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" --dart-define=CI_DEVICE_INTEGRATION=true
 
       - name: Runtime gate - device certification
