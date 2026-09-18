@@ -36,7 +36,7 @@ class PostHogAnalyticsService {
   );
   static const _host = String.fromEnvironment(
     'POSTHOG_HOST',
-    defaultValue: 'https://us.i.posthog.com',
+    defaultValue: 'https://eu.i.posthog.com',
   );
 
   static const _allowedPropertyKeys = <String>{
@@ -62,16 +62,25 @@ class PostHogAnalyticsService {
       _enabled &&
       _environment == 'staging' &&
       _effectiveProjectToken.isNotEmpty &&
-      _validHost(_host);
+      _normalizedHost(_host) != null;
 
-  static bool _validHost(String value) {
+  static String? _normalizedHost(String value) {
     final uri = Uri.tryParse(value.trim());
-    return uri != null &&
-        uri.scheme == 'https' &&
-        uri.host.isNotEmpty &&
-        uri.userInfo.isEmpty &&
-        uri.query.isEmpty &&
-        uri.fragment.isEmpty;
+    if (uri == null ||
+        uri.scheme != 'https' ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty ||
+        uri.query.isNotEmpty ||
+        uri.fragment.isNotEmpty) {
+      return null;
+    }
+    if (uri.host == 'eu.posthog.com') return 'https://eu.i.posthog.com';
+    if (uri.host == 'us.posthog.com') return 'https://us.i.posthog.com';
+    if (uri.host != 'eu.i.posthog.com' && uri.host != 'us.i.posthog.com') {
+      return null;
+    }
+    if (uri.path.isNotEmpty && uri.path != '/') return null;
+    return 'https://${uri.host}';
   }
 
   Future<void> capture(
@@ -90,7 +99,8 @@ class PostHogAnalyticsService {
     sanitized['\$process_person_profile'] = false;
 
     try {
-      final host = _host.trim().replaceFirst(RegExp(r'/+$'), '');
+      final host = _normalizedHost(_host);
+      if (host == null) return;
       await http
           .post(
             Uri.parse('$host/i/v0/e/'),
