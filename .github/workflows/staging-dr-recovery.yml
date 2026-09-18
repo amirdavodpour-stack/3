@@ -100,25 +100,29 @@ jobs:
 
           npm install -g --allow-scripts=@railway/cli @railway/cli@5.30.1 >/dev/null
 
-          workspace_id='e6af3417-6d75-46e1-b1e3-e1aae3374974'
-          if [ -n "${RAILWAY_API_TOKEN:-}" ]; then
-            echo 'Checking Railway workspace SSH keys...'
-            workspace_keys="$(env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" railway ssh keys --workspace "$workspace_id" 2>&1)" || {
-              echo "$workspace_keys" >&2
-              exit 1
-            }
-            if printf '%s\n' "$workspace_keys" | grep -Fq "$key_fingerprint"; then
-              echo 'Expected SSH key is already registered as a workspace-owned key.'
-            else
-              env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
-                railway ssh keys add --workspace "$workspace_id" \
-                --key "$HOME/.ssh/id_ed25519.pub" --name 'hope-github-actions-dr'
-              echo 'Registered expected SSH key as a workspace-owned key.'
-            fi
-          fi
-
           project_id='8c686259-09c6-4609-bbe7-4ea25e769e18'
           environment_id='5a435e97-1e7a-4a5c-952c-19da2f10d955'
+          workspace_id='e6af3417-6d75-46e1-b1e3-e1aae3374974'
+
+          # Workspace-scoped Railway API tokens use workspace-owned SSH keys.
+          # The existing GitHub secret key is already registered to the personal
+          # Railway account and cannot be registered a second time in the workspace.
+          # Generate an ephemeral workspace key for this isolated DR run instead.
+          if [ -n "${RAILWAY_API_TOKEN:-}" ]; then
+            workspace_key_file="$RUNNER_TEMP/railway-workspace-dr-ed25519"
+            workspace_pub_file="$workspace_key_file.pub"
+            rm -f "$workspace_key_file" "$workspace_pub_file"
+            ssh-keygen -t ed25519 -N '' -C "hope-github-actions-dr-$GITHUB_RUN_ID" -f "$workspace_key_file" >/dev/null
+            workspace_fingerprint="$(ssh-keygen -lf "$workspace_pub_file" | awk '{print $2}')"
+            echo "Generated ephemeral workspace SSH key: $workspace_fingerprint"
+            env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+              railway ssh keys add --workspace "$workspace_id" \
+              --key "$workspace_pub_file" --name "hope-github-actions-dr-$GITHUB_RUN_ID"
+            cp "$workspace_key_file" "$HOME/.ssh/id_ed25519"
+            cp "$workspace_pub_file" "$HOME/.ssh/id_ed25519.pub"
+            chmod 600 "$HOME/.ssh/id_ed25519"
+            echo 'Registered ephemeral SSH key as workspace-owned key.'
+          fi
 
           start_tunnel() {
             local mode="$1"
