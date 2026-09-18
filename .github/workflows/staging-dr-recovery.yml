@@ -9,7 +9,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: hope-staging-dr-recovery
+  # Each isolated DR attempt gets its own runner slot so a stuck historical
+  # attempt cannot block the latest checkpointed recovery attempt.
+  group: hope-staging-dr-recovery-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
