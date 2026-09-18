@@ -52,7 +52,7 @@ jobs:
           failures=0
           for key_name in "${keys[@]}"; do
             echo "Removing temporary key: $key_name"
-            if railway ssh keys remove --workspace "$WORKSPACE_ID" --key "$key_name"; then
+            if railway ssh keys remove --workspace "$WORKSPACE_ID" "$key_name"; then
               echo "Removed: $key_name"
             else
               echo "FAILED to remove: $key_name" >&2
