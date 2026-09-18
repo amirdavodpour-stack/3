@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      API_BASE_URL_STAGING: ${{ secrets.API_BASE_URL_STAGING }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -31,14 +32,24 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
-      - name: Validate API_BASE_URL secret
+      - name: Validate effective API base URL secret
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         shell: bash
         run: |
           set -euo pipefail
-          [ -n "${API_BASE_URL:-}" ] || { echo 'API_BASE_URL secret is required.' >&2; exit 1; }
-          [[ "$API_BASE_URL" =~ ^https://[^[:space:]]+$ ]] || {
-            echo 'API_BASE_URL contains whitespace or is malformed; API_BASE_URL must use HTTPS.' >&2
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            effective_api_base_url="${API_BASE_URL_STAGING:-}"
+            secret_label="API_BASE_URL_STAGING"
+          else
+            effective_api_base_url="${API_BASE_URL:-}"
+            secret_label="API_BASE_URL"
+          fi
+          [ -n "$effective_api_base_url" ] || {
+            echo "$secret_label secret is required for this event." >&2
+            exit 1
+          }
+          [[ "$effective_api_base_url" =~ ^https://[^[:space:]]+$ ]] || {
+            echo "$secret_label contains whitespace or is malformed; the API base URL must use HTTPS." >&2
             exit 1
           }
 
