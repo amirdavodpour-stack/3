@@ -108,7 +108,7 @@ export async function claimOutboxEvent(leaseSeconds = 60) {
   });
 }
 
-export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, actorId, leaseToken }) {
+export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, actorId, leaseToken, providerReleaseRef = null }) {
   return withSqlTransaction(async (client) => {
     const { rows: er } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
     if (!er[0]) return { completed:false, reason:'OUTBOX_NOT_FOUND' };
@@ -141,7 +141,11 @@ export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, 
         for (const entry of journal) await client.query(`INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,NOW())`, [crypto.randomUUID(),journalId,reference,paymentId,entry.account,entry.debit,entry.credit,breakdown.currency]);
       }
     }
-    await client.query(`INSERT INTO settlements(id,payment_id,provider_ref,amount,currency,status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'RELEASED',NOW(),NOW()) ON CONFLICT(payment_id) DO UPDATE SET status='RELEASED',provider_ref=EXCLUDED.provider_ref,updated_at=NOW()`, [crypto.randomUUID(),paymentId,payment.provider_ref,breakdown.providerPayout,breakdown.currency]);
+    const settlementProviderRef = providerReleaseRef || payment.provider_ref;
+    if (!settlementProviderRef) {
+      const e = new Error('SETTLEMENT_PROVIDER_REF_REQUIRED'); e.code = 'SETTLEMENT_PROVIDER_REF_REQUIRED'; throw e;
+    }
+    await client.query(`INSERT INTO settlements(id,payment_id,provider_ref,amount,currency,status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'RELEASED',NOW(),NOW()) ON CONFLICT(payment_id) DO UPDATE SET status='RELEASED',provider_ref=EXCLUDED.provider_ref,updated_at=NOW()`, [crypto.randomUUID(),paymentId,settlementProviderRef,breakdown.providerPayout,breakdown.currency]);
     await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_RELEASE',$2,'payment',$3,$4::jsonb,NOW())`, [crypto.randomUUID(), actorId, paymentId, JSON.stringify({ jobId, outboxEventId:eventId, providerPayout:breakdown.providerPayout, platformFee:breakdown.platformFee })]);
     await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
     return { completed:true, alreadyDone:false };
