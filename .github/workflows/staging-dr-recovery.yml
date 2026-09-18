@@ -109,18 +109,14 @@ jobs:
           # Railway account and cannot be registered a second time in the workspace.
           # Generate an ephemeral workspace key for this isolated DR run instead.
           if [ -n "${RAILWAY_API_TOKEN:-}" ]; then
-            workspace_key_file="$RUNNER_TEMP/railway-workspace-dr-ed25519"
-            workspace_pub_file="$workspace_key_file.pub"
-            rm -f "$workspace_key_file" "$workspace_pub_file"
-            ssh-keygen -t ed25519 -N '' -C "hope-github-actions-dr-$GITHUB_RUN_ID" -f "$workspace_key_file" >/dev/null
-            workspace_fingerprint="$(ssh-keygen -lf "$workspace_pub_file" | awk '{print $2}')"
+            rm -f "$key_file" "$HOME/.ssh/id_ed25519.pub"
+            ssh-keygen -t ed25519 -N '' -C "hope-github-actions-dr-$GITHUB_RUN_ID" -f "$key_file" >/dev/null
+            chmod 600 "$key_file"
+            workspace_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
             echo "Generated ephemeral workspace SSH key: $workspace_fingerprint"
             env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
               railway ssh keys add --workspace "$workspace_id" \
-              --key "$workspace_pub_file" --name "hope-github-actions-dr-$GITHUB_RUN_ID"
-            cp "$workspace_key_file" "$HOME/.ssh/id_ed25519"
-            cp "$workspace_pub_file" "$HOME/.ssh/id_ed25519.pub"
-            chmod 600 "$HOME/.ssh/id_ed25519"
+              --key "$HOME/.ssh/id_ed25519.pub" --name "hope-github-actions-dr-$GITHUB_RUN_ID"
             echo 'Registered ephemeral SSH key as workspace-owned key.'
           fi
 
