@@ -1,0 +1,155 @@
+name: HOPE Payment Certification
+
+on:
+  workflow_call:
+  pull_request:
+    branches:
+      - release/v2hope-hardening-2026-09-19
+  workflow_dispatch:
+
+concurrency:
+  group: hope-payment-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  payment-certification:
+    name: Payment certification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: hope
+          POSTGRES_PASSWORD: hope
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hope -d hope_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DATABASE_URL: postgresql://hope:hope@127.0.0.1:5432/hope_test
+      NODE_ENV: test
+      PAYMENT_PROVIDER: webhook
+      PAYMENT_CURRENCY: TOMAN
+      PAYMENT_PROVIDER_TOKEN: hope-ci-mock-provider-token-32-characters
+      PAYMENT_PROVIDER_CREATE_URL: http://127.0.0.1:18080/create
+      PAYMENT_PROVIDER_RELEASE_URL: http://127.0.0.1:18080/release
+      PAYMENT_PROVIDER_REFUND_URL: http://127.0.0.1:18080/refund
+      PAYMENT_WEBHOOK_SECRET: certification-webhook-secret-32-characters-minimum
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Syntax check payment provider service
+        run: node --check tools/staging-payment-provider/server.mjs
+
+      - name: Start local Mock Payment Provider
+        working-directory: tools/staging-payment-provider
+        env:
+          PORT: '18080'
+          PAYMENT_PROVIDER_TOKEN: hope-ci-mock-provider-token-32-characters
+        run: |
+          set -euo pipefail
+          node server.mjs > "$RUNNER_TEMP/hope-mock-payment-provider.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/hope-mock-payment-provider.pid"
+          for i in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:18080/health >/tmp/hope-mock-payment-health.json; then
+              cat /tmp/hope-mock-payment-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/hope-mock-payment-provider.log"
+          exit 1
+
+      - name: Run targeted payment certification
+        working-directory: backend
+        env:
+          DATABASE_URL: ''
+        run: npm run test:payment-certification
+
+      - name: Run live Mock Payment Provider certification
+        working-directory: backend
+        env:
+          MOCK_PROVIDER_BASE_URL: http://127.0.0.1:18080
+        run: npm run test:payment-mock-live
+
+      - name: Run PostgreSQL migrations
+        working-directory: backend
+        run: npm run migrate
+
+      - name: Run PostgreSQL webhook payment end-to-end
+        working-directory: backend
+        env:
+          REQUIRE_INTEGRATION: '1'
+        run: npm run test:payment-webhook-postgres-e2e
+
+      - name: Run PostgreSQL marketplace/payment lifecycle
+        working-directory: backend
+        env:
+          REQUIRE_INTEGRATION: '1'
+        run: npm run test:postgres
+
+      - name: Run PostgreSQL internal wallet and ledger lifecycle
+        working-directory: backend
+        env:
+          REQUIRE_INTEGRATION: '1'
+        run: npm run test:payment-postgres-integration
+
+      - name: Run PostgreSQL financial invariants
+        working-directory: backend
+        run: npm run test:payment-postgres-invariants
+
+      - name: Capture Mock Payment Provider log
+        if: always()
+        run: |
+          mkdir -p artifacts
+          if [ -f "$RUNNER_TEMP/hope-mock-payment-provider.log" ]; then
+            cp "$RUNNER_TEMP/hope-mock-payment-provider.log" artifacts/hope-mock-payment-provider.log
+          fi
+
+      - name: Stop local Mock Payment Provider
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/hope-mock-payment-provider.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/hope-mock-payment-provider.pid")" 2>/dev/null || true
+          fi
+
+      - name: Generate evidence
+        working-directory: backend
+        if: always()
+        run: |
+          mkdir -p ../artifacts/HOPE_PAYMENT_CERTIFICATION
+          printf '{"workflow":"HOPE Payment Certification","runId":"%s","sha":"%s","status":"%s"}\n' "${{ github.run_id }}" "${{ github.sha }}" "${{ job.status }}" > ../artifacts/HOPE_PAYMENT_CERTIFICATION/summary.json
+          git status --short > ../artifacts/HOPE_PAYMENT_CERTIFICATION/git-status.txt
+          date -u > ../artifacts/HOPE_PAYMENT_CERTIFICATION/timestamp.txt
+          tar -czf ../HOPE-PAYMENT-CERTIFICATION.tar.gz -C ../artifacts HOPE_PAYMENT_CERTIFICATION
+
+      - name: Upload evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HOPE-PAYMENT-CERTIFICATION
+          path: HOPE-PAYMENT-CERTIFICATION.tar.gz
+          if-no-files-found: error

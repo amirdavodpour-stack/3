@@ -1,0 +1,16 @@
+
+::group::✅ Passing tests
+✅ jobs page requests categories and opportunities
+✅ search narrows the rendered opportunity list
+✅ online jobs remain visible for a selected city
+✅ kind chip narrows the list to missions only
+✅ kind chip narrows the list to jobs only
+✅ visibility chip narrows the list to specialized only
+✅ visibility chip toggles from specialized back to public
+✅ selecting a category filters the list and shows its localized label (regression: picker used to leak the raw slug and never match any job)
+✅ choosing "همه حوزه‌ها" again clears the category filter
+✅ selecting "همه" (all cities) surfaces jobs from every city (regression: the literal word used to be sent to the server as the city filter, and since no job's city equals that string the server returned zero jobs)
+✅ picking a specific city still shows online jobs (regression: forwarding the city filter to the server used to drop every online job, since the server has no carve-out for them)
+::endgroup::
+
+🎉 11 tests passed.

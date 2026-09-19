@@ -1,0 +1,107 @@
+name: Device integration certification
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      API_BASE_URL_STAGING:
+        required: true
+
+concurrency:
+  group: hope-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  device-certification:
+    name: Android device certification
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL_STAGING: ${{ secrets.API_BASE_URL_STAGING }}
+      CI_DEVICE_INTEGRATION: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Verify Flutter lockfile
+        run: |
+          set -euo pipefail
+          [[ "${API_BASE_URL_STAGING:-}" =~ ^https://[^[:space:]]+$ ]] || { echo 'API_BASE_URL_STAGING must use https:// and contain no whitespace.' >&2; exit 1; }
+          bash tools/verify-pubspec-lock-fresh.sh
+
+      - name: Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Resolve staging host for Android guest fallback
+        id: resolve_staging_host
+        shell: bash
+        env:
+          STAGING_BASE_URL: ${{ env.API_BASE_URL_STAGING }}
+        run: |
+          set -euo pipefail
+          host="$(node -e "console.log(new URL(process.env.STAGING_BASE_URL).hostname)")"
+          ips="$(getent ahostsv4 "$host" | awk '{print $1}' | sort -u | paste -sd, -)"
+          test -n "$ips" || { echo "Runner DNS could not resolve $host." >&2; exit 1; }
+          echo "Resolved $host to $ips"
+          echo "ips=$ips" >> "$GITHUB_OUTPUT"
+
+      - name: Android emulator certification
+        id: emulator_certification
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          API_BASE_URL_STAGING: ${{ env.API_BASE_URL_STAGING }}
+          CI_DEVICE_INTEGRATION: 'true'
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          # The Android guest can inherit unusable DNS on GitHub-hosted Linux
+          # runners even when the emulator itself boots successfully. Use explicit
+          # public resolvers so the device gate tests the real staging host.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8
+          # GitHub-hosted Linux can lose the emulator ADB settings service immediately after boot.
+          # The test suite does not require animation state, so do not let the action's optional
+          # animation-disabling ADB calls turn a healthy boot into a false-negative certification.
+          disable-animations: false
+          # reactivecircus/android-emulator-runner executes this under /usr/bin/sh.
+          # Keep the script POSIX-sh compatible; do not use bash-only pipefail.
+          script: |
+            STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}" \
+              bash tools/android-staging-network-preflight.sh
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" --dart-define=CI_DEVICE_INTEGRATION=true
+
+      - name: Runtime gate - device certification
+        id: device_certification_evidence
+        if: ${{ always() }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.emulator_certification.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate device_certification \
+            --command 'flutter test --no-pub integration_test/runtime/app_smoke_test.dart' \
+            --result "$GATE_RESULT"
+
+      - name: Upload device evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-device-certification-${{ github.run_id }}
+          path: docs/audit/evidence/device_certification.json
+          if-no-files-found: warn

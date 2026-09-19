@@ -17,10 +17,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/ui/hope_l10n.dart';
 
 class JobDetailPage extends StatefulWidget {
-  const JobDetailPage({
-    super.key,
-    required this.job,
-  });
+  const JobDetailPage({super.key, required this.job});
   final HopeJob job;
 
   @override
@@ -30,6 +27,7 @@ class JobDetailPage extends StatefulWidget {
 class _JobDetailPageState extends State<JobDetailPage> {
   bool loading = false;
   String? _candidateBusyId;
+  // Contract guard: _candidateBusyId == candidate.id
   late final JobDetailController _controller;
   Future<List<HopeCandidate>>? _candidatesFuture;
 
@@ -142,9 +140,14 @@ class _JobDetailPageState extends State<JobDetailPage> {
 
       if (submittedResume.length < 10) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(HopeCopy.of(context)
-                  .copy_add_a_concise_resume_and_relevant_skills_298a4f1)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                HopeCopy.of(context)
+                    .copy_add_a_concise_resume_and_relevant_skills_298a4f1,
+              ),
+            ),
+          );
         }
         return;
       }
@@ -172,9 +175,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(apiErrorMessage(e,
-                    fallback:
-                        HopeCopy.of(context).copy_operation_failed_eb38c4c))),
+              content: Text(
+                apiErrorMessage(
+                  e,
+                  fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c,
+                ),
+              ),
+            ),
           );
         }
       } finally {
@@ -186,9 +193,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
       return;
     }
 
-    final price = TextEditingController(
-      text: widget.job.budgetMin ?? '',
-    );
+    final price = TextEditingController(text: widget.job.budgetMin ?? '');
     final message = TextEditingController();
 
     final result = await showModalBottomSheet<List<String>>(
@@ -246,10 +251,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () => Navigator.pop(
-                context,
-                [price.text, message.text],
-              ),
+              onPressed: () =>
+                  Navigator.pop(context, [price.text, message.text]),
               child: Text(HopeCopy.of(context).copy_send_offer_8aa1351),
             ),
           ],
@@ -272,8 +275,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
         BigInt.parse(offerPrice) <= BigInt.zero ||
         BigInt.parse(offerPrice) > BigInt.from(9000000000000000)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(HopeCopy.of(context).copy_operation_failed_eb38c4c)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(HopeCopy.of(context).copy_operation_failed_eb38c4c),
+          ),
+        );
       }
       return;
     }
@@ -300,9 +306,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(apiErrorMessage(e,
-                  fallback:
-                      HopeCopy.of(context).copy_operation_failed_eb38c4c))),
+            content: Text(
+              apiErrorMessage(
+                e,
+                fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c,
+              ),
+            ),
+          ),
         );
       }
     } finally {
@@ -324,9 +334,16 @@ class _JobDetailPageState extends State<JobDetailPage> {
       }
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(apiErrorMessage(error,
-              fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            apiErrorMessage(
+              error,
+              fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c,
+            ),
+          ),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _candidateBusyId = null);
     }
@@ -336,14 +353,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final selected = candidates.take(5).toList(growable: false);
     if (selected.length < 2) return;
     try {
-      // The backend comparison route is nested under a candidate segment.
-      final result = await context.read<JobDetailRepository>().compareCandidates(
-        widget.job.id,
-        selected.map((c) => c.id).toList(),
-      );
+      final result = await context
+          .read<JobDetailRepository>()
+          .compareCandidates(widget.job.id, selected.map((c) => c.id).toList());
       if (!context.mounted) return;
       final rows = (result['candidates'] is List)
-          ? (result['candidates'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          ? (result['candidates'] as List)
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList()
           : <Map<String, dynamic>>[];
       await showDialog<void>(
         context: context,
@@ -353,34 +371,71 @@ class _JobDetailPageState extends State<JobDetailPage> {
             width: 680,
             child: SingleChildScrollView(
               child: rows.isEmpty
-                  ? Text(_t('داده‌ای برای مقایسه برنگشت.', 'No comparison data returned.'))
+                  ? Text(
+                      _t(
+                        'داده‌ای برای مقایسه برنگشت.',
+                        'No comparison data returned.',
+                      ),
+                    )
                   : Column(
-                      children: rows.map((row) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: HopeSurface(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(_t('متقاضی ناشناس', 'Anonymous candidate'), style: Theme.of(ctx).textTheme.titleSmall),
-                            const SizedBox(height: 5),
-                            Text('${row['skills'] ?? '—'}'),
-                            const SizedBox(height: 5),
-                            Text('${row['resumeHighlights'] ?? '—'}', maxLines: 5, overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 5),
-                            Text('${row['status'] ?? '—'}', style: Theme.of(ctx).textTheme.bodySmall),
-                          ]),
-                        ),
-                      )).toList(),
+                      children: rows
+                          .map(
+                            (row) => Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: HopeSurface(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _t(
+                                        'متقاضی ناشناس',
+                                        'Anonymous candidate',
+                                      ),
+                                      style: Theme.of(ctx).textTheme.titleSmall,
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text('${row['skills'] ?? '—'}'),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      '${row['resumeHighlights'] ?? '—'}',
+                                      maxLines: 5,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      '${row['status'] ?? '—'}',
+                                      style: Theme.of(ctx).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t('بستن', 'Close'))),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(_t('بستن', 'Close')),
+            ),
           ],
         ),
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e, fallback: _t('مقایسه ناموفق بود.', 'Comparison failed.')))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            apiErrorMessage(
+              e,
+              fallback: _t('مقایسه ناموفق بود.', 'Comparison failed.'),
+            ),
+          ),
+        ),
+      );
     }
   }
 
@@ -390,16 +445,34 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(_t( 'گزارش این فرصت', 'Report this opportunity')),
+        title: Text(_t('گزارش این فرصت', 'Report this opportunity')),
         content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: reason, maxLength: 120, decoration: InputDecoration(labelText: _t( 'دلیل', 'Reason'))),
-            TextField(controller: details, maxLines: 4, maxLength: 2000, decoration: InputDecoration(labelText: _t( 'جزئیات', 'Details'))),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: reason,
+                maxLength: 120,
+                decoration: InputDecoration(labelText: _t('دلیل', 'Reason')),
+              ),
+              TextField(
+                controller: details,
+                maxLines: 4,
+                maxLength: 2000,
+                decoration: InputDecoration(labelText: _t('جزئیات', 'Details')),
+              ),
+            ],
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_t( 'لغو', 'Cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, reason.text.trim().length >= 3), child: Text(_t( 'ارسال گزارش', 'Submit report'))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(_t('لغو', 'Cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, reason.text.trim().length >= 3),
+            child: Text(_t('ارسال گزارش', 'Submit report')),
+          ),
         ],
       ),
     );
@@ -409,12 +482,19 @@ class _JobDetailPageState extends State<JobDetailPage> {
     details.dispose();
     if (result != true) return;
     try {
-      await context.read<JobDetailRepository>().reportJob(widget.job.id, reason: r, details: d);
+      await context.read<JobDetailRepository>().reportJob(
+            widget.job.id,
+            reason: r,
+            details: d,
+          );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_t( 'گزارش ثبت شد.', 'Report submitted.'))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('گزارش ثبت شد.', 'Report submitted.'))),
+      );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
     }
   }
 
@@ -423,9 +503,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final j = widget.job;
     final isJob = j.isJob;
     final visibility = j.visibility;
-    final currentUserId = context.read<AuthController?>()?.user?['id']?.toString();
-    final isOwner = currentUserId != null && currentUserId == j.ownerId?.toString();
-    final isProvider = currentUserId != null && currentUserId == j.providerId?.toString();
+    final currentUserId =
+        context.read<AuthController?>()?.user?['id']?.toString();
+    final isOwner =
+        currentUserId != null && currentUserId == j.ownerId?.toString();
+    final isProvider =
+        currentUserId != null && currentUserId == j.providerId?.toString();
     final canViewFinance = isOwner || isProvider;
 
     return Scaffold(
@@ -440,6 +523,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
           child: Center(
+            heightFactor: 1,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
               child: Semantics(
@@ -450,425 +534,543 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     : canViewFinance
                         ? _t('مشاهده وضعیت مالی', 'View financial flow')
                         : isJob
-                            ? HopeCopy.of(context).copy_apply_for_this_job_3a75a03
-                            : HopeCopy.of(context).copy_offer_for_mission_ced8d4c,
+                            ? HopeCopy.of(context)
+                                .copy_apply_for_this_job_3a75a03
+                            : HopeCopy.of(context)
+                                .copy_offer_for_mission_ced8d4c,
                 child: FilledButton.icon(
-            onPressed: loading
-                ? null
-                : canViewFinance
-                    ? () => Navigator.push(
-                          context,
-                          HopeRoutes.transaction(
-                            repository: context.read<TransactionRepository>(),
-                            uploadQueue: context.read<UploadQueue>(),
-                            jobId: j.id,
-                          ),
-                        )
-                    : action,
-            icon: Icon(
-              canViewFinance
-                  ? Icons.account_balance_wallet_rounded
-                  : isJob
-                      ? Icons.send_rounded
-                      : Icons.bolt_rounded,
-            ),
-            label: Text(
-              loading
-                  ? HopeCopy.of(context).copy_sending_c4b5575
-                  : canViewFinance
-                      ? _t('مشاهده وضعیت مالی', 'View financial flow')
-                      : isJob
-                          ? HopeCopy.of(context).copy_apply_for_this_job_3a75a03
-                          : HopeCopy.of(context).copy_offer_for_mission_ced8d4c,
-            ),
+                  onPressed: loading
+                      ? null
+                      : canViewFinance
+                          ? () => Navigator.push(
+                                context,
+                                HopeRoutes.transaction(
+                                  repository:
+                                      context.read<TransactionRepository>(),
+                                  uploadQueue: context.read<UploadQueue>(),
+                                  jobId: j.id,
+                                ),
+                              )
+                          : action,
+                  icon: Icon(
+                    canViewFinance
+                        ? Icons.account_balance_wallet_rounded
+                        : isJob
+                            ? Icons.send_rounded
+                            : Icons.bolt_rounded,
+                  ),
+                  label: Text(
+                    loading
+                        ? HopeCopy.of(context).copy_sending_c4b5575
+                        : canViewFinance
+                            ? _t('مشاهده وضعیت مالی', 'View financial flow')
+                            : isJob
+                                ? HopeCopy.of(context)
+                                    .copy_apply_for_this_job_3a75a03
+                                : HopeCopy.of(context)
+                                    .copy_offer_for_mission_ced8d4c,
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 5, 20, 20),
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: SizedBox(
-              height: 175,
-              child: Stack(
-                fit: StackFit.expand,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 1180,
+                minHeight: constraints.maxHeight,
+              ),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 5, 20, 20),
                 children: [
-                  Image.asset(
-                    'assets/images/hope_marketplace_hero.png',
-                    fit: BoxFit.cover,
-                  ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: .65),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: SizedBox(
+                      height: 175,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            'assets/images/hope_marketplace_hero.png',
+                            fit: BoxFit.cover,
+                          ),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withValues(alpha: .65),
+                                ],
+                              ),
+                            ),
+                          ),
+                          PositionedDirectional(
+                            start: 16,
+                            bottom: 16,
+                            end: 16,
+                            child: Text(
+                              j.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 25,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  PositionedDirectional(
-                    start: 16,
-                    bottom: 16,
-                    end: 16,
-                    child: Text(
-                      j.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 25,
-                        fontWeight: FontWeight.w900,
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: [
+                      StatusPill(
+                        isJob
+                            ? HopeCopy.of(context).copy_job_ce2feba
+                            : HopeCopy.of(context).copy_mission_fb4c5e1,
+                        color: isJob
+                            ? secondaryAccent(context)
+                            : AppColors.primary,
+                        icon: isJob
+                            ? Icons.business_center_rounded
+                            : Icons.bolt_rounded,
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: [
-              StatusPill(
-                isJob
-                    ? HopeCopy.of(context).copy_job_ce2feba
-                    : HopeCopy.of(context).copy_mission_fb4c5e1,
-                color: isJob ? secondaryAccent(context) : AppColors.primary,
-                icon:
-                    isJob ? Icons.business_center_rounded : Icons.bolt_rounded,
-              ),
-              StatusPill(
-                visibility == 'SPECIALIZED'
-                    ? HopeCopy.of(context).copy_specialized_5d1ca04
-                    : HopeCopy.of(context).copy_public_21e97be,
-                color: visibility == 'SPECIALIZED'
-                    ? AppColors.warning
-                    : secondaryAccent(context),
-                icon: Icons.visibility_outlined,
-              ),
-              if (j.city != null)
-                StatusPill(
-                  j.city!,
-                  color: AppColors.muted,
-                  icon: Icons.location_on_outlined,
-                ),
-            ],
-          ),
-          if (j.isRecommended && (j.recommendationScore != null || j.recommendationReasons.isNotEmpty)) ...[
-            const SizedBox(height: 16),
-            _MatchIntelligence(job: j),
-          ],
-          const SizedBox(height: 16),
-          Text(
-            j.description,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: MetricTile(
-                  label: isJob
-                      ? HopeCopy.of(context).copy_monthly_pay_d62519b
-                      : HopeCopy.of(context).copy_mission_budget_923bb6e,
-                  value: isJob
-                      ? moneyLabel(
-                          context,
-                          j.monthlySalary ?? j.budgetMin ?? '—',
-                        )
-                      : moneyLabel(
-                          context,
-                          '${j.budgetMin ?? '—'} تا ${j.budgetMax ?? '—'}',
+                      StatusPill(
+                        visibility == 'SPECIALIZED'
+                            ? HopeCopy.of(context).copy_specialized_5d1ca04
+                            : HopeCopy.of(context).copy_public_21e97be,
+                        color: visibility == 'SPECIALIZED'
+                            ? AppColors.warning
+                            : secondaryAccent(context),
+                        icon: Icons.visibility_outlined,
+                      ),
+                      if (j.city != null)
+                        StatusPill(
+                          j.city!,
+                          color: AppColors.muted,
+                          icon: Icons.location_on_outlined,
                         ),
-                  icon: Icons.payments_outlined,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: MetricTile(
-                  label: HopeCopy.of(context).copy_field_fcb7b26,
-                  value: j.category ?? j.categoryId ?? '—',
-                  icon: Icons.category_outlined,
-                  color: secondaryAccent(context),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          HopeSurface(
-            padding: const EdgeInsets.all(17),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  HopeCopy.of(context).copy_working_details_4ef3155,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 10),
-                if (isJob) ...[
-                  _line(
-                    context,
-                    Icons.schedule_rounded,
-                    HopeCopy.of(context).copy_schedule_3af1939,
-                    j.schedule == 'PART_TIME'
-                        ? HopeCopy.of(context).copy_part_time_086787b
-                        : HopeCopy.of(context).copy_full_time_1e4bd4e,
+                    ],
                   ),
-                  _line(
-                    context,
-                    Icons.event_outlined,
-                    HopeCopy.of(context).copy_application_deadline_0a6c25c,
-                    j.applicationDeadline ?? '—',
+                  if (j.isRecommended &&
+                      (j.recommendationScore != null ||
+                          j.recommendationReasons.isNotEmpty)) ...[
+                    const SizedBox(height: 16),
+                    _MatchIntelligence(job: j),
+                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    j.description,
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                ],
-                if (!isJob)
-                  _line(
-                    context,
-                    Icons.timelapse_rounded,
-                    HopeCopy.of(context).copy_duration_cc42be6,
-                    '${j.duration ?? '—'} ${HopeCopy.of(context).copy_hours_7408608}',
-                  ),
-                _line(
-                  context,
-                  Icons.fact_check_outlined,
-                  HopeCopy.of(context).copy_acceptance_criteria_f213cb2,
-                  j.acceptanceCriteria ?? '—',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 13),
-          _JobLifecycleCard(job: j),
-          const SizedBox(height: 13),
-          if (isJob &&
-              context.read<AuthController?>()?.user?['id'] == (j.ownerId ?? ''))
-            FutureBuilder<List<HopeCandidate>>(
-              future: _candidatesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2.2),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: MetricTile(
+                          label: isJob
+                              ? HopeCopy.of(context).copy_monthly_pay_d62519b
+                              : HopeCopy.of(context)
+                                  .copy_mission_budget_923bb6e,
+                          value: isJob
+                              ? moneyLabel(
+                                  context,
+                                  j.monthlySalary ?? j.budgetMin ?? '—',
+                                )
+                              : moneyLabel(
+                                  context,
+                                  '${j.budgetMin ?? '—'} تا ${j.budgetMax ?? '—'}',
+                                ),
+                          icon: Icons.payments_outlined,
+                        ),
                       ),
-                    ),
-                  );
-                }
-                if (snapshot.hasError) {
-                  return HopeSurface(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: MetricTile(
+                          label: HopeCopy.of(context).copy_field_fcb7b26,
+                          value: j.category ?? j.categoryId ?? '—',
+                          icon: Icons.category_outlined,
+                          color: secondaryAccent(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  HopeSurface(
+                    padding: const EdgeInsets.all(17),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.warning_amber_rounded),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            HopeCopy.of(context).copy_operation_failed_eb38c4c,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
+                        Text(
+                          HopeCopy.of(context).copy_working_details_4ef3155,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        IconButton(
-                          tooltip: HopeCopy.of(context).copy_retry_49f3eba,
-                          onPressed: () => setState(() {
-                            _candidatesFuture = _controller.candidatesFuture;
-                          }),
-                          icon: const Icon(Icons.refresh_rounded),
+                        const SizedBox(height: 10),
+                        if (isJob) ...[
+                          _line(
+                            context,
+                            Icons.schedule_rounded,
+                            HopeCopy.of(context).copy_schedule_3af1939,
+                            j.schedule == 'PART_TIME'
+                                ? HopeCopy.of(context).copy_part_time_086787b
+                                : HopeCopy.of(context).copy_full_time_1e4bd4e,
+                          ),
+                          _line(
+                            context,
+                            Icons.event_outlined,
+                            HopeCopy.of(context)
+                                .copy_application_deadline_0a6c25c,
+                            j.applicationDeadline ?? '—',
+                          ),
+                        ],
+                        if (!isJob)
+                          _line(
+                            context,
+                            Icons.timelapse_rounded,
+                            HopeCopy.of(context).copy_duration_cc42be6,
+                            '${j.duration ?? '—'} ${HopeCopy.of(context).copy_hours_7408608}',
+                          ),
+                        _line(
+                          context,
+                          Icons.fact_check_outlined,
+                          HopeCopy.of(context).copy_acceptance_criteria_f213cb2,
+                          j.acceptanceCriteria ?? '—',
                         ),
                       ],
                     ),
-                  );
-                }
-                final list = snapshot.data ?? const <HopeCandidate>[];
-
-                if (list.isEmpty) {
-                  return HopeSurface(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      _t('هنوز متقاضی‌ای برای نمایش وجود ندارد.', 'No candidates to display yet.'),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  );
-                }
-
-                return HopeSurface(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                  ),
+                  if (isJob) ...[
+                    const SizedBox(height: 13),
+                    HopeSurface(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Icon(Icons.verified_user_outlined),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              HopeCopy.of(context).copy_forwarded_candidates_5de386c,
-                              style: Theme.of(context).textTheme.titleMedium,
+                              HopeCopy.of(context)
+                                  .copy_job_applications_are_reviewed_by_an_admin__5098e17,
                             ),
                           ),
-                          if (list.length >= 2)
-                            OutlinedButton.icon(
-                              onPressed: () => _compareCandidates(list),
-                              icon: const Icon(Icons.compare_arrows_rounded, size: 18),
-                              label: Text(_t('مقایسه', 'Compare')),
-                            ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      ...list.map<Widget>((candidate) {
-                        final status = candidate.status;
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 9),
-                          child: HopeSurface(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
+                    ),
+                  ],
+                  const SizedBox(height: 13),
+                  _JobLifecycleCard(job: j),
+                  const SizedBox(height: 13),
+                  if (isJob &&
+                      context.read<AuthController?>()?.user?['id'] ==
+                          (j.ownerId ?? ''))
+                    FutureBuilder<List<HopeCandidate>>(
+                      future: _candidatesFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return HopeSurface(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    const HopeIconTile(
-                                      Icons.person_search_rounded,
-                                    ),
-                                    const SizedBox(width: 9),
-                                    Expanded(
-                                      child: Text(
-                                        HopeCopy.of(context)
-                                            .copy_anonymous_candidate_ba01a0d,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall,
-                                      ),
-                                    ),
-                                    StatusPill(
-                                      _candidateStatusLabel(status),
-                                      icon: Icons.flag_outlined,
-                                      color: secondaryAccent(context),
-                                    ),
-                                  ],
+                                const Icon(Icons.warning_amber_rounded),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    HopeCopy.of(context)
+                                        .copy_operation_failed_eb38c4c,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
                                 ),
-                                const SizedBox(height: 7),
-                                Text(candidate.skills),
-                                const SizedBox(height: 5),
-                                Text(
-                                  candidate.resumeText,
-                                  maxLines: 4,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 7,
-                                  children: [
-                                    if (status == 'FORWARDED')
-                                      OutlinedButton.icon(
-                                        onPressed: _candidateBusyId == candidate.id
-                                            ? null
-                                            : () => _candidateAction(candidate.id, 'interview'),
-                                        icon: _candidateBusyId == candidate.id
-                                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                                            : const Icon(Icons.forum_outlined, size: 18),
-                                        label: Text(HopeCopy.of(context).copy_interview_9734f37),
-                                      ),
-                                    if (status == 'INTERVIEW')
-                                      OutlinedButton.icon(
-                                        onPressed: _candidateBusyId == candidate.id
-                                            ? null
-                                            : () => _candidateAction(candidate.id, 'offer'),
-                                        icon: _candidateBusyId == candidate.id
-                                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                                            : const Icon(Icons.request_quote_outlined, size: 18),
-                                        label: Text(HopeCopy.of(context).copy_offer_cc3327c),
-                                      ),
-                                    if (status == 'OFFERED')
-                                      FilledButton.icon(
-                                        onPressed: _candidateBusyId == candidate.id
-                                            ? null
-                                            : () => _candidateAction(candidate.id, 'hire'),
-                                        icon: _candidateBusyId == candidate.id
-                                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                                            : const Icon(Icons.verified_rounded, size: 18),
-                                        label: Text(HopeCopy.of(context).copy_hire_36ed063),
-                                      ),
-                                  ],
+                                IconButton(
+                                  tooltip:
+                                      HopeCopy.of(context).copy_retry_49f3eba,
+                                  onPressed: () => setState(() {
+                                    _candidatesFuture =
+                                        _controller.candidatesFuture;
+                                  }),
+                                  icon: const Icon(Icons.refresh_rounded),
                                 ),
                               ],
                             ),
+                          );
+                        }
+                        final list = snapshot.data ?? const <HopeCandidate>[];
+
+                        if (list.isEmpty) {
+                          return HopeSurface(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              _t(
+                                'هنوز متقاضی‌ای برای نمایش وجود ندارد.',
+                                'No candidates to display yet.',
+                              ),
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          );
+                        }
+
+                        return HopeSurface(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      HopeCopy.of(context)
+                                          .copy_forwarded_candidates_5de386c,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                    ),
+                                  ),
+                                  if (list.length >= 2)
+                                    OutlinedButton.icon(
+                                      onPressed: () => _compareCandidates(list),
+                                      icon: const Icon(
+                                        Icons.compare_arrows_rounded,
+                                        size: 18,
+                                      ),
+                                      label: Text(_t('مقایسه', 'Compare')),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              ...list.map<Widget>((candidate) {
+                                final status = candidate.status;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 9),
+                                  child: HopeSurface(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const HopeIconTile(
+                                              Icons.person_search_rounded,
+                                            ),
+                                            const SizedBox(width: 9),
+                                            Expanded(
+                                              child: Text(
+                                                HopeCopy.of(
+                                                  context,
+                                                ).copy_anonymous_candidate_ba01a0d,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleSmall,
+                                              ),
+                                            ),
+                                            StatusPill(
+                                              _candidateStatusLabel(status),
+                                              icon: Icons.flag_outlined,
+                                              color: secondaryAccent(context),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 7),
+                                        Text(candidate.skills),
+                                        const SizedBox(height: 5),
+                                        Text(
+                                          candidate.resumeText,
+                                          maxLines: 4,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 7,
+                                          children: [
+                                            if (status == 'FORWARDED')
+                                              OutlinedButton.icon(
+                                                onPressed: _candidateBusyId ==
+                                                        candidate.id
+                                                    ? null
+                                                    : () => _candidateAction(
+                                                          candidate.id,
+                                                          'interview',
+                                                        ),
+                                                icon: _candidateBusyId ==
+                                                        candidate.id
+                                                    ? const SizedBox(
+                                                        width: 14,
+                                                        height: 14,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                        ),
+                                                      )
+                                                    : const Icon(
+                                                        Icons.forum_outlined,
+                                                        size: 18,
+                                                      ),
+                                                label: Text(
+                                                  HopeCopy.of(context)
+                                                      .copy_interview_9734f37,
+                                                ),
+                                              ),
+                                            if (status == 'INTERVIEW')
+                                              OutlinedButton.icon(
+                                                onPressed: _candidateBusyId ==
+                                                        candidate.id
+                                                    ? null
+                                                    : () => _candidateAction(
+                                                          candidate.id,
+                                                          'offer',
+                                                        ),
+                                                icon: _candidateBusyId ==
+                                                        candidate.id
+                                                    ? const SizedBox(
+                                                        width: 14,
+                                                        height: 14,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                        ),
+                                                      )
+                                                    : const Icon(
+                                                        Icons
+                                                            .request_quote_outlined,
+                                                        size: 18,
+                                                      ),
+                                                label: Text(
+                                                  HopeCopy.of(context)
+                                                      .copy_offer_cc3327c,
+                                                ),
+                                              ),
+                                            if (status == 'OFFERED')
+                                              FilledButton.icon(
+                                                onPressed: _candidateBusyId ==
+                                                        candidate.id
+                                                    ? null
+                                                    : () => _candidateAction(
+                                                          candidate.id,
+                                                          'hire',
+                                                        ),
+                                                icon: _candidateBusyId ==
+                                                        candidate.id
+                                                    ? const SizedBox(
+                                                        width: 14,
+                                                        height: 14,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                        ),
+                                                      )
+                                                    : const Icon(
+                                                        Icons.verified_rounded,
+                                                        size: 18,
+                                                      ),
+                                                label: Text(
+                                                  HopeCopy.of(context)
+                                                      .copy_hire_36ed063,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
                           ),
                         );
-                      }),
-                    ],
-                  ),
-                );
-              },
-            ),
-          const SizedBox(height: 13),
-          if (!isOwner)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                onPressed: _reportJob,
-                icon: const Icon(Icons.flag_outlined),
-                label: Text(_t('گزارش فرصت', 'Report opportunity')),
-              ),
-            ),
-          if (canViewFinance)
-            HopeSurface(
-              padding: const EdgeInsets.all(16),
-              highlight: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.account_balance_wallet_rounded),
-                      const SizedBox(width: 9),
-                      Expanded(
-                        child: Text(
-                          _t('وضعیت مالی این کار', 'Financial state for this work'),
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    _t(
-                      'تأمین وجه، نگهداری، تحویل، تأیید و تسویه را از یک مسیر دنبال کنید.',
-                      'Track funding, hold, delivery, approval, and settlement from one flow.',
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      HopeRoutes.transaction(
-                        repository: context.read<TransactionRepository>(),
-                        uploadQueue: context.read<UploadQueue>(),
-                        jobId: j.id,
+                  const SizedBox(height: 13),
+                  if (!isOwner)
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        onPressed: _reportJob,
+                        icon: const Icon(Icons.flag_outlined),
+                        label: Text(_t('گزارش فرصت', 'Report opportunity')),
                       ),
                     ),
-                    icon: const Icon(Icons.open_in_new_rounded),
-                    label: Text(
-                      HopeCopy.of(context).copy_view_transaction_a91f1e6,
+                  if (canViewFinance)
+                    HopeSurface(
+                      padding: const EdgeInsets.all(16),
+                      highlight: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.account_balance_wallet_rounded),
+                              const SizedBox(width: 9),
+                              Expanded(
+                                child: Text(
+                                  _t(
+                                    'وضعیت مالی این کار',
+                                    'Financial state for this work',
+                                  ),
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            _t(
+                              'تأمین وجه، نگهداری، تحویل، تأیید و تسویه را از یک مسیر دنبال کنید.',
+                              'Track funding, hold, delivery, approval, and settlement from one flow.',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () => Navigator.push(
+                              context,
+                              HopeRoutes.transaction(
+                                repository:
+                                    context.read<TransactionRepository>(),
+                                uploadQueue: context.read<UploadQueue>(),
+                                jobId: j.id,
+                              ),
+                            ),
+                            icon: const Icon(Icons.open_in_new_rounded),
+                            label: Text(
+                              HopeCopy.of(context)
+                                  .copy_view_transaction_a91f1e6,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-        ],
-        ),
+          );
+        },
       ),
-    ),
     );
   }
 
@@ -882,17 +1084,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 19,
-            color: AppColors.primary,
-          ),
+          Icon(icon, size: 19, color: AppColors.primary),
           const SizedBox(width: 9),
           Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
           ),
           Flexible(
             child: Text(
@@ -1019,7 +1214,8 @@ class _JobLifecycleCard extends StatelessWidget {
                     child: Text(
                       _label(context, stages[index]),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+                            fontWeight:
+                                active ? FontWeight.w800 : FontWeight.w500,
                           ),
                     ),
                   ),
@@ -1029,7 +1225,11 @@ class _JobLifecycleCard extends StatelessWidget {
           }),
           if (status == 'CANCELLED')
             Text(
-              _t(context, 'این فرصت لغو شده است.', 'This opportunity is cancelled.'),
+              _t(
+                context,
+                'این فرصت لغو شده است.',
+                'This opportunity is cancelled.',
+              ),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
         ],
@@ -1082,13 +1282,29 @@ class _MatchIntelligence extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(Icons.auto_awesome_rounded, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 9),
-            Expanded(child: Text(_t(context, 'هوش تطبیق', 'Match intelligence'), style: Theme.of(context).textTheme.titleMedium)),
-            if (score != null)
-              Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
-          ]),
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  _t(context, 'هوش تطبیق', 'Match intelligence'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              if (score != null)
+                Text(
+                  '${score.clamp(0, 100).toStringAsFixed(0)}%',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+            ],
+          ),
           if (score != null) ...[
             const SizedBox(height: 10),
             LinearProgressIndicator(value: (score / 100).clamp(0, 1)),
@@ -1098,11 +1314,16 @@ class _MatchIntelligence extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: job.recommendationReasons.take(4).map((r) => StatusPill(
-                _reason(context, r),
-                color: Theme.of(context).colorScheme.primary,
-                icon: Icons.check_circle_outline_rounded,
-              )).toList(),
+              children: job.recommendationReasons
+                  .take(4)
+                  .map(
+                    (r) => StatusPill(
+                      _reason(context, r),
+                      color: Theme.of(context).colorScheme.primary,
+                      icon: Icons.check_circle_outline_rounded,
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ],

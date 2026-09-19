@@ -1,0 +1,279 @@
+name: Disaster recovery restore drill
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      RAILWAY_TOKEN:
+        required: false
+      RAILWAY_API_TOKEN:
+        required: false
+      RAILWAY_SSH_PRIVATE_KEY:
+        required: false
+      SOURCE_DATABASE_URL:
+        required: true
+      DRILL_DATABASE_URL:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  dr-restore:
+    name: DR restore drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+      RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}
+      SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
+      DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
+      RTO_TARGET_SECONDS: '900'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup PostgreSQL client
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Backend install
+        working-directory: backend
+        run: npm ci
+
+      # Uses a Railway Project Token when available; falls back to the workspace API token
+      # with a run-scoped workspace SSH key for GitHub-hosted DR access.
+      - name: Start Railway Postgres SSH tunnel for DR
+        id: postgres_tunnel
+        if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          : "${RAILWAY_SSH_PRIVATE_KEY:?RAILWAY_SSH_PRIVATE_KEY is required for the GitHub-hosted DR tunnel}"
+
+          RAILWAY_TOKEN="$(printf '%s' "${RAILWAY_TOKEN:-}" | tr -d '\r\n')"
+          RAILWAY_API_TOKEN="$(printf '%s' "${RAILWAY_API_TOKEN:-}" | tr -d '\r\n')"
+          RAILWAY_SSH_PRIVATE_KEY="$(printf '%s' "$RAILWAY_SSH_PRIVATE_KEY" | tr -d '\r')"
+
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          raw_key="$RAILWAY_SSH_PRIVATE_KEY"
+          key_file="$HOME/.ssh/id_ed25519"
+          if printf '%s' "$raw_key" | grep -q -- '-----BEGIN .*PRIVATE KEY-----'; then
+            printf '%s\n' "$raw_key" | sed 's/\\\\n/\n/g' > "$key_file"
+          else
+            compact_key="$(printf '%s' "$raw_key" | tr -d '[:space:]')"
+            decoded_key="$RUNNER_TEMP/railway-dr-key.bin"
+            if ! printf '%s' "$compact_key" | base64 --decode > "$decoded_key" 2>/dev/null; then
+              echo 'RAILWAY_SSH_PRIVATE_KEY is neither an armored private key nor valid base64' >&2
+              exit 1
+            fi
+            if head -c 15 "$decoded_key" | grep -aq '^openssh-key-v1'; then
+              {
+                printf '%s\n' '-----BEGIN OPENSSH PRIVATE KEY-----'
+                base64 --wrap=64 "$decoded_key"
+                printf '%s\n' '-----END OPENSSH PRIVATE KEY-----'
+              } > "$key_file"
+            else
+              decoded_text="$RUNNER_TEMP/railway-dr-key.txt"
+              tr -d '\r' < "$decoded_key" > "$decoded_text"
+              grep -q -- '-----BEGIN .*PRIVATE KEY-----' "$decoded_text" || { echo 'Decoded Railway SSH secret is not an OpenSSH private key' >&2; exit 1; }
+              cat "$decoded_text" > "$key_file"
+            fi
+          fi
+          chmod 600 "$key_file"
+          ssh-keygen -y -f "$key_file" > "$HOME/.ssh/id_ed25519.pub"
+          key_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
+          echo "RAILWAY_SSH_KEY_FINGERPRINT=$key_fingerprint"
+          test "$key_fingerprint" = 'SHA256:/Lrb+F+ajiLSfE93dOL7jMsajR7AMlKoSNTLchVjn3w'
+
+          npm install -g --allow-scripts=@railway/cli @railway/cli@5.30.1 >/dev/null
+          project_id='8c686259-09c6-4609-bbe7-4ea25e769e18'
+          environment_id='5a435e97-1e7a-4a5c-952c-19da2f10d955'
+          workspace_id='e6af3417-6d75-46e1-b1e3-e1aae3374974'
+
+          tunnel_log="$RUNNER_TEMP/railway-postgres-tunnel.log"
+          tunnel_pid="$RUNNER_TEMP/railway-postgres-tunnel.pid"
+          rm -f "$tunnel_log" "$tunnel_pid"
+
+          project_ok=false
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            env -u RAILWAY_API_TOKEN -u RAILWAY_TOKEN RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+              railway connect Postgres --tunnel-only --port 15432 \
+              --project "$project_id" --environment "$environment_id" \
+              >"$tunnel_log" 2>&1 &
+            echo $! > "$tunnel_pid"
+            for _ in $(seq 1 30); do
+              if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+                project_ok=true
+                echo 'Railway Postgres SSH tunnel is ready (project token auth).'
+                break
+              fi
+              if ! kill -0 "$(cat "$tunnel_pid")" 2>/dev/null; then
+                break
+              fi
+              sleep 1
+            done
+            if [ "$project_ok" != true ]; then
+              cat "$tunnel_log" >&2 || true
+              kill "$(cat "$tunnel_pid")" 2>/dev/null || true
+              rm -f "$tunnel_pid"
+              echo 'Railway project token rejected; trying workspace API-token fallback.'
+            fi
+          fi
+
+          if [ "$project_ok" != true ]; then
+            : "${RAILWAY_API_TOKEN:?RAILWAY_API_TOKEN is required for the workspace fallback}"
+            rm -f "$key_file" "$HOME/.ssh/id_ed25519.pub"
+            ssh-keygen -t ed25519 -N '' -C "hope-github-actions-dr-$GITHUB_RUN_ID" -f "$key_file" >/dev/null
+            chmod 600 "$key_file"
+            workspace_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
+            echo "Generated workspace SSH key: $workspace_fingerprint"
+            workspace_key_name="hope-github-actions-dr-$GITHUB_RUN_ID"
+            env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+              railway ssh keys add --workspace "$workspace_id" \
+              --key "$HOME/.ssh/id_ed25519.pub" --name "$workspace_key_name"
+            echo 'Registered run-scoped workspace SSH key.'
+            cleanup_workspace_key() {
+              set +e
+              env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+                railway ssh keys remove --workspace "$workspace_id" "$workspace_key_name" >/tmp/hope-dr-key-cleanup.log 2>&1
+              rc=$?
+              if [ "$rc" -eq 0 ]; then
+                echo "Removed run-scoped workspace SSH key: $workspace_key_name"
+              else
+                echo "Warning: could not remove run-scoped workspace SSH key: $workspace_key_name" >&2
+                cat /tmp/hope-dr-key-cleanup.log >&2 || true
+              fi
+              return 0
+            }
+            # Remove the run-scoped workspace key when the job exits, including failures.
+            trap cleanup_workspace_key EXIT
+
+            rm -f "$tunnel_log" "$tunnel_pid"
+            env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+              railway connect Postgres --tunnel-only --port 15432 \
+              --project "$project_id" --environment "$environment_id" \
+              >"$tunnel_log" 2>&1 &
+            echo $! > "$tunnel_pid"
+            for _ in $(seq 1 30); do
+              if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+                echo 'Railway Postgres SSH tunnel is ready (workspace API token auth).'
+                break
+              fi
+              if ! kill -0 "$(cat "$tunnel_pid")" 2>/dev/null; then
+                cat "$tunnel_log" >&2
+                exit 1
+              fi
+              sleep 1
+            done
+          fi
+
+          pg_isready -h 127.0.0.1 -p 15432
+
+
+      - name: Prepare tunneled source URL
+        id: tunneled_source
+        shell: bash
+        env:
+          SOURCE_DATABASE_URL: ${{ env.SOURCE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          source_url="$(node -e 'const u=new URL(process.env.SOURCE_DATABASE_URL); u.hostname="127.0.0.1"; u.port="15432"; process.stdout.write(u.toString())')"
+          echo "SOURCE_DATABASE_TUNNELED_URL=$source_url" >> "$GITHUB_ENV"
+
+      - name: Verify target isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${SOURCE_DATABASE_URL:?SOURCE_DATABASE_URL is required}"
+          : "${DRILL_DATABASE_URL:?DRILL_DATABASE_URL is required}"
+          test "$SOURCE_DATABASE_URL" != "$DRILL_DATABASE_URL"
+          echo "Source and DR target are distinct; source will be reached through the private Railway SSH tunnel."
+
+      - name: DR restore drill
+        id: dr_restore
+        shell: bash
+        run: bash backend/scripts/dr-restore-drill.sh
+
+      - name: Validate restored migration state
+        id: migration_state
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DRILL_DATABASE_URL }}
+        run: npm run migrate:status
+
+      - name: Financial integrity probe on restored target
+        id: financial_probe
+        shell: bash
+        env:
+          TARGET_DATABASE_URL: ${{ env.DRILL_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF EXISTS (SELECT 1 FROM wallet_accounts WHERE currency <> 'TOMAN') THEN
+              RAISE EXCEPTION 'DR violation: non-TOMAN wallet currency';
+            END IF;
+            IF EXISTS (SELECT 1 FROM wallet_accounts WHERE available_balance < 0 OR locked_balance < 0) THEN
+              RAISE EXCEPTION 'DR violation: negative wallet balance';
+            END IF;
+            IF EXISTS (
+              SELECT 1
+              FROM journals j
+              LEFT JOIN (
+                SELECT journal_id, COUNT(*) AS entry_count,
+                       COALESCE(SUM(debit),0) AS debit_total,
+                       COALESCE(SUM(credit),0) AS credit_total
+                FROM ledger_entries
+                GROUP BY journal_id
+              ) e ON e.journal_id = j.id
+              WHERE j.status = 'POSTED'
+                AND (COALESCE(e.entry_count,0) = 0 OR e.debit_total <> e.credit_total OR e.debit_total <= 0)
+            ) THEN
+              RAISE EXCEPTION 'DR violation: posted journal is not balanced';
+            END IF;
+            IF EXISTS (
+              SELECT 1 FROM payouts
+              WHERE (status IN ('SUCCEEDED','FAILED') AND completed_at IS NULL)
+                 OR (status NOT IN ('SUCCEEDED','FAILED') AND completed_at IS NOT NULL)
+                 OR (provider_ref IS NOT NULL AND status <> 'SUCCEEDED')
+                 OR (status = 'SUCCEEDED' AND NULLIF(BTRIM(provider_ref),'') IS NULL)
+            ) THEN
+              RAISE EXCEPTION 'DR violation: payout invariant failed';
+            END IF;
+          END $$;
+          SELECT 'DR financial integrity PASS' AS result;
+          SQL
+
+      - name: Runtime gate - DR restore
+        id: dr_restore_evidence
+        if: ${{ always() }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.dr_restore.outcome == 'success' && steps.migration_state.outcome == 'success' && steps.financial_probe.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs             --gate dr_restore             --command 'bash backend/scripts/dr-restore-drill.sh + migrate:status + financial integrity probe'             --result "$GATE_RESULT"
+
+      - name: Upload DR evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-dr-restore-${{ github.run_id }}
+          path: docs/audit/evidence/dr_restore.json
+          if-no-files-found: warn

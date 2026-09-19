@@ -1,17 +1,11 @@
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
-import { fundingJournal, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
+import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient, postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 
 const RELEASE_STATES = new Set(['RELEASE_PENDING', 'RELEASE_FAILED']);
-
-function providerRefMatches(payment, providerRef) {
-  if (!providerRef) return true;
-  if (!payment?.provider_ref) return true;
-  return String(payment.provider_ref) === String(providerRef);
-}
 
 function conflict(code, message) {
   const e = new Error(code);
@@ -19,10 +13,6 @@ function conflict(code, message) {
   e.status = 409;
   e.message = message;
   return e;
-}
-
-function financialNumber(currency, value) {
-  return String(currency || config.paymentCurrency).toUpperCase() === 'TOMAN' ? String(value ?? '0') : Number(value ?? 0);
 }
 
 export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,providerRef,payload}) {
@@ -51,10 +41,10 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
     if(!pr[0]) throw conflict('PAYMENT_NOT_FOUND','Payment not found');
     const p=pr[0];
 
-    if (!providerRefMatches(p, providerRef) && eventType !== 'PAYMENT_REFUNDED') {
-      throw conflict('PROVIDER_REF_MISMATCH','Webhook provider reference does not match the payment');
-    }
-
+    // Provider references belong to the provider operation being acknowledged:
+    // HOLD uses the hold reference, RELEASE uses a distinct release reference,
+    // and REFUND uses its own refund reference. They must not be compared to the
+    // payment's original hold reference.
     const {rows:insertedEvents}=await client.query(
       `INSERT INTO payment_webhook_events(id,event_id,event_type,payment_id,provider_ref,payload,processed_at,created_at)
        VALUES($1,$2,$3,$4,$5,$6::jsonb,NOW(),NOW())
@@ -66,7 +56,7 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       return {processed:true,duplicate:true,paymentId:duplicate.rows[0]?.payment_id || null};
     }
 
-    const b={baseAmount:financialNumber(p.currency,p.base_amount||p.amount),employerFee:financialNumber(p.currency,p.employer_fee||0),workerFee:financialNumber(p.currency,p.worker_fee||0),platformFee:financialNumber(p.currency,p.platform_fee||0),employerCharge:financialNumber(p.currency,p.employer_charge||p.amount),providerPayout:financialNumber(p.currency,p.provider_payout||p.amount),currency:p.currency||config.paymentCurrency};
+    const b={baseAmount:normalizeFinancialAmount(p.currency,p.base_amount||p.amount),employerFee:normalizeFinancialAmount(p.currency,p.employer_fee||0),workerFee:normalizeFinancialAmount(p.currency,p.worker_fee||0),platformFee:normalizeFinancialAmount(p.currency,p.platform_fee||0),employerCharge:normalizeFinancialAmount(p.currency,p.employer_charge||p.amount),providerPayout:normalizeFinancialAmount(p.currency,p.provider_payout||p.amount),currency:p.currency||config.paymentCurrency};
     if(eventType==='PAYMENT_HELD' && p.status==='HOLD_PENDING') {
       if (config.paymentProvider === 'internal') {
         if (b.currency !== 'TOMAN') throw conflict('INTERNAL_CURRENCY_MISMATCH','Internal payment webhook requires TOMAN');

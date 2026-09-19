@@ -29,7 +29,7 @@ const { evaluateRecommendationRanking, buildCandidateProfile } = await import('.
 const { businessHealth } = await import('../src/business_metrics.js');
 const { createPaymentProvider } = await import('../src/payment_provider.js');
 const { deliverNotification } = await import('../src/notification_provider.js');
-const { readBody } = await import('../src/http.js');
+const { readBody, readMultipartSingleFile } = await import('../src/http.js');
 const { storage } = await import('../src/storage.js');
 
 function requestFrom(chunks, headers = {}) {
@@ -205,6 +205,28 @@ test('HTTP body parser enforces JSON media type and request size', async () => {
   await assert.rejects(() => readBody(requestFrom([Buffer.from('nope')], {'content-type':'application/json'})), (error) => error?.code === 'INVALID_JSON');
   await assert.rejects(() => readBody(requestFrom([Buffer.from('{}')], {'content-type':'text/plain'})), (error) => error?.code === 'UNSUPPORTED_MEDIA_TYPE');
   await assert.rejects(() => readBody(requestFrom([Buffer.from('x'.repeat(2000))], {'content-type':'application/json'})), (error) => error?.code === 'BODY_TOO_LARGE');
+});
+
+test('multipart parser returns the extracted file bytes, not the multipart envelope', async () => {
+  const boundary = '----HOPE-EDGE-BOUNDARY';
+  const payload = Buffer.from('%PDF-1.7\nHOPE MULTIPART PAYLOAD\n');
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="evidence.pdf"\r\nContent-Type: application/pdf\r\n\r\n`),
+    payload,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  const file = await readMultipartSingleFile(requestFrom([body], {
+    'content-type': `multipart/form-data; boundary=${boundary}`,
+    'content-length': String(body.length),
+  }));
+  try {
+    assert.equal(file.filename, 'evidence.pdf');
+    assert.equal(file.contentType, 'application/pdf');
+    assert.equal(file.size, payload.length);
+    assert.deepEqual(await fs.readFile(file.path), payload);
+  } finally {
+    await fs.rm(file.path, { force: true });
+  }
 });
 
 test('local storage moves uploaded files atomically and rejects direct-upload APIs', async () => {

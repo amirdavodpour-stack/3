@@ -1,0 +1,2 @@
+Trigger-only marker after adding automatic Railway workspace SSH-key registration.
+No application code or production/main change.

@@ -37,6 +37,7 @@ const KNOWN_GATES = new Set([
   'provider_runtime',
   'dr_restore',
   'perf_run',
+  'posthog_runtime',
   'npm_audit',
 ]);
 

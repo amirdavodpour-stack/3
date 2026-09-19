@@ -1,0 +1,51 @@
+name: Supabase Storage live certification
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: hope-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  supabase-storage-live:
+    name: Supabase Storage live S3 certification
+    runs-on: ubuntu-latest
+    env:
+      S3_ENDPOINT: ${{ secrets.STAGING_S3_ENDPOINT }}
+      S3_BUCKET: ${{ secrets.STAGING_S3_BUCKET }}
+      S3_REGION: ${{ secrets.STAGING_S3_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.STAGING_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.STAGING_AWS_SECRET_ACCESS_KEY }}
+      S3_INTEGRATION: '1'
+      S3_REQUIRE_LIVE: '1'
+      S3_REQUIRE_HTTPS: '1'
+      S3_EXPECT_BUCKET_RESTRICTIONS: '1'
+      S3_FORCE_PATH_STYLE: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Backend install
+        working-directory: backend
+        run: npm ci
+
+      - name: Verify staging application bucket contract
+        run: |
+          test "$S3_BUCKET" = "v2hope-private"
+          test "$S3_ENDPOINT" = "https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3"
+          test "$S3_REGION" = "eu-west-1"
+
+      - name: Validate live Supabase S3 integration and bucket restrictions
+        working-directory: backend
+        run: node tests/s3-integration.test.mjs

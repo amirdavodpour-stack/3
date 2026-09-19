@@ -27,6 +27,27 @@ if [[ "$BUILD_PROFILE" == "production" ]]; then
   : "${ANDROID_RELEASE_STORE_PASSWORD:?Set ANDROID_RELEASE_STORE_PASSWORD for a production release}"
   : "${ANDROID_RELEASE_KEY_ALIAS:?Set ANDROID_RELEASE_KEY_ALIAS for a production release}"
   : "${ANDROID_RELEASE_KEY_PASSWORD:?Set ANDROID_RELEASE_KEY_PASSWORD for a production release}"
+
+  # Production builds are explicitly barred from PostHog staging capture.
+  export HOPE_ENV="production"
+  export POSTHOG_ENABLED="false"
+  export POSTHOG_PROJECT_TOKEN=""
+else
+  export HOPE_ENV="${HOPE_ENV:-local}"
+  export POSTHOG_ENABLED="${POSTHOG_ENABLED:-false}"
+  export POSTHOG_PROJECT_TOKEN="${POSTHOG_PROJECT_TOKEN:-}"
+fi
+export POSTHOG_HOST="${POSTHOG_HOST:-https://eu.i.posthog.com}"
+
+if [ "$POSTHOG_ENABLED" = "true" ]; then
+  [ "$HOPE_ENV" = "staging" ] || {
+    echo 'ERROR: POSTHOG_ENABLED=true is allowed only with HOPE_ENV=staging.' >&2
+    exit 1
+  }
+  [ -n "$POSTHOG_PROJECT_TOKEN" ] || {
+    echo 'ERROR: POSTHOG_PROJECT_TOKEN is required when PostHog is enabled.' >&2
+    exit 1
+  }
 fi
 
 chmod +x android/gradlew
@@ -56,6 +77,10 @@ BUILD_PROFILE_B64="$(printf '%s' "$BUILD_PROFILE" | base64 | tr -d '\n')"
 flutter build apk --release --no-pub \
   --dart-define=API_BASE_URL="$API_BASE_URL" \
   --dart-define=BUILD_PROFILE="$BUILD_PROFILE" \
+  --dart-define=HOPE_ENV="$HOPE_ENV" \
+  --dart-define=POSTHOG_ENABLED="$POSTHOG_ENABLED" \
+  --dart-define=POSTHOG_PROJECT_TOKEN="$POSTHOG_PROJECT_TOKEN" \
+  --dart-define=POSTHOG_HOST="$POSTHOG_HOST" \
   --dart-define=API_BASE_URL_B64="$API_BASE_URL_B64" \
   --dart-define=BUILD_PROFILE_B64="$BUILD_PROFILE_B64" \
   --verbose
