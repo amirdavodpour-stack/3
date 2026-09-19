@@ -48,10 +48,10 @@ jobs:
       attestations: write
     env:
       BUILD_PROFILE: production
-      API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION || secrets.API_BASE_URL_STAGING }}
       ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
       REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
-      PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET_PRODUCTION }}
+      PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET }}
       RESET_TOKEN_DELIVERY_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
       ALLOWED_CORS_ORIGINS: ${{ secrets.ALLOWED_CORS_ORIGINS_PRODUCTION }}
       DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
@@ -61,10 +61,10 @@ jobs:
       STAGING_CERTIFICATION_RUN_ID: ${{ github.run_id }}
       STAGING_CERTIFICATION_SHA: ${{ github.sha }}
       STAGING_CERTIFICATION_ATTEMPT: "1"
-      ANDROID_RELEASE_KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
-      ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
-      ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
-      ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+      ANDROID_RELEASE_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -131,12 +131,12 @@ jobs:
       - name: Build signed production APK
         id: release_build
         env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION || secrets.API_BASE_URL_STAGING }}
           BUILD_PROFILE: production
           ANDROID_RELEASE_STORE_FILE: ${{ steps.keystore_prepare.outputs.path }}
-          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
-          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
-          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: bash tools/build_apk_release.sh
 
       - name: Set release artifact metadata
