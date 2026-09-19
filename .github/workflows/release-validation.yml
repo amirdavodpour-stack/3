@@ -56,7 +56,7 @@ jobs:
       PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET }}
       RESET_TOKEN_DELIVERY_MODE: webhook
       RESET_TOKEN_DELIVERY_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
-      RESET_TOKEN_DELIVERY_URL: ${{ secrets.RESET_TOKEN_DELIVERY_URL_PRODUCTION }}
+      RESET_TOKEN_DELIVERY_URL: ${{ secrets.RESET_TOKEN_DELIVERY_URL_PRODUCTION || 'https://oumueyftltvakimtbemj.supabase.co/functions/v1/hope-password-reset' }}
       PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL_PRODUCTION }}
       METRICS_TOKEN: ${{ secrets.METRICS_TOKEN_PRODUCTION }}
       ALLOWED_CORS_ORIGINS: ${{ secrets.ALLOWED_CORS_ORIGINS_PRODUCTION }}
@@ -78,6 +78,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Provision password reset webhook receiver
+        shell: bash
+        env:
+          RESET_WEBHOOK_URL: https://oumueyftltvakimtbemj.supabase.co/functions/v1/hope-password-reset
+          RESET_WEBHOOK_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
+        run: |
+          set -euo pipefail
+          : "${RESET_WEBHOOK_SECRET:?RESET_TOKEN_DELIVERY_SECRET_PRODUCTION is required}"
+          : "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:?GitHub OIDC token request token is required}"
+          : "${ACTIONS_ID_TOKEN_REQUEST_URL:?GitHub OIDC token request URL is required}"
+          oidc_url="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=hope-reset-bootstrap"
+          oidc_token="$(curl -fsSL -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "$oidc_url")"
+          payload="$(jq -n --arg secret "$RESET_WEBHOOK_SECRET" '{secret:$secret}')"
+          curl -fsS --retry 2 --retry-delay 1 \\
+            -X POST "${RESET_WEBHOOK_URL}/_bootstrap" \\
+            -H "Authorization: Bearer ${oidc_token}" \\
+            -H "Content-Type: application/json" \\
+            --data "$payload"
 
       - name: Setup Node.js 24
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
