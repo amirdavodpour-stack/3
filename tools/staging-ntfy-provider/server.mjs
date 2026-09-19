@@ -1,11 +1,13 @@
 import http from 'node:http';
 import https from 'node:https';
+import dns from 'node:dns';
 
 const PORT = Number(process.env.PORT || 8080);
 const PROVIDER_TOKEN = process.env.NOTIFICATION_PROVIDER_TOKEN || '';
 const NTFY_TOPIC = process.env.NTFY_TOPIC || '';
 const NTFY_BASE_URL = (process.env.NTFY_BASE_URL || 'https://ntfy.sh').replace(/\/+$/, '');
-const NTFY_REQUEST_TIMEOUT_MS = Math.max(5_000, Math.min(60_000, Number(process.env.NTFY_REQUEST_TIMEOUT_MS || 30_000)));
+const NTFY_REQUEST_TIMEOUT_MS = Math.max(3_000, Math.min(15_000, Number(process.env.NTFY_REQUEST_TIMEOUT_MS || 6_000)));
+const NTFY_DNS_TIMEOUT_MS = 3_000;
 
 if (PROVIDER_TOKEN.length < 24) throw new Error('NOTIFICATION_PROVIDER_TOKEN must be at least 24 characters');
 if (!/^[A-Za-z0-9_-]{16,128}$/.test(NTFY_TOPIC)) throw new Error('NTFY_TOPIC must be a high-entropy topic name');
@@ -39,21 +41,37 @@ function constantTimeEqual(a, b) {
   return diff === 0;
 }
 
-async function publish(payload, idempotencyKey) {
+async function resolveIpv4(hostname) {
+  return await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('NTFY_DNS_TIMEOUT')), NTFY_DNS_TIMEOUT_MS);
+    dns.lookup(hostname, { all: true, family: 4 }, (error, addresses) => {
+      clearTimeout(timer);
+      if (error) return reject(error);
+      const ipv4s = [...new Set(addresses.map((entry) => entry.address).filter(Boolean))];
+      if (ipv4s.length === 0) return reject(new Error('NTFY_NO_IPV4'));
+      resolve(ipv4s);
+    });
+  });
+}
+
+function publishToIpv4(target, ipv4, payload, idempotencyKey) {
   const title = String(payload.title || 'HOPE staging notification').slice(0, 200);
   const message = String(payload.body || '').slice(0, 4000);
   const data = JSON.stringify(payload.data ?? {});
-  const target = new URL(NTFY_BASE_URL + '/' + NTFY_TOPIC);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error('NTFY_REQUEST_TIMEOUT')), NTFY_REQUEST_TIMEOUT_MS);
 
-  // Railway staging has shown intermittent Node/Undici fetch egress failures.
-  // Use the native HTTPS client and force IPv4 for this external hop so the
-  // provider does not fail solely because native fetch selects a bad address.
-  const response = await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const req = https.request(target, {
       method: 'POST',
+      hostname: ipv4,
       family: 4,
-      timeout: NTFY_REQUEST_TIMEOUT_MS,
+      servername: target.hostname,
+      agent: false,
+      path: target.pathname + target.search,
+      signal: controller.signal,
       headers: {
+        host: target.hostname,
         'content-type': 'text/plain; charset=utf-8',
         'X-Title': title,
         'X-Tags': 'hope,staging',
@@ -66,15 +84,30 @@ async function publish(payload, idempotencyKey) {
       res.on('data', chunk => { raw += chunk; });
       res.on('end', () => resolve({ status: res.statusCode || 0, text: raw }));
     });
-    req.on('timeout', () => req.destroy(new Error('NTFY_REQUEST_TIMEOUT')));
     req.on('error', reject);
     req.end(message || data);
-  });
+  }).finally(() => clearTimeout(timer));
+}
 
-  if (response.status < 200 || response.status >= 300) {
-    throw new Error('NTFY_HTTP_' + response.status + ':' + response.text.slice(0, 200));
+async function publish(payload, idempotencyKey) {
+  const target = new URL(NTFY_BASE_URL + '/' + NTFY_TOPIC);
+  if (target.protocol !== 'https:') throw new Error('NTFY_BASE_URL must use HTTPS');
+
+  const ipv4s = await resolveIpv4(target.hostname);
+  let lastError = null;
+  for (const ipv4 of ipv4s) {
+    try {
+      const response = await publishToIpv4(target, ipv4, payload, idempotencyKey);
+      if (response.status >= 200 && response.status < 300) {
+        return { status: response.status, ipv4 };
+      }
+      lastError = new Error('NTFY_HTTP_' + response.status + ':' + response.text.slice(0, 200));
+    } catch (error) {
+      lastError = error;
+      console.error('ntfy upstream attempt failed', { ipv4, error: error?.message || String(error) });
+    }
   }
-  return { status: response.status };
+  throw lastError || new Error('NTFY_UPSTREAM_UNAVAILABLE');
 }
 
 const server = http.createServer(async (req, res) => {
