@@ -1,9 +1,8 @@
 name: Main CI
 
 on:
-  push:
-    branches:
-      - release/v2hope-hardening-2026-09-19
+  workflow_call:
+    secrets: inherit
   pull_request:
     branches:
       - release/v2hope-hardening-2026-09-19

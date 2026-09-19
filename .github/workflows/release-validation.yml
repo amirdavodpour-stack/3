@@ -1,0 +1,54 @@
+name: HOPE Release Validation
+
+on:
+  push:
+    branches:
+      - release/v2hope-hardening-2026-09-19
+  workflow_dispatch:
+
+concurrency:
+  group: hope-release-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Core quality
+    uses: ./.github/workflows/main.yml
+    secrets: inherit
+
+  staging:
+    name: Staging certification
+    uses: ./.github/workflows/staging-certification.yml
+    secrets: inherit
+
+  payment:
+    name: Payment certification
+    uses: ./.github/workflows/hope-payment-certification.yml
+    secrets: inherit
+
+  release_gate:
+    name: Release validation gate
+    needs:
+      - quality
+      - staging
+      - payment
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate release gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Core quality: ${{ needs.quality.result }}"
+          echo "Staging certification: ${{ needs.staging.result }}"
+          echo "Payment certification: ${{ needs.payment.result }}"
+          for result in "${{ needs.quality.result }}" "${{ needs.staging.result }}" "${{ needs.payment.result }}"; do
+            if [[ "$result" != "success" ]]; then
+              echo "Release validation failed: $result" >&2
+              exit 1
+            fi
+          done
+          echo "RELEASE VALIDATION: PASS"

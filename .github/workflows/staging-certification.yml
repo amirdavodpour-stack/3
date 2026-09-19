@@ -1,9 +1,6 @@
 name: Staging certification
 
 on:
-  push:
-    branches:
-      - release/v2hope-hardening-2026-09-19
   pull_request:
     branches:
       - release/v2hope-hardening-2026-09-19
