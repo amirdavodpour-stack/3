@@ -557,11 +557,6 @@ jobs:
           disable-animations: true
           script: |
             export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
-            # The emulator action can occasionally leave the host adb daemon in a
-            # transient state. Refresh the daemon before the real device smoke test.
-            adb kill-server >/dev/null 2>&1 || true
-            adb start-server
-            adb -s "${ANDROID_SERIAL:-emulator-5554}" wait-for-device
             bash tools/android-staging-network-preflight.sh
             flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
