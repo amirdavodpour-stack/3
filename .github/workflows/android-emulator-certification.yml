@@ -3,7 +3,8 @@ name: HOPE Android Emulator Certification (clean certification)
 on:
   push:
     branches:
-      - chore/android-emulator-cert-clean-2026-09-19
+      - chore/android-emulator-cert-emulator36410-v2-2026-09-19
+      - chore/android-emulator-cert-api34-v2-2026-09-19
   workflow_dispatch:
 
 concurrency:
