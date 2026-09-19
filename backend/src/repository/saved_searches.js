@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import { requirePool } from './context.js';
 
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const fromRow = (r) => ({
   id: r.id,
   userId: r.user_id,
@@ -23,7 +25,10 @@ export async function listSavedSearches(userId) {
 }
 
 export async function upsertSavedSearch(userId, search) {
-  const id = search.id || crypto.randomUUID();
+  // Mobile/offline clients may arrive with a legacy opaque local id.
+  // PostgreSQL requires UUID, so normalize only the primary key while
+  // retaining name-based upsert semantics for convergence.
+  const id = search.id && UUID_V4.test(String(search.id)) ? String(search.id) : crypto.randomUUID();
   const { rows } = await requirePool().query(
     `INSERT INTO saved_searches(id,user_id,name,query,kind,visibility,city,category,updated_at)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8,NOW())
