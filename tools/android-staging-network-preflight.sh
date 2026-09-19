@@ -27,9 +27,8 @@ fi
 
 echo "Android staging network preflight: host=$HOST resolved_ipv4s=$IPS"
 
-adb -s "$ADB_SERIAL" wait-for-device
-
 wait_for_online_device() {
+  adb -s "$ADB_SERIAL" wait-for-device
   for _ in $(seq 1 90); do
     state="$(adb -s "$ADB_SERIAL" get-state 2>/dev/null || true)"
     if [ "$state" = "device" ]; then
@@ -46,80 +45,36 @@ wait_for_online_device() {
 
 wait_for_online_device
 
-if adb -s "$ADB_SERIAL" shell "host -t A '$HOST'" >/tmp/hope-android-dns-check.log 2>&1; then
-  echo "Android guest DNS resolves $HOST."
-  cat /tmp/hope-android-dns-check.log
-  exit 0
-fi
-
-echo "Android guest DNS could not resolve $HOST; installing a temporary /system/etc/hosts mapping."
-
-if ! adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root.log 2>&1; then
-  cat /tmp/hope-adb-root.log >&2 || true
-  echo "adb root is required for the Android staging hostname fallback." >&2
-  exit 1
-fi
-
-# Follow Android's supported overlayfs sequence: root -> disable-verity -> reboot -> root -> remount.
-adb -s "$ADB_SERIAL" disable-verity >/tmp/hope-disable-verity.log 2>&1 || {
-  cat /tmp/hope-disable-verity.log >&2 || true
-  echo "adb disable-verity failed." >&2
-  exit 1
-}
-cat /tmp/hope-disable-verity.log
-
-adb -s "$ADB_SERIAL" reboot
-adb -s "$ADB_SERIAL" wait-for-device
-wait_for_online_device
-adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root-after-reboot.log 2>&1 || {
-  cat /tmp/hope-adb-root-after-reboot.log >&2 || true
-  echo "adb root failed after overlayfs reboot." >&2
-  exit 1
-}
-cat /tmp/hope-adb-root-after-reboot.log
-adb -s "$ADB_SERIAL" wait-for-device
-wait_for_online_device
-adb -s "$ADB_SERIAL" remount
-adb -s "$ADB_SERIAL" wait-for-device
-
-# Reboot after remount rather than issuing stop/start to the Android framework. On
-# GitHub-hosted API 35 images, stop/start can leave wlan0/eth0 administratively down;
-# a clean reboot restores the emulator network stack while preserving the writable
-# overlayfs state for the hosts mapping below.
-adb -s "$ADB_SERIAL" reboot
-adb -s "$ADB_SERIAL" wait-for-device
-wait_for_online_device
-
-# Remounting can restart system services; require a working route before host-file validation.
-NETWORK_READY=false
+# Do not remount /system or edit /system/etc/hosts during certification.
+# API 35 emulator images can lose their guest network after an overlayfs
+# remount/reboot cycle. The emulator runner already supports explicit DNS
+# servers, so the certification should validate the real DNS path directly.
 for _ in $(seq 1 45); do
-  if adb -s "$ADB_SERIAL" shell "ping -c 1 -W 2 1.1.1.1" >/tmp/hope-android-network-check.log 2>&1; then
-    NETWORK_READY=true
-    break
+  if adb -s "$ADB_SERIAL" shell "host -t A '$HOST'" >/tmp/hope-android-dns-check.log 2>&1; then
+    echo "Android guest DNS resolves $HOST."
+    cat /tmp/hope-android-dns-check.log
+    exit 0
   fi
   sleep 2
 done
 
-if [ "$NETWORK_READY" != "true" ]; then
-  echo "Android guest has no working network route after overlayfs remount/framework restart." >&2
-  cat /tmp/hope-android-network-check.log >&2 || true
-  adb -s "$ADB_SERIAL" shell ip addr show >&2 || true
-  adb -s "$ADB_SERIAL" shell ip route show >&2 || true
-  exit 1
-fi
+echo "Android guest DNS could not resolve $HOST after 90 seconds." >&2
+echo "Runner-resolved IPv4s: $IPS" >&2
+echo "Android DNS properties:" >&2
+adb -s "$ADB_SERIAL" shell getprop | grep -Ei '(^|\[)net\.dns|dns[._-]?(1|2|3|4)' >&2 || true
+echo "Android connectivity state:" >&2
+adb -s "$ADB_SERIAL" shell dumpsys connectivity 2>/dev/null | head -n 120 >&2 || true
+echo "Android routes/interfaces:" >&2
+adb -s "$ADB_SERIAL" shell ip addr show >&2 || true
+adb -s "$ADB_SERIAL" shell ip route show >&2 || true
 
 IFS=',' read -r -a IP_ARRAY <<< "$IPS"
 for ip in "${IP_ARRAY[@]}"; do
   [ -n "$ip" ] || continue
-  adb -s "$ADB_SERIAL" shell "grep -Fq '$ip $HOST' /system/etc/hosts || echo '$ip $HOST' >> /system/etc/hosts"
+  if adb -s "$ADB_SERIAL" shell "ping -c 1 -W 2 '$ip'" >/tmp/hope-android-ip-check.log 2>&1; then
+    echo "Android guest can reach staging IP $ip but cannot resolve $HOST." >&2
+    cat /tmp/hope-android-ip-check.log >&2 || true
+  fi
 done
-adb -s "$ADB_SERIAL" shell sync
 
-adb -s "$ADB_SERIAL" shell "host -t A '$HOST'" >/tmp/hope-android-host-check.log 2>&1 || {
-  cat /tmp/hope-android-host-check.log >&2 || true
-  echo "Android guest still cannot resolve $HOST after hosts fallback." >&2
-  exit 1
-}
-
-cat /tmp/hope-android-host-check.log
-echo "Android staging hostname fallback is active for $HOST."
+exit 1
