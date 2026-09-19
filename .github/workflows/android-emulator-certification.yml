@@ -53,16 +53,6 @@ jobs:
           echo "Resolved $host to $ips"
           echo "ips=$ips" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve emulator DNS servers
-        id: resolve_emulator_dns
-        shell: bash
-        run: |
-          set -euo pipefail
-          dns_servers="$(awk '/^nameserver[[:space:]]+/ {print $2}' /etc/resolv.conf | head -n 4 | paste -sd, -)"
-          test -n "$dns_servers" || { echo "Runner /etc/resolv.conf has no nameservers." >&2; cat /etc/resolv.conf >&2; exit 1; }
-          echo "Using emulator DNS servers from GitHub runner: $dns_servers"
-          echo "dns_servers=$dns_servers" >> "$GITHUB_OUTPUT"
-
       - name: Prepare Flutter dependencies
         shell: bash
         run: |
@@ -82,8 +72,11 @@ jobs:
           cores: 4
           ram-size: 4096M
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server ${{ steps.resolve_emulator_dns.outputs.dns_servers }}
+          # Explicit public IPv4 DNS; avoid guest filesystem mutation and remount cycles.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -netdelay none -netspeed full -dns-server 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1
           disable-animations: true
+          disable-spellchecker: true
+          force-avd-creation: true
           script: |
             set -eu
             bash tools/android-staging-network-preflight.sh
@@ -113,5 +106,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
         with:
           name: hope-android-emulator-certification-${{ github.run_id }}
-          path: docs/audit/evidence/android-emulator-certification.json
+          path: |
+            docs/audit/evidence/android-emulator-certification.json
+            docs/audit/android-emulator/**
+
           if-no-files-found: warn
