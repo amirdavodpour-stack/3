@@ -45,10 +45,18 @@ BACKUP_END="$(date +%s)"
 BACKUP_SECONDS=$((BACKUP_END-BACKUP_START))
 
 STAGE="archive-inspection"
-pg_restore --list "$DUMP" >"$WORK_DIR/restore-toc.txt"
+TOC_RC=0
+pg_restore --list "$DUMP" >"$WORK_DIR/restore-toc.txt" 2>&1 || TOC_RC=$?
 {
+  echo "== pg_restore --list rc == $TOC_RC"
+  echo '== Full archive TOC =='
+  cat "$WORK_DIR/restore-toc.txt" || true
+  echo
   echo '== Archive TOC entries for required tables =='
-  grep -E 'TABLE (DATA )?public (users|categories|jobs|offers|job_applications|payments|outbox_events)' "$WORK_DIR/restore-toc.txt" || true
+  grep -Ei 'TABLE( DATA)? .*public (users|categories|jobs|offers|job_applications|payments|outbox_events)' "$WORK_DIR/restore-toc.txt" || true
+  echo
+  echo '== Archive TOC entries containing job_applications =='
+  grep -Ei 'job_applications' "$WORK_DIR/restore-toc.txt" || true
   echo
   echo '== Drill target tables before restore =='
   psql "$DRILL_DATABASE_URL" -Atqc "select table_name from information_schema.tables where table_schema='public' order by table_name;" || true
@@ -57,11 +65,15 @@ pg_restore --list "$DUMP" >"$WORK_DIR/restore-toc.txt"
   psql "$DRILL_DATABASE_URL" -Atqc "select to_regclass('public.job_applications');" || true
 } > "$DIAGNOSTIC"
 
-if ! grep -Eq 'TABLE public job_applications([[:space:]]|$)' "$WORK_DIR/restore-toc.txt"; then
+if [ "$TOC_RC" -ne 0 ]; then
+  echo "pg_restore --list failed with rc=$TOC_RC; archive evidence captured in $DIAGNOSTIC." >&2
+  exit "$TOC_RC"
+fi
+if ! grep -Eiq 'TABLE .*public job_applications' "$WORK_DIR/restore-toc.txt"; then
   echo 'Restore archive is missing the TABLE definition for public.job_applications.' >&2
   exit 1
 fi
-if ! grep -Eq 'TABLE DATA public job_applications([[:space:]]|$)' "$WORK_DIR/restore-toc.txt"; then
+if ! grep -Eiq 'TABLE DATA .*public job_applications' "$WORK_DIR/restore-toc.txt"; then
   echo 'Restore archive is missing TABLE DATA for public.job_applications.' >&2
   exit 1
 fi
