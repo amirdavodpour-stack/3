@@ -61,23 +61,32 @@ adb -s "$ADB_SERIAL" shell cmd connectivity reevaluate >/tmp/hope-android-reeval
 TARGET_IP="$(printf '%s' "$IPS" | cut -d',' -f1)"
 ROUTE_OK=false
 ROUTE_LOOKUP=""
+TCP_OK=false
 
-echo "Waiting up to 60s for a usable guest route to $TARGET_IP..." >&2
+echo "Waiting up to 60s for real guest TCP connectivity to $TARGET_IP:443..." >&2
 for _ in $(seq 1 20); do
   ROUTE_LOOKUP="$(adb -s "$ADB_SERIAL" shell "ip route get '$TARGET_IP'" 2>&1 | tr -d '\r' || true)"
   if [ -n "$ROUTE_LOOKUP" ] && ! printf '%s\n' "$ROUTE_LOOKUP" | grep -Eq '(^|[[:space:]])(unreachable|prohibit|blackhole|throw)([[:space:]]|$)'; then
     if printf '%s\n' "$ROUTE_LOOKUP" | grep -Eq '(^|[[:space:]])dev[[:space:]]+[[:alnum:]_.-]+'; then
       ROUTE_OK=true
-      break
     fi
+  fi
+
+  # Android policy routing can make "ip route get" look unusable even when a
+  # real socket can connect. Use an actual TCP probe as the authoritative
+  # connectivity gate; retain route output only as diagnostic evidence.
+  if adb -s "$ADB_SERIAL" shell "toybox nc -z -w 3 '$TARGET_IP' 443" >/dev/null 2>&1; then
+    TCP_OK=true
+    break
   fi
   sleep 3
 done
 
 printf '%s\n' "$ROUTE_LOOKUP" >"$ARTIFACT_DIR/ip-route-get.txt"
+printf 'tcp_connect_443=%s\n' "$TCP_OK" >"$ARTIFACT_DIR/tcp-connect-check.txt"
 
-if [ "$ROUTE_OK" != "true" ]; then
-  echo "Android emulator has no usable route to staging target $TARGET_IP." >&2
+if [ "$TCP_OK" != "true" ]; then
+  echo "Android emulator has no real TCP connectivity to staging target $TARGET_IP:443." >&2
   collect_diagnostics
   echo "--- ip rule show ---" >&2
   cat "$ARTIFACT_DIR/ip-rule.txt" >&2 || true
