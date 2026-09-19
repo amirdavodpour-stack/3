@@ -261,3 +261,16 @@ test('production reset bootstrap targets the same configured URL used by runtime
   assert.match(block, /RESET_TOKEN_DELIVERY_SECRET_PRODUCTION/);
   assert.match(block, /curl -fsS --retry 2/);
 });
+
+
+test('release and core quality workflows are bounded against hangs', () => {
+  const release = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  const main = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
+  assert.match(release, /name: Production signed artifact[\s\S]*?timeout-minutes: 45/);
+  assert.match(release, /timeout --foreground --signal=TERM --kill-after=45s 20m npm run check:all/);
+  assert.match(release, /timeout --foreground --signal=TERM --kill-after=30s 10m npm audit --audit-level=high/);
+  assert.match(release, /timeout --foreground --signal=TERM --kill-after=30s 15m flutter test --no-pub/);
+  assert.match(main, /name: Backend and Flutter quality[\s\S]*?timeout-minutes: 30/);
+  assert.match(main, /timeout --foreground --signal=TERM --kill-after=30s 8m npm run check/);
+  assert.match(main, /timeout --foreground --signal=TERM --kill-after=30s 15m flutter test --no-pub/);
+});
