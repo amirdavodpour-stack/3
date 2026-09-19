@@ -48,16 +48,6 @@ collect_diagnostics() {
   adb -s "$ADB_SERIAL" shell logcat -d -t 500 >"$ARTIFACT_DIR/logcat-tail.txt" 2>&1 || true
 }
 
-recover_guest_network() {
-  echo "Applying non-destructive Android connectivity recovery..." >&2
-  adb -s "$ADB_SERIAL" shell 'settings put global airplane_mode_on 0' >/dev/null 2>&1 || true
-  adb -s "$ADB_SERIAL" shell 'cmd connectivity airplane-mode disable' >/dev/null 2>&1 || true
-  adb -s "$ADB_SERIAL" shell 'svc wifi enable' >/dev/null 2>&1 || true
-  adb -s "$ADB_SERIAL" shell 'cmd wifi set-wifi-enabled enabled' >/dev/null 2>&1 || true
-  adb -s "$ADB_SERIAL" shell 'svc data enable' >/dev/null 2>&1 || true
-  adb -s "$ADB_SERIAL" shell 'cmd connectivity reevaluate' >/dev/null 2>&1 || true
-}
-
 wait_for_online_device
 
 echo "Collecting Android network state before route checks..."
@@ -72,7 +62,8 @@ TARGET_IP="$(printf '%s' "$IPS" | cut -d',' -f1)"
 ROUTE_OK=false
 ROUTE_LOOKUP=""
 
-for _ in $(seq 1 30); do
+echo "Waiting up to 60s for a usable guest route to $TARGET_IP..." >&2
+for _ in $(seq 1 20); do
   ROUTE_LOOKUP="$(adb -s "$ADB_SERIAL" shell "ip route get '$TARGET_IP'" 2>&1 | tr -d '\r' || true)"
   if [ -n "$ROUTE_LOOKUP" ] && ! printf '%s\n' "$ROUTE_LOOKUP" | grep -Eq '(^|[[:space:]])(unreachable|prohibit|blackhole|throw)([[:space:]]|$)'; then
     if printf '%s\n' "$ROUTE_LOOKUP" | grep -Eq '(^|[[:space:]])dev[[:space:]]+[[:alnum:]_.-]+'; then
@@ -80,8 +71,7 @@ for _ in $(seq 1 30); do
       break
     fi
   fi
-  recover_guest_network
-  sleep 2
+  sleep 3
 done
 
 printf '%s\n' "$ROUTE_LOOKUP" >"$ARTIFACT_DIR/ip-route-get.txt"
