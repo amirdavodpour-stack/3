@@ -6,6 +6,7 @@ const PORT = Number(process.env.PORT || 8080);
 const PROVIDER_TOKEN = process.env.NOTIFICATION_PROVIDER_TOKEN || '';
 const NTFY_TOPIC = process.env.NTFY_TOPIC || '';
 const NTFY_BASE_URL = (process.env.NTFY_BASE_URL || 'https://ntfy.sh').replace(/\/+$/, '');
+const NTFY_BASE_URLS = [...new Set((process.env.NTFY_BASE_URLS || NTFY_BASE_URL).split(',').map((value) => value.trim().replace(/\/+$/, '')).filter(Boolean))];
 const NTFY_REQUEST_TIMEOUT_MS = Math.max(3_000, Math.min(15_000, Number(process.env.NTFY_REQUEST_TIMEOUT_MS || 6_000)));
 const NTFY_DNS_TIMEOUT_MS = 3_000;
 
@@ -90,21 +91,34 @@ function publishToIpv4(target, ipv4, payload, idempotencyKey) {
 }
 
 async function publish(payload, idempotencyKey) {
-  const target = new URL(NTFY_BASE_URL + '/' + NTFY_TOPIC);
-  if (target.protocol !== 'https:') throw new Error('NTFY_BASE_URL must use HTTPS');
-
-  const ipv4s = await resolveIpv4(target.hostname);
   let lastError = null;
-  for (const ipv4 of ipv4s) {
+  for (const baseUrl of NTFY_BASE_URLS) {
+    const target = new URL(baseUrl + '/' + NTFY_TOPIC);
+    if (target.protocol !== 'https:') {
+      lastError = new Error('NTFY_BASE_URL_MUST_USE_HTTPS');
+      continue;
+    }
     try {
-      const response = await publishToIpv4(target, ipv4, payload, idempotencyKey);
-      if (response.status >= 200 && response.status < 300) {
-        return { status: response.status, ipv4 };
+      const ipv4s = await resolveIpv4(target.hostname);
+      for (const ipv4 of ipv4s) {
+        try {
+          const response = await publishToIpv4(target, ipv4, payload, idempotencyKey);
+          if (response.status >= 200 && response.status < 300) {
+            return { status: response.status, ipv4, upstream: target.origin };
+          }
+          lastError = new Error('NTFY_HTTP_' + response.status + ':' + response.text.slice(0, 200));
+        } catch (error) {
+          lastError = error;
+          console.error('ntfy upstream attempt failed', {
+            upstream: target.origin,
+            ipv4,
+            error: error?.message || String(error),
+          });
+        }
       }
-      lastError = new Error('NTFY_HTTP_' + response.status + ':' + response.text.slice(0, 200));
     } catch (error) {
       lastError = error;
-      console.error('ntfy upstream attempt failed', { ipv4, error: error?.message || String(error) });
+      console.error('ntfy upstream DNS failed', { upstream: target.origin, error: error?.message || String(error) });
     }
   }
   throw lastError || new Error('NTFY_UPSTREAM_UNAVAILABLE');
