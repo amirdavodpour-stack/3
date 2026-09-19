@@ -14,6 +14,7 @@ const { createServer } = await import('../src/app.js');
 const { db, getPool } = await import('../src/db.js');
 const { findPaymentByJob } = await import('../src/repository.js');
 const { processPaymentCreateHoldNow } = await import('../src/outbox_worker.js');
+const { creditWallet } = await import('../src/wallet_ledger.js');
 
 let server = null;
 let json = null;
@@ -87,6 +88,7 @@ test('PostgreSQL repository path executes a complete marketplace/payment lifecyc
   assert.equal(offer.status, 201);
   assert.equal((await json(`/offers/${offer.body.data.id}/accept`, {method:'POST', headers:auth(owner.accessToken)})).status, 200);
 
+  await creditWallet({userId: owner.user.id, amount:'1000000', idempotencyKey:`pg-seed-funds-${suffix}`, referenceType:'TEST_TOP_UP', metadata:{test:'postgres-repository-e2e'}});
   const fund = await json(`/payments/fund/${job.id}`, {
     method:'POST',
     headers:auth(owner.accessToken, {'Idempotency-Key':'pg-fund-1'}),
