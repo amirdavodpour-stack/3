@@ -303,7 +303,7 @@ test('production check:all collects every suite and aggregates failures', () => 
   assert.equal(packageJson.scripts?.['check:all'], 'node tools/check-all-collect.mjs');
   const runner = fs.readFileSync(path.join(root, 'backend/tools/check-all-collect.mjs'), 'utf8');
   assert.match(runner, /Collect-all mode/);
-  assert.match(runner, /for \\(const \\[command, timeoutMs\\] of steps\\)/);
+  assert.match(runner, /for \(const \[command, timeoutMs\] of steps\)/);
   assert.match(runner, /summaries\.push\(result\)/);
   assert.match(runner, /process\.exit\(1\)/);
   assert.match(runner, /check-all-summary\.json/);
