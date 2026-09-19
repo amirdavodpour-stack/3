@@ -18,6 +18,7 @@ jobs:
   quality:
     name: Backend and Flutter quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       API_BASE_URL: ${{ secrets.API_BASE_URL || secrets.API_BASE_URL_STAGING }}
       API_BASE_URL_STAGING: ${{ secrets.API_BASE_URL_STAGING }}
@@ -55,11 +56,11 @@ jobs:
 
       - name: Backend install
         working-directory: backend
-        run: npm ci
+        run: timeout --foreground --signal=TERM --kill-after=30s 8m npm ci
 
       - name: Backend static check
         working-directory: backend
-        run: npm run check
+        run: timeout --foreground --signal=TERM --kill-after=30s 8m npm run check
 
       - name: Runtime gate - npm audit
         id: npm_audit_gate
@@ -68,7 +69,7 @@ jobs:
         run: |
           set -u
           result=pass
-          npm audit --audit-level=high || result=fail
+          timeout --foreground --signal=TERM --kill-after=30s 8m npm audit --audit-level=high || result=fail
           CI=true node tools/write-evidence.mjs \
             --gate npm_audit \
             --command 'npm audit --audit-level=high' \
@@ -99,8 +100,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          flutter analyze --no-fatal-warnings --no-fatal-infos
-          flutter test --no-pub
+          timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze --no-fatal-warnings --no-fatal-infos
+          timeout --foreground --signal=TERM --kill-after=30s 15m flutter test --no-pub
 
       - name: Runtime gate - flutter toolchain
         id: flutter_runtime_evidence
