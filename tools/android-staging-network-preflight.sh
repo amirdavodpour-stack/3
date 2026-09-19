@@ -42,37 +42,66 @@ collect_diagnostics() {
   adb -s "$ADB_SERIAL" shell dumpsys connectivity >"$ARTIFACT_DIR/connectivity.txt" 2>&1 || true
   adb -s "$ADB_SERIAL" shell dumpsys netstats detail >"$ARTIFACT_DIR/netstats.txt" 2>&1 || true
   adb -s "$ADB_SERIAL" shell ip addr show >"$ARTIFACT_DIR/ip-addr.txt" 2>&1 || true
+  adb -s "$ADB_SERIAL" shell ip rule show >"$ARTIFACT_DIR/ip-rule.txt" 2>&1 || true
+  adb -s "$ADB_SERIAL" shell ip route show table all >"$ARTIFACT_DIR/ip-route-all.txt" 2>&1 || true
   adb -s "$ADB_SERIAL" shell ip route show >"$ARTIFACT_DIR/ip-route.txt" 2>&1 || true
   adb -s "$ADB_SERIAL" shell logcat -d -t 500 >"$ARTIFACT_DIR/logcat-tail.txt" 2>&1 || true
 }
 
+recover_guest_network() {
+  echo "Applying non-destructive Android connectivity recovery..." >&2
+  adb -s "$ADB_SERIAL" shell 'settings put global airplane_mode_on 0' >/dev/null 2>&1 || true
+  adb -s "$ADB_SERIAL" shell 'cmd connectivity airplane-mode disable' >/dev/null 2>&1 || true
+  adb -s "$ADB_SERIAL" shell 'svc wifi enable' >/dev/null 2>&1 || true
+  adb -s "$ADB_SERIAL" shell 'cmd wifi set-wifi-enabled enabled' >/dev/null 2>&1 || true
+  adb -s "$ADB_SERIAL" shell 'svc data enable' >/dev/null 2>&1 || true
+  adb -s "$ADB_SERIAL" shell 'cmd connectivity reevaluate' >/dev/null 2>&1 || true
+}
+
 wait_for_online_device
 
-echo "Collecting Android network state before DNS checks..."
-adb -s "$ADB_SERIAL" shell ip route show >"$ARTIFACT_DIR/ip-route-initial.txt" 2>&1 || true
+echo "Collecting Android network state before route checks..."
+adb -s "$ADB_SERIAL" shell ip route show table all >"$ARTIFACT_DIR/ip-route-initial.txt" 2>&1 || true
+adb -s "$ADB_SERIAL" shell ip rule show >"$ARTIFACT_DIR/ip-rule-initial.txt" 2>&1 || true
 adb -s "$ADB_SERIAL" shell ip addr show >"$ARTIFACT_DIR/ip-addr-initial.txt" 2>&1 || true
 adb -s "$ADB_SERIAL" shell dumpsys connectivity >"$ARTIFACT_DIR/connectivity-initial.txt" 2>&1 || true
 adb -s "$ADB_SERIAL" shell getprop | grep -E 'net\.dns|^\[dhcp\.|^\[wifi\.' >"$ARTIFACT_DIR/dns-properties.txt" 2>&1 || true
 adb -s "$ADB_SERIAL" shell cmd connectivity reevaluate >/tmp/hope-android-reevaluate.log 2>&1 || true
 
-DEFAULT_ROUTE_OK=false
+TARGET_IP="$(printf '%s' "$IPS" | cut -d',' -f1)"
+ROUTE_OK=false
+ROUTE_LOOKUP=""
+
 for _ in $(seq 1 30); do
-  if adb -s "$ADB_SERIAL" shell ip route show | grep -Eq '(^| )default( |$)'; then
-    DEFAULT_ROUTE_OK=true
-    break
+  ROUTE_LOOKUP="$(adb -s "$ADB_SERIAL" shell "ip route get '$TARGET_IP'" 2>&1 | tr -d '\r' || true)"
+  if [ -n "$ROUTE_LOOKUP" ] && ! printf '%s\n' "$ROUTE_LOOKUP" | grep -Eq '(^|[[:space:]])(unreachable|prohibit|blackhole|throw)([[:space:]]|$)'; then
+    if printf '%s\n' "$ROUTE_LOOKUP" | grep -Eq '(^|[[:space:]])dev[[:space:]]+[[:alnum:]_.-]+'; then
+      ROUTE_OK=true
+      break
+    fi
   fi
-  adb -s "$ADB_SERIAL" shell cmd connectivity reevaluate >/dev/null 2>&1 || true
+  recover_guest_network
   sleep 2
 done
 
-if [ "$DEFAULT_ROUTE_OK" != "true" ]; then
-  echo "Android emulator has no default route; guest network is not ready." >&2
+printf '%s\n' "$ROUTE_LOOKUP" >"$ARTIFACT_DIR/ip-route-get.txt"
+
+if [ "$ROUTE_OK" != "true" ]; then
+  echo "Android emulator has no usable route to staging target $TARGET_IP." >&2
   collect_diagnostics
-  cat "$ARTIFACT_DIR/ip-route.txt" >&2 || true
+  echo "--- ip rule show ---" >&2
+  cat "$ARTIFACT_DIR/ip-rule.txt" >&2 || true
+  echo "--- ip route show table all ---" >&2
+  cat "$ARTIFACT_DIR/ip-route-all.txt" >&2 || true
+  echo "--- ip route get $TARGET_IP ---" >&2
+  cat "$ARTIFACT_DIR/ip-route-get.txt" >&2 || true
+  echo "--- connectivity ---" >&2
+  cat "$ARTIFACT_DIR/connectivity.txt" >&2 || true
   exit 1
 fi
 
-echo "Android emulator has a default network route."
+echo "Android emulator has a usable route to staging target $TARGET_IP."
+cat "$ARTIFACT_DIR/ip-route-get.txt"
 
 DNS_OK=false
 for _ in $(seq 1 12); do
