@@ -10,6 +10,7 @@ concurrency:
   group: hope-android-emulator-certification-${{ github.ref }}
   cancel-in-progress: true
 
+# # Android emulator certification — network recovery after remount
 permissions:
   contents: read
 
