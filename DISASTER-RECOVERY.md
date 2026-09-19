@@ -34,11 +34,11 @@ Create a backup with:
 
     backend/scripts/backup.sh
 
-Restore into an isolated recovery database with:
+Restore into an isolated database with a recovery-specific target using:
 
     backend/scripts/restore.sh
 
-The restore target must not be the production database. Recovery is performed against the independent DR target first.
+The restore target is an isolated database and must not be the production database. Recovery is performed against the independent DR target first.
 
 ## CI recovery drill
 
