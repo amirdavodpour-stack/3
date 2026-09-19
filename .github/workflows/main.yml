@@ -59,11 +59,14 @@ jobs:
         run: timeout --foreground --signal=TERM --kill-after=30s 8m npm ci
 
       - name: Backend static check
+        id: backend_static_check
+        continue-on-error: true
         working-directory: backend
         run: timeout --foreground --signal=TERM --kill-after=30s 8m npm run check
 
       - name: Runtime gate - npm audit
         id: npm_audit_gate
+        continue-on-error: true
         working-directory: backend
         shell: bash
         run: |
@@ -95,20 +98,22 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Flutter static and test gate
-        id: flutter_gate
-        shell: bash
-        run: |
-          set -euo pipefail
-          timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze --no-fatal-warnings --no-fatal-infos
-          timeout --foreground --signal=TERM --kill-after=30s 15m flutter test --no-pub
+      - name: Flutter analyze gate
+        id: flutter_analyze_gate
+        continue-on-error: true
+        run: timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Flutter test gate
+        id: flutter_test_gate
+        continue-on-error: true
+        run: timeout --foreground --signal=TERM --kill-after=30s 15m flutter test --no-pub
 
       - name: Runtime gate - flutter toolchain
         id: flutter_runtime_evidence
         if: ${{ always() }}
         working-directory: backend
         env:
-          GATE_RESULT: ${{ steps.flutter_gate.outcome == 'success' && 'pass' || 'fail' }}
+          GATE_RESULT: ${{ (steps.flutter_analyze_gate.outcome == 'success' && steps.flutter_test_gate.outcome == 'success') && 'pass' || 'fail' }}
         run: |
           CI=true node tools/write-evidence.mjs \
             --gate flutter_toolchain \
@@ -123,6 +128,22 @@ jobs:
           path: |
             docs/audit/evidence/*.json
           if-no-files-found: warn
+
+      - name: Enforce core quality gate
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -u
+          failures=()
+          [ "${{ steps.backend_static_check.outcome }}" = "success" ] || failures+=("backend_static_check:${{ steps.backend_static_check.outcome }}")
+          [ "${{ steps.npm_audit_gate.outcome }}" = "success" ] || failures+=("npm_audit:${{ steps.npm_audit_gate.outcome }}")
+          [ "${{ steps.flutter_analyze_gate.outcome }}" = "success" ] || failures+=("flutter_analyze:${{ steps.flutter_analyze_gate.outcome }}")
+          [ "${{ steps.flutter_test_gate.outcome }}" = "success" ] || failures+=("flutter_test:${{ steps.flutter_test_gate.outcome }}")
+          if [ "${#failures[@]}" -gt 0 ]; then
+            printf 'CORE QUALITY BLOCKED: %s\n' "${failures[@]}" >&2
+            exit 1
+          fi
+          echo 'CORE QUALITY: PASS'
 
   staging-performance:
     name: Staging performance smoke
