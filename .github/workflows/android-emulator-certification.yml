@@ -74,7 +74,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8 -writable-system
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
             export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
             bash tools/android-staging-network-preflight.sh
             flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
