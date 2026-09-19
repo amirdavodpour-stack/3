@@ -89,16 +89,9 @@ jobs:
           : "${RESET_WEBHOOK_SECRET:?RESET_TOKEN_DELIVERY_SECRET_PRODUCTION is required}"
           : "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:?GitHub OIDC token request token is required}"
           : "${ACTIONS_ID_TOKEN_REQUEST_URL:?GitHub OIDC token request URL is required}"
-          oidc_token="$(curl -fsSL --get \\
-            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \\
-            --data-urlencode "audience=hope-reset-bootstrap" \\
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}")"
+          oidc_token="$(curl -fsSL --get -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" --data-urlencode "audience=hope-reset-bootstrap" "${ACTIONS_ID_TOKEN_REQUEST_URL}")"
           payload="$(jq -n --arg secret "$RESET_WEBHOOK_SECRET" '{secret:$secret}')"
-          curl -fsS --retry 2 --retry-delay 1 \\
-            -X POST "${RESET_WEBHOOK_URL}/_bootstrap" \\
-            -H "Authorization: Bearer ${oidc_token}" \\
-            -H "Content-Type: application/json" \\
-            --data "$payload"
+          curl -fsS --retry 2 --retry-delay 1 -X POST "${RESET_WEBHOOK_URL}/_bootstrap" -H "Authorization: Bearer ${oidc_token}" -H "Content-Type: application/json" --data "$payload"
 
       - name: Setup Node.js 24
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
