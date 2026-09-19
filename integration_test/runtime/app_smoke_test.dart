@@ -26,6 +26,33 @@ class _SmokeAuthRepository implements AuthRepository {
   Future<void> requestPasswordReset(String email) async {}
 }
 
+Future<T> _retry<T>(
+  Future<T> Function() operation, {
+  int attempts = 6,
+  Duration delay = const Duration(seconds: 3),
+}) async {
+  Object? lastError;
+  StackTrace? lastStack;
+  for (var attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await operation();
+    } catch (error, stack) {
+      lastError = error;
+      lastStack = stack;
+      if (attempt == attempts) break;
+      await Future<void>.delayed(delay * attempt);
+    }
+  }
+  Error.throwWithStackTrace(
+    lastError ?? StateError('retry exhausted'),
+    lastStack ?? StackTrace.current,
+  );
+}
+
+Future<http.Response> _getWithRetry(Uri uri) {
+  return _retry(() => http.get(uri).timeout(const Duration(seconds: 10)));
+}
+
 Future<void> _pump(WidgetTester tester) async {
   final settings = HopeSettingsController();
   await settings.load();
@@ -73,15 +100,11 @@ void main() {
     const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     expect(baseUrl, isNotEmpty);
     expect(Uri.parse(baseUrl).scheme, 'https');
-    final live = await http
-        .get(Uri.parse('$baseUrl/live'))
-        .timeout(const Duration(seconds: 10));
+    final live = await _getWithRetry(Uri.parse('$baseUrl/live'));
     expect(live.statusCode, 200);
     expect(live.headers['content-type'] ?? '', contains('application/json'));
 
-    final categories = await http
-        .get(Uri.parse('$baseUrl/categories'))
-        .timeout(const Duration(seconds: 10));
+    final categories = await _getWithRetry(Uri.parse('$baseUrl/categories'));
     expect(categories.statusCode, 200);
     expect(
         categories.headers['content-type'] ?? '', contains('application/json'));
