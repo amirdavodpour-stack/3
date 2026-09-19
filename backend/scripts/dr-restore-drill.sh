@@ -39,8 +39,8 @@ RTO_TARGET_SECONDS="${RTO_TARGET_SECONDS:-900}"
 count="$(psql "$DRILL_DATABASE_URL" -Atqc "select count(*) from information_schema.tables where table_schema='public';")"
 [ "${count:-0}" -ge 15 ] || { echo "Unexpected public table count: $count" >&2; exit 1; }
 
-users="$(psql "$DRILL_DATABASE_URL" -Atqc 'select count(*) from users;')"
-categories="$(psql "$DRILL_DATABASE_URL" -Atqc 'select count(*) from categories;')"
+users="$(psql "$DRILL_DATABASE_URL" -Atqc 'select count(*) from public.users;')"
+categories="$(psql "$DRILL_DATABASE_URL" -Atqc 'select count(*) from public.categories;')"
 required="users,categories,jobs,offers,payments,outbox_events"
 for table in $(printf '%s' "$required" | tr ',' ' '); do
   exists="$(psql "$DRILL_DATABASE_URL" -Atqc "select to_regclass('public.' || '$table') is not null;")"

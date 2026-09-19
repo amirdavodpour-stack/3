@@ -39,6 +39,18 @@ function roundedPercent(units, rate) {
 const centsToMoney = (cents) => cents / 100;
 const tomanToMoney = (units) => units.toString();
 
+export function normalizeFinancialAmount(currency, value) {
+  if (String(currency || config.paymentCurrency).toUpperCase() === TOMAN) {
+    let raw = String(value ?? '0').trim();
+    if (/^\d+\.0+$/.test(raw)) raw = raw.slice(0, raw.indexOf('.'));
+    if (!/^\d+$/.test(raw)) throw new Error('INVALID_TOMAN_AMOUNT');
+    const units = BigInt(raw);
+    if (units < 0n || units > MAX_TOMAN_UNITS) throw new Error('INVALID_TOMAN_AMOUNT');
+    return units.toString();
+  }
+  return Number(value ?? 0);
+}
+
 export function calculatePaymentBreakdown(kind, baseAmount, currency = config.paymentCurrency) {
   const normalizedKind = String(kind || '').toUpperCase();
   const employerFeeRate = normalizedKind === 'MISSION' ? 10 : 30;

@@ -1,14 +1,28 @@
 name: Staging certification
 
 on:
+  push:
+    branches:
+      - feat/staging-ntfy-provider-2026-09-18
   pull_request:
     branches:
       - Main
+      - hope/full-stack-hardening-2026-09-17
   workflow_call:
     secrets:
       STAGING_BASE_URL:
-        required: true
+        required: false
+      API_BASE_URL_STAGING:
+        required: false
       STAGING_DATABASE_URL:
+        required: false
+      RAILWAY_TOKEN:
+        required: true
+      RAILWAY_API_TOKEN:
+        required: false
+      RAILWAY_SSH_PRIVATE_KEY:
+        required: true
+      SOURCE_DATABASE_URL:
         required: false
       DRILL_DATABASE_URL:
         required: false
@@ -60,10 +74,10 @@ jobs:
       certification_sha: ${{ steps.certification_status.outputs.certification_sha }}
       certification_attempt: ${{ steps.certification_status.outputs.certification_attempt }}
     env:
-      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://v2hope-production-7e9e.up.railway.app' }}
+      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
       STAGING_PAYMENT_PROVIDER: internal
       STAGING_PAYMENT_CURRENCY: TOMAN
-      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.SOURCE_DATABASE_URL }}
       DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
       STAGING_S3_ENDPOINT: ${{ secrets.STAGING_S3_ENDPOINT }}
       STAGING_S3_BUCKET: ${{ secrets.STAGING_S3_BUCKET }}
@@ -198,6 +212,26 @@ jobs:
           S3_FORCE_PATH_STYLE: 'true'
         run: |
           set -euo pipefail
+          node <<'NODE'
+          const endpoint = process.env.STAGING_S3_ENDPOINT;
+          const u = new URL(endpoint);
+          const expected = 'https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3';
+          const crypto = await import('node:crypto');
+          const digest = crypto.createHash('sha256').update(endpoint).digest('hex');
+          const expectedDigest = crypto.createHash('sha256').update(expected).digest('hex');
+          console.log('S3 endpoint host:', u.hostname);
+          console.log('S3 endpoint path:', u.pathname);
+          console.log('S3 endpoint matches repository Supabase endpoint:', endpoint === expected);
+          console.log('S3 endpoint sha256:', digest);
+          console.log('Expected endpoint sha256:', expectedDigest);
+          console.log('S3 bucket matches v2hope-private:', process.env.S3_BUCKET === 'v2hope-private');
+          console.log('S3 region matches eu-west-1:', process.env.S3_REGION === 'eu-west-1');
+          NODE
+          s3_host="$(node -e 'console.log(new URL(process.env.STAGING_S3_ENDPOINT).hostname)')"
+          echo 'S3 DNS lookup:'
+          getent hosts "$s3_host" || true
+          echo 'S3 HTTPS reachability probe:'
+          curl -I -sS -o /dev/null -w 'status=%{http_code} remote_ip=%{remote_ip}\\n' --max-time 15 "$STAGING_S3_ENDPOINT" || true
           node tests/s3-integration.test.mjs
 
       - name: Runtime gate - s3
@@ -244,6 +278,164 @@ jobs:
           BUILD_PROFILE: pilot
         run: bash tools/build_apk_debug.sh
 
+      - name: Install PostgreSQL 18 client
+        if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! apt-cache show postgresql-client-18 >/dev/null 2>&1; then
+            sudo install -d -m 0755 /etc/apt/keyrings
+            curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/keyrings/pgdg.asc >/dev/null
+            echo "deb [signed-by=/etc/apt/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+            sudo apt-get update -y
+          fi
+          sudo apt-get install -y postgresql-client-18
+          echo '/usr/lib/postgresql/18/bin' >> "$GITHUB_PATH"
+
+      # Uses a Railway Project Token when available; falls back to the workspace API token
+      # with a run-scoped workspace SSH key for GitHub-hosted DR access.
+      - name: Start Railway Postgres SSH tunnel for DR
+        id: postgres_tunnel
+        if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          : "${RAILWAY_SSH_PRIVATE_KEY:?RAILWAY_SSH_PRIVATE_KEY is required for the GitHub-hosted DR tunnel}"
+
+          RAILWAY_TOKEN="$(printf '%s' "${RAILWAY_TOKEN:-}" | tr -d '\r\n')"
+          RAILWAY_API_TOKEN="$(printf '%s' "${RAILWAY_API_TOKEN:-}" | tr -d '\r\n')"
+          RAILWAY_SSH_PRIVATE_KEY="$(printf '%s' "$RAILWAY_SSH_PRIVATE_KEY" | tr -d '\r')"
+
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          raw_key="$RAILWAY_SSH_PRIVATE_KEY"
+          key_file="$HOME/.ssh/id_ed25519"
+          if printf '%s' "$raw_key" | grep -q -- '-----BEGIN .*PRIVATE KEY-----'; then
+            printf '%s\n' "$raw_key" | sed 's/\\\\n/\n/g' > "$key_file"
+          else
+            compact_key="$(printf '%s' "$raw_key" | tr -d '[:space:]')"
+            decoded_key="$RUNNER_TEMP/railway-dr-key.bin"
+            if ! printf '%s' "$compact_key" | base64 --decode > "$decoded_key" 2>/dev/null; then
+              echo 'RAILWAY_SSH_PRIVATE_KEY is neither an armored private key nor valid base64' >&2
+              exit 1
+            fi
+            if head -c 15 "$decoded_key" | grep -aq '^openssh-key-v1'; then
+              {
+                printf '%s\n' '-----BEGIN OPENSSH PRIVATE KEY-----'
+                base64 --wrap=64 "$decoded_key"
+                printf '%s\n' '-----END OPENSSH PRIVATE KEY-----'
+              } > "$key_file"
+            else
+              decoded_text="$RUNNER_TEMP/railway-dr-key.txt"
+              tr -d '\r' < "$decoded_key" > "$decoded_text"
+              grep -q -- '-----BEGIN .*PRIVATE KEY-----' "$decoded_text" || { echo 'Decoded Railway SSH secret is not an OpenSSH private key' >&2; exit 1; }
+              cat "$decoded_text" > "$key_file"
+            fi
+          fi
+          chmod 600 "$key_file"
+          ssh-keygen -y -f "$key_file" > "$HOME/.ssh/id_ed25519.pub"
+          key_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
+          echo "RAILWAY_SSH_KEY_FINGERPRINT=$key_fingerprint"
+          test "$key_fingerprint" = 'SHA256:/Lrb+F+ajiLSfE93dOL7jMsajR7AMlKoSNTLchVjn3w'
+
+          npm install -g --allow-scripts=@railway/cli @railway/cli@5.30.1 >/dev/null
+          project_id='8c686259-09c6-4609-bbe7-4ea25e769e18'
+          environment_id='5a435e97-1e7a-4a5c-952c-19da2f10d955'
+          workspace_id='e6af3417-6d75-46e1-b1e3-e1aae3374974'
+
+          tunnel_log="$RUNNER_TEMP/railway-postgres-tunnel.log"
+          tunnel_pid="$RUNNER_TEMP/railway-postgres-tunnel.pid"
+          rm -f "$tunnel_log" "$tunnel_pid"
+
+          project_ok=false
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            env -u RAILWAY_API_TOKEN -u RAILWAY_TOKEN RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+              railway connect Postgres --tunnel-only --port 15432 \
+              --project "$project_id" --environment "$environment_id" \
+              >"$tunnel_log" 2>&1 &
+            echo $! > "$tunnel_pid"
+            for _ in $(seq 1 30); do
+              if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+                project_ok=true
+                echo 'Railway Postgres SSH tunnel is ready (project token auth).'
+                break
+              fi
+              if ! kill -0 "$(cat "$tunnel_pid")" 2>/dev/null; then
+                break
+              fi
+              sleep 1
+            done
+            if [ "$project_ok" != true ]; then
+              cat "$tunnel_log" >&2 || true
+              kill "$(cat "$tunnel_pid")" 2>/dev/null || true
+              rm -f "$tunnel_pid"
+              echo 'Railway project token rejected; trying workspace API-token fallback.'
+            fi
+          fi
+
+          if [ "$project_ok" != true ]; then
+            : "${RAILWAY_API_TOKEN:?RAILWAY_API_TOKEN is required for the workspace fallback}"
+            rm -f "$key_file" "$HOME/.ssh/id_ed25519.pub"
+            ssh-keygen -t ed25519 -N '' -C "hope-github-actions-dr-$GITHUB_RUN_ID" -f "$key_file" >/dev/null
+            chmod 600 "$key_file"
+            workspace_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $2}')"
+            echo "Generated workspace SSH key: $workspace_fingerprint"
+            workspace_key_name="hope-github-actions-dr-$GITHUB_RUN_ID"
+            env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+              railway ssh keys add --workspace "$workspace_id" \
+              --key "$HOME/.ssh/id_ed25519.pub" --name "$workspace_key_name"
+            echo 'Registered run-scoped workspace SSH key.'
+            cleanup_workspace_key() {
+              set +e
+              env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+                railway ssh keys remove --workspace "$workspace_id" --key "$workspace_key_name" >/tmp/hope-dr-key-cleanup.log 2>&1
+              rc=$?
+              if [ "$rc" -eq 0 ]; then
+                echo "Removed run-scoped workspace SSH key: $workspace_key_name"
+              else
+                echo "Warning: could not remove run-scoped workspace SSH key: $workspace_key_name" >&2
+                cat /tmp/hope-dr-key-cleanup.log >&2 || true
+              fi
+              return 0
+            }
+            # Remove the run-scoped workspace key when the job exits, including failures.
+            trap cleanup_workspace_key EXIT
+
+            rm -f "$tunnel_log" "$tunnel_pid"
+            env -u RAILWAY_TOKEN RAILWAY_API_TOKEN="$RAILWAY_API_TOKEN" \
+              railway connect Postgres --tunnel-only --port 15432 \
+              --project "$project_id" --environment "$environment_id" \
+              >"$tunnel_log" 2>&1 &
+            echo $! > "$tunnel_pid"
+            for _ in $(seq 1 30); do
+              if pg_isready -h 127.0.0.1 -p 15432 >/dev/null 2>&1; then
+                echo 'Railway Postgres SSH tunnel is ready (workspace API token auth).'
+                break
+              fi
+              if ! kill -0 "$(cat "$tunnel_pid")" 2>/dev/null; then
+                cat "$tunnel_log" >&2
+                exit 1
+              fi
+              sleep 1
+            done
+          fi
+
+          pg_isready -h 127.0.0.1 -p 15432
+      - name: Prepare tunneled source URL
+        id: tunneled_source
+        if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
+        shell: bash
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          source_url="$(node -e 'const u=new URL(process.env.DATABASE_URL); u.hostname="127.0.0.1"; u.port="15432"; process.stdout.write(u.toString())')"
+          echo "SOURCE_DATABASE_TUNNELED_URL=$source_url" >> "$GITHUB_ENV"
+
       - name: DR restore drill
         id: dr_drill
         if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
@@ -255,7 +447,7 @@ jobs:
           DRILL_EVIDENCE_FILE: ${{ runner.temp }}/hope-dr-restore-evidence.txt
         run: |
           set -euo pipefail
-          bash backend/scripts/dr-restore-drill.sh
+          SOURCE_DATABASE_URL="$SOURCE_DATABASE_TUNNELED_URL" bash backend/scripts/dr-restore-drill.sh
 
       - name: Runtime gate - dr restore
         id: dr_restore_evidence
@@ -294,10 +486,13 @@ jobs:
           arch: x86_64
           target: google_apis
           profile: pixel_2
+          cores: 4
+          ram-size: 4096M
+          emulator-boot-timeout: 1200
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8 -writable-system
           # GitHub-hosted Linux can lose the emulator ADB settings service immediately after boot.
           # The test suite does not require animation state, so keep this optional action step disabled.
-          disable-animations: false
+          disable-animations: true
           script: |
             export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
             bash tools/android-staging-network-preflight.sh

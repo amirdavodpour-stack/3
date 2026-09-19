@@ -29,8 +29,13 @@ echo "Android staging network preflight: host=$HOST resolved_ipv4s=$IPS"
 
 adb -s "$ADB_SERIAL" wait-for-device
 
-if adb -s "$ADB_SERIAL" shell "ping -c 1 -W 2 '$HOST'" >/tmp/hope-android-dns-check.log 2>&1; then
+# Do not use ICMP ping as the DNS probe: a valid DNS resolution can still
+# return non-zero when the destination blocks ICMP. Android API 35 ships the
+# toybox "host" utility, which tests name resolution without conflating it
+# with reachability.
+if adb -s "$ADB_SERIAL" shell "host -t A '$HOST'" >/tmp/hope-android-dns-check.log 2>&1; then
   echo "Android guest DNS resolves $HOST."
+  cat /tmp/hope-android-dns-check.log
   exit 0
 fi
 

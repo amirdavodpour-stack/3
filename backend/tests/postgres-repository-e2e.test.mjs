@@ -12,6 +12,8 @@ process.env.STORAGE_DIR = path.join(tmp, 'storage');
 
 const { createServer } = await import('../src/app.js');
 const { db, getPool } = await import('../src/db.js');
+const { findPaymentByJob } = await import('../src/repository.js');
+const { processPaymentCreateHoldNow } = await import('../src/outbox_worker.js');
 
 let server = null;
 let json = null;
@@ -40,6 +42,15 @@ async function register(email, displayName = email) {
 
 function auth(token, extra = {}) {
   return {Authorization:`Bearer ${token}`, ...extra};
+}
+
+async function drainUntilPaymentStatus(jobId, expectedStatus) {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const payment = await findPaymentByJob(jobId);
+    if (payment?.status === expectedStatus) return payment;
+    await processPaymentCreateHoldNow();
+  }
+  throw new Error(`PAYMENT_STATUS_DID_NOT_REACH_${expectedStatus}`);
 }
 
 test('PostgreSQL repository path executes a complete marketplace/payment lifecycle', {skip: !enabled}, async () => {
@@ -81,8 +92,12 @@ test('PostgreSQL repository path executes a complete marketplace/payment lifecyc
     headers:auth(owner.accessToken, {'Idempotency-Key':'pg-fund-1'}),
     body:'{}',
   });
-  assert.equal(fund.status, 201);
-  assert.equal(fund.body.data.status, 'HELD');
+  assert.ok([201, 202].includes(fund.status));
+  if (fund.status === 202) {
+    assert.equal(fund.body.data.status, 'HOLD_PENDING');
+  }
+  const heldPayment = await drainUntilPaymentStatus(job.id, 'HELD');
+  assert.equal(heldPayment.id, fund.body.data.id);
   const replay = await json(`/payments/fund/${job.id}`, {
     method:'POST',
     headers:auth(owner.accessToken, {'Idempotency-Key':'pg-fund-1'}),

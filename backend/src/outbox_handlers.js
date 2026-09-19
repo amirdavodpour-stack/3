@@ -49,8 +49,8 @@ export async function processOutboxEvent(event) {
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type, payoutId:payload.payoutId });
     } else if (event.event_type === 'PAYMENT_RELEASE') {
       const result = await paymentProvider.releaseHold({ paymentId: payload.paymentId, providerRef: payload.providerRef, idempotencyKey: payload.idempotencyKey || `payment-release:${payload.paymentId}` });
-      if (result.status !== 'RELEASED') throw new Error('PAYMENT_PROVIDER_UNCONFIRMED');
-      const completed = await completePaymentReleaseOutbox({ eventId:event.id, jobId:payload.jobId, paymentId:payload.paymentId, actorId:payload.ownerId, leaseToken:event.lease_token });
+      if (result.status !== 'RELEASED' || !result.releaseRef) throw new Error('PAYMENT_PROVIDER_UNCONFIRMED');
+      const completed = await completePaymentReleaseOutbox({ eventId:event.id, jobId:payload.jobId, paymentId:payload.paymentId, actorId:payload.ownerId, leaseToken:event.lease_token, providerReleaseRef:result.releaseRef });
       if (!completed?.completed) throw new Error(`OUTBOX_RELEASE_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
       recordOutboxProcessed();
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type });

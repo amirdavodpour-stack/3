@@ -14,7 +14,7 @@ jobs:
     name: Staging performance diagnostic
     runs-on: ubuntu-latest
     env:
-      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://v2hope-production-7e9e.up.railway.app' }}
+      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
       STAGING_METRICS_TOKEN: ${{ secrets.STAGING_METRICS_TOKEN || secrets.METRICS_TOKEN }}
     steps:
       - name: Checkout
