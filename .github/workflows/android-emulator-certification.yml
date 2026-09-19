@@ -1,9 +1,9 @@
-name: HOPE Android Emulator Certification (isolated)
+name: HOPE Android Emulator Certification (API 34 experiment)
 
 on:
   push:
     branches:
-      - chore/android-emulator-cert-2026-09-19
+      - chore/android-emulator-cert-api34-2026-09-19
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   android-emulator-certification:
-    name: Android emulator certification
+    name: Android emulator certification (API 34)
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -64,16 +64,15 @@ jobs:
           API_BASE_URL_STAGING: ${{ env.API_BASE_URL_STAGING }}
           CI_DEVICE_INTEGRATION: 'true'
         with:
-          api-level: 35
+          # Experiment isolates API 35 from the same runner/emulator configuration by
+          # running the identical test stack on API 34.
+          api-level: 34
           arch: x86_64
           target: google_apis
           profile: pixel_2
           cores: 4
           ram-size: 4096M
           emulator-boot-timeout: 1200
-          # GitHub-hosted runners have a known emulator networking failure mode where wlan0
-          # remains NO-CARRIER / no default route. The proven mitigation is explicit IPv4
-          # DNS + -netfast + -no-metrics. No guest filesystem mutation or remount is used.
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics -feature -WiFiPacketStream -feature -VirtioWifi
           disable-animations: true
           disable-spellchecker: true
@@ -81,7 +80,10 @@ jobs:
           script: |
             set -eu
             bash tools/android-staging-network-preflight.sh
-            flutter test --no-pub integration_test/runtime/app_smoke_test.dart               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING"               --dart-define=CI_DEVICE_INTEGRATION=true               --dart-define=HOPE_ENV=staging
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
+              --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
+              --dart-define=CI_DEVICE_INTEGRATION=true \
+              --dart-define=HOPE_ENV=staging
 
       - name: Emit Android certification evidence
         if: ${{ always() }}
@@ -95,7 +97,8 @@ jobs:
             "run_id": "${{ github.run_id }}",
             "ref": "${{ github.ref_name }}",
             "sha": "${{ github.sha }}",
-            "result": "${{ job.status }}"
+            "result": "${{ job.status }}",
+            "api_level": 34
           }
           EOF
 
@@ -109,4 +112,4 @@ jobs:
             docs/audit/android-emulator/**
           if-no-files-found: warn
 
-# CI note: API 35 networking is tested with legacy Wi-Fi packet-stream mode to isolate netsim regressions.
+# Experiment note: only api-level changes; the current emulator networking flags and Flutter smoke test remain unchanged.
