@@ -553,7 +553,6 @@ jobs:
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://eu.i.posthog.com' }}
         with:
           api-level: 35
-          emulator-build: '15004761'
           arch: x86_64
           target: google_apis
           profile: pixel_2
