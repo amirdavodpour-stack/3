@@ -19,7 +19,7 @@ jobs:
     name: Backend and Flutter quality
     runs-on: ubuntu-latest
     env:
-      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL || secrets.API_BASE_URL_STAGING }}
       API_BASE_URL_STAGING: ${{ secrets.API_BASE_URL_STAGING }}
     steps:
       - name: Checkout
@@ -42,7 +42,7 @@ jobs:
             secret_label="API_BASE_URL_STAGING"
           else
             effective_api_base_url="${API_BASE_URL:-}"
-            secret_label="API_BASE_URL"
+            secret_label="API_BASE_URL or API_BASE_URL_STAGING"
           fi
           [ -n "$effective_api_base_url" ] || {
             echo "$secret_label secret is required for this event." >&2
@@ -132,7 +132,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.4.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '24'
 
