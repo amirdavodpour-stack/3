@@ -108,3 +108,5 @@ jobs:
             docs/audit/evidence/android-emulator-certification.json
             docs/audit/android-emulator/**
           if-no-files-found: warn
+
+# CI note: API 35 networking is tested with legacy Wi-Fi packet-stream mode to isolate netsim regressions.
