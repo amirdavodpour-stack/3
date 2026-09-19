@@ -1,0 +1,59 @@
+name: HOPE DR lock inspection
+
+on:
+  push:
+    branches:
+      - chore/dr-lock-inspect-2026-09-19
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    name: Inspect PostgreSQL advisory locks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
+    steps:
+      - name: Setup PostgreSQL 18 client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          if ! apt-cache show postgresql-client-18 >/dev/null 2>&1; then
+            sudo install -d -m 0755 /etc/apt/keyrings
+            curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/keyrings/pgdg.asc >/dev/null
+            echo "deb [signed-by=/etc/apt/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+            sudo apt-get update -y
+          fi
+          sudo apt-get install -y postgresql-client-18
+          echo '/usr/lib/postgresql/18/bin' >> "$GITHUB_PATH"
+
+      - name: Query advisory locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${DRILL_DATABASE_URL:?DRILL_DATABASE_URL is required}"
+          echo '== Target identity =='
+          psql "$DRILL_DATABASE_URL" -Atqc "select current_database(), current_user, inet_server_addr(), inet_server_port();"
+          echo '== HOPE DR lock key =='
+          psql "$DRILL_DATABASE_URL" -Atqc "select hashtext('HOPE_STAGING_DR_RESTORE'), hashtext('DRILL_TARGET');"
+          echo '== All granted advisory locks =='
+          psql "$DRILL_DATABASE_URL" -P pager=off -c "
+            select
+              l.pid,
+              l.classid,
+              l.objid,
+              l.mode,
+              a.usename,
+              a.application_name,
+              a.client_addr,
+              a.state,
+              a.query_start,
+              left(a.query, 300) as query
+            from pg_locks l
+            left join pg_stat_activity a on a.pid = l.pid
+            where l.locktype = 'advisory' and l.granted
+            order by l.pid;"
