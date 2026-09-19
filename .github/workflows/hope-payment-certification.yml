@@ -3,10 +3,10 @@ name: HOPE Payment Certification
 on:
   push:
     branches:
-      - feat/staging-ntfy-provider-2026-09-18
+      - release/v2hope-hardening-2026-09-19
   pull_request:
     branches:
-      - hope/full-stack-hardening-2026-09-17
+      - release/v2hope-hardening-2026-09-19
   workflow_dispatch:
 
 concurrency:
