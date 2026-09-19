@@ -5,6 +5,7 @@ const PORT = Number(process.env.PORT || 8080);
 const PROVIDER_TOKEN = process.env.NOTIFICATION_PROVIDER_TOKEN || '';
 const NTFY_TOPIC = process.env.NTFY_TOPIC || '';
 const NTFY_BASE_URL = (process.env.NTFY_BASE_URL || 'https://ntfy.sh').replace(/\/+$/, '');
+const NTFY_REQUEST_TIMEOUT_MS = Math.max(5_000, Math.min(60_000, Number(process.env.NTFY_REQUEST_TIMEOUT_MS || 30_000)));
 
 if (PROVIDER_TOKEN.length < 24) throw new Error('NOTIFICATION_PROVIDER_TOKEN must be at least 24 characters');
 if (!/^[A-Za-z0-9_-]{16,128}$/.test(NTFY_TOPIC)) throw new Error('NTFY_TOPIC must be a high-entropy topic name');
@@ -51,7 +52,7 @@ async function publish(payload, idempotencyKey) {
     const req = https.request(target, {
       method: 'POST',
       family: 4,
-      timeout: 10000,
+      timeout: NTFY_REQUEST_TIMEOUT_MS,
       headers: {
         'content-type': 'text/plain; charset=utf-8',
         'X-Title': title,
