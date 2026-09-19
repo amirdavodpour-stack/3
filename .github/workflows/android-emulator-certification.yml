@@ -53,6 +53,16 @@ jobs:
           echo "Resolved $host to $ips"
           echo "ips=$ips" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve emulator DNS servers
+        id: resolve_emulator_dns
+        shell: bash
+        run: |
+          set -euo pipefail
+          dns_servers="$(awk '/^nameserver[[:space:]]+/ {print $2}' /etc/resolv.conf | head -n 4 | paste -sd, -)"
+          test -n "$dns_servers" || { echo "Runner /etc/resolv.conf has no nameservers." >&2; cat /etc/resolv.conf >&2; exit 1; }
+          echo "Using emulator DNS servers from GitHub runner: $dns_servers"
+          echo "dns_servers=$dns_servers" >> "$GITHUB_OUTPUT"
+
       - name: Prepare Flutter dependencies
         shell: bash
         run: |
@@ -72,11 +82,10 @@ jobs:
           cores: 4
           ram-size: 4096M
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8 -writable-system
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server ${{ steps.resolve_emulator_dns.outputs.dns_servers }}
           disable-animations: true
           script: |
             set -eu
-            export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
             bash tools/android-staging-network-preflight.sh
             flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
