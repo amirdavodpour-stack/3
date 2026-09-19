@@ -1,10 +1,6 @@
 name: Staging DR recovery
 
 on:
-  push:
-    branches:
-      - chore/staging-dr-recovery-2026-09-18
-
 permissions:
   contents: read
 
