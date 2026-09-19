@@ -21,6 +21,9 @@ jobs:
 
   staging:
     name: Staging certification
+    needs:
+      - quality
+    if: ${{ always() }}
     uses: ./.github/workflows/staging-certification.yml
     secrets: inherit
 
