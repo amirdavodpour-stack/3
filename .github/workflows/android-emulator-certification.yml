@@ -1,0 +1,122 @@
+name: HOPE Android Emulator Certification (clean certification)
+
+on:
+  push:
+    branches:
+      - chore/android-emulator-cert-clean-2026-09-19
+  workflow_dispatch:
+
+concurrency:
+  group: hope-android-emulator-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android-emulator-certification:
+    name: Android emulator certification
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      API_BASE_URL_STAGING: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
+      CI_DEVICE_INTEGRATION: 'true'
+      HOPE_ENV: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Enable KVM group perms
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm 2>&1 || true
+          test -e /dev/kvm && echo "KVM device present" || echo "KVM device unavailable; emulator may fall back to software acceleration"
+
+      - name: Install adb for runtime preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y adb
+          adb version
+
+      - name: Resolve staging host
+        id: resolve_staging_host
+        shell: bash
+        run: |
+          set -euo pipefail
+          host="$(node -e "const u=new URL(process.env.API_BASE_URL_STAGING); if(u.protocol!=='https:') throw new Error('API_BASE_URL_STAGING must use HTTPS'); console.log(u.hostname)")"
+          ips="$(getent ahostsv4 "$host" | awk '{print $1}' | sort -u | paste -sd, -)"
+          test -n "$ips" || { echo "Runner DNS could not resolve $host." >&2; exit 1; }
+          echo "Resolved $host to $ips"
+          echo "ips=$ips" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Flutter dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter pub get --enforce-lockfile
+
+      - name: Android emulator certification
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          API_BASE_URL_STAGING: ${{ env.API_BASE_URL_STAGING }}
+          CI_DEVICE_INTEGRATION: 'true'
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          cores: 4
+          ram-size: 4096M
+          emulator-boot-timeout: 1200
+          # GitHub-hosted runners have a known emulator networking failure mode where wlan0
+          # remains NO-CARRIER / no default route. The proven mitigation is explicit IPv4
+          # DNS + -netfast + -no-metrics. No guest filesystem mutation or remount is used.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics -feature -WiFiPacketStream
+          disable-animations: true
+          disable-spellchecker: true
+          force-avd-creation: true
+          script: |
+            set -eu
+            bash tools/android-staging-network-preflight.sh
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING"               --dart-define=CI_DEVICE_INTEGRATION=true               --dart-define=HOPE_ENV=staging
+
+      - name: Emit Android certification evidence
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/audit/evidence
+          cat > docs/audit/evidence/android-emulator-certification.json <<EOF
+          {
+            "workflow": "${{ github.workflow }}",
+            "run_id": "${{ github.run_id }}",
+            "ref": "${{ github.ref_name }}",
+            "sha": "${{ github.sha }}",
+            "result": "${{ job.status }}"
+          }
+          EOF
+
+      - name: Upload Android certification evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
+        with:
+          name: hope-android-emulator-certification-${{ github.run_id }}
+          path: |
+            docs/audit/evidence/android-emulator-certification.json
+            docs/audit/android-emulator/**
+          if-no-files-found: warn
+
+# Clean certification branch rebased from the latest staging baseline; main remains untouched.
