@@ -561,12 +561,7 @@ jobs:
             # transient state. Refresh the daemon before the real device smoke test.
             adb kill-server >/dev/null 2>&1 || true
             adb start-server
-            for _ in $(seq 1 30); do
-              if adb -s "${ANDROID_SERIAL:-emulator-5554}" get-state 2>/dev/null | grep -qx device; then
-                break
-              fi
-              sleep 2
-            done
+            adb -s "${ANDROID_SERIAL:-emulator-5554}" wait-for-device
             bash tools/android-staging-network-preflight.sh
             flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
