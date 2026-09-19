@@ -286,7 +286,7 @@ test('CI collects certification failures before enforcing aggregate gates', () =
   assert.match(main, /id: flutter_test_gate[\\s\\S]*?continue-on-error: true/);
   assert.match(main, /name: Enforce core quality gate/);
   for (const id of ['targeted_payment','live_mock_payment','payment_migrations','payment_webhook_pg','payment_postgres_lifecycle','payment_wallet_ledger','payment_financial_invariants']) {
-    assert.match(payment, new RegExp('id: ' + id + '[\\\\s\\\\S]*?continue-on-error: true'));
+    assert.match(payment, new RegExp('id: ' + id + '[\\s\\S]*?continue-on-error: true'));
   }
   assert.match(payment, /name: Evaluate payment certification/);
   assert.match(payment, /name: Enforce payment certification/);
