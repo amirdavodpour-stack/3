@@ -3,12 +3,10 @@ name: Staging certification
 on:
   push:
     branches:
-      - feat/staging-ntfy-provider-2026-09-18
-      - chore/staging-dr-recovery-2026-09-18
+      - release/v2hope-hardening-2026-09-19
   pull_request:
     branches:
-      - Main
-      - hope/full-stack-hardening-2026-09-17
+      - release/v2hope-hardening-2026-09-19
   workflow_call:
     secrets:
       STAGING_BASE_URL:
