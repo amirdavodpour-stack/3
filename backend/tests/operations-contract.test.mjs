@@ -45,7 +45,7 @@ test('production release workflow requires reusable staging certification before
 
 test('DR document requires isolated restore evidence before release certification', () => {
   const dr = fs.readFileSync(path.join(root, '..', 'DISASTER-RECOVERY.md'), 'utf8');
-  assert.match(dr, /isolated database/i);
+  assert.match(dr, /isolated (?:database|recovery database)/i);
   assert.match(dr, /restore/i);
   assert.match(dr, /evidence/i);
 });
@@ -67,10 +67,10 @@ test('DR restore drill is fail-closed, validates archive, restores into an isola
 
 test('dedicated DR CI workflow provisions separate source and drill PostgreSQL services', () => {
   const workflow = fs.readFileSync(path.join(root, '..', '.github/workflows/dr-restore.yml'), 'utf8');
-  assert.match(workflow, /source-db:/);
-  assert.match(workflow, /drill-db:/);
-  assert.match(workflow, /54321:5432/);
-  assert.match(workflow, /54322:5432/);
+  assert.match(workflow, /SOURCE_DATABASE_URL/);
+  assert.match(workflow, /DRILL_DATABASE_URL/);
+  assert.match(workflow, /Start Railway Postgres SSH tunnel for DR/);
+  assert.match(workflow, /Verify target isolation/);
   assert.match(workflow, /npm run migrate/);
   assert.match(workflow, /dr-restore-drill\.sh/);
   assert.match(workflow, /actions\/upload-artifact/);
