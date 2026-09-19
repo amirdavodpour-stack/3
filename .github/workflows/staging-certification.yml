@@ -111,6 +111,16 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Enable KVM group perms
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm 2>&1 || true
+          test -e /dev/kvm && echo "KVM device present" || echo "KVM device unavailable; emulator may fall back to software acceleration"
+
       - name: Install adb for runtime preflight
         shell: bash
         run: |
@@ -543,28 +553,22 @@ jobs:
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://eu.i.posthog.com' }}
         with:
           api-level: 35
+          emulator-build: '15004761'
           arch: x86_64
           target: google_apis
           profile: pixel_2
           cores: 4
           ram-size: 4096M
           emulator-boot-timeout: 1200
-          # Pin the emulator system-image build already proven green in the dedicated
-          # API 35 certification run; this avoids runner/image drift during release.
-          emulator-build: '15004761'
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8 -writable-system
-          # Keep the guest stable on GitHub-hosted Linux; animations are not required by the runtime smoke suite.
+          # Proven green GitHub-hosted emulator configuration from the dedicated API 35 run.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics -feature -WiFiPacketStream
           disable-animations: true
+          disable-spellchecker: true
+          force-avd-creation: true
           script: |
-            export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
+            set -eu
             bash tools/android-staging-network-preflight.sh
-            flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
-              --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
-              --dart-define=CI_DEVICE_INTEGRATION=true \
-              --dart-define=HOPE_ENV=staging \
-              --dart-define=POSTHOG_ENABLED="${POSTHOG_ENABLED:-false}" \
-              --dart-define=POSTHOG_PROJECT_TOKEN="${POSTHOG_PROJECT_TOKEN:-}" \
-              --dart-define=POSTHOG_HOST="${POSTHOG_HOST:-https://us.i.posthog.com}"
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING"               --dart-define=CI_DEVICE_INTEGRATION=true               --dart-define=HOPE_ENV=staging               --dart-define=POSTHOG_ENABLED="${POSTHOG_ENABLED:-false}"               --dart-define=POSTHOG_PROJECT_TOKEN="${POSTHOG_PROJECT_TOKEN:-}"               --dart-define=POSTHOG_HOST="${POSTHOG_HOST:-https://us.i.posthog.com}"
 
       - name: Runtime gate - device certification
         id: device_runtime_evidence
