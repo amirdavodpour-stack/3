@@ -23,12 +23,13 @@ function run(command, timeoutMs) {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'inherit',
+      detached: true,
     });
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
       console.error(`\\n[check:all] TIMEOUT: ${command} after ${timeoutMs}ms`);
-      child.kill('SIGTERM');
+      killGroup('SIGTERM');
       setTimeout(() => child.kill('SIGKILL'), 30000).unref();
     }, timeoutMs);
     child.on('close', (code, signal) => {
