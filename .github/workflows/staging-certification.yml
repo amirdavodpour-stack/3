@@ -170,6 +170,7 @@ jobs:
 
       - name: Staging external integration gate
         id: provider_integration
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -192,6 +193,7 @@ jobs:
 
       - name: Staging product workflow
         id: product_workflow
+        continue-on-error: true
         working-directory: backend
         env:
           STAGING_BASE_URL: ${{ env.STAGING_BASE_URL }}
@@ -199,6 +201,7 @@ jobs:
 
       - name: Notification delivery
         id: notification_delivery
+        continue-on-error: true
         if: ${{ env.NOTIFICATION_PROVIDER_TOKEN != '' && (env.NOTIFICATION_PUSH_URL != '' || env.NOTIFICATION_EMAIL_URL != '') }}
         working-directory: backend
         shell: bash
@@ -208,6 +211,7 @@ jobs:
 
       - name: Postgres runtime probe
         id: postgres_runtime
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -238,6 +242,7 @@ jobs:
 
       - name: S3 runtime probe
         id: s3_runtime
+        continue-on-error: true
         if: ${{ env.STAGING_S3_ENDPOINT != '' && env.STAGING_S3_BUCKET != '' && env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
         working-directory: backend
         env:
@@ -267,6 +272,7 @@ jobs:
 
       - name: Staging performance smoke
         id: perf_gate
+        continue-on-error: true
         working-directory: backend
         env:
           PERF_BASE_URL: ${{ env.STAGING_BASE_URL }}
@@ -292,6 +298,7 @@ jobs:
 
       - name: PostHog staging ingestion preflight
         id: posthog_runtime
+        continue-on-error: true
         shell: bash
         env:
           POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
@@ -362,6 +369,7 @@ jobs:
 
       - name: Android quality gates
         id: android_quality
+        continue-on-error: true
         env:
           API_BASE_URL: ${{ env.STAGING_BASE_URL }}
           BUILD_PROFILE: pilot
@@ -518,6 +526,7 @@ jobs:
 
       - name: DR restore drill
         id: dr_drill
+        continue-on-error: true
         if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
         shell: bash
         env:
@@ -557,6 +566,7 @@ jobs:
 
       - name: Android emulator certification
         id: emulator_certification
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         env:
           API_BASE_URL_STAGING: ${{ env.STAGING_BASE_URL }}
@@ -609,6 +619,7 @@ jobs:
 
       - name: Staging operational gate
         id: operational_gate
+        continue-on-error: true
         if: ${{ always() && steps.provider_integration.outcome == 'success' && (steps.notification_delivery.outcome == 'success' || steps.notification_delivery.outcome == 'skipped') && (steps.dr_drill.outcome == 'success' || steps.dr_drill.outcome == 'skipped') }}
         working-directory: backend
         env:
@@ -626,7 +637,6 @@ jobs:
           for result in \
             "${{ steps.provider_integration.outcome }}" \
             "${{ steps.product_workflow.outcome }}" \
-            "${{ steps.notification_delivery.outcome }}" \
             "${{ steps.postgres_runtime.outcome }}" \
             "${{ steps.s3_runtime.outcome }}" \
             "${{ steps.perf_gate.outcome }}" \
@@ -634,11 +644,12 @@ jobs:
             "${{ steps.dr_drill.outcome }}" \
             "${{ steps.emulator_certification.outcome }}" \
             "${{ steps.operational_gate.outcome }}"; do
-            case "$result" in
-              success|skipped) ;;
-              *) status=BLOCKED ;;
-            esac
+            [ "$result" = "success" ] || status=BLOCKED
           done
+          case "${{ steps.notification_delivery.outcome }}" in
+            success|skipped) ;;
+            *) status=BLOCKED ;;
+          esac
 
           # PostHog is optional when no credential is configured, but once the
           # staging project token exists its ingestion preflight is a required
@@ -664,3 +675,11 @@ jobs:
             ${{ runner.temp }}/hope-dr-restore-evidence.txt
             ${{ runner.temp }}/staging-notification-delivery.log
           if-no-files-found: warn
+
+      - name: Enforce staging certification
+        if: ${{ always() }}
+        run: |
+          test "${{ steps.certification_status.outputs.certification_status }}" = "PASS" || {
+            echo "STAGING CERTIFICATION BLOCKED" >&2
+            exit 1
+          }
