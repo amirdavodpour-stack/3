@@ -22,10 +22,11 @@ test('production environment remains fail-closed for external integrations', () 
 });
 
 test('payment webhook uses timing-safe HMAC verification and atomic persistence', () => {
-  const app = fs.readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  const webhookSecurity = fs.readFileSync(new URL('../src/webhook_security.js', import.meta.url), 'utf8');
   const paymentRoutes = fs.readFileSync(new URL('../src/routes/payment_routes.js', import.meta.url), 'utf8');
   const repo = fs.readFileSync(new URL('../src/repository/payment_webhooks.js', import.meta.url), 'utf8');
-  assert.match(paymentRoutes, /crypto\.timingSafeEqual/);
+  assert.match(webhookSecurity, /crypto\.timingSafeEqual/);
+  assert.match(paymentRoutes, /verifyPaymentWebhookSignature/);
   assert.match(repo, /ON CONFLICT\(event_id\) DO NOTHING RETURNING payment_id/);
   assert.match(repo, /payment_webhook_events/);
 });
