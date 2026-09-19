@@ -74,7 +74,7 @@ jobs:
           # GitHub-hosted runners have a known emulator networking failure mode where wlan0
           # remains NO-CARRIER / no default route. The proven mitigation is explicit IPv4
           # DNS + -netfast + -no-metrics. No guest filesystem mutation or remount is used.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics -feature -WiFiPacketStream
           disable-animations: true
           disable-spellchecker: true
           force-avd-creation: true
