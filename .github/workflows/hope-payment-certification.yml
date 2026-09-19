@@ -189,3 +189,10 @@ jobs:
           name: HOPE-PAYMENT-CERTIFICATION
           path: HOPE-PAYMENT-CERTIFICATION.tar.gz
           if-no-files-found: error
+      - name: Enforce payment certification
+        if: always()
+        run: |
+          test "${{ steps.payment_certification_status.outputs.status }}" = "PASS" || {
+            echo "PAYMENT CERTIFICATION BLOCKED" >&2
+            exit 1
+          }
