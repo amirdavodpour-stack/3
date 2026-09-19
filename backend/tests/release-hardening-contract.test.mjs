@@ -237,3 +237,14 @@ test('migration checker covers every committed migration file', () => {
     assert.match(script, new RegExp(file.replace('.', '\\.') + '$|'+file.replace('.', '\\.')+' &&|'+file.replace('.', '\\.')+';'));
   }
 });
+
+
+test('release validation consumes the actual reusable staging certification outputs', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  assert.match(workflow, /needs\.staging\.outputs\.certification_status == 'PASS'/);
+  assert.match(workflow, /needs\.staging\.outputs\.certification_sha == github\.sha/);
+  assert.match(workflow, /STAGING_CERTIFICATION_RUN_ID: \$\{\{ needs\.staging\.outputs\.certification_run_id \}\}/);
+  assert.match(workflow, /STAGING_CERTIFICATION_SHA: \$\{\{ needs\.staging\.outputs\.certification_sha \}\}/);
+  assert.match(workflow, /STAGING_CERTIFICATION_ATTEMPT: \$\{\{ needs\.staging\.outputs\.certification_attempt \}\}/);
+  assert.doesNotMatch(workflow, /STAGING_CERTIFICATION_STATUS: PASS/);
+});
