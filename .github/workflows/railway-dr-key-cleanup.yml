@@ -1,0 +1,78 @@
+name: Railway DR SSH key cleanup
+
+on:
+  push:
+    branches:
+      - chore/railway-dr-key-cleanup-2026-09-18
+  pull_request:
+    branches:
+      - hope/full-stack-hardening-2026-09-17
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Remove temporary DR workspace SSH keys
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+      WORKSPACE_ID: e6af3417-6d75-46e1-b1e3-e1aae3374974
+
+    steps:
+      - name: Install Railway CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${RAILWAY_API_TOKEN:?RAILWAY_API_TOKEN is required}"
+          npm install -g --allow-scripts=@railway/cli @railway/cli@5.30.1 >/dev/null
+
+      - name: Inspect and remove run-scoped DR keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${RAILWAY_API_TOKEN:?RAILWAY_API_TOKEN is required}"
+
+          echo '== Railway CLI SSH-key removal capability =='
+          railway --version
+          railway ssh keys --help || true
+          railway ssh keys remove --help || true
+          echo '== Live GraphQL mutations related to SSH keys =='
+          railway api search ssh --kind mutation --compact || true
+          echo '== Workspace SSH keys before cleanup =='
+          railway ssh keys list --workspace "$WORKSPACE_ID" | tee "$RUNNER_TEMP/railway-keys-before.txt"
+
+          mapfile -t keys < <(
+            awk '/^  hope-github-actions-dr-[0-9]+$/ {sub(/^  /, ""); print}'               "$RUNNER_TEMP/railway-keys-before.txt"
+          )
+
+          if [ "${#keys[@]}" -eq 0 ]; then
+            echo 'No temporary DR workspace keys found.'
+            exit 0
+          fi
+
+          failures=0
+          for key_name in "${keys[@]}"; do
+            echo "Removing temporary key: $key_name"
+            if railway ssh keys remove --workspace "$WORKSPACE_ID" "$key_name"; then
+              echo "Removed: $key_name"
+            else
+              echo "FAILED to remove: $key_name" >&2
+              failures=$((failures + 1))
+            fi
+          done
+
+          echo '== Workspace SSH keys after cleanup =='
+          railway ssh keys list --workspace "$WORKSPACE_ID" | tee "$RUNNER_TEMP/railway-keys-after.txt"
+
+          remaining="$(
+            awk '/^  hope-github-actions-dr-[0-9]+$/ {count++} END {print count+0}'               "$RUNNER_TEMP/railway-keys-after.txt"
+          )"
+
+          if [ "$remaining" -ne 0 ] || [ "$failures" -ne 0 ]; then
+            echo "Temporary key cleanup incomplete: remaining=$remaining failures=$failures" >&2
+            exit 1
+          fi
+
+          echo 'Temporary DR workspace key cleanup complete.'

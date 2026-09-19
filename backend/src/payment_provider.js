@@ -4,7 +4,10 @@ import { config } from './config.js';
 function assertHttps(url, label) {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== 'https:') throw new Error(`${label} must use HTTPS`);
+    const testLoopback = process.env.NODE_ENV === 'test'
+      && parsed.protocol === 'http:'
+      && (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost');
+    if (parsed.protocol !== 'https:' && !testLoopback) throw new Error(`${label} must use HTTPS`);
   } catch (error) {
     throw new Error(`${label} is invalid: ${error.message}`);
   }
