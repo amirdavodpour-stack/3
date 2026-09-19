@@ -82,7 +82,7 @@ jobs:
       - name: Provision password reset webhook receiver
         shell: bash
         env:
-          RESET_WEBHOOK_URL: https://oumueyftltvakimtbemj.supabase.co/functions/v1/hope-password-reset
+          RESET_WEBHOOK_URL: ${{ secrets.RESET_TOKEN_DELIVERY_URL_PRODUCTION || 'https://oumueyftltvakimtbemj.supabase.co/functions/v1/hope-password-reset' }}
           RESET_WEBHOOK_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
         run: |
           set -euo pipefail
