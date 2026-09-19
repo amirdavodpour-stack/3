@@ -41,6 +41,7 @@ jobs:
       - payment
     if: ${{ needs.quality.result == 'success' && needs.staging.result == 'success' && needs.staging.outputs.certification_status == 'PASS' && needs.staging.outputs.certification_sha == github.sha && needs.payment.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: production
     permissions:
       contents: read
@@ -142,20 +143,20 @@ jobs:
 
       - name: Backend quality gates
         working-directory: backend
-        run: npm run check:all
+        run: timeout --foreground --signal=TERM --kill-after=45s 20m npm run check:all
 
       - name: Production npm audit
         working-directory: backend
-        run: npm audit --audit-level=high
+        run: timeout --foreground --signal=TERM --kill-after=30s 10m npm audit --audit-level=high
 
       - name: Verify Flutter lockfile
         run: bash tools/verify-pubspec-lock-fresh.sh
 
       - name: Flutter static check
-        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+        run: timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze --no-fatal-warnings --no-fatal-infos
 
       - name: Flutter test gate
-        run: flutter test --no-pub
+        run: timeout --foreground --signal=TERM --kill-after=30s 15m flutter test --no-pub
 
       - name: Configure production keystore
         id: keystore_prepare
@@ -177,7 +178,7 @@ jobs:
           ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: bash tools/build_apk_release.sh
+        run: timeout --foreground --signal=TERM --kill-after=45s 20m bash tools/build_apk_release.sh
 
       - name: Set release artifact metadata
         id: artifact_meta
@@ -213,7 +214,7 @@ jobs:
         working-directory: backend
         env:
           DOCKER_BUILDKIT: '1'
-        run: docker build --pull --file Dockerfile --tag hope-api:${GITHUB_SHA} .
+        run: timeout --foreground --signal=TERM --kill-after=45s 15m docker build --pull --file Dockerfile --tag hope-api:${GITHUB_SHA} .
 
       - name: Record backend image identity
         id: backend_image
@@ -228,7 +229,7 @@ jobs:
 
       - name: Generate SBOM
         working-directory: backend
-        run: npm run sbom
+        run: timeout --foreground --signal=TERM --kill-after=30s 5m npm run sbom
 
       - name: Generate release manifest
         working-directory: backend
@@ -242,7 +243,7 @@ jobs:
           STAGING_CERTIFICATION_SHA: ${{ needs.staging.outputs.certification_sha }}
           STAGING_CERTIFICATION_ATTEMPT: ${{ needs.staging.outputs.certification_attempt }}
           RELEASE_MANIFEST_PATH: ${{ github.workspace }}/release-manifest.json
-        run: npm run release:manifest
+        run: timeout --foreground --signal=TERM --kill-after=30s 2m npm run release:manifest
 
       - name: Create SHA256SUMS.txt
         shell: bash
