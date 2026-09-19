@@ -2,7 +2,6 @@ name: HOPE Payment Certification
 
 on:
   workflow_call:
-    secrets: inherit
   pull_request:
     branches:
       - release/v2hope-hardening-2026-09-19
