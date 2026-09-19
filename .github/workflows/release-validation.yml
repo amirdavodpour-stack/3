@@ -51,12 +51,22 @@ jobs:
       API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
       ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
       REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
+      PAYMENT_PROVIDER: internal
+      PAYMENT_CURRENCY: TOMAN
       PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET }}
+      RESET_TOKEN_DELIVERY_MODE: webhook
       RESET_TOKEN_DELIVERY_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
+      RESET_TOKEN_DELIVERY_URL: ${{ secrets.RESET_TOKEN_DELIVERY_URL_PRODUCTION }}
+      PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL_PRODUCTION }}
+      METRICS_TOKEN: ${{ secrets.METRICS_TOKEN_PRODUCTION }}
       ALLOWED_CORS_ORIGINS: ${{ secrets.ALLOWED_CORS_ORIGINS_PRODUCTION }}
       DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
+      RATE_LIMIT_STORE: postgres
+      STORAGE_BACKEND: s3
       S3_BUCKET: ${{ secrets.S3_BUCKET_PRODUCTION }}
       S3_REGION: ${{ secrets.S3_REGION_PRODUCTION }}
+      S3_ENDPOINT: ${{ secrets.S3_ENDPOINT_PRODUCTION }}
+      S3_FORCE_PATH_STYLE: ${{ secrets.S3_FORCE_PATH_STYLE_PRODUCTION || 'false' }}
       STAGING_CERTIFICATION_STATUS: PASS
       STAGING_CERTIFICATION_RUN_ID: ${{ github.run_id }}
       STAGING_CERTIFICATION_SHA: ${{ github.sha }}
@@ -94,6 +104,22 @@ jobs:
         working-directory: backend
         env:
           NODE_ENV: production
+          PAYMENT_PROVIDER: ${{ env.PAYMENT_PROVIDER }}
+          PAYMENT_CURRENCY: ${{ env.PAYMENT_CURRENCY }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          PUBLIC_BASE_URL: ${{ env.PUBLIC_BASE_URL }}
+          METRICS_TOKEN: ${{ env.METRICS_TOKEN }}
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+          S3_REGION: ${{ env.S3_REGION }}
+          S3_ENDPOINT: ${{ env.S3_ENDPOINT }}
+          STORAGE_BACKEND: ${{ env.STORAGE_BACKEND }}
+          RESET_TOKEN_DELIVERY_MODE: ${{ env.RESET_TOKEN_DELIVERY_MODE }}
+          RESET_TOKEN_DELIVERY_URL: ${{ env.RESET_TOKEN_DELIVERY_URL }}
+          RESET_TOKEN_DELIVERY_SECRET: ${{ env.RESET_TOKEN_DELIVERY_SECRET }}
+          ALLOWED_CORS_ORIGINS: ${{ env.ALLOWED_CORS_ORIGINS }}
+          ACCESS_TOKEN_SECRET: ${{ env.ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET: ${{ env.REFRESH_TOKEN_SECRET }}
+          PAYMENT_WEBHOOK_SECRET: ${{ env.PAYMENT_WEBHOOK_SECRET }}
         run: bash scripts/validate-production-env.sh
 
       - name: Backend install
