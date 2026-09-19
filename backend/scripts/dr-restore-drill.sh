@@ -19,6 +19,7 @@ DIAGNOSTIC="${DRILL_DIAGNOSTIC_FILE:-docs/audit/evidence/dr-restore-diagnostics.
 mkdir -p "$(dirname "$DIAGNOSTIC")"
 : > "$DIAGNOSTIC"
 STAGE="initialization"
+LOCK_PID=""
 
 write_failure_evidence() {
   rc="$?"
@@ -31,11 +32,41 @@ write_failure_evidence() {
       echo "Diagnostic file: $DIAGNOSTIC"
     } > "$EVIDENCE"
   fi
+  if [ -n "$LOCK_PID" ]; then
+    kill "$LOCK_PID" 2>/dev/null || true
+    wait "$LOCK_PID" 2>/dev/null || true
+  fi
   rm -f "$DUMP"
   exit "$rc"
 }
 trap write_failure_evidence EXIT
 
+STAGE="target-lock"
+LOCK_LOG="$WORK_DIR/dr-restore-lock.log"
+LOCK_SQL="SELECT pg_advisory_lock(hashtext('HOPE_STAGING_DR_RESTORE'), hashtext('DRILL_TARGET')); SELECT 'HOPE_DR_LOCK_ACQUIRED'; SELECT pg_sleep(3600);"
+psql "$DRILL_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "$LOCK_SQL" >"$LOCK_LOG" 2>&1 &
+LOCK_PID="$!"
+LOCK_ACQUIRED=false
+for _ in $(seq 1 30); do
+  if grep -q 'HOPE_DR_LOCK_ACQUIRED' "$LOCK_LOG" 2>/dev/null; then
+    LOCK_ACQUIRED=true
+    break
+  fi
+  if ! kill -0 "$LOCK_PID" 2>/dev/null; then
+    echo 'Failed to establish the isolated DR target advisory lock.' >&2
+    cat "$LOCK_LOG" >&2 || true
+    exit 1
+  fi
+  sleep 1
+done
+if [ "$LOCK_ACQUIRED" != "true" ]; then
+  echo 'Timed out waiting for the isolated DR target advisory lock.' >&2
+  cat "$LOCK_LOG" >&2 || true
+  exit 1
+fi
+echo 'DR target advisory lock acquired; concurrent restore attempts are serialized.'
+
+STAGE="backup"
 START_EPOCH="$(date +%s)"
 START_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 STAGE="backup"
