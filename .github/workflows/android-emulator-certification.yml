@@ -10,7 +10,6 @@ concurrency:
   group: hope-android-emulator-certification-${{ github.ref }}
   cancel-in-progress: true
 
-# # Android emulator certification — network recovery after remount
 permissions:
   contents: read
 
@@ -72,8 +71,8 @@ jobs:
           cores: 4
           ram-size: 4096M
           emulator-boot-timeout: 1200
-          # Explicit public IPv4 DNS; avoid guest filesystem mutation and remount cycles.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -netdelay none -netspeed full -dns-server 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1
+          # Let the emulator auto-discover the runner DNS; Android's official emulator networking maps host DNS to 10.0.2.3+ aliases.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -netdelay none -netspeed full
           disable-animations: true
           disable-spellchecker: true
           force-avd-creation: true
@@ -109,5 +108,4 @@ jobs:
           path: |
             docs/audit/evidence/android-emulator-certification.json
             docs/audit/android-emulator/**
-
           if-no-files-found: warn
