@@ -1,9 +1,9 @@
-name: HOPE Android Emulator Certification (isolated)
+name: HOPE Android Emulator Certification (legacy emulator 36.4.10 experiment)
 
 on:
   push:
     branches:
-      - chore/android-emulator-cert-2026-09-19
+      - chore/android-emulator-cert-emulator36410-2026-09-19
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   android-emulator-certification:
-    name: Android emulator certification
+    name: Android emulator certification (legacy emulator 36.4.10)
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -32,6 +32,18 @@ jobs:
           flutter-version: '3.47.2'
           channel: stable
           cache: true
+
+      - name: Enable KVM group perms
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm 2>&1 || true
+          groups
+          id
+          test -e /dev/kvm && echo "KVM device present" || echo "KVM device unavailable; emulator may fall back to software acceleration"
 
       - name: Install adb for runtime preflight
         shell: bash
@@ -70,18 +82,22 @@ jobs:
           profile: pixel_2
           cores: 4
           ram-size: 4096M
+          emulator-build: '15004761'
           emulator-boot-timeout: 1200
-          # GitHub-hosted runners have a known emulator networking failure mode where wlan0
-          # remains NO-CARRIER / no default route. The proven mitigation is explicit IPv4
-          # DNS + -netfast + -no-metrics. No guest filesystem mutation or remount is used.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics -feature -WiFiPacketStream -feature -VirtioWifi
+          # Experiment: pin Android Emulator 36.4.10 (build 15004761), before the
+          # 36.5.x Wi-FiPacketStream networking changes. Keep the known safe
+          # network flags, but do not use the newer feature toggles.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics
           disable-animations: true
           disable-spellchecker: true
           force-avd-creation: true
           script: |
             set -eu
             bash tools/android-staging-network-preflight.sh
-            flutter test --no-pub integration_test/runtime/app_smoke_test.dart               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING"               --dart-define=CI_DEVICE_INTEGRATION=true               --dart-define=HOPE_ENV=staging
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
+              --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
+              --dart-define=CI_DEVICE_INTEGRATION=true \
+              --dart-define=HOPE_ENV=staging
 
       - name: Emit Android certification evidence
         if: ${{ always() }}
@@ -95,7 +111,9 @@ jobs:
             "run_id": "${{ github.run_id }}",
             "ref": "${{ github.ref_name }}",
             "sha": "${{ github.sha }}",
-            "result": "${{ job.status }}"
+            "result": "${{ job.status }}",
+            "emulator_build": "15004761",
+            "emulator_version": "36.4.10"
           }
           EOF
 
@@ -109,4 +127,5 @@ jobs:
             docs/audit/android-emulator/**
           if-no-files-found: warn
 
-# CI note: API 35 networking is tested with legacy Wi-Fi packet-stream mode to isolate netsim regressions.
+# Experiment note: API 35 on legacy Android Emulator 36.4.10 is run in parallel
+# with the current 37.1.11 feature-flag experiment, without touching the active branch.
