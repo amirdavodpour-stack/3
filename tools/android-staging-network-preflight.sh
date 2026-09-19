@@ -102,29 +102,51 @@ fi
 echo "Android emulator has a usable route to staging target $TARGET_IP."
 cat "$ARTIFACT_DIR/ip-route-get.txt"
 
-DNS_OK=SKIPPED
-if adb -s "$ADB_SERIAL" shell 'command -v host' >/dev/null 2>&1; then
-  DNS_OK=false
-  for _ in $(seq 1 6); do
-    if adb -s "$ADB_SERIAL" shell "host -W 3 -t A '$HOST'" >"$ARTIFACT_DIR/dns-check.txt" 2>&1; then
-      DNS_OK=true
-      break
-    fi
-    adb -s "$ADB_SERIAL" shell cmd connectivity reevaluate >/dev/null 2>&1 || true
-    sleep 2
-  done
-
-  if [ "$DNS_OK" = "true" ]; then
-    echo "Android guest DNS resolves $HOST."
-    cat "$ARTIFACT_DIR/dns-check.txt"
-  else
-    echo "Android guest DNS probe did not resolve $HOST; continuing to the real Flutter HTTPS smoke test." >&2
-    echo "Runner-resolved IPv4s: $IPS" >&2
-    cat "$ARTIFACT_DIR/dns-check.txt" >&2 2>/dev/null || true
+DNS_OK=false
+for _ in $(seq 1 12); do
+  if adb -s "$ADB_SERIAL" shell "host -W 3 -t A '$HOST'" >"$ARTIFACT_DIR/dns-check.txt" 2>&1; then
+    DNS_OK=true
+    break
   fi
+  adb -s "$ADB_SERIAL" shell cmd connectivity reevaluate >/dev/null 2>&1 || true
+  sleep 2
+done
+
+if [ "$DNS_OK" != "true" ]; then
+  echo "Primary emulator DNS path did not resolve $HOST; attempting targeted netd resolver recovery." >&2
+
+  net_id="$(adb -s "$ADB_SERIAL" shell 'cmd connectivity get-active-network 2>/dev/null' | tr -d '\r' | grep -Eo '[0-9]+' | head -n 1 || true)"
+  if [ -z "$net_id" ]; then
+    net_id="$(adb -s "$ADB_SERIAL" shell dumpsys connectivity 2>/dev/null | grep -Eio '((Active default network|mActiveDefaultNetwork)[^0-9]*[0-9]+)' | grep -Eo '[0-9]+' | tail -n 1 | tr -d '\r' || true)"
+  fi
+
+  if [ -n "$net_id" ] && adb -s "$ADB_SERIAL" root >/tmp/hope-adb-root-dns.log 2>&1; then
+    cat /tmp/hope-adb-root-dns.log >&2 || true
+    wait_for_online_device
+    adb -s "$ADB_SERIAL" shell "ndc resolver setnetdns '$net_id' '' 8.8.8.8 8.8.4.4" >"$ARTIFACT_DIR/ndc-setnetdns.txt" 2>&1 || true
+    adb -s "$ADB_SERIAL" shell "ndc resolver flushnet '$net_id'" >"$ARTIFACT_DIR/ndc-flushnet.txt" 2>&1 || true
+    adb -s "$ADB_SERIAL" shell "cmd connectivity reevaluate" >"$ARTIFACT_DIR/connectivity-reevaluate.txt" 2>&1 || true
+    sleep 3
+    for _ in $(seq 1 12); do
+      if adb -s "$ADB_SERIAL" shell "host -W 3 -t A '$HOST'" >"$ARTIFACT_DIR/dns-check.txt" 2>&1; then
+        DNS_OK=true
+        break
+      fi
+      sleep 2
+    done
+  else
+    echo "No active network id was available for resolver recovery." >&2
+    cat /tmp/hope-adb-root-dns.log >&2 2>/dev/null || true
+  fi
+fi
+
+if [ "$DNS_OK" = "true" ]; then
+  echo "Android guest DNS resolves $HOST."
+  cat "$ARTIFACT_DIR/dns-check.txt"
 else
-  echo "Android guest does not provide the optional 'host' diagnostic; DNS validation is delegated to the real Flutter HTTPS smoke test." >&2
-  printf '%s\n' "dns_probe=skipped_host_utility_missing" >"$ARTIFACT_DIR/dns-check.txt"
+  echo "Android guest DNS did not resolve $HOST during preflight; continuing to the real Flutter HTTPS smoke test." >&2
+  echo "Runner-resolved IPv4s: $IPS" >&2
+  cat "$ARTIFACT_DIR/dns-check.txt" >&2 2>/dev/null || true
 fi
 
 exit 0
