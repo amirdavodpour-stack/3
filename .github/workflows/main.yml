@@ -18,7 +18,7 @@ jobs:
   quality:
     name: Backend and Flutter quality
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       API_BASE_URL: ${{ secrets.API_BASE_URL || secrets.API_BASE_URL_STAGING }}
       API_BASE_URL_STAGING: ${{ secrets.API_BASE_URL_STAGING }}
