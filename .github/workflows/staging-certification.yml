@@ -283,26 +283,50 @@ jobs:
           echo "Resolved $host to $ips"
           echo "ips=$ips" >> "$GITHUB_OUTPUT"
 
+      - name: Enable KVM group perms
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm 2>&1 || true
+          test -e /dev/kvm && echo "KVM device present" || echo "KVM device unavailable; emulator may fall back to software acceleration"
+
+      - name: Prepare Flutter dependencies for Android certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter pub get --enforce-lockfile
+
       - name: Android emulator certification
         id: emulator_certification
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         env:
           API_BASE_URL_STAGING: ${{ env.STAGING_BASE_URL }}
           CI_DEVICE_INTEGRATION: 'true'
+          HOPE_ENV: staging
         with:
           api-level: 35
           arch: x86_64
           target: google_apis
           profile: pixel_2
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8 -writable-system
-          # GitHub-hosted Linux can lose the emulator ADB settings service immediately after boot.
-          # The test suite does not require animation state, so keep this optional action step disabled.
-          disable-animations: false
+          cores: 4
+          ram-size: 4096M
+          emulator-boot-timeout: 1200
+          # Proven on the same GitHub-hosted runner family: explicit IPv4 DNS,
+          # -netfast and -no-metrics avoid intermittent cold-boot/network failures.
+          # No guest filesystem mutation or remount is used.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics -feature -WiFiPacketStream
+          disable-animations: true
+          disable-spellchecker: true
+          force-avd-creation: true
           script: |
+            set -eu
             export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
+            export ANDROID_CERT_ARTIFACT_DIR="docs/audit/android-emulator"
             bash tools/android-staging-network-preflight.sh
-            flutter test --no-pub integration_test/runtime/app_smoke_test.dart --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" --dart-define=CI_DEVICE_INTEGRATION=true
-
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" --dart-define=CI_DEVICE_INTEGRATION=true --dart-define=HOPE_ENV=staging
       - name: Runtime gate - device certification
         id: device_runtime_evidence
         if: ${{ always() }}
