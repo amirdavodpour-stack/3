@@ -5,7 +5,6 @@ on:
     branches:
       - feat/staging-ntfy-provider-2026-09-18
       - chore/staging-dr-recovery-2026-09-18
-      - chore/android-emulator-cert-clean-2026-09-19
   pull_request:
     branches:
       - Main
