@@ -1,0 +1,20 @@
+name: HOPE Clean Staging Full Certification
+
+on:
+  push:
+    branches:
+      - chore/android-emulator-cert-clean-2026-09-19
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hope-clean-staging-full-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  staging:
+    name: Reuse full staging certification
+    uses: ./.github/workflows/staging-certification.yml
+    secrets: inherit
