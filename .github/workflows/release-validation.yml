@@ -48,7 +48,7 @@ jobs:
       attestations: write
     env:
       BUILD_PROFILE: production
-      API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION || secrets.API_BASE_URL_STAGING }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
       ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
       REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
       PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET }}
