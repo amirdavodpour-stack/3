@@ -71,18 +71,17 @@ jobs:
           cores: 4
           ram-size: 4096M
           emulator-boot-timeout: 1200
-          # Let the emulator auto-discover the runner DNS; Android's official emulator networking maps host DNS to 10.0.2.3+ aliases.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -netdelay none -netspeed full
+          # GitHub-hosted runners have a known emulator networking failure mode where wlan0
+          # remains NO-CARRIER / no default route. The proven mitigation is explicit IPv4
+          # DNS + -netfast + -no-metrics. No guest filesystem mutation or remount is used.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics
           disable-animations: true
           disable-spellchecker: true
           force-avd-creation: true
           script: |
             set -eu
             bash tools/android-staging-network-preflight.sh
-            flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
-              --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
-              --dart-define=CI_DEVICE_INTEGRATION=true \
-              --dart-define=HOPE_ENV=staging
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING"               --dart-define=CI_DEVICE_INTEGRATION=true               --dart-define=HOPE_ENV=staging
 
       - name: Emit Android certification evidence
         if: ${{ always() }}
