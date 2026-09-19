@@ -248,3 +248,16 @@ test('release validation consumes the actual reusable staging certification outp
   assert.match(workflow, /STAGING_CERTIFICATION_ATTEMPT: \$\{\{ needs\.staging\.outputs\.certification_attempt \}\}/);
   assert.doesNotMatch(workflow, /STAGING_CERTIFICATION_STATUS: PASS/);
 });
+
+
+test('production reset bootstrap targets the same configured URL used by runtime delivery', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  assert.match(
+    workflow,
+    /RESET_WEBHOOK_URL:\s*\$\{\{\s*secrets\.RESET_TOKEN_DELIVERY_URL_PRODUCTION\s*\|\|\s*'https:\/\/oumueyftltvakimtbemj\.supabase\.co\/functions\/v1\/hope-password-reset'\s*\}\}/,
+  );
+  const block = workflow.match(/name: Provision password reset webhook receiver[\s\S]*?\n      - name: Setup Node\.js 24/)?.[0] || '';
+  assert.match(block, /RESET_WEBHOOK_URL/);
+  assert.match(block, /RESET_TOKEN_DELIVERY_SECRET_PRODUCTION/);
+  assert.match(block, /curl -fsS --retry 2/);
+});
