@@ -1,9 +1,6 @@
 name: Staging performance diagnostic
 
 on:
-  push:
-    paths:
-      - '.github/workflows/staging-perf-diagnostic.yml'
   workflow_dispatch:
 
 permissions:
