@@ -1,9 +1,10 @@
-name: HOPE Android Emulator Certification (legacy emulator 36.4.10 experiment)
+name: HOPE Android Emulator Certification (clean certification)
 
 on:
   push:
     branches:
       - chore/android-emulator-cert-emulator36410-v2-2026-09-19
+      - chore/android-emulator-cert-api34-v2-2026-09-19
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +16,7 @@ permissions:
 
 jobs:
   android-emulator-certification:
-    name: Android emulator certification (legacy emulator 36.4.10)
+    name: Android emulator certification
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -85,7 +86,6 @@ jobs:
           # GitHub-hosted runners have a known emulator networking failure mode where wlan0
           # remains NO-CARRIER / no default route. The proven mitigation is explicit IPv4
           # DNS + -netfast + -no-metrics. No guest filesystem mutation or remount is used.
-          # Legacy emulator experiment: pin 36.4.10 while retaining the latest non-destructive preflight and KVM hardening.
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics -feature -WiFiPacketStream
           disable-animations: true
           disable-spellchecker: true
@@ -121,4 +121,4 @@ jobs:
             docs/audit/android-emulator/**
           if-no-files-found: warn
 
-# legacy emulator 36.4.10 parallel experiment; main certification branch remains untouched.
+# Emulator 36.4.10 certification branch; main/release remain untouched.
