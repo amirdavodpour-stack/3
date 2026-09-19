@@ -1,0 +1,39 @@
+name: Supabase Storage contract
+
+on:
+  pull_request:
+    branches:
+      - Main
+  workflow_dispatch:
+
+concurrency:
+  group: hope-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  supabase-storage-contract:
+    name: Supabase Storage compatibility contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Backend install
+        working-directory: backend
+        run: npm ci
+
+      - name: Syntax and storage hardening contracts
+        working-directory: backend
+        run: |
+          npm run check
+          node --test tests/supabase-storage-contract.test.mjs tests/storage-hardening-contract.test.mjs

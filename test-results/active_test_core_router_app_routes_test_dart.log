@@ -1,0 +1,7 @@
+
+::group::✅ Passing tests
+✅ HopeRoutes.login pushes a real LoginPage onto the stack
+✅ HopeRoutes.jobDetail pushes a page for the given job
+::endgroup::
+
+🎉 2 tests passed.

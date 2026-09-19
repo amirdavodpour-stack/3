@@ -1,6 +1,7 @@
 import { config } from './config.js';
 import { claimOutboxEvent } from './repository.js';
 import { processOutboxEvent } from './outbox_handlers.js';
+import { processPaymentReleaseNow as processPaymentReleaseEventNow } from './targeted_release_worker.js';
 
 let stopped = false;
 let workers = [];
@@ -44,7 +45,7 @@ export function startOutboxWorker() {
   };
 }
 
-export async function processPaymentReleaseNow() { return processOne(); }
+export async function processPaymentReleaseNow(eventId) { return processPaymentReleaseEventNow(eventId); }
 export async function processPaymentCreateHoldNow() { return processOne(); }
 export async function processPaymentRefundNow() { return processOne(); }
 

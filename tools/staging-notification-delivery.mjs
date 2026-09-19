@@ -104,7 +104,10 @@ function expectStatus(res, expected, what) {
     expected,
     `${what}: expected HTTP ${expected}, got ${res.status} — ${res.text.slice(0, 400)}`,
   );
-  return res.json;
+  // HOPE HTTP responses are consistently envelope-shaped as { data }.
+  // Return the resource payload so the staging canary exercises the same
+  // contract as the existing product smoke gate.
+  return res.json?.data ?? res.json;
 }
 
 async function readMetrics(label) {
@@ -180,7 +183,7 @@ async function main() {
   const owner = expectStatus(
     await request('/auth/register', {
       method: 'POST',
-      body: { email: ownerEmail, password, fullName: 'CI Notification Owner' },
+      body: { email: ownerEmail, password, displayName: 'CI Notification Owner' },
     }),
     201,
     'register owner',
@@ -188,7 +191,7 @@ async function main() {
   const applicant = expectStatus(
     await request('/auth/register', {
       method: 'POST',
-      body: { email: applicantEmail, password, fullName: 'CI Notification Applicant' },
+      body: { email: applicantEmail, password, displayName: 'CI Notification Applicant' },
     }),
     201,
     'register applicant',
@@ -228,6 +231,7 @@ async function main() {
         kind: 'JOB',
         jobType: 'HOURLY',
         budgetType: 'RANGE',
+        duration: 3,
         budgetMin: 1_000_000,
         budgetMax: 2_000_000,
         schedule: 'FULL_TIME',
@@ -253,6 +257,7 @@ async function main() {
       body: {
         jobId: job.id,
         coverLetter: 'Automated staging-certification notification-delivery probe.',
+        resumeText: 'Automated CI notification-delivery canary resume.',
       },
     }),
     201,

@@ -1,0 +1,405 @@
+name: Staging certification
+
+on:
+  pull_request:
+    branches:
+      - Main
+  workflow_call:
+    secrets:
+      STAGING_BASE_URL:
+        required: true
+      STAGING_DATABASE_URL:
+        required: false
+      DRILL_DATABASE_URL:
+        required: false
+      STAGING_S3_ENDPOINT:
+        required: false
+      STAGING_S3_BUCKET:
+        required: false
+      STAGING_S3_REGION:
+        required: false
+      STAGING_AWS_ACCESS_KEY_ID:
+        required: false
+      STAGING_AWS_SECRET_ACCESS_KEY:
+        required: false
+      STAGING_METRICS_TOKEN:
+        required: false
+      STAGING_PRODUCT_PASSWORD:
+        required: false
+      PAYMENT_PROVIDER_TOKEN:
+        required: false
+      PAYMENT_PROVIDER_CREATE_URL:
+        required: false
+      PAYMENT_PROVIDER_RELEASE_URL:
+        required: false
+      PAYMENT_PROVIDER_REFUND_URL:
+        required: false
+      NOTIFICATION_PUSH_URL:
+        required: false
+      NOTIFICATION_EMAIL_URL:
+        required: false
+      NOTIFICATION_PROVIDER_TOKEN:
+        required: false
+  workflow_dispatch:
+
+concurrency:
+  group: hope-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  staging-certification:
+    name: Staging certification
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    outputs:
+      certification_run_id: ${{ github.run_id }}
+      certification_status: ${{ steps.certification_status.outputs.certification_status }}
+      certification_sha: ${{ steps.certification_status.outputs.certification_sha }}
+      certification_attempt: ${{ steps.certification_status.outputs.certification_attempt }}
+    env:
+      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://v2hope-production-7e9e.up.railway.app' }}
+      STAGING_PAYMENT_PROVIDER: internal
+      STAGING_PAYMENT_CURRENCY: TOMAN
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      DRILL_DATABASE_URL: ${{ secrets.DRILL_DATABASE_URL }}
+      STAGING_S3_ENDPOINT: ${{ secrets.STAGING_S3_ENDPOINT }}
+      STAGING_S3_BUCKET: ${{ secrets.STAGING_S3_BUCKET }}
+      STAGING_S3_REGION: ${{ secrets.STAGING_S3_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.STAGING_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.STAGING_AWS_SECRET_ACCESS_KEY }}
+      STAGING_METRICS_TOKEN: ${{ secrets.STAGING_METRICS_TOKEN || secrets.METRICS_TOKEN }}
+      STAGING_PRODUCT_PASSWORD: ${{ secrets.STAGING_PRODUCT_PASSWORD }}
+      PAYMENT_PROVIDER_TOKEN: ${{ secrets.PAYMENT_PROVIDER_TOKEN }}
+      PAYMENT_PROVIDER_CREATE_URL: ${{ secrets.PAYMENT_PROVIDER_CREATE_URL }}
+      PAYMENT_PROVIDER_RELEASE_URL: ${{ secrets.PAYMENT_PROVIDER_RELEASE_URL }}
+      PAYMENT_PROVIDER_REFUND_URL: ${{ secrets.PAYMENT_PROVIDER_REFUND_URL }}
+      NOTIFICATION_PUSH_URL: ${{ secrets.NOTIFICATION_PUSH_URL }}
+      NOTIFICATION_EMAIL_URL: ${{ secrets.NOTIFICATION_EMAIL_URL }}
+      NOTIFICATION_PROVIDER_TOKEN: ${{ secrets.NOTIFICATION_PROVIDER_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Install adb for runtime preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y adb
+          adb version
+
+      - name: Backend install
+        working-directory: backend
+        run: npm ci
+
+      - name: Runtime certification preflight
+        run: bash tools/runtime-certification-preflight.sh
+
+      - name: Verify Flutter lockfile
+        run: bash tools/verify-pubspec-lock-fresh.sh
+
+      - name: Staging external integration gate
+        id: provider_integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "${STAGING_BASE_URL:-}" ] || { echo 'STAGING_BASE_URL is required.' >&2; exit 1; }
+          [[ "$STAGING_BASE_URL" =~ ^https://[^[:space:]]+$ ]] || { echo 'STAGING_BASE_URL must use HTTPS and contain no whitespace.' >&2; exit 1; }
+          curl --fail --silent --show-error --retry 3 --retry-connrefused --max-time 20 "$STAGING_BASE_URL/live" >/tmp/staging-live.json
+          case "${STAGING_PAYMENT_PROVIDER:-}" in
+            internal)
+              [ "${STAGING_PAYMENT_CURRENCY:-}" = 'TOMAN' ] || { echo 'Internal staging payment mode requires PAYMENT_CURRENCY=TOMAN.' >&2; exit 1; }
+              echo 'staging payment provider: internal (no external PSP required)'
+              ;;
+            webhook)
+              node -e "const u=process.env.PAYMENT_PROVIDER_CREATE_URL;if(!u)throw new Error('PAYMENT_PROVIDER_CREATE_URL is required for webhook staging external integration');new URL(u);if(!u.startsWith('https://'))throw new Error('PAYMENT_PROVIDER_CREATE_URL must use HTTPS');console.log('payment provider endpoint configured:',new URL(u).origin)"
+              ;;
+            *)
+              echo "Unsupported STAGING_PAYMENT_PROVIDER=${STAGING_PAYMENT_PROVIDER:-unset}; expected internal or webhook." >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Staging product workflow
+        id: product_workflow
+        working-directory: backend
+        env:
+          STAGING_BASE_URL: ${{ env.STAGING_BASE_URL }}
+        run: node ../tools/staging-product-smoke.mjs
+
+      - name: Notification delivery
+        id: notification_delivery
+        if: ${{ env.NOTIFICATION_PROVIDER_TOKEN != '' && (env.NOTIFICATION_PUSH_URL != '' || env.NOTIFICATION_EMAIL_URL != '') }}
+        working-directory: backend
+        shell: bash
+        run: |
+          set -o pipefail
+          node ../tools/staging-notification-delivery.mjs 2>&1 | tee "$RUNNER_TEMP/staging-notification-delivery.log"
+
+      - name: Postgres runtime probe
+        id: postgres_runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-connrefused --max-time 20 "$STAGING_BASE_URL/ready" >/tmp/staging-ready.json
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const body = JSON.parse(fs.readFileSync('/tmp/staging-ready.json', 'utf8'));
+          const ready = body?.data?.ready === true || body?.ready === true;
+          const databaseStatus = body?.data?.database?.status ?? body?.database?.status;
+          const database = body?.data?.database ?? body?.database;
+          if (!ready || databaseStatus !== 'ok') {
+            throw new Error(`Staging readiness did not confirm PostgreSQL health: ${JSON.stringify(body)}`);
+          }
+          console.log(JSON.stringify({ status: 'PASS', database }));
+          NODE
+
+      - name: Runtime gate - postgres
+        id: postgres_runtime_evidence
+        if: ${{ always() }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.postgres_runtime.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate postgres_runtime \
+            --command 'GET /ready with database health assertion' \
+            --result "$GATE_RESULT"
+
+      - name: S3 runtime probe
+        id: s3_runtime
+        if: ${{ env.STAGING_S3_ENDPOINT != '' && env.STAGING_S3_BUCKET != '' && env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
+        working-directory: backend
+        env:
+          STAGING_S3_ENDPOINT: ${{ env.STAGING_S3_ENDPOINT }}
+          S3_ENDPOINT: ${{ env.STAGING_S3_ENDPOINT }}
+          S3_BUCKET: ${{ env.STAGING_S3_BUCKET }}
+          S3_REGION: ${{ env.STAGING_S3_REGION }}
+          S3_REQUIRE_HTTPS: '0'
+          S3_INTEGRATION: '1'
+          S3_REQUIRE_LIVE: '1'
+          S3_FORCE_PATH_STYLE: 'true'
+        run: |
+          set -euo pipefail
+          node tests/s3-integration.test.mjs
+
+      - name: Runtime gate - s3
+        id: s3_runtime_evidence
+        if: ${{ always() && steps.s3_runtime.outcome != 'skipped' }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.s3_runtime.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate s3_runtime \
+            --command 'S3_INTEGRATION=1 node tests/s3-integration.test.mjs' \
+            --result "$GATE_RESULT"
+
+      - name: Staging performance smoke
+        id: perf_gate
+        working-directory: backend
+        env:
+          PERF_BASE_URL: ${{ env.STAGING_BASE_URL }}
+          PERF_REQUESTS: '500'
+          PERF_CONCURRENCY: '50'
+          PERF_P95_BUDGET_MS: '500'
+          PERF_P99_BUDGET_MS: '1000'
+          PERF_MAX_5XX_RATE: '0.01'
+        run: node ../tools/perf-smoke.mjs
+
+      - name: Runtime gate - performance
+        id: perf_runtime_evidence
+        if: ${{ always() && steps.perf_gate.outcome != 'skipped' }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.perf_gate.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate perf_run \
+            --command 'PERF_REQUESTS=500 PERF_CONCURRENCY=50 PERF_P95_BUDGET_MS=500 PERF_P99_BUDGET_MS=1000 PERF_MAX_5XX_RATE=0.01 node ../tools/perf-smoke.mjs' \
+            --result "$GATE_RESULT" \
+            --artifact perf-smoke.json
+
+      - name: Android quality gates
+        id: android_quality
+        env:
+          API_BASE_URL: ${{ env.STAGING_BASE_URL }}
+          BUILD_PROFILE: pilot
+        run: bash tools/build_apk_debug.sh
+
+      - name: DR restore drill
+        id: dr_drill
+        if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
+        shell: bash
+        env:
+          SOURCE_DATABASE_URL: ${{ env.DATABASE_URL }}
+          DRILL_DATABASE_URL: ${{ env.DRILL_DATABASE_URL }}
+          RTO_TARGET_SECONDS: '900'
+          DRILL_EVIDENCE_FILE: ${{ runner.temp }}/hope-dr-restore-evidence.txt
+        run: |
+          set -euo pipefail
+          bash backend/scripts/dr-restore-drill.sh
+
+      - name: Runtime gate - dr restore
+        id: dr_restore_evidence
+        if: ${{ always() && steps.dr_drill.outcome != 'skipped' }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.dr_drill.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate dr_restore \
+            --command 'bash backend/scripts/dr-restore-drill.sh' \
+            --result "$GATE_RESULT" \
+            --artifact "$RUNNER_TEMP/hope-dr-restore-evidence.txt"
+
+      - name: Resolve staging host for Android guest fallback
+        id: resolve_staging_host
+        shell: bash
+        env:
+          STAGING_BASE_URL: ${{ env.STAGING_BASE_URL }}
+        run: |
+          set -euo pipefail
+          host="$(node -e "console.log(new URL(process.env.STAGING_BASE_URL).hostname)")"
+          ips="$(getent ahostsv4 "$host" | awk '{print $1}' | sort -u | paste -sd, -)"
+          test -n "$ips" || { echo "Runner DNS could not resolve $host." >&2; exit 1; }
+          echo "Resolved $host to $ips"
+          echo "ips=$ips" >> "$GITHUB_OUTPUT"
+
+      - name: Enable KVM group perms
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm 2>&1 || true
+          test -e /dev/kvm && echo "KVM device present" || echo "KVM device unavailable; emulator may fall back to software acceleration"
+
+      - name: Prepare Flutter dependencies for Android certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter pub get --enforce-lockfile
+
+      - name: Android emulator certification
+        id: emulator_certification
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          API_BASE_URL_STAGING: ${{ env.STAGING_BASE_URL }}
+          CI_DEVICE_INTEGRATION: 'true'
+          HOPE_ENV: staging
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          cores: 4
+          ram-size: 4096M
+          emulator-boot-timeout: 1200
+          # Proven on the same GitHub-hosted runner family: explicit IPv4 DNS,
+          # -netfast and -no-metrics avoid intermittent cold-boot/network failures.
+          # No guest filesystem mutation or remount is used.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -dns-server 8.8.8.8 -netfast -no-metrics -feature -WiFiPacketStream
+          disable-animations: true
+          disable-spellchecker: true
+          force-avd-creation: true
+          script: |
+            set -eu
+            export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
+            export ANDROID_CERT_ARTIFACT_DIR="docs/audit/android-emulator"
+            bash tools/android-staging-network-preflight.sh
+            flutter test --no-pub integration_test/runtime/app_smoke_test.dart --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" --dart-define=CI_DEVICE_INTEGRATION=true --dart-define=HOPE_ENV=staging
+      - name: Runtime gate - device certification
+        id: device_runtime_evidence
+        if: ${{ always() }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.emulator_certification.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate device_certification \
+            --command 'flutter test --no-pub integration_test/runtime/app_smoke_test.dart' \
+            --result "$GATE_RESULT"
+
+      - name: Runtime gate - provider runtime
+        id: provider_runtime_evidence
+        if: ${{ always() }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ (steps.product_workflow.outcome == 'success' && (steps.notification_delivery.outcome == 'success' || steps.notification_delivery.outcome == 'skipped')) && 'pass' || 'fail' }}
+        run: |
+          if [ "${{ steps.notification_delivery.conclusion }}" != 'skipped' ]; then
+            CI=true node tools/write-evidence.mjs \
+              --gate provider_runtime \
+              --command 'staging-product-smoke + staging-notification-delivery' \
+              --result "$GATE_RESULT" \
+              --note 'Final human receipt is attested by the provider, not by this run.'
+          fi
+
+      - name: Staging operational gate
+        id: operational_gate
+        if: ${{ always() && steps.provider_integration.outcome == 'success' && (steps.notification_delivery.outcome == 'success' || steps.notification_delivery.outcome == 'skipped') && (steps.dr_drill.outcome == 'success' || steps.dr_drill.outcome == 'skipped') }}
+        working-directory: backend
+        env:
+          STAGING_BASE_URL: ${{ env.STAGING_BASE_URL }}
+          STAGING_METRICS_TOKEN: ${{ env.STAGING_METRICS_TOKEN }}
+        run: node ../tools/staging-operational-gate.mjs
+
+      - name: Emit certification status
+        id: certification_status
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=PASS
+          for result in \
+            "${{ steps.provider_integration.outcome }}" \
+            "${{ steps.product_workflow.outcome }}" \
+            "${{ steps.notification_delivery.outcome }}" \
+            "${{ steps.postgres_runtime.outcome }}" \
+            "${{ steps.s3_runtime.outcome }}" \
+            "${{ steps.perf_gate.outcome }}" \
+            "${{ steps.android_quality.outcome }}" \
+            "${{ steps.dr_drill.outcome }}" \
+            "${{ steps.emulator_certification.outcome }}" \
+            "${{ steps.operational_gate.outcome }}"; do
+            case "$result" in
+              success|skipped) ;;
+              *) status=BLOCKED ;;
+            esac
+          done
+          echo "certification_status=$status" >> "$GITHUB_OUTPUT"
+          echo "certification_run_id=${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "certification_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "certification_attempt=${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          printf 'certification_status=%s\ncertification_run_id=%s\ncertification_sha=%s\ncertification_attempt=%s\n' "$status" "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_RUN_ATTEMPT"
+
+      - name: Upload staging certification evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-staging-certification-evidence-${{ github.run_id }}
+          path: |
+            docs/audit/evidence/*.json
+            backend/perf-smoke.json
+            ${{ runner.temp }}/hope-dr-restore-evidence.txt
+            ${{ runner.temp }}/staging-notification-delivery.log
+          if-no-files-found: warn
