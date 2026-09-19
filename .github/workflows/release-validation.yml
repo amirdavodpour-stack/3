@@ -267,6 +267,7 @@ jobs:
             release-manifest.json
             backend/sbom.json
             docs/audit/evidence/android_build.json
+            backend/check-all-summary.json
           if-no-files-found: warn
 
       - name: Cleanup production keystore

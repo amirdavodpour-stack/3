@@ -165,12 +165,12 @@ test('Runtime gates are outcome-derived and honest on failure', () => {
   const release = fs.readFileSync(path.join(workflowDir, 'production-release.yml'), 'utf8');
 
   // the observed steps must be identifiable
-  assert.match(main, /- name: Flutter static and test gate\n\s+id: flutter_gate/);
+  assert.match(main, /- name: Flutter analyze gate\n\s+id: flutter_analyze_gate/);\n  assert.match(main, /- name: Flutter test gate\n\s+id: flutter_test_gate/);
   assert.match(release, /- name: Build signed production APK\n\s+id: release_build/);
   assert.match(release, /- name: Verify signed production APK\n\s+id: apk_verify/);
 
   // the gate result must be derived from those steps
-  assert.match(main, /GATE_RESULT: \$\{\{ steps\.flutter_gate\.outcome == 'success' && 'pass' \|\| 'fail' \}\}/);
+  assert.match(main, /GATE_RESULT: \$\{\{ \(steps\.flutter_analyze_gate\.outcome == 'success' && steps\.flutter_test_gate\.outcome == 'success'\) && 'pass' \|\| 'fail' \}\}/);
   assert.match(release, /GATE_RESULT: \$\{\{ steps\.apk_verify\.outcome == 'success' && 'pass' \|\| 'fail' \}\}/);
 
   // and the converted evidence steps must still run when the observed command

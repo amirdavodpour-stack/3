@@ -36,7 +36,7 @@ test('CI never contains the placeholder API host and requires a real HTTPS secre
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
   assert.doesNotMatch(workflow, /api\.hope\.example\.invalid/);
   assert.match(workflow, /secrets\.API_BASE_URL/);
-  assert.match(workflow, /API_BASE_URL secret is required/);
+  assert.match(workflow, /API_BASE_URL(?: or API_BASE_URL_STAGING)? secret is required/);
   assert.match(workflow, /API_BASE_URL(?:_[A-Z]+)? must use HTTPS/);
   assert.match(workflow, /contains whitespace or is malformed/);
   assert.match(workflow, /\^https:\/\/\[\^\[:space:\]\]\+\$/);
@@ -291,8 +291,20 @@ test('CI collects certification failures before enforcing aggregate gates', () =
   assert.match(payment, /name: Evaluate payment certification/);
   assert.match(payment, /name: Enforce payment certification/);
   for (const id of ['provider_integration','product_workflow','postgres_runtime','s3_runtime','perf_gate','android_quality','dr_drill','emulator_certification','operational_gate']) {
-    assert.match(staging, new RegExp('id: ' + id + '[\\\\s\\\\S]*?continue-on-error: true'));
+    assert.match(staging, new RegExp('id: ' + id + '[\\s\\S]*?continue-on-error: true'));
   }
   assert.match(staging, /name: Enforce staging certification/);
   assert.match(staging, /\\[ "\\$result" = "success" \\] \\|\\| status=BLOCKED/);
+});
+
+
+test('production check:all collects every suite and aggregates failures', () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'backend/package.json'), 'utf8'));
+  assert.equal(packageJson.scripts?.['check:all'], 'node tools/check-all-collect.mjs');
+  const runner = fs.readFileSync(path.join(root, 'backend/tools/check-all-collect.mjs'), 'utf8');
+  assert.match(runner, /Collect-all mode/);
+  assert.match(runner, /for \\(const \\[command, timeoutMs\\] of steps\\)/);
+  assert.match(runner, /summaries\.push\(result\)/);
+  assert.match(runner, /process\.exit\(1\)/);
+  assert.match(runner, /check-all-summary\.json/);
 });

@@ -25,7 +25,7 @@
     "test:backup": "NODE_ENV=test node --test tests/backup-contract.test.mjs tests/operations-contract.test.mjs",
     "sbom": "node tools/generate-sbom.mjs",
     "security:audit": "npm audit --audit-level=high",
-    "check:all": "npm run check && npm run test:fast && npm run test:contract && npm run test:backup && npm run test:staging-contract && npm run test:e2e && npm run test:provider && npm run test:failure-injection && npm run test:postgres && NODE_ENV=test node --test tests/sbom-contract.test.mjs tests/property-workflow.test.mjs tests/property-security.test.mjs tests/e2e-state-guard.test.mjs tests/wave10-release-security.test.mjs && npm run check:toolchain-contract",
+    "check:all": "node tools/check-all-collect.mjs",
     "test:product": "NODE_ENV=test node --test tests/e2e-product-requirements.test.mjs tests/version-contract.test.mjs tests/mobile-contract.test.mjs",
     "pretest:offline": "node tools/guard-legacy-test-env.mjs test:offline",
     "test:offline": "NODE_ENV=test node tools/run-test-files-isolated.mjs",
