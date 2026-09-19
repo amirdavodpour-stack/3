@@ -16,6 +16,8 @@ mkdir -p "$WORK_DIR"
 DUMP="$WORK_DIR/restore-drill.dump"
 EVIDENCE="${DRILL_EVIDENCE_FILE:-$WORK_DIR/restore-evidence.txt}"
 DIAGNOSTIC="${DRILL_DIAGNOSTIC_FILE:-docs/audit/evidence/dr-restore-diagnostics.txt}"
+mkdir -p "$(dirname "$DIAGNOSTIC")"
+: > "$DIAGNOSTIC"
 STAGE="initialization"
 
 write_failure_evidence() {
@@ -64,6 +66,7 @@ pg_restore --list "$DUMP" >"$WORK_DIR/restore-toc.txt" 2>&1 || TOC_RC=$?
   echo '== Drill job_applications before restore =='
   psql "$DRILL_DATABASE_URL" -Atqc "select to_regclass('public.job_applications');" || true
 } > "$DIAGNOSTIC"
+cat "$DIAGNOSTIC" >&2 || true
 
 if [ "$TOC_RC" -ne 0 ]; then
   echo "pg_restore --list failed with rc=$TOC_RC; archive evidence captured in $DIAGNOSTIC." >&2
