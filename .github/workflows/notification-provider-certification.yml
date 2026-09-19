@@ -1,0 +1,39 @@
+name: HOPE Notification Provider Certification
+
+on:
+  push:
+    branches:
+      - chore/notification-cert-2026-09-19
+  workflow_dispatch:
+
+concurrency:
+  group: hope-notification-provider-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  notification:
+    name: Notification provider runtime gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
+      STAGING_METRICS_TOKEN: ${{ secrets.STAGING_METRICS_TOKEN || secrets.METRICS_TOKEN }}
+      NOTIFICATION_PUSH_URL: ${{ secrets.NOTIFICATION_PUSH_URL }}
+      NOTIFICATION_EMAIL_URL: ${{ secrets.NOTIFICATION_EMAIL_URL }}
+      NOTIFICATION_PROVIDER_TOKEN: ${{ secrets.NOTIFICATION_PROVIDER_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Notification provider runtime gate
+        run: node tools/staging-notification-delivery.mjs
