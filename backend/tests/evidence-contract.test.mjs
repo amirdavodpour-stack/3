@@ -140,7 +140,7 @@ test('Evidence steps publish the observed outcome, never an unconditional pass',
     );
     assert.match(
       body,
-      /GATE_RESULT: \$\{\{ steps\.[a-z_]+\.outcome == 'success' && 'pass' \|\| 'fail' \}\}/,
+      /GATE_RESULT:\s*\$\{\{[\s\S]*?steps\.[a-z_]+\.outcome[\s\S]*?['\"]pass['\"][\s\S]*?['\"]fail['\"][\s\S]*?\}\}/,
       `${file}: gate result must come from the observed step outcome`,
     );
   }

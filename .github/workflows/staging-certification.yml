@@ -5,6 +5,19 @@ on:
     branches:
       - release/v2hope-hardening-2026-09-19
   workflow_call:
+    outputs:
+      certification_run_id:
+        description: 'Run ID of this staging certification.'
+        value: ${{ jobs.staging-certification.outputs.certification_run_id }}
+      certification_status:
+        description: 'Final staging certification status.'
+        value: ${{ jobs.staging-certification.outputs.certification_status }}
+      certification_sha:
+        description: 'Commit SHA certified by this staging run.'
+        value: ${{ jobs.staging-certification.outputs.certification_sha }}
+      certification_attempt:
+        description: 'Run attempt used for this certification.'
+        value: ${{ jobs.staging-certification.outputs.certification_attempt }}
     secrets:
       STAGING_BASE_URL:
         required: false
@@ -74,7 +87,7 @@ jobs:
       certification_sha: ${{ steps.certification_status.outputs.certification_sha }}
       certification_attempt: ${{ steps.certification_status.outputs.certification_attempt }}
     env:
-      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
+      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING }}
       STAGING_PAYMENT_PROVIDER: internal
       STAGING_PAYMENT_CURRENCY: TOMAN
       DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL || secrets.SOURCE_DATABASE_URL }}
@@ -583,18 +596,16 @@ jobs:
 
       - name: Runtime gate - provider runtime
         id: provider_runtime_evidence
-        if: ${{ always() }}
+        if: ${{ always() && steps.notification_delivery.conclusion != 'skipped' }}
         working-directory: backend
         env:
           GATE_RESULT: ${{ (steps.product_workflow.outcome == 'success' && (steps.notification_delivery.outcome == 'success' || steps.notification_delivery.outcome == 'skipped')) && 'pass' || 'fail' }}
         run: |
-          if [ "${{ steps.notification_delivery.conclusion }}" != 'skipped' ]; then
-            CI=true node tools/write-evidence.mjs \
-              --gate provider_runtime \
-              --command 'staging-product-smoke + staging-notification-delivery' \
-              --result "$GATE_RESULT" \
-              --note 'Final human receipt is attested by the provider, not by this run.'
-          fi
+          CI=true node tools/write-evidence.mjs \
+            --gate provider_runtime \
+            --command 'staging-product-smoke + staging-notification-delivery' \
+            --result "$GATE_RESULT" \
+            --note 'Final human receipt is attested by the provider, not by this run.'
 
       - name: Staging operational gate
         id: operational_gate

@@ -3,14 +3,19 @@ import { HttpError } from '../api/http_error.js';
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9._~:-]+$/;
 
 export function validateIdempotencyPair({ headerKey = '', bodyKey = '', maxLength }) {
-  const header = String(headerKey || '').trim();
-  const body = String(bodyKey || '').trim();
-  if (body && body.length > maxLength) {
-    throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key is too long');
-  }
-  if (body && !IDEMPOTENCY_KEY_RE.test(body)) {
-    throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key contains unsupported characters');
-  }
+  const normalize = (value) => String(value || '').trim();
+  const validate = (value) => {
+    if (!value) return '';
+    if (value.length > maxLength) {
+      throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key is too long');
+    }
+    if (!IDEMPOTENCY_KEY_RE.test(value)) {
+      throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key contains unsupported characters');
+    }
+    return value;
+  };
+  const header = validate(normalize(headerKey));
+  const body = validate(normalize(bodyKey));
   if (header && body && header !== body) {
     throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Header and body idempotency keys must match');
   }

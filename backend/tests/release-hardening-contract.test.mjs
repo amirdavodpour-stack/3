@@ -37,7 +37,7 @@ test('CI never contains the placeholder API host and requires a real HTTPS secre
   assert.doesNotMatch(workflow, /api\.hope\.example\.invalid/);
   assert.match(workflow, /secrets\.API_BASE_URL/);
   assert.match(workflow, /API_BASE_URL secret is required/);
-  assert.match(workflow, /API_BASE_URL must use HTTPS/);
+  assert.match(workflow, /API_BASE_URL(?:_[A-Z]+)? must use HTTPS/);
   assert.match(workflow, /contains whitespace or is malformed/);
   assert.match(workflow, /\^https:\/\/\[\^\[:space:\]\]\+\$/);
 });
@@ -159,9 +159,10 @@ test('staging certification requires a real external staging base URL and does n
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/staging-certification.yml'), 'utf8');
   assert.match(workflow, /secrets:\s*\n\s*STAGING_BASE_URL:/);
   assert.doesNotMatch(workflow, /PERF_BASE_URL: http:\/\/127\.0\.0\.1/);
-  assert.doesNotMatch(workflow, /STAGING_BASE_URL: http:\/\/127\.0\.0\.1/);
+  assert.doesNotMatch(workflow, /STAGING_BASE_URL:\s*http:\/\/127\.0\.0\.1/);
+  assert.doesNotMatch(workflow, /STAGING_BASE_URL:\s*\$\{\{[\s\S]*v2hope-production-7e9e\.up\.railway\.app/);
   assert.match(workflow, /PERF_BASE_URL: \$\{\{ env\.STAGING_BASE_URL \}\}/);
-  assert.match(workflow, /STAGING_BASE_URL: \$\{\{ secrets\.STAGING_BASE_URL \}\}/);
+  assert.match(workflow, /STAGING_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
 });
 
 
