@@ -272,5 +272,6 @@ jobs:
           path: |
             backend/docs/audit/evidence/*.json
             docs/audit/evidence/*.json
+            docs/audit/evidence/dr-restore-diagnostics.txt
             /home/runner/work/_temp/hope-dr-restore-evidence.txt
           if-no-files-found: warn
