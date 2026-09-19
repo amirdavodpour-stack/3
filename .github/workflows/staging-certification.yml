@@ -549,11 +549,24 @@ jobs:
           cores: 4
           ram-size: 4096M
           emulator-boot-timeout: 1200
+          # Pin the emulator system-image build already proven green in the dedicated
+          # API 35 certification run; this avoids runner/image drift during release.
+          emulator-build: '15004761'
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 1.1.1.1,8.8.8.8 -writable-system
           # Keep the guest stable on GitHub-hosted Linux; animations are not required by the runtime smoke suite.
           disable-animations: true
           script: |
             export STAGING_RESOLVED_IPS="${{ steps.resolve_staging_host.outputs.ips }}"
+            # The emulator action can occasionally leave the host adb daemon in a
+            # transient state. Refresh the daemon before the real device smoke test.
+            adb kill-server >/dev/null 2>&1 || true
+            adb start-server
+            for _ in $(seq 1 30); do
+              if adb -s "${ANDROID_SERIAL:-emulator-5554}" get-state 2>/dev/null | grep -qx device; then
+                break
+              fi
+              sleep 2
+            done
             bash tools/android-staging-network-preflight.sh
             flutter test --no-pub integration_test/runtime/app_smoke_test.dart \
               --dart-define=API_BASE_URL="$API_BASE_URL_STAGING" \
