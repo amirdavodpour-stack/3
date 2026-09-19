@@ -39,7 +39,7 @@ jobs:
       - quality
       - staging
       - payment
-    if: ${{ needs.quality.result == 'success' && needs.staging.result == 'success' && needs.payment.result == 'success' }}
+    if: ${{ needs.quality.result == 'success' && needs.staging.result == 'success' && needs.staging.outputs.certification_status == 'PASS' && needs.staging.outputs.certification_sha == github.sha && needs.payment.result == 'success' }}
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -67,10 +67,10 @@ jobs:
       S3_REGION: ${{ secrets.S3_REGION_PRODUCTION }}
       S3_ENDPOINT: ${{ secrets.S3_ENDPOINT_PRODUCTION }}
       S3_FORCE_PATH_STYLE: ${{ secrets.S3_FORCE_PATH_STYLE_PRODUCTION || 'false' }}
-      STAGING_CERTIFICATION_STATUS: PASS
-      STAGING_CERTIFICATION_RUN_ID: ${{ github.run_id }}
-      STAGING_CERTIFICATION_SHA: ${{ github.sha }}
-      STAGING_CERTIFICATION_ATTEMPT: "1"
+      STAGING_CERTIFICATION_STATUS: ${{ needs.staging.outputs.certification_status }}
+      STAGING_CERTIFICATION_RUN_ID: ${{ needs.staging.outputs.certification_run_id }}
+      STAGING_CERTIFICATION_SHA: ${{ needs.staging.outputs.certification_sha }}
+      STAGING_CERTIFICATION_ATTEMPT: ${{ needs.staging.outputs.certification_attempt }}
       ANDROID_RELEASE_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -237,10 +237,10 @@ jobs:
           APK_PATH: ${{ steps.artifact_meta.outputs.apk }}
           BACKEND_IMAGE_ID: ${{ steps.backend_image.outputs.id }}
           BACKEND_IMAGE_REF: ${{ steps.backend_image.outputs.ref }}
-          STAGING_CERTIFICATION_STATUS: PASS
-          STAGING_CERTIFICATION_RUN_ID: ${{ github.run_id }}
-          STAGING_CERTIFICATION_SHA: ${{ github.sha }}
-          STAGING_CERTIFICATION_ATTEMPT: "1"
+          STAGING_CERTIFICATION_STATUS: ${{ needs.staging.outputs.certification_status }}
+          STAGING_CERTIFICATION_RUN_ID: ${{ needs.staging.outputs.certification_run_id }}
+          STAGING_CERTIFICATION_SHA: ${{ needs.staging.outputs.certification_sha }}
+          STAGING_CERTIFICATION_ATTEMPT: ${{ needs.staging.outputs.certification_attempt }}
           RELEASE_MANIFEST_PATH: ${{ github.workspace }}/release-manifest.json
         run: npm run release:manifest
 
