@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - chore/staging-dr-recovery-2026-09-18
+      - chore/dr-restore-diagnostic-2026-09-19
 
 permissions:
   contents: read
