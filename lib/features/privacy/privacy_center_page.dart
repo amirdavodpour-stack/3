@@ -51,8 +51,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
   Future<void> _copyExport() async {
     final data = _export;
     if (data == null) return;
-    // Runtime JSON payload prevents this constructor from being const.
-    // ignore: prefer_const_constructors
+    // Runtime JSON payload cannot be a const expression.
     await Clipboard.setData(ClipboardData(
       text: JsonEncoder.withIndent('  ').convert(data),
     ));
