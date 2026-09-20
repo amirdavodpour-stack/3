@@ -11,6 +11,7 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/features/home/home_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -102,5 +103,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('ورود'), findsOneWidget);
     expect(find.text('ساخت حساب'), findsOneWidget);
+  });
+
+  testWidgets('desktop home uses the premium navigation rail',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PremiumNavigationRail), findsOneWidget);
+
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
   });
 }
