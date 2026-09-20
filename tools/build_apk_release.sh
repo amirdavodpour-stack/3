@@ -51,6 +51,25 @@ if [ "$POSTHOG_ENABLED" = "true" ]; then
 fi
 
 chmod +x android/gradlew
+
+# GitHub-hosted runners have the Android SDK installed, but the SDK's
+# build-tools/cmdline-tools binaries are not guaranteed to be on PATH.
+# Resolve the newest installed tool locations explicitly so post-build
+# metadata/signature verification is independent of runner PATH layout.
+ANDROID_SDK_PATH="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+if [[ -n "$ANDROID_SDK_PATH" && -d "$ANDROID_SDK_PATH" ]]; then
+  BUILD_TOOLS_DIR=""
+  CMDLINE_TOOLS_DIR=""
+  if [[ -d "$ANDROID_SDK_PATH/build-tools" ]]; then
+    BUILD_TOOLS_DIR="$(find "$ANDROID_SDK_PATH/build-tools" -mindepth 1 -maxdepth 1 -type d -print | sort -V | tail -1)"
+  fi
+  if [[ -d "$ANDROID_SDK_PATH/cmdline-tools" ]]; then
+    CMDLINE_TOOLS_DIR="$(find "$ANDROID_SDK_PATH/cmdline-tools" -mindepth 1 -maxdepth 1 -type d -print | sort -V | tail -1)"
+  fi
+  [[ -n "$BUILD_TOOLS_DIR" ]] && export PATH="$BUILD_TOOLS_DIR:$PATH"
+  [[ -n "$CMDLINE_TOOLS_DIR" && -d "$CMDLINE_TOOLS_DIR/bin" ]] && export PATH="$CMDLINE_TOOLS_DIR/bin:$PATH"
+fi
+
 export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/.gradle-release}"
 export GRADLE_OPTS="${GRADLE_OPTS:--Dorg.gradle.daemon=false -Dorg.gradle.caching=false -Dorg.gradle.configuration-cache=false -Dorg.gradle.vfs.watch=false -Dorg.gradle.parallel=false}"
 bash tools/android-build-preflight.sh
