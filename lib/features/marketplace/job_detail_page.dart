@@ -597,18 +597,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image.asset(
-                            'assets/images/hope_marketplace_hero.png',
-                            fit: BoxFit.cover,
-                          ),
                           DecoratedBox(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
+                                begin: Alignment.topRight,
+                                end: Alignment.bottomLeft,
                                 colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: .65),
+                                  Theme.of(context).colorScheme.primary,
+                                  Theme.of(context).colorScheme.secondary,
+                                  Theme.of(context).colorScheme.surfaceContainerHighest,
                                 ],
                               ),
                             ),
