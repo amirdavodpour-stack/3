@@ -376,3 +376,11 @@ test('the standalone production release workflow isolates backend quality tests 
 });
 
 // Release APK generation must strip the dev-only integration_test native registration from generated Android source.
+
+test('production APK isolation prunes only the integration_test dependency tree in its temporary lockfile', () => {
+  const apk = fs.readFileSync(path.join(root, 'tools/build_apk_release.sh'), 'utf8');
+  assert.match(apk, /flutter pub get --enforce-lockfile/);
+  for (const name of ['integration_test','flutter_driver','fuchsia_remote_debug_protocol','process','sync_http','webdriver']) {
+    assert.match(apk, new RegExp(`["']${name}["']`));
+  }
+});
