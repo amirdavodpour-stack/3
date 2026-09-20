@@ -3,6 +3,8 @@ import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class AboutHopePage extends StatelessWidget {
   const AboutHopePage({super.key});
@@ -15,9 +17,12 @@ class AboutHopePage extends StatelessWidget {
       child: Scaffold(
         appBar:
             AppBar(title: Text(HopeCopy.of(context).copy_about_hope_f8ee86b)),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-          children: [
+        body: PremiumPageFrame(
+          maxWidth: 980,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
             const HeroBanner(),
             const SizedBox(height: 18),
             const Center(child: HopeMark(size: 72, showText: true)),
@@ -109,7 +114,8 @@ class AboutHopePage extends StatelessWidget {
                         .textTheme
                         .labelSmall
                         ?.copyWith(color: AppColors.muted))),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -155,6 +161,8 @@ class AboutHopePage extends StatelessWidget {
 class HeroBanner extends StatelessWidget {
   const HeroBanner({super.key});
 
+  static const _height = 220.0;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -162,7 +170,7 @@ class HeroBanner extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: SizedBox(
-        height: 180,
+        height: _height,
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -210,7 +218,7 @@ class HeroBanner extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(HopeV2Spacing.xl),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
