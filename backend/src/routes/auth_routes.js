@@ -56,6 +56,24 @@ export function createAuthRoutes({
 
       const emailUser = await getUserByEmail(identity.email);
       if (emailUser) {
+        if (identity.authoritativeEmail && process.env.DATABASE_URL) {
+          try {
+            const linked = await repo.linkGoogleSubject(emailUser.id, identity.subject);
+            if (linked) {
+              const session = await issueSession(linked);
+              await createAudit('AUTH_GOOGLE_LINK_LOGIN', linked.id, 'user', linked.id);
+              return sendJson(res, 200, { ...session, user: authUserView(linked) });
+            }
+          } catch (error) {
+            if (error?.code !== '23505') throw error;
+          }
+          const raced = await repo.findUserByGoogleSubject(identity.subject);
+          if (raced) {
+            const session = await issueSession(raced);
+            await createAudit('AUTH_GOOGLE_LOGIN', raced.id, 'user', raced.id);
+            return sendJson(res, 200, { ...session, user: authUserView(raced) });
+          }
+        }
         throw new HttpError(409, 'GOOGLE_ACCOUNT_LINK_REQUIRED', 'This email already has a HOPE password account. Sign in with your password first, then link Google.');
       }
 
