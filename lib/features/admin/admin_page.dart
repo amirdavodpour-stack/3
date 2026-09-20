@@ -139,65 +139,54 @@ class _AdminPageState extends State<AdminPage>
   Widget _summaryGrid(BuildContext context, HopeAdminSummary? raw) {
     final m = raw;
     final items = [
-      [
-        'users',
-        HopeCopy.of(context).copy_users_200338b,
-        Icons.people_alt_outlined
-      ],
-      [
-        'published_opportunities',
-        HopeCopy.of(context).copy_published_1a00f35,
-        Icons.public_rounded
-      ],
-      [
-        'missions',
-        HopeCopy.of(context).copy_missions_a833d13,
-        Icons.task_alt_rounded
-      ],
-      [
-        'jobs',
-        HopeCopy.of(context).copy_jobs_ebf9a80,
-        Icons.work_outline_rounded
-      ],
-      [
-        'pending_applications',
-        HopeCopy.of(context).copy_pending_86ad26d,
-        Icons.hourglass_top_rounded
-      ],
-      [
-        'audit_events',
-        HopeCopy.of(context).copy_audit_events_7f47fd5,
-        Icons.fact_check_outlined
-      ],
+      ['users', HopeCopy.of(context).copy_users_200338b, Icons.people_alt_outlined],
+      ['published_opportunities', HopeCopy.of(context).copy_published_1a00f35, Icons.public_rounded],
+      ['missions', HopeCopy.of(context).copy_missions_a833d13, Icons.task_alt_rounded],
+      ['jobs', HopeCopy.of(context).copy_jobs_ebf9a80, Icons.work_outline_rounded],
+      ['pending_applications', HopeCopy.of(context).copy_pending_86ad26d, Icons.hourglass_top_rounded],
+      ['audit_events', HopeCopy.of(context).copy_audit_events_7f47fd5, Icons.fact_check_outlined],
     ];
-    return GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: 2.25,
-        children: items
-            .map((e) => PremiumPanel(
-                padding: const EdgeInsets.all(13),
-                child: Row(children: [
-                  HopeIconTile(e[2] as IconData, filled: true, size: 40),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                        Text('${m?[e[0] as String] ?? 0}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w800)),
-                        Text('${e[1]}',
-                            style: Theme.of(context).textTheme.bodySmall)
-                      ]))
-                ])))
-            .toList());
+
+    return GridView.extent(
+      maxCrossAxisExtent: 340,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 2.55,
+      children: items.map((e) {
+        return PremiumPanel(
+          padding: const EdgeInsets.all(13),
+          child: Row(
+            children: [
+              HopeIconTile(e[2] as IconData, filled: true, size: 40),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${m?[e[0] as String] ?? 0}',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    Text(
+                      '${e[1]}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
   }
 
   Widget _errorState(BuildContext context, Object? error,
