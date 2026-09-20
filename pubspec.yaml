@@ -33,5 +33,4 @@ flutter:
   uses-material-design: true
   generate: true
   assets:
-    - assets/images/hope_marketplace_hero.png
     - assets/branding/
