@@ -168,7 +168,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     const SizedBox(height: 12),
                     Text(
                       _filter == 'ALL'
-                          ? _t('هنوز درخواستی ثبت نکرده‌ای.', 'You have not submitted any applications yet.')
+                          ? _t('هنوز درخواستی ثبت نکرده‌اید.', 'You have not submitted any applications yet.')
                           : _t('در این وضعیت درخواستی وجود ندارد.', 'No applications match this status.'),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.titleMedium,
