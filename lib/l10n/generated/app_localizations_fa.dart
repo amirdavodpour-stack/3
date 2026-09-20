@@ -15,7 +15,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get loginWelcomeBack => 'خوش برگشتی.';
 
   @override
-  String get loginWelcomeBackSubtitle => 'به فضای کارت برگرد و ادامه بده.';
+  String get loginWelcomeBackSubtitle => 'برای ورود، اطلاعات حساب را وارد کنید.';
 
   @override
   String get emailLabel => 'ایمیل';
@@ -39,7 +39,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get signInWithGoogle => 'ورود با Google';
 
   @override
-  String get continueAsGuest => 'فعلاً به‌عنوان مهمان ادامه بده';
+  String get continueAsGuest => 'ادامه به‌عنوان مهمان';
 
   @override
   String get orDivider => 'یا';
@@ -51,10 +51,10 @@ class AppLocalizationsFa extends AppLocalizations {
   String get loginTermsNotice => 'ورود به معنای پذیرش قوانین استفاده HOPE است.';
 
   @override
-  String get emailPasswordRequired => 'ایمیل و رمز عبور را وارد کن.';
+  String get emailPasswordRequired => 'ایمیل و رمز عبور را وارد کنید.';
 
   @override
-  String get loginFailedGeneric => 'ورود ناموفق بود. دوباره تلاش کن.';
+  String get loginFailedGeneric => 'ورود ناموفق بود. دوباره تلاش کنید.';
 
   @override
   String get copy_10_from_the_employer_and_10_from_the_candi_cf15dfa =>
@@ -66,11 +66,11 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_a_better_path_to_finding_work_5802652 =>
-      'مسیر بهتر برای پیدا کردن کار';
+      'پیدا کردن فرصت‌های کاری';
 
   @override
   String get copy_a_clearer_more_human_way_to_find_work_3553ab8 =>
-      'اینجا قرار است پیدا کردن کار، واضح‌تر و انسانی‌تر باشد.';
+      'فرصت‌های کاری، ماموریت‌ها و شغل‌ها';
 
   @override
   String get copy_a_defined_task_with_a_clear_price_and_deli_bf299f3 =>
@@ -82,7 +82,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_a_home_for_your_professional_path_52dbb09 =>
-      'یک خانه برای مسیر حرفه‌ای تو.';
+      'حساب و اطلاعات حرفه‌ای';
 
   @override
   String get copy_a_part_time_or_full_time_role_with_monthly_ac5f029 =>
@@ -115,7 +115,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_add_a_concise_resume_and_relevant_skills_298a4f1 =>
-      'رزومه متنی و مهارت‌های مرتبط را وارد کن.';
+      'رزومه متنی و مهارت‌های مرتبط را وارد کنید.';
 
   @override
   String get copy_admin_panel_348cd94 => 'مدیریت ادمین';
@@ -162,7 +162,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_apply_with_a_strong_professional_profile_13980b1 =>
-      'با رزومه و پیشنهاد حرفه‌ای وارد شو.';
+      'رزومه و پیشنهاد خود را ارسال کنید.';
 
   @override
   String get copy_as_described_in_the_opportunity_836cb3e =>
@@ -196,7 +196,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_broaden_your_filters_or_try_another_city_e8e32cb =>
-      'فیلترها را کمی بازتر کن یا شهر دیگری را امتحان کن.';
+      'فیلترها را تغییر دهید یا شهر دیگری انتخاب کنید.';
 
   @override
   String get copy_cancel_9955c4b => 'انصراف';
@@ -209,24 +209,24 @@ class AppLocalizationsFa extends AppLocalizations {
       'اطلاعات هویتی کارجو برای جلوگیری از تبانی در مرحله انتخاب مخفی می‌ماند.';
 
   @override
-  String get copy_choose_79a9d79 => 'انتخاب کن';
+  String get copy_choose_79a9d79 => 'انتخاب';
 
   @override
-  String get copy_choose_a_category_b77d860 => 'دسته‌بندی را انتخاب کن';
+  String get copy_choose_a_category_b77d860 => 'دسته‌بندی را انتخاب کنید';
 
   @override
-  String get copy_choose_a_city_a93b334 => 'شهر را انتخاب کن';
+  String get copy_choose_a_city_a93b334 => 'شهر را انتخاب کنید';
 
   @override
   String get copy_choose_a_professional_category_b4cf5b8 =>
-      'حوزه تخصصی را انتخاب کن.';
+      'حوزه تخصصی را انتخاب کنید.';
 
   @override
   String get copy_choose_another_city_1375095 => 'انتخاب شهر دیگر';
 
   @override
   String get copy_choose_your_preferred_city_c19f66a =>
-      'شهر مورد نظر را انتخاب کن';
+      'شهر مورد نظر را انتخاب کنید';
 
   @override
   String get copy_city_3d7dc3e => 'شهر';
@@ -270,7 +270,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_create_an_account_to_apply_post_and_person_6fd6b91 =>
-      'حساب بساز تا پیشنهاد بدهی، فرصت ثبت کنی و تنظیمات شخصی داشته باشی.';
+      'برای ثبت فرصت یا ارسال درخواست، وارد حساب شوید.';
 
   @override
   String get copy_current_location_182622a => 'موقعیت فعلی';
@@ -321,13 +321,13 @@ class AppLocalizationsFa extends AppLocalizations {
       'ایمیل حساب را وارد کن؛ راهنمای بازیابی برایت ارسال می‌شود.';
 
   @override
-  String get copy_enter_your_email_2562106 => 'ایمیل را وارد کن.';
+  String get copy_enter_your_email_2562106 => 'ایمیل را وارد کنید.';
 
   @override
   String get copy_explore_115e9fd => 'کاوش';
 
   @override
-  String get copy_explore_837e4eb => 'پیدا کن';
+  String get copy_explore_837e4eb => 'یافتن';
 
   @override
   String get copy_explore_a80d678 => 'شروع کاوش';
@@ -340,7 +340,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_filter_by_city_field_and_opportunity_type_1d75340 =>
-      'شهر، حوزه و نوع فرصت را فیلتر کن.';
+      'بر اساس شهر، حوزه و نوع فرصت فیلتر کنید.';
 
   @override
   String get copy_filters_df4d10e => 'فیلترها';
@@ -354,7 +354,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_first_choose_what_kind_of_opportunity_you__f035ca9 =>
-      'اول مشخص کن دنبال چه نوع همکاری هستی.';
+      'نوع فرصت را انتخاب کنید.';
 
   @override
   String get copy_fit_more_information_on_a_page_aedc497 =>
@@ -464,7 +464,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_limit_notifications_during_rest_b5e0db3 =>
-      'اعلان‌ها را در زمان استراحت محدود کن';
+      'اعلان‌ها را در زمان استراحت محدود کنید.';
 
   @override
   String get copy_location_city_46ccc39 => 'موقعیت و شهر';
@@ -526,7 +526,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_monitor_and_manage_hope_in_one_place_bea3b7d =>
-      'همه‌چیز را یکجا ببین و مدیریت کن.';
+      'کارها را از یک داشبورد مدیریت کنید.';
 
   @override
   String get copy_monthly_pay_d62519b => 'دستمزد ماهانه';
@@ -659,7 +659,7 @@ class AppLocalizationsFa extends AppLocalizations {
       'پیشنهادهای شخصی‌سازی‌شده';
 
   @override
-  String get copy_please_complete_all_fields_55c07bb => 'همه فیلدها را پر کن.';
+  String get copy_please_complete_all_fields_55c07bb => 'همه فیلدها را کامل کنید.';
 
   @override
   String get copy_post_a_mission_or_job_364fb6f => 'ثبت ماموریت یا شغل';
@@ -713,7 +713,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get copy_quiet_hours_02885b4 => 'ساعات سکوت';
 
   @override
-  String get copy_recommended_for_you_e56d06b => 'پیشنهاد متناسب با تو';
+  String get copy_recommended_for_you_e56d06b => 'پیشنهادها';
 
   @override
   String get copy_reference_aa63360 => 'مرجع';
@@ -741,7 +741,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_review_users_opportunities_applications_an_e30b9d2 =>
-      'کاربران، فرصت‌ها، درخواست‌ها و رویدادهای حساس را از یک داشبورد بررسی کن.';
+      'کاربران، فرصت‌ها، درخواست‌ها و رویدادهای حساس را بررسی کنید.';
 
   @override
   String get copy_salary_schedule_bab0cb3 => 'دستمزد و مدل همکاری';
@@ -750,7 +750,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get copy_schedule_3af1939 => 'نوع همکاری';
 
   @override
-  String get copy_search_dd58413 => 'جست‌وجو کن...';
+  String get copy_search_dd58413 => 'جست‌وجو...';
 
   @override
   String get copy_see_missions_and_jobs_together_then_narrow_7e573a3 =>
@@ -771,11 +771,11 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_set_a_defined_price_and_delivery_time_1e53f1a =>
-      'یک قیمت مشخص و مدت انجام کار تعیین کن.';
+      'قیمت و مدت انجام کار را مشخص کنید.';
 
   @override
   String get copy_set_an_application_deadline_for_jobs_5fd80f8 =>
-      'برای شغل، مهلت دریافت درخواست را مشخص کن.';
+      'مهلت دریافت درخواست را مشخص کنید.';
 
   @override
   String get copy_settings_a8a6c67 => 'تنظیمات';
@@ -804,7 +804,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_start_with_your_city_or_explore_any_other__05a1e84 =>
-      'کاوش را با شهر خودت شروع کن یا هر شهر دیگری را انتخاب کن.';
+      'شهر را انتخاب کنید یا شهر دیگری را بررسی کنید.';
 
   @override
   String get copy_start_work_51d8317 => 'شروع کار';
@@ -844,7 +844,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_the_server_did_not_return_data_try_again_bccfbb3 =>
-      'فعلاً داده‌ها از سرور دریافت نشد. دوباره امتحان کن.';
+      'داده‌ای از سرور دریافت نشد. دوباره تلاش کنید.';
 
   @override
   String get copy_this_transaction_is_settled_04f8174 =>
@@ -934,11 +934,11 @@ class AppLocalizationsFa extends AppLocalizations {
   String get copy_your_offer_was_submitted_75e3409 => 'پیشنهادت ثبت شد.';
 
   @override
-  String get copy_your_professional_path_2da0026 => 'مسیر حرفه‌ای تو';
+  String get copy_your_professional_path_2da0026 => 'اطلاعات حرفه‌ای';
 
   @override
   String get copy_your_projects_applications_and_payments_wi_bec5340 =>
-      'با ارسال یا قبول پیشنهاد، جریان کار تو اینجا دیده می‌شود.';
+      'وضعیت ارسال و قبول پیشنهادها را اینجا مشاهده کنید.';
 
   @override
   String get copy_hope_work_grow_together_6a1d9f0 =>
@@ -952,7 +952,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_registration_failed_please_try_again_bbb72e2 =>
-      'ثبت‌نام انجام نشد. دوباره تلاش کن.';
+      'ثبت‌نام انجام نشد. دوباره تلاش کنید.';
 
   @override
   String get copy_link_uri_optional_1d2307a => 'لینک/URI (اختیاری)';
