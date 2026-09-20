@@ -115,7 +115,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               ],
             ),
             PremiumHero(
-              image: 'assets/images/hope_marketplace_hero.png',
               eyebrow: _t(context, 'بازار حرفه‌ای HOPE', 'HOPE professional marketplace'),
               title: _t(context, 'فرصت مناسب بعدی را پیدا کن', 'Find your next right opportunity'),
               message: _t(context, 'فرصت‌های واقعی را بررسی کن و با وضعیت کاری فعلی‌ات هماهنگ پیش برو.', 'Explore real opportunities and keep discovery aligned with your current work.'),
