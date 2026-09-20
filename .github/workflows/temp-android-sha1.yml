@@ -1,9 +1,9 @@
 name: TEMP Android Production SHA1
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/google-sign-in-2026-09-20
+      - Main
   workflow_dispatch:
 
 permissions:
@@ -38,14 +38,12 @@ jobs:
           printf '%s' "$normalized" | base64 --decode > "$keystore"
           test -s "$keystore"
           keytool -list -v -keystore "$keystore" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > "$RUNNER_TEMP/keytool.txt"
-          sha1="$(awk -F': ' '/^Certificate fingerprint \(SHA1\):/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
-          sha256="$(awk -F': ' '/^Certificate fingerprints:/ {seen=1; next} seen && /^ *SHA256:/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
+          sha1="$(awk -F': ' '/^Certificate fingerprint \\(SHA1\\):/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
           if [ -z "$sha1" ]; then
             sha1="$(awk -F': ' '/^SHA1:/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
           fi
           test -n "$sha1"
-          printf 'Production signing certificate SHA-1: %s\n' "$sha1" | tee android-production-sha1.txt
-          [ -n "${sha256:-}" ] && printf 'Production signing certificate SHA-256: %s\n' "$sha256" >> android-production-sha1.txt
+          printf 'Production signing certificate SHA-1: %s\n' "$sha1" > android-production-sha1.txt
           printf 'Package name: com.hope.marketplace\n' >> android-production-sha1.txt
 
       - name: Upload fingerprint artifact
