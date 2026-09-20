@@ -50,7 +50,7 @@ test('saved-search sync endpoint is authenticated, bounded and user-isolated', a
     assert.equal(r.status, 404);
     assert.equal(r.body.error.code, 'SAVED_SEARCH_NOT_FOUND');
 
-    r = await api.json('/saved-searches/search-alice-1', {
+    r = await api.json(`/saved-searches/${savedSearchId}`, {
       method: 'DELETE',
       headers: auth(alice.accessToken),
     });
