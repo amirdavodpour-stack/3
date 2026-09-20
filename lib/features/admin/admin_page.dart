@@ -527,4 +527,3 @@ class _AdminPageState extends State<AdminPage>
       () => _applicationRegistry(context).adminCommands.deleteJob(id),
     );
   }
-}
