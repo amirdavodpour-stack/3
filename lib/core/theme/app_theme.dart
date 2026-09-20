@@ -89,7 +89,7 @@ class AppTheme {
       tabBarTheme: TabBarThemeData(
         dividerColor: Colors.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
-        indicator: BoxDecoration(
+        indicator: const BoxDecoration(
           color: dark ? const Color(0x287660FF) : AppColors.softPrimary,
           borderRadius: BorderRadius.circular(14),
         ),
@@ -99,7 +99,6 @@ class AppTheme {
         unselectedLabelStyle:
             const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
         overlayColor: WidgetStatePropertyAll(Colors.transparent),
-        padding: const EdgeInsets.all(4),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: dark ? const Color(0x1AFFFFFF) : const Color(0xFFF1EFF7),
