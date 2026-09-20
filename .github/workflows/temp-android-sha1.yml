@@ -19,12 +19,10 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -euo pipefail
           : "${KEYSTORE_B64:?ANDROID_KEYSTORE_BASE64 is required}"
           : "${STORE_PASSWORD:?ANDROID_KEYSTORE_PASSWORD is required}"
-          : "${KEY_ALIAS:?ANDROID_KEY_ALIAS is required}"
           normalized="$(printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' | tr '_-' '/+')"
           rem=$(( ${#normalized} % 4 ))
           if [ "$rem" -eq 1 ]; then
@@ -38,14 +36,29 @@ jobs:
           keystore="$RUNNER_TEMP/hope-production-release.keystore"
           printf '%s' "$normalized" | base64 --decode > "$keystore"
           test -s "$keystore"
-          keytool -list -v -keystore "$keystore" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > "$RUNNER_TEMP/keytool.txt"
-          sha1="$(awk -F': ' '/^Certificate fingerprint \\(SHA1\\):/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
-          if [ -z "$sha1" ]; then
-            sha1="$(awk -F': ' '/^SHA1:/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
+
+          set +e
+          keytool -list -v -keystore "$keystore" -storepass "$STORE_PASSWORD" > "$RUNNER_TEMP/keytool.txt" 2> "$RUNNER_TEMP/keytool.err"
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            echo "keytool_exit_code=$rc"
+            echo "The production signing keystore could not be opened with the configured store password."
+            sed -n '1,20p' "$RUNNER_TEMP/keytool.err"
+            exit "$rc"
           fi
-          test -n "$sha1"
-          printf 'Production signing certificate SHA-1: %s\n' "$sha1" > android-production-sha1.txt
+
+          awk -F': ' '
+            /^Alias name:/ { alias=$2 }
+            /^Certificate fingerprint \(SHA1\):/ {
+              printf "alias=%s\nSHA1=%s\n", alias, $2
+              found=1
+            }
+          ' "$RUNNER_TEMP/keytool.txt" > android-production-sha1.txt
+
+          grep -q '^SHA1=' android-production-sha1.txt
           printf 'Package name: com.hope.marketplace\n' >> android-production-sha1.txt
+
 
       - name: Upload fingerprint artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
