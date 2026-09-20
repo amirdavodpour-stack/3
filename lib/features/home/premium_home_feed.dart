@@ -316,7 +316,11 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             const SizedBox(height: HopeV2Spacing.lg),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
             const SizedBox(height: HopeV2Spacing.md),
-            Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: const Icon(Icons.arrow_forward_rounded), label: Text(action))),
+            Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: Icon(
+                              Directionality.of(context) == TextDirection.rtl
+                                  ? Icons.arrow_back_rounded
+                                  : Icons.arrow_forward_rounded,
+                            ), label: Text(action))),
           ]),
         );
       },
@@ -329,21 +333,87 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox.shrink();
         final wallet = snapshot.data!;
-        String money(int v) => '${v.toString().replaceAllMapped(RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')} ${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'TOMAN') : wallet.currency}';
-        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          PremiumSectionHeader(title: _t(context, 'وضعیت مالی', 'Financial snapshot')),
-          const SizedBox(height: HopeV2Spacing.md),
-          LayoutBuilder(builder: (_, c) {
-            final two = c.maxWidth >= HopeV2Breakpoints.compact;
-            final children = [
-              PremiumStatCard(label: _t(context, 'قابل استفاده', 'Available'), value: money(wallet.availableBalance), icon: Icons.account_balance_wallet_outlined),
-              PremiumStatCard(label: _t(context, 'قفل‌شده', 'Locked'), value: money(wallet.lockedBalance), icon: Icons.lock_outline_rounded),
-            ];
-            return two ? Row(children: [Expanded(child: children[0]), const SizedBox(width: HopeV2Spacing.md), Expanded(child: children[1])]) : Column(children: [children[0], const SizedBox(height: HopeV2Spacing.md), children[1]]);
-          }),
-        ]);
+        String money(int v) =>
+            '${v.toString().replaceAllMapped(RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')} '
+            '${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'TOMAN') : wallet.currency}';
+
+        return PremiumPanel(
+          highlight: true,
+          padding: const EdgeInsets.all(HopeV2Spacing.lg),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 560;
+              final balance = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _t(context, 'وضعیت مالی', 'Financial snapshot'),
+                    style: HopeV2Type.eyebrow(context),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    money(wallet.availableBalance),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.displaySmall,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _t(context, 'موجودی قابل استفاده', 'Available balance'),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              );
+
+              final details = Row(
+                mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: PremiumTag(
+                      icon: Icons.lock_outline_rounded,
+                      label:
+                          '${_t(context, 'قفل‌شده', 'Locked')}: ${money(wallet.lockedBalance)}',
+                      color: AppColors.warning,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    onPressed: () {
+                      final repository =
+                          applicationRegistryOf(context).walletsOrThrow;
+                      Navigator.push(
+                        context,
+                        HopeRoutes.wallet(repository: repository),
+                      );
+                    },
+                    tooltip: _t(context, 'باز کردن کیف پول', 'Open wallet'),
+                    icon: const Icon(Icons.arrow_outward_rounded),
+                  ),
+                ],
+              );
+
+              return compact
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        balance,
+                        const SizedBox(height: 14),
+                        details,
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(child: balance),
+                        details,
+                      ],
+                    );
+            },
+          ),
+        );
       },
     );
+  }
   }
 }
 
