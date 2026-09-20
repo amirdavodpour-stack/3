@@ -273,6 +273,7 @@ class _JobsPageState extends State<JobsPage> {
         },
       ),
     );
+  }
 
   Future<void> _pickCity(
       BuildContext context, HopeSettingsController settings) async {
