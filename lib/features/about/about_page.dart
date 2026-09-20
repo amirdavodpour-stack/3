@@ -215,7 +215,7 @@ class HeroBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      HopeCopy.of(context).copy_a_better_path_to_finding_work_5802652,
+                      isEn ? 'فرصت‌های کاری' : 'فرصت‌های کاری',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
@@ -223,7 +223,7 @@ class HeroBanner extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      HopeCopy.of(context).copy_opportunities_meet_the_right_people_d51fef5,
+                      isEn ? 'فهرست فرصت‌های کاری' : 'فهرست فرصت‌های کاری',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 23,
