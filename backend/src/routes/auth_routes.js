@@ -2,7 +2,7 @@ export function createAuthRoutes({
   authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser,
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH,
-  logEvent, rateLimitAuthAccount, stringField, id, legacy,
+  logEvent, rateLimitAuthAccount, stringField, id, legacy, verifyGoogleIdToken,
 }) {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,6 +28,78 @@ export function createAuthRoutes({
       }
       const session = await issueSession(user);
       await createAudit('AUTH_REGISTER', user.id, 'user', user.id);
+      return sendJson(res, 201, { ...session, user: authUserView(user) });
+    }
+
+    if (req.method === 'POST' && route === 'google') {
+      if (!config.googleAuthEnabled || !config.googleOAuthClientId) {
+        throw new HttpError(503, 'GOOGLE_AUTH_UNAVAILABLE', 'Google sign-in is not currently available');
+      }
+      const body = await readBody(req);
+      requireFields(body, ['idToken']);
+      const idToken = stringField(body.idToken, 'idToken', { min: 1, max: 16384, required: true });
+      let identity;
+      try {
+        identity = await verifyGoogleIdToken(idToken, config.googleOAuthClientId);
+      } catch (error) {
+        logEvent({ level: 'warn', action: 'GOOGLE_AUTH_REJECTED', code: error?.code || error?.message || 'INVALID_GOOGLE_TOKEN' });
+        throw new HttpError(401, 'INVALID_GOOGLE_TOKEN', 'Google authentication could not be verified');
+      }
+
+      const linkedUser = await repo.findUserByGoogleSubject(identity.subject);
+      if (linkedUser) {
+        if (linkedUser.status !== 'ACTIVE') throw new HttpError(401, 'INVALID_CREDENTIALS', 'Account is not active');
+        const session = await issueSession(linkedUser);
+        await createAudit('AUTH_GOOGLE_LOGIN', linkedUser.id, 'user', linkedUser.id);
+        return sendJson(res, 200, { ...session, user: authUserView(linkedUser) });
+      }
+
+      const emailUser = await getUserByEmail(identity.email);
+      if (emailUser) {
+        throw new HttpError(409, 'GOOGLE_ACCOUNT_LINK_REQUIRED', 'This email already has a HOPE password account. Sign in with your password first, then link Google.');
+      }
+
+      const userDraft = {
+        id: id(),
+        email: identity.email,
+        passwordHash: await hashPassword(randomToken(48)),
+        displayName: identity.displayName,
+        role: 'USER',
+        status: 'ACTIVE',
+        sessionVersion: 0,
+        createdAt: now(),
+        googleSubject: identity.subject,
+      };
+      const providerDraft = {
+        id: id(),
+        userId: userDraft.id,
+        providerType: 'INDIVIDUAL',
+        capacity: 'OPEN',
+        verificationStatus: 'UNVERIFIED',
+        createdAt: now(),
+        updatedAt: now(),
+      };
+
+      let user;
+      try {
+        user = process.env.DATABASE_URL
+          ? await repo.createUserWithProvider(userDraft, providerDraft)
+          : legacy.createUserWithProvider(userDraft, providerDraft);
+      } catch (error) {
+        if (error?.code === '23505') {
+          const raced = process.env.DATABASE_URL ? await repo.findUserByGoogleSubject(identity.subject) : null;
+          if (raced) {
+            const session = await issueSession(raced);
+            await createAudit('AUTH_GOOGLE_LOGIN', raced.id, 'user', raced.id);
+            return sendJson(res, 200, { ...session, user: authUserView(raced) });
+          }
+          const e = new HttpError(409, 'EMAIL_IN_USE', 'An account with this email already exists');
+          throw e;
+        }
+        throw error;
+      }
+      const session = await issueSession(user);
+      await createAudit('AUTH_GOOGLE_REGISTER', user.id, 'user', user.id);
       return sendJson(res, 201, { ...session, user: authUserView(user) });
     }
 
