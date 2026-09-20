@@ -6,6 +6,64 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
+
+class _OfferFilterChip extends StatelessWidget {
+  const _OfferFilterChip({
+    required this.selected,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+        child: AnimatedContainer(
+          duration: HopeV2Motion.fast,
+          constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected
+                ? color.withValues(alpha: .11)
+                : HopeV2Surfaces.panel(context),
+            borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+            border: Border.all(
+              color: selected
+                  ? color.withValues(alpha: .28)
+                  : HopeV2Surfaces.border(context),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (selected) ...[
+                Icon(Icons.check_rounded, size: 16, color: color),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? color : null,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class OffersPage extends StatefulWidget {
   const OffersPage({super.key, this.jobId});
@@ -113,13 +171,21 @@ class _OffersPageState extends State<OffersPage> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
+                        for (final x in const [
+                          'ALL',
+                          'PENDING',
+                          'ACCEPTED',
+                          'REJECTED',
+                        ])
                           Padding(
                             padding: const EdgeInsetsDirectional.only(end: 8),
-                            child: ChoiceChip(
-                              label: Text(x == 'ALL' ? _t('همه', 'All') : _statusLabel(x)),
+                            child: _OfferFilterChip(
                               selected: _filter == x,
-                              onSelected: (_) => setState(() => _filter = x),
+                              label: x == 'ALL' ? _t('همه', 'All') : _statusLabel(x),
+                              color: x == 'ALL'
+                                  ? Theme.of(context).colorScheme.primary
+                                  : _statusColor(context, x),
+                              onTap: () => setState(() => _filter = x),
                             ),
                           ),
                       ],

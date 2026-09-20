@@ -15,6 +15,7 @@ import '../../core/ui/premium_components.dart';
 import '../../core/ui/copy.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 
 class JobDetailPage extends StatefulWidget {
@@ -698,7 +699,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final tiles = [
-                        MetricTile(
+                        PremiumStatCard(
                           label: isJob
                               ? HopeCopy.of(context).copy_monthly_pay_d62519b
                               : HopeCopy.of(context).copy_mission_budget_923bb6e,
@@ -712,12 +713,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   '${j.budgetMin ?? '—'} تا ${j.budgetMax ?? '—'}',
                                 ),
                           icon: Icons.payments_outlined,
+                          accent: Theme.of(context).colorScheme.primary,
                         ),
-                        MetricTile(
+                        PremiumStatCard(
                           label: HopeCopy.of(context).copy_field_fcb7b26,
                           value: j.category ?? j.categoryId ?? '—',
                           icon: Icons.category_outlined,
-                          color: secondaryAccent(context),
+                          accent: secondaryAccent(context),
                         ),
                       ];
                       if (constraints.maxWidth < 500) {
