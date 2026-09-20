@@ -175,7 +175,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More menu'));
+    await tester.tap(find.byTooltip('App menu'));
     await tester.pumpAndSettle();
     expect(find.text('App menu'), findsOneWidget);
     // A non-admin member sees notifications but no admin panel.
@@ -229,10 +229,10 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.byRole(Role.tab, name: 'Profile'));
     await tester.pumpAndSettle();
     expect(find.text('Profile'), findsWidgets);
-    await tester.tap(find.text('Home'));
+    await tester.tap(find.byRole(Role.tab, name: 'Home'));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);
   });
