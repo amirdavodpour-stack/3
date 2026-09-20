@@ -3,8 +3,8 @@ import fs from 'node:fs';
 
 const steps = [
   ['npm run check', 120000],
-  ['npm run test:fast', 240000],
-  ['npm run test:contract', 240000],
+  ['npm run test:fast', 180000],
+  ['npm run test:contract', 180000],
   ['npm run test:backup', 180000],
   ['npm run test:staging-contract', 180000],
   ['npm run test:e2e', 240000],
@@ -26,11 +26,19 @@ function run(command, timeoutMs) {
       detached: true,
     });
     let timedOut = false;
+    const killGroup = (signal) => {
+      if (!child.pid) return;
+      try {
+        process.kill(-child.pid, signal);
+      } catch (error) {
+        if (error?.code !== 'ESRCH') throw error;
+      }
+    };
     const timer = setTimeout(() => {
       timedOut = true;
-      console.error(`\\n[check:all] TIMEOUT: ${command} after ${timeoutMs}ms`);
+      console.error(`\\n[check:all] TIMEOUT: ${command} after ${timeoutMs}ms; terminating process group`);
       killGroup('SIGTERM');
-      setTimeout(() => child.kill('SIGKILL'), 30000).unref();
+      setTimeout(() => killGroup('SIGKILL'), 30000).unref();
     }, timeoutMs);
     child.on('close', (code, signal) => {
       clearTimeout(timer);
