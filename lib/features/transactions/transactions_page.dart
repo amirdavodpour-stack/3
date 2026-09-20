@@ -110,18 +110,40 @@ class _TransactionsPageState extends State<TransactionsPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
-      return Center(
-          child: EmptyState(
-              icon: Icons.lock_outline_rounded,
+      return PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: ListView(
+          children: [
+            PremiumHeader(
+              eyebrow: HopeCopy.of(context).copy_activity_4b38716,
               title: HopeCopy.of(context).copy_your_activity_is_private_1363766,
-              message: HopeCopy.of(context)
+              subtitle: HopeCopy.of(context)
                   .copy_sign_in_to_view_your_projects_and_payments_32a2bc2,
-              action: FilledButton.icon(
-                  onPressed: () => Navigator.push(context, HopeRoutes.login()),
-                  icon: const Icon(Icons.login_rounded),
-                  label: Text(HopeCopy.of(context).copy_log_in_b4c960b))));
+              trailing: const HopeIconTile(
+                Icons.lock_outline_rounded,
+                size: 50,
+                filled: true,
+              ),
+            ),
+            const SizedBox(height: 20),
+            PremiumPanel(
+              padding: const EdgeInsets.all(20),
+              child: FilledButton.icon(
+                onPressed: () =>
+                    Navigator.push(context, HopeRoutes.login()),
+                icon: const Icon(Icons.login_rounded),
+                label: Text(HopeCopy.of(context).copy_log_in_b4c960b),
+              ),
+            ),
+          ],
+        ),
+      );
     }
-    if (future == null) return const Center(child: CircularProgressIndicator());
+    if (future == null) {
+      return const PremiumPageFrame(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
     return FutureBuilder<List<HopeJob>>(
         future: future,
         builder: (context, snap) {
@@ -130,29 +152,75 @@ class _TransactionsPageState extends State<TransactionsPage> {
           }
           if (snap.hasError) {
             return RefreshIndicator(
-                onRefresh: reload,
-                child: ListView(children: [
-                  const SizedBox(height: 220),
-                  EmptyState(
-                      icon: Icons.cloud_off_rounded,
-                      title: HopeCopy.of(context)
-                          .copy_could_not_load_activity_335b923,
-                      message: HopeCopy.of(context)
-                          .copy_pull_down_to_try_again_c41d215)
-                ]));
+              onRefresh: reload,
+              child: PremiumPageFrame(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+                child: ListView(
+                  children: [
+                    PremiumHeader(
+                      eyebrow: HopeCopy.of(context).copy_activity_4b38716,
+                      title: HopeCopy.of(context).copy_could_not_load_activity_335b923,
+                      subtitle: HopeCopy.of(context)
+                          .copy_pull_down_to_try_again_c41d215,
+                      trailing: const HopeIconTile(
+                        Icons.cloud_off_rounded,
+                        size: 50,
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    PremiumPanel(
+                      padding: const EdgeInsets.all(20),
+                      child: FilledButton.icon(
+                        onPressed: reload,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           final items = snap.data ?? const <HopeJob>[];
           if (items.isEmpty) {
             return RefreshIndicator(
-                onRefresh: reload,
-                child: ListView(children: [
-                  const SizedBox(height: 220),
-                  EmptyState(
-                      icon: Icons.auto_graph_rounded,
+              onRefresh: reload,
+              child: PremiumPageFrame(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+                child: ListView(
+                  children: [
+                    PremiumHeader(
+                      eyebrow: HopeCopy.of(context).copy_activity_4b38716,
                       title: HopeCopy.of(context).copy_no_activity_yet_264ceb0,
-                      message: HopeCopy.of(context)
-                          .copy_your_projects_applications_and_payments_wi_bec5340)
-                ]));
+                      subtitle: HopeCopy.of(context)
+                          .copy_your_projects_applications_and_payments_wi_bec5340,
+                      trailing: const HopeIconTile(
+                        Icons.auto_graph_rounded,
+                        size: 50,
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    PremiumPanel(
+                      padding: const EdgeInsets.all(20),
+                      child: FilledButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          HopeRoutes.jobs(),
+                        ),
+                        icon: const Icon(Icons.explore_rounded),
+                        label: Text(
+                          Localizations.localeOf(context).languageCode == 'en'
+                              ? 'Explore opportunities'
+                              : 'مشاهده فرصت‌ها',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           return RefreshIndicator(
               onRefresh: reload,
