@@ -165,6 +165,45 @@ jobs:
           printf '%s' "$normalized" | base64 --decode > "$KEYSTORE_PATH"
           test -s "$KEYSTORE_PATH"
           keytool -list -keystore "$KEYSTORE_PATH" -storepass "$ANDROID_RELEASE_STORE_PASSWORD" >/dev/null
+
+          # Validate private-key access before starting the long release build. Some
+          # release keystores intentionally use the same password for the store and
+          # key entry; support that canonical configuration without exposing any
+          # credential values. If a distinct key password is configured, it must be
+          # correct and remains authoritative.
+          KEY_VALIDATION_PATH="$RUNNER_TEMP/hope-release-key-validation.p12"
+          rm -f "$KEY_VALIDATION_PATH"
+          key_password_from_store=false
+          if keytool -importkeystore -noprompt \
+            -srckeystore "$KEYSTORE_PATH" \
+            -srcstorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
+            -srcalias "$ANDROID_RELEASE_KEY_ALIAS" \
+            -srckeypass "$ANDROID_RELEASE_KEY_PASSWORD" \
+            -destkeystore "$KEY_VALIDATION_PATH" \
+            -deststorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
+            -destkeypass "$ANDROID_RELEASE_STORE_PASSWORD" \
+            -destalias "__hope_release_key_validation__" \
+            -deststoretype PKCS12 >/dev/null 2>&1; then
+            :
+          elif keytool -importkeystore -noprompt \
+            -srckeystore "$KEYSTORE_PATH" \
+            -srcstorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
+            -srcalias "$ANDROID_RELEASE_KEY_ALIAS" \
+            -srckeypass "$ANDROID_RELEASE_STORE_PASSWORD" \
+            -destkeystore "$KEY_VALIDATION_PATH" \
+            -deststorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
+            -destkeypass "$ANDROID_RELEASE_STORE_PASSWORD" \
+            -destalias "__hope_release_key_validation__" \
+            -deststoretype PKCS12 >/dev/null 2>&1; then
+            key_password_from_store=true
+            echo 'Private-key validation: supplied key password did not unlock the alias; keystore password does, so the release key uses the keystore password.'
+          else
+            echo 'ERROR: release keystore is valid, but neither the supplied key password nor the keystore password can unlock the configured release key alias.' >&2
+            rm -f "$KEY_VALIDATION_PATH"
+            exit 1
+          fi
+          rm -f "$KEY_VALIDATION_PATH"
+          echo "key_password_from_store=$key_password_from_store" >> "$GITHUB_OUTPUT"
           echo "path=$KEYSTORE_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Build signed production APK
@@ -176,7 +215,12 @@ jobs:
           ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: timeout --foreground --signal=TERM --kill-after=45s 20m bash tools/build_apk_release.sh
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.keystore_prepare.outputs.key_password_from_store }}" == "true" ]]; then
+            export ANDROID_RELEASE_KEY_PASSWORD="$ANDROID_RELEASE_STORE_PASSWORD"
+          fi
+          timeout --foreground --signal=TERM --kill-after=45s 20m bash tools/build_apk_release.sh
 
       - name: Set release artifact metadata
         id: artifact_meta
