@@ -42,6 +42,8 @@ class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      fontFamily: 'Vazirmatn',
+      fontFamilyFallback: const ['Roboto'],
       colorScheme: scheme,
       scaffoldBackgroundColor:
           dark ? AppColors.darkBackground : AppColors.background,
