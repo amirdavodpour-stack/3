@@ -33,3 +33,14 @@ test('Flutter TOMAN job creation never coerces monetary input through double', (
   assert.match(createJobValidator, /RegExp\(r'\^\\d\+\$'/);
   assert.match(createJobValidator, /9000000000000000/);
 });
+
+
+test('payment release requires and persists the provider release reference', () => {
+  const handler = fs.readFileSync(new URL('../src/outbox_handlers.js', import.meta.url), 'utf8');
+  const outbox = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
+  assert.match(handler, /result\.status !== 'RELEASED' \|\| !result\.releaseRef/);
+  assert.match(handler, /providerReleaseRef:result\.releaseRef/);
+  assert.match(outbox, /providerReleaseRef = null/);
+  assert.match(outbox, /settlementProviderRef = providerReleaseRef \|\| payment\.provider_ref/);
+  assert.match(outbox, /SETTLEMENT_PROVIDER_REF_REQUIRED/);
+});

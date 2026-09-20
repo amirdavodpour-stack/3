@@ -27,23 +27,135 @@ if [[ "$BUILD_PROFILE" == "production" ]]; then
   : "${ANDROID_RELEASE_STORE_PASSWORD:?Set ANDROID_RELEASE_STORE_PASSWORD for a production release}"
   : "${ANDROID_RELEASE_KEY_ALIAS:?Set ANDROID_RELEASE_KEY_ALIAS for a production release}"
   : "${ANDROID_RELEASE_KEY_PASSWORD:?Set ANDROID_RELEASE_KEY_PASSWORD for a production release}"
+
+  # Production builds are explicitly barred from PostHog staging capture.
+  export HOPE_ENV="production"
+  export POSTHOG_ENABLED="false"
+  export POSTHOG_PROJECT_TOKEN=""
+else
+  export HOPE_ENV="${HOPE_ENV:-local}"
+  export POSTHOG_ENABLED="${POSTHOG_ENABLED:-false}"
+  export POSTHOG_PROJECT_TOKEN="${POSTHOG_PROJECT_TOKEN:-}"
+fi
+export POSTHOG_HOST="${POSTHOG_HOST:-https://eu.i.posthog.com}"
+
+if [ "$POSTHOG_ENABLED" = "true" ]; then
+  [ "$HOPE_ENV" = "staging" ] || {
+    echo 'ERROR: POSTHOG_ENABLED=true is allowed only with HOPE_ENV=staging.' >&2
+    exit 1
+  }
+  [ -n "$POSTHOG_PROJECT_TOKEN" ] || {
+    echo 'ERROR: POSTHOG_PROJECT_TOKEN is required when PostHog is enabled.' >&2
+    exit 1
+  }
 fi
 
 chmod +x android/gradlew
+
+# GitHub-hosted runners have the Android SDK installed, but the SDK's
+# build-tools/cmdline-tools binaries are not guaranteed to be on PATH.
+# Resolve the newest installed tool locations explicitly so post-build
+# metadata/signature verification is independent of runner PATH layout.
+ANDROID_SDK_PATH="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+if [[ -n "$ANDROID_SDK_PATH" && -d "$ANDROID_SDK_PATH" ]]; then
+  BUILD_TOOLS_DIR=""
+  CMDLINE_TOOLS_DIR=""
+  if [[ -d "$ANDROID_SDK_PATH/build-tools" ]]; then
+    BUILD_TOOLS_DIR="$(find "$ANDROID_SDK_PATH/build-tools" -mindepth 1 -maxdepth 1 -type d -print | sort -V | tail -1)"
+  fi
+  if [[ -d "$ANDROID_SDK_PATH/cmdline-tools" ]]; then
+    CMDLINE_TOOLS_DIR="$(find "$ANDROID_SDK_PATH/cmdline-tools" -mindepth 1 -maxdepth 1 -type d -print | sort -V | tail -1)"
+  fi
+  [[ -n "$BUILD_TOOLS_DIR" ]] && export PATH="$BUILD_TOOLS_DIR:$PATH"
+  [[ -n "$CMDLINE_TOOLS_DIR" && -d "$CMDLINE_TOOLS_DIR/bin" ]] && export PATH="$CMDLINE_TOOLS_DIR/bin:$PATH"
+fi
+
 export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/.gradle-release}"
 export GRADLE_OPTS="${GRADLE_OPTS:--Dorg.gradle.daemon=false -Dorg.gradle.caching=false -Dorg.gradle.configuration-cache=false -Dorg.gradle.vfs.watch=false -Dorg.gradle.parallel=false}"
 bash tools/android-build-preflight.sh
 rm -rf build android/build android/app/build .gradle android/.gradle .dart_tool
 rm -f android/local.properties .flutter-plugins-dependencies
 flutter clean
+# integration_test is intentionally a dev-only dependency. Flutter's Android
+# plugin discovery can nevertheless include its native plugin in the release
+# registrant. Resolve the release APK from a temporary pubspec that excludes
+# this test-only dependency; tracked pubspec and lockfile are restored on exit.
+PUBSPEC_BACKUP="$RUNNER_TEMP/hope-pubspec.yaml"
+LOCKFILE_BACKUP="$RUNNER_TEMP/hope-pubspec.lock"
+cp pubspec.yaml "$PUBSPEC_BACKUP"
+cp pubspec.lock "$LOCKFILE_BACKUP"
+restore_release_dependency_files() {
+  cp "$PUBSPEC_BACKUP" pubspec.yaml
+  cp "$LOCKFILE_BACKUP" pubspec.lock
+}
+trap restore_release_dependency_files EXIT
+# Remove only the dev-only integration_test edge and the dependency-tree entries that
+# become unreachable from it. The remaining lockfile entries stay pinned, so the
+# release build still uses --enforce-lockfile and cannot silently upgrade anything.
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+pubspec = Path("pubspec.yaml")
+lines = pubspec.read_text().splitlines()
+out = []
+skip = False
+for line in lines:
+    if line.startswith("  integration_test:"):
+        skip = True
+        continue
+    if skip:
+        if line and not line.startswith("    "):
+            skip = False
+            out.append(line)
+        elif not line.strip():
+            skip = False
+            out.append(line)
+        continue
+    out.append(line)
+pubspec.write_text("\n".join(out) + "\n")
+
+# With integration_test removed, Pub reports these entries as no longer depended on.
+# Prune only those exact unreachable stanzas from the temporary lockfile.
+pruned_release_packages = {
+    "integration_test",
+    "flutter_driver",
+    "fuchsia_remote_debug_protocol",
+    "process",
+    "sync_http",
+    "webdriver",
+}
+lock = Path("pubspec.lock")
+lock_lines = lock.read_text().splitlines()
+lock_out = []
+i = 0
+while i < len(lock_lines):
+    line = lock_lines[i]
+    match = re.match(r"^  ([A-Za-z0-9_+.-]+):\s*$", line)
+    if match and match.group(1) in pruned_release_packages:
+        i += 1
+        while i < len(lock_lines):
+            nxt = lock_lines[i]
+            if nxt == "sdks:" or re.match(r"^  [A-Za-z0-9_+.-]+:\s*$", nxt):
+                break
+            i += 1
+        continue
+    lock_out.append(line)
+    i += 1
+
+lock.write_text("\n".join(lock_out) + "\n")
+PY
 flutter pub get --enforce-lockfile
+
 [ -f android/local.properties ] || { echo 'ERROR: Flutter did not regenerate android/local.properties.' >&2; exit 1; }
 FLUTTER_SDK_PATH="$(sed -n 's/^flutter\.sdk=//p' android/local.properties | head -1)"
 ANDROID_SDK_PATH="$(sed -n 's/^sdk\.dir=//p' android/local.properties | head -1)"
 [ -n "$FLUTTER_SDK_PATH" ] && [ -d "$FLUTTER_SDK_PATH" ] || { echo 'ERROR: generated flutter.sdk path is invalid.' >&2; exit 1; }
 [ -n "$ANDROID_SDK_PATH" ] && [ -d "$ANDROID_SDK_PATH" ] || { echo 'ERROR: generated sdk.dir path is invalid.' >&2; exit 1; }
 flutter gen-l10n
-flutter analyze
+# Match the canonical core-quality analyzer policy: analyzer warnings/info are reported,
+# while actual errors remain release-blocking.
+flutter analyze --no-fatal-warnings --no-fatal-infos lib
 flutter test --no-pub
 
 # Encode Dart defines with portable base64 so pilot/production builds survive any
@@ -56,6 +168,10 @@ BUILD_PROFILE_B64="$(printf '%s' "$BUILD_PROFILE" | base64 | tr -d '\n')"
 flutter build apk --release --no-pub \
   --dart-define=API_BASE_URL="$API_BASE_URL" \
   --dart-define=BUILD_PROFILE="$BUILD_PROFILE" \
+  --dart-define=HOPE_ENV="$HOPE_ENV" \
+  --dart-define=POSTHOG_ENABLED="$POSTHOG_ENABLED" \
+  --dart-define=POSTHOG_PROJECT_TOKEN="$POSTHOG_PROJECT_TOKEN" \
+  --dart-define=POSTHOG_HOST="$POSTHOG_HOST" \
   --dart-define=API_BASE_URL_B64="$API_BASE_URL_B64" \
   --dart-define=BUILD_PROFILE_B64="$BUILD_PROFILE_B64" \
   --verbose

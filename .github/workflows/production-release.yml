@@ -1,0 +1,270 @@
+name: Production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      CONFIRM:
+        description: 'Type RELEASE to continue'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  staging-certification:
+    name: Staging certification prerequisite
+    uses: ./.github/workflows/staging-certification.yml
+    secrets: inherit
+
+  release:
+    name: Production release
+    needs: staging-certification
+    if: ${{ needs.staging-certification.outputs.certification_status == 'PASS' }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      BUILD_PROFILE: production
+      API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
+      ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
+      REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
+      PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET_PRODUCTION }}
+      RESET_TOKEN_DELIVERY_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
+      ALLOWED_CORS_ORIGINS: ${{ secrets.ALLOWED_CORS_ORIGINS_PRODUCTION }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET_PRODUCTION }}
+      S3_REGION: ${{ secrets.S3_REGION_PRODUCTION }}
+      STAGING_CERTIFICATION_STATUS: ${{ needs.staging-certification.outputs.certification_status }}
+      STAGING_CERTIFICATION_RUN_ID: ${{ needs.staging-certification.outputs.certification_run_id }}
+      STAGING_CERTIFICATION_SHA: ${{ needs.staging-certification.outputs.certification_sha }}
+      STAGING_CERTIFICATION_ATTEMPT: ${{ needs.staging-certification.outputs.certification_attempt }}
+      ANDROID_RELEASE_KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
+      ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+      ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+      ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Enforce immutable release tag
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == refs/tags/v* ]] || { echo 'Production release must run from an immutable version tag (refs/tags/v...).' >&2; exit 1; }
+          VERSION="$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml | cut -d+ -f1)"
+          [ -n "$VERSION" ] || { echo 'Application version is missing.' >&2; exit 1; }
+          [ "$TAG" = "v$VERSION" ] || { echo "Release tag $TAG does not match application version v$VERSION" >&2; exit 1; }
+
+      - name: Require explicit release confirmation
+        shell: bash
+        env:
+          CONFIRM: ${{ inputs.CONFIRM }}
+        run: |
+          set -euo pipefail
+          printf 'CONFIRM:-%s\n' "$CONFIRM"
+          [ "$CONFIRM" = 'RELEASE' ] || { echo 'Production release requires explicit CONFIRM=RELEASE.' >&2; exit 1; }
+
+      - name: Validate production API base URL
+        shell: bash
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
+        run: |
+          set -euo pipefail
+          [ -n "${API_BASE_URL:-}" ] || { echo 'Production API_BASE_URL secret is required.' >&2; exit 1; }
+          [[ "$API_BASE_URL" =~ ^https://[^[:space:]]+$ ]] || { echo 'Production API_BASE_URL must use HTTPS and contain no whitespace.' >&2; exit 1; }
+
+      - name: Validate production environment contract
+        working-directory: backend
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET_PRODUCTION }}
+          S3_REGION: ${{ secrets.S3_REGION_PRODUCTION }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
+          ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
+          REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
+          PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET_PRODUCTION }}
+          RESET_TOKEN_DELIVERY_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
+          ALLOWED_CORS_ORIGINS: ${{ secrets.ALLOWED_CORS_ORIGINS_PRODUCTION }}
+        run: bash scripts/validate-production-env.sh
+
+      - name: Backend install
+        working-directory: backend
+        run: npm ci
+
+      - name: Backend quality gates
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          DATABASE_URL: ''
+          DATA_FILE: ${{ runner.temp }}/hope-production-quality/hope.json
+          STORAGE_DIR: ${{ runner.temp }}/hope-production-quality/storage
+          PAYMENT_PROVIDER: simulator
+          PAYMENT_CURRENCY: TOMAN
+          STORAGE_BACKEND: local
+          RESET_TOKEN_DELIVERY_MODE: console
+          RESET_TOKEN_DELIVERY_URL: ''
+          RESET_TOKEN_DELIVERY_SECRET: ''
+          API_BASE_URL: ''
+          ACCESS_TOKEN_SECRET: ''
+          REFRESH_TOKEN_SECRET: ''
+          PAYMENT_WEBHOOK_SECRET: ''
+          PUBLIC_BASE_URL: ''
+          METRICS_TOKEN: ''
+          ALLOWED_CORS_ORIGINS: ''
+          S3_BUCKET: ''
+          S3_REGION: ''
+          S3_ENDPOINT: ''
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$DATA_FILE")" "$STORAGE_DIR"
+          timeout --foreground --signal=TERM --kill-after=45s 20m npm run check:all
+
+      - name: Production npm audit
+        working-directory: backend
+        run: timeout --foreground --signal=TERM --kill-after=30s 10m npm audit --audit-level=high
+
+      - name: Verify Flutter lockfile
+        run: bash tools/verify-pubspec-lock-fresh.sh
+
+      - name: Flutter static check
+        run: timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Flutter test gate
+        run: timeout --foreground --signal=TERM --kill-after=30s 15m flutter test --no-pub
+
+      - name: Configure production keystore
+        id: keystore_prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_RELEASE_KEYSTORE_B64:?ANDROID_RELEASE_KEYSTORE_B64 is required}"
+          KEYSTORE_PATH="$RUNNER_TEMP/hope-production-release.keystore"
+          printf '%s' "$ANDROID_RELEASE_KEYSTORE_B64" | base64 --decode > "$KEYSTORE_PATH"
+          test -s "$KEYSTORE_PATH"
+          echo "path=$KEYSTORE_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Build signed production APK
+        id: release_build
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
+          BUILD_PROFILE: production
+          ANDROID_RELEASE_STORE_FILE: ${{ steps.keystore_prepare.outputs.path }}
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: timeout --foreground --signal=TERM --kill-after=45s 20m bash tools/build_apk_release.sh
+
+      - name: Set release artifact metadata
+        id: artifact_meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml)"
+          APK="artifacts/HOPE-${VERSION}-production.apk"
+          test -s "$APK"
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Verify signed production APK
+        id: apk_verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          apksigner verify --verbose "${{ steps.artifact_meta.outputs.apk }}"
+
+      - name: Runtime gate - android build
+        id: android_build_evidence
+        if: ${{ always() }}
+        working-directory: backend
+        env:
+          GATE_RESULT: ${{ steps.apk_verify.outcome == 'success' && 'pass' || 'fail' }}
+        run: |
+          CI=true node tools/write-evidence.mjs \
+            --gate android_build \
+            --command 'apksigner verify --verbose <release-apk>' \
+            --result "$GATE_RESULT"
+
+      - name: Build production backend image
+        working-directory: backend
+        env:
+          DOCKER_BUILDKIT: '1'
+        run: docker build --pull --file Dockerfile --tag hope-api:${GITHUB_SHA} .
+
+      - name: Record backend image identity
+        id: backend_image
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          IMAGE_ID="$(docker image inspect --format='{{.Id}}' "hope-api:${GITHUB_SHA}")"
+          IMAGE_REF="hope-api:${GITHUB_SHA}"
+          echo "id=$IMAGE_ID" >> "$GITHUB_OUTPUT"
+          echo "ref=$IMAGE_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SBOM
+        working-directory: backend
+        run: npm run sbom
+
+      - name: Generate release manifest
+        working-directory: backend
+        env:
+          BUILD_PROFILE: production
+          APK_PATH: ${{ steps.artifact_meta.outputs.apk }}
+          BACKEND_IMAGE_ID: ${{ steps.backend_image.outputs.id }}
+          BACKEND_IMAGE_REF: ${{ steps.backend_image.outputs.ref }}
+          STAGING_CERTIFICATION_STATUS: ${{ needs.staging-certification.outputs.certification_status }}
+          STAGING_CERTIFICATION_RUN_ID: ${{ needs.staging-certification.outputs.certification_run_id }}
+          STAGING_CERTIFICATION_SHA: ${{ needs.staging-certification.outputs.certification_sha }}
+          STAGING_CERTIFICATION_ATTEMPT: ${{ needs.staging-certification.outputs.certification_attempt }}
+          RELEASE_MANIFEST_PATH: ${{ github.workspace }}/release-manifest.json
+        run: npm run release:manifest
+
+      - name: Create SHA256SUMS.txt
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum "${{ steps.artifact_meta.outputs.apk }}" release-manifest.json > SHA256SUMS.txt
+
+      - name: Attest release APK provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.artifact_meta.outputs.apk }}
+
+      - name: Upload production release artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-production-release-${{ github.ref_name }}-${{ github.run_id }}
+          path: |
+            ${{ steps.artifact_meta.outputs.apk }}
+            SHA256SUMS.txt
+            release-manifest.json
+            backend/sbom.json
+            docs/audit/evidence/android_build.json
+          if-no-files-found: warn
+
+      - name: Cleanup production keystore
+        if: ${{ always() }}
+        shell: bash
+        env:
+          KEYSTORE_PATH: ${{ steps.keystore_prepare.outputs.path }}
+        run: rm -f -- "$KEYSTORE_PATH"

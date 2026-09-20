@@ -31,26 +31,28 @@ class _FakeDetail implements JobDetailRepository {
   final List<String> calls = [];
 
   @override
-  Future<List<HopeCandidate>> listCandidates(String jobId) async =>
-      candidates;
+  Future<List<HopeCandidate>> listCandidates(String jobId) async => candidates;
 
   @override
   Future<HopeApplication> applyToJob(String jobId,
       {required String resumeText, required String skills}) async {
     calls.add('apply:$jobId');
-    return HopeApplication.fromMap({
-      'id': 'app1',
-      'jobId': jobId,
-      'jobTitle': 't',
-      'status': 'PENDING'
-    });
+    return HopeApplication.fromMap(
+        {'id': 'app1', 'jobId': jobId, 'jobTitle': 't', 'status': 'PENDING'});
   }
 
   @override
   Future<HopeOffer> submitOffer(String jobId,
       {required String price, required String message}) async {
     calls.add('offer:$jobId:$price');
-    return HopeOffer.fromMap({'id': 'o1', 'jobId': jobId, 'providerId': 'u1', 'price': price, 'message': message, 'status': 'PENDING'});
+    return HopeOffer.fromMap({
+      'id': 'o1',
+      'jobId': jobId,
+      'providerId': 'u1',
+      'price': price,
+      'message': message,
+      'status': 'PENDING'
+    });
   }
 
   @override
@@ -60,11 +62,13 @@ class _FakeDetail implements JobDetailRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> compareCandidates(String jobId, List<String> applicationIds) async => const {};
+  Future<Map<String, dynamic>> compareCandidates(
+          String jobId, List<String> applicationIds) async =>
+      const {};
 
   @override
-  Future<void> reportJob(String jobId, {required String reason, String details = ''}) async {}
-
+  Future<void> reportJob(String jobId,
+      {required String reason, String details = ''}) async {}
 }
 
 class _FakeTx implements TransactionRepository {
@@ -220,17 +224,18 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('mission details render pricing, duration and transaction entry',
+  testWidgets('mission details render pricing, duration and action entry',
       (tester) async {
     await _pump(tester, job: _job());
     expect(find.text('Mission details'), findsOneWidget);
-    expect(find.text('Design a logo'), findsOneWidget);
+    expect(
+      tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
+      'Design a logo',
+    );
     expect(find.text('Mission budget'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
-    // Duration is mission-only.
     expect(find.text('Duration'), findsOneWidget);
-    // A mission exposes the transaction entry, not the admin-review banner.
-    expect(find.text('View transaction'), findsOneWidget);
+    expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
 
@@ -238,12 +243,15 @@ void main() {
       (tester) async {
     await _pump(tester, job: _job(kind: 'JOB'));
     expect(find.text('Job details'), findsOneWidget);
-    expect(find.text('Flutter developer'), findsOneWidget);
+    expect(
+      tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
+      'Flutter developer',
+    );
     expect(find.text('Monthly pay'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.textContaining('2026-09-30'), findsOneWidget);
     expect(find.textContaining('reviewed by an admin'), findsOneWidget);
-    expect(find.text('View transaction'), findsNothing);
+    expect(find.text('View financial flow'), findsNothing);
   });
 
   testWidgets('owner job with forwarded candidates renders candidate actions',
@@ -267,6 +275,7 @@ void main() {
       userId: 'u1',
     );
 
+    await tester.ensureVisible(find.text('Forwarded candidates'));
     expect(find.text('Forwarded candidates'), findsOneWidget);
     expect(find.text('Anonymous candidate'), findsNWidgets(2));
     expect(find.text('Flutter'), findsOneWidget);
@@ -304,11 +313,10 @@ void main() {
 
   testWidgets('owner mission opens the transaction route intent',
       (tester) async {
-    await _pump(tester, job: _job(kind: 'MISSION', ownerId: 'u1'), userId: 'u1');
+    await _pump(tester,
+        job: _job(kind: 'MISSION', ownerId: 'u1'), userId: 'u1');
     expect(find.byType(TransactionPage), findsNothing);
-    await tester.scrollUntilVisible(find.text('View transaction'), 150);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('View transaction'));
+    await tester.tap(find.text('View financial flow'));
     await tester.pumpAndSettle();
     // Navigation intent reached the transaction route and the transaction
     // page renders the funded payment.

@@ -6,8 +6,9 @@ test('saved-search sync endpoint is authenticated, bounded and user-isolated', a
   const tmp = makeTempEnv('hope-saved-search-sync-');
   const api = await startApiServer();
   try {
-    const alice = await register(api.json, 'alice-saved-search@example.com');
-    const bob = await register(api.json, 'bob-saved-search@example.com');
+    const suffix = `${Date.now()}-${process.pid}-${Math.random().toString(16).slice(2)}`;
+    const alice = await register(api.json, `alice-saved-search-${suffix}@example.com`);
+    const bob = await register(api.json, `bob-saved-search-${suffix}@example.com`);
     const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
     let r = await api.json('/saved-searches', { headers: auth(alice.accessToken) });
@@ -21,6 +22,8 @@ test('saved-search sync endpoint is authenticated, bounded and user-isolated', a
     });
     assert.equal(r.status, 200);
     assert.equal(r.body.data.name, 'Flutter');
+    const savedSearchId = r.body.data.id;
+    assert.match(savedSearchId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 
     r = await api.json('/saved-searches', { headers: auth(bob.accessToken) });
     assert.equal(r.status, 200);
@@ -38,15 +41,16 @@ test('saved-search sync endpoint is authenticated, bounded and user-isolated', a
     });
     assert.equal(r.status, 200);
     assert.equal(r.body.data.query, 'dart');
+    assert.equal(r.body.data.id, savedSearchId);
 
-    r = await api.json('/saved-searches/search-alice-1', {
+    r = await api.json(`/saved-searches/${savedSearchId}`, {
       method: 'DELETE',
       headers: auth(bob.accessToken),
     });
     assert.equal(r.status, 404);
     assert.equal(r.body.error.code, 'SAVED_SEARCH_NOT_FOUND');
 
-    r = await api.json('/saved-searches/search-alice-1', {
+    r = await api.json(`/saved-searches/${savedSearchId}`, {
       method: 'DELETE',
       headers: auth(alice.accessToken),
     });
@@ -61,7 +65,8 @@ test('saved-search route rejects oversized or malformed names', async () => {
   const tmp = makeTempEnv('hope-saved-search-validation-');
   const api = await startApiServer();
   try {
-    const user = await register(api.json, 'saved-search-validation@example.com');
+    const suffix = `${Date.now()}-${process.pid}-${Math.random().toString(16).slice(2)}`;
+    const user = await register(api.json, `saved-search-validation-${suffix}@example.com`);
     const auth = { Authorization: `Bearer ${user.accessToken}` };
     const longName = 'x'.repeat(101);
     let r = await api.json('/saved-searches', { method: 'PUT', headers: auth, body: JSON.stringify({ name: longName }) });

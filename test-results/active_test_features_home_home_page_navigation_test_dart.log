@@ -1,0 +1,10 @@
+
+::group::✅ Passing tests
+✅ member drawer shows account entries and hides admin panel
+✅ admin member sees the admin panel entry in the drawer
+✅ notifications drawer entry opens the notifications page
+✅ drawer language toggle switches the app locale
+✅ bottom navigation switches tabs and shows profile scaffold
+::endgroup::
+
+🎉 5 tests passed.

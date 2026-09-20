@@ -34,14 +34,42 @@ process.env.PAYMENT_PROVIDER_RELEASE_URL=`https://127.0.0.1:${port}/release`;
 process.env.PAYMENT_PROVIDER_REFUND_URL=`https://127.0.0.1:${port}/refund`;
 process.env.PAYMENT_PROVIDER_MAX_ATTEMPTS='3';
 process.env.PAYMENT_PROVIDER_RETRY_BASE_MS='0';
-process.env.NODE_TLS_REJECT_UNAUTHORIZED='0';
+
+// Use a request-local TLS bypass for the ephemeral self-signed test server.
+// This keeps the real HTTPS path under test without disabling TLS verification
+// process-wide through NODE_TLS_REJECT_UNAUTHORIZED.
+const originalFetch = global.fetch;
+global.fetch = async (input, init = {}) => {
+  const url = new URL(input);
+  if (url.hostname !== '127.0.0.1' || url.protocol !== 'https:') {
+    return originalFetch(input, init);
+  }
+  return new Promise((resolve, reject) => {
+    const request = https.request(url, {
+      method: init.method || 'GET',
+      headers: init.headers,
+      rejectUnauthorized: false,
+    }, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => resolve(new Response(Buffer.concat(chunks), {
+        status: response.statusCode || 0,
+        headers: response.headers,
+      })));
+      response.on('error', reject);
+    });
+    request.on('error', reject);
+    if (init.body) request.write(init.body);
+    request.end();
+  });
+};
 
 const { createPaymentProvider } = await import('../src/payment_provider.js');
 const { config } = await import('../src/config.js');
 const provider = createPaymentProvider('webhook');
 
 after(async () => {
-  delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  global.fetch = originalFetch;
   await new Promise(resolve => tlsServer.close(resolve));
   fs.rmSync(tmp,{recursive:true,force:true});
 });

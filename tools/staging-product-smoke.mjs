@@ -47,6 +47,16 @@ const providerRegistration = await register(providerEmail, 'Staging Provider');
 const provider = expectStatus(providerRegistration, 201, 'provider registration');
 assert.ok(provider.accessToken, 'provider access token missing');
 
+// Funding a job consumes the customer's internal TOMAN balance. The staging
+// environment exposes an explicitly gated internal-provider top-up endpoint;
+// seed the owner with enough balance to cover the job's employer charge.
+const topUp = await request('/wallet/top-up', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${owner.accessToken}` },
+  body: JSON.stringify({ amount: 200, idempotencyKey: `staging-topup-${stamp}` }),
+});
+expectStatus(topUp, 200, 'owner wallet top-up');
+
 const categories = await request('/categories');
 const categoryList = expectStatus(categories, 200, 'categories');
 assert.ok(Array.isArray(categoryList) && categoryList.length > 0, 'no staging categories available');
@@ -86,7 +96,10 @@ const fundResult = await request(`/api/v1/payments/fund/${job.id}`, {
   body: '{}',
 });
 assert.ok([200, 201, 202].includes(fundResult.response.status), `payment funding: expected 200/201/202, got ${fundResult.response.status}; body=${JSON.stringify(fundResult.body)}`);
-await poll('payment hold', () => request(`/api/v1/payments/jobs/${job.id}`, { headers: auth(owner.accessToken) }), (result) => result.response.status === 200 && (result.body?.data?.status ?? result.body?.status) === 'HELD');
+// Railway may still be converging from the branch commit while this workflow starts.
+// Keep the financial assertion bounded, but long enough for the new deployment's
+// outbox worker to take over a payment created by the previous container.
+await poll('payment hold', () => request(`/api/v1/payments/jobs/${job.id}`, { headers: auth(owner.accessToken) }), (result) => result.response.status === 200 && (result.body?.data?.status ?? result.body?.status) === 'HELD', 60000);
 
 expectStatus(await request(`/api/v1/jobs/${job.id}/start`, { method: 'POST', headers: auth(provider.accessToken) }), 200, 'job start');
 
@@ -102,13 +115,13 @@ expectStatus(await request(`/api/v1/jobs/${job.id}/accept`, { method: 'POST', he
 
 const releaseResult = await request(`/api/v1/payments/release/${job.id}`, { method: 'POST', headers: auth(owner.accessToken) });
 assert.ok([200, 202].includes(releaseResult.response.status), `payment release: expected 200/202, got ${releaseResult.response.status}; body=${JSON.stringify(releaseResult.body)}`);
-const release = await poll('payment release', () => request(`/api/v1/payments/jobs/${job.id}`, { headers: auth(owner.accessToken) }), (result) => result.response.status === 200 && (result.body?.data?.status ?? result.body?.status) === 'RELEASED');
+const release = await poll('payment release', () => request(`/api/v1/payments/jobs/${job.id}`, { headers: auth(owner.accessToken) }), (result) => result.response.status === 200 && (result.body?.data?.status ?? result.body?.status) === 'RELEASED', 60000);
 const releaseData = release.body?.data ?? release.body;
 assert.equal(releaseData.status, 'RELEASED', `payment release status=${releaseData.status}`);
 
 console.log(JSON.stringify({
   status: 'PASS',
-  workflow: 'auth -> job -> publish -> offer -> accept -> fund -> start -> evidence -> deliver -> accept -> release',
+  workflow: 'auth -> wallet top-up -> job -> publish -> offer -> accept -> fund -> start -> evidence -> deliver -> accept -> release',
   jobId: job.id,
   offerId: offer.id,
   paymentStatus: releaseData.status,

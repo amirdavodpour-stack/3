@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateIdempotencyPair, paymentAmountForJob, mapPaymentMutationError } from '../src/application/payment_policy.js';
 
-test('payment policy accepts matching header/body idempotency keys', () => {
-  assert.equal(validateIdempotencyPair({ headerKey: 'abc-123', bodyKey: 'abc-123', maxLength: 64 }), 'abc-123');
+test('payment policy accepts matching and normalizes header/body idempotency keys consistently', () => {
+  assert.equal(validateIdempotencyPair({ headerKey: ' abc-123 ', bodyKey: 'abc-123', maxLength: 64 }), 'abc-123');
+  assert.throws(() => validateIdempotencyPair({ headerKey: 'x'.repeat(65), maxLength: 64 }), /too long/i);
 });
 
 test('payment policy rejects unsafe and oversized idempotency keys', () => {

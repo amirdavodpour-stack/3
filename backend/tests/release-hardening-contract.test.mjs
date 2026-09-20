@@ -36,8 +36,8 @@ test('CI never contains the placeholder API host and requires a real HTTPS secre
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
   assert.doesNotMatch(workflow, /api\.hope\.example\.invalid/);
   assert.match(workflow, /secrets\.API_BASE_URL/);
-  assert.match(workflow, /API_BASE_URL secret is required/);
-  assert.match(workflow, /API_BASE_URL must use HTTPS/);
+  assert.match(workflow, /secret_label="API_BASE_URL or API_BASE_URL_STAGING"/);
+  assert.match(workflow, /API_BASE_URL(?:_[A-Z]+)? must use HTTPS/);
   assert.match(workflow, /contains whitespace or is malformed/);
   assert.match(workflow, /\^https:\/\/\[\^\[:space:\]\]\+\$/);
 });
@@ -159,9 +159,10 @@ test('staging certification requires a real external staging base URL and does n
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/staging-certification.yml'), 'utf8');
   assert.match(workflow, /secrets:\s*\n\s*STAGING_BASE_URL:/);
   assert.doesNotMatch(workflow, /PERF_BASE_URL: http:\/\/127\.0\.0\.1/);
-  assert.doesNotMatch(workflow, /STAGING_BASE_URL: http:\/\/127\.0\.0\.1/);
+  assert.doesNotMatch(workflow, /STAGING_BASE_URL:\s*http:\/\/127\.0\.0\.1/);
+  assert.doesNotMatch(workflow, /STAGING_BASE_URL:\s*\$\{\{[\s\S]*v2hope-production-7e9e\.up\.railway\.app/);
   assert.match(workflow, /PERF_BASE_URL: \$\{\{ env\.STAGING_BASE_URL \}\}/);
-  assert.match(workflow, /STAGING_BASE_URL: \$\{\{ secrets\.STAGING_BASE_URL \}\}/);
+  assert.match(workflow, /STAGING_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
 });
 
 
@@ -176,18 +177,37 @@ test('CI Android toolchain is explicit and release builds enforce the lockfile',
   assert.match(build, /flutter pub get --enforce-lockfile/);
   const apk = fs.readFileSync(path.join(root, 'tools/build_apk_release.sh'), 'utf8');
   assert.match(apk, /flutter pub get --enforce-lockfile/);
+  assert.match(apk, /integration_test is intentionally a dev-only dependency/);
+  assert.match(apk, /dev\\.flutter\\.plugins\\.integration_test\\.IntegrationTestPlugin/);
 });
 
-test('staging Android quality gate uses one canonical debug build path', () => {
+test('production keystore secret decoding tolerates wrapped or unpadded base64', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  const start = workflow.indexOf('- name: Configure production keystore');
+  const end = workflow.indexOf('- name: Build signed production APK', start);
+  assert.ok(start >= 0 && end > start);
+  const block = workflow.slice(start, end);
+  assert.ok(block.includes('tr -d \'[:space:]\''));
+  assert.ok(block.includes("tr '_-' '/+'"));
+  assert.ok(block.includes('rem=$(( ${#normalized} % 4 ))'));
+  assert.ok(block.includes('base64 --decode'));
+  assert.ok(block.includes('keytool -list -keystore'));
+  assert.ok(block.includes('keytool -importkeystore -noprompt'));
+  assert.ok(block.includes('key_password_from_store=false'));
+  assert.ok(block.includes('key_password_from_store=$key_password_from_store'));
+});
+
+test('staging Android runtime gate is the canonical device certification path', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/staging-certification.yml', import.meta.url), 'utf8');
-  const block = workflow.slice(workflow.indexOf('name: Android quality gates'), workflow.indexOf('name: Android emulator certification'));
-  assert.equal((block.match(/bash tools\/build_apk_debug\.sh/g) || []).length, 1);
-  assert.equal((block.match(/^\s*flutter build apk --debug/gm) || []).length, 0);
-  assert.equal((block.match(/^\s*flutter analyze$/gm) || []).length, 0);
-  assert.equal((block.match(/^\s*flutter test --no-pub$/gm) || []).length, 0);
-});
-
-test('production release derives canonical APK artifact from pubspec version', () => {
+  const start = workflow.indexOf('      - name: Android emulator certification');
+  const end = workflow.indexOf('      - name: Runtime gate - device certification', start);
+  assert.ok(start >= 0 && end > start);
+  const block = workflow.slice(start, end);
+  assert.ok(workflow.includes('id: flutter_runtime_dependencies'));
+  assert.ok(block.includes('flutter test --no-pub integration_test/runtime/app_smoke_test.dart'));
+  assert.ok(!workflow.includes('id: android_quality'));
+  assert.ok(!workflow.includes('bash tools/build_apk_debug.sh'));
+});test('production release derives canonical APK artifact from pubspec version', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/production-release.yml'), 'utf8');
   assert.doesNotMatch(workflow, /HOPE-3\.8\.0\+11-production\.apk/);
   assert.match(workflow, /HOPE-\$\{VERSION\}-production\.apk/);
@@ -234,5 +254,136 @@ test('migration checker covers every committed migration file', () => {
   assert.ok(files.length >= 1);
   for (const file of files) {
     assert.match(script, new RegExp(file.replace('.', '\\.') + '$|'+file.replace('.', '\\.')+' &&|'+file.replace('.', '\\.')+';'));
+  }
+});
+
+
+test('release validation consumes the actual reusable staging certification outputs', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  assert.match(workflow, /needs\.staging\.outputs\.certification_status == 'PASS'/);
+  assert.match(workflow, /needs\.staging\.outputs\.certification_sha == github\.sha/);
+  assert.match(workflow, /STAGING_CERTIFICATION_RUN_ID: \$\{\{ needs\.staging\.outputs\.certification_run_id \}\}/);
+  assert.match(workflow, /STAGING_CERTIFICATION_SHA: \$\{\{ needs\.staging\.outputs\.certification_sha \}\}/);
+  assert.match(workflow, /STAGING_CERTIFICATION_ATTEMPT: \$\{\{ needs\.staging\.outputs\.certification_attempt \}\}/);
+  assert.doesNotMatch(workflow, /STAGING_CERTIFICATION_STATUS: PASS/);
+});
+
+
+test('production reset bootstrap targets the same configured URL used by runtime delivery', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  assert.match(
+    workflow,
+    /RESET_WEBHOOK_URL:\s*\$\{\{\s*secrets\.RESET_TOKEN_DELIVERY_URL_PRODUCTION\s*\|\|\s*'https:\/\/oumueyftltvakimtbemj\.supabase\.co\/functions\/v1\/hope-password-reset'\s*\}\}/,
+  );
+  const block = workflow.match(/name: Provision password reset webhook receiver[\s\S]*?\n      - name: Setup Node\.js 24/)?.[0] || '';
+  assert.match(block, /RESET_WEBHOOK_URL/);
+  assert.match(block, /RESET_TOKEN_DELIVERY_SECRET_PRODUCTION/);
+  assert.match(block, /curl -fsS --retry 2/);
+});
+
+
+test('CI collects certification failures before enforcing aggregate gates', () => {
+  const main = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
+  const payment = fs.readFileSync(path.join(root, '.github/workflows/hope-payment-certification.yml'), 'utf8');
+  const staging = fs.readFileSync(path.join(root, '.github/workflows/staging-certification.yml'), 'utf8');
+  for (const pair of [
+    ['backend_static_check', main],
+    ['npm_audit_gate', main],
+    ['flutter_analyze_gate', main],
+    ['flutter_test_gate', main],
+    ['targeted_payment', payment],
+    ['live_mock_payment', payment],
+    ['payment_migrations', payment],
+    ['payment_webhook_pg', payment],
+    ['payment_postgres_lifecycle', payment],
+    ['payment_wallet_ledger', payment],
+    ['payment_financial_invariants', payment],
+    ['provider_integration', staging],
+    ['product_workflow', staging],
+    ['postgres_runtime', staging],
+    ['s3_runtime', staging],
+    ['perf_gate', staging],
+    ['dr_drill', staging],
+    ['emulator_certification', staging],
+    ['operational_gate', staging],
+  ]) {
+    const [id, body] = pair;
+    const marker = `id: ${id}`;
+    const start = body.indexOf(marker);
+    assert.ok(start >= 0, `missing ${id}`);
+    const next = body.indexOf('\n        - name:', start);
+    const step = body.slice(start, next >= 0 ? next : body.length);
+    assert.match(step, /continue-on-error: true/);
+  }
+  assert.match(main, /name: Enforce core quality gate/);
+  assert.match(payment, /name: Evaluate payment certification/);
+  assert.match(payment, /name: Enforce payment certification/);
+  assert.match(staging, /name: Enforce staging certification/);
+});
+
+test('production check:all collects every suite and aggregates failures', () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'backend/package.json'), 'utf8'));
+  assert.equal(packageJson.scripts?.['check:all'], 'node tools/check-all-collect.mjs');
+  const runner = fs.readFileSync(path.join(root, 'backend/tools/check-all-collect.mjs'), 'utf8');
+  assert.match(runner, /Collect-all mode/);
+  assert.match(runner, /for \(const \[command, timeoutMs\] of steps\)/);
+  assert.match(runner, /summaries\.push\(result\)/);
+  assert.match(runner, /process\.exit\(1\)/);
+  assert.match(runner, /check-all-summary\.json/);
+});
+
+
+test('production APK build uses only the validated production API secret', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  const build = workflow.slice(workflow.indexOf('- name: Build signed production APK'), workflow.indexOf('- name: Set release artifact metadata'));
+  assert.match(build, /API_BASE_URL: \\$\\{\\{ secrets\.API_BASE_URL_PRODUCTION \\}\\}/);
+  assert.doesNotMatch(build, /API_BASE_URL_STAGING/);
+});
+
+test('release validation cancels superseded runs on the same ref', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  assert.match(workflow, /concurrency:\n\s+group: release-validation-\$\{\{ github\.ref \}\}\n\s+cancel-in-progress: true/);
+});
+
+
+test('release validation reuses prerequisite gates instead of rerunning them in the artifact job', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  const start = workflow.indexOf('  production_artifact:');
+  const end = workflow.indexOf('  release_gate:', start);
+  assert.ok(start >= 0 && end > start);
+  const block = workflow.slice(start, end);
+  assert.ok(block.includes("needs.quality.result == 'success'"));
+  assert.ok(block.includes("needs.staging.outputs.certification_status == 'PASS'"));
+  assert.ok(block.includes("needs.payment.result == 'success'"));
+  assert.ok(!block.includes('npm run check:all'));
+  assert.ok(!block.includes('flutter analyze --no-fatal-warnings'));
+  assert.ok(!block.includes('flutter test --no-pub'));
+  assert.ok(!block.includes('backend/check-all-summary.json'));
+  assert.ok(block.includes('Production supply-chain audit'));
+  assert.ok(block.includes('Build signed production APK'));
+  assert.ok(block.includes('Verify signed production APK'));
+});
+
+test('the standalone production release workflow isolates backend quality tests from production secrets', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/production-release.yml'), 'utf8');
+  const start = workflow.indexOf('- name: Backend quality gates');
+  const end = workflow.indexOf('- name: Production npm audit', start);
+  assert.ok(start >= 0 && end > start);
+  const block = workflow.slice(start, end);
+  assert.match(block, /NODE_ENV: test/);
+  assert.match(block, /DATABASE_URL: ''/);
+  assert.match(block, /PAYMENT_PROVIDER: simulator/);
+  assert.match(block, /STORAGE_BACKEND: local/);
+  assert.match(block, /DATA_FILE: \$\{\{ runner\.temp \}\}/);
+  assert.doesNotMatch(block, /DATABASE_URL:\s+\$\{\{\s*secrets\.DATABASE_URL_PRODUCTION/);
+});
+
+// Release APK generation must strip the dev-only integration_test native registration from generated Android source.
+
+test('production APK isolation prunes only the integration_test dependency tree in its temporary lockfile', () => {
+  const apk = fs.readFileSync(path.join(root, 'tools/build_apk_release.sh'), 'utf8');
+  assert.match(apk, /flutter pub get --enforce-lockfile/);
+  for (const name of ['integration_test','flutter_driver','fuchsia_remote_debug_protocol','process','sync_http','webdriver']) {
+    assert.match(apk, new RegExp(`["']${name}["']`));
   }
 });

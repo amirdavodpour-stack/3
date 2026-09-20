@@ -78,8 +78,13 @@ export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, H
     }
     if (req.method === 'POST' && parts[1] === 'top-up') {
       const me = await authUser(req);
-      const enabled = process.env.NODE_ENV !== 'production' && config.internalWalletUserTopUpEnabled;
-      if (config.paymentProvider !== 'internal' || !enabled) {
+      // Production deployments keep this endpoint off by default. The
+      // explicit staging flag permits the internal TOMAN funding path in the
+      // hardening environment even though Railway's environment is named
+      // "production". It never enables an external payment provider.
+      const stagingSandbox = process.env.STAGING_ALLOW_INTERNAL_WALLET_TOPUP === 'true';
+      const enabled = config.paymentProvider === 'internal' && config.internalWalletUserTopUpEnabled && (process.env.NODE_ENV !== 'production' || stagingSandbox);
+      if (!enabled) {
         throw new HttpError(404, 'NOT_FOUND', 'Wallet top-up is disabled in this environment');
       }
       const body = await readBody(req);

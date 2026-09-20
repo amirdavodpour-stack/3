@@ -291,6 +291,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   }
 
   Future<void> _resolvePayout(String id, String decision) async {
+    final repository = context.read<AdminRepository>();
     String providerRef = '';
     String reason = '';
     if (decision == 'SUCCEEDED') {
@@ -314,7 +315,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       if (result != true) return;
     }
     try {
-      await context.read<AdminRepository>().resolveUnknownPayout(
+      await repository.resolveUnknownPayout(
         id,
         decision: decision,
         providerRef: providerRef.isEmpty ? null : providerRef,

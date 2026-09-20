@@ -3,14 +3,19 @@ import { HttpError } from '../api/http_error.js';
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9._~:-]+$/;
 
 export function validateIdempotencyPair({ headerKey = '', bodyKey = '', maxLength }) {
-  const header = String(headerKey || '').trim();
-  const body = String(bodyKey || '').trim();
-  if (body && body.length > maxLength) {
-    throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key is too long');
-  }
-  if (body && !IDEMPOTENCY_KEY_RE.test(body)) {
-    throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key contains unsupported characters');
-  }
+  const normalize = (value) => String(value || '').trim();
+  const validate = (value) => {
+    if (!value) return '';
+    if (value.length > maxLength) {
+      throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key is too long');
+    }
+    if (!IDEMPOTENCY_KEY_RE.test(value)) {
+      throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key contains unsupported characters');
+    }
+    return value;
+  };
+  const header = validate(normalize(headerKey));
+  const body = validate(normalize(bodyKey));
   if (header && body && header !== body) {
     throw new HttpError(400, 'INVALID_IDEMPOTENCY_KEY', 'Header and body idempotency keys must match');
   }
@@ -21,7 +26,14 @@ export function paymentAmountForJob(job) {
   const candidate = job.kind === 'JOB'
     ? (job.monthlySalary || job.budgetMax || job.budgetMin)
     : (job.budgetMax || job.budgetMin);
-  const raw = String(candidate ?? '').trim();
+  let raw = String(candidate ?? '').trim();
+
+  // PostgreSQL NUMERIC(18,2) values are returned by node-postgres as strings,
+  // so an integer TOMAN amount such as 150 can round-trip to "150.00".
+  // Normalize only zero-fraction decimal strings; fractional TOMAN values
+  // remain invalid by design.
+  if (/^\d+\.0+$/.test(raw)) raw = raw.slice(0, raw.indexOf('.'));
+
   if (!/^\d+$/.test(raw) || raw === '0') {
     throw new HttpError(400, 'INVALID_AMOUNT', 'Job budget is invalid');
   }

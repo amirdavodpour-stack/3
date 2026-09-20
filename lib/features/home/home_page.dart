@@ -84,8 +84,8 @@ class _HomePageState extends State<HomePage> {
                     labelType: MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded
                         ? NavigationRailLabelType.none
                         : NavigationRailLabelType.all,
-                    leading: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 12, 8, 22),
+                    leading: const Padding(
+                      padding: EdgeInsets.fromLTRB(8, 12, 8, 22),
                       child: HopeMark(size: 44, showText: false),
                     ),
                     destinations: [
@@ -128,7 +128,16 @@ class _HomePageState extends State<HomePage> {
               if (!auth.isGuest) _drawerTile(context, Icons.local_offer_outlined, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
               if (!auth.isGuest) _drawerTile(context, Icons.notifications_rounded, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
               if (!auth.isGuest) _drawerTile(context, Icons.account_balance_wallet_rounded, _t(context, 'کیف پول', 'Wallet'), () { Navigator.pop(context); _selectTab(3); }),
-              if (auth.user?['role'] == 'ADMIN') _drawerTile(context, Icons.admin_panel_settings_rounded, _t(context, 'پنل مدیریت', 'Admin'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
+              if (auth.user?['role'] == 'ADMIN') _drawerTile(context, Icons.admin_panel_settings_rounded, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
+              ListTile(
+                leading: const HopeIconTile(Icons.translate_rounded),
+                title: Text(
+                  settings.language == 'en' ? 'Language: English' : 'زبان: فارسی',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text(_t(context, 'برای تغییر زبان لمس کنید.', 'Tap to switch language.')),
+                onTap: () => settings.setLanguage(settings.language == 'en' ? 'fa' : 'en'),
+              ),
               const Divider(height: 26),
               ListTile(
                 leading: const HopeIconTile(Icons.location_on_outlined),

@@ -137,7 +137,6 @@ export async function readMultipartSingleFile(req) {
     try { stream.destroy(); await fs.promises.unlink(tempPath); } catch {}
     throw error;
   }
-  let filePath = null;
   await acquireUploadParser();
   try {
     const body = await fs.promises.readFile(tempPath);
@@ -166,12 +165,14 @@ export async function readMultipartSingleFile(req) {
     }
     const safeName = path.basename(disposition[2]).replace(/[^a-zA-Z0-9._-]/g, '_');
     const key = `${crypto.randomUUID()}-${safeName}`;
-    filePath = path.join(config.storageDir, key);
-    await fs.promises.writeFile(filePath, content, { flag: 'wx' });
+    // Reuse the already-created temp file for the extracted payload. This is
+    // important: the object storage layer must receive the file bytes, not the
+    // surrounding multipart envelope. Keeping one path also guarantees that the
+    // route's finally block removes the exact temporary file after upload.
+    await fs.promises.writeFile(tempPath, content);
     return { key, filename: safeName, contentType, size: content.length, path: tempPath };
   } catch (error) {
     try { await fs.promises.unlink(tempPath); } catch {}
-    if (filePath) { try { await fs.promises.unlink(filePath); } catch {} }
     throw error;
   } finally {
     releaseUploadParser();

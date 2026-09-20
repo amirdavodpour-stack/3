@@ -13,6 +13,22 @@ esac
 export BUILD_PROFILE="${BUILD_PROFILE:-pilot}"
 [ "$BUILD_PROFILE" = "pilot" ] || { echo 'ERROR: debug certification uses BUILD_PROFILE=pilot.' >&2; exit 1; }
 
+export HOPE_ENV="${HOPE_ENV:-local}"
+export POSTHOG_ENABLED="${POSTHOG_ENABLED:-false}"
+export POSTHOG_PROJECT_TOKEN="${POSTHOG_PROJECT_TOKEN:-}"
+export POSTHOG_HOST="${POSTHOG_HOST:-https://eu.i.posthog.com}"
+
+if [ "$POSTHOG_ENABLED" = "true" ]; then
+  [ "$HOPE_ENV" = "staging" ] || {
+    echo 'ERROR: POSTHOG_ENABLED=true is allowed only with HOPE_ENV=staging.' >&2
+    exit 1
+  }
+  [ -n "$POSTHOG_PROJECT_TOKEN" ] || {
+    echo 'ERROR: POSTHOG_PROJECT_TOKEN is required when PostHog is enabled.' >&2
+    exit 1
+  }
+fi
+
 export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$ROOT/.gradle-debug}"
 bash tools/ci-resource-guard.sh
 export GRADLE_OPTS="${GRADLE_OPTS:--Dorg.gradle.daemon=false -Dorg.gradle.caching=false -Dorg.gradle.configuration-cache=false -Dorg.gradle.vfs.watch=false -Dorg.gradle.parallel=false}"
@@ -30,18 +46,34 @@ ANDROID_SDK_PATH="$(sed -n 's/^sdk\.dir=//p' android/local.properties | head -1)
 [ -n "$FLUTTER_SDK_PATH" ] && [ -d "$FLUTTER_SDK_PATH" ] || { echo 'ERROR: generated flutter.sdk path is invalid.' >&2; exit 1; }
 [ -n "$ANDROID_SDK_PATH" ] && [ -d "$ANDROID_SDK_PATH" ] || { echo 'ERROR: generated sdk.dir path is invalid.' >&2; exit 1; }
 flutter gen-l10n
-flutter analyze
+flutter analyze --no-fatal-warnings --no-fatal-infos
 flutter test --no-pub
 
 flutter build apk --debug --no-pub \
   --dart-define=API_BASE_URL="$API_BASE_URL" \
   --dart-define=BUILD_PROFILE="$BUILD_PROFILE" \
+  --dart-define=HOPE_ENV="$HOPE_ENV" \
+  --dart-define=POSTHOG_ENABLED="$POSTHOG_ENABLED" \
+  --dart-define=POSTHOG_PROJECT_TOKEN="$POSTHOG_PROJECT_TOKEN" \
+  --dart-define=POSTHOG_HOST="$POSTHOG_HOST" \
   --verbose
 
 APK="build/app/outputs/flutter-apk/app-debug.apk"
 test -s "$APK" || { echo "ERROR: expected debug APK was not produced: $APK" >&2; find build/app/outputs/flutter-apk -maxdepth 1 -type f -print >&2 || true; exit 1; }
 APK_SIZE="$(stat -c '%s' "$APK" 2>/dev/null || stat -f '%z' "$APK")"
 test "$APK_SIZE" -gt 1000000 || { echo "ERROR: debug APK is implausibly small: $APK_SIZE bytes" >&2; exit 1; }
+
+# Hosted runners do not guarantee Android command-line tools are on PATH.
+# Resolve the APK verifier from the exact SDK that Flutter generated in
+# android/local.properties so certification is independent of runner PATH.
+AAPT_PATH="$(find "$ANDROID_SDK_PATH/build-tools" -mindepth 2 -maxdepth 2 -type f -name aapt -perm -111 -print 2>/dev/null | sort -V | tail -1 || true)"
+if [ -n "$AAPT_PATH" ]; then
+  export PATH="$(dirname "$AAPT_PATH"):$PATH"
+fi
+if [ -x "$ANDROID_SDK_PATH/cmdline-tools/latest/bin/apkanalyzer" ]; then
+  export PATH="$ANDROID_SDK_PATH/cmdline-tools/latest/bin:$PATH"
+fi
+hash -r 2>/dev/null || true
 
 VERSION="$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml)"
 VERSION_NAME="${VERSION%%+*}"

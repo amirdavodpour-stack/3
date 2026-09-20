@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { db } from './db.js';
 import { startOutboxWorker } from './outbox_worker.js';
 import { startReconciliationWorker } from './reconciliation_worker.js';
+import { startStorageCleanupWorker } from './storage_cleanup_worker.js';
 import { metricsSnapshot } from './observability.js';
 import { dispatchOperationalAlerts } from './alerting.js';
 
@@ -21,6 +22,7 @@ server.on('clientError', (error, socket) => {
 });
 const outboxWorker = startOutboxWorker();
 const reconciliationWorker = startReconciliationWorker();
+const storageCleanupWorker = startStorageCleanupWorker();
 const alertTimer = setInterval(() => { dispatchOperationalAlerts(metricsSnapshot()).catch((error) => console.error('[alerting] error:', error.message)); }, 30000);
 alertTimer.unref();
 server.listen(config.port, config.host, () => {
@@ -34,7 +36,7 @@ const shutdown = () => {
   const timer = setTimeout(() => process.exit(1), 10000);
   timer.unref();
   server.close(async () => {
-    try { clearInterval(alertTimer); outboxWorker.stop(); reconciliationWorker.stop(); await db.close(); process.exitCode = 0; }
+    try { clearInterval(alertTimer); outboxWorker.stop(); reconciliationWorker.stop(); storageCleanupWorker.stop(); await db.close(); process.exitCode = 0; }
     catch (error) { console.error('[server] shutdown error:', error); process.exitCode = 1; }
     finally { process.exit(); }
   });

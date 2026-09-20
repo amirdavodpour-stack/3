@@ -19,6 +19,12 @@ test('device certification workflow uses a pinned emulator runner and HTTPS stag
   assert.match(workflow, /CI_DEVICE_INTEGRATION=true/);
 });
 
+test('device emulator runner script remains POSIX-sh compatible', () => {
+  assert.doesNotMatch(workflow, /script:\s*\|\s*\n\s*set\s+[^\n]*pipefail/);
+  assert.match(workflow, /script:\s*\|[\s\S]*?flutter test --no-pub integration_test\/runtime\/app_smoke_test\.dart/);
+  assert.match(workflow, /bash tools\/android-staging-network-preflight\.sh/);
+});
+
 test('staging certification performs device certification before any production signing job can run', () => {
   const deviceIndex = staging.indexOf('Android emulator certification');
   assert.ok(deviceIndex >= 0);

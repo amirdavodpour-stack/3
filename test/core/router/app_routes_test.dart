@@ -18,23 +18,45 @@ class _FakeJobDetailRepository implements JobDetailRepository {
   Future<List<HopeCandidate>> listCandidates(String jobId) async => const [];
 
   @override
-  Future<HopeApplication> applyToJob(String jobId,
-          {required String resumeText, required String skills}) =>
-      throw UnimplementedError();
+  Future<HopeApplication> applyToJob(
+    String jobId, {
+    required String resumeText,
+    required String skills,
+  }) => throw UnimplementedError();
 
   @override
-  Future<HopeOffer> submitOffer(String jobId,
-          {required String price, required String message}) async => HopeOffer.fromMap({'id': 'o1', 'jobId': jobId, 'providerId': 'u1', 'price': price, 'message': message, 'status': 'PENDING'});
+  Future<HopeOffer> submitOffer(
+    String jobId, {
+    required String price,
+    required String message,
+  }) async => HopeOffer.fromMap({
+        'id': 'o1',
+        'jobId': jobId,
+        'providerId': 'u1',
+        'price': price,
+        'message': message,
+        'status': 'PENDING',
+      });
 
   @override
   Future<void> candidateAction(
-          String jobId, String candidateId, String action) async {}
+    String jobId,
+    String candidateId,
+    String action,
+  ) async {}
 
   @override
-  Future<Map<String, dynamic>> compareCandidates(String jobId, List<String> applicationIds) async => const {};
+  Future<Map<String, dynamic>> compareCandidates(
+    String jobId,
+    List<String> applicationIds,
+  ) async => const {};
 
   @override
-  Future<void> reportJob(String jobId, {required String reason, String details = ''}) async {}
+  Future<void> reportJob(
+    String jobId, {
+    required String reason,
+    String details = '',
+  }) async {}
 }
 
 // The provider must sit ABOVE the MaterialApp: a route pushed with
@@ -95,12 +117,8 @@ void main() {
     await tester.tap(find.text('go'));
     await tester.pumpAndSettle();
     expect(find.byType(JobDetailPage), findsOneWidget);
-    expect(find.text('طراحی اپ'), findsWidgets);
+    final page = tester.widget<JobDetailPage>(find.byType(JobDetailPage));
+    expect(page.job.id, 'j1');
+    expect(page.job.title, 'طراحی اپ');
   });
-  @override
-  Future<Map<String, dynamic>> compareCandidates(String jobId, List<String> applicationIds) async => const {};
-
-  @override
-  Future<void> reportJob(String jobId, {required String reason, String details = ''}) async {}
-
 }
