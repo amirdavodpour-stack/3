@@ -141,14 +141,16 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(_t('حریم خصوصی و داده‌ها', 'Privacy & data'))),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      body: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: ListView(
+          padding: EdgeInsets.zero,
         children: [
           PremiumHeader(
             eyebrow: _t('کنترل حساب', 'ACCOUNT CONTROL'),
-            title: _t('داده‌ها دست خودت است', 'Your data, under your control'),
+            title: _t('داده‌ها تحت کنترل شماست', 'Your data, under your control'),
             subtitle: _t(
-              'خروجی اطلاعات و حذف حساب را از یک مسیر شفاف مدیریت کن.',
+              'خروجی اطلاعات و حذف حساب را از یک مسیر شفاف مدیریت کنید.',
               'Export your account data or permanently delete the account from one clear place.',
             ),
             trailing: const HopeIconTile(Icons.privacy_tip_outlined, size: 50, filled: true),
@@ -163,7 +165,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                     style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 Text(_t(
-                  'یک خروجی ساختاریافته از داده‌هایی که HOPE برای حساب تو نگه می‌دارد دریافت کن.',
+                  'یک خروجی ساختاریافته از داده‌هایی که HOPE برای حساب شما نگه می‌دارد دریافت کن.',
                   'Get a structured export of the data HOPE stores for your account.',
                 )),
                 const SizedBox(height: 16),
@@ -221,7 +223,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                     )),
                 const SizedBox(height: 8),
                 Text(_t(
-                  'حذف حساب برگشت‌پذیر نیست. قبل از انجام آن، خروجی داده‌ها را دریافت کن.',
+                  'حذف حساب برگشت‌پذیر نیست. قبل از انجام آن، خروجی داده‌ها را دریافت کنید.',
                   'Account deletion cannot be undone. Export your data first if you need a copy.',
                 )),
                 const SizedBox(height: 16),
