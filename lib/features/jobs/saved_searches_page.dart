@@ -220,6 +220,19 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
               trailing: const HopeIconTile(Icons.bookmark_rounded, size: 50, filled: true),
             ),
             const SizedBox(height: 18),
+            if (!_loading && _error == null && _items.isNotEmpty)
+              PremiumStatCard(
+                label: _t('جست‌وجوهای فعال', 'Saved searches'),
+                value: _items.length.toString(),
+                icon: Icons.bookmark_rounded,
+                accent: Theme.of(context).colorScheme.primary,
+                caption: _t(
+                  'فیلترهای ذخیره‌شده حساب شما',
+                  'Saved filters on your account',
+                ),
+              ),
+            if (!_loading && _error == null && _items.isNotEmpty)
+              const SizedBox(height: 12),
             if (_loading)
               const PremiumPanel(
                 child: SizedBox(
