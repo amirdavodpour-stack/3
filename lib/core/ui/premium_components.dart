@@ -46,6 +46,68 @@ class PremiumNavigationBar extends StatelessWidget {
   }
 }
 
+class PremiumNavigationRail extends StatelessWidget {
+  const PremiumNavigationRail({
+    super.key,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.destinations,
+    this.extended = false,
+    this.leading,
+    this.trailing,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final List<NavigationDestination> destinations;
+  final bool extended;
+  final Widget? leading;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: .96),
+        border: Border(
+          right: BorderSide(color: HopeV2Surfaces.border(context)),
+        ),
+      ),
+      child: SafeArea(
+        left: false,
+        top: false,
+        bottom: false,
+        child: NavigationRail(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          destinations: [
+            for (final destination in destinations)
+              NavigationRailDestination(
+                icon: destination.icon,
+                selectedIcon: destination.selectedIcon,
+                label: Text(destination.label),
+              ),
+          ],
+          extended: extended,
+          minWidth: 88,
+          minExtendedWidth: 210,
+          labelType: extended
+              ? NavigationRailLabelType.none
+              : NavigationRailLabelType.all,
+          leading: leading,
+          trailing: trailing,
+          backgroundColor: Colors.transparent,
+          indicatorColor: scheme.primary.withValues(alpha: .12),
+          useIndicator: true,
+          elevation: 0,
+          groupAlignment: -.6,
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumPageFrame extends StatelessWidget {
   const PremiumPageFrame({
     super.key,
