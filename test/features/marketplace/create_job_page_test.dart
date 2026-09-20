@@ -199,7 +199,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Choose a professional category.'), findsOneWidget);
+    expect(find.text('Select a professional field.'), findsOneWidget);
     expect(repo.calls, isEmpty);
   });
 
@@ -238,7 +238,7 @@ void main() {
     await tester.tap(find.text('Publish opportunity'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Set an application deadline for jobs.'), findsOneWidget);
+    expect(find.text('Set the application deadline.'), findsOneWidget);
     expect(repo.calls, isEmpty);
 
     // With a deadline the job publishes.
@@ -293,7 +293,7 @@ void main() {
     await tester.tap(find.text('Publish opportunity'));
     await tester.pumpAndSettle();
 
-    expect(find.text('The server did not return data. Try again.'),
+    expect(find.text('No data was returned by the server. Please try again.'),
         findsOneWidget);
     // Still on the form: the pop only happens on success.
     expect(find.byType(CreateJobPage), findsOneWidget);
