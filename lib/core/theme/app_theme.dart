@@ -52,7 +52,6 @@ class AppTheme {
           dark ? AppColors.darkBackground : AppColors.backgroundWarm,
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
-      scaffoldBackgroundColor: dark ? AppColors.darkBackground : AppColors.backgroundWarm,
       focusColor: (dark ? AppColors.primaryDark : AppColors.primary)
           .withValues(alpha: .14),
       hoverColor: (dark ? AppColors.primaryDark : AppColors.primary)
