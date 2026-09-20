@@ -61,6 +61,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
       SnackBar(content: Text(_t('خروجی JSON کپی شد.', 'JSON export copied.'))),
     );
   }
+}
 
   Future<void> _deleteAccount() async {
     final controller = TextEditingController();
