@@ -85,6 +85,19 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
     }
   }
 
+  String _platformLabel(String platform) {
+    switch (platform.toUpperCase()) {
+      case 'ANDROID':
+        return 'Android';
+      case 'IOS':
+        return 'iPhone / iPad';
+      case 'WEB':
+        return 'Web';
+      default:
+        return platform.isEmpty ? _t('دستگاه', 'Device') : platform;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,6 +119,18 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               trailing: const HopeIconTile(Icons.devices_rounded, size: 50, filled: true),
             ),
             const SizedBox(height: 18),
+            if (!_loading && _error == null)
+              PremiumStatCard(
+                label: _t('دستگاه فعال برای Push', 'Active Push devices'),
+                value: '$activeCountExpr',
+                icon: Icons.notifications_active_rounded,
+                accent: Theme.of(context).colorScheme.primary,
+                caption: _t(
+                  'فقط توکن‌ها و وضعیت لازم برای مدیریت اعلان نمایش داده می‌شود.',
+                  'Only the state needed to manage notifications is exposed.',
+                ),
+              ),
+            if (!_loading && _error == null) const SizedBox(height: 12),
             if (_loading)
               const PremiumPanel(
                 child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator())),
@@ -156,11 +181,24 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                     final busy = _busyId == device.id;
                     return ListTile(
                       leading: HopeIconTile(_icon(device.platform), filled: true),
-                      title: Text(device.platform),
-                      subtitle: Text(
-                        device.enabled
-                            ? _t('فعال برای Push', 'Enabled for Push')
-                            : _t('غیرفعال', 'Disabled'),
+                      title: Text(
+                        _platformLabel(device.platform),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      subtitle: Row(
+                        children: [
+                          PremiumTag(
+                            icon: device.enabled
+                                ? Icons.check_circle_rounded
+                                : Icons.pause_circle_outline_rounded,
+                            label: device.enabled
+                                ? _t('فعال', 'Enabled')
+                                : _t('غیرفعال', 'Disabled'),
+                            color: device.enabled
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                        ],
                       ),
                       trailing: device.enabled
                           ? TextButton(
