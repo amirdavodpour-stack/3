@@ -4,6 +4,48 @@ import 'components.dart';
 
 /// Shared page shell. Every V2 flagship surface should use this instead of
 /// inventing its own max-width, page padding, or bottom safe-area behavior.
+/// Canonical mobile navigation surface for the HOPE shell.
+class PremiumNavigationBar extends StatelessWidget {
+  const PremiumNavigationBar({
+    super.key,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.destinations,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final List<NavigationDestination> destinations;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: .96),
+        border: Border(
+          top: BorderSide(color: HopeV2Surfaces.border(context)),
+        ),
+        boxShadow: HopeV2Shadows.card,
+      ),
+      child: SafeArea(
+        top: false,
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          destinations: destinations,
+          height: 80,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: scheme.primary.withValues(alpha: .12),
+          elevation: 0,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumPageFrame extends StatelessWidget {
   const PremiumPageFrame({
     super.key,
