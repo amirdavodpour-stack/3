@@ -122,7 +122,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 'Search missions and jobs, or post a new opportunity.',
               ),
               icon: Icons.work_outline_rounded,
-              height: 272,
+              height: 344,
               action: Wrap(
                 spacing: 10,
                 runSpacing: 10,
