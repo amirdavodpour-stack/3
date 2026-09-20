@@ -18,7 +18,7 @@ class AboutHopePage extends StatelessWidget {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
           children: [
-            const HeroBanner(image: 'assets/images/hope_marketplace_hero.png'),
+            const HeroBanner(),
             const SizedBox(height: 18),
             const Center(child: HopeMark(size: 72, showText: true)),
             const SizedBox(height: 20),
@@ -153,44 +153,90 @@ class AboutHopePage extends StatelessWidget {
 }
 
 class HeroBanner extends StatelessWidget {
-  const HeroBanner({super.key, required this.image});
-  final String image;
+  const HeroBanner({super.key});
+
   @override
-  Widget build(BuildContext context) => ClipRRect(
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: SizedBox(
-          height: 180,
-          child: Stack(fit: StackFit.expand, children: [
-            Image.asset(image, fit: BoxFit.cover),
-            DecoratedBox(
-                decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                  Colors.black12,
-                  Colors.black.withValues(alpha: .62)
-                ]))),
-            Padding(
+        height: 180,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                scheme.primary,
+                scheme.secondary,
+                scheme.surfaceContainerHighest,
+              ],
+            ),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned(
+                right: -42,
+                top: -56,
+                child: ExcludeSemantics(
+                  child: Container(
+                    width: 190,
+                    height: 190,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: .16),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: -26,
+                bottom: -74,
+                child: ExcludeSemantics(
+                  child: Container(
+                    width: 180,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: .08),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                          HopeCopy.of(context)
-                              .copy_a_better_path_to_finding_work_5802652,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 4),
-                      Text(
-                          HopeCopy.of(context)
-                              .copy_opportunities_meet_the_right_people_d51fef5,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 23,
-                              fontWeight: FontWeight.w900))
-                    ]))
-          ])));
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      HopeCopy.of(context).copy_a_better_path_to_finding_work_5802652,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      HopeCopy.of(context).copy_opportunities_meet_the_right_people_d51fef5,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
