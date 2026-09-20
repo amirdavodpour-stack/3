@@ -807,8 +807,9 @@ class _WalletPageState extends State<WalletPage> {
           ],
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _DetailRow extends StatelessWidget {
