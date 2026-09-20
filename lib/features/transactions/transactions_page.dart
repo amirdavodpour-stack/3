@@ -244,16 +244,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final metrics = [
-                          MetricTile(
+                          PremiumStatCard(
                             label: HopeCopy.of(context).copy_total_projects_78ce548,
                             value: '${items.length}',
                             icon: Icons.work_history_rounded,
+                            caption: HopeCopy.of(context).copy_latest_activity_a05277b,
                           ),
-                          MetricTile(
+                          PremiumStatCard(
                             label: HopeCopy.of(context).copy_status_b81f9c7,
                             value: HopeCopy.of(context).copy_active_5726b26,
                             icon: Icons.bolt_rounded,
-                            color: secondaryAccent(context),
+                            accent: secondaryAccent(context),
+                            caption: HopeCopy.of(context).copy_work_status_eb2d6f2,
                           ),
                         ];
 
