@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/auth/auth_controller.dart';
 import 'core/auth/auth_repository.dart';
+import 'core/auth/google_sign_in_service.dart';
 import 'core/account/account_privacy_repository.dart';
 import 'core/network/api_client.dart';
 import 'core/settings/settings_controller.dart';
@@ -36,6 +37,8 @@ Future<void> main() async {
   final store = SecureStore();
   final api = ApiClient(store);
   final authRepository = ApiAuthRepository(api);
+  final googleSignIn = GoogleSignInService();
+  await googleSignIn.initialize();
   final profileRepository = ApiProfileRepository(api);
   final notificationRepository = ApiNotificationRepository(api);
   final telemetry = TelemetryService(store, baseUrl: api.baseUrl);
@@ -73,6 +76,7 @@ Future<void> main() async {
       ChangeNotifierProvider(create: (_) => ThemeController(settings)),
       ChangeNotifierProvider.value(value: auth),
       Provider<AuthRepository>.value(value: authRepository),
+      Provider<GoogleSignInService>.value(value: googleSignIn),
       Provider<ProfileRepository>.value(value: profileRepository),
       Provider<NotificationRepository>.value(value: notificationRepository),
       Provider<MarketplaceRepository>(
