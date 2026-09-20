@@ -70,8 +70,8 @@ class PremiumNavigationRail extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface.withValues(alpha: .96),
-        border: Border(
-          right: BorderSide(color: HopeV2Surfaces.border(context)),
+        border: BorderDirectional(
+          end: BorderSide(color: HopeV2Surfaces.border(context)),
         ),
       ),
       child: SafeArea(
