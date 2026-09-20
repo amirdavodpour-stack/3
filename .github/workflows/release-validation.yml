@@ -138,47 +138,12 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Backend quality gates
-        working-directory: backend
-        env:
-          NODE_ENV: test
-          DATABASE_URL: ''
-          DATA_FILE: ${{ runner.temp }}/hope-backend-quality/hope.json
-          STORAGE_DIR: ${{ runner.temp }}/hope-backend-quality/storage
-          PAYMENT_PROVIDER: simulator
-          PAYMENT_CURRENCY: TOMAN
-          STORAGE_BACKEND: local
-          RESET_TOKEN_DELIVERY_MODE: console
-          RESET_TOKEN_DELIVERY_URL: ''
-          RESET_TOKEN_DELIVERY_SECRET: ''
-          API_BASE_URL: ''
-          ACCESS_TOKEN_SECRET: ''
-          REFRESH_TOKEN_SECRET: ''
-          PAYMENT_WEBHOOK_SECRET: ''
-          PUBLIC_BASE_URL: ''
-          METRICS_TOKEN: ''
-          ALLOWED_CORS_ORIGINS: ''
-          S3_BUCKET: ''
-          S3_REGION: ''
-          S3_ENDPOINT: ''
-        run: |
-          set -euo pipefail
-          mkdir -p "$(dirname "$DATA_FILE")" "$STORAGE_DIR"
-          timeout --foreground --signal=TERM --kill-after=45s 20m npm run check:all
-
-      - name: Production npm audit
+      # Core backend/Flutter/security gates already passed in prerequisite jobs
+      # quality + payment + staging for this exact SHA; this job performs only
+      # release-specific validation, signing, packaging, and provenance.
+      - name: Production supply-chain audit
         working-directory: backend
         run: timeout --foreground --signal=TERM --kill-after=30s 10m npm audit --audit-level=high
-
-      - name: Verify Flutter lockfile
-        run: bash tools/verify-pubspec-lock-fresh.sh
-
-      - name: Flutter static check
-        run: timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze --no-fatal-warnings --no-fatal-infos
-
-      - name: Flutter test gate
-        run: timeout --foreground --signal=TERM --kill-after=30s 15m flutter test --no-pub
-
       - name: Configure production keystore
         id: keystore_prepare
         shell: bash
@@ -288,7 +253,6 @@ jobs:
             release-manifest.json
             backend/sbom.json
             docs/audit/evidence/android_build.json
-            backend/check-all-summary.json
           if-no-files-found: warn
 
       - name: Cleanup production keystore
