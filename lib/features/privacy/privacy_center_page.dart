@@ -51,6 +51,8 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
   Future<void> _copyExport() async {
     final data = _export;
     if (data == null) return;
+    // Runtime JSON payload prevents this constructor from being const.
+    // ignore: prefer_const_constructors
     await Clipboard.setData(ClipboardData(
       text: JsonEncoder.withIndent('  ').convert(data),
     ));
@@ -196,6 +198,8 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  // Runtime export JSON prevents this constructor from being const.
+                  // ignore: prefer_const_constructors
                   SelectableText(
                     JsonEncoder.withIndent('  ').convert(_export),
                     maxLines: 18,
