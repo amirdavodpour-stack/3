@@ -54,7 +54,7 @@ class _JobsFilterHeader extends StatelessWidget {
               .copy_see_missions_and_jobs_together_then_narrow_7e573a3,
           trailing: PremiumTag(
             icon: Icons.grid_view_rounded,
-            label: '${resultCount} ${HopeCopy.of(context).copy_results_2d120a3}',
+            label: '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
           ),
         ),
         const SizedBox(height: HopeV2Spacing.xl),
