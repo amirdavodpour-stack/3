@@ -307,7 +307,8 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                   }).toList(),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
