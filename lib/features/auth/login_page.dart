@@ -31,11 +31,20 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> submitGoogle() async {
     final l10n = AppLocalizations.of(context);
+    final google = context.read<GoogleSignInService?>();
+    if (google == null || !google.isConfigured) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.loginFailedGeneric)),
+        );
+      }
+      return;
+    }
     setState(() => loading = true);
     try {
       await context
           .read<AuthController>()
-          .loginWithGoogle(context.read<GoogleSignInService>());
+          .loginWithGoogle(google);
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
@@ -138,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       const SizedBox(height: 23),
-                      if (context.read<GoogleSignInService>().isConfigured) ...[
+                      if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
