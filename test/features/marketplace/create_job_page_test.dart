@@ -211,6 +211,15 @@ void main() {
     await tester.pumpAndSettle();
     await _open(tester);
 
+    expect(
+      tester.getTopLeft(find.text('Job')).dy,
+      greaterThan(tester.getBottomRight(find.text('Mission')).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text('Specialized')).dy,
+      greaterThan(tester.getBottomRight(find.text('Public')).dy),
+    );
+
     final minField = find.widgetWithText(TextField, 'Minimum pay');
     final maxField = find.widgetWithText(TextField, 'Maximum pay');
     expect(minField, findsOneWidget);
