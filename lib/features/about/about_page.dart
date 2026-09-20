@@ -96,14 +96,6 @@ class AboutHopePage extends StatelessWidget {
                           .copy_admins_can_remove_opportunities_that_viola_82df522),
                 ])),
             const SizedBox(height: 24),
-            Center(
-                child: Text(
-                    HopeCopy.of(context).copy_hope_work_grow_together_6a1d9f0,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelLarge
-                        ?.copyWith(color: AppColors.muted))),
-            const SizedBox(height: 6),
             // Reuses the same build-time HOPE_VERSION convention already
             // used by telemetry_service.dart, so About always shows the
             // actual shipped version rather than a hard-coded string.
