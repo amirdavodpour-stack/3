@@ -186,12 +186,53 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   }
 
   Widget _filterChip(String value, String label, int count) {
+    final selected = _filter == value;
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 8),
-      child: ChoiceChip(
-        selected: _filter == value,
-        label: Text('$label  $count'),
-        onSelected: (_) => setState(() => _filter = value),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: '$label $count',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: () => setState(() => _filter = value),
+            child: AnimatedContainer(
+              duration: HopeV2Motion.fast,
+              constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+              decoration: BoxDecoration(
+                color: selected
+                    ? scheme.primary.withValues(alpha: .11)
+                    : HopeV2Surfaces.panel(context),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: selected
+                      ? scheme.primary.withValues(alpha: .28)
+                      : HopeV2Surfaces.border(context),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (selected) ...[
+                    Icon(Icons.check_rounded, size: 16, color: scheme.primary),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(
+                    '$label  $count',
+                    style: TextStyle(
+                      color: selected ? scheme.primary : null,
+                      fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
