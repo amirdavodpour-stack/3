@@ -414,7 +414,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       },
     );
   }
-  }
 }
 
 class _PulseSkeleton extends StatelessWidget {
