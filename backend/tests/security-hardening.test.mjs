@@ -13,13 +13,12 @@ test('JWT verification enforces issuer, audience, bounded token size, iat and jt
 
 test('production CORS is explicit and idempotency keys are bounded', () => {
   const config = fs.readFileSync(new URL('../src/config.js', import.meta.url), 'utf8');
-  const app = fs.readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
-  const authRoutes = fs.readFileSync(new URL('../src/routes/auth_routes.js', import.meta.url), 'utf8');
   const paymentRoutes = fs.readFileSync(new URL('../src/routes/payment_routes.js', import.meta.url), 'utf8');
-  const routes = fs.readFileSync(new URL('../src/routes/storage_routes.js', import.meta.url), 'utf8');
+  const paymentPolicy = fs.readFileSync(new URL('../src/application/payment_policy.js', import.meta.url), 'utf8');
   assert.match(config, /ALLOWED_CORS_ORIGINS must explicitly list non-wildcard origins in production/);
-  assert.match(paymentRoutes, /INVALID_IDEMPOTENCY_KEY/);
-  assert.match(paymentRoutes, /maxIdempotencyKeyLength/);
+  assert.match(config, /maxIdempotencyKeyLength: positiveIntegerEnv\('MAX_IDEMPOTENCY_KEY_LENGTH'/);
+  assert.match(paymentRoutes, /validateIdempotencyPair/);
+  assert.match(paymentPolicy, /IDEMPOTENCY_KEY_RE/);
 });
 
 test('HTTP hardening headers and server timeouts exist', () => {
