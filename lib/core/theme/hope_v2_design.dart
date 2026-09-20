@@ -34,6 +34,13 @@ class HopeV2Colors {
   static const darkCard = Color(0xFF1C1925);
   static const darkText = Color(0xFFF8F7FC);
   static const darkMuted = Color(0xFFAAA6B8);
+
+  static const pageLight = Color(0xFFF7F7FB);
+  static const pageDark = Color(0xFF090811);
+  static const panelLight = Color(0xFFFFFFFF);
+  static const panelDark = Color(0xFF15131D);
+  static const panelSoftLight = Color(0xFFFCFBFF);
+  static const panelSoftDark = Color(0xFF1C1926);
 }
 
 class HopeV2Spacing {
@@ -101,17 +108,17 @@ class HopeV2Surfaces {
 
   static Color page(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? const Color(0xFF090811) : const Color(0xFFF7F7FB);
+    return dark ? HopeV2Colors.pageDark : HopeV2Colors.pageLight;
   }
 
   static Color panel(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? const Color(0xFF15131D) : Colors.white;
+    return dark ? HopeV2Colors.panelDark : HopeV2Colors.panelLight;
   }
 
   static Color panelSoft(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? const Color(0xFF1C1926) : const Color(0xFFFCFBFF);
+    return dark ? HopeV2Colors.panelSoftDark : HopeV2Colors.panelSoftLight;
   }
 
   static Color border(BuildContext context) {
