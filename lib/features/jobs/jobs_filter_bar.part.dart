@@ -160,15 +160,6 @@ class _JobsFilterHeader extends StatelessWidget {
                     label: Text(categoryLabel),
                     onPressed: onPickCategory,
                   ),
-                  Semantics(
-                    liveRegion: true,
-                    label:
-                        '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
-                    child: StatusPill(
-                      '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
-                      icon: Icons.grid_view_rounded,
-                    ),
-                  ),
                 ],
               ),
             ],
