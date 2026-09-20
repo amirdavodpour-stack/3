@@ -256,8 +256,8 @@ class PremiumHero extends StatelessWidget {
               ),
             ),
             if (icon != null)
-              Positioned(
-                right: horizontal,
+              PositionedDirectional(
+                end: horizontal,
                 top: horizontal,
                 child: ExcludeSemantics(
                   child: Container(
