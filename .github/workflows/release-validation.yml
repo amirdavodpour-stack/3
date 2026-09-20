@@ -151,8 +151,20 @@ jobs:
           set -euo pipefail
           : "${ANDROID_RELEASE_KEYSTORE_B64:?ANDROID_RELEASE_KEYSTORE_B64 is required}"
           KEYSTORE_PATH="$RUNNER_TEMP/hope-production-release.keystore"
-          printf '%s' "$ANDROID_RELEASE_KEYSTORE_B64" | base64 --decode > "$KEYSTORE_PATH"
+          # Accept wrapped/padded/unpadded base64 secrets without weakening the
+          # release gate: whitespace is removed, URL-safe characters are normalized,
+          # and the decoded keystore must be non-empty and parseable by keytool.
+          normalized="$(printf '%s' "$ANDROID_RELEASE_KEYSTORE_B64" | tr -d '[:space:]' | tr '_-' '/+')"
+          rem=$(( ${#normalized} % 4 ))
+          if [ "$rem" -eq 1 ]; then
+            echo 'ANDROID_RELEASE_KEYSTORE_B64 has an invalid base64 length.' >&2
+            exit 1
+          fi
+          if [ "$rem" -eq 2 ]; then normalized="${normalized}=="; fi
+          if [ "$rem" -eq 3 ]; then normalized="${normalized}="; fi
+          printf '%s' "$normalized" | base64 --decode > "$KEYSTORE_PATH"
           test -s "$KEYSTORE_PATH"
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$ANDROID_RELEASE_STORE_PASSWORD" >/dev/null
           echo "path=$KEYSTORE_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Build signed production APK

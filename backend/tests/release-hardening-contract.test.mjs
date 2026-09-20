@@ -179,6 +179,19 @@ test('CI Android toolchain is explicit and release builds enforce the lockfile',
   assert.match(apk, /flutter pub get --enforce-lockfile/);
 });
 
+test('production keystore secret decoding tolerates wrapped or unpadded base64', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  const start = workflow.indexOf('- name: Configure production keystore');
+  const end = workflow.indexOf('- name: Build signed production APK', start);
+  assert.ok(start >= 0 && end > start);
+  const block = workflow.slice(start, end);
+  assert.ok(block.includes('tr -d \'[:space:]\''));
+  assert.ok(block.includes("tr '_-' '/+'"));
+  assert.ok(block.includes('rem=$(( ${#normalized} % 4 ))'));
+  assert.ok(block.includes('base64 --decode'));
+  assert.ok(block.includes('keytool -list -keystore'));
+});
+
 test('staging Android runtime gate is the canonical device certification path', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/staging-certification.yml', import.meta.url), 'utf8');
   const start = workflow.indexOf('      - name: Android emulator certification');
