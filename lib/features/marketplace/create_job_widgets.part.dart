@@ -342,6 +342,7 @@ class _CreateJobForm extends StatelessWidget {
                     }
                     final categories = snapshot.data ?? const <HopeCategory>[];
                     return DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: categoryId,
                       decoration: InputDecoration(
                         labelText: HopeCopy.of(context)
@@ -472,6 +473,7 @@ class _CreateJobForm extends StatelessWidget {
             Column(
               children: [
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: schedule,
                   decoration: InputDecoration(
                     labelText: HopeCopy.of(context).copy_schedule_3af1939,
