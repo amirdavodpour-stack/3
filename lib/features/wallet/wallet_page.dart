@@ -805,12 +805,10 @@ class _WalletPageState extends State<WalletPage> {
               label: Text(_t('تراکنش‌های بیشتر', 'Load more')), 
             ),
           ],
-          ],
-        ),
+        ],
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _DetailRow extends StatelessWidget {
