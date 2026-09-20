@@ -138,7 +138,6 @@ class PremiumPanel extends StatelessWidget {
 class PremiumHero extends StatelessWidget {
   const PremiumHero({
     super.key,
-    required this.image,
     required this.eyebrow,
     required this.title,
     required this.message,
@@ -146,61 +145,12 @@ class PremiumHero extends StatelessWidget {
     this.height = 280,
     this.semanticLabel,
   });
-
-  final String image;
   final String eyebrow;
   final String title;
   final String message;
   final Widget? action;
   final double height;
   final String? semanticLabel;
-
-  Widget _imageFallback(BuildContext context, Object error, StackTrace? stack) {
-    final scheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            scheme.primary,
-            scheme.secondary,
-            scheme.surfaceContainerHighest,
-          ],
-        ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            right: -56,
-            top: -64,
-            child: ExcludeSemantics(
-              child: Container(
-                width: 230,
-                height: 230,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: .16)),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 24,
-            top: 24,
-            child: ExcludeSemantics(
-              child: Icon(
-                Icons.auto_awesome_rounded,
-                size: 48,
-                color: Colors.white.withValues(alpha: .86),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,22 +174,15 @@ class PremiumHero extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            ExcludeSemantics(
-              child: Image.asset(
-                image,
-                fit: BoxFit.cover,
-                errorBuilder: _imageFallback,
-              ),
-            ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topRight,
                   end: Alignment.bottomLeft,
                   colors: [
-                    Colors.black.withValues(alpha: .08),
-                    Colors.black.withValues(alpha: .30),
-                    Colors.black.withValues(alpha: .82),
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
                   ],
                 ),
               ),
