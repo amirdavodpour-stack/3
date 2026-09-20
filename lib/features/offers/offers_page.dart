@@ -71,9 +71,9 @@ class _OffersPageState extends State<OffersPage> {
                 children: [
                   PremiumHeader(
                     eyebrow: _t('پیشنهادها', 'OFFERS'),
-                    title: _t('پیشنهادهای دریافتی و ارسالی', 'Offers in context'),
+                    title: _t('پیشنهادهای کاری', 'Job offers'),
                     subtitle: _t(
-                      'مبلغ، وضعیت و اقدام بعدی هر پیشنهاد را بررسی کنید.',
+                      'مبلغ، وضعیت و اقدام مجاز هر پیشنهاد را بررسی کنید.',
                       'Review amount, status, and the next allowed action for each offer.',
                     ),
                     trailing: PremiumTag(
