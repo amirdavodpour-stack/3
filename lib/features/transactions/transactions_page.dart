@@ -173,21 +173,41 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    Row(children: [
-                      Expanded(
-                          child: MetricTile(
-                              label: HopeCopy.of(context)
-                                  .copy_total_projects_78ce548,
-                              value: '${items.length}',
-                              icon: Icons.work_history_rounded)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                          child: MetricTile(
-                              label: HopeCopy.of(context).copy_status_b81f9c7,
-                              value: HopeCopy.of(context).copy_active_5726b26,
-                              icon: Icons.bolt_rounded,
-                              color: secondaryAccent(context)))
-                    ]),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final metrics = [
+                          MetricTile(
+                            label: HopeCopy.of(context).copy_total_projects_78ce548,
+                            value: '${items.length}',
+                            icon: Icons.work_history_rounded,
+                          ),
+                          MetricTile(
+                            label: HopeCopy.of(context).copy_status_b81f9c7,
+                            value: HopeCopy.of(context).copy_active_5726b26,
+                            icon: Icons.bolt_rounded,
+                            color: secondaryAccent(context),
+                          ),
+                        ];
+
+                        if (constraints.maxWidth < 500) {
+                          return Column(
+                            children: [
+                              metrics[0],
+                              const SizedBox(height: 10),
+                              metrics[1],
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            Expanded(child: metrics[0]),
+                            const SizedBox(width: 10),
+                            Expanded(child: metrics[1]),
+                          ],
+                        );
+                      },
+                    ),
                     const SizedBox(height: 20),
                     SectionTitle(
                         title:
