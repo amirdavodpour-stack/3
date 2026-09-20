@@ -543,6 +543,8 @@ class PremiumFilterChip extends StatelessWidget {
     required this.onTap,
     this.icon,
     this.color,
+    this.enabled = true,
+    this.loading = false,
   });
 
   final String label;
@@ -550,18 +552,27 @@ class PremiumFilterChip extends StatelessWidget {
   final VoidCallback onTap;
   final IconData? icon;
   final Color? color;
+  final bool enabled;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
+    final interactive = enabled && !loading;
     final base = color ?? Theme.of(context).colorScheme.primary;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final foreground = interactive
+        ? (selected ? base : Theme.of(context).colorScheme.onSurface)
+        : muted;
+
     return Semantics(
       button: true,
       selected: selected,
+      enabled: interactive,
       label: label,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: interactive ? onTap : null,
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
           child: AnimatedContainer(
             duration: HopeV2Motion.fast,
@@ -569,36 +580,37 @@ class PremiumFilterChip extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(
               color: selected
-                  ? base.withValues(alpha: .11)
+                  ? base.withValues(alpha: interactive ? .11 : .05)
                   : HopeV2Surfaces.panel(context),
               borderRadius: BorderRadius.circular(HopeV2Radii.pill),
               border: Border.all(
                 color: selected
-                    ? base.withValues(alpha: .28)
+                    ? base.withValues(alpha: interactive ? .28 : .12)
                     : HopeV2Surfaces.border(context),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (icon != null) ...[
-                  Icon(
-                    icon,
-                    size: 16,
-                    color: selected
-                        ? base
-                        : Theme.of(context).colorScheme.outline,
-                  ),
-                  const SizedBox(width: 5),
-                ],
-                if (selected) ...[
-                  const Icon(Icons.check_rounded, size: 16),
+                if (loading)
+                  const ExcludeSemantics(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else if (icon != null)
+                  Icon(icon, size: 16, color: foreground),
+                if (loading || icon != null) const SizedBox(width: 5),
+                if (!loading && selected) ...[
+                  Icon(Icons.check_rounded, size: 16, color: foreground),
                   const SizedBox(width: 5),
                 ],
                 Text(
                   label,
                   style: TextStyle(
-                    color: selected ? base : null,
+                    color: foreground,
                     fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                   ),
                 ),
