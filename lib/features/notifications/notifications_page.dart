@@ -179,6 +179,91 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
     await _load();
   }
+  Widget _notificationCard(HopeNotification n) {
+    final unread = n.isUnread;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: PremiumPanel(
+        padding: const EdgeInsets.all(16),
+        highlight: unread,
+        semanticLabel: n.title,
+        child: InkWell(
+          onTap: n.hasAction || unread ? () => _openNotification(n) : null,
+          borderRadius: BorderRadius.circular(18),
+          onLongPress: unread ? () => _read(n.id) : null,
+          child: Semantics(
+            button: unread,
+            label: unread
+                ? '${n.title}، ${n.hasAction ? n.actionLabel : HopeCopy.of(context).copy_tap_to_mark_as_read_5c9917a}'
+                : n.title,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HopeIconTile(
+                  unread
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
+                  filled: unread,
+                  color: unread
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              n.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          if (unread) ...[
+                            const SizedBox(width: 8),
+                            PremiumTag(
+                              label: _t('جدید', 'New'),
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        n.body,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      if (n.hasAction) ...[
+                        const SizedBox(height: 10),
+                        FilledButton.tonalIcon(
+                          onPressed: () => _openNotification(n),
+                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                          label: Text(n.actionLabel),
+                        ),
+                      ],
+                      const SizedBox(height: 7),
+                      Text(
+                        n.createdAt ?? '',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -232,85 +317,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     child: Text(HopeCopy.of(context)
                                         .copy_you_have_no_new_notifications_45f9685))
                               ])
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
-                            itemCount: items.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              final n = items[index];
-                              final unread = n.isUnread;
-                              return PremiumPanel(
-                                  padding: const EdgeInsets.all(16),
-                                  highlight: unread,
-                                  semanticLabel: n.title,
-                                  child: InkWell(
-                                      onTap: n.hasAction || unread ? () => _openNotification(n) : null,
-                                      borderRadius: BorderRadius.circular(18),
-                                      // Notification actions both acknowledge the event and
-                                      // route the user to the relevant project when available.
-                                      onLongPress: unread ? () => _read(n.id) : null,
-                                      child: Semantics(
-                                          button: unread,
-                                          label: unread
-                                              ? '${n.title}، ${n.hasAction ? n.actionLabel : HopeCopy.of(context).copy_tap_to_mark_as_read_5c9917a}'
-                                              : n.title,
-                                          child: Padding(
-                                              padding: const EdgeInsets.all(16),
-                                              child: Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Icon(unread
-                                                        ? Icons
-                                                            .notifications_active_rounded
-                                                        : Icons
-                                                            .notifications_none_rounded),
-                                                    const SizedBox(width: 12),
-                                                    Expanded(
-                                                        child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                          Text(n.title,
-                                                              style: Theme.of(
-                                                                      context)
-                                                                  .textTheme
-                                                                  .titleMedium
-                                                                  ?.copyWith(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w800)),
-                                                          const SizedBox(
-                                                              height: 4),
-                                                          Text(n.body),
-                                                          if (n.hasAction) ...[
-                                                            const SizedBox(height: 10),
-                                                            Align(
-                                                              alignment: AlignmentDirectional.centerStart,
-                                                              child: FilledButton.tonalIcon(
-                                                                onPressed: () => _openNotification(n),
-                                                                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                                                                label: Text(n.actionLabel),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                          if (unread) ...[
-                                                            const SizedBox(
-                                                                height: 7),
-                                                            Text(
-                                                                HopeCopy.of(
-                                                                        context)
-                                                                    .copy_tap_to_mark_as_read_5c9917a,
-                                                                style: Theme.of(
-                                                                        context)
-                                                                    .textTheme
-                                                                    .labelMedium)
-                                                          ]
-                                                        ]))
-                                                  ])))));
-                            }),
+                        : ListView(
+                            padding: const EdgeInsets.fromLTRB(0, 12, 0, 32),
+                            children: [
+                              PremiumHeader(
+                                eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
+                                title: _t('اعلان‌ها', 'Notifications'),
+                                subtitle: _t(
+                                  'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها.',
+                                  'Updates for applications, work, and payments.',
+                                ),
+                                trailing: PremiumTag(
+                                  icon: Icons.notifications_active_outlined,
+                                  label: items.length.toString(),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              ...items.map(_notificationCard),
+                            ],
+                          )
           ),
         ),
       );
