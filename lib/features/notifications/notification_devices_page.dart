@@ -122,7 +122,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
             if (!_loading && _error == null)
               PremiumStatCard(
                 label: _t('دستگاه فعال برای Push', 'Active Push devices'),
-                value: '$activeCountExpr',
+                value: '${_devices.where((device) => device.enabled).length}',
                 icon: Icons.notifications_active_rounded,
                 accent: Theme.of(context).colorScheme.primary,
                 caption: _t(
