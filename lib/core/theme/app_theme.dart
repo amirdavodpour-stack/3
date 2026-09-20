@@ -76,11 +76,51 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         foregroundColor: textColor,
         centerTitle: false,
+        toolbarHeight: 64,
+        titleSpacing: 16,
+        iconTheme: IconThemeData(color: textColor, size: 23),
         titleTextStyle: TextStyle(
-            fontSize: 21,
-            fontWeight: FontWeight.w900,
-            color: textColor,
-            letterSpacing: -.3),
+          fontSize: 20,
+          fontWeight: FontWeight.w900,
+          color: textColor,
+          letterSpacing: -.3,
+        ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: dark ? const Color(0x287660FF) : AppColors.softPrimary,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        labelColor: scheme.primary,
+        unselectedLabelColor: mutedColor,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+        unselectedLabelStyle:
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        overlayColor: WidgetStatePropertyAll(Colors.transparent),
+        padding: const EdgeInsets.all(4),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: dark ? const Color(0x1AFFFFFF) : const Color(0xFFF1EFF7),
+        selectedColor: dark ? const Color(0x337660FF) : AppColors.softPrimary,
+        disabledColor: dark ? Colors.white10 : const Color(0xFFEAE7F0),
+        side: BorderSide(
+          color: dark ? Colors.white10 : const Color(0xFFE1DDEA),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        labelStyle: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+        secondaryLabelStyle: TextStyle(
+          color: mutedColor,
+          fontWeight: FontWeight.w700,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
