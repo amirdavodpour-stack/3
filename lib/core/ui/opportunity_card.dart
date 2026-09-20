@@ -64,7 +64,7 @@ class OpportunityCard extends StatelessWidget {
         ? [job.budgetMin, job.budgetMax].where((v) => v?.isNotEmpty == true).join(' – ')
         : (job.monthlySalary ?? job.budgetMin ?? '');
     final title = job.title.trim().isEmpty ? _t(context, 'فرصت بدون عنوان', 'Untitled opportunity') : job.title;
-    final primary = job.isMission ? AppColors.primary : secondaryAccent(context);
+    final primary = job.isMission ? HopeV2Colors.primary : secondaryAccent(context);
     final reasons = job.recommendationReasons.take(3).toList(growable: false);
 
     return Semantics(
@@ -197,11 +197,11 @@ class OpportunityCard extends StatelessWidget {
           children: [
             PremiumTag(icon: Icons.location_on_outlined, label: city, color: secondaryAccent(context)),
             if ((job.category ?? '').isNotEmpty)
-              PremiumTag(icon: Icons.category_outlined, label: job.category!, color: AppColors.muted),
+              PremiumTag(icon: Icons.category_outlined, label: job.category!, color: HopeV2Colors.muted),
             if (job.distanceKm != null)
               PremiumTag(icon: Icons.near_me_rounded, label: '${job.distanceKm!.toStringAsFixed(1)} km', color: secondaryAccent(context)),
             if (job.visibility == 'SPECIALIZED')
-              PremiumTag(icon: Icons.lock_outline_rounded, label: _t(context, 'تخصصی', 'Specialized'), color: AppColors.warning),
+              PremiumTag(icon: Icons.lock_outline_rounded, label: _t(context, 'تخصصی', 'Specialized'), color: HopeV2Colors.warning),
           ],
         ),
         if (amount.isNotEmpty) ...[
