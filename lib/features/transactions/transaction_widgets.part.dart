@@ -194,12 +194,25 @@ extension on _TransactionPageState {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
             children: [
-              Row(children: [
-                const HopeMark(size: 38),
-                const Spacer(),
-                StatusPill(_statusLabel(status),
-                    color: _statusColor(status), icon: _statusIcon(status))
-              ]),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 500;
+                  return Row(
+                    children: [
+                      HopeMark(
+                        size: 38,
+                        showText: !compact,
+                      ),
+                      const Spacer(),
+                      StatusPill(
+                        _statusLabel(status),
+                        color: _statusColor(status),
+                        icon: _statusIcon(status),
+                      ),
+                    ],
+                  );
+                },
+              ),
               const SizedBox(height: 20),
               if (job != null) ...[
                 Text(job.title,
