@@ -343,3 +343,18 @@ test('release validation cancels superseded runs on the same ref', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
   assert.match(workflow, /concurrency:\n\s+group: release-validation-\$\{\{ github\.ref \}\}\n\s+cancel-in-progress: true/);
 });
+
+
+test('the standalone production release workflow isolates backend quality tests from production secrets', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/production-release.yml'), 'utf8');
+  const start = workflow.indexOf('- name: Backend quality gates');
+  const end = workflow.indexOf('- name: Production npm audit', start);
+  assert.ok(start >= 0 && end > start);
+  const block = workflow.slice(start, end);
+  assert.match(block, /NODE_ENV: test/);
+  assert.match(block, /DATABASE_URL: ''/);
+  assert.match(block, /PAYMENT_PROVIDER: simulator/);
+  assert.match(block, /STORAGE_BACKEND: local/);
+  assert.match(block, /DATA_FILE: \$\{\{ runner\.temp \}\}/);
+  assert.doesNotMatch(block, /DATABASE_URL:\s+\$\{\{\s*secrets\.DATABASE_URL_PRODUCTION/);
+});
