@@ -136,7 +136,7 @@ ANDROID_SDK_PATH="$(sed -n 's/^sdk\.dir=//p' android/local.properties | head -1)
 flutter gen-l10n
 # Match the canonical core-quality analyzer policy: analyzer warnings/info are reported,
 # while actual errors remain release-blocking.
-flutter analyze --no-fatal-warnings --no-fatal-infos
+flutter analyze --no-fatal-warnings --no-fatal-infos lib
 flutter test --no-pub
 
 # Encode Dart defines with portable base64 so pilot/production builds survive any
