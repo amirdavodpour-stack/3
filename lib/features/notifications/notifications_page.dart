@@ -268,57 +268,69 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-            title: Text(HopeCopy.of(context).copy_notifications_370b4a1),
-            actions: [
-              IconButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    HopeRoutes.notificationDevices(),
-                  ),
-                  icon: const Icon(Icons.devices_rounded),
-                  tooltip: _t('دستگاه‌های اعلان', 'Notification devices')),
-              IconButton(
-                  onPressed: _openPreferences,
-                  icon: const Icon(Icons.tune_rounded),
-                  tooltip: _t('تنظیمات اعلان‌ها', 'Notification settings')),
-              IconButton(
-                  onPressed: items.isEmpty ? null : _readAll,
-                  icon: const Icon(Icons.done_all_rounded),
-                  tooltip: HopeCopy.of(context).copy_mark_all_read_500a31c)
-            ]),
+          title: Text(HopeCopy.of(context).copy_notifications_370b4a1),
+          actions: [
+            IconButton(
+              onPressed: () =>
+                  Navigator.push(context, HopeRoutes.notificationDevices()),
+              icon: const Icon(Icons.devices_rounded),
+              tooltip: _t('دستگاه‌های اعلان', 'Notification devices'),
+            ),
+            IconButton(
+              onPressed: _openPreferences,
+              icon: const Icon(Icons.tune_rounded),
+              tooltip: _t('تنظیمات اعلان‌ها', 'Notification settings'),
+            ),
+            IconButton(
+              onPressed: items.isEmpty ? null : _readAll,
+              icon: const Icon(Icons.done_all_rounded),
+              tooltip: HopeCopy.of(context).copy_mark_all_read_500a31c,
+            ),
+          ],
+        ),
         body: PremiumPageFrame(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
           child: RefreshIndicator(
             onRefresh: _load,
             child: loading
-                ? ListView(children: const [
-                    SizedBox(height: 280),
-                    Center(child: CircularProgressIndicator())
-                  ])
+                ? const ListView(
+                    children: [
+                      SizedBox(height: 280),
+                      Center(child: CircularProgressIndicator()),
+                    ],
+                  )
                 : error != null
-                    ? ListView(padding: const EdgeInsets.all(24), children: [
-                        Text(HopeCopy.of(context)
-                            .copy_could_not_load_notifications_a904a88),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                            onPressed: _load,
-                            child:
-                                Text(HopeCopy.of(context).copy_retry_49f3eba))
-                      ])
+                    ? ListView(
+                        padding: const EdgeInsets.all(24),
+                        children: [
+                          EmptyState(
+                            icon: Icons.cloud_off_rounded,
+                            title: HopeCopy.of(context)
+                                .copy_could_not_load_notifications_a904a88,
+                            message: error!,
+                            action: FilledButton(
+                              onPressed: _load,
+                              child:
+                                  Text(HopeCopy.of(context).copy_retry_49f3eba),
+                            ),
+                          ),
+                        ],
+                      )
                     : items.isEmpty
                         ? ListView(
                             padding: const EdgeInsets.all(24),
                             children: [
-                                const SizedBox(height: 80),
-                                const Icon(Icons.notifications_none_rounded,
-                                    size: 64),
-                                const SizedBox(height: 16),
-                                Center(
-                                    child: Text(HopeCopy.of(context)
-                                        .copy_you_have_no_new_notifications_45f9685))
-                              ])
+                              EmptyState(
+                                icon: Icons.notifications_none_rounded,
+                                title: _t('اعلانی وجود ندارد', 'No notifications'),
+                                message: HopeCopy.of(context)
+                                    .copy_you_have_no_new_notifications_45f9685,
+                              ),
+                            ],
+                          )
                         : ListView(
-                            padding: const EdgeInsets.fromLTRB(0, 12, 0, 32),
+                            padding:
+                                const EdgeInsets.fromLTRB(0, 12, 0, 32),
                             children: [
                               PremiumHeader(
                                 eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
@@ -328,7 +340,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   'Updates for applications, work, and payments.',
                                 ),
                                 trailing: PremiumTag(
-                                  icon: Icons.notifications_active_outlined,
+                                  icon:
+                                      Icons.notifications_active_outlined,
                                   label: items.length.toString(),
                                 ),
                               ),
