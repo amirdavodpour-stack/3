@@ -335,8 +335,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               const SizedBox(height: 18),
                               ...items.map(_notificationCard),
                             ],
-                          )
+                          ),
           ),
         ),
-      );
+      ),
+    );
 }
