@@ -262,7 +262,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_create_a_hope_account_and_take_the_first_s_9ccd119 =>
-      'Create a HOPE account and take the first step.';
+      'Enter your name, email, and password.';
 
   @override
   String get copy_create_account_bfa3517 => 'Create account';
@@ -802,7 +802,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_start_a_good_collaboration_9df52cf =>
-      'Start a good collaboration.';
+      'Create your account';
 
   @override
   String get copy_start_here_555e56f => 'Start here';
@@ -927,7 +927,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_your_account_data_is_kept_securely_by_hope_b91dd1f =>
-      'Your account data is kept securely by HOPE.';
+      'Your account information is stored securely.';
 
   @override
   String get copy_your_activity_is_private_1363766 =>
@@ -950,7 +950,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_hope_work_grow_together_6a1d9f0 =>
-      'HOPE • Work • Grow • Together';
+      'HOPE • Opportunities • Work';
 
   @override
   String get copy_language_english_d9f5a4a => 'Language: English';
