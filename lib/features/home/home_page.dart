@@ -77,22 +77,16 @@ class _HomePageState extends State<HomePage> {
         child: isDesktop
             ? Row(
                 children: [
-                  NavigationRail(
+                  PremiumNavigationRail(
                     selectedIndex: tab,
                     onDestinationSelected: _selectTab,
-                    extended: MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded,
-                    minExtendedWidth: 210,
-                    labelType: MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded
-                        ? NavigationRailLabelType.none
-                        : NavigationRailLabelType.all,
+                    extended:
+                        MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded,
                     leading: const Padding(
                       padding: EdgeInsets.fromLTRB(8, 12, 8, 22),
                       child: HopeMark(size: 44, showText: false),
                     ),
-                    destinations: [
-                      for (final d in destinations)
-                        NavigationRailDestination(icon: d.icon, selectedIcon: d.selectedIcon, label: Text(d.label)),
-                    ],
+                    destinations: destinations,
                   ),
                   const VerticalDivider(width: 1),
                   Expanded(child: content),
