@@ -192,6 +192,9 @@ test('production keystore secret decoding tolerates wrapped or unpadded base64',
   assert.ok(block.includes('rem=$(( ${#normalized} % 4 ))'));
   assert.ok(block.includes('base64 --decode'));
   assert.ok(block.includes('keytool -list -keystore'));
+  assert.ok(block.includes('keytool -importkeystore -noprompt'));
+  assert.ok(block.includes('key_password_from_store=false'));
+  assert.ok(block.includes('key_password_from_store=$key_password_from_store'));
 });
 
 test('staging Android runtime gate is the canonical device certification path', () => {
