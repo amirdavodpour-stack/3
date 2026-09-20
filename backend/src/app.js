@@ -49,6 +49,7 @@ import { createSessionLegacyAdapter } from './application/legacy/session_legacy.
 import { createOfferLegacyAdapter } from './application/legacy/offer_legacy.js';
 import { createStorageLegacyAdapter } from './application/legacy/storage_legacy.js';
 import { createAppLegacyAdapter } from './application/legacy/app_legacy.js';
+import { verifyGoogleIdToken } from './google_auth.js';
 
 await initDatabase();
 await seedBaseData();
@@ -145,7 +146,7 @@ const {
 const jobLegacy = createJobLegacyAdapter({ db, categoryBy, relatedJob, findUser, publicUser, now });
 
 const authRoutes = createAuthRoutes({
-  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser, rateLimitAuthAccount,
+  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser, rateLimitAuthAccount, verifyGoogleIdToken,
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH, logEvent, stringField,
   id: db.id, legacy: authLegacy,
