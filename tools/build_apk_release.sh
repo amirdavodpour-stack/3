@@ -62,6 +62,42 @@ flutter pub get --enforce-lockfile
 # generated during dependency resolution. A platform-specific config-only build
 # refreshes the Android project metadata before the deterministic release build.
 flutter build apk --release --config-only
+
+# integration_test is intentionally a dev-only dependency. Flutter 3.47.2 still
+# regenerates its Android plugin registrant with that dev plugin during a release
+# build, but the production APK does not need the integration_test native plugin.
+# Remove only that generated registration after Flutter config generation so the
+# release compiler sees the production plugin set without modifying tracked source.
+REGISTRANT="android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java"
+python - "$REGISTRANT" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+if not path.is_file():
+    raise SystemExit("ERROR: GeneratedPluginRegistrant.java was not generated.")
+
+text = path.read_text()
+pattern = re.compile(
+    r"""    try \{
+      flutterEngine\.getPlugins\(\)\.add\(new dev\.flutter\.plugins\.integration_test\.IntegrationTestPlugin\(\)\);
+    \} catch \(Exception e\) \{
+      Log\.e\(TAG, "Error registering plugin integration_test, dev\.flutter\.plugins\.integration_test\.IntegrationTestPlugin", e\);
+    \}
+"""
+)
+matches = pattern.findall(text)
+if len(matches) != 1:
+    raise SystemExit(
+        f"ERROR: expected exactly one integration_test plugin registration; found {len(matches)}."
+    )
+path.write_text(pattern.sub("", text, count=1))
+PY
+! grep -q "dev.flutter.plugins.integration_test" "$REGISTRANT" || {
+  echo 'ERROR: integration_test native plugin registration remained in the release registrant.' >&2
+  exit 1
+}
 [ -f android/local.properties ] || { echo 'ERROR: Flutter did not regenerate android/local.properties.' >&2; exit 1; }
 FLUTTER_SDK_PATH="$(sed -n 's/^flutter\.sdk=//p' android/local.properties | head -1)"
 ANDROID_SDK_PATH="$(sed -n 's/^sdk\.dir=//p' android/local.properties | head -1)"
