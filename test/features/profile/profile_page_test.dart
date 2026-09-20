@@ -100,7 +100,7 @@ void main() {
 
     expect(find.text('کاربر'), findsWidgets);
     expect(find.text('فارسی'), findsOneWidget);
-    expect(find.text('English'), findsOneWidget);
+    expect(find.text('انگلیسی'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
