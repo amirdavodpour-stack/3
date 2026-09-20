@@ -178,12 +178,12 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               )
             else
               ...visible.map(_applicationCard),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _filterChip(String value, String label, int count) {
     return Padding(
