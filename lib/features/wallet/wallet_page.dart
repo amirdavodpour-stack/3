@@ -804,7 +804,8 @@ class _WalletPageState extends State<WalletPage> {
                   : const Icon(Icons.expand_more_rounded),
               label: Text(_t('تراکنش‌های بیشتر', 'Load more')), 
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
