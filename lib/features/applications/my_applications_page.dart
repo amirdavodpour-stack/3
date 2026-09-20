@@ -121,16 +121,18 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(_t('درخواست‌های من', 'My applications'))),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      body: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
               eyebrow: _t('مسیر حرفه‌ای', 'PROFESSIONAL PATH'),
-              title: _t('همه درخواست‌ها در یک نما', 'Every application in one view'),
+              title: _t('درخواست‌های من', 'My applications'),
               subtitle: _t(
-                'وضعیت هر درخواست را دنبال کن و فقط در وضعیت‌های مجاز آن را پس بگیر.',
+                'وضعیت هر درخواست را بررسی کنید و فقط در وضعیت‌های مجاز آن را پس بگیرید.',
                 'Track every application and withdraw only while its workflow still allows it.',
               ),
               trailing: const HopeIconTile(Icons.assignment_rounded, size: 50, filled: true),
