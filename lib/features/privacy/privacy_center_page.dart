@@ -165,7 +165,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                     style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 Text(_t(
-                  'یک خروجی ساختاریافته از داده‌هایی که HOPE برای حساب شما نگه می‌دارد دریافت کن.',
+                  'یک خروجی ساختاریافته از داده‌هایی که HOPE برای حساب شما نگه می‌دارد دریافت کنید.',
                   'Get a structured export of the data HOPE stores for your account.',
                 )),
                 const SizedBox(height: 16),
