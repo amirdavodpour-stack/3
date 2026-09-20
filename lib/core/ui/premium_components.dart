@@ -208,6 +208,7 @@ class PremiumHero extends StatelessWidget {
     required this.title,
     required this.message,
     this.action,
+    this.icon,
     this.height = 280,
     this.semanticLabel,
   });
@@ -215,6 +216,7 @@ class PremiumHero extends StatelessWidget {
   final String title;
   final String message;
   final Widget? action;
+  final IconData? icon;
   final double height;
   final String? semanticLabel;
 
@@ -253,6 +255,25 @@ class PremiumHero extends StatelessWidget {
                 ),
               ),
             ),
+            if (icon != null)
+              Positioned(
+                right: horizontal,
+                top: horizontal,
+                child: ExcludeSemantics(
+                  child: Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: .16),
+                      ),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 28),
+                  ),
+                ),
+              ),
             Positioned(
               right: -52,
               top: -62,
