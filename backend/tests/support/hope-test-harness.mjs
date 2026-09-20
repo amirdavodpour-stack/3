@@ -40,7 +40,10 @@ export async function register(json, email, displayName = email) {
 }
 
 export async function closeApi({server, db, tmp}) {
+  const closePromise = new Promise((resolve) => server.close(resolve));
+  server.closeIdleConnections?.();
+  server.closeAllConnections?.();
+  await closePromise;
   await db.close();
-  await new Promise((resolve) => server.close(resolve));
   fs.rmSync(tmp, {recursive: true, force: true});
 }
