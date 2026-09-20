@@ -113,12 +113,6 @@ class AppTheme {
             borderRadius: BorderRadius.circular(18),
             borderSide: const BorderSide(color: AppColors.danger)),
       ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.primary,
-        foregroundColor: Colors.white,
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
