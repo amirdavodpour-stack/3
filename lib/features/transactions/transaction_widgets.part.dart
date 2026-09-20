@@ -188,12 +188,15 @@ extension on _TransactionPageState {
                     : Icons.arrow_forward_rounded),
                 tooltip: HopeCopy.of(context).copy_back_6e09f79),
             title: Text(HopeCopy.of(context).copy_transaction_7e0ea3b)),
-        body: RefreshIndicator(
-          onRefresh: refresh,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-            children: [
+        body: PremiumPageFrame(
+          maxWidth: 980,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 72),
+          child: RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              children: [
               LayoutBuilder(
                 builder: (context, constraints) {
                   final compact = constraints.maxWidth < 500;
@@ -410,7 +413,8 @@ extension on _TransactionPageState {
                     },
                     onChanged: refresh),
               ],
-            ],
+              ],
+            ),
           ),
         ),
       ),
