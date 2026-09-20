@@ -79,7 +79,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
           PremiumHeader(
             eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
-            title: '${HopeCopy.of(context).copy_hello_fc7ef4a}, $name',
+            title: name,
             subtitle: HopeCopy.of(context)
                 .copy_professional_identity_preferences_and_acco_7f164ce,
             trailing: const HopeMark(size: 42, showText: false),
@@ -306,7 +306,7 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 14),
           SectionTitle(
             title: _t(context, 'مرکز کنترل حساب', 'Account control center'),
-            subtitle: _t(context, 'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کن.', 'Manage privacy, devices, and your work applications in one place.'),
+            subtitle: _t(context, 'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کنید.', 'Manage privacy, devices, and your work applications in one place.'),
           ),
           const SizedBox(height: 10),
           PremiumPanel(
