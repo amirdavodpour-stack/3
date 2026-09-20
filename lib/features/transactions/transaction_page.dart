@@ -12,6 +12,7 @@ import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/copy.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/ui/premium_components.dart';
 import 'transaction_controller.dart';
 import '../../core/marketplace/job.dart';
 part 'transaction_evidence.part.dart';
