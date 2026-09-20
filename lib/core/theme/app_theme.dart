@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'hope_v2_design.dart';
+
 class AppColors {
   // Compatibility facade. New UI code should consume HopeV2Colors directly.
   const AppColors._();
