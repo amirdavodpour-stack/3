@@ -17,6 +17,7 @@ import 'core/notifications/notification_service.dart';
 import 'core/notifications/notification_repository.dart';
 import 'core/profile/profile_repository.dart';
 import 'core/uploads/upload_queue.dart';
+import 'core/theme/vazirmatn_loader.dart';
 import 'dart:ui';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -31,6 +32,7 @@ import 'core/application/application_registry.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await loadVazirmatnFont();
   final settings = HopeSettingsController();
   await settings.load();
 
