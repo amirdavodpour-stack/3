@@ -12,7 +12,6 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
-import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/copy.dart';
 
 import '../../core/theme/app_theme.dart';
