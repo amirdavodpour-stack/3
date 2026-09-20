@@ -502,34 +502,73 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
-          ListTile(
-            leading: const HopeIconTile(Icons.translate_rounded),
-            title: Text(
-              HopeCopy.of(context).copy_app_language_789c9c4,
-            ),
-            subtitle: Text(
-              settings.language == 'fa'
-                  ? HopeCopy.of(context).copy_language_persian_3ffcd3e
-                  : HopeCopy.of(context).copy_language_english_d9f5a4a,
-            ),
-            trailing: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'fa',
-                  label: Text(
-                    HopeCopy.of(context).copy_persian_62775b3,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final selector = SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'fa',
+                    label: Text(
+                      HopeCopy.of(context).copy_persian_62775b3,
+                    ),
                   ),
-                ),
-                ButtonSegment(
-                  value: 'en',
-                  label: Text(
-                    HopeCopy.of(context).copy_english_8396fe3,
+                  ButtonSegment(
+                    value: 'en',
+                    label: Text(
+                      HopeCopy.of(context).copy_english_8396fe3,
+                    ),
                   ),
+                ],
+                selected: {settings.language},
+                onSelectionChanged: (value) => settings.setLanguage(value.first),
+              );
+
+              final details = ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                leading: const HopeIconTile(Icons.translate_rounded),
+                title: Text(
+                  HopeCopy.of(context).copy_app_language_789c9c4,
                 ),
-              ],
-              selected: {settings.language},
-              onSelectionChanged: (value) => settings.setLanguage(value.first),
-            ),
+                subtitle: Text(
+                  settings.language == 'fa'
+                      ? HopeCopy.of(context).copy_language_persian_3ffcd3e
+                      : HopeCopy.of(context).copy_language_english_d9f5a4a,
+                ),
+              );
+
+              if (constraints.maxWidth < 500) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      details,
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(15, 0, 15, 8),
+                          child: selector,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                leading: const HopeIconTile(Icons.translate_rounded),
+                title: Text(
+                  HopeCopy.of(context).copy_app_language_789c9c4,
+                ),
+                subtitle: Text(
+                  settings.language == 'fa'
+                      ? HopeCopy.of(context).copy_language_persian_3ffcd3e
+                      : HopeCopy.of(context).copy_language_english_d9f5a4a,
+                ),
+                trailing: selector,
+              );
+            },
           ),
           const Divider(height: 1),
           ListTile(
