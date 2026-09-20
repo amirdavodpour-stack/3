@@ -63,6 +63,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
   }
 }
 
+
   Future<void> _deleteAccount() async {
     final controller = TextEditingController();
     final confirmed = await showDialog<bool>(
