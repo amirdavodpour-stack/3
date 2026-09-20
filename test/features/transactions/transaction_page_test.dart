@@ -157,8 +157,9 @@ Future<void> _pump(
   WidgetTester tester,
   _FakeTx repo, {
   String ownerId = 'u1',
+  double width = 900,
 }) async {
-  tester.view.physicalSize = const Size(900, 2200);
+  tester.view.physicalSize = Size(width, 2200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
