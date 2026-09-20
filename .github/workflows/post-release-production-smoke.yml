@@ -1,0 +1,64 @@
+name: HOPE Post-release Production Smoke
+
+on:
+  push:
+    branches:
+      - ops/post-release-production-smoke
+
+permissions:
+  contents: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Public API smoke
+        shell: bash
+        env:
+          BASE_URL: https://v2hope-production-production.up.railway.app
+        run: |
+          set -euo pipefail
+          curl_common=(--fail --silent --show-error --location --max-time 20 --retry 3 --retry-delay 2)
+
+          for path in /live /health /ready /categories /jobs/recommended; do
+            echo "=== GET $path ==="
+            body="$(curl "${curl_common[@]}" -D /tmp/headers.txt "${BASE_URL}${path}")"
+            status="$(awk 'NR==1 {print $2}' /tmp/headers.txt)"
+            test "$status" = "200"
+            test -n "$body"
+            echo "HTTP $status"
+            printf '%s
+' "$body" | head -c 500
+            echo
+          done
+
+      - name: Authentication boundary smoke
+        shell: bash
+        env:
+          BASE_URL: https://v2hope-production-production.up.railway.app
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error --location --max-time 20             -o /tmp/wallet-body.txt -w '%{http_code}'             "${BASE_URL}/wallet/me")"
+          test "$status" = "401"
+          grep -q '"UNAUTHORIZED"' /tmp/wallet-body.txt
+          echo "Unauthenticated wallet access correctly returns HTTP 401."
+
+      - name: Security headers smoke
+        shell: bash
+        env:
+          BASE_URL: https://v2hope-production-production.up.railway.app
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --location --max-time 20             -D /tmp/live-headers.txt -o /dev/null "${BASE_URL}/live"
+          grep -qi '^x-content-type-options: nosniff' /tmp/live-headers.txt
+          grep -qi '^x-frame-options: DENY' /tmp/live-headers.txt
+          grep -qi '^referrer-policy: no-referrer' /tmp/live-headers.txt
+          grep -qi '^strict-transport-security:' /tmp/live-headers.txt
+          echo "Production security response headers verified."
+
+      - name: Delete temporary smoke branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X DELETE /repos/amirdavodpour-stack/3/git/refs/heads/ops/post-release-production-smoke
