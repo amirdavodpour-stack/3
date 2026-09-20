@@ -83,9 +83,14 @@ class _HomePageState extends State<HomePage> {
                     onDestinationSelected: _selectTab,
                     extended:
                         MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded,
-                    leading: const Padding(
-                      padding: EdgeInsets.fromLTRB(8, 12, 8, 22),
-                      child: HopeMark(size: 44, showText: false),
+                    leading: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 12, 8, 22),
+                      child: HopeMark(
+                        size: 44,
+                        showText:
+                            MediaQuery.sizeOf(context).width >=
+                            HopeV2Breakpoints.expanded,
+                      ),
                     ),
                     destinations: destinations,
                   ),
