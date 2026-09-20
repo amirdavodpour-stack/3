@@ -36,7 +36,7 @@ test('CI never contains the placeholder API host and requires a real HTTPS secre
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
   assert.doesNotMatch(workflow, /api\.hope\.example\.invalid/);
   assert.match(workflow, /secrets\.API_BASE_URL/);
-  assert.match(workflow, /API_BASE_URL(?: or API_BASE_URL_STAGING)? secret is required/);
+  assert.match(workflow, /secret_label="API_BASE_URL or API_BASE_URL_STAGING"/);
   assert.match(workflow, /API_BASE_URL(?:_[A-Z]+)? must use HTTPS/);
   assert.match(workflow, /contains whitespace or is malformed/);
   assert.match(workflow, /\^https:\/\/\[\^\[:space:\]\]\+\$/);
