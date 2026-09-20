@@ -153,12 +153,39 @@ class OpportunityCard extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: Text(title, maxLines: featured ? 3 : 2, overflow: TextOverflow.ellipsis, style: featured ? HopeV2Type.hero(context) : Theme.of(context).textTheme.titleLarge)),
-            const SizedBox(width: HopeV2Spacing.sm),
-            PremiumTag(
-              label: job.isMission ? _t(context, 'ماموریت', 'Mission') : _t(context, 'استخدام', 'Job'),
-              icon: job.isMission ? Icons.bolt_rounded : Icons.business_center_rounded,
+            HopeIconTile(
+              job.isMission
+                  ? Icons.bolt_rounded
+                  : Icons.business_center_rounded,
               color: primary,
+              filled: true,
+              size: featured ? 50 : 46,
+            ),
+            const SizedBox(width: HopeV2Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PremiumTag(
+                    label: job.isMission
+                        ? _t(context, 'ماموریت', 'Mission')
+                        : _t(context, 'استخدام', 'Job'),
+                    icon: job.isMission
+                        ? Icons.bolt_rounded
+                        : Icons.business_center_rounded,
+                    color: primary,
+                  ),
+                  const SizedBox(height: HopeV2Spacing.sm),
+                  Text(
+                    title,
+                    maxLines: featured ? 3 : 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: featured
+                        ? HopeV2Type.hero(context)
+                        : Theme.of(context).textTheme.titleLarge,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -178,13 +205,49 @@ class OpportunityCard extends StatelessWidget {
         ),
         if (amount.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.lg),
-          Text(
-            amount,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: featured ? 22 : 19, fontWeight: FontWeight.w900, color: primary),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: HopeV2Spacing.md,
+              vertical: HopeV2Spacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: .07),
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
+              border: Border.all(color: primary.withValues(alpha: .12)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.payments_outlined, color: primary, size: 21),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job.isMission
+                            ? _t(context, 'مبلغ پروژه', 'Project budget')
+                            : _t(context, 'درآمد ماهانه', 'Monthly compensation'),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        amount,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: featured ? 22 : 19,
+                          fontWeight: FontWeight.w900,
+                          color: primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          Text(job.isMission ? _t(context, 'مبلغ پروژه', 'Project budget') : _t(context, 'درآمد ماهانه', 'Monthly compensation'), style: Theme.of(context).textTheme.bodySmall),
         ],
         if (reasons.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.md),
