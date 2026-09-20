@@ -112,12 +112,12 @@ lock_out = []
 i = 0
 while i < len(lock_lines):
     line = lock_lines[i]
-    match = re.match(r"^  ([A-Za-z0-9_+.-]+):\\s*$", line)
+    match = re.match(r"^  ([A-Za-z0-9_+.-]+):\s*$", line)
     if match and match.group(1) in pruned_release_packages:
         i += 1
         while i < len(lock_lines):
             nxt = lock_lines[i]
-            if nxt == "sdks:" or re.match(r"^  [A-Za-z0-9_+.-]+:\\s*$", nxt):
+            if nxt == "sdks:" or re.match(r"^  [A-Za-z0-9_+.-]+:\s*$", nxt):
                 break
             i += 1
         continue
