@@ -19,7 +19,34 @@ class _OffersPageState extends State<OffersPage> {
 
   @override void initState(){super.initState(); _reload();}
   void _reload(){ final r=context.read<OfferRepository>(); _future=widget.jobId==null?r.listMine():r.listForJob(widget.jobId!); if(mounted)setState((){}); }
-  String _t(String fa,String en)=>Localizations.localeOf(context).languageCode=='en'?en:fa;
+  String _t(String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _statusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return _t('در انتظار بررسی', 'Pending');
+      case 'ACCEPTED':
+        return _t('پذیرفته‌شده', 'Accepted');
+      case 'REJECTED':
+        return _t('رد شده', 'Rejected');
+      default:
+        return status;
+    }
+  }
+
+  Color _statusColor(BuildContext context, String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return AppColors.warning;
+      case 'ACCEPTED':
+        return AppColors.success;
+      case 'REJECTED':
+        return Theme.of(context).colorScheme.error;
+      default:
+        return Theme.of(context).colorScheme.primary;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +88,7 @@ class _OffersPageState extends State<OffersPage> {
           final all = s.data ?? const <HopeOffer>[];
           final rows = _filter == 'ALL'
               ? all
-              : all.where((x) => x.status == _filter).toList();
+              : all.where((x) => x.status.toUpperCase() == _filter).toList();
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: PremiumPageFrame(
@@ -90,7 +117,7 @@ class _OffersPageState extends State<OffersPage> {
                           Padding(
                             padding: const EdgeInsetsDirectional.only(end: 8),
                             child: ChoiceChip(
-                              label: Text(x == 'ALL' ? _t('همه', 'All') : x),
+                              label: Text(x == 'ALL' ? _t('همه', 'All') : _statusLabel(x)),
                               selected: _filter == x,
                               onSelected: (_) => setState(() => _filter = x),
                             ),
@@ -134,7 +161,7 @@ class _OffersPageState extends State<OffersPage> {
               const HopeIconTile(Icons.sell_outlined,filled:true),
               const SizedBox(width:10),
               Expanded(child:Text('${_t('مبلغ','Amount')}: ${o.price}',style:Theme.of(context).textTheme.titleMedium)),
-              StatusPill(o.status,color:o.isPending?AppColors.warning:Theme.of(context).colorScheme.primary),
+              StatusPill(_statusLabel(o.status), color: _statusColor(context, o.status)),
             ]),
             if(o.message.trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:10),child:Text(o.message,maxLines:3,overflow:TextOverflow.ellipsis)),
             const SizedBox(height:8),
@@ -186,7 +213,7 @@ class _OffersPageState extends State<OffersPage> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.flag_outlined),
                   title: Text(_t('وضعیت','Status')),
-                  subtitle: Text(detail.status),
+                  subtitle: Text(_statusLabel(detail.status)),
                 ),
                 if (detail.message.trim().isNotEmpty)
                   ListTile(
