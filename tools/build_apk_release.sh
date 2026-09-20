@@ -58,6 +58,10 @@ rm -rf build android/build android/app/build .gradle android/.gradle .dart_tool
 rm -f android/local.properties .flutter-plugins-dependencies
 flutter clean
 flutter pub get --enforce-lockfile
+# Refresh Flutter-generated Android project metadata after resolving dev-only
+# integration_test plugins; without this, --no-pub release builds can retain a
+# stale GeneratedPluginRegistrant reference to the integration_test plugin.
+flutter build --config-only
 [ -f android/local.properties ] || { echo 'ERROR: Flutter did not regenerate android/local.properties.' >&2; exit 1; }
 FLUTTER_SDK_PATH="$(sed -n 's/^flutter\.sdk=//p' android/local.properties | head -1)"
 ANDROID_SDK_PATH="$(sed -n 's/^sdk\.dir=//p' android/local.properties | head -1)"
