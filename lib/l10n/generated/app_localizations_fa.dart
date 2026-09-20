@@ -36,6 +36,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get loginButton => 'ورود به HOPE';
 
   @override
+  String get signInWithGoogle => 'ورود با Google';
+
+  @override
   String get continueAsGuest => 'فعلاً به‌عنوان مهمان ادامه بده';
 
   @override
