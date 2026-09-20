@@ -55,7 +55,7 @@ class HopeAsyncState extends StatelessWidget {
       HopeStateKind.rateLimited => (Icons.hourglass_top_rounded, Theme.of(context).colorScheme.secondary),
       HopeStateKind.retrying => (Icons.sync_rounded, Theme.of(context).colorScheme.primary),
       HopeStateKind.permission => (Icons.lock_outline_rounded, Theme.of(context).colorScheme.secondary),
-      HopeStateKind.pending => (Icons.schedule_rounded, Colors.orange.shade700),
+      HopeStateKind.pending => (Icons.schedule_rounded, HopeV2SemanticColors.warning(context)),
       HopeStateKind.submitting => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.primary),
       HopeStateKind.success => (Icons.check_circle_outline_rounded, Theme.of(context).colorScheme.tertiary),
     };
