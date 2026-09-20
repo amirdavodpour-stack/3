@@ -200,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       Align(
-                        alignment: Alignment.centerRight,
+                        alignment: AlignmentDirectional.centerEnd,
                         child: TextButton(
                           onPressed: () => Navigator.push(
                               context, HopeRoutes.passwordReset()),
