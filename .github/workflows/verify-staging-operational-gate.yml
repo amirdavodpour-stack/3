@@ -2,7 +2,7 @@ name: Verify staging operational gate
 on:
   pull_request:
     branches:
-      - release/v2hope-hardening-2026-09-19
+      - Main
   workflow_dispatch:
 concurrency:
   group: hope-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
