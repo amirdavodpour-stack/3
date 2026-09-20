@@ -95,7 +95,7 @@ class HopeSurface extends StatelessWidget {
       {super.key,
       required this.child,
       this.padding = EdgeInsets.zero,
-      this.radius = 26,
+      this.radius = 22,
       this.highlight = false});
   final Widget child;
   final EdgeInsets padding;
@@ -110,18 +110,24 @@ class HopeSurface extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: dark ? AppColors.darkCard : AppColors.surface,
+        color: highlight
+            ? (dark ? const Color(0x1A7660FF) : const Color(0xFFF1EEFF))
+            : (dark ? AppColors.darkCard : AppColors.surface),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-            color:
-                highlight ? AppColors.primary.withValues(alpha: .20) : border),
+          color: highlight
+              ? AppColors.primary.withValues(alpha: .24)
+              : border,
+          width: highlight ? 1.1 : 1,
+        ),
         boxShadow: dark
             ? const []
             : const [
                 BoxShadow(
-                    color: Color(0x0A211A44),
-                    blurRadius: 26,
-                    offset: Offset(0, 10))
+                  color: Color(0x081B1638),
+                  blurRadius: 22,
+                  offset: Offset(0, 8),
+                ),
               ],
       ),
       child: Material(
