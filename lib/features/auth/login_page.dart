@@ -8,6 +8,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -114,39 +115,80 @@ class _LoginPageState extends State<LoginPage> {
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
                     icon: Icon(
-                        Localizations.localeOf(context).languageCode == 'en'
-                            ? Icons.arrow_back_rounded
-                            : Icons.arrow_forward_rounded),
+                      Localizations.localeOf(context).languageCode == 'en'
+                          ? Icons.arrow_back_rounded
+                          : Icons.arrow_forward_rounded,
+                    ),
                     tooltip: l10n.backButtonTooltip,
                   ),
                   const Spacer(),
-                  const HopeMark(size: 40),
+                  const HopeMark(size: 38),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 22),
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(17),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: const Icon(
+                        Icons.lock_open_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.loginWelcomeBack,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 23,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            l10n.loginWelcomeBackSubtitle,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
               AnimatedEntrance(
-                child: HopeSurface(
-                  padding: const EdgeInsets.all(22),
-                  highlight: true,
+                child: PremiumPanel(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const HopeIconTile(
-                        Icons.waving_hand_rounded,
-                        size: 62,
-                        filled: true,
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        l10n.loginWelcomeBack,
-                        style: Theme.of(context).textTheme.displaySmall,
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        l10n.loginWelcomeBackSubtitle,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 23),
                       if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
                         SizedBox(
                           width: double.infinity,
@@ -169,6 +211,13 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 9),
                       ],
+                      Text(
+                        Localizations.localeOf(context).languageCode == 'en'
+                            ? 'Account email'
+                            : 'ایمیل حساب',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 9),
                       TextField(
                         controller: email,
                         keyboardType: TextInputType.emailAddress,
@@ -214,9 +263,7 @@ class _LoginPageState extends State<LoginPage> {
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Text(l10n.loginButton),
                       ),
