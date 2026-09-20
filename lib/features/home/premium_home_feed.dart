@@ -19,9 +19,11 @@ class PremiumHomeFeed extends StatefulWidget {
     super.key,
     required this.onOpenExplore,
     required this.onOpenMenu,
+    required this.onOpenCreate,
   });
   final VoidCallback onOpenExplore;
   final VoidCallback onOpenMenu;
+  final VoidCallback onOpenCreate;
 
   @override
   State<PremiumHomeFeed> createState() => _PremiumHomeFeedState();
@@ -134,10 +136,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     label: Text(_t(context, 'جست‌وجوی فرصت‌ها', 'Explore opportunities')),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      HopeRoutes.createJob(),
-                    ),
+                    onPressed: widget.onOpenCreate,
                     icon: const Icon(Icons.add_rounded),
                     label: Text(_t(context, 'ثبت فرصت جدید', 'Post opportunity')),
                     style: OutlinedButton.styleFrom(

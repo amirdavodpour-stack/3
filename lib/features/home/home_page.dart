@@ -37,6 +37,7 @@ class _HomePageState extends State<HomePage> {
             context,
             () => _selectTab(1),
             () => _scaffoldKey.currentState?.openDrawer(),
+            () => _openCreate(context),
           ),
         1 => const JobsPage(key: ValueKey('explore')),
         2 => TransactionsPage(
