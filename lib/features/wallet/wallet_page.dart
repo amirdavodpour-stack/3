@@ -674,29 +674,32 @@ class _WalletPageState extends State<WalletPage> {
           const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, constraints) {
-              final wide = constraints.maxWidth >= 560;
+              final wide = constraints.maxWidth >= 760;
               final tiles = [
-                MetricTile(
-                  label: _t('موجودی قابل‌استفاده', 'Available'),
+                PremiumStatCard(
+                  label: _t('موجودی قابل‌استفاده', 'Available balance'),
                   value: _money(wallet.availableBalance, wallet.currency),
                   icon: Icons.account_balance_wallet_outlined,
+                  caption: _t('قابل خرج یا انتقال', 'Ready to spend or transfer'),
                 ),
-                MetricTile(
-                  label: _t('قفل‌شده', 'Locked'),
+                PremiumStatCard(
+                  label: _t('قفل‌شده', 'Locked balance'),
                   value: _money(wallet.lockedBalance, wallet.currency),
                   icon: Icons.lock_clock_outlined,
-                  color: secondaryAccent(context),
+                  accent: secondaryAccent(context),
+                  caption: _t('تا آزادسازی قابل استفاده نیست', 'Unavailable until released'),
                 ),
-                MetricTile(
-                  label: _t('برداشت در جریان', 'Pending payouts'),
+                PremiumStatCard(
+                  label: _t('برداشت‌های در جریان', 'Pending payouts'),
                   value: '$_pendingPayoutCount',
                   icon: Icons.schedule_send_outlined,
-                  color: AppColors.warning,
+                  accent: AppColors.warning,
+                  caption: _t('درخواست‌های نیازمند پیگیری', 'Requests awaiting completion'),
                 ),
               ];
               return GridView.count(
                 crossAxisCount: wide ? 3 : 1,
-                childAspectRatio: wide ? 2.55 : 4.2,
+                childAspectRatio: wide ? 1.55 : 2.9,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
                 shrinkWrap: true,
@@ -749,8 +752,11 @@ class _WalletPageState extends State<WalletPage> {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   onTap: () => _showTransaction(item),
-                  leading: CircleAvatar(
-                    child: Icon(_directionIcon(item.isCredit)),
+                  leading: HopeIconTile(
+                    _directionIcon(item.isCredit),
+                    color: _directionColor(context, item.isCredit),
+                    filled: true,
+                    size: 44,
                   ),
                   title: Text(_entryTitle(item), style: const TextStyle(fontWeight: FontWeight.w800)),
                   subtitle: Text('${_date(item.createdAt)}\n${item.referenceType}'),
@@ -783,7 +789,12 @@ class _WalletPageState extends State<WalletPage> {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   onTap: () => _showPayout(payout),
-                  leading: const CircleAvatar(child: Icon(Icons.south_west_rounded)),
+                  leading: HopeIconTile(
+                    _payoutIcon(payout.status),
+                    color: _payoutColor(context, payout.status),
+                    filled: true,
+                    size: 44,
+                  ),
                   title: Text(_money(payout.amount, payout.currency), style: const TextStyle(fontWeight: FontWeight.w900)),
                   subtitle: Text('${_date(payout.createdAt)}\n${payout.provider}'),
                   isThreeLine: true,
