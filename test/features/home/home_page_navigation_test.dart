@@ -229,10 +229,10 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byRole(Role.tab, name: 'Profile'));
+    await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Profile')));
     await tester.pumpAndSettle();
     expect(find.text('Profile'), findsWidgets);
-    await tester.tap(find.byRole(Role.tab, name: 'Home'));
+    await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Home')));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);
   });
