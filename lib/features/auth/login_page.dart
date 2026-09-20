@@ -3,6 +3,7 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/google_sign_in_service.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/brand.dart';
@@ -26,6 +27,31 @@ class _LoginPageState extends State<LoginPage> {
     email.dispose();
     password.dispose();
     super.dispose();
+  }
+
+  Future<void> submitGoogle() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => loading = true);
+    try {
+      await context
+          .read<AuthController>()
+          .loginWithGoogle(context.read<GoogleSignInService>());
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              apiErrorMessage(error, fallback: l10n.loginFailedGeneric),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 
   Future<void> submit() async {
@@ -112,6 +138,28 @@ class _LoginPageState extends State<LoginPage> {
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       const SizedBox(height: 23),
+                      if (context.read<GoogleSignInService>().isConfigured) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: loading ? null : submitGoogle,
+                            icon: const Icon(Icons.account_circle_outlined),
+                            label: Text(l10n.signInWithGoogle),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: Theme.of(context).dividerColor)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(l10n.orDivider),
+                            ),
+                            Expanded(child: Divider(color: Theme.of(context).dividerColor)),
+                          ],
+                        ),
+                        const SizedBox(height: 9),
+                      ],
                       TextField(
                         controller: email,
                         keyboardType: TextInputType.emailAddress,
