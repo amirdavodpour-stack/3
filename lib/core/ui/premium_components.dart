@@ -179,18 +179,33 @@ class PremiumPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final panel = Container(
       decoration: BoxDecoration(
-        color: HopeV2Surfaces.panel(context),
+        color: highlight
+            ? (dark
+                ? scheme.primary.withValues(alpha: .09)
+                : scheme.primary.withValues(alpha: .055))
+            : HopeV2Surfaces.panel(context),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: .18)
+              ? scheme.primary.withValues(alpha: .20)
               : HopeV2Surfaces.border(context),
+          width: highlight ? 1.1 : 1,
         ),
-        boxShadow: Theme.of(context).brightness == Brightness.dark
+        boxShadow: dark
             ? const []
-            : HopeV2Shadows.card,
+            : [
+                BoxShadow(
+                  color: highlight
+                      ? scheme.primary.withValues(alpha: .06)
+                      : const Color(0x081B1638),
+                  blurRadius: highlight ? 26 : 22,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       padding: padding,
       child: Material(type: MaterialType.transparency, child: child),
