@@ -181,8 +181,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _filterChip(String value, String label, int count) {
     return Padding(
