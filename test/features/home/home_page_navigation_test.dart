@@ -24,6 +24,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// no shared mutable state between tests.
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
