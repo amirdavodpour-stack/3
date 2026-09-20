@@ -70,10 +70,15 @@ restore_release_dependency_files() {
   cp "$LOCKFILE_BACKUP" pubspec.lock
 }
 trap restore_release_dependency_files EXIT
+# Remove only the dev-only integration_test edge and the dependency-tree entries that
+# become unreachable from it. The remaining lockfile entries stay pinned, so the
+# release build still uses --enforce-lockfile and cannot silently upgrade anything.
 python3 - <<'PY'
 from pathlib import Path
-p = Path("pubspec.yaml")
-lines = p.read_text().splitlines()
+import re
+
+pubspec = Path("pubspec.yaml")
+lines = pubspec.read_text().splitlines()
 out = []
 skip = False
 for line in lines:
@@ -89,7 +94,37 @@ for line in lines:
             out.append(line)
         continue
     out.append(line)
-p.write_text("\n".join(out) + "\n")
+pubspec.write_text("\n".join(out) + "\n")
+
+# With integration_test removed, Pub reports these entries as no longer depended on.
+# Prune only those exact unreachable stanzas from the temporary lockfile.
+pruned_release_packages = {
+    "integration_test",
+    "flutter_driver",
+    "fuchsia_remote_debug_protocol",
+    "process",
+    "sync_http",
+    "webdriver",
+}
+lock = Path("pubspec.lock")
+lock_lines = lock.read_text().splitlines()
+lock_out = []
+i = 0
+while i < len(lock_lines):
+    line = lock_lines[i]
+    match = re.match(r"^  ([A-Za-z0-9_+.-]+):\\s*$", line)
+    if match and match.group(1) in pruned_release_packages:
+        i += 1
+        while i < len(lock_lines):
+            nxt = lock_lines[i]
+            if nxt == "sdks:" or re.match(r"^  [A-Za-z0-9_+.-]+:\\s*$", nxt):
+                break
+            i += 1
+        continue
+    lock_out.append(line)
+    i += 1
+
+lock.write_text("\n".join(lock_out) + "\n")
 PY
 flutter pub get --enforce-lockfile
 
