@@ -211,7 +211,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
             padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
-              eyebrow: _t('بازار', 'MARKETPLACE'),
+              eyebrow: _t('جست‌وجو', 'SEARCH'),
               title: _t('جست‌وجوهای ذخیره‌شده', 'Saved searches'),
               subtitle: _t(
                 'فیلترهای ذخیره‌شده حساب را ویرایش یا حذف کنید.',
