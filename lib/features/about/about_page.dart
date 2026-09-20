@@ -158,6 +158,7 @@ class HeroBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: SizedBox(
