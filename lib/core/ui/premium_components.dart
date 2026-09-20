@@ -293,48 +293,68 @@ class PremiumHero extends StatelessWidget {
               padding: EdgeInsets.all(horizontal),
               child: Align(
                 alignment: AlignmentDirectional.bottomStart,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        eyebrow.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 11,
-                          letterSpacing: .9,
-                        ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final dense = constraints.maxHeight < 300;
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            eyebrow.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              letterSpacing: .9,
+                            ),
+                          ),
+                          SizedBox(
+                            height: dense ? 5 : HopeV2Spacing.sm,
+                          ),
+                          Text(
+                            title,
+                            maxLines: dense ? 2 : 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: dense ? 27 : 31,
+                              height: 1.03,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -.9,
+                            ),
+                          ),
+                          SizedBox(
+                            height: dense ? 5 : HopeV2Spacing.sm,
+                          ),
+                          Text(
+                            message,
+                            maxLines: dense ? 2 : 4,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              height: dense ? 1.34 : 1.48,
+                            ),
+                          ),
+                          if (action != null) ...[
+                            SizedBox(
+                              height: dense ? 9 : HopeV2Spacing.lg,
+                            ),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: HopeV2Touch.minimum,
+                              ),
+                              child: action!,
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: HopeV2Spacing.sm),
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 31,
-                          height: 1.03,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -.9,
-                        ),
-                      ),
-                      const SizedBox(height: HopeV2Spacing.sm),
-                      Text(
-                        message,
-                        style: const TextStyle(
-                            color: Colors.white70, height: 1.48),
-                      ),
-                      if (action != null) ...[
-                        const SizedBox(height: HopeV2Spacing.lg),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(
-                              minHeight: HopeV2Touch.minimum),
-                          child: action!,
-                        ),
-                      ],
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
