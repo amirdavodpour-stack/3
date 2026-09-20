@@ -366,34 +366,56 @@ class _CreateJobForm extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           if (kind == 'MISSION')
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final fields = [
+                  TextField(
                     controller: minBudget,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(16),
+                    ],
                     decoration: InputDecoration(
                       labelText: HopeCopy.of(context).copy_minimum_pay_38cc5ec,
                       prefixIcon: const Icon(Icons.payments_outlined),
                       suffixText: translate('تومان', 'TOMAN'),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
+                  TextField(
                     controller: maxBudget,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(16),
+                    ],
                     decoration: InputDecoration(
                       labelText: HopeCopy.of(context).copy_maximum_pay_b51ad57,
-                      prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
+                      prefixIcon:
+                          const Icon(Icons.account_balance_wallet_outlined),
                       suffixText: translate('تومان', 'TOMAN'),
                     ),
                   ),
-                ),
-              ],
+                ];
+
+                if (constraints.maxWidth < 500) {
+                  return Column(
+                    children: [
+                      fields[0],
+                      const SizedBox(height: 11),
+                      fields[1],
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: fields[0]),
+                    const SizedBox(width: 10),
+                    Expanded(child: fields[1]),
+                  ],
+                );
+              },
             )
           else
             TextField(
