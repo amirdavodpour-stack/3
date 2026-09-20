@@ -229,6 +229,7 @@ class _AdminPageState extends State<AdminPage>
         );
       },
     );
+  }
 
   Widget _errorState(BuildContext context, Object? error,
       {required VoidCallback retry}) {
