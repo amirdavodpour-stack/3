@@ -205,7 +205,7 @@ class PremiumHero extends StatelessWidget {
             Padding(
               padding: EdgeInsets.all(horizontal),
               child: Align(
-                alignment: Alignment.bottomLeft,
+                alignment: AlignmentDirectional.bottomStart,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: Column(
