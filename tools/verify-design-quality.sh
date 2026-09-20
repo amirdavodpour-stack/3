@@ -45,8 +45,8 @@ from pathlib import Path
 root = Path(".")
 fa = json.loads((root / "lib/l10n/app_fa.arb").read_text(encoding="utf-8"))
 en = json.loads((root / "lib/l10n/app_en.arb").read_text(encoding="utf-8"))
-fa_keys = {k for k in fa if not k.startswith("@@")}
-en_keys = {k for k in en if not k.startswith("@@")}
+fa_keys = {k for k in fa if not k.startswith("@")}
+en_keys = {k for k in en if not k.startswith("@")}
 missing_en = sorted(fa_keys - en_keys)
 missing_fa = sorted(en_keys - fa_keys)
 if missing_en or missing_fa:
