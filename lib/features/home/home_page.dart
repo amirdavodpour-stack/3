@@ -10,6 +10,7 @@ import '../../core/transactions/wallet_repository.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
 import '../jobs/jobs_page.dart';
 import '../profile/profile_page.dart';
 import '../transactions/transactions_page.dart';
@@ -101,7 +102,7 @@ class _HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: isDesktop
           ? null
-          : NavigationBar(
+          : PremiumNavigationBar(
               selectedIndex: tab,
               onDestinationSelected: _selectTab,
               destinations: destinations,
