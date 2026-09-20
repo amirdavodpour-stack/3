@@ -4,6 +4,38 @@ import 'package:flutter/material.dart';
 ///
 /// This is intentionally token-first: screens should consume these values
 /// instead of inventing per-page spacing, radii, or breakpoints.
+
+/// Canonical HOPE visual tokens. Legacy theme APIs alias these values so
+/// existing screens can migrate without creating a second design system.
+class HopeV2Colors {
+  const HopeV2Colors._();
+
+  static const primary = Color(0xFF6C4DFF);
+  static const primaryDark = Color(0xFFB3A2FF);
+  static const secondary = Color(0xFF22B8A7);
+  static const secondaryStrong = Color(0xFF0C7D70);
+  static const secondaryDark = Color(0xFF3AC3B1);
+  static const accent = Color(0xFFFFB45C);
+  static const inkSoft = Color(0xFF26223A);
+  static const backgroundWarm = Color(0xFFF8F7FC);
+  static const ink = Color(0xFF151326);
+  static const muted = Color(0xFF6B6780);
+  static const surface = Color(0xFFFFFFFF);
+  static const background = Color(0xFFF6F5FC);
+  static const success = Color(0xFF0B7A58);
+  static const successDark = Color(0xFF4CD4A3);
+  static const warning = Color(0xFF8F5C0E);
+  static const warningDark = Color(0xFFFFD54F);
+  static const danger = Color(0xFFBA454D);
+  static const dangerDark = Color(0xFFFF8A80);
+  static const softPrimary = Color(0xFFEAE5FF);
+  static const darkBackground = Color(0xFF0C0A12);
+  static const darkSurface = Color(0xFF15131D);
+  static const darkCard = Color(0xFF1C1925);
+  static const darkText = Color(0xFFF8F7FC);
+  static const darkMuted = Color(0xFFAAA6B8);
+}
+
 class HopeV2Spacing {
   const HopeV2Spacing._();
   static const xs = 4.0;
