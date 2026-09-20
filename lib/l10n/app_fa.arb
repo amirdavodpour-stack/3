@@ -33,6 +33,10 @@
     "description": "Link to the password-reset page from the login page."
   },
   "loginButton": "ورود به HOPE",
+  "signInWithGoogle": "ورود با Google",
+  "@signInWithGoogle": {
+    "description": "Button label for Google authentication on the login page."
+  },
   "@loginButton": {
     "description": "Primary submit button on the login page."
   },
