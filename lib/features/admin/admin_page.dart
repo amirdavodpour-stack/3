@@ -135,6 +135,7 @@ class _AdminPageState extends State<AdminPage>
           ),
         ),
       );
+  }
 
   Widget _summaryGrid(BuildContext context, HopeAdminSummary? raw) {
     final m = raw;
