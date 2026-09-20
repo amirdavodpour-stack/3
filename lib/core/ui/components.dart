@@ -140,21 +140,44 @@ class SectionTitle extends StatelessWidget {
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(title, style: Theme.of(context).textTheme.titleLarge),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium)
-                ],
-              ])),
-          if (action != null) action!,
-        ],
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ],
+          );
+
+          if (action == null) return content;
+
+          if (constraints.maxWidth < 600) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                content,
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: action!,
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: content),
+              const SizedBox(width: 12),
+              action!,
+            ],
+          );
+        },
       );
 }
 
