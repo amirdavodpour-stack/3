@@ -96,7 +96,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
     var index = order.indexOf(status);
     if (index < 0 && {'RELEASED', 'SETTLED'}.contains(status)) index = order.length - 1;
     if (index < 0) index = 0;
-    const labels = <String>['منتشر شده', 'تخصیص داده شده', 'در حال انجام', 'تحویل شده', 'تکمیل شده'];
+    final labels = <String>[
+      _t('منتشر شده', 'Published'),
+      _t('تخصیص داده شده', 'Assigned'),
+      _t('در حال انجام', 'In progress'),
+      _t('تحویل شده', 'Delivered'),
+      _t('تکمیل شده', 'Completed'),
+    ];
     const icons = <IconData>[Icons.campaign_outlined, Icons.assignment_ind_outlined, Icons.play_circle_outline_rounded, Icons.upload_file_outlined, Icons.check_circle_outline_rounded];
     return List.generate(order.length, (i) => PremiumLifecycleStep(
       label: labels[i],
