@@ -87,7 +87,7 @@ class AppTheme {
         color: dark ? AppColors.darkCard : AppColors.surface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       dividerTheme: DividerThemeData(
           color: dark ? Colors.white10 : const Color(0xFFE8E5F0), space: 1),
@@ -147,8 +147,46 @@ class AppTheme {
             dark ? const Color(0xF714121B) : const Color(0xFDFEFEFF),
         surfaceTintColor: Colors.transparent,
         indicatorColor: dark ? const Color(0x4D7660FF) : AppColors.softPrimary,
-        labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w900
+                : FontWeight.w700,
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : mutedColor,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            size: 23,
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : mutedColor,
+          ),
+        ),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        indicatorColor:
+            dark ? const Color(0x3D7660FF) : AppColors.softPrimary,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        selectedIconTheme: IconThemeData(color: scheme.primary, size: 24),
+        unselectedIconTheme: IconThemeData(color: mutedColor, size: 23),
+        selectedLabelTextStyle: TextStyle(
+          color: scheme.primary,
+          fontWeight: FontWeight.w900,
+        ),
+        unselectedLabelTextStyle: TextStyle(
+          color: mutedColor,
+          fontWeight: FontWeight.w700,
+        ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
