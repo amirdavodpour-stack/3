@@ -2,7 +2,7 @@
   "@@locale": "en",
   "backButtonTooltip": "Back",
   "loginWelcomeBack": "Welcome back.",
-  "loginWelcomeBackSubtitle": "Return to your workspace and keep going.",
+  "loginWelcomeBackSubtitle": "Enter your account details to sign in.",
   "emailLabel": "Email",
   "passwordLabel": "Password",
   "showPasswordTooltip": "Show password",
@@ -13,12 +13,12 @@
   "@signInWithGoogle": {
     "description": "Button label for Google authentication on the login page."
   },
-  "continueAsGuest": "Continue as a guest for now",
+  "continueAsGuest": "Continue as guest",
   "orDivider": "or",
   "noAccountSignUp": "No account? Sign up",
   "loginTermsNotice": "Logging in means accepting HOPE's terms of use.",
   "emailPasswordRequired": "Enter your email and password.",
-  "loginFailedGeneric": "Login failed. Please try again.",
+  "loginFailedGeneric": "Sign-in failed. Please try again.",
   "copy_10_from_the_employer_and_10_from_the_candi_cf15dfa": "10% from the employer and 10% from the candidate; fees are shown transparently at transaction time.",
   "@copy_10_from_the_employer_and_10_from_the_candi_cf15dfa": {
     "description": "UI copy migrated from manual bilingual text."
@@ -83,7 +83,7 @@
   "@copy_activity_4b38716": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_add_a_concise_resume_and_relevant_skills_298a4f1": "Add a concise resume and relevant skills.",
+  "copy_add_a_concise_resume_and_relevant_skills_298a4f1": "Enter a concise resume and relevant skills.",
   "@copy_add_a_concise_resume_and_relevant_skills_298a4f1": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -143,7 +143,7 @@
   "@copy_apply_to_this_job_923b353": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_apply_with_a_strong_professional_profile_13980b1": "Apply with a strong professional profile.",
+  "copy_apply_with_a_strong_professional_profile_13980b1": "Submit your resume and offer.",
   "@copy_apply_with_a_strong_professional_profile_13980b1": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -183,7 +183,7 @@
   "@copy_based_on_your_city_and_preferences_79e2a31": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_broaden_your_filters_or_try_another_city_e8e32cb": "Broaden your filters or try another city.",
+  "copy_broaden_your_filters_or_try_another_city_e8e32cb": "Change the filters or select another city.",
   "@copy_broaden_your_filters_or_try_another_city_e8e32cb": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -199,7 +199,7 @@
   "@copy_candidate_identity_stays_hidden_during_sel_6a73883": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_79a9d79": "Choose",
+  "copy_choose_79a9d79": "Select",
   "@copy_choose_79a9d79": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -211,7 +211,7 @@
   "@copy_choose_a_city_a93b334": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_a_professional_category_b4cf5b8": "Choose a professional category.",
+  "copy_choose_a_professional_category_b4cf5b8": "Select a professional field.",
   "@copy_choose_a_professional_category_b4cf5b8": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -343,7 +343,7 @@
   "@copy_explore_115e9fd": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_explore_837e4eb": "Explore",
+  "copy_explore_837e4eb": "Find",
   "@copy_explore_837e4eb": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -359,7 +359,7 @@
   "@copy_field_fcb7b26": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_filter_by_city_field_and_opportunity_type_1d75340": "Filter by city, field and opportunity type.",
+  "copy_filter_by_city_field_and_opportunity_type_1d75340": "Filter by city, field, and opportunity type.",
   "@copy_filter_by_city_field_and_opportunity_type_1d75340": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -375,7 +375,7 @@
   "@copy_find_the_right_opportunity_or_create_one_c8a9e6f": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_first_choose_what_kind_of_opportunity_you__f035ca9": "First choose what kind of opportunity you are posting.",
+  "copy_first_choose_what_kind_of_opportunity_you__f035ca9": "Select the opportunity type.",
   "@copy_first_choose_what_kind_of_opportunity_you__f035ca9": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -511,7 +511,7 @@
   "@copy_light_096ac39": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_limit_notifications_during_rest_b5e0db3": "Limit notifications during rest",
+  "copy_limit_notifications_during_rest_b5e0db3": "Limit notifications during rest hours.",
   "@copy_limit_notifications_during_rest_b5e0db3": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -587,7 +587,7 @@
   "@copy_missions_a833d13": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_monitor_and_manage_hope_in_one_place_bea3b7d": "Monitor and manage HOPE in one place.",
+  "copy_monitor_and_manage_hope_in_one_place_bea3b7d": "Manage activity from one dashboard.",
   "@copy_monitor_and_manage_hope_in_one_place_bea3b7d": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -755,7 +755,7 @@
   "@copy_personalized_recommendations_a4e4411": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_please_complete_all_fields_55c07bb": "Please complete all fields.",
+  "copy_please_complete_all_fields_55c07bb": "Complete all fields.",
   "@copy_please_complete_all_fields_55c07bb": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -823,7 +823,7 @@
   "@copy_quiet_hours_02885b4": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_recommended_for_you_e56d06b": "Recommended for you",
+  "copy_recommended_for_you_e56d06b": "Recommendations",
   "@copy_recommended_for_you_e56d06b": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -859,7 +859,7 @@
   "@copy_retry_49f3eba": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_review_users_opportunities_applications_an_e30b9d2": "Review users, opportunities, applications and sensitive events from one dashboard.",
+  "copy_review_users_opportunities_applications_an_e30b9d2": "Review users, opportunities, applications, and sensitive events.",
   "@copy_review_users_opportunities_applications_an_e30b9d2": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -895,11 +895,11 @@
   "@copy_sending_c4b5575": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_set_a_defined_price_and_delivery_time_1e53f1a": "Set a defined price and delivery time.",
+  "copy_set_a_defined_price_and_delivery_time_1e53f1a": "Set the price and delivery time.",
   "@copy_set_a_defined_price_and_delivery_time_1e53f1a": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_set_an_application_deadline_for_jobs_5fd80f8": "Set an application deadline for jobs.",
+  "copy_set_an_application_deadline_for_jobs_5fd80f8": "Set the application deadline.",
   "@copy_set_an_application_deadline_for_jobs_5fd80f8": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -935,7 +935,7 @@
   "@copy_start_here_555e56f": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_start_with_your_city_or_explore_any_other__05a1e84": "Start with your city—or explore any other city.",
+  "copy_start_with_your_city_or_explore_any_other__05a1e84": "Select your city or explore another city.",
   "@copy_start_with_your_city_or_explore_any_other__05a1e84": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -983,7 +983,7 @@
   "@copy_the_reset_request_could_not_be_submitted_475bdfd": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_the_server_did_not_return_data_try_again_bccfbb3": "The server did not return data. Try again.",
+  "copy_the_server_did_not_return_data_try_again_bccfbb3": "No data was returned by the server. Please try again.",
   "@copy_the_server_did_not_return_data_try_again_bccfbb3": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -1104,7 +1104,7 @@
   "@copy_your_professional_path_2da0026": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_your_projects_applications_and_payments_wi_bec5340": "Your projects, applications and payments will appear here.",
+  "copy_your_projects_applications_and_payments_wi_bec5340": "View the status of sent and accepted offers here.",
   "@copy_your_projects_applications_and_payments_wi_bec5340": {
     "description": "UI copy migrated from manual bilingual text."
   },
