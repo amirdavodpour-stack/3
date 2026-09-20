@@ -9,6 +9,8 @@ import '../../core/application/application_registry_context.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'create_job_payload.dart';
 
@@ -175,8 +177,31 @@ class _CreateJobPageState extends State<CreateJobPage> {
           HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
         ),
       ),
-      body: _CreateJobForm(
-        title: title,
+      body: PremiumPageFrame(
+        maxWidth: 980,
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            PremiumHeader(
+              eyebrow: HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
+              title: _t(
+                'ثبت فرصت جدید',
+                'Post an opportunity',
+              ),
+              subtitle: _t(
+                'نوع فرصت، مشخصات، مبلغ و شرایط را مشخص کنید.',
+                'Set the opportunity type, details, budget, and requirements.',
+              ),
+              trailing: const HopeIconTile(
+                Icons.add_business_rounded,
+                size: 52,
+                filled: true,
+              ),
+            ),
+            const SizedBox(height: HopeV2Spacing.xl),
+            _CreateJobForm(
+              title: title,
         description: desc,
         minBudget: min,
         maxBudget: max,
@@ -200,7 +225,10 @@ class _CreateJobPageState extends State<CreateJobPage> {
             setState(() => _categoriesFuture = _loadCategories()),
         onPickDeadline: _pickDeadline,
         onSubmit: submit,
-        translate: _t,
+              translate: _t,
+            ),
+          ],
+        ),
       ),
     );
   }
