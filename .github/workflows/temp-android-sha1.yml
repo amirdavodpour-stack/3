@@ -1,0 +1,56 @@
+name: TEMP Android Production SHA1
+
+on:
+  push:
+    branches:
+      - feat/google-sign-in-2026-09-20
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fingerprint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Export production signing certificate SHA-1
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          : "${KEYSTORE_B64:?ANDROID_KEYSTORE_BASE64 is required}"
+          : "${STORE_PASSWORD:?ANDROID_KEYSTORE_PASSWORD is required}"
+          : "${KEY_ALIAS:?ANDROID_KEY_ALIAS is required}"
+          normalized="$(printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' | tr '_-' '/+')"
+          rem=$(( ${#normalized} % 4 ))
+          if [ "$rem" -eq 1 ]; then
+            echo "Invalid base64 length." >&2
+            exit 1
+          elif [ "$rem" -eq 2 ]; then
+            normalized="${normalized}=="
+          elif [ "$rem" -eq 3 ]; then
+            normalized="${normalized}="
+          fi
+          keystore="$RUNNER_TEMP/hope-production-release.keystore"
+          printf '%s' "$normalized" | base64 --decode > "$keystore"
+          test -s "$keystore"
+          keytool -list -v -keystore "$keystore" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > "$RUNNER_TEMP/keytool.txt"
+          sha1="$(awk -F': ' '/^Certificate fingerprint \(SHA1\):/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
+          sha256="$(awk -F': ' '/^Certificate fingerprints:/ {seen=1; next} seen && /^ *SHA256:/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
+          if [ -z "$sha1" ]; then
+            sha1="$(awk -F': ' '/^SHA1:/ {print $2; exit}' "$RUNNER_TEMP/keytool.txt")"
+          fi
+          test -n "$sha1"
+          printf 'Production signing certificate SHA-1: %s\n' "$sha1" | tee android-production-sha1.txt
+          [ -n "${sha256:-}" ] && printf 'Production signing certificate SHA-256: %s\n' "$sha256" >> android-production-sha1.txt
+          printf 'Package name: com.hope.marketplace\n' >> android-production-sha1.txt
+
+      - name: Upload fingerprint artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-production-sha1
+          path: android-production-sha1.txt
+          if-no-files-found: error
