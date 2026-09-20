@@ -232,6 +232,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
             ],
           ),
         ),
-      )
+      ),
+    );
   }
 }
