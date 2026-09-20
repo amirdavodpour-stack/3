@@ -58,10 +58,42 @@ rm -rf build android/build android/app/build .gradle android/.gradle .dart_tool
 rm -f android/local.properties .flutter-plugins-dependencies
 flutter clean
 flutter pub get --enforce-lockfile
-# Flutter's Android --no-pub build can retain a dev-dependency plugin registrant
-# generated during dependency resolution. A platform-specific config-only build
-# refreshes the Android project metadata before the deterministic release build.
-flutter build apk --release --config-only
+# integration_test is intentionally a dev-only dependency. Flutter's Android
+# plugin discovery can nevertheless include its plugin in GeneratedPluginRegistrant
+# during a release dependency resolution. Build the production APK from the same
+# locked dependency graph with that test-only package temporarily excluded.
+# The tracked pubspec/lockfile are restored before this script exits.
+PUBSPEC_BACKUP="$RUNNER_TEMP/hope-pubspec.yaml"
+LOCKFILE_BACKUP="$RUNNER_TEMP/hope-pubspec.lock"
+cp pubspec.yaml "$PUBSPEC_BACKUP"
+cp pubspec.lock "$LOCKFILE_BACKUP"
+restore_release_dependency_files() {
+  cp "$PUBSPEC_BACKUP" pubspec.yaml
+  cp "$LOCKFILE_BACKUP" pubspec.lock
+}
+trap restore_release_dependency_files EXIT
+python3 - <<'PY'
+from pathlib import Path
+p = Path("pubspec.yaml")
+lines = p.read_text().splitlines()
+out = []
+skip = False
+for line in lines:
+    if line == "  integration_test:":
+        skip = True
+        continue
+    if skip:
+        if line.startswith("  ") and not line.startswith("    "):
+            skip = False
+            out.append(line)
+        elif not line.strip():
+            skip = False
+            out.append(line)
+        continue
+    out.append(line)
+p.write_text("\n".join(out) + "\n")
+PY
+flutter pub get --enforce-lockfile
 
 # integration_test is intentionally a dev-only dependency. Flutter 3.47.2 still
 # regenerates its Android plugin registrant with that dev plugin during a release
