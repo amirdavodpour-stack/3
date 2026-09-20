@@ -53,8 +53,6 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
     final data = _export;
     if (data == null) return;
     // Runtime JSON payload cannot be a const expression.
-    // Dynamic JSON payload cannot be const.
-    // ignore: prefer_const_constructors
     await Clipboard.setData(ClipboardData(
       text: JsonEncoder.withIndent('  ').convert(data),
     ));
@@ -218,8 +216,6 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Runtime export JSON cannot be const.
-                    // ignore: prefer_const_constructors
                     SelectableText(
                       JsonEncoder.withIndent('  ').convert(_export),
                       maxLines: 18,
