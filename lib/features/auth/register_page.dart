@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
-import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 
 class RegisterPage extends StatefulWidget {
