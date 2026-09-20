@@ -9,6 +9,10 @@
   "hidePasswordTooltip": "Hide password",
   "forgotPassword": "Forgot your password?",
   "loginButton": "Log in to HOPE",
+  "signInWithGoogle": "Continue with Google",
+  "@signInWithGoogle": {
+    "description": "Button label for Google authentication on the login page."
+  },
   "continueAsGuest": "Continue as a guest for now",
   "orDivider": "or",
   "noAccountSignUp": "No account? Sign up",
