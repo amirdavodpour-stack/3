@@ -282,6 +282,27 @@ void main() {
     expect(repo2.calls, contains('refund:j1'));
   });
 
+  testWidgets('transaction summary contains long values on narrow screens',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'RELEASE_PENDING',
+        'amount': '9000000000000000',
+        'providerRef':
+            'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
+        'job': _job('j1', 'COMPLETED').toMap(),
+      }));
+
+    await _pump(tester, repo, ownerId: 'u1', width: 360);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment status'), findsOneWidget);
+    expect(find.text('Amount'), findsOneWidget);
+    expect(find.text('Reference'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('completed and released payment shows settled copy',
       (tester) async {
     final repo = _FakeTx()
