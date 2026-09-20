@@ -37,6 +37,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginButton => 'Log in to HOPE';
 
   @override
+  String get signInWithGoogle => 'Continue with Google';
+
+  @override
   String get continueAsGuest => 'Continue as a guest for now';
 
   @override
