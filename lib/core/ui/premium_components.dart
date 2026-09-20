@@ -23,12 +23,71 @@ class PremiumPageFrame extends StatelessWidget {
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
     return DecoratedBox(
       decoration: BoxDecoration(color: HopeV2Surfaces.page(context)),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
-          child: Padding(
-            padding: padding.copyWith(bottom: padding.bottom + bottomInset),
-            child: Material(type: MaterialType.transparency, child: child),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -120,
+            right: -90,
+            child: ExcludeSemantics(
+              child: _BrandOrb(
+                size: 250,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 300,
+            left: -130,
+            child: ExcludeSemantics(
+              child: _BrandOrb(
+                size: 220,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Padding(
+                  padding: padding.copyWith(
+                    bottom: padding.bottom + bottomInset,
+                  ),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: child,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _BrandOrb extends StatelessWidget {
+  const _BrandOrb({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: .12),
+              color.withValues(alpha: .035),
+              Colors.transparent,
+            ],
           ),
         ),
       ),
@@ -57,10 +116,17 @@ class PremiumHeader extends StatelessWidget {
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                eyebrow.toUpperCase(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: .09),
+                  borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                ),
+                child: Text(
+                  eyebrow.toUpperCase(),
                 style: HopeV2Type.eyebrow(context).copyWith(
                   color: Theme.of(context).colorScheme.primary,
+                ),
                 ),
               ),
               const SizedBox(height: HopeV2Spacing.sm),
