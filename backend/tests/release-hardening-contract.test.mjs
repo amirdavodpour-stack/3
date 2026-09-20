@@ -178,6 +178,7 @@ test('CI Android toolchain is explicit and release builds enforce the lockfile',
   const apk = fs.readFileSync(path.join(root, 'tools/build_apk_release.sh'), 'utf8');
   assert.match(apk, /flutter pub get --enforce-lockfile/);
   assert.match(apk, /flutter build apk --release --config-only/);
+  assert.match(apk, /dev\\.flutter\\.plugins\\.integration_test\\.IntegrationTestPlugin/);
 });
 
 test('production keystore secret decoding tolerates wrapped or unpadded base64', () => {
@@ -373,3 +374,5 @@ test('the standalone production release workflow isolates backend quality tests 
   assert.match(block, /DATA_FILE: \$\{\{ runner\.temp \}\}/);
   assert.doesNotMatch(block, /DATABASE_URL:\s+\$\{\{\s*secrets\.DATABASE_URL_PRODUCTION/);
 });
+
+// Release APK generation must strip the dev-only integration_test native registration from generated Android source.
