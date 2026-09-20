@@ -92,9 +92,13 @@ class _FakeMarket implements MarketplaceRepository {
       const [];
 }
 
-Future<void> _pump(WidgetTester tester, _FakeMarket repo,
-    {HopeSettingsController? settings}) async {
-  tester.view.physicalSize = const Size(900, 3400);
+Future<void> _pump(
+  WidgetTester tester,
+  _FakeMarket repo, {
+  HopeSettingsController? settings,
+  double width = 900,
+}) async {
+  tester.view.physicalSize = Size(width, 3400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -206,9 +210,7 @@ void main() {
   testWidgets('mission budget fields stack on narrow screens',
       (tester) async {
     final repo = _FakeMarket();
-    await _pump(tester, repo);
-    tester.view.physicalSize = const Size(360, 3400);
-    await tester.pumpAndSettle();
+    await _pump(tester, repo, width: 360);
     await _open(tester);
 
     expect(
