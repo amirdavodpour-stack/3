@@ -616,9 +616,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             end: 16,
                             child: Text(
                               j.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 25,
+                                height: 1.12,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
