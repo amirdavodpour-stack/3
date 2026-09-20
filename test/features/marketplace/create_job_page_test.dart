@@ -203,6 +203,25 @@ void main() {
     expect(repo.calls, isEmpty);
   });
 
+  testWidgets('mission budget fields stack on narrow screens',
+      (tester) async {
+    final repo = _FakeMarket();
+    await _pump(tester, repo);
+    tester.view.physicalSize = const Size(360, 3400);
+    await tester.pumpAndSettle();
+    await _open(tester);
+
+    final minField = find.widgetWithText(TextField, 'Minimum pay');
+    final maxField = find.widgetWithText(TextField, 'Maximum pay');
+    expect(minField, findsOneWidget);
+    expect(maxField, findsOneWidget);
+    expect(
+      tester.getTopLeft(maxField).dy,
+      greaterThan(tester.getBottomRight(minField).dy),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('switching types swaps price fields, fee copy and job deadline',
       (tester) async {
     final repo = _FakeMarket();
