@@ -65,4 +65,11 @@ test('every lifecycle action is rejected when the job is in the wrong state', as
   assert.equal((await json(`/payments/release/${job.id}`, { method: 'POST', headers: { Authorization: `Bearer ${owner.accessToken}` } })).status, 409);
 });
 
-after(async () => { await db.close(); await new Promise((r) => server.close(r)); fs.rmSync(tmp, { recursive: true, force: true }); });
+after(async () => {
+  await new Promise((resolve) => {
+    server.closeAllConnections?.();
+    server.close(resolve);
+  });
+  await db.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});

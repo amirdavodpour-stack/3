@@ -150,8 +150,11 @@ test('PostgreSQL repository path executes a complete marketplace/payment lifecyc
 
 after(async () => {
   if (server) {
+    await new Promise((resolve) => {
+      server.closeAllConnections?.();
+      server.close(resolve);
+    });
     await db.close();
-    await new Promise((resolve) => server.close(resolve));
   }
   fs.rmSync(tmp, {recursive:true, force:true});
 });

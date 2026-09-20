@@ -11,6 +11,10 @@ const { createServer } = await import('../src/app.js');
 const { db } = await import('../src/db.js');
 const { creditWallet } = await import('../src/wallet_ledger.js');
 const server = createServer();
+const closeServer = () => new Promise((resolve) => {
+  if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
+  server.close(resolve);
+});
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}/api/v1`;
 const json = (url, options={}) => fetch(base+url,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}}).then(async r=>({status:r.status,body:await r.json()}));
@@ -32,4 +36,9 @@ test('full marketplace flow', async () => {
   r=await json(`/jobs/${job.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${alice.accessToken}`}}); assert.equal(r.status,200);
   r=await json(`/payments/release/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${alice.accessToken}`}}); assert.equal(r.status,200); assert.equal(r.body.data.status,'RELEASED');
 });
-after(async ()=>{ await db.close(); await new Promise(r=>server.close(r)); fs.rmSync(tmp,{recursive:true,force:true}); });
+after(async ()=>{
+  await closeServer();
+  await db.close();
+  fs.rmSync(tmp,{recursive:true,force:true});
+});
+
