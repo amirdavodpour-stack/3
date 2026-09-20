@@ -78,4 +78,35 @@ void main() {
       greaterThanOrEqualTo(210),
     );
   });
+
+  testWidgets('premium desktop navigation rail uses a direction-aware divider',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: PremiumNavigationRail(
+              selectedIndex: 0,
+              onDestinationSelected: (_) {},
+              destinations: destinations,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final decorated = tester.widget<DecoratedBox>(
+      find
+          .descendant(
+            of: find.byType(PremiumNavigationRail),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
+    );
+    expect(decorated.decoration, isA<BoxDecoration>());
+    final decoration = decorated.decoration as BoxDecoration;
+    expect(decoration.border, isA<BorderDirectional>());
+  });
 }
