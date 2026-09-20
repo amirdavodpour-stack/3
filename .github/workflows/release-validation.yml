@@ -185,6 +185,7 @@ jobs:
             -destalias "__hope_release_key_validation__" \
             -deststoretype PKCS12 >/dev/null 2>&1; then
             :
+            rm -f "$KEY_VALIDATION_PATH"
           elif keytool -importkeystore -noprompt \
             -srckeystore "$KEYSTORE_PATH" \
             -srcstorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
