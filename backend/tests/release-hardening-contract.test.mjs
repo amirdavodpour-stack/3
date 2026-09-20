@@ -338,3 +338,8 @@ test('production APK build uses only the validated production API secret', () =>
   assert.match(build, /API_BASE_URL: \\$\\{\\{ secrets\.API_BASE_URL_PRODUCTION \\}\\}/);
   assert.doesNotMatch(build, /API_BASE_URL_STAGING/);
 });
+
+test('release validation cancels superseded runs on the same ref', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  assert.match(workflow, /concurrency:\n\s+group: release-validation-\$\{\{ github\.ref \}\}\n\s+cancel-in-progress: true/);
+});
