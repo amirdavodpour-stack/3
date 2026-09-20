@@ -215,7 +215,7 @@ class HeroBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isEn ? 'فرصت‌های کاری' : 'فرصت‌های کاری',
+                      isEn ? 'Work marketplace' : 'فرصت‌های کاری',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
@@ -223,7 +223,7 @@ class HeroBanner extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isEn ? 'فهرست فرصت‌های کاری' : 'فهرست فرصت‌های کاری',
+                      isEn ? 'Available opportunities' : 'فرصت‌های موجود',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 23,
