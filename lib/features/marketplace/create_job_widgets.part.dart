@@ -366,6 +366,7 @@ class _CreateJobForm extends StatelessWidget {
                 ),
                 const SizedBox(height: 11),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: city,
                   decoration: InputDecoration(
                     labelText: HopeCopy.of(context).copy_city_3d7dc3e,
