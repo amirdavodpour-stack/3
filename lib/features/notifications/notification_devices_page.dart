@@ -89,16 +89,18 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(_t('دستگاه‌های اعلان', 'Notification devices'))),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      body: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
               eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
               title: _t('دستگاه‌های متصل', 'Connected devices'),
               subtitle: _t(
-                'دستگاه‌هایی که Push برای حساب تو روی آن‌ها فعال است را ببین و هرکدام را جداگانه غیرفعال کن.',
+                'دستگاه‌هایی که Push برای حساب شما روی آن‌ها فعال است را ببینید و هرکدام را جداگانه غیرفعال کنیدید.',
                 'Review devices registered for Push notifications and disable any device independently.',
               ),
               trailing: const HopeIconTile(Icons.devices_rounded, size: 50, filled: true),
@@ -139,7 +141,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _t('وقتی Push را در یک دستگاه فعال کنی، اینجا نمایش داده می‌شود.',
+                      _t('وقتی Push را در یک دستگاه فعال کنید، اینجا نمایش داده می‌شود.',
                           'A device appears here after Push notifications are enabled.'),
                       textAlign: TextAlign.center,
                     ),
