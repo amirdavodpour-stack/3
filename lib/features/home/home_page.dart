@@ -84,8 +84,8 @@ class _HomePageState extends State<HomePage> {
                     labelType: MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded
                         ? NavigationRailLabelType.none
                         : NavigationRailLabelType.all,
-                    leading: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 12, 8, 22),
+                    leading: const Padding(
+                      padding: EdgeInsets.fromLTRB(8, 12, 8, 22),
                       child: HopeMark(size: 44, showText: false),
                     ),
                     destinations: [

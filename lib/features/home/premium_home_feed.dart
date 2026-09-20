@@ -277,7 +277,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 class _PulseSkeleton extends StatelessWidget {
   const _PulseSkeleton();
   @override
-  Widget build(BuildContext context) => Column(children: [
+  Widget build(BuildContext context) => const Column(children: [
     const OpportunitySkeletonCard(),
     const SizedBox(height: HopeV2Spacing.md),
     const OpportunitySkeletonCard(),

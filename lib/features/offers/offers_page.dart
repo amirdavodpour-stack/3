@@ -172,13 +172,15 @@ class _OffersPageState extends State<OffersPage> {
   }
 
   Future<void> _accept(HopeOffer o)async{
+    final repository = context.read<OfferRepository>();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
       title:Text(_t('پذیرش پیشنهاد؟','Accept this offer?')),
       content:Text(_t('پذیرش پیشنهاد یک اقدام مالی/قراردادی است. قبل از تأیید مبلغ و شرایط را بررسی کنید.','Accepting an offer is a contractual/financial action. Review the amount and terms before confirming.')),
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:Text(_t('لغو','Cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:Text(_t('تأیید','Confirm')))]
     ));
     if(ok!=true)return;
-    try{await context.read<OfferRepository>().accept(o.id);if(mounted){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(_t('پیشنهاد پذیرفته شد','Offer accepted'))));_reload();}}
+    if (!mounted) return;
+    try{await repository.accept(o.id);if(mounted){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(_t('پیشنهاد پذیرفته شد','Offer accepted'))));_reload();}}
     catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(apiErrorMessage(e))));}
   }
 }

@@ -152,7 +152,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         return;
       }
 
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() => loading = true);
 
       try {
@@ -284,7 +284,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
       return;
     }
 
-    if (!context.mounted) return;
+    if (!mounted) return;
     setState(() => loading = true);
 
     try {
@@ -333,7 +333,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         });
       }
     } catch (error) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -350,13 +350,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
   }
 
   Future<void> _compareCandidates(List<HopeCandidate> candidates) async {
+    final repository = context.read<JobDetailRepository>();
     final selected = candidates.take(5).toList(growable: false);
     if (selected.length < 2) return;
     try {
-      final result = await context
-          .read<JobDetailRepository>()
-          .compareCandidates(widget.job.id, selected.map((c) => c.id).toList());
-      if (!context.mounted) return;
+      final result = await repository.compareCandidates(
+        widget.job.id,
+        selected.map((c) => c.id).toList(),
+      );
+      if (!mounted) return;
       final rows = (result['candidates'] is List)
           ? (result['candidates'] as List)
               .whereType<Map>()
@@ -425,7 +427,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         ),
       );
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -440,6 +442,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
   }
 
   Future<void> _reportJob() async {
+    final repository = context.read<JobDetailRepository>();
     final reason = TextEditingController();
     final details = TextEditingController();
     final result = await showDialog<bool>(
@@ -482,17 +485,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
     details.dispose();
     if (result != true) return;
     try {
-      await context.read<JobDetailRepository>().reportJob(
+      await repository.reportJob(
             widget.job.id,
             reason: r,
             details: d,
           );
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('گزارش ثبت شد.', 'Report submitted.'))),
       );
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
     }

@@ -145,6 +145,7 @@ class _WalletPageState extends State<WalletPage> {
       await widget.repository.topUp(amount: amount, idempotencyKey: key);
       await _clearPendingKey('TOP_UP', {'amount': amount});
       await _load();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('شارژ داخلی ثبت شد.', 'Internal top-up recorded.'))),
       );
