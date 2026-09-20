@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:flutter_test/flutter_test.dart";
 import "package:flutter_localizations/flutter_localizations.dart";
 import "package:hope_mobile/core/ui/components.dart";
+import "package:hope_mobile/core/ui/premium_components.dart";
 import "package:hope_mobile/l10n/generated/app_localizations.dart";
 import "package:hope_mobile/core/theme/app_theme.dart";
 
@@ -43,6 +44,37 @@ void main() {
     expect(find.text("منتشر شده"), findsOneWidget);
     expect(find.byIcon(Icons.work_rounded), findsOneWidget);
     expect(find.bySemanticsLabel("جست‌وجو..."), findsOneWidget);
+  });
+
+  testWidgets("premium hero follows RTL text alignment", (tester) async {
+    tester.view.physicalSize = const Size(800, 500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(16),
+            child: PremiumHero(
+              eyebrow: "فرصت‌ها",
+              title: "فرصت‌های کاری",
+              message: "فرصت‌های موجود",
+              height: 260,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final title = find.text("فرصت‌های کاری");
+    expect(title, findsOneWidget);
+    final left = tester.getTopLeft(title).dx;
+    final right = tester.getBottomRight(title).dx;
+    expect(right, greaterThan(520));
+    expect(left, greaterThan(300));
   });
 
   testWidgets("pressable scale exposes button semantics", (tester) async {
