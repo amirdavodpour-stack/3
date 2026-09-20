@@ -73,11 +73,27 @@ class OpportunityCard extends StatelessWidget {
         onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            gradient: featured
+                ? LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      primary.withValues(alpha: .09),
+                      Theme.of(context).colorScheme.surface,
+                      Theme.of(context).colorScheme.surface,
+                    ],
+                    stops: const [0, .34, 1],
+                  )
+                : null,
+            color: featured ? null : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(
               featured ? HopeV2Radii.xl : HopeV2Radii.lg,
             ),
-            border: Border.all(color: HopeV2Surfaces.border(context)),
+            border: Border.all(
+              color: featured
+                  ? primary.withValues(alpha: .24)
+                  : HopeV2Surfaces.border(context),
+            ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
                 ? const []
                 : HopeV2Shadows.card,
