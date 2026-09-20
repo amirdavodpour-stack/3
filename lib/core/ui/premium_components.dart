@@ -100,7 +100,6 @@ class PremiumNavigationRail extends StatelessWidget {
           backgroundColor: Colors.transparent,
           indicatorColor: scheme.primary.withValues(alpha: .12),
           useIndicator: true,
-          elevation: 0,
           groupAlignment: -.6,
         ),
       ),
