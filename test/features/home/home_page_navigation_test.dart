@@ -189,7 +189,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true, admin: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More menu'));
+    await tester.tap(find.byTooltip('App menu'));
     await tester.pumpAndSettle();
     expect(find.text('Admin panel'), findsOneWidget);
   });
@@ -199,7 +199,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More menu'));
+    await tester.tap(find.byTooltip('App menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Notifications'));
     await tester.pumpAndSettle();
@@ -210,7 +210,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More menu'));
+    await tester.tap(find.byTooltip('App menu'));
     await tester.pumpAndSettle();
     expect(find.text('Language: English'), findsOneWidget);
     await tester.tap(find.text('Language: English'));
