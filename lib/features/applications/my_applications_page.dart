@@ -7,6 +7,7 @@ import '../../core/marketplace/application.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class MyApplicationsPage extends StatefulWidget {
   const MyApplicationsPage({super.key});
