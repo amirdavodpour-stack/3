@@ -77,6 +77,34 @@ void main() {
     expect(left, greaterThan(300));
   });
 
+  testWidgets("section title stacks action on narrow screens",
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(16),
+            child: SectionTitle(
+              title: "فرصت‌ها",
+              subtitle: "آخرین فرصت‌های کاری",
+              action: TextButton(onPressed: _noopAction, child: Text("مشاهده همه")),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final titleTop = tester.getTopLeft(find.text("فرصت‌ها")).dy;
+    final actionTop = tester.getTopLeft(find.text("مشاهده همه")).dy;
+    expect(actionTop, greaterThan(titleTop));
+  });
+
   testWidgets("pressable scale exposes button semantics", (tester) async {
     var tapped = false;
 
@@ -102,3 +130,4 @@ void main() {
 }
 
 void _noop(String _) {}
+void _noopAction() {}
