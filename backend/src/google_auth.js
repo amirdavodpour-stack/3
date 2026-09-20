@@ -29,5 +29,7 @@ export async function verifyGoogleIdToken(idToken, audience) {
     displayName: displayName || 'HOPE user',
     picture: payload.picture ? String(payload.picture) : null,
     locale: payload.locale ? String(payload.locale) : null,
+    hostedDomain: payload.hd ? String(payload.hd).trim().toLowerCase() : null,
+    authoritativeEmail: String(payload.email).toLowerCase().endsWith('@gmail.com') || Boolean(payload.hd),
   };
 }
