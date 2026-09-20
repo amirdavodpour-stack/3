@@ -69,7 +69,7 @@ class _StepRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final highlighted = step.active || step.complete;
-    final iconColor = highlighted ? AppColors.primary : AppColors.muted;
+    final iconColor = highlighted ? HopeV2Colors.primary : HopeV2Colors.muted;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
