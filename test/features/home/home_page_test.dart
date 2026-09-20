@@ -118,4 +118,16 @@ void main() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
   });
+
+  testWidgets('guest hero posting action is guarded by sign-in',
+      (tester) async {
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ثبت فرصت جدید'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ورود'), findsOneWidget);
+    expect(find.text('ساخت حساب'), findsOneWidget);
+  });
 }
