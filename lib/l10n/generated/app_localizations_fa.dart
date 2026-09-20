@@ -804,7 +804,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_start_with_your_city_or_explore_any_other__05a1e84 =>
-      'شهر را انتخاب کنیدید یا شهر دیگری را بررسی کنید.';
+      'شهر را انتخاب کنید یا شهر دیگری را بررسی کنید.';
 
   @override
   String get copy_start_work_51d8317 => 'شروع کار';
