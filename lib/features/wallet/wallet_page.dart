@@ -181,6 +181,7 @@ class _WalletPageState extends State<WalletPage> {
         'amount': amount,
       });
       await _load();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('انتقال داخلی ثبت شد.', 'Internal transfer recorded.'))),
       );
@@ -202,6 +203,7 @@ class _WalletPageState extends State<WalletPage> {
       await widget.repository.requestPayout(amount: amount, idempotencyKey: key);
       await _clearPendingKey('PAYOUT', {'amount': amount});
       await _load();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('درخواست برداشت ثبت شد.', 'Withdrawal request recorded.'))),
       );
