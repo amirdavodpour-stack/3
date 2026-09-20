@@ -143,7 +143,31 @@ jobs:
 
       - name: Backend quality gates
         working-directory: backend
-        run: timeout --foreground --signal=TERM --kill-after=45s 20m npm run check:all
+        env:
+          NODE_ENV: test
+          DATABASE_URL: ''
+          DATA_FILE: ${{ runner.temp }}/hope-backend-quality/hope.json
+          STORAGE_DIR: ${{ runner.temp }}/hope-backend-quality/storage
+          PAYMENT_PROVIDER: simulator
+          PAYMENT_CURRENCY: TOMAN
+          STORAGE_BACKEND: local
+          RESET_TOKEN_DELIVERY_MODE: console
+          RESET_TOKEN_DELIVERY_URL: ''
+          RESET_TOKEN_DELIVERY_SECRET: ''
+          API_BASE_URL: ''
+          ACCESS_TOKEN_SECRET: ''
+          REFRESH_TOKEN_SECRET: ''
+          PAYMENT_WEBHOOK_SECRET: ''
+          PUBLIC_BASE_URL: ''
+          METRICS_TOKEN: ''
+          ALLOWED_CORS_ORIGINS: ''
+          S3_BUCKET: ''
+          S3_REGION: ''
+          S3_ENDPOINT: ''
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$DATA_FILE")" "$STORAGE_DIR"
+          timeout --foreground --signal=TERM --kill-after=45s 20m npm run check:all
 
       - name: Production npm audit
         working-directory: backend
@@ -172,7 +196,7 @@ jobs:
       - name: Build signed production APK
         id: release_build
         env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION || secrets.API_BASE_URL_STAGING }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
           BUILD_PROFILE: production
           ANDROID_RELEASE_STORE_FILE: ${{ steps.keystore_prepare.outputs.path }}
           ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}

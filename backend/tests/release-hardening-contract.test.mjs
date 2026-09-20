@@ -308,3 +308,33 @@ test('production check:all collects every suite and aggregates failures', () => 
   assert.match(runner, /process\.exit\(1\)/);
   assert.match(runner, /check-all-summary\.json/);
 });
+
+
+test('production backend quality gates are isolated from production runtime credentials', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  const start = workflow.indexOf('- name: Backend quality gates');
+  const end = workflow.indexOf('- name: Production npm audit', start);
+  assert.ok(start >= 0 && end > start, 'backend quality gate block must exist');
+  const block = workflow.slice(start, end);
+  for (const marker of [
+    "NODE_ENV: test",
+    "DATABASE_URL: ''",
+    "PAYMENT_PROVIDER: simulator",
+    "STORAGE_BACKEND: local",
+    "ACCESS_TOKEN_SECRET: ''",
+    "REFRESH_TOKEN_SECRET: ''",
+    "PAYMENT_WEBHOOK_SECRET: ''",
+    "API_BASE_URL: ''",
+    "PUBLIC_BASE_URL: ''",
+  ]) assert.match(block, new RegExp(marker.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')));
+  assert.match(block, /DATA_FILE: \\$\\{\\{ runner\.temp \\}\\}/);
+  assert.match(block, /STORAGE_DIR: \\$\\{\\{ runner\.temp \\}\\}/);
+  assert.doesNotMatch(block, /DATABASE_URL:\\s+\\$\\{\\{\\s*secrets\.DATABASE_URL_PRODUCTION/, 'production database credentials must never be injected into backend quality suites');
+});
+
+test('production APK build uses only the validated production API secret', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
+  const build = workflow.slice(workflow.indexOf('- name: Build signed production APK'), workflow.indexOf('- name: Set release artifact metadata'));
+  assert.match(build, /API_BASE_URL: \\$\\{\\{ secrets\.API_BASE_URL_PRODUCTION \\}\\}/);
+  assert.doesNotMatch(build, /API_BASE_URL_STAGING/);
+});
