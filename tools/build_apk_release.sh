@@ -58,11 +58,10 @@ rm -rf build android/build android/app/build .gradle android/.gradle .dart_tool
 rm -f android/local.properties .flutter-plugins-dependencies
 flutter clean
 flutter pub get --enforce-lockfile
-# GeneratedPluginRegistrant.java is Flutter-generated and can remain stale in a
-# clean release checkout when dev-only integration_test was resolved earlier.
-# Remove the stale generated file so the next release build regenerates it from
-# the current plugin set (without editing generated source).
-rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+# Flutter's Android --no-pub build can retain a dev-dependency plugin registrant
+# generated during dependency resolution. A platform-specific config-only build
+# refreshes the Android project metadata before the deterministic release build.
+flutter build apk --release --config-only
 [ -f android/local.properties ] || { echo 'ERROR: Flutter did not regenerate android/local.properties.' >&2; exit 1; }
 FLUTTER_SDK_PATH="$(sed -n 's/^flutter\.sdk=//p' android/local.properties | head -1)"
 ANDROID_SDK_PATH="$(sed -n 's/^sdk\.dir=//p' android/local.properties | head -1)"
