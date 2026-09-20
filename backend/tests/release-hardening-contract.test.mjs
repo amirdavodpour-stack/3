@@ -185,6 +185,7 @@ test('staging Android runtime gate is the canonical device certification path', 
   const end = workflow.indexOf('      - name: Runtime gate - device certification', start);
   assert.ok(start >= 0 && end > start);
   const block = workflow.slice(start, end);
+  assert.ok(workflow.includes('id: flutter_runtime_dependencies'));
   assert.ok(block.includes('flutter test --no-pub integration_test/runtime/app_smoke_test.dart'));
   assert.ok(!workflow.includes('id: android_quality'));
   assert.ok(!workflow.includes('bash tools/build_apk_debug.sh'));

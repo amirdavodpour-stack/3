@@ -547,6 +547,12 @@ jobs:
           echo "Resolved $host to $ips"
           echo "ips=$ips" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare Flutter runtime dependencies
+        id: flutter_runtime_dependencies
+        continue-on-error: true
+        shell: bash
+        run: flutter pub get --enforce-lockfile
+
       - name: Android emulator certification
         id: emulator_certification
         continue-on-error: true
