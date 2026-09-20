@@ -88,7 +88,9 @@ void main() {
   testWidgets('authenticated profile displays account and provider data',
       (tester) async {
     await _pump(tester, authenticated: true);
-    expect(find.text('کاربر'), findsOneWidget);
+    expect(find.text('کاربر'), findsWidgets);
+    expect(find.text('سلام، کاربر'), findsNothing);
+
     final individual = find.text('INDIVIDUAL');
     var attempts = 0;
     while (attempts < 6 && individual.evaluate().isEmpty) {
