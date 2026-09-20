@@ -177,7 +177,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('More menu'));
     await tester.pumpAndSettle();
-    expect(find.text('Your professional path'), findsOneWidget);
+    expect(find.text('App menu'), findsOneWidget);
     // A non-admin member sees notifications but no admin panel.
     expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Admin panel'), findsNothing);
