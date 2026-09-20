@@ -12,6 +12,7 @@ import '../../core/network/api_client.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_async_state.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key, required this.repository});
@@ -528,49 +529,92 @@ class _WalletPageState extends State<WalletPage> {
     final wallet = _wallet!;
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
-        children: [
-          PremiumHeader(
-            eyebrow: _t('مالی', 'FINANCE'),
-            title: _t('کیف پول', 'Wallet'),
-            subtitle: _t('موجودی، انتقال داخلی و تاریخچه مالی شما.', 'Balance, internal transfers, and financial history.'),
-            trailing: const HopeIconTile(Icons.account_balance_wallet_rounded, size: 50, filled: true),
-          ),
-          const SizedBox(height: 18),
-          HopeSurface(
-            highlight: true,
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_t('موجودی قابل استفاده', 'Available balance'), style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 8),
-                FittedBox(
-                  alignment: AlignmentDirectional.centerStart,
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    _money(wallet.availableBalance, wallet.currency),
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w900),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    Text(_t('قفل‌شده: ', 'Locked: ') + _money(wallet.lockedBalance, wallet.currency)),
-                    StatusPill(
-                      wallet.status,
-                      color: wallet.isActive ? AppColors.success : AppColors.warning,
-                      icon: wallet.isActive ? Icons.check_circle_outline : Icons.pause_circle_outline,
-                    ),
+      child: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            PremiumHeader(
+              eyebrow: _t('مالی', 'FINANCE'),
+              title: _t('کیف پول', 'Wallet'),
+              subtitle: _t(
+                'موجودی، انتقال داخلی و تاریخچه مالی.',
+                'Balance, internal transfers, and financial history.',
+              ),
+              trailing: PremiumTag(
+                icon: Icons.shield_outlined,
+                label: wallet.isActive
+                    ? _t('فعال', 'Active')
+                    : _t('غیرفعال', 'Inactive'),
+                color: wallet.isActive ? AppColors.success : AppColors.warning,
+              ),
+            ),
+            const SizedBox(height: HopeV2Spacing.xl),
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
                   ],
                 ),
-              ],
+                boxShadow: HopeV2Shadows.hero,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const HopeIconTile(
+                        Icons.account_balance_wallet_rounded,
+                        size: 48,
+                        filled: true,
+                      ),
+                      const Spacer(),
+                      StatusPill(
+                        wallet.status,
+                        color: Colors.white,
+                        icon: wallet.isActive
+                            ? Icons.check_circle_outline
+                            : Icons.pause_circle_outline,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  Text(
+                    _t('موجودی قابل استفاده', 'Available balance'),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  FittedBox(
+                    alignment: AlignmentDirectional.centerStart,
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _money(wallet.availableBalance, wallet.currency),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _t('قفل‌شده: ', 'Locked: ') +
+                        _money(wallet.lockedBalance, wallet.currency),
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
           HopeSurface(
             padding: const EdgeInsets.all(16),
             child: Row(
