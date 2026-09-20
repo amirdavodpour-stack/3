@@ -42,7 +42,7 @@ void main() {
 
     expect(find.text("منتشر شده"), findsOneWidget);
     expect(find.byIcon(Icons.work_rounded), findsOneWidget);
-    expect(find.bySemanticsLabel("جست‌وجو کن..."), findsOneWidget);
+    expect(find.bySemanticsLabel("جست‌وجو..."), findsOneWidget);
   });
 
   testWidgets("pressable scale exposes button semantics", (tester) async {
