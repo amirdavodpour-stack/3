@@ -117,6 +117,9 @@ HopeJob _job(String id, String status, {String? providerId}) =>
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
