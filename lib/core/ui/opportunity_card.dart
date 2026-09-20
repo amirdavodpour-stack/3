@@ -7,6 +7,7 @@ import '../theme/hope_v2_design.dart';
 import 'components.dart';
 import 'premium_components.dart';
 
+// Core marketplace card pattern for the HOPE visual system.
 enum OpportunityCardVariant { compact, standard, featured, expanded }
 
 class OpportunityCard extends StatelessWidget {
