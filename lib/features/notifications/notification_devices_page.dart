@@ -100,7 +100,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
               title: _t('دستگاه‌های متصل', 'Connected devices'),
               subtitle: _t(
-                'دستگاه‌هایی که Push برای حساب شما روی آن‌ها فعال است را ببینید و هرکدام را جداگانه غیرفعال کنیدید.',
+                'دستگاه‌هایی که Push برای حساب شما روی آن‌ها فعال است را ببینید و هرکدام را جداگانه غیرفعال کنید.',
                 'Review devices registered for Push notifications and disable any device independently.',
               ),
               trailing: const HopeIconTile(Icons.devices_rounded, size: 50, filled: true),
@@ -171,7 +171,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                                       height: 18,
                                       child: CircularProgressIndicator(strokeWidth: 2),
                                     )
-                                  : Text(_t('غیرفعال کن', 'Disable')),
+                                  : Text(_t('غیرفعال کنید', 'Disable')),
                             )
                           : null,
                     );
