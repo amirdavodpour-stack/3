@@ -12,6 +12,7 @@ permissions:
 jobs:
   fingerprint:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Export production signing certificate SHA-1
         shell: bash
