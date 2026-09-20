@@ -2,32 +2,34 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const primary = Color(0xFF6C4DFF);
-  static const primaryDark = Color(0xFFB3A2FF);
-  static const secondary = Color(0xFF22B8A7);
-  static const secondaryStrong = Color(0xFF0C7D70);
-  static const secondaryDark = Color(0xFF3AC3B1);
-  static const accent = Color(0xFFFFB45C);
-  static const inkSoft = Color(0xFF26223A);
-  static const backgroundWarm = Color(0xFFF8F7FC);
-  static const ink = Color(0xFF151326);
-  static const muted = Color(0xFF6B6780);
-  static const surface = Color(0xFFFFFFFF);
-  static const background = Color(0xFFF6F5FC);
-  static const success = Color(0xFF0B7A58);
-  static const successDark = Color(0xFF4CD4A3);
-  static const warning = Color(0xFF8F5C0E);
-  static const warningDark = Color(0xFFFFD54F);
-  static const danger = Color(0xFFBA454D);
-  static const dangerDark = Color(0xFFFF8A80);
-  static const softPrimary = Color(0xFFEAE5FF);
-  static const darkBackground = Color(0xFF0C0A12);
-  static const darkSurface = Color(0xFF15131D);
-  static const darkCard = Color(0xFF1C1925);
-  static const darkText = Color(0xFFF8F7FC);
-  static const darkMuted = Color(0xFFAAA6B8);
-}
+  // Compatibility facade. New UI code should consume HopeV2Colors directly.
+  const AppColors._();
 
+  static const primary = HopeV2Colors.primary;
+  static const primaryDark = HopeV2Colors.primaryDark;
+  static const secondary = HopeV2Colors.secondary;
+  static const secondaryStrong = HopeV2Colors.secondaryStrong;
+  static const secondaryDark = HopeV2Colors.secondaryDark;
+  static const accent = HopeV2Colors.accent;
+  static const inkSoft = HopeV2Colors.inkSoft;
+  static const backgroundWarm = HopeV2Colors.backgroundWarm;
+  static const ink = HopeV2Colors.ink;
+  static const muted = HopeV2Colors.muted;
+  static const surface = HopeV2Colors.surface;
+  static const background = HopeV2Colors.background;
+  static const success = HopeV2Colors.success;
+  static const successDark = HopeV2Colors.successDark;
+  static const warning = HopeV2Colors.warning;
+  static const warningDark = HopeV2Colors.warningDark;
+  static const danger = HopeV2Colors.danger;
+  static const dangerDark = HopeV2Colors.dangerDark;
+  static const softPrimary = HopeV2Colors.softPrimary;
+  static const darkBackground = HopeV2Colors.darkBackground;
+  static const darkSurface = HopeV2Colors.darkSurface;
+  static const darkCard = HopeV2Colors.darkCard;
+  static const darkText = HopeV2Colors.darkText;
+  static const darkMuted = HopeV2Colors.darkMuted;
+}
 class AppTheme {
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
