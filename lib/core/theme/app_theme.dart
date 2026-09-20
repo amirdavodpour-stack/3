@@ -7,6 +7,9 @@ class AppColors {
   static const secondary = Color(0xFF22B8A7);
   static const secondaryStrong = Color(0xFF0C7D70);
   static const secondaryDark = Color(0xFF3AC3B1);
+  static const accent = Color(0xFFFFB45C);
+  static const inkSoft = Color(0xFF26223A);
+  static const backgroundWarm = Color(0xFFF8F7FC);
   static const ink = Color(0xFF151326);
   static const muted = Color(0xFF6B6780);
   static const surface = Color(0xFFFFFFFF);
@@ -46,9 +49,10 @@ class AppTheme {
       fontFamilyFallback: const ['Roboto'],
       colorScheme: scheme,
       scaffoldBackgroundColor:
-          dark ? AppColors.darkBackground : AppColors.background,
+          dark ? AppColors.darkBackground : AppColors.backgroundWarm,
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
+      scaffoldBackgroundColor: dark ? AppColors.darkBackground : AppColors.backgroundWarm,
       focusColor: (dark ? AppColors.primaryDark : AppColors.primary)
           .withValues(alpha: .14),
       hoverColor: (dark ? AppColors.primaryDark : AppColors.primary)
@@ -110,12 +114,18 @@ class AppTheme {
             borderRadius: BorderRadius.circular(18),
             borderSide: const BorderSide(color: AppColors.danger)),
       ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primary,
+        foregroundColor: Colors.white,
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
           padding: const EdgeInsets.symmetric(horizontal: 18),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle:
               const TextStyle(fontWeight: FontWeight.w900, letterSpacing: -.1),
         ),
@@ -126,7 +136,7 @@ class AppTheme {
           side: BorderSide(
               color: dark ? Colors.white12 : const Color(0xFFDED9EA)),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -163,18 +173,18 @@ class AppTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       textTheme: TextTheme(
         displaySmall: TextStyle(
-            fontSize: 34,
+            fontSize: 31,
             fontWeight: FontWeight.w900,
             height: 1.08,
             letterSpacing: -.65,
             color: textColor),
         headlineMedium: TextStyle(
-            fontSize: 29,
+            fontSize: 27,
             fontWeight: FontWeight.w900,
             letterSpacing: -.6,
             color: textColor),
         headlineSmall: TextStyle(
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: FontWeight.w900,
             height: 1.08,
             letterSpacing: -.45,
