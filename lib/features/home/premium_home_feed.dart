@@ -103,7 +103,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               children: [
                 Expanded(
                   child: Text(
-                    _t(context, 'مرکز HOPE', 'HOPE workspace'),
+                    _t(context, 'خانه', 'Home'),
                     style: Theme.of(context).textTheme.labelLarge,
                   ),
                 ),
@@ -115,20 +115,20 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               ],
             ),
             PremiumHero(
-              eyebrow: _t(context, 'بازار حرفه‌ای HOPE', 'HOPE professional marketplace'),
-              title: _t(context, 'فرصت مناسب بعدی را پیدا کن', 'Find your next right opportunity'),
-              message: _t(context, 'فرصت‌های واقعی را بررسی کن و با وضعیت کاری فعلی‌ات هماهنگ پیش برو.', 'Explore real opportunities and keep discovery aligned with your current work.'),
+              eyebrow: _t(context, 'فرصت‌ها', 'Opportunities'),
+              title: _t(context, 'فرصت‌ها را ببینید', 'View opportunities'),
+              message: _t(context, 'فرصت‌های موجود را بر اساس شهر و مهارت بررسی کنید.', 'Browse available opportunities by city and skill.'),
               action: FilledButton.icon(
                 onPressed: widget.onOpenExplore,
                 icon: const Icon(Icons.explore_rounded),
-                label: Text(_t(context, 'کاوش فرصت‌ها', 'Explore opportunities')),
+                label: Text(_t(context, 'مشاهده فرصت‌ها', 'View opportunities')),
               ),
             ),
             const SizedBox(height: HopeV2Spacing.xl),
             PremiumHeader(
-              eyebrow: _t(context, 'مرکز کار شخصی', 'Personal work command center'),
-              title: _t(context, 'سلام، ${auth.user?['displayName'] ?? 'دوست'} 👋', 'Hello, ${auth.user?['displayName'] ?? 'there'} 👋'),
-              subtitle: _t(context, 'وضعیت فعلی، اقدام بعدی و فرصت‌های مرتبط را یک‌جا ببینید.', 'See your current work, next action, and relevant opportunities in one place.'),
+              eyebrow: _t(context, 'وضعیت حساب', 'Account status'),
+              title: ((auth.user?['displayName'] as String?)?.trim().isNotEmpty ?? false) ? (auth.user?['displayName'] as String).trim() : _t(context, 'حساب کاربری', 'Account'),
+              subtitle: _t(context, 'فرصت‌ها، کارهای فعال و کیف پول.', 'Opportunities, active work, and wallet.'),
               trailing: HopeIconTile(Icons.auto_awesome_rounded, color: Theme.of(context).colorScheme.primary, filled: true, size: 54),
             ),
             const SizedBox(height: HopeV2Spacing.xl),
@@ -182,20 +182,20 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PremiumSectionHeader(
-          title: _t(context, 'HOPE Pulse', 'HOPE Pulse'),
-          subtitle: _t(context, '${jobs.length} فرصت از منبع واقعی', '${jobs.length} opportunities from the live source'),
+          title: _t(context, 'فرصت‌ها', 'Opportunities'),
+          subtitle: _t(context, '\${jobs.length} فرصت', '\${jobs.length} opportunities'),
         ),
         const SizedBox(height: HopeV2Spacing.lg),
         if (recommended.isNotEmpty) ...[
           OpportunityCard(job: recommended.first, variant: OpportunityCardVariant.featured),
           const SizedBox(height: HopeV2Spacing.lg),
         ],
-        _section(context, _t(context, 'بهترین تطابق‌ها', 'Best matches'), recommended.skip(recommended.isNotEmpty ? 1 : 0).take(3).toList(), widget.onOpenExplore),
+        _section(context, _t(context, 'تطابق‌ها', 'Matches'), recommended.skip(recommended.isNotEmpty ? 1 : 0).take(3).toList(), widget.onOpenExplore),
         const SizedBox(height: HopeV2Spacing.section),
         _section(context, _t(context, 'نزدیک شما', 'Near you'), nearby.take(3).toList(), widget.onOpenExplore),
         if (remaining.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.section),
-          _section(context, _t(context, 'ارزش بررسی دارد', 'Worth a look'), remaining.take(4).toList(), widget.onOpenExplore),
+          _section(context, _t(context, 'سایر فرصت‌ها', 'Other opportunities'), remaining.take(4).toList(), widget.onOpenExplore),
         ],
       ],
     );
