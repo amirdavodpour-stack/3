@@ -129,13 +129,13 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
             padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
-              eyebrow: _t('مسیر حرفه‌ای', 'PROFESSIONAL PATH'),
+              eyebrow: _t('درخواست‌ها', 'APPLICATIONS'),
               title: _t('درخواست‌های من', 'My applications'),
               subtitle: _t(
                 'وضعیت هر درخواست را بررسی کنید و فقط در وضعیت‌های مجاز آن را پس بگیرید.',
                 'Track every application and withdraw only while its workflow still allows it.',
               ),
-              trailing: const HopeIconTile(Icons.assignment_rounded, size: 50, filled: true),
+              trailing: PremiumTag(icon: Icons.assignment_rounded, label: _items.length.toString()),
             ),
             const SizedBox(height: 16),
             if (!_loading)
