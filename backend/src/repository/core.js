@@ -11,6 +11,10 @@ export async function findUserByGoogleSubject(subject) {
   const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE google_subject=$1`, [subject]);
   return rows[0] ? userFromRow(rows[0]) : null;
 }
+export async function linkGoogleSubject(userId, subject) {
+  const { rows } = await requirePool().query(`UPDATE users SET google_subject=$2 WHERE id=$1 AND google_subject IS NULL RETURNING ${userSelect}`, [userId, subject]);
+  return rows[0] ? userFromRow(rows[0]) : null;
+}
 export async function findUserById(id) {
   const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE id=$1`, [id]);
   return rows[0] ? userFromRow(rows[0]) : null;
