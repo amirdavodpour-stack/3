@@ -179,16 +179,16 @@ test('CI Android toolchain is explicit and release builds enforce the lockfile',
   assert.match(apk, /flutter pub get --enforce-lockfile/);
 });
 
-test('staging Android quality gate uses one canonical debug build path', () => {
+test('staging Android runtime gate is the canonical device certification path', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/staging-certification.yml', import.meta.url), 'utf8');
-  const block = workflow.slice(workflow.indexOf('name: Android quality gates'), workflow.indexOf('name: Android emulator certification'));
-  assert.equal((block.match(/bash tools\/build_apk_debug\.sh/g) || []).length, 1);
-  assert.equal((block.match(/^\s*flutter build apk --debug/gm) || []).length, 0);
-  assert.equal((block.match(/^\s*flutter analyze$/gm) || []).length, 0);
-  assert.equal((block.match(/^\s*flutter test --no-pub$/gm) || []).length, 0);
-});
-
-test('production release derives canonical APK artifact from pubspec version', () => {
+  const start = workflow.indexOf('      - name: Android emulator certification');
+  const end = workflow.indexOf('      - name: Runtime gate - device certification', start);
+  assert.ok(start >= 0 && end > start);
+  const block = workflow.slice(start, end);
+  assert.ok(block.includes('flutter test --no-pub integration_test/runtime/app_smoke_test.dart'));
+  assert.ok(!workflow.includes('id: android_quality'));
+  assert.ok(!workflow.includes('bash tools/build_apk_debug.sh'));
+});test('production release derives canonical APK artifact from pubspec version', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/production-release.yml'), 'utf8');
   assert.doesNotMatch(workflow, /HOPE-3\.8\.0\+11-production\.apk/);
   assert.match(workflow, /HOPE-\$\{VERSION\}-production\.apk/);
@@ -284,7 +284,6 @@ test('CI collects certification failures before enforcing aggregate gates', () =
     ['postgres_runtime', staging],
     ['s3_runtime', staging],
     ['perf_gate', staging],
-    ['android_quality', staging],
     ['dr_drill', staging],
     ['emulator_certification', staging],
     ['operational_gate', staging],

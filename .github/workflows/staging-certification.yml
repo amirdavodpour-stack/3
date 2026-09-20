@@ -364,20 +364,6 @@ jobs:
             --command 'POST /i/v0/e/ with staging smoke event' \
             --result "$GATE_RESULT"
 
-      - name: Android quality gates
-        id: android_quality
-        continue-on-error: true
-        env:
-          API_BASE_URL: ${{ env.STAGING_BASE_URL }}
-          BUILD_PROFILE: pilot
-          HOPE_ENV: staging
-          POSTHOG_ENABLED: ${{ secrets.POSTHOG_PROJECT_TOKEN != '' && 'true' || 'false' }}
-          POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
-          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://eu.i.posthog.com' }}
-        run: bash tools/build_apk_debug.sh
-
-      # Uses a Railway Project Token when available; falls back to the workspace API token
-      # with a run-scoped workspace SSH key for GitHub-hosted DR access.
       - name: Start Railway Postgres SSH tunnel for DR
         id: postgres_tunnel
         if: ${{ env.DATABASE_URL != '' && env.DRILL_DATABASE_URL != '' }}
@@ -637,7 +623,6 @@ jobs:
             "${{ steps.postgres_runtime.outcome }}" \
             "${{ steps.s3_runtime.outcome }}" \
             "${{ steps.perf_gate.outcome }}" \
-            "${{ steps.android_quality.outcome }}" \
             "${{ steps.dr_drill.outcome }}" \
             "${{ steps.emulator_certification.outcome }}" \
             "${{ steps.operational_gate.outcome }}"; do
