@@ -99,39 +99,113 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _t(context, 'خانه', 'Home'),
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                ),
-                IconButton(
-                  onPressed: widget.onOpenMenu,
-                  tooltip: _t(context, 'منوی بیشتر', 'More menu'),
-                  icon: const Icon(Icons.menu_rounded),
-                ),
-              ],
+            PremiumSectionHeader(
+              title: _t(context, 'خانه', 'Home'),
+              subtitle: _t(
+                context,
+                'فرصت، کار فعال و وضعیت مالی را یکجا ببینید.',
+                'Opportunities, active work, and finances in one place.',
+              ),
+              action: IconButton.filledTonal(
+                onPressed: widget.onOpenMenu,
+                tooltip: _t(context, 'منوی برنامه', 'App menu'),
+                icon: const Icon(Icons.menu_rounded),
+              ),
             ),
+            const SizedBox(height: HopeV2Spacing.lg),
             PremiumHero(
-              eyebrow: _t(context, 'فرصت‌ها', 'Opportunities'),
-              title: _t(context, 'فرصت‌ها را ببینید', 'View opportunities'),
-              message: _t(context, 'فرصت‌های موجود را بر اساس شهر و مهارت بررسی کنید.', 'Browse available opportunities by city and skill.'),
-              action: FilledButton.icon(
-                onPressed: widget.onOpenExplore,
-                icon: const Icon(Icons.explore_rounded),
-                label: Text(_t(context, 'مشاهده فرصت‌ها', 'View opportunities')),
+              eyebrow: _t(context, 'بازار کار', 'Work marketplace'),
+              title: _t(context, 'فرصت مناسب خود را پیدا کنید', 'Find the right opportunity'),
+              message: _t(
+                context,
+                'ماموریت و شغل را جست‌وجو کنید یا فرصت جدید ثبت کنید.',
+                'Search missions and jobs, or post a new opportunity.',
+              ),
+              icon: Icons.work_outline_rounded,
+              height: 272,
+              action: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  FilledButton.icon(
+                    onPressed: widget.onOpenExplore,
+                    icon: const Icon(Icons.search_rounded),
+                    label: Text(_t(context, 'جست‌وجوی فرصت‌ها', 'Explore opportunities')),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      HopeRoutes.createJob(),
+                    ),
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(_t(context, 'ثبت فرصت جدید', 'Post opportunity')),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white38),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: HopeV2Spacing.xl),
-            PremiumHeader(
-              eyebrow: _t(context, 'وضعیت حساب', 'Account status'),
-              title: ((auth.user?['displayName'] as String?)?.trim().isNotEmpty ?? false) ? (auth.user?['displayName'] as String).trim() : _t(context, 'حساب کاربری', 'Account'),
-              subtitle: _t(context, 'فرصت‌ها، کارهای فعال و کیف پول.', 'Opportunities, active work, and wallet.'),
-              trailing: HopeIconTile(Icons.auto_awesome_rounded, color: Theme.of(context).colorScheme.primary, filled: true, size: 54),
-            ),
-            const SizedBox(height: HopeV2Spacing.xl),
+            if (!auth.isGuest)
+              PremiumPanel(
+                highlight: true,
+                padding: const EdgeInsets.all(HopeV2Spacing.lg),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 560;
+                    final name =
+                        ((auth.user?['displayName'] as String?)?.trim().isNotEmpty ??
+                                false)
+                            ? (auth.user?['displayName'] as String).trim()
+                            : _t(context, 'حساب کاربری', 'Account');
+                    final account = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _t(context, 'فضای کاری', 'Workspace'),
+                          style: HopeV2Type.eyebrow(context),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          name,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _t(
+                            context,
+                            'وضعیت حساب، کارهای فعال و کیف پول.',
+                            'Account status, active work, and wallet.',
+                          ),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    );
+                    final action = FilledButton.tonalIcon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        HopeRoutes.profile(),
+                      ),
+                      icon: const Icon(Icons.person_outline_rounded),
+                      label: Text(_t(context, 'پروفایل', 'Profile')),
+                    );
+                    return compact
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [account, const SizedBox(height: 12), action],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(child: account),
+                              action,
+                            ],
+                          );
+                  },
+                ),
+              ),
+            if (!auth.isGuest) const SizedBox(height: HopeV2Spacing.xl),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
