@@ -65,7 +65,7 @@ void main() {
     await tester.pumpWidget(await _screen(const LoginPage()));
     await tester.pumpAndSettle();
     expect(find.byType(LoginPage), findsOneWidget);
-    expect(find.text('فعلاً به‌عنوان مهمان ادامه بده'), findsOneWidget);
+    expect(find.text('ادامه به‌عنوان مهمان'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('ساخت حساب'), 200,
         scrollable: find.byType(Scrollable).first);
     expect(find.textContaining('ساخت حساب'), findsOneWidget);
@@ -78,7 +78,7 @@ void main() {
     final auth = Provider.of<AuthController>(
         tester.element(find.byType(LoginPage)),
         listen: false);
-    await tester.tap(find.text('فعلاً به‌عنوان مهمان ادامه بده'));
+    await tester.tap(find.text('ادامه به‌عنوان مهمان'));
     await tester.pumpAndSettle();
     expect(auth.isGuest, isTrue);
     expect(auth.isAuthenticated, isFalse);
