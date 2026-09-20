@@ -1,9 +1,6 @@
 name: Staging certification
 
 on:
-  pull_request:
-    branches:
-      - release/v2hope-hardening-2026-09-19
   workflow_call:
     outputs:
       certification_run_id:
