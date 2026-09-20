@@ -177,7 +177,7 @@ test('CI Android toolchain is explicit and release builds enforce the lockfile',
   assert.match(build, /flutter pub get --enforce-lockfile/);
   const apk = fs.readFileSync(path.join(root, 'tools/build_apk_release.sh'), 'utf8');
   assert.match(apk, /flutter pub get --enforce-lockfile/);
-  assert.match(apk, /rm -f android\/app\/src\/main\/java\/io\/flutter\/plugins\/GeneratedPluginRegistrant\.java/);
+  assert.match(apk, /flutter build apk --release --config-only/);
 });
 
 test('production keystore secret decoding tolerates wrapped or unpadded base64', () => {
