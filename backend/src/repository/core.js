@@ -2,9 +2,13 @@ import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { userFromRow, jobFromRow, offerFromRow, applicationFromRow, verticalFromRow } from './mappers.js';
 
-const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt"`;
+const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt",google_subject AS "googleSubject"`;
 export async function findUserByEmail(email) {
   const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE email=$1`, [email]);
+  return rows[0] ? userFromRow(rows[0]) : null;
+}
+export async function findUserByGoogleSubject(subject) {
+  const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE google_subject=$1`, [subject]);
   return rows[0] ? userFromRow(rows[0]) : null;
 }
 export async function findUserById(id) {
@@ -13,7 +17,7 @@ export async function findUserById(id) {
 }
 export async function createUserWithProvider(user, provider) {
   return withSqlTransaction(async (client) => {
-    await client.query(`INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [user.id,user.email,user.passwordHash,user.displayName,user.role,user.status,user.sessionVersion || 0,user.createdAt]);
+    await client.query(`INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at,google_subject) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [user.id,user.email,user.passwordHash,user.displayName,user.role,user.status,user.sessionVersion || 0,user.createdAt,user.googleSubject || null]);
     await client.query(`INSERT INTO providers(id,user_id,provider_type,capacity,verification_status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7)`, [provider.id,provider.userId,provider.providerType,provider.capacity,provider.verificationStatus,provider.createdAt,provider.updatedAt]);
     // Financial invariant: registration atomically creates exactly one TOMAN wallet.
     await client.query(`INSERT INTO wallet_accounts(id,user_id,currency,available_balance,locked_balance,status,created_at,updated_at) VALUES(gen_random_uuid(),$1,'TOMAN',0,0,'ACTIVE',NOW(),NOW())`, [user.id]);
