@@ -170,64 +170,34 @@ class _AdminPageState extends State<AdminPage>
         Icons.fact_check_outlined
       ],
     ];
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 900
-            ? 3
-            : constraints.maxWidth >= 560
-                ? 2
-                : 1;
-        return GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            mainAxisExtent: columns == 1 ? 84 : 92,
-          ),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final e = items[index];
-            return PremiumPanel(
-              padding: const EdgeInsets.all(13),
-              highlight: index == 0,
-              child: Row(
-                children: [
-                  HopeIconTile(
-                    e[2] as IconData,
-                    filled: true,
-                    size: 40,
-                  ),
+    return GridView.count(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        childAspectRatio: 2.25,
+        children: items
+            .map((e) => PremiumPanel(
+                padding: const EdgeInsets.all(13),
+                child: Row(children: [
+                  HopeIconTile(e[2] as IconData, filled: true, size: 40),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          (m?[e[0] as String] ?? 0).toString(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w900),
-                        ),
-                        Text(
-                          e[1].toString(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                        Text('${m?[e[0] as String] ?? 0}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w800)),
+                        Text('${e[1]}',
+                            style: Theme.of(context).textTheme.bodySmall)
+                      ]))
+                ])))
+            .toList());
   }
 
   Widget _errorState(BuildContext context, Object? error,
