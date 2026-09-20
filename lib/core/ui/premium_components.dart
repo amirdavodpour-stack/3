@@ -535,6 +535,82 @@ class PremiumTag extends StatelessWidget {
   }
 }
 
+class PremiumFilterChip extends StatelessWidget {
+  const PremiumFilterChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+    this.color,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = color ?? Theme.of(context).colorScheme.primary;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+          child: AnimatedContainer(
+            duration: HopeV2Motion.fast,
+            constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: selected
+                  ? base.withValues(alpha: .11)
+                  : HopeV2Surfaces.panel(context),
+              borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+              border: Border.all(
+                color: selected
+                    ? base.withValues(alpha: .28)
+                    : HopeV2Surfaces.border(context),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: selected
+                        ? base
+                        : Theme.of(context).colorScheme.outline,
+                  ),
+                  const SizedBox(width: 5),
+                ],
+                if (selected) ...[
+                  const Icon(Icons.check_rounded, size: 16),
+                  const SizedBox(width: 5),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected ? base : null,
+                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumSearchBar extends StatelessWidget {
   const PremiumSearchBar({
     super.key,
