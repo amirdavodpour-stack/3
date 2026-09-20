@@ -89,7 +89,7 @@ class AppTheme {
       tabBarTheme: TabBarThemeData(
         dividerColor: Colors.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
-        indicator: const BoxDecoration(
+        indicator: BoxDecoration(
           color: dark ? const Color(0x287660FF) : AppColors.softPrimary,
           borderRadius: BorderRadius.circular(14),
         ),
