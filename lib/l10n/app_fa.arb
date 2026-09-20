@@ -248,11 +248,11 @@
   "@copy_choose_79a9d79": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_a_category_b77d860": "دسته‌بندی را انتخاب کن",
+  "copy_choose_a_category_b77d860": "دسته‌بندی را انتخاب کنید",
   "@copy_choose_a_category_b77d860": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_a_city_a93b334": "شهر را انتخاب کن",
+  "copy_choose_a_city_a93b334": "شهر را انتخاب کنید",
   "@copy_choose_a_city_a93b334": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -264,7 +264,7 @@
   "@copy_choose_another_city_1375095": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_your_preferred_city_c19f66a": "شهر مورد نظر را انتخاب کن",
+  "copy_choose_your_preferred_city_c19f66a": "شهر مورد نظر را انتخاب کنید",
   "@copy_choose_your_preferred_city_c19f66a": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -376,7 +376,7 @@
   "@copy_english_8396fe3": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_enter_your_account_email_and_we_will_start_16caa6e": "ایمیل حساب را وارد کن؛ راهنمای بازیابی برایت ارسال می‌شود.",
+  "copy_enter_your_account_email_and_we_will_start_16caa6e": "ایمیل حساب را وارد کنید؛ راهنمای بازیابی برای شما ارسال می‌شود.",
   "@copy_enter_your_account_email_and_we_will_start_16caa6e": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -440,7 +440,7 @@
   "@copy_for_jobs_admins_send_only_the_professional_e6e694e": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_for_security_the_response_is_intentionally_6574fa6": "برای حفظ امنیت، حتی در صورت نبودن حساب هم پاسخ مشابهی دریافت می‌کنی.",
+  "copy_for_security_the_response_is_intentionally_6574fa6": "برای حفظ امنیت، حتی در صورت نبودن حساب هم پاسخ مشابهی دریافت می‌کنید.",
   "@copy_for_security_the_response_is_intentionally_6574fa6": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -568,11 +568,11 @@
   "@copy_location_on_dad416c": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_location_permission_was_not_enabled_you_ca_ba53b81": "دسترسی مکان فعال نشد؛ می‌توانی شهر را دستی انتخاب کنی.",
+  "copy_location_permission_was_not_enabled_you_ca_ba53b81": "دسترسی مکان فعال نشد؛ می‌توانید شهر را دستی انتخاب کنید.",
   "@copy_location_permission_was_not_enabled_you_ca_ba53b81": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_location_personalization_is_on_you_can_cha_8dd12f4": "موقعیت مکانی روشن است؛ می‌توانی شهر را از تنظیمات عوض کنی.",
+  "copy_location_personalization_is_on_you_can_cha_8dd12f4": "موقعیت مکانی روشن است؛ می‌توانید شهر را از تنظیمات تغییر دهید.",
   "@copy_location_personalization_is_on_you_can_cha_8dd12f4": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -916,11 +916,11 @@
   "@copy_schedule_3af1939": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_search_dd58413": "جست‌وجو کن...",
+  "copy_search_dd58413": "جست‌وجو...",
   "@copy_search_dd58413": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_see_missions_and_jobs_together_then_narrow_7e573a3": "ماموریت و شغل را کنار هم ببین؛ بعد دقیق‌تر فیلتر کن.",
+  "copy_see_missions_and_jobs_together_then_narrow_7e573a3": "ماموریت و شغل را کنار هم ببینید؛ سپس دقیق‌تر فیلتر کنید.",
   "@copy_see_missions_and_jobs_together_then_narrow_7e573a3": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -980,7 +980,7 @@
   "@copy_start_here_555e56f": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_start_with_your_city_or_explore_any_other__05a1e84": "شهر را انتخاب کنید یا شهر دیگری را بررسی کنید.",
+  "copy_start_with_your_city_or_explore_any_other__05a1e84": "شهر را انتخاب کنیدید یا شهر دیگری را بررسی کنید.",
   "@copy_start_with_your_city_or_explore_any_other__05a1e84": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -1012,7 +1012,7 @@
   "@copy_system_bf4e081": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_tap_to_mark_as_read_5c9917a": "برای خواندن باز کن",
+  "copy_tap_to_mark_as_read_5c9917a": "برای خواندن باز کنید",
   "@copy_tap_to_mark_as_read_5c9917a": {
     "description": "UI copy migrated from manual bilingual text."
   },
