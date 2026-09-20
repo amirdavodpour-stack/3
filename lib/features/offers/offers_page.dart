@@ -29,9 +29,11 @@ class _OffersPageState extends State<OffersPage> {
       ),
       body:FutureBuilder<List<HopeOffer>>(future:_future,builder:(context,s){
         if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator());
-        if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(24),child:EmptyState(
+        if(s.hasError) {
+          return Center(child:Padding(padding:const EdgeInsets.all(24),child:EmptyState(
           icon:Icons.cloud_off_rounded,title:_t('پیشنهادها در دسترس نیستند','Offers unavailable'),
           message:apiErrorMessage(s.error ?? Object()),action:FilledButton(onPressed:_reload,child:Text(_t('تلاش دوباره','Retry'))))));
+        }
         final all=s.data??const <HopeOffer>[];
         final rows=_filter=='ALL'?all:all.where((x)=>x.status==_filter).toList();
         return RefreshIndicator(onRefresh:()async=>_reload(),child:ListView(
