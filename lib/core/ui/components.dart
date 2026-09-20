@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'hope_l10n.dart';
 import '../../core/theme/app_theme.dart';
+import '../theme/hope_v2_design.dart';
 
 /// Resolves the accessible secondary accent for the current brightness.
 /// Text/icons in the brand teal need >= 4.5:1 against the surface they sit
@@ -9,8 +10,8 @@ import '../../core/theme/app_theme.dart';
 /// uses a darker teal and dark mode a lighter one.
 Color secondaryAccent(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
-        ? AppColors.secondaryDark
-        : AppColors.secondaryStrong;
+        ? HopeV2Colors.secondaryDark
+        : HopeV2Colors.secondaryStrong;
 
 class AnimatedEntrance extends StatelessWidget {
   const AnimatedEntrance(
@@ -112,11 +113,11 @@ class HopeSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: highlight
             ? (dark ? const Color(0x1A7660FF) : const Color(0xFFF1EEFF))
-            : (dark ? AppColors.darkCard : AppColors.surface),
+            : (dark ? HopeV2Colors.darkCard : HopeV2Colors.surface),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? AppColors.primary.withValues(alpha: .24)
+              ? HopeV2Colors.primary.withValues(alpha: .24)
               : border,
           width: highlight ? 1.1 : 1,
         ),
@@ -189,7 +190,7 @@ class SectionTitle extends StatelessWidget {
 
 class StatusPill extends StatelessWidget {
   const StatusPill(this.label,
-      {super.key, this.color = AppColors.primary, this.icon});
+      {super.key, this.color = HopeV2Colors.primary, this.icon});
   final String label;
   final Color color;
   final IconData? icon;
@@ -221,11 +222,11 @@ class StatusPill extends StatelessWidget {
 
   Color _accessible(BuildContext context, Color c) {
     if (Theme.of(context).brightness != Brightness.dark) return c;
-    if (c == AppColors.warning) return AppColors.warningDark;
-    if (c == AppColors.danger) return AppColors.dangerDark;
-    if (c == AppColors.success) return AppColors.successDark;
-    if (c == AppColors.muted) return AppColors.darkMuted;
-    if (c == AppColors.primary) return AppColors.primaryDark;
+    if (c == HopeV2Colors.warning) return HopeV2Colors.warningDark;
+    if (c == HopeV2Colors.danger) return HopeV2Colors.dangerDark;
+    if (c == HopeV2Colors.success) return HopeV2Colors.successDark;
+    if (c == HopeV2Colors.muted) return HopeV2Colors.darkMuted;
+    if (c == HopeV2Colors.primary) return HopeV2Colors.primaryDark;
     return c;
   }
 }
@@ -233,7 +234,7 @@ class StatusPill extends StatelessWidget {
 class HopeIconTile extends StatelessWidget {
   const HopeIconTile(this.icon,
       {super.key,
-      this.color = AppColors.primary,
+      this.color = HopeV2Colors.primary,
       this.size = 46,
       this.filled = false,
       this.semanticLabel});
@@ -268,7 +269,7 @@ class MetricTile extends StatelessWidget {
       required this.label,
       required this.value,
       this.icon,
-      this.color = AppColors.primary});
+      this.color = HopeV2Colors.primary});
   final String label;
   final String value;
   final IconData? icon;
