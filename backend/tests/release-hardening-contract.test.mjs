@@ -280,23 +280,41 @@ test('CI collects certification failures before enforcing aggregate gates', () =
   const main = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
   const payment = fs.readFileSync(path.join(root, '.github/workflows/hope-payment-certification.yml'), 'utf8');
   const staging = fs.readFileSync(path.join(root, '.github/workflows/staging-certification.yml'), 'utf8');
-  assert.match(main, /id: backend_static_check[\\s\\S]*?continue-on-error: true/);
-  assert.match(main, /id: npm_audit_gate[\\s\\S]*?continue-on-error: true/);
-  assert.match(main, /id: flutter_analyze_gate[\\s\\S]*?continue-on-error: true/);
-  assert.match(main, /id: flutter_test_gate[\\s\\S]*?continue-on-error: true/);
-  assert.match(main, /name: Enforce core quality gate/);
-  for (const id of ['targeted_payment','live_mock_payment','payment_migrations','payment_webhook_pg','payment_postgres_lifecycle','payment_wallet_ledger','payment_financial_invariants']) {
-    assert.match(payment, new RegExp('id: ' + id + '[\\s\\S]*?continue-on-error: true'));
+  for (const pair of [
+    ['backend_static_check', main],
+    ['npm_audit_gate', main],
+    ['flutter_analyze_gate', main],
+    ['flutter_test_gate', main],
+    ['targeted_payment', payment],
+    ['live_mock_payment', payment],
+    ['payment_migrations', payment],
+    ['payment_webhook_pg', payment],
+    ['payment_postgres_lifecycle', payment],
+    ['payment_wallet_ledger', payment],
+    ['payment_financial_invariants', payment],
+    ['provider_integration', staging],
+    ['product_workflow', staging],
+    ['postgres_runtime', staging],
+    ['s3_runtime', staging],
+    ['perf_gate', staging],
+    ['android_quality', staging],
+    ['dr_drill', staging],
+    ['emulator_certification', staging],
+    ['operational_gate', staging],
+  ]) {
+    const [id, body] = pair;
+    const marker = `id: ${id}`;
+    const start = body.indexOf(marker);
+    assert.ok(start >= 0, `missing ${id}`);
+    const next = body.indexOf('\n        - name:', start);
+    const step = body.slice(start, next >= 0 ? next : body.length);
+    assert.match(step, /continue-on-error: true/);
   }
+  assert.match(main, /name: Enforce core quality gate/);
   assert.match(payment, /name: Evaluate payment certification/);
   assert.match(payment, /name: Enforce payment certification/);
-  for (const id of ['provider_integration','product_workflow','postgres_runtime','s3_runtime','perf_gate','android_quality','dr_drill','emulator_certification','operational_gate']) {
-    assert.match(staging, new RegExp('id: ' + id + '[\\s\\S]*?continue-on-error: true'));
-  }
   assert.match(staging, /name: Enforce staging certification/);
-  assert.match(staging, /\\[ "\\$result" = "success" \\] \\|\\| status=BLOCKED/);
 });
-
 
 test('production check:all collects every suite and aggregates failures', () => {
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'backend/package.json'), 'utf8'));

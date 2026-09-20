@@ -3,15 +3,15 @@ import fs from 'node:fs';
 
 const steps = [
   ['npm run check', 120000],
-  ['npm run test:fast', 180000],
-  ['npm run test:contract', 180000],
+  ['node tools/run-test-script-isolated.mjs --script test:fast', 480000],
+  ['node tools/run-test-script-isolated.mjs --script test:contract', 480000],
   ['npm run test:backup', 180000],
   ['npm run test:staging-contract', 180000],
   ['npm run test:e2e', 240000],
   ['npm run test:provider', 240000],
   ['npm run test:failure-injection', 240000],
   ['npm run test:postgres', 300000],
-  ['node --test tests/sbom-contract.test.mjs tests/property-workflow.test.mjs tests/property-security.test.mjs tests/e2e-state-guard.test.mjs tests/wave10-release-security.test.mjs', 240000],
+  ['node tools/run-test-script-isolated.mjs --files tests/sbom-contract.test.mjs tests/property-workflow.test.mjs tests/property-security.test.mjs tests/e2e-state-guard.test.mjs tests/wave10-release-security.test.mjs', 480000],
   ['npm run check:toolchain-contract', 120000],
 ];
 

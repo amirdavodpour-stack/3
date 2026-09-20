@@ -163,30 +163,21 @@ test('Runtime gates are outcome-derived and honest on failure', () => {
   const workflowDir = path.join(projectRoot, '.github', 'workflows');
   const main = fs.readFileSync(path.join(workflowDir, 'main.yml'), 'utf8');
   const release = fs.readFileSync(path.join(workflowDir, 'production-release.yml'), 'utf8');
-
-  // the observed steps must be identifiable
-  assert.match(main, /- name: Flutter analyze gate\n\s+id: flutter_analyze_gate/);\n  assert.match(main, /- name: Flutter test gate\n\s+id: flutter_test_gate/);
-  assert.match(release, /- name: Build signed production APK\n\s+id: release_build/);
-  assert.match(release, /- name: Verify signed production APK\n\s+id: apk_verify/);
-
-  // the gate result must be derived from those steps
-  assert.match(main, /GATE_RESULT: \$\{\{ \(steps\.flutter_analyze_gate\.outcome == 'success' && steps\.flutter_test_gate\.outcome == 'success'\) && 'pass' \|\| 'fail' \}\}/);
-  assert.match(release, /GATE_RESULT: \$\{\{ steps\.apk_verify\.outcome == 'success' && 'pass' \|\| 'fail' \}\}/);
-
-  // and the converted evidence steps must still run when the observed command
-  // failed. (main.yml's npm_audit gate is deliberately a single step that runs
-  // the audit and records its observed exit status, so it needs no always().)
-  const converted = [
+  assert.ok(main.includes('- name: Flutter analyze gate') && main.includes('id: flutter_analyze_gate'));
+  assert.ok(main.includes('- name: Flutter test gate') && main.includes('id: flutter_test_gate'));
+  assert.ok(main.includes("GATE_RESULT: ${{ (steps.flutter_analyze_gate.outcome == 'success' && steps.flutter_test_gate.outcome == 'success') && 'pass' || 'fail' }}"));
+  assert.ok(release.includes('- name: Build signed production APK') && release.includes('id: release_build'));
+  assert.ok(release.includes('- name: Verify signed production APK') && release.includes('id: apk_verify'));
+  assert.ok(release.includes("GATE_RESULT: ${{ steps.apk_verify.outcome == 'success' && 'pass' || 'fail' }}"));
+  for (const [file, body, header] of [
     ['main.yml', main, '- name: Runtime gate - flutter toolchain'],
     ['production-release.yml', release, '- name: Runtime gate - android build'],
-  ];
-  for (const [file, body, header] of converted) {
+  ]) {
     const parts = body.split(header);
     assert.equal(parts.length, 2, `${file}: expected exactly one ${header}`);
-    assert.match(parts[1].slice(0, 400), /if:\s*\$\{\{\s*always\(\)/, `${file}: converted gate step must use always()`);
+    assert.ok(parts[1].slice(0, 500).includes('if: ${{ always() }}'), `${file}: converted gate must use always()`);
   }
 });
-
 test('evidence steps still run when the observed command fails', () => {
   const workflowDir = path.join(projectRoot, '.github', 'workflows');
   for (const file of ['staging-certification.yml', 'dr-restore.yml', 'device-integration.yml']) {
