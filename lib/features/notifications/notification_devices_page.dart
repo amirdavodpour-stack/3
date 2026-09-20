@@ -198,6 +198,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
