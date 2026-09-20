@@ -69,8 +69,16 @@ class _Transactions implements TransactionRepository {
       required String type}) async {}
 }
 
-Future<void> _pump(WidgetTester tester, _Transactions repo,
-    {bool guest = false}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  _Transactions repo, {
+  bool guest = false,
+  double width = 900,
+}) async {
+  tester.view.physicalSize = Size(width, 2400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -120,6 +128,17 @@ void main() {
     final repo = _Transactions()..jobs = [];
     await _pump(tester, repo);
     expect(find.textContaining('فعالیتی'), findsWidgets);
+  });
+
+  testWidgets('activity metrics stack on narrow screens',
+      (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('a', status: 'IN_PROGRESS')];
+    await _pump(tester, repo, width: 360);
+
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('فعال'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('authenticated transactions render active and completed jobs',
