@@ -239,6 +239,6 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
 }
