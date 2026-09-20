@@ -150,10 +150,11 @@ jobs:
         run: |
           set -euo pipefail
           : "${ANDROID_RELEASE_KEYSTORE_B64:?ANDROID_RELEASE_KEYSTORE_B64 is required}"
-          KEYSTORE_PATH="$RUNNER_TEMP/hope-production-release.keystore"
-          # Accept wrapped/padded/unpadded base64 secrets without weakening the
-          # release gate: whitespace is removed, URL-safe characters are normalized,
-          # and the decoded keystore must be non-empty and parseable by keytool.
+          SOURCE_KEYSTORE_PATH="$RUNNER_TEMP/hope-production-release.source.keystore"
+          NORMALIZED_KEYSTORE_PATH="$RUNNER_TEMP/hope-production-release.keystore"
+          rm -f "$SOURCE_KEYSTORE_PATH" "$NORMALIZED_KEYSTORE_PATH"
+
+          # Decode and validate the submitted keystore first.
           normalized="$(printf '%s' "$ANDROID_RELEASE_KEYSTORE_B64" | tr -d '[:space:]' | tr '_-' '/+')"
           rem=$(( ${#normalized} % 4 ))
           if [ "$rem" -eq 1 ]; then
@@ -162,51 +163,51 @@ jobs:
           fi
           if [ "$rem" -eq 2 ]; then normalized="${normalized}=="; fi
           if [ "$rem" -eq 3 ]; then normalized="${normalized}="; fi
-          printf '%s' "$normalized" | base64 --decode > "$KEYSTORE_PATH"
-          test -s "$KEYSTORE_PATH"
-          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$ANDROID_RELEASE_STORE_PASSWORD" >/dev/null
+          printf '%s' "$normalized" | base64 --decode > "$SOURCE_KEYSTORE_PATH"
+          test -s "$SOURCE_KEYSTORE_PATH"
+          keytool -list -keystore "$SOURCE_KEYSTORE_PATH" -storepass "$ANDROID_RELEASE_STORE_PASSWORD" >/dev/null
 
-          # Validate private-key access before starting the long release build. Some
-          # release keystores intentionally use the same password for the store and
-          # key entry; support that canonical configuration without exposing any
-          # credential values. If a distinct key password is configured, it must be
-          # correct and remains authoritative.
-          KEY_VALIDATION_PATH="$RUNNER_TEMP/hope-release-key-validation.p12"
-          rm -f "$KEY_VALIDATION_PATH"
-          key_password_from_store=false
+          # AGP/Gradle can fail to recover a private key from a PKCS12 entry
+          # whose key password differs from the store password, even when
+          # keytool can open that entry. Normalize the release keystore to a
+          # fresh PKCS12 file whose store and key passwords are identical.
+          SOURCE_KEY_PASSWORD=""
           if keytool -importkeystore -noprompt \
-            -srckeystore "$KEYSTORE_PATH" \
+            -srckeystore "$SOURCE_KEYSTORE_PATH" \
             -srcstorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
             -srcalias "$ANDROID_RELEASE_KEY_ALIAS" \
             -srckeypass "$ANDROID_RELEASE_KEY_PASSWORD" \
-            -destkeystore "$KEY_VALIDATION_PATH" \
+            -destkeystore "$NORMALIZED_KEYSTORE_PATH" \
             -deststorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
             -destkeypass "$ANDROID_RELEASE_STORE_PASSWORD" \
-            -destalias "__hope_release_key_validation__" \
+            -destalias "$ANDROID_RELEASE_KEY_ALIAS" \
             -deststoretype PKCS12 >/dev/null 2>&1; then
-            :
-            rm -f "$KEY_VALIDATION_PATH"
-          elif keytool -importkeystore -noprompt \
-            -srckeystore "$KEYSTORE_PATH" \
-            -srcstorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
-            -srcalias "$ANDROID_RELEASE_KEY_ALIAS" \
-            -srckeypass "$ANDROID_RELEASE_STORE_PASSWORD" \
-            -destkeystore "$KEY_VALIDATION_PATH" \
-            -deststorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
-            -destkeypass "$ANDROID_RELEASE_STORE_PASSWORD" \
-            -destalias "__hope_release_key_validation__" \
-            -deststoretype PKCS12 >/dev/null 2>&1; then
-            key_password_from_store=true
-            echo 'Private-key validation: supplied key password did not unlock the alias; keystore password does, so the release key uses the keystore password.'
+            SOURCE_KEY_PASSWORD="$ANDROID_RELEASE_KEY_PASSWORD"
           else
-            echo 'ERROR: release keystore is valid, but neither the supplied key password nor the keystore password can unlock the configured release key alias.' >&2
-            rm -f "$KEY_VALIDATION_PATH"
-            exit 1
+            rm -f "$NORMALIZED_KEYSTORE_PATH"
+            if keytool -importkeystore -noprompt \
+              -srckeystore "$SOURCE_KEYSTORE_PATH" \
+              -srcstorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
+              -srcalias "$ANDROID_RELEASE_KEY_ALIAS" \
+              -srckeypass "$ANDROID_RELEASE_STORE_PASSWORD" \
+              -destkeystore "$NORMALIZED_KEYSTORE_PATH" \
+              -deststorepass "$ANDROID_RELEASE_STORE_PASSWORD" \
+              -destkeypass "$ANDROID_RELEASE_STORE_PASSWORD" \
+              -destalias "$ANDROID_RELEASE_KEY_ALIAS" \
+              -deststoretype PKCS12 >/dev/null 2>&1; then
+              SOURCE_KEY_PASSWORD="$ANDROID_RELEASE_STORE_PASSWORD"
+            else
+              echo 'ERROR: release keystore is valid, but neither the supplied key password nor the keystore password can unlock the configured release key alias.' >&2
+              rm -f "$SOURCE_KEYSTORE_PATH" "$NORMALIZED_KEYSTORE_PATH"
+              exit 1
+            fi
           fi
-          rm -f "$KEY_VALIDATION_PATH"
-          echo "key_password_from_store=$key_password_from_store" >> "$GITHUB_OUTPUT"
-          echo "path=$KEYSTORE_PATH" >> "$GITHUB_OUTPUT"
 
+          keytool -list -v -keystore "$NORMALIZED_KEYSTORE_PATH" -storepass "$ANDROID_RELEASE_STORE_PASSWORD" -alias "$ANDROID_RELEASE_KEY_ALIAS" >/dev/null
+          rm -f "$SOURCE_KEYSTORE_PATH"
+          echo "path=$NORMALIZED_KEYSTORE_PATH" >> "$GITHUB_OUTPUT"
+          echo "key_password_from_store=true" >> "$GITHUB_OUTPUT"
+          echo 'Release keystore normalized for AGP private-key access.'
       - name: Build signed production APK
         id: release_build
         env:
