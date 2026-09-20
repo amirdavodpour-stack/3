@@ -90,6 +90,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return labels[rawStatus.toUpperCase()] ?? rawStatus;
   }
 
+  String _t(String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
   List<PremiumLifecycleStep> _stepsForStatus(String rawStatus) {
     final status = rawStatus.toUpperCase();
     const order = <String>['PUBLISHED', 'ASSIGNED', 'IN_PROGRESS', 'DELIVERED', 'COMPLETED'];
