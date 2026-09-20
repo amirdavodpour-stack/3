@@ -304,7 +304,7 @@
   "@copy_could_not_submit_evidence_9d09019": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_create_a_hope_account_and_take_the_first_s_9ccd119": "یک حساب HOPE بساز و قدم اول را بردار.",
+  "copy_create_a_hope_account_and_take_the_first_s_9ccd119": "نام، ایمیل و رمز عبور خود را وارد کنید.",
   "@copy_create_a_hope_account_and_take_the_first_s_9ccd119": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -972,7 +972,7 @@
   "@copy_specialized_5d1ca04": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_start_a_good_collaboration_9df52cf": "شروع یک همکاری خوب.",
+  "copy_start_a_good_collaboration_9df52cf": "ساخت حساب کاربری",
   "@copy_start_a_good_collaboration_9df52cf": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -1129,7 +1129,7 @@
   "@copy_you_have_no_new_notifications_45f9685": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_your_account_data_is_kept_securely_by_hope_b91dd1f": "با ساخت حساب، اطلاعات تو در فضای امن HOPE نگهداری می‌شود.",
+  "copy_your_account_data_is_kept_securely_by_hope_b91dd1f": "اطلاعات حساب شما به‌صورت امن نگهداری می‌شود.",
   "@copy_your_account_data_is_kept_securely_by_hope_b91dd1f": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -1153,7 +1153,7 @@
   "@copy_your_projects_applications_and_payments_wi_bec5340": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_hope_work_grow_together_6a1d9f0": "HOPE • کار • رشد • همراهی",
+  "copy_hope_work_grow_together_6a1d9f0": "HOPE • فرصت‌ها • کار",
   "@copy_hope_work_grow_together_6a1d9f0": {
     "description": "Migrated language selector/brand copy."
   },
