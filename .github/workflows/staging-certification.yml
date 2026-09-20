@@ -67,7 +67,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: hope-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: hope-staging-certification-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
