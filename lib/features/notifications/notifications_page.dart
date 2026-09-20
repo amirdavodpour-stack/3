@@ -266,7 +266,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final unreadCount = items.where((item) => item.isUnread).length;
+    return Scaffold(
         appBar: AppBar(
           title: Text(HopeCopy.of(context).copy_notifications_370b4a1),
           actions: [
@@ -282,7 +284,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               tooltip: _t('تنظیمات اعلان‌ها', 'Notification settings'),
             ),
             IconButton(
-              onPressed: items.isEmpty ? null : _readAll,
+              onPressed: unreadCount == 0 ? null : _readAll,
               icon: const Icon(Icons.done_all_rounded),
               tooltip: HopeCopy.of(context).copy_mark_all_read_500a31c,
             ),
@@ -340,9 +342,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   'Updates for applications, work, and payments.',
                                 ),
                                 trailing: PremiumTag(
-                                  icon:
-                                      Icons.notifications_active_outlined,
-                                  label: items.length.toString(),
+                                  icon: unreadCount > 0
+                                      ? Icons.notifications_active_outlined
+                                      : Icons.done_all_rounded,
+                                  label: unreadCount > 0
+                                      ? '$unreadCount ${_t('جدید', 'new')}'
+                                      : _t('همه خوانده شده', 'All read'),
+                                  color: unreadCount > 0
+                                      ? Theme.of(context).colorScheme.primary
+                                      : AppColors.success,
                                 ),
                               ),
                               const SizedBox(height: 18),
@@ -352,4 +360,4 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
         ),
       );
-}
+  }
