@@ -69,8 +69,10 @@ void main() {
       ),
     );
 
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationRailDestination), findsNWidgets(5));
+    final rail = tester.widget<NavigationRail>(
+      find.byType(NavigationRail),
+    );
+    expect(rail.destinations, hasLength(5));
     expect(
       tester.getSize(find.byType(PremiumNavigationRail)).width,
       greaterThanOrEqualTo(210),
