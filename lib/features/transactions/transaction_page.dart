@@ -217,12 +217,31 @@ class _TransactionPageState extends State<TransactionPage> {
   Widget build(BuildContext context) => _buildPage(context);
 }
 
-Widget _moneyRow(BuildContext context, String label, dynamic value, {bool strong = false}) => Padding(
+Widget _moneyRow(BuildContext context, String label, dynamic value, {bool strong = false}) =>
+    Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Expanded(child: Text(label)),
-        Text(moneyLabel(context, value ?? '—'),
-            style: TextStyle(
-                fontWeight: strong ? FontWeight.w800 : FontWeight.w500))
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              moneyLabel(context, value ?? '—'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
