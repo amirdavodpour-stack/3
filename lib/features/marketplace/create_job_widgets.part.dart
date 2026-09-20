@@ -20,10 +20,10 @@ class _TypeHero extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _tile(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final tiles = [
+                _tile(
                   context,
                   'MISSION',
                   Icons.bolt_rounded,
@@ -31,10 +31,7 @@ class _TypeHero extends StatelessWidget {
                   HopeCopy.of(context)
                       .copy_a_defined_task_with_defined_pay_77b1068,
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _tile(
+                _tile(
                   context,
                   'JOB',
                   Icons.business_center_rounded,
@@ -42,8 +39,26 @@ class _TypeHero extends StatelessWidget {
                   HopeCopy.of(context)
                       .copy_part_full_time_with_monthly_pay_abd5afd,
                 ),
-              ),
-            ],
+              ];
+
+              if (constraints.maxWidth < 500) {
+                return Column(
+                  children: [
+                    tiles[0],
+                    const SizedBox(height: 10),
+                    tiles[1],
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: tiles[0]),
+                  const SizedBox(width: 10),
+                  Expanded(child: tiles[1]),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -230,10 +245,10 @@ class _CreateJobForm extends StatelessWidget {
                 HopeCopy.of(context).copy_make_it_public_or_specialized_e890215,
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _VisibilityCard(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cards = [
+                _VisibilityCard(
                   icon: Icons.public_rounded,
                   title: HopeCopy.of(context).copy_public_21e97be,
                   sub: HopeCopy.of(context).copy_for_everyone_ebc769c,
@@ -241,10 +256,7 @@ class _CreateJobForm extends StatelessWidget {
                   selected: visibility == 'PUBLIC',
                   onSelected: onVisibilityChanged,
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _VisibilityCard(
+                _VisibilityCard(
                   icon: Icons.auto_awesome_rounded,
                   title: HopeCopy.of(context).copy_specialized_5d1ca04,
                   sub: HopeCopy.of(context).copy_for_a_specific_field_9b79bd6,
@@ -252,8 +264,26 @@ class _CreateJobForm extends StatelessWidget {
                   selected: visibility == 'SPECIALIZED',
                   onSelected: onVisibilityChanged,
                 ),
-              ),
-            ],
+              ];
+
+              if (constraints.maxWidth < 500) {
+                return Column(
+                  children: [
+                    cards[0],
+                    const SizedBox(height: 10),
+                    cards[1],
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: cards[0]),
+                  const SizedBox(width: 10),
+                  Expanded(child: cards[1]),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
           HopeSurface(
