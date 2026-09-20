@@ -212,10 +212,10 @@ class AppLocalizationsFa extends AppLocalizations {
   String get copy_choose_79a9d79 => 'انتخاب';
 
   @override
-  String get copy_choose_a_category_b77d860 => 'دسته‌بندی را انتخاب کنید';
+  String get copy_choose_a_category_b77d860 => 'دسته‌بندی را انتخاب کنیدید';
 
   @override
-  String get copy_choose_a_city_a93b334 => 'شهر را انتخاب کنید';
+  String get copy_choose_a_city_a93b334 => 'شهر را انتخاب کنیدید';
 
   @override
   String get copy_choose_a_professional_category_b4cf5b8 =>
@@ -226,7 +226,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_choose_your_preferred_city_c19f66a =>
-      'شهر مورد نظر را انتخاب کنید';
+      'شهر مورد نظر را انتخاب کنیدید';
 
   @override
   String get copy_city_3d7dc3e => 'شهر';
@@ -318,7 +318,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_enter_your_account_email_and_we_will_start_16caa6e =>
-      'ایمیل حساب را وارد کن؛ راهنمای بازیابی برایت ارسال می‌شود.';
+      'ایمیل حساب را وارد کنید؛ راهنمای بازیابی برای شما ارسال می‌شود.';
 
   @override
   String get copy_enter_your_email_2562106 => 'ایمیل را وارد کنید.';
@@ -372,7 +372,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_for_security_the_response_is_intentionally_6574fa6 =>
-      'برای حفظ امنیت، حتی در صورت نبودن حساب هم پاسخ مشابهی دریافت می‌کنی.';
+      'برای حفظ امنیت، حتی در صورت نبودن حساب هم پاسخ مشابهی دریافت می‌کنید.';
 
   @override
   String get copy_forward_5ec70ea => 'ارسال';
@@ -474,11 +474,11 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_location_permission_was_not_enabled_you_ca_ba53b81 =>
-      'دسترسی مکان فعال نشد؛ می‌توانی شهر را دستی انتخاب کنی.';
+      'دسترسی مکان فعال نشد؛ می‌توانید شهر را دستی انتخاب کنید.';
 
   @override
   String get copy_location_personalization_is_on_you_can_cha_8dd12f4 =>
-      'موقعیت مکانی روشن است؛ می‌توانی شهر را از تنظیمات عوض کنی.';
+      'موقعیت مکانی روشن است؛ می‌توانید شهر را از تنظیمات تغییر دهید.';
 
   @override
   String get copy_log_in_b4c960b => 'ورود';
@@ -754,7 +754,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_see_missions_and_jobs_together_then_narrow_7e573a3 =>
-      'ماموریت و شغل را کنار هم ببین؛ بعد دقیق‌تر فیلتر کن.';
+      'ماموریت و شغل را کنار هم ببینید؛ سپس دقیق‌تر فیلتر کنید.';
 
   @override
   String get copy_send_offer_8aa1351 => 'ارسال پیشنهاد';
@@ -804,7 +804,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_start_with_your_city_or_explore_any_other__05a1e84 =>
-      'شهر را انتخاب کنید یا شهر دیگری را بررسی کنید.';
+      'شهر را انتخاب کنیدید یا شهر دیگری را بررسی کنید.';
 
   @override
   String get copy_start_work_51d8317 => 'شروع کار';
@@ -828,7 +828,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get copy_system_bf4e081 => 'سیستم';
 
   @override
-  String get copy_tap_to_mark_as_read_5c9917a => 'برای خواندن باز کن';
+  String get copy_tap_to_mark_as_read_5c9917a => 'برای خواندن باز کنید';
 
   @override
   String get copy_the_first_month_salary_determines_hope_s_j_ca73bd3 =>
