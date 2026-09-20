@@ -175,14 +175,13 @@ class _JobsFilterHeader extends StatelessWidget {
     bool selected,
     VoidCallback onTap, {
     IconData? icon,
-  }) =>
-      Padding(
-        padding: const EdgeInsetsDirectional.only(end: 7),
-        child: PremiumFilterChip(
-          label: text,
+  }) => Padding(
+        padding: const EdgeInsets.only(right: 7),
+        child: ChoiceChip(
           selected: selected,
-          onTap: onTap,
-          icon: icon,
+          label: Text(text),
+          avatar: icon == null ? null : Icon(icon, size: 17),
+          onSelected: (_) => onTap(),
         ),
       );
 }
