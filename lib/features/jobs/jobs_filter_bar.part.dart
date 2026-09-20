@@ -35,24 +35,32 @@ class _JobsFilterHeader extends StatelessWidget {
   final VoidCallback onSaveSearch;
   final VoidCallback onOpenSavedSearches;
 
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PremiumSectionHeader(
-          title: HopeCopy.of(context).copy_explore_115e9fd,
+        PremiumHeader(
+          eyebrow: HopeCopy.of(context).copy_explore_115e9fd,
+          title: _t(
+            context,
+            'فرصت مناسب خود را پیدا کنید',
+            'Find the right opportunity',
+          ),
           subtitle: HopeCopy.of(context)
               .copy_see_missions_and_jobs_together_then_narrow_7e573a3,
-          action: const HopeIconTile(
-            Icons.explore_rounded,
-            size: 52,
-            filled: true,
+          trailing: PremiumTag(
+            icon: Icons.grid_view_rounded,
+            label: resultCount.toString() + ' ' +
+                HopeCopy.of(context).copy_results_2d120a3,
           ),
         ),
-        const SizedBox(height: HopeV2Spacing.lg),
+        const SizedBox(height: HopeV2Spacing.xl),
         PremiumPanel(
-          padding: const EdgeInsets.all(HopeV2Spacing.md),
+          padding: const EdgeInsets.all(HopeV2Spacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
