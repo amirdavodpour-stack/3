@@ -240,18 +240,32 @@ extension on _TransactionPageState {
               HopeSurface(
                   padding: const EdgeInsets.all(18),
                   child: Column(children: [
-                    Row(children: [
-                      Expanded(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
                           child: Text(
-                              HopeCopy.of(context).copy_payment_status_e1b6f0c,
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      Text(_statusLabel(status),
-                          textAlign: TextAlign.end,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800))
-                    ]),
+                            HopeCopy.of(context).copy_payment_status_e1b6f0c,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            _statusLabel(status),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ],
+                    ),
                     if (status == 'NO_TRANSACTION') ...[
                       const SizedBox(height: 8),
                       Align(
@@ -274,13 +288,27 @@ extension on _TransactionPageState {
                       ),
                     ],
                     const SizedBox(height: 14),
-                    Row(children: [
-                      Expanded(
-                          child: Text(HopeCopy.of(context).copy_amount_6400812,
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      Text(moneyLabel(context, payment?.amount ?? '—'),
-                          style: Theme.of(context).textTheme.titleMedium)
-                    ]),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            HopeCopy.of(context).copy_amount_6400812,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            moneyLabel(context, payment?.amount ?? '—'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 14),
                     Row(children: [
                       Expanded(
@@ -288,9 +316,14 @@ extension on _TransactionPageState {
                               HopeCopy.of(context).copy_reference_aa63360,
                               style: Theme.of(context).textTheme.bodyMedium)),
                       Flexible(
-                          child: Text(payment?.providerRef ?? '—',
-                              textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.titleMedium))
+                        child: Text(
+                          payment?.providerRef ?? '—',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      )
                     ]),
                   ])),
               const SizedBox(height: 10),
