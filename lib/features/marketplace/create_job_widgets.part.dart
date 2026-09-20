@@ -411,7 +411,7 @@ class _CreateJobForm extends StatelessWidget {
                     decoration: InputDecoration(
                       labelText: HopeCopy.of(context).copy_minimum_pay_38cc5ec,
                       prefixIcon: const Icon(Icons.payments_outlined),
-                      suffixText: translate('تومان', 'TOMAN'),
+                      suffixText: translate('تومان', 'Toman'),
                     ),
                   ),
                   TextField(
@@ -425,7 +425,7 @@ class _CreateJobForm extends StatelessWidget {
                       labelText: HopeCopy.of(context).copy_maximum_pay_b51ad57,
                       prefixIcon:
                           const Icon(Icons.account_balance_wallet_outlined),
-                      suffixText: translate('تومان', 'TOMAN'),
+                      suffixText: translate('تومان', 'Toman'),
                     ),
                   ),
                 ];
@@ -457,7 +457,7 @@ class _CreateJobForm extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_monthly_salary_1d770dc,
                 prefixIcon: const Icon(Icons.payments_rounded),
-                suffixText: translate('تومان', 'TOMAN'),
+                suffixText: translate('تومان', 'Toman'),
               ),
             ),
           const SizedBox(height: 11),

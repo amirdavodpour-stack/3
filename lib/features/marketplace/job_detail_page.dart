@@ -234,7 +234,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_offer_price_d8fc5f4,
                 prefixIcon: const Icon(Icons.payments_outlined),
-                suffixText: 'TOMAN',
+                suffixText: _t('تومان', 'Toman'),
                 helperText: _t(
                   'قیمت پیشنهادی را به تومان و به‌صورت عدد صحیح وارد کنید.',
                   'Enter your offer in whole Toman.',
