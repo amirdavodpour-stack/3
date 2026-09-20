@@ -300,6 +300,8 @@ void main() {
     expect(find.text('Payment status'), findsOneWidget);
     expect(find.text('Amount'), findsOneWidget);
     expect(find.text('Reference'), findsOneWidget);
+    final logos = tester.widgetList<Widget>(find.byType(HopeMark));
+    expect(logos, isNotEmpty);
     expect(tester.takeException(), isNull);
   });
 
