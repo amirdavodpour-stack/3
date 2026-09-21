@@ -213,4 +213,52 @@ void main() {
     expect(find.text('400,000 Toman'), findsOneWidget);
     expect(find.text('400,000 IRR'), findsNothing);
   });
+  testWidgets('wallet presents backend enums as localized user-facing labels',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: _FakeWallet()),
+          ],
+          child: WalletPage(repository: _FakeWallet()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Active'), findsWidgets);
+    expect(find.text('ACTIVE'), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.text('Wallet history'),
+      600,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Internal transfer'), findsWidgets);
+    expect(find.text('TRANSFER'), findsNothing);
+
+    await tester.tap(find.text('Internal transfer').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Credit'), findsOneWidget);
+    expect(find.text('CREDIT'), findsNothing);
+    expect(find.text('Entry type'), findsOneWidget);
+    expect(find.text('Reference type'), findsOneWidget);
+  });
+
 }
