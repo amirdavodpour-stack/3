@@ -99,9 +99,11 @@ void main() {
 
     final semantics = tester.ensureSemantics();
     try {
-      final node = tester.getSemantics(
-        find.bySemanticsLabel('جزئیات پیشنهاد o1'),
-      );
+      final row = find.ancestor(
+        of: find.text('مبلغ: 1,234,567 تومان'),
+        matching: find.byType(Semantics),
+      ).first;
+      final node = tester.getSemantics(row);
       expect(node.label, 'پیشنهاد o1، مبلغ 1,234,567 تومان، در انتظار بررسی');
     } finally {
       semantics.dispose();
