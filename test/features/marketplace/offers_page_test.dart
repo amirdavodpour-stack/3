@@ -70,6 +70,6 @@ void main() {
         .whereType<String>()
         .toList();
 
-    expect(texts, contains('1,234,567 تومان'));
+    expect(texts, contains('مبلغ: 1,234,567 تومان'));
   });
 }
