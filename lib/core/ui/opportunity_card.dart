@@ -282,7 +282,7 @@ class OpportunityCard extends StatelessWidget {
           children: [
             Expanded(child: Text(job.isMission ? _t(context, 'مشاهده و اقدام برای ماموریت', 'View and act on mission') : _t(context, 'مشاهده جزئیات و اقدام', 'View details and act'), style: Theme.of(context).textTheme.bodyMedium)),
             Icon(
-              Directionality.of(context) == TextDirection.rtl
+              Directionality.of(context) == ui.TextDirection.rtl
                   ? Icons.arrow_back_rounded
                   : Icons.arrow_forward_rounded,
               size: 20,
