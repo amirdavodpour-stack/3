@@ -674,7 +674,11 @@ class _WalletPageState extends State<WalletPage> {
           const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, constraints) {
-              final wide = constraints.maxWidth >= 760;
+              final columns = constraints.maxWidth >= 1000
+                  ? 3
+                  : constraints.maxWidth >= 680
+                      ? 2
+                      : 1;
               final tiles = [
                 PremiumStatCard(
                   label: _t('موجودی قابل‌استفاده', 'Available balance'),
@@ -698,8 +702,8 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ];
               return GridView.count(
-                crossAxisCount: wide ? 3 : 1,
-                mainAxisExtent: wide ? 156 : 140,
+                crossAxisCount: columns,
+                childAspectRatio: 1.55,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
                 shrinkWrap: true,
