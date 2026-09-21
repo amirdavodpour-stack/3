@@ -1,0 +1,118 @@
+name: HOPE UI Runtime Evidence
+
+on:
+  push:
+    branches:
+      - feat/google-sign-in-2026-09-20
+
+concurrency:
+  group: hope-ui-runtime-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wallet-runtime-evidence:
+    name: Wallet Android runtime evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Verify HOPE design/runtime guardrails
+        run: bash tools/verify-design-quality.sh
+
+      - name: Prepare Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Android runtime evidence
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          cores: 4
+          ram-size: 4096M
+          emulator-boot-timeout: 1200
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          disable-animations: true
+          script: |
+            set -eu
+            evidence_dir="docs/audit/evidence/android-runtime"
+            mkdir -p "$evidence_dir"
+            log_file="$RUNNER_TEMP/hope-wallet-runtime.log"
+            exit_file="$RUNNER_TEMP/hope-wallet-runtime.exit"
+            : > "$log_file"
+            rm -f "$exit_file"
+
+            set +e
+            stdbuf -oL -eL flutter test --no-pub               integration_test/runtime/wallet_surface_evidence_test.dart               -r expanded 2>&1 | tee "$log_file" &
+            test_pid=$!
+            set -e
+
+            capture_screen() {
+              marker="$1"
+              output="$2"
+              for _ in $(seq 1 90); do
+                if grep -q "HOPE_SCREENSHOT_READY:$marker" "$log_file"; then
+                  adb wait-for-device
+                  adb exec-out screencap -p > "$evidence_dir/$output"
+                  return 0
+                fi
+                if ! kill -0 "$test_pid" 2>/dev/null; then
+                  break
+                fi
+                sleep 2
+              done
+              echo "Timed out waiting for screenshot marker: $marker" >&2
+              return 1
+            }
+
+            capture_screen "wallet-fa-rtl" "wallet-fa-rtl.png"
+            capture_screen "wallet-en-ltr" "wallet-en-ltr.png"
+
+            set +e
+            wait "$test_pid"
+            test_status=$?
+            set -e
+
+            adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt"
+            adb shell getprop ro.product.model > "$evidence_dir/device-model.txt"
+            adb shell wm size > "$evidence_dir/viewport.txt"
+            cat > "$evidence_dir/metadata.json" <<EOF
+            {
+              "workflow": "${GITHUB_WORKFLOW}",
+              "run_id": "${GITHUB_RUN_ID}",
+              "ref": "${GITHUB_REF_NAME}",
+              "sha": "${GITHUB_SHA}",
+              "surface": "WalletPage",
+              "evidence_type": "rendered_android_runtime",
+              "locales": ["fa-RTL", "en-LTR"],
+              "theme": "light",
+              "interactive_target_contract": "48px",
+              "test_exit_code": $test_status
+            }
+            EOF
+
+            cat "$log_file"
+            exit "$test_status"
+
+      - name: Upload Wallet runtime evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
+        with:
+          name: hope-wallet-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            docs/audit/evidence/android-runtime/**
+            ${{ runner.temp }}/hope-wallet-runtime.log
+          if-no-files-found: warn
