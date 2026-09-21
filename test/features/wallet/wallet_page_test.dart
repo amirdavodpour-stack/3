@@ -201,8 +201,8 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('500,000 Toman'), findsOneWidget);
-    expect(find.textContaining('500,000 IRR'), findsNothing);
+    expect(find.text('+500,000 Toman'), findsOneWidget);
+    expect(find.text('+500,000 IRR'), findsNothing);
 
     await tester.scrollUntilVisible(
       find.textContaining('400,000 Toman'),
@@ -210,7 +210,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('400,000 Toman'), findsOneWidget);
-    expect(find.textContaining('400,000 IRR'), findsNothing);
+    expect(find.text('400,000 Toman'), findsOneWidget);
+    expect(find.text('400,000 IRR'), findsNothing);
   });
 }
