@@ -214,7 +214,12 @@ class _WalletPageState extends State<WalletPage> {
   Future<void> _openTransfer() async {
     final result = await showDialog<(String, int)>(
       context: context,
-      builder: (context) => _TransferDialog(isEnglish: _isEnglish, maxAmount: _wallet?.availableBalance),
+      builder: (context) => _TransferDialog(
+        isEnglish: _isEnglish,
+        maxAmount: _wallet?.availableBalance,
+        maxAmountLabel:
+            _wallet == null ? null : _money(_wallet!.availableBalance),
+      ),
     );
     if (result == null) return;
     final (destination, amount) = result;
@@ -929,9 +934,14 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _TransferDialog extends StatefulWidget {
-  const _TransferDialog({required this.isEnglish, this.maxAmount});
+  const _TransferDialog({
+    required this.isEnglish,
+    this.maxAmount,
+    this.maxAmountLabel,
+  });
   final bool isEnglish;
   final int? maxAmount;
+  final String? maxAmountLabel;
 
   @override
   State<_TransferDialog> createState() => _TransferDialogState();
@@ -973,7 +983,12 @@ class _TransferDialogState extends State<_TransferDialog> {
               decoration: InputDecoration(
                 labelText: t('مبلغ به تومان', 'Amount in Toman'),
                 suffixText: t('تومان', 'TOMAN'),
-                helperText: widget.maxAmount == null ? null : t('حداکثر: ${widget.maxAmount}', 'Maximum: ${widget.maxAmount}'),
+                helperText: widget.maxAmountLabel == null
+                    ? null
+                    : t(
+                        'حداکثر: ' + widget.maxAmountLabel!,
+                        'Maximum: ' + widget.maxAmountLabel!,
+                      ),
                 errorText: errorText,
               ),
             ),
