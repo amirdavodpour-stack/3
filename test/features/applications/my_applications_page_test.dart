@@ -139,6 +139,11 @@ void main() {
   testWidgets(
       'applications refresh failure keeps existing items and exposes retry error',
       (tester) async {
+    tester.view.physicalSize = const Size(390, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final profile = _FailingProfileRepository()..fail = false;
 
     await tester.pumpWidget(
@@ -166,10 +171,16 @@ void main() {
     );
 
     profile.fail = true;
-    final refreshIndicator =
-        tester.state<RefreshIndicatorState>(find.byType(RefreshIndicator));
-    await refreshIndicator.show();
-    await tester.pumpAndSettle();
+
+    // Trigger the real pull-to-refresh gesture instead of awaiting
+    // RefreshIndicatorState.show(), which can hang when the indicator's
+    // scroll-position animation never reaches its completion condition.
+    await tester.drag(
+      find.byType(ListView),
+      const Offset(0, 320),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Design task'), findsOneWidget);
     expect(find.text('Could not load applications.'), findsWidgets);
