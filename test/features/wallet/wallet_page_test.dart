@@ -298,7 +298,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('RECONCILIATION_ENTRY').first);
+    await tester.tap(find.text('Internal transfer').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Ledger entry'), findsNothing);
