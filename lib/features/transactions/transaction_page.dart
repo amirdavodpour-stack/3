@@ -37,6 +37,7 @@ class _TransactionPageState extends State<TransactionPage> {
   HopePayment? payment;
   bool loading = true;
   String? error;
+  int _refreshRequestId = 0;
   @override
   void initState() {
     super.initState();
@@ -44,21 +45,27 @@ class _TransactionPageState extends State<TransactionPage> {
   }
 
   Future<void> refresh() async {
+    final requestId = ++_refreshRequestId;
     try {
       if (mounted) setState(() => error = null);
       final data = await TransactionController(
               repository: widget.repository, jobId: widget.jobId)
           .load();
-      if (mounted) {
-        setState(() => payment = data);
+      if (mounted && requestId == _refreshRequestId) {
+        setState(() {
+          payment = data;
+          error = null;
+        });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && requestId == _refreshRequestId) {
         setState(() => error = apiErrorMessage(e,
             fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c));
       }
     }
-    if (mounted) setState(() => loading = false);
+    if (mounted && requestId == _refreshRequestId) {
+      setState(() => loading = false);
+    }
   }
 
   Future<void> action(String operation) async {
