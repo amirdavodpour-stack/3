@@ -439,7 +439,12 @@ void main() {
       find.bySemanticsLabel('Amount in Toman'),
       '1000',
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Transfer'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, 'Transfer'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('INSUFFICIENT_FUNDS'), findsNothing);
