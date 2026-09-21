@@ -8,6 +8,9 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class _FakeOffers implements OfferRepository {
+  _FakeOffers({this.status = 'PENDING'});
+
+  final String status;
   final offers = <HopeOffer>[
     HopeOffer(
       id: 'o1',
@@ -15,7 +18,7 @@ class _FakeOffers implements OfferRepository {
       providerId: 'u1',
       price: '1234567',
       message: 'مبلغ پیشنهادی',
-      status: 'PENDING',
+      status: status,
       createdAt: '2026-09-21T00:00:00Z',
     ),
   ];
@@ -72,4 +75,29 @@ void main() {
 
     expect(texts, contains('مبلغ: 1,234,567 تومان'));
   });
+
+  testWidgets('offers do not expose unknown backend statuses',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Provider<OfferRepository>.value(
+          value: _FakeOffers(status: 'UNKNOWN_OFFER_STATE'),
+          child: const OffersPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('UNKNOWN_OFFER_STATE'), findsNothing);
+  });
+
 }
