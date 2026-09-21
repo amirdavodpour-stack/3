@@ -496,7 +496,7 @@ class _WalletPageState extends State<WalletPage> {
       case 'UNKNOWN': return _t('نیازمند بررسی', 'Needs review');
       case 'SUCCEEDED': return _t('موفق', 'Succeeded');
       case 'FAILED': return _t('ناموفق', 'Failed');
-      default: return status;
+      default: return _t('نیازمند بررسی', 'Needs review');
     }
   }
 
