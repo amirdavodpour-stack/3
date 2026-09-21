@@ -196,7 +196,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byType(PremiumStatCard).at(1),
       500,
-      scrollable: find.byType(ListView).first,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
@@ -209,7 +209,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Wallet history'),
       700,
-      scrollable: find.byType(ListView).first,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
@@ -219,7 +219,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Withdrawals'),
       700,
-      scrollable: find.byType(ListView).first,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
