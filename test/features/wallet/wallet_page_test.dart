@@ -11,6 +11,7 @@ import 'package:hope_mobile/features/wallet/wallet_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeWallet implements WalletRepository {
   _FakeWallet({
@@ -396,6 +397,7 @@ void main() {
 
   testWidgets('wallet does not expose raw API errors in action failures',
       (tester) async {
+    SharedPreferences.setMockInitialValues({});
     final auth = AuthController(_AuthRepo(), SecureStore());
     await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
     final wallet = _FakeWallet()
