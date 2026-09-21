@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
-import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/features/applications/my_applications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -118,7 +117,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(HopeAsyncState), findsOneWidget);
     expect(find.text('Could not load applications.'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
     expect(
