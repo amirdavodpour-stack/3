@@ -261,4 +261,44 @@ void main() {
     expect(find.text('Reference type'), findsOneWidget);
   });
 
+  testWidgets('wallet localizes finance copy and provider labels',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+
+    final wallet = _FakeWallet();
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Ledger entries'), findsNothing);
+    expect(find.textContaining('cursor'), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.text('برداشت‌ها'),
+      700,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('کیف پول داخلی'), findsOneWidget);
+    expect(find.text('internal'), findsNothing);
+  });
+
 }
