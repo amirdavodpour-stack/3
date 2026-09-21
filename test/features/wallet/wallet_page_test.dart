@@ -489,6 +489,8 @@ void main() {
 
     expect(find.text('Maximum: 2,500,000 Toman'), findsOneWidget);
     expect(find.text('Maximum: 2500000'), findsNothing);
+    expect(find.text('Toman'), findsOneWidget);
+    expect(find.text('TOMAN'), findsNothing);
   });
 
 }
