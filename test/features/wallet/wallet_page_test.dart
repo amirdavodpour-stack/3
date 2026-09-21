@@ -214,6 +214,52 @@ void main() {
     }
   });
 
+  testWidgets('wallet payout rows expose grouped finance semantics',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('برداشت‌ها'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    final semantics = tester.ensureSemantics();
+    try {
+      final row = find.ancestor(
+        of: find.text('درخواست‌شده'),
+        matching: find.byType(Semantics),
+      ).first;
+      final node = tester.getSemantics(row);
+      expect(node.label, '400,000 تومان، کیف پول داخلی، درخواست‌شده');
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('wallet treats backend ledger currencies as internal Toman',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
