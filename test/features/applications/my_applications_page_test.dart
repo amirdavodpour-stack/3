@@ -135,4 +135,49 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+      'applications refresh failure keeps existing items and exposes retry error',
+      (tester) async {
+    final profile = _FailingProfileRepository()..fail = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Provider<ApplicationRegistry>.value(
+          value: ApplicationRegistry(profile: profile),
+          child: const MyApplicationsPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Design task'), findsOneWidget);
+    expect(
+      find.text('You have not submitted any applications yet.'),
+      findsNothing,
+    );
+
+    profile.fail = true;
+    final refreshIndicator =
+        tester.state<RefreshIndicatorState>(find.byType(RefreshIndicator));
+    await refreshIndicator.show();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Design task'), findsOneWidget);
+    expect(find.text('Could not load applications.'), findsWidgets);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(
+      find.text('You have not submitted any applications yet.'),
+      findsNothing,
+    );
+  });
+
 }
