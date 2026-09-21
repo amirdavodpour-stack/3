@@ -868,7 +868,7 @@ class _WalletPageState extends State<WalletPage> {
                   container: true,
                   button: true,
                   excludeSemantics: true,
-                  label: '\${_money(payout.amount)}، \${_providerLabel(payout.provider)}، \${_payoutLabel(payout.status)}',
+                  label: '${_money(payout.amount)}، ${_providerLabel(payout.provider)}، ${_payoutLabel(payout.status)}',
                   onTap: () => _showPayout(payout),
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
