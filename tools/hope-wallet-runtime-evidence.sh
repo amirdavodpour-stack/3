@@ -37,12 +37,18 @@ capture_screen() {
   done
 
   echo "Timed out waiting for screenshot marker after ${timeout_seconds}s: $marker" >&2
+  echo "Collecting Android diagnostics before emulator cleanup..." >&2
+  adb devices -l > "$evidence_dir/adb-devices-timeout.txt" 2>&1 || true
+  adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-timeout.txt" 2>&1 || true
+  adb shell dumpsys activity activities > "$evidence_dir/activity-timeout.txt" 2>&1 || true
+  adb shell logcat -d -t 1000 > "$evidence_dir/logcat-timeout.txt" 2>&1 || true
   return 1
 }
 
-# The first marker can legitimately arrive after a cold Android/Gradle build.
-# Keep the wait bounded, but do not fail during the known build/install window.
-capture_screen "HOPE_SCREENSHOT_READY:wallet-fa-rtl" "wallet-fa-rtl.png" 600
+# Cold API-35 emulator boot + first Gradle/CMake build + APK install can consume
+# most of the runtime window. This deadline starts when marker capture begins and
+# therefore must leave enough headroom after installation for Flutter VM startup.
+capture_screen "HOPE_SCREENSHOT_READY:wallet-fa-rtl" "wallet-fa-rtl.png" 900
 # Once the first test is running, the second marker should follow promptly.
 capture_screen "HOPE_SCREENSHOT_READY:wallet-en-ltr" "wallet-en-ltr.png" 120
 
