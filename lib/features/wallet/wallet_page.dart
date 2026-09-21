@@ -102,12 +102,12 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  String _money(int amount, String currency) {
+  String _money(int amount) {
     final grouped = amount.toString().replaceAllMapped(
       RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'),
       (_) => ',',
     );
-    return '$grouped ${currency == 'TOMAN' ? _t('تومان', 'TOMAN') : currency}';
+    return '$grouped ${_t('تومان', 'Toman')}';
   }
 
   String _date(String? raw) {
@@ -265,7 +265,7 @@ class _WalletPageState extends State<WalletPage> {
                   suffixText: _t('تومان', 'TOMAN'),
                   helperText: maxAmount == null
                       ? _t('عدد صحیح وارد کنید.', 'Enter a whole-number amount.')
-                      : _t('حداکثر قابل استفاده: ${_money(maxAmount, _wallet?.currency ?? 'TOMAN')}', 'Maximum available: ${_money(maxAmount, _wallet?.currency ?? 'TOMAN')}'),
+                      : _t('حداکثر قابل استفاده: ${_money(maxAmount)}', 'Maximum available: ${_money(maxAmount)}'),
                   errorText: errorText,
                 ),
               ),
@@ -351,7 +351,7 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Text(_entryTitle(item), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 16),
-              _DetailRow(label: _t('مبلغ', 'Amount'), value: '${item.isCredit ? '+' : '-'}${_money(item.amount, item.currency)}'),
+              _DetailRow(label: _t('مبلغ', 'Amount'), value: '${item.isCredit ? '+' : '-'}${_money(item.amount)}'),
               _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: item.entryType),
               _DetailRow(label: _t('جهت', 'Direction'), value: item.direction),
               _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: item.referenceType),
@@ -359,7 +359,7 @@ class _WalletPageState extends State<WalletPage> {
                 _DetailRow(label: _t('شناسه مرجع', 'Reference ID'), value: item.referenceId!),
               _DetailRow(label: _t('عملیات مالی', 'Financial operation'), value: item.financialOperationId),
               if (item.balanceAfter != null)
-                _DetailRow(label: _t('موجودی پس از تراکنش', 'Balance after'), value: _money(item.balanceAfter!, item.currency)),
+                _DetailRow(label: _t('موجودی پس از تراکنش', 'Balance after'), value: _money(item.balanceAfter!)),
               _DetailRow(label: _t('زمان', 'Timestamp'), value: _date(item.createdAt)),
             ],
           ),
@@ -402,7 +402,7 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
               const SizedBox(height: 18),
-              _DetailRow(label: _t('مبلغ', 'Amount'), value: _money(payout.amount, payout.currency)),
+              _DetailRow(label: _t('مبلغ', 'Amount'), value: _money(payout.amount)),
               _DetailRow(label: _t('وضعیت', 'Status'), value: _payoutLabel(status)),
               _DetailRow(label: _t('ارائه‌دهنده', 'Provider'), value: payout.provider),
               _DetailRow(label: _t('زمان ثبت', 'Created'), value: _date(payout.createdAt)),
@@ -597,7 +597,7 @@ class _WalletPageState extends State<WalletPage> {
                     alignment: AlignmentDirectional.centerStart,
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      _money(wallet.availableBalance, wallet.currency),
+                      _money(wallet.availableBalance),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 32,
@@ -608,7 +608,7 @@ class _WalletPageState extends State<WalletPage> {
                   const SizedBox(height: 12),
                   Text(
                     _t('قفل‌شده: ', 'Locked: ') +
-                        _money(wallet.lockedBalance, wallet.currency),
+                        _money(wallet.lockedBalance),
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -682,13 +682,13 @@ class _WalletPageState extends State<WalletPage> {
               final tiles = [
                 PremiumStatCard(
                   label: _t('موجودی قابل‌استفاده', 'Available balance'),
-                  value: _money(wallet.availableBalance, wallet.currency),
+                  value: _money(wallet.availableBalance),
                   icon: Icons.account_balance_wallet_outlined,
                   caption: _t('قابل خرج یا انتقال', 'Ready to spend or transfer'),
                 ),
                 PremiumStatCard(
                   label: _t('قفل‌شده', 'Locked balance'),
-                  value: _money(wallet.lockedBalance, wallet.currency),
+                  value: _money(wallet.lockedBalance),
                   icon: Icons.lock_clock_outlined,
                   accent: secondaryAccent(context),
                   caption: _t('تا آزادسازی قابل استفاده نیست', 'Unavailable until released'),
@@ -766,7 +766,7 @@ class _WalletPageState extends State<WalletPage> {
                   subtitle: Text('${_date(item.createdAt)}\n${item.referenceType}'),
                   isThreeLine: true,
                   trailing: Text(
-                    '${item.isCredit ? '+' : '-'}${_money(item.amount, item.currency)}',
+                    '${item.isCredit ? '+' : '-'}${_money(item.amount)}',
                     textAlign: TextAlign.end,
                     style: TextStyle(fontWeight: FontWeight.w900, color: _directionColor(context, item.isCredit)),
                   ),
@@ -799,7 +799,7 @@ class _WalletPageState extends State<WalletPage> {
                     filled: true,
                     size: 44,
                   ),
-                  title: Text(_money(payout.amount, payout.currency), style: const TextStyle(fontWeight: FontWeight.w900)),
+                  title: Text(_money(payout.amount), style: const TextStyle(fontWeight: FontWeight.w900)),
                   subtitle: Text('${_date(payout.createdAt)}\n${payout.provider}'),
                   isThreeLine: true,
                   trailing: StatusPill(
