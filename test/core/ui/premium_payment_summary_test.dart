@@ -6,9 +6,9 @@ import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/ui/premium_payment_summary.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
-HopePayment _payment({String currency = 'IRR'}) => HopePayment(
+HopePayment _payment({String currency = 'IRR', String status = 'HELD'}) => HopePayment(
       id: 'p1',
-      status: 'HELD',
+      status: status,
       amount: '1000000',
       job: HopeJob.fromMap({
         'id': 'j1',
@@ -38,6 +38,31 @@ HopePayment _payment({String currency = 'IRR'}) => HopePayment(
     );
 
 void main() {
+  testWidgets('PremiumPaymentSummary safely localizes unknown payment status',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en'), Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: PremiumPaymentSummary(
+            payment: _payment(status: 'UNKNOWN_STATUS'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('UNKNOWN_STATUS'), findsNothing);
+  });
+
   testWidgets(
       'PremiumPaymentSummary always presents the current internal ledger as Toman',
       (tester) async {
