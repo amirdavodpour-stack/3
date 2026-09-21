@@ -58,7 +58,8 @@ class HopeApplication {
             'REJECTED': 'رد شد',
             'WITHDRAWN': 'پس گرفته شد',
           };
-    return labels[status.toUpperCase()] ?? status;
+    return labels[status.toUpperCase()] ??
+        (english ? 'Needs review' : 'نیازمند بررسی');
   }
 
   bool get isTerminal => const {'ACCEPTED', 'REJECTED', 'WITHDRAWN'}.contains(status.toUpperCase());
