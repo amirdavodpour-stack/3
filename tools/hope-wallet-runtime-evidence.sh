@@ -19,8 +19,10 @@ set -e
 capture_screen() {
   local marker="$1"
   local output="$2"
+  local timeout_seconds="$3"
+  local deadline=$((SECONDS + timeout_seconds))
 
-  for _ in $(seq 1 90); do
+  while (( SECONDS < deadline )); do
     if grep -q -- "$marker" "$log_file"; then
       adb wait-for-device
       adb exec-out screencap -p > "$evidence_dir/$output"
@@ -34,12 +36,15 @@ capture_screen() {
     sleep 2
   done
 
-  echo "Timed out waiting for screenshot marker: $marker" >&2
+  echo "Timed out waiting for screenshot marker after ${timeout_seconds}s: $marker" >&2
   return 1
 }
 
-capture_screen "HOPE_SCREENSHOT_READY:wallet-fa-rtl" "wallet-fa-rtl.png"
-capture_screen "HOPE_SCREENSHOT_READY:wallet-en-ltr" "wallet-en-ltr.png"
+# The first marker can legitimately arrive after a cold Android/Gradle build.
+# Keep the wait bounded, but do not fail during the known build/install window.
+capture_screen "HOPE_SCREENSHOT_READY:wallet-fa-rtl" "wallet-fa-rtl.png" 600
+# Once the first test is running, the second marker should follow promptly.
+capture_screen "HOPE_SCREENSHOT_READY:wallet-en-ltr" "wallet-en-ltr.png" 120
 
 set +e
 wait "$test_pid"
