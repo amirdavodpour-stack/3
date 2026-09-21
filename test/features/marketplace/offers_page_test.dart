@@ -8,20 +8,21 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class _FakeOffers implements OfferRepository {
-  _FakeOffers({this.status = 'PENDING'});
+  _FakeOffers({this.status = 'PENDING'})
+      : offers = <HopeOffer>[
+          HopeOffer(
+            id: 'o1',
+            jobId: 'j1',
+            providerId: 'u1',
+            price: '1234567',
+            message: 'مبلغ پیشنهادی',
+            status: status,
+            createdAt: '2026-09-21T00:00:00Z',
+          ),
+        ];
 
   final String status;
-  final offers = <HopeOffer>[
-    HopeOffer(
-      id: 'o1',
-      jobId: 'j1',
-      providerId: 'u1',
-      price: '1234567',
-      message: 'مبلغ پیشنهادی',
-      status: status,
-      createdAt: '2026-09-21T00:00:00Z',
-    ),
-  ];
+  final List<HopeOffer> offers;
 
   @override
   Future<List<HopeOffer>> listForJob(String jobId) async => offers;
