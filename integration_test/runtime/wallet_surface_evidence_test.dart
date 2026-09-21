@@ -132,16 +132,25 @@ Future<void> _pumpWallet(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+
+  // WalletPage contains a repeating shimmer while data is pending.
+  // Do not wait for global animation quiescence; advance a bounded frame
+  // window so the real rendered surface can be asserted and captured.
+  await tester.pump(const Duration(milliseconds: 800));
 
   expect(find.byType(WalletPage), findsOneWidget);
-  expect(find.textContaining(
-    locale.languageCode == 'fa' ? '2,500,000 تومان' : '2,500,000 Toman',
-  ), findsWidgets);
   expect(
-    find.text(locale.languageCode == 'fa'
-        ? 'موجودی قابل‌استفاده'
-        : 'Available balance'),
+    find.textContaining(
+      locale.languageCode == 'fa' ? '2,500,000 تومان' : '2,500,000 Toman',
+    ),
+    findsWidgets,
+  );
+  expect(
+    find.text(
+      locale.languageCode == 'fa'
+          ? 'موجودی قابل‌استفاده'
+          : 'Available balance',
+    ),
     findsWidgets,
   );
 }
