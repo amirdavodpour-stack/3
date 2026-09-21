@@ -820,10 +820,16 @@ class _WalletPageState extends State<WalletPage> {
               child: HopeSurface(
                 radius: 18,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
+                child: Semantics(
+                  container: true,
+                  button: true,
+                  excludeSemantics: true,
+                  label: '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${item.isCredit ? '+' : '-'}${_money(item.amount)}',
                   onTap: () => _showTransaction(item),
-                  leading: HopeIconTile(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => _showTransaction(item),
+                    leading: HopeIconTile(
                     _directionIcon(item.isCredit),
                     color: _directionColor(context, item.isCredit),
                     filled: true,
@@ -836,6 +842,7 @@ class _WalletPageState extends State<WalletPage> {
                     '${item.isCredit ? '+' : '-'}${_money(item.amount)}',
                     textAlign: TextAlign.end,
                     style: TextStyle(fontWeight: FontWeight.w900, color: _directionColor(context, item.isCredit)),
+                  ),
                   ),
                 ),
               ),
