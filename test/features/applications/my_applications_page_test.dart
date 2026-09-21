@@ -185,7 +185,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Design task'),
       600,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.byType(ListView).first,
     );
     expect(find.text('Design task'), findsOneWidget);
     expect(find.text('Could not load applications.'), findsWidgets);

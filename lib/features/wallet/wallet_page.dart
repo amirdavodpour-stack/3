@@ -53,9 +53,10 @@ class _WalletPageState extends State<WalletPage> {
 
   Future<void> _load() async {
     if (!mounted) return;
+    final hasExistingWallet = _wallet != null;
     setState(() {
-      _loading = true;
       _error = null;
+      if (!hasExistingWallet) _loading = true;
     });
     try {
       final wallet = await widget.repository.getWallet();
@@ -558,7 +559,7 @@ class _WalletPageState extends State<WalletPage> {
       );
     }
 
-    if (_loading) {
+    if (_loading && _wallet == null) {
       return HopeAsyncState(
         kind: HopeStateKind.loading,
         title: _t('در حال بارگذاری', 'Loading wallet'),
@@ -568,7 +569,7 @@ class _WalletPageState extends State<WalletPage> {
         ),
       );
     }
-    if (_error != null || _wallet == null) {
+    if (_wallet == null) {
       return RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -601,6 +602,22 @@ class _WalletPageState extends State<WalletPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
+            if (_error != null) ...[
+              HopeAsyncState(
+                kind: HopeStateKind.error,
+                title: _t('به‌روزرسانی کیف پول ناموفق بود', 'Wallet refresh failed'),
+                message: _t(
+                  'اطلاعات قبلی حفظ شده است. وضعیت را دوباره بررسی کنید.',
+                  'The last loaded wallet data is preserved. Refresh to try again.',
+                ),
+                action: OutlinedButton.icon(
+                  onPressed: _load,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(_t('تلاش دوباره', 'Try again')),
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
             PremiumHeader(
               eyebrow: _t('مالی', 'FINANCE'),
               title: _t('کیف پول', 'Wallet'),
