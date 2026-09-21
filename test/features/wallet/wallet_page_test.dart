@@ -297,6 +297,10 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
+
+    await tester.tap(find.text('400,000 تومان'));
+    await tester.pumpAndSettle();
+
     expect(find.text('کیف پول داخلی'), findsOneWidget);
     expect(find.text('internal'), findsNothing);
   });
