@@ -224,7 +224,7 @@ extension on _TransactionPageState {
                 Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: StatusPill(
-                    job.status ?? 'UNKNOWN',
+                    _jobStatusLabel(job.status),
                     color: AppColors.muted,
                     icon: Icons.work_history_outlined,
                   ),
