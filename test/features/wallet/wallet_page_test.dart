@@ -114,7 +114,7 @@ void main() {
               ChangeNotifierProvider.value(value: auth),
               Provider<WalletRepository>.value(value: _FakeWallet()),
             ],
-            child: const WalletPage(repository: _FakeWallet()),
+            child: WalletPage(repository: _FakeWallet()),
           ),
         ),
       );
