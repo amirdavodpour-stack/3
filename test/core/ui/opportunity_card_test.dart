@@ -36,8 +36,17 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('1,000,000 تومان'), findsOneWidget);
-    expect(find.textContaining('1,500,000 تومان'), findsOneWidget);
+    final amountTexts = find
+        .byWidgetPredicate(
+          (widget) =>
+              widget is Text && (widget.data?.contains('تومان') ?? false),
+        )
+        .evaluate()
+        .map((element) => (element.widget as Text).data)
+        .whereType<String>()
+        .toList();
+    expect(amountTexts, contains('1,000,000 تومان'));
+    expect(amountTexts, contains('1,500,000 تومان'));
   });
 
   testWidgets('opportunity card labels mission budget in Toman',
