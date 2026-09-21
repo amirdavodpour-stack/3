@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
+import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/features/applications/my_applications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +19,67 @@ class _FakeProfileRepository implements ProfileRepository {
 
   @override
   Future<List<HopeApplication>> listApplications() async => [application];
+
+  @override
+  Future<HopeApplication> withdrawApplication(String applicationId) =>
+      throw UnimplementedError();
+  testWidgets('applications load failure shows explicit error state with retry',
+      (tester) async {
+    final profile = _FailingProfileRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Provider<ApplicationRegistry>.value(
+          value: ApplicationRegistry(profile: profile),
+          child: const MyApplicationsPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HopeAsyncState), findsOneWidget);
+    expect(find.text('Could not load applications.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(
+      find.text('You have not submitted any applications yet.'),
+      findsNothing,
+    );
+  });
+
+}
+
+
+class _FailingProfileRepository implements ProfileRepository {
+  bool fail = true;
+  final HopeApplication application = HopeApplication(
+    id: 'app-1',
+    jobId: 'job-1',
+    jobTitle: 'Design task',
+    jobCity: 'Berlin',
+    jobKind: 'JOB',
+    resumeText: '',
+    skills: '',
+    status: 'PENDING',
+    createdAt: null,
+    updatedAt: null,
+  );
+
+  @override
+  Future<HopeProviderProfile> getProviderProfile() => throw UnimplementedError();
+
+  @override
+  Future<List<HopeApplication>> listApplications() async {
+    if (fail) throw StateError('applications unavailable');
+    return [application];
+  }
 
   @override
   Future<HopeApplication> withdrawApplication(String applicationId) =>
