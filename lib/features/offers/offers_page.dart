@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/marketplace/application.dart';
 import '../../core/marketplace/offer_repository.dart';
@@ -23,6 +24,11 @@ class _OffersPageState extends State<OffersPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  String _money(String value) {
+    final parsed = int.tryParse(value.trim());
+    if (parsed == null) return value;
+    return '\${NumberFormat.decimalPattern('en_US').format(parsed)} \${_t('تومان', 'Toman')}';
+  }
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
@@ -169,7 +175,7 @@ class _OffersPageState extends State<OffersPage> {
             Row(children:[
               const HopeIconTile(Icons.sell_outlined,filled:true),
               const SizedBox(width:10),
-              Expanded(child:Text('${_t('مبلغ','Amount')}: ${o.price}',style:Theme.of(context).textTheme.titleMedium)),
+              Expanded(child:Text('${_t('مبلغ','Amount')}: ${_money(o.price)}',style:Theme.of(context).textTheme.titleMedium)),
               StatusPill(_statusLabel(o.status), color: _statusColor(context, o.status)),
             ]),
             if(o.message.trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:10),child:Text(o.message,maxLines:3,overflow:TextOverflow.ellipsis)),
@@ -216,7 +222,7 @@ class _OffersPageState extends State<OffersPage> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.payments_outlined),
                   title: Text(_t('مبلغ','Amount')),
-                  subtitle: Text(detail.price),
+                  subtitle: Text(_money(detail.price)),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
