@@ -53,12 +53,26 @@ assert_hope_focused() {
   local current_focus
   current_focus="$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
 
-  if ! grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus"; then
-    echo "Rendered evidence rejected: HOPE app is not the focused Android window." >&2
-    capture_android_diagnostics "$prefix"
-    return 1
+  # Android 35's "dumpsys window windows" output may omit mCurrentFocus even
+  # while the target activity is RESUMED and is both the IME input/control
+  # target. Treat that representation change as a harness compatibility case:
+  # fall back to the activity manager's topResumedActivity evidence instead of
+  # falsely rejecting a valid rendered frame.
+  if [ -n "$current_focus" ]; then
+    if ! grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus"; then
+      echo "Rendered evidence rejected: HOPE app is not the focused Android window." >&2
+      capture_android_diagnostics "$prefix"
+      return 1
+    fi
+  else
+    local activity_dump="$evidence_dir/activity-${prefix}.txt"
+    adb shell dumpsys activity activities > "$activity_dump" 2>&1 || true
+    if ! grep -q "topResumedActivity=.*com.hope.marketplace/.MainActivity" "$activity_dump"; then
+      echo "Rendered evidence rejected: HOPE MainActivity is not the top resumed Android activity." >&2
+      capture_android_diagnostics "$prefix"
+      return 1
+    fi
   fi
-
   # An Android ANR dialog can itself contain the HOPE package name
   # (e.g. "Application Not Responding: com.hope.marketplace"), so checking only
   # for the package name is insufficient. Reject any visible ANR/error dialog
