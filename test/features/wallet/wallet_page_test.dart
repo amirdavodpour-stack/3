@@ -101,6 +101,55 @@ class _FakeWallet implements WalletRepository {
       const {};
 }
 
+class _SequencedWallet implements WalletRepository {
+  final Completer<HopeWallet> firstWallet = Completer<HopeWallet>();
+  int calls = 0;
+
+  HopeWallet _wallet(String id, int availableBalance) => HopeWallet.fromMap({
+        'id': id,
+        'userId': 'u1',
+        'currency': 'TOMAN',
+        'availableBalance': availableBalance,
+        'lockedBalance': 1000000,
+        'status': 'ACTIVE',
+      });
+
+  @override
+  Future<HopeWallet> getWallet() {
+    calls += 1;
+    if (calls == 1) return firstWallet.future;
+    return Future<HopeWallet>.value(_wallet('fresh-wallet', 7000000));
+  }
+
+  @override
+  Future<WalletTransactionsPage> listTransactions({
+    int limit = 30,
+    String? cursor,
+  }) async => WalletTransactionsPage(items: []);
+
+  @override
+  Future<List<HopePayout>> listPayouts() async => const [];
+
+  @override
+  Future<Map<String, dynamic>> transfer({
+    required String destinationWalletId,
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+
+  @override
+  Future<Map<String, dynamic>> requestPayout({
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+
+  @override
+  Future<Map<String, dynamic>> topUp({
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+}
+
 class _AuthRepo implements AuthRepository {
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
@@ -117,6 +166,59 @@ class _AuthRepo implements AuthRepository {
 }
 
 void main() {
+  testWidgets('latest wallet refresh wins over an older in-flight load',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _SequencedWallet();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.drag(
+      find.byType(ListView),
+      const Offset(0, 420),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(wallet.calls, 2);
+    expect(find.textContaining('7,000,000 Toman'), findsWidgets);
+
+    wallet.firstWallet.complete(
+      HopeWallet.fromMap({
+        'id': 'stale-wallet',
+        'userId': 'u1',
+        'currency': 'TOMAN',
+        'availableBalance': 1000000,
+        'lockedBalance': 1000000,
+        'status': 'ACTIVE',
+      }),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('7,000,000 Toman'), findsWidgets);
+    expect(find.textContaining('1,000,000 Toman'), findsNothing);
+  });
+
   testWidgets(
     'wallet keeps available, locked and pending payout metrics distinct',
     (tester) async {

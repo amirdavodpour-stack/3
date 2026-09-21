@@ -40,6 +40,7 @@ class _WalletPageState extends State<WalletPage> {
   bool _loadingMore = false;
   bool _actionBusy = false;
   String _historyFilter = 'ALL';
+  int _loadRequestId = 0;
 
   bool get _isEnglish => Localizations.localeOf(context).languageCode == 'en';
 
@@ -53,6 +54,7 @@ class _WalletPageState extends State<WalletPage> {
 
   Future<void> _load() async {
     if (!mounted) return;
+    final requestId = ++_loadRequestId;
     final hasExistingWallet = _wallet != null;
     setState(() {
       _error = null;
@@ -62,7 +64,7 @@ class _WalletPageState extends State<WalletPage> {
       final wallet = await widget.repository.getWallet();
       final page = await widget.repository.listTransactions(limit: 30);
       final payouts = await widget.repository.listPayouts();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _wallet = wallet;
         _transactions = page.items;
@@ -71,7 +73,7 @@ class _WalletPageState extends State<WalletPage> {
         _loading = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _error = error;
         _loading = false;
