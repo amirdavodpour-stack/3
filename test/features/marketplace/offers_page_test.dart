@@ -77,6 +77,37 @@ void main() {
     expect(texts, contains('مبلغ: 1,234,567 تومان'));
   });
 
+  testWidgets('offer cards expose grouped financial semantics',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Provider<OfferRepository>.value(
+          value: _FakeOffers(),
+          child: const OffersPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final semantics = tester.ensureSemantics();
+    try {
+      final node = tester.getSemantics(
+        find.bySemanticsLabel('جزئیات پیشنهاد o1'),
+      );
+      expect(node.label, 'پیشنهاد o1، مبلغ 1,234,567 تومان، در انتظار بررسی');
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('offers do not expose unknown backend statuses',
       (tester) async {
     await tester.pumpWidget(
