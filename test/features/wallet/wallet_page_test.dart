@@ -196,7 +196,7 @@ void main() {
     expect(find.textContaining('IRR'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.textContaining('500,000 Toman'),
+      find.text('+500,000 Toman'),
       500,
       scrollable: find.byType(Scrollable).first,
     );
