@@ -1,0 +1,15 @@
+name: HOPE Android isolated certification
+
+on:
+  push:
+    branches:
+      - hope/android-certification-ephemeral-2026-09-17
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    uses: ./.github/workflows/device-integration.yml
+    secrets:
+      API_BASE_URL_STAGING: ${{ secrets.API_BASE_URL_STAGING }}
