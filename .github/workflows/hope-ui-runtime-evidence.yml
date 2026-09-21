@@ -62,10 +62,11 @@ jobs:
         run: flutter build apk --debug --no-pub
 
       - name: Verify reusable debug APK
-        run: test -s "$HOPE_PREBUILT_APK"
+        run: test -s "\$HOPE_PREBUILT_APK"
 
       - name: Android runtime evidence
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        # Immutable pin to upstream fix PR #495 for android-emulator-runner issue #432.
+        uses: reactivecircus/android-emulator-runner@831d1a14052fea0bb78aae8763a8573ad003a9ee1
         with:
           api-level: 35
           arch: x86_64
