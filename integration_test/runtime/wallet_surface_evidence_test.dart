@@ -160,7 +160,10 @@ void main() {
 
   testWidgets('Wallet runtime rendered evidence — fa RTL', (tester) async {
     await _pumpWallet(tester, locale: const Locale('fa'));
-    await binding.convertFlutterSurfaceToImage();
+    // The runtime harness captures the native Android surface with adb.
+    // convertFlutterSurfaceToImage() is intentionally avoided here because
+    // Flutter documents it as an expensive Android operation and it is not
+    // needed for host-side native screencap evidence.
     await tester.pump();
     print('HOPE_SCREENSHOT_READY:wallet-fa-rtl');
     await Future<void>.delayed(const Duration(seconds: 4));
@@ -168,7 +171,6 @@ void main() {
 
   testWidgets('Wallet runtime rendered evidence — en LTR', (tester) async {
     await _pumpWallet(tester, locale: const Locale('en'));
-    await binding.convertFlutterSurfaceToImage();
     await tester.pump();
     print('HOPE_SCREENSHOT_READY:wallet-en-ltr');
     await Future<void>.delayed(const Duration(seconds: 4));
