@@ -170,8 +170,22 @@ void main() {
       ..jobs = [_job('unknown', status: 'UNKNOWN_STATE')];
     await _pump(tester, repo);
 
-    expect(find.text('UNKNOWN_STATE'), findsNothing);
-    expect(find.text('نیازمند بررسی'), findsWidgets);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.data == 'وضعیت کار: UNKNOWN_STATE',
+      ),
+      findsNothing,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.data == 'وضعیت کار: نیازمند بررسی',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('transactions still render when payment lookup is unavailable',
