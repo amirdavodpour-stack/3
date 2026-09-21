@@ -21,8 +21,6 @@ jobs:
     name: Wallet Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
-    env:
-      HOPE_PREBUILT_APK: ${{ github.workspace }}/build/app/outputs/flutter-apk/app-debug.apk
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -79,11 +77,6 @@ jobs:
       - name: Prepare Flutter dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Build reusable debug APK
-        run: flutter build apk --debug --no-pub
-
-      - name: Verify reusable debug APK
-        run: test -s "$HOPE_PREBUILT_APK"
 
       - name: Android runtime evidence
         # Local execution of the immutable PR #495 fix commit avoids relying on fork-packaged node_modules.
