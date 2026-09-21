@@ -166,11 +166,14 @@ class _OffersPageState extends State<OffersPage> {
   Widget _card(HopeOffer o)=>Padding(
     padding:const EdgeInsets.only(bottom:10),
     child:Semantics(
+      container:true,
+      explicitChildNodes:true,
       button:true,
-      label:_t('جزئیات پیشنهاد ${o.id}','Offer ${o.id} details'),
+      label:_t('پیشنهاد ${o.id}، مبلغ ${_money(o.price)}، ${_statusLabel(o.status)}','Offer ${o.id}, amount ${_money(o.price)}, ${_statusLabel(o.status)}'),
+      onTap:()=>_showDetails(o),
       child:InkWell(
+        excludeFromSemantics:true,
         borderRadius:BorderRadius.circular(18),
-        onTap:()=>_showDetails(o),
         child:PremiumPanel(
           padding:const EdgeInsets.all(15),
           child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
