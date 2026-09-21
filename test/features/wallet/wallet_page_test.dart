@@ -168,6 +168,47 @@ void main() {
     },
   );
 
+  testWidgets('wallet transaction rows expose grouped finance semantics',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('انتقال داخلی'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
+    expect(
+      find.bySemanticsLabel('انتقال داخلی، ورودی، +500,000 تومان'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('wallet treats backend ledger currencies as internal Toman',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
