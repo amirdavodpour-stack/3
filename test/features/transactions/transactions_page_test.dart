@@ -164,6 +164,16 @@ void main() {
     expect(find.text('پروژه b'), findsOneWidget);
   });
 
+  testWidgets('transactions safely localize unknown job status',
+      (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('unknown', status: 'UNKNOWN_STATE')];
+    await _pump(tester, repo);
+
+    expect(find.text('UNKNOWN_STATE'), findsNothing);
+    expect(find.text('نیازمند بررسی'), findsWidgets);
+  });
+
   testWidgets('transactions still render when payment lookup is unavailable',
       (tester) async {
     final repo = _Transactions()
