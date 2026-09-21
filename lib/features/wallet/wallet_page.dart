@@ -117,16 +117,65 @@ class _WalletPageState extends State<WalletPage> {
     return '${parsed.year}/${parsed.month.toString().padLeft(2, '0')}/${parsed.day.toString().padLeft(2, '0')} · ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
   }
 
-  String _entryTitle(HopeWalletTransaction item) {
-    final type = item.referenceType.toUpperCase();
+  String _walletStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return _t('فعال', 'Active');
+      case 'INACTIVE':
+        return _t('غیرفعال', 'Inactive');
+      case 'SUSPENDED':
+        return _t('تعلیق‌شده', 'Suspended');
+      case 'LOCKED':
+        return _t('قفل‌شده', 'Locked');
+      default:
+        return _t('نیازمند بررسی', 'Needs review');
+    }
+  }
+
+  String _referenceTypeLabel(String value) {
+    final type = value.toUpperCase();
     if (type.contains('TRANSFER')) return _t('انتقال داخلی', 'Internal transfer');
     if (type.contains('TOP_UP')) return _t('شارژ کیف پول', 'Wallet top-up');
     if (type.contains('PAYOUT') || type.contains('WITHDRAW')) return _t('برداشت', 'Withdrawal');
     if (type.contains('HOLD')) return _t('رزرو مبلغ', 'Funds held');
     if (type.contains('RELEASE')) return _t('آزادسازی مبلغ', 'Funds released');
     if (type.contains('REFUND')) return _t('بازگشت وجه', 'Refund');
-    return item.entryType.isEmpty ? _t('تراکنش کیف پول', 'Wallet transaction') : item.entryType;
+    return _t('سایر فعالیت‌ها', 'Other activity');
   }
+
+  String _entryTypeLabel(String value) {
+    switch (value.toUpperCase()) {
+      case 'TRANSFER':
+        return _t('انتقال داخلی', 'Internal transfer');
+      case 'TOP_UP':
+        return _t('شارژ کیف پول', 'Wallet top-up');
+      case 'PAYOUT':
+      case 'WITHDRAW':
+        return _t('برداشت', 'Withdrawal');
+      case 'HOLD':
+        return _t('رزرو مبلغ', 'Funds held');
+      case 'RELEASE':
+        return _t('آزادسازی مبلغ', 'Funds released');
+      case 'REFUND':
+        return _t('بازگشت وجه', 'Refund');
+      default:
+        return _t('ثبت مالی', 'Ledger entry');
+    }
+  }
+
+  String _directionLabel(String value) {
+    switch (value.toUpperCase()) {
+      case 'CREDIT':
+        return _t('ورودی', 'Credit');
+      case 'DEBIT':
+        return _t('خروجی', 'Debit');
+      default:
+        return _t('نامشخص', 'Unknown');
+    }
+  }
+
+  String _entryTitle(HopeWalletTransaction item) =>
+      _referenceTypeLabel(item.referenceType);
 
   Color _directionColor(BuildContext context, bool credit) {
     final colors = Theme.of(context).colorScheme;
@@ -352,9 +401,9 @@ class _WalletPageState extends State<WalletPage> {
               Text(_entryTitle(item), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 16),
               _DetailRow(label: _t('مبلغ', 'Amount'), value: '${item.isCredit ? '+' : '-'}${_money(item.amount)}'),
-              _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: item.entryType),
-              _DetailRow(label: _t('جهت', 'Direction'), value: item.direction),
-              _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: item.referenceType),
+              _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: _entryTypeLabel(item.entryType)),
+              _DetailRow(label: _t('جهت', 'Direction'), value: _directionLabel(item.direction)),
+              _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: _referenceTypeLabel(item.referenceType)),
               if (item.referenceId != null && item.referenceId!.isNotEmpty)
                 _DetailRow(label: _t('شناسه مرجع', 'Reference ID'), value: item.referenceId!),
               _DetailRow(label: _t('عملیات مالی', 'Financial operation'), value: item.financialOperationId),
@@ -576,7 +625,7 @@ class _WalletPageState extends State<WalletPage> {
                       ),
                       const Spacer(),
                       StatusPill(
-                        wallet.status,
+                        _walletStatusLabel(wallet.status),
                         color: Colors.white,
                         icon: wallet.isActive
                             ? Icons.check_circle_outline
@@ -763,7 +812,7 @@ class _WalletPageState extends State<WalletPage> {
                     size: 44,
                   ),
                   title: Text(_entryTitle(item), style: const TextStyle(fontWeight: FontWeight.w800)),
-                  subtitle: Text('${_date(item.createdAt)}\n${item.referenceType}'),
+                  subtitle: Text('${_date(item.createdAt)}\n${_referenceTypeLabel(item.referenceType)}'),
                   isThreeLine: true,
                   trailing: Text(
                     '${item.isCredit ? '+' : '-'}${_money(item.amount)}',
