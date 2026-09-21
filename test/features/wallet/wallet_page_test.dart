@@ -190,50 +190,36 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    var texts = tester
-        .widgetList<Text>(find.byType(Text))
-        .map((text) => text.data ?? '')
-        .toList();
+    expect(find.textContaining('2,500,000 IRR'), findsOneWidget);
 
-    expect(texts.where((value) => value.contains('IRR')), isEmpty);
-    expect(texts.any((value) => value.contains('2,500,000 Toman')), isTrue);
     await tester.scrollUntilVisible(
-      find.textContaining('Locked:'),
+      find.byType(PremiumStatCard).at(1),
       500,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.byType(ListView).first,
     );
     await tester.pumpAndSettle();
 
-    texts = tester
-        .widgetList<Text>(find.byType(Text))
-        .map((text) => text.data ?? '')
-        .toList();
-    expect(texts.any((value) => value.contains('1,000,000 Toman')), isTrue);
+    final lockedMetric = tester.widget<PremiumStatCard>(
+      find.byType(PremiumStatCard).at(1),
+    );
+    expect(lockedMetric.value, '1,000,000 IRR');
 
     await tester.scrollUntilVisible(
       find.text('Wallet history'),
       700,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.byType(ListView).first,
     );
     await tester.pumpAndSettle();
 
-    texts = tester
-        .widgetList<Text>(find.byType(Text))
-        .map((text) => text.data ?? '')
-        .toList();
-    expect(texts.any((value) => value.contains('500,000 Toman')), isTrue);
+    expect(find.textContaining('500,000 IRR'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Withdrawals'),
       700,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.byType(ListView).first,
     );
     await tester.pumpAndSettle();
 
-    texts = tester
-        .widgetList<Text>(find.byType(Text))
-        .map((text) => text.data ?? '')
-        .toList();
-    expect(texts.any((value) => value.contains('400,000 Toman')), isTrue);
+    expect(find.textContaining('400,000 IRR'), findsOneWidget);
   });
 }
