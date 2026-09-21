@@ -16,11 +16,13 @@ class _FakeWallet implements WalletRepository {
     this.currency = 'TOMAN',
     this.transactionCurrency = 'TOMAN',
     this.payoutCurrency = 'TOMAN',
+    this.payoutStatus = 'REQUESTED',
   });
 
   final String currency;
   final String transactionCurrency;
   final String payoutCurrency;
+  final String payoutStatus;
 
   @override
   Future<HopeWallet> getWallet() async => HopeWallet.fromMap({
@@ -60,7 +62,7 @@ class _FakeWallet implements WalletRepository {
           'amount': 400000,
           'currency': payoutCurrency,
           'provider': 'internal',
-          'status': 'REQUESTED',
+          'status': payoutStatus,
           'idempotencyKey': 'key-1',
         }),
       ];
@@ -259,6 +261,46 @@ void main() {
     expect(find.text('CREDIT'), findsNothing);
     expect(find.text('Entry type'), findsOneWidget);
     expect(find.text('Reference type'), findsOneWidget);
+  });
+
+  testWidgets('wallet uses a safe localized fallback for unknown payout statuses',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+
+    final wallet = _FakeWallet(payoutStatus: 'AWAITING_PROVIDER_RECONCILIATION');
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('400,000 Toman'),
+      700,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('400,000 Toman'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('AWAITING_PROVIDER_RECONCILIATION'), findsNothing);
   });
 
   testWidgets('wallet localizes finance copy and provider labels',
