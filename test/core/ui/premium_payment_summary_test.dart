@@ -125,8 +125,10 @@ void main() {
         node.label,
         'Payment status: Funds held, amount 1,000,000 Toman',
       );
+      final directChildren = <SemanticsNode>[];
+      node.visitChildren(directChildren.add);
       expect(
-        node.children.where(
+        directChildren.where(
           (child) => child.label == 'Payment details, Funds held',
         ),
         isEmpty,
