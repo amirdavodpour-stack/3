@@ -56,6 +56,7 @@ class _WalletPageState extends State<WalletPage> {
     final hasExistingWallet = _wallet != null;
     setState(() {
       _error = null;
+      _loadingMore = false;
       if (!hasExistingWallet) _loading = true;
     });
     try {
@@ -82,20 +83,21 @@ class _WalletPageState extends State<WalletPage> {
   Future<void> _loadMore() async {
     final cursor = _nextCursor;
     if (_loadingMore || cursor == null || cursor.isEmpty) return;
+    final requestId = _loadRequestId;
     setState(() => _loadingMore = true);
     try {
       final page = await widget.repository.listTransactions(
         limit: 30,
         cursor: cursor,
       );
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _transactions = [..._transactions, ...page.items];
         _nextCursor = page.nextCursor;
         _loadingMore = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() => _loadingMore = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('بارگذاری بیشتر انجام نشد.', 'Could not load more transactions.'))),

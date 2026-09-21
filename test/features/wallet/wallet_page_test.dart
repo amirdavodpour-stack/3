@@ -101,6 +101,73 @@ class _FakeWallet implements WalletRepository {
       const {};
 }
 
+class _PagedWallet implements WalletRepository {
+  final Completer<WalletTransactionsPage> olderPage =
+      Completer<WalletTransactionsPage>();
+  int transactionCalls = 0;
+
+  HopeWallet _wallet(int balance) => HopeWallet.fromMap({
+        'id': 'wallet-1',
+        'userId': 'u1',
+        'currency': 'TOMAN',
+        'availableBalance': balance,
+        'lockedBalance': 1000000,
+        'status': 'ACTIVE',
+      });
+
+  HopeWalletTransaction _tx(String id, int amount) =>
+      HopeWalletTransaction.fromMap({
+        'id': id,
+        'entryType': 'TRANSFER',
+        'direction': 'CREDIT',
+        'amount': amount,
+        'currency': 'TOMAN',
+        'referenceType': 'TRANSFER',
+        'financialOperationId': 'op-$id',
+        'createdAt': '2026-09-21T00:00:00Z',
+      });
+
+  @override
+  Future<HopeWallet> getWallet() async => _wallet(2500000);
+
+  @override
+  Future<WalletTransactionsPage> listTransactions({
+    int limit = 30,
+    String? cursor,
+  }) async {
+    transactionCalls += 1;
+    if (cursor == null) {
+      return WalletTransactionsPage(
+        items: [_tx('fresh', 7000000)],
+        nextCursor: 'cursor-1',
+      );
+    }
+    return olderPage.future;
+  }
+
+  @override
+  Future<List<HopePayout>> listPayouts() async => const [];
+
+  @override
+  Future<Map<String, dynamic>> transfer({
+    required String destinationWalletId,
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+
+  @override
+  Future<Map<String, dynamic>> requestPayout({
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+
+  @override
+  Future<Map<String, dynamic>> topUp({
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+}
+
 class _AuthRepo implements AuthRepository {
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
@@ -117,6 +184,64 @@ class _AuthRepo implements AuthRepository {
 }
 
 void main() {
+  testWidgets(
+    'refresh invalidates an older wallet load-more response',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _PagedWallet();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Load more'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Load more'));
+      await tester.pump();
+
+      await tester.fling(
+        find.byType(ListView).first,
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('7,000,000 Toman'), findsOneWidget);
+
+      wallet.olderPage.complete(
+        WalletTransactionsPage(
+          items: [_PagedWallet()._tx('stale', 9999999)],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('9,999,999 Toman'), findsNothing);
+      expect(find.text('7,000,000 Toman'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'wallet keeps available, locked and pending payout metrics distinct',
     (tester) async {
