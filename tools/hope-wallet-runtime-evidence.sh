@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-evidence_dir="\${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
+evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
 mkdir -p "$evidence_dir"
 
-runner_temp="\${RUNNER_TEMP:-/tmp}"
+runner_temp="${RUNNER_TEMP:-/tmp}"
 log_file="$runner_temp/hope-wallet-runtime.log"
 rm -f "$log_file"
 : > "$log_file"
@@ -52,10 +52,10 @@ adb shell wm size > "$evidence_dir/viewport.txt"
 
 cat > "$evidence_dir/metadata.json" <<EOF
 {
-  "workflow": "\${GITHUB_WORKFLOW}",
-  "run_id": "\${GITHUB_RUN_ID}",
-  "ref": "\${GITHUB_REF_NAME}",
-  "sha": "\${GITHUB_SHA}",
+  "workflow": "${GITHUB_WORKFLOW}",
+  "run_id": "${GITHUB_RUN_ID}",
+  "ref": "${GITHUB_REF_NAME}",
+  "sha": "${GITHUB_SHA}",
   "surface": "WalletPage",
   "evidence_type": "rendered_android_runtime",
   "locales": ["fa-RTL", "en-LTR"],
