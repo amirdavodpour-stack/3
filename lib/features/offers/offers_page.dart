@@ -6,6 +6,7 @@ import '../../core/marketplace/offer_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_async_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
 
@@ -16,11 +17,45 @@ class OffersPage extends StatefulWidget {
 }
 
 class _OffersPageState extends State<OffersPage> {
-  late Future<List<HopeOffer>> _future;
+  List<HopeOffer> _items = const [];
+  Object? _loadError;
+  bool _loading = true;
+  int _reloadRequestId = 0;
   String _filter='ALL';
 
-  @override void initState(){super.initState(); _reload();}
-  void _reload(){ final r=context.read<OfferRepository>(); _future=widget.jobId==null?r.listMine():r.listForJob(widget.jobId!); if(mounted)setState((){}); }
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    if (!mounted) return;
+    final requestId = ++_reloadRequestId;
+    final repository = context.read<OfferRepository>();
+    final hasExistingItems = _items.isNotEmpty;
+    setState(() {
+      _loadError = null;
+      if (!hasExistingItems) _loading = true;
+    });
+    try {
+      final items = widget.jobId == null
+          ? await repository.listMine()
+          : await repository.listForJob(widget.jobId!);
+      if (!mounted || requestId != _reloadRequestId) return;
+      setState(() {
+        _items = items;
+        _loading = false;
+        _loadError = null;
+      });
+    } catch (error) {
+      if (!mounted || requestId != _reloadRequestId) return;
+      setState(() {
+        _loading = false;
+        _loadError = error;
+      });
+    }
+  }
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
@@ -59,6 +94,15 @@ class _OffersPageState extends State<OffersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final all = _items;
+    final rows = _filter == 'ALL'
+        ? all
+        : all.where((x) => x.status.toUpperCase() == _filter).toList();
+
+    if (_loading && _items.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.jobId == null
@@ -72,93 +116,75 @@ class _OffersPageState extends State<OffersPage> {
           ),
         ],
       ),
-      body: FutureBuilder<List<HopeOffer>>(
-        future: _future,
-        builder: (context, s) {
-          if (s.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (s.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: EmptyState(
-                  icon: Icons.cloud_off_rounded,
-                  title: _t('پیشنهادها در دسترس نیستند', 'Offers unavailable'),
-                  message: apiErrorMessage(s.error ?? Object()),
+      body: RefreshIndicator(
+        onRefresh: _reload,
+        child: PremiumPageFrame(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              PremiumHeader(
+                eyebrow: _t('پیشنهادها', 'OFFERS'),
+                title: _t('پیشنهادهای کاری', 'Job offers'),
+                subtitle: _t(
+                  'مبلغ، وضعیت و اقدام مجاز هر پیشنهاد را بررسی کنید.',
+                  'Review amount, status, and the next allowed action for each offer.',
+                ),
+                trailing: PremiumTag(
+                  icon: Icons.local_offer_outlined,
+                  label: all.length.toString(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (_loadError != null) ...[
+                HopeAsyncState(
+                  kind: HopeStateKind.error,
+                  title: _t(
+                    'پیشنهادها در دسترس نیستند',
+                    'Offers unavailable',
+                  ),
+                  message: apiErrorMessage(_loadError!),
                   action: FilledButton(
                     onPressed: _reload,
                     child: Text(_t('تلاش دوباره', 'Retry')),
                   ),
                 ),
-              ),
-            );
-          }
-          final all = s.data ?? const <HopeOffer>[];
-          final rows = _filter == 'ALL'
-              ? all
-              : all.where((x) => x.status.toUpperCase() == _filter).toList();
-          return RefreshIndicator(
-            onRefresh: () async => _reload(),
-            child: PremiumPageFrame(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  PremiumHeader(
-                    eyebrow: _t('پیشنهادها', 'OFFERS'),
-                    title: _t('پیشنهادهای کاری', 'Job offers'),
-                    subtitle: _t(
-                      'مبلغ، وضعیت و اقدام مجاز هر پیشنهاد را بررسی کنید.',
-                      'Review amount, status, and the next allowed action for each offer.',
-                    ),
-                    trailing: PremiumTag(
-                      icon: Icons.local_offer_outlined,
-                      label: all.length.toString(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (final x in const [
-                          'ALL',
-                          'PENDING',
-                          'ACCEPTED',
-                          'REJECTED',
-                        ])
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 8),
-                            child: PremiumFilterChip(
-                              selected: _filter == x,
-                              label: x == 'ALL' ? _t('همه', 'All') : _statusLabel(x),
-                              color: x == 'ALL'
-                                  ? Theme.of(context).colorScheme.primary
-                                  : _statusColor(context, x),
-                              onTap: () => setState(() => _filter = x),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  if (rows.isEmpty)
-                    EmptyState(
-                      icon: Icons.inbox_outlined,
-                      title: _t('پیشنهادی وجود ندارد', 'No offers'),
-                      message: _t(
-                        'در این وضعیت پیشنهادی برای نمایش وجود ندارد.',
-                        'There are no offers in this state.',
+                const SizedBox(height: 14),
+              ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final x in const ['ALL','PENDING','ACCEPTED','REJECTED'])
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 8),
+                        child: PremiumFilterChip(
+                          selected: _filter == x,
+                          label: x == 'ALL' ? _t('همه', 'All') : _statusLabel(x),
+                          color: x == 'ALL'
+                              ? Theme.of(context).colorScheme.primary
+                              : _statusColor(context, x),
+                          onTap: () => setState(() => _filter = x),
+                        ),
                       ),
-                    )
-                  else
-                    ...rows.map(_card),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+              const SizedBox(height: 14),
+              if (rows.isEmpty)
+                EmptyState(
+                  icon: Icons.inbox_outlined,
+                  title: _t('پیشنهادی وجود ندارد', 'No offers'),
+                  message: _t(
+                    'در این وضعیت پیشنهادی برای نمایش وجود ندارد.',
+                    'There are no offers in this state.',
+                  ),
+                )
+              else
+                ...rows.map(_card),
+            ],
+          ),
+        ),
       ),
     );
   }
