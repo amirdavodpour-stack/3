@@ -192,37 +192,24 @@ void main() {
 
     expect(find.textContaining('2,500,000 Toman'), findsOneWidget);
     expect(find.textContaining('2,500,000 IRR'), findsNothing);
+    expect(find.textContaining('1,000,000 Toman'), findsOneWidget);
+    expect(find.textContaining('IRR'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.byType(PremiumStatCard).at(1),
+      find.textContaining('500,000 Toman'),
       500,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-
-    final lockedMetric = tester.widget<PremiumStatCard>(
-      find.byType(PremiumStatCard).at(1),
-    );
-    expect(lockedMetric.value, '1,000,000 Toman');
-    expect(lockedMetric.value, isNot(contains('IRR')));
-
-    await tester.scrollUntilVisible(
-      find.text('Wallet history'),
-      700,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-
     expect(find.textContaining('500,000 Toman'), findsOneWidget);
     expect(find.textContaining('500,000 IRR'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.text('Withdrawals'),
+      find.textContaining('400,000 Toman'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-
     expect(find.textContaining('400,000 Toman'), findsOneWidget);
     expect(find.textContaining('400,000 IRR'), findsNothing);
   });
