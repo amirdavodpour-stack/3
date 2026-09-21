@@ -101,6 +101,7 @@ jobs:
           force-avd-creation: false
           cores: 4
           ram-size: 6144M
+          disable-linux-hw-accel: false
           emulator-boot-timeout: 1200
           emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
