@@ -4,20 +4,12 @@ set -euo pipefail
 evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
 runner_temp="${RUNNER_TEMP:-/tmp}"
 log_file="$runner_temp/hope-wallet-runtime.log"
-apk="${HOPE_PREBUILT_APK:-${GITHUB_WORKSPACE:-$PWD}/build/app/outputs/flutter-apk/app-debug.apk}"
-
 mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
 
-if [[ ! -s "$apk" ]]; then
-  echo "Prebuilt APK is missing or empty: $apk" >&2
-  exit 2
-fi
-
 set +e
 stdbuf -oL -eL flutter test --no-pub \
-  --use-application-binary="$apk" \
   integration_test/runtime/wallet_surface_evidence_test.dart \
   -r expanded 2>&1 | tee "$log_file" &
 test_pid=$!
@@ -72,7 +64,7 @@ capture_screen() {
   return 1
 }
 
-if ! wait_for_marker "HOPE_TEST_STARTED:wallet-fa-rtl" 300; then
+if ! wait_for_marker "HOPE_TEST_STARTED:wallet-fa-rtl" 1200; then
   echo "Timed out waiting for Wallet test body to start." >&2
   adb devices -l > "$evidence_dir/adb-devices-start-timeout.txt" 2>&1 || true
   adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-start-timeout.txt" 2>&1 || true
@@ -104,7 +96,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["fa-RTL", "en-LTR"],
   "theme": "light",
   "interactive_target_contract": "48px",
-  "prebuilt_apk": true,
+  "prebuilt_apk": false,
   "test_exit_code": $test_status
 }
 EOF
