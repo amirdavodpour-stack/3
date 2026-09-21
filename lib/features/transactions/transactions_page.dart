@@ -87,7 +87,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
       'RELEASED': 'تسویه شده',
       'SETTLED': 'تسویه شده',
     };
-    return labels[rawStatus.toUpperCase()] ?? rawStatus;
+    return labels[rawStatus.toUpperCase()] ??
+        _t('نیازمند بررسی', 'Needs review');
   }
 
   String _t(String fa, String en) =>
