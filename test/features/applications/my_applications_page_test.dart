@@ -15,7 +15,8 @@ class _FakeProfileRepository implements ProfileRepository {
   final HopeApplication application;
 
   @override
-  Future<HopeProviderProfile> getProviderProfile() => throw UnimplementedError();
+  Future<HopeProviderProfile> getProviderProfile() =>
+      throw UnimplementedError();
 
   @override
   Future<List<HopeApplication>> listApplications() async => [application];
@@ -23,10 +24,11 @@ class _FakeProfileRepository implements ProfileRepository {
   @override
   Future<HopeApplication> withdrawApplication(String applicationId) =>
       throw UnimplementedError();
-
+}
 
 class _FailingProfileRepository implements ProfileRepository {
   bool fail = true;
+
   final HopeApplication application = HopeApplication(
     id: 'app-1',
     jobId: 'job-1',
@@ -41,7 +43,8 @@ class _FailingProfileRepository implements ProfileRepository {
   );
 
   @override
-  Future<HopeProviderProfile> getProviderProfile() => throw UnimplementedError();
+  Future<HopeProviderProfile> getProviderProfile() =>
+      throw UnimplementedError();
 
   @override
   Future<List<HopeApplication>> listApplications() async {
