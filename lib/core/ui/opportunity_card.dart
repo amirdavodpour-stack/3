@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../marketplace/job.dart';
 import '../router/app_routes.dart';
@@ -26,19 +27,16 @@ class OpportunityCard extends StatelessWidget {
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
   String _formatAmount(String value) {
+    final formatter = NumberFormat.decimalPattern('en_US');
     return value
         .split(' – ')
         .map((part) {
           final trimmed = part.trim();
-          if (!RegExp(r'^\d+$').hasMatch(trimmed)) return part;
-          return trimmed.replaceAllMapped(
-            RegExp(r'\B(?=(\d{3})+(?!\d))'),
-            (_) => ',',
-          );
+          final parsed = int.tryParse(trimmed);
+          return parsed == null ? part : formatter.format(parsed);
         })
         .join(' – ');
   }
-
   String _reason(BuildContext context, String value) {    const fa = {
       'SKILL_MATCH': 'مهارت مرتبط',
       'CATEGORY_MATCH': 'دسته‌بندی مرتبط',
