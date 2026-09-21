@@ -174,6 +174,9 @@ void main() {
     await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
     final wallet = _FakeWallet();
 
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
+
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('fa'),
@@ -201,8 +204,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     expect(
       find.bySemanticsLabel('انتقال داخلی، ورودی، +500,000 تومان'),
       findsOneWidget,
