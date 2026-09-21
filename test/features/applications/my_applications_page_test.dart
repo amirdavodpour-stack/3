@@ -23,38 +23,6 @@ class _FakeProfileRepository implements ProfileRepository {
   @override
   Future<HopeApplication> withdrawApplication(String applicationId) =>
       throw UnimplementedError();
-  testWidgets('applications load failure shows explicit error state with retry',
-      (tester) async {
-    final profile = _FailingProfileRepository();
-
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('en'),
-        supportedLocales: const [Locale('fa'), Locale('en')],
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        home: Provider<ApplicationRegistry>.value(
-          value: ApplicationRegistry(profile: profile),
-          child: const MyApplicationsPage(),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(HopeAsyncState), findsOneWidget);
-    expect(find.text('Could not load applications.'), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
-    expect(
-      find.text('You have not submitted any applications yet.'),
-      findsNothing,
-    );
-  });
-
-}
 
 
 class _FailingProfileRepository implements ProfileRepository {
@@ -123,5 +91,36 @@ void main() {
 
     expect(find.text('Needs review'), findsOneWidget);
     expect(find.text('UNKNOWN_APPLICATION_STATE'), findsNothing);
+  });
+
+  testWidgets('applications load failure shows explicit error state with retry',
+      (tester) async {
+    final profile = _FailingProfileRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Provider<ApplicationRegistry>.value(
+          value: ApplicationRegistry(profile: profile),
+          child: const MyApplicationsPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HopeAsyncState), findsOneWidget);
+    expect(find.text('Could not load applications.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(
+      find.text('You have not submitted any applications yet.'),
+      findsNothing,
+    );
   });
 }
