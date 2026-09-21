@@ -175,9 +175,8 @@ void main() {
     final wallet = _FakeWallet();
 
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-
-    await tester.pumpWidget(
+    try {
+      await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa'), Locale('en')],
@@ -208,8 +207,11 @@ void main() {
       of: find.text('انتقال داخلی'),
       matching: find.byType(Semantics),
     ).first;
-    final node = tester.getSemantics(row);
-    expect(node.label, 'انتقال داخلی، ورودی، +500,000 تومان');
+      final node = tester.getSemantics(row);
+      expect(node.label, 'انتقال داخلی، ورودی، +500,000 تومان');
+    } finally {
+      semantics.dispose();
+    }
   });
 
   testWidgets('wallet treats backend ledger currencies as internal Toman',
