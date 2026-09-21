@@ -456,4 +456,39 @@ void main() {
     expect(find.text('Action could not be completed.'), findsOneWidget);
   });
 
+
+  testWidgets('wallet transfer dialog formats the available limit in Toman',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Transfer').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Maximum: 2,500,000 Toman'), findsOneWidget);
+    expect(find.text('Maximum: 2500000'), findsNothing);
+  });
+
 }
