@@ -301,6 +301,7 @@ void main() {
     await tester.tap(find.text('Internal transfer').first);
     await tester.pumpAndSettle();
 
+    expect(find.text('Other activity'), findsOneWidget);
     expect(find.text('Ledger entry'), findsNothing);
     expect(find.text('RECONCILIATION_ENTRY'), findsNothing);
   });
