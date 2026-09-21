@@ -93,4 +93,46 @@ void main() {
     expect(values.any((value) => value.contains('1,100,000 Toman')), isTrue);
     expect(values.any((value) => value.contains('900,000 Toman')), isTrue);
   });
+
+  testWidgets('PremiumPaymentSummary exposes one financial summary semantics boundary',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en'), Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: PremiumPaymentSummary(payment: _payment()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final semantics = tester.ensureSemantics();
+    try {
+      final outer = find.ancestor(
+        of: find.byType(PremiumPaymentSummary),
+        matching: find.byType(Semantics),
+      ).first;
+      final node = tester.getSemantics(outer);
+
+      expect(
+        node.label,
+        'Payment status: Funds held, amount 1,000,000 Toman',
+      );
+      expect(
+        node.children.where(
+          (child) => child.label == 'Payment details, Funds held',
+        ),
+        isEmpty,
+      );
+    } finally {
+      semantics.dispose();
+    }
+  });
 }
