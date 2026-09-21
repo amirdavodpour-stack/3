@@ -211,7 +211,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.textContaining('2,500,000 Toman'), findsWidgets);
-    expect(find.text('Wallet could not be loaded'), findsOneWidget);
+    expect(find.text('Wallet refresh failed'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
 
