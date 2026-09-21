@@ -40,7 +40,7 @@ class _OffersPageState extends State<OffersPage> {
       case 'REJECTED':
         return _t('رد شده', 'Rejected');
       default:
-        return status;
+        return _t('نیازمند بررسی', 'Needs review');
     }
   }
 
