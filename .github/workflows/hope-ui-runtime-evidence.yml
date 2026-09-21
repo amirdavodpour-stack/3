@@ -66,7 +66,7 @@ jobs:
 
       - name: Android runtime evidence
         # Immutable pin to upstream fix PR #495 for android-emulator-runner issue #432.
-        uses: reactivecircus/android-emulator-runner@831d1a14052fea0bb78aae8763a8573ad003a9ee1
+        uses: reactivecircus/android-emulator-runner@ab495a9b42f2af30f5222bd978136f9b0a85b68a
         with:
           api-level: 35
           arch: x86_64
