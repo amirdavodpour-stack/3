@@ -79,7 +79,7 @@ class _FakeWallet implements WalletRepository {
   }) async {
     if (transferError != null) throw transferError!;
     return const {};
-  };
+  }
 
   @override
   Future<Map<String, dynamic>> requestPayout({
@@ -94,60 +94,6 @@ class _FakeWallet implements WalletRepository {
     required String idempotencyKey,
   }) async =>
       const {};
-
-  testWidgets('wallet does not expose raw API errors in action failures',
-      (tester) async {
-    final auth = AuthController(_AuthRepo(), SecureStore());
-    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
-    final wallet = _FakeWallet()
-      ..transferError = ApiException(
-        'INSUFFICIENT_FUNDS',
-        'backend-only diagnostic detail',
-        status: 409,
-      );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('en'),
-        supportedLocales: const [Locale('fa'), Locale('en')],
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        home: MultiProvider(
-          providers: [
-            ChangeNotifierProvider.value(value: auth),
-            Provider<WalletRepository>.value(value: wallet),
-          ],
-          child: WalletPage(repository: wallet),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Transfer'));
-    await tester.pumpAndSettle();
-    expect(find.bySemanticsLabel('Destination wallet ID'), findsOneWidget);
-    expect(find.bySemanticsLabel('Amount in Toman'), findsOneWidget);
-
-    await tester.enterText(
-      find.bySemanticsLabel('Destination wallet ID'),
-      'wallet-destination',
-    );
-    await tester.enterText(
-      find.bySemanticsLabel('Amount in Toman'),
-      '1000',
-    );
-    await tester.tap(find.widgetWithText(FilledButton, 'Transfer'));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('INSUFFICIENT_FUNDS'), findsNothing);
-    expect(find.textContaining('backend-only diagnostic detail'), findsNothing);
-    expect(find.text('Action could not be completed.'), findsOneWidget);
-  });
-
 }
 
 class _AuthRepo implements AuthRepository {
@@ -446,6 +392,59 @@ void main() {
 
     expect(find.text('کیف پول داخلی'), findsOneWidget);
     expect(find.text('internal'), findsNothing);
+  });
+
+  testWidgets('wallet does not expose raw API errors in action failures',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet()
+      ..transferError = ApiException(
+        'INSUFFICIENT_FUNDS',
+        'backend-only diagnostic detail',
+        status: 409,
+      );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Transfer'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Destination wallet ID'), findsOneWidget);
+    expect(find.bySemanticsLabel('Amount in Toman'), findsOneWidget);
+
+    await tester.enterText(
+      find.bySemanticsLabel('Destination wallet ID'),
+      'wallet-destination',
+    );
+    await tester.enterText(
+      find.bySemanticsLabel('Amount in Toman'),
+      '1000',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Transfer'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('INSUFFICIENT_FUNDS'), findsNothing);
+    expect(find.textContaining('backend-only diagnostic detail'), findsNothing);
+    expect(find.text('Action could not be completed.'), findsOneWidget);
   });
 
 }
