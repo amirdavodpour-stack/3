@@ -45,8 +45,7 @@ void main() {
         .map((element) => (element.widget as Text).data)
         .whereType<String>()
         .toList();
-    expect(amountTexts, contains('1,000,000 تومان'));
-    expect(amountTexts, contains('1,500,000 تومان'));
+    expect(amountTexts, contains('1,000,000 – 1,500,000 تومان'));
   });
 
   testWidgets('opportunity card labels mission budget in Toman',
