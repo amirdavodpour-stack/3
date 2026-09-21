@@ -62,7 +62,7 @@ jobs:
         run: flutter build apk --debug --no-pub
 
       - name: Verify reusable debug APK
-        run: test -s "\$HOPE_PREBUILT_APK"
+        run: test -s "$HOPE_PREBUILT_APK"
 
       - name: Android runtime evidence
         # Immutable pin to upstream fix PR #495 for android-emulator-runner issue #432.
