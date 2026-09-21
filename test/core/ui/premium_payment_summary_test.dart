@@ -116,26 +116,15 @@ void main() {
 
     final semantics = tester.ensureSemantics();
     try {
-      final outer = find.ancestor(
-        of: find.byType(PremiumPaymentSummary),
-        matching: find.byType(Semantics),
-      ).first;
-      final node = tester.getSemantics(outer);
-
       expect(
-        node.label,
-        'Payment status: Funds held, amount 1,000,000 Toman',
-      );
-      final directChildren = <SemanticsNode>[];
-      node.visitChildren((child) {
-        directChildren.add(child);
-        return true;
-      });
-      expect(
-        directChildren.where(
-          (child) => child.label == 'Payment details, Funds held',
+        find.bySemanticsLabel(
+          'Payment status: Funds held, amount 1,000,000 Toman',
         ),
-        isEmpty,
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Payment details, Funds held'),
+        findsNothing,
       );
     } finally {
       semantics.dispose();
