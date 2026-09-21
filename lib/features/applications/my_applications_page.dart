@@ -18,6 +18,7 @@ class MyApplicationsPage extends StatefulWidget {
 class _MyApplicationsPageState extends State<MyApplicationsPage> {
   List<HopeApplication> _items = const [];
   bool _loading = true;
+  String? _loadError;
   String _filter = 'ALL';
   String? _busyId;
 
@@ -36,21 +37,31 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    final hasExistingItems = _items.isNotEmpty;
+    setState(() {
+      _loadError = null;
+      if (!hasExistingItems) _loading = true;
+    });
     try {
       final items = await _registry.listApplications();
       if (!mounted) return;
       setState(() {
         _items = items;
         _loading = false;
+        _loadError = null;
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(apiErrorMessage(error,
-            fallback: _t('درخواست‌ها قابل دریافت نیستند.', 'Could not load applications.')))),
-      );
+      setState(() {
+        _loading = false;
+        _loadError = apiErrorMessage(
+          error,
+          fallback: _t(
+            'درخواست‌ها قابل دریافت نیستند.',
+            'Could not load applications.',
+          ),
+        );
+      });
     }
   }
 
@@ -160,8 +171,27 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
             const SizedBox(height: 12),
             if (_loading)
               const PremiumPanel(
-                child: SizedBox(height: 220, child: Center(child: CircularProgressIndicator())),
+                child: SizedBox(
+                  height: 220,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
               )
+            else if (_loadError != null)
+              ...[
+                HopeAsyncState(
+                  kind: HopeStateKind.error,
+                  title: _t(
+                    'درخواست‌ها قابل دریافت نیستند.',
+                    'Could not load applications.',
+                  ),
+                  message: _loadError!,
+                  action: FilledButton(
+                    onPressed: _load,
+                    child: Text(_t('تلاش دوباره', 'Retry')),
+                  ),
+                ),
+                ...visible.map(_applicationCard),
+              ]
             else if (visible.isEmpty)
               PremiumPanel(
                 padding: const EdgeInsets.all(26),
