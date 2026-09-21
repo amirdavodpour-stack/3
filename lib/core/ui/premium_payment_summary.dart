@@ -35,14 +35,13 @@ class PremiumPaymentSummary extends StatelessWidget {
   String _label(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _money(BuildContext context, dynamic value, String currency) {
+  String _money(BuildContext context, dynamic value) {
     if (value == null) return '—';
     final raw = '$value'.trim();
     final grouped = RegExp(r'^\d+$').hasMatch(raw)
         ? raw.replaceAllMapped(RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')
         : raw;
-    final unit = currency == 'TOMAN' ? _label(context, 'تومان', 'TOMAN') : currency;
-    return '$grouped $unit';
+    return '$grouped ${_label(context, 'تومان', 'Toman')}';
   }
 
   IconData _statusIcon() {
@@ -65,11 +64,14 @@ class PremiumPaymentSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final amount = payment.amount;
     final fees = payment.fees;
-    final currency = (fees?.currency.isNotEmpty == true ? fees!.currency : 'TOMAN').toUpperCase();
     final status = _statusLabel(context);
     return Semantics(
       container: true,
-      label: _label(context, 'وضعیت پرداخت: $status، مبلغ ${_money(context, amount, currency)}', 'Payment status: $status, amount ${_money(context, amount, currency)}'),
+      label: _label(
+        context,
+        'وضعیت پرداخت: $status، مبلغ ${_money(context, amount)}',
+        'Payment status: $status, amount ${_money(context, amount)}',
+      ),
       child: PremiumPanel(
         padding: const EdgeInsets.all(HopeV2Spacing.lg),
         semanticLabel: _label(context, 'جزئیات پرداخت، $status', 'Payment details, $status'),
@@ -81,12 +83,16 @@ class PremiumPaymentSummary extends StatelessWidget {
                 Icon(_statusIcon(), size: 22),
                 const SizedBox(width: HopeV2Spacing.sm),
                 Expanded(
-                  child: Text(status,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                  child: Text(
+                    status,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                  ),
                 ),
                 if (amount != null)
-                  Text(_money(context, amount, currency),
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                  Text(
+                    _money(context, amount),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                  ),
               ],
             ),
             if (fees != null) ...[
@@ -96,11 +102,20 @@ class PremiumPaymentSummary extends StatelessWidget {
                 runSpacing: HopeV2Spacing.sm,
                 children: [
                   if (fees.employerCharge != null)
-                    _Metric(label: _label(context, 'مبلغ نهایی', 'Total charge'), value: _money(context, fees.employerCharge, currency)),
+                    _Metric(
+                      label: _label(context, 'مبلغ نهایی', 'Total charge'),
+                      value: _money(context, fees.employerCharge),
+                    ),
                   if (fees.providerPayout != null)
-                    _Metric(label: _label(context, 'دریافتی مجری', 'Provider payout'), value: _money(context, fees.providerPayout, currency)),
+                    _Metric(
+                      label: _label(context, 'دریافتی مجری', 'Provider payout'),
+                      value: _money(context, fees.providerPayout),
+                    ),
                   if (fees.platformFee != null)
-                    _Metric(label: _label(context, 'کارمزد پلتفرم', 'Platform fee'), value: _money(context, fees.platformFee, currency)),
+                    _Metric(
+                      label: _label(context, 'کارمزد پلتفرم', 'Platform fee'),
+                      value: _money(context, fees.platformFee),
+                    ),
                 ],
               ),
             ],
@@ -130,7 +145,10 @@ class _Metric extends StatelessWidget {
           children: [
             Text(label, style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 2),
-            Text(value, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
           ],
         ),
       );
