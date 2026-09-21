@@ -234,7 +234,7 @@ class OpportunityCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        amount,
+                        '${amount} ${_t(context, 'تومان', 'Toman')}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
