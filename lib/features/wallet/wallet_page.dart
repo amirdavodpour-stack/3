@@ -864,10 +864,16 @@ class _WalletPageState extends State<WalletPage> {
               child: HopeSurface(
                 radius: 18,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
+                child: Semantics(
+                  container: true,
+                  button: true,
+                  excludeSemantics: true,
+                  label: '\${_money(payout.amount)}، \${_providerLabel(payout.provider)}، \${_payoutLabel(payout.status)}',
                   onTap: () => _showPayout(payout),
-                  leading: HopeIconTile(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => _showPayout(payout),
+                    leading: HopeIconTile(
                     _payoutIcon(payout.status),
                     color: _payoutColor(context, payout.status),
                     filled: true,
@@ -880,6 +886,7 @@ class _WalletPageState extends State<WalletPage> {
                     _payoutLabel(payout.status),
                     color: _payoutColor(context, payout.status),
                     icon: _payoutIcon(payout.status),
+                  ),
                   ),
                 ),
               ),
