@@ -12,6 +12,16 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class _FakeWallet implements WalletRepository {
+  _FakeWallet({
+    this.currency = 'TOMAN',
+    this.transactionCurrency = 'TOMAN',
+    this.payoutCurrency = 'TOMAN',
+  });
+
+  final String currency;
+  final String transactionCurrency;
+  final String payoutCurrency;
+
   @override
   Future<HopeWallet> getWallet() async => const HopeWallet(
         id: 'wallet-1',
@@ -34,7 +44,7 @@ class _FakeWallet implements WalletRepository {
             'entryType': 'TRANSFER',
             'direction': 'CREDIT',
             'amount': 500000,
-            'currency': 'TOMAN',
+            'currency': transactionCurrency,
             'referenceType': 'TRANSFER',
             'financialOperationId': 'op-1',
             'createdAt': '2026-09-21T00:00:00Z',
@@ -48,7 +58,7 @@ class _FakeWallet implements WalletRepository {
           'id': 'payout-1',
           'walletId': 'wallet-1',
           'amount': 400000,
-          'currency': 'TOMAN',
+          'currency': payoutCurrency,
           'provider': 'internal',
           'status': 'REQUESTED',
           'idempotencyKey': 'key-1',
@@ -148,4 +158,47 @@ void main() {
       expect(find.text('برداشت‌های در جریان'), findsOneWidget);
     },
   );
+
+  testWidgets('wallet treats backend ledger currencies as internal Toman',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet(
+      currency: 'IRR',
+      transactionCurrency: 'IRR',
+      payoutCurrency: 'IRR',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final texts = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((text) => text.data ?? '')
+        .toList();
+
+    expect(texts.where((value) => value.contains('IRR')), isEmpty);
+    expect(texts.any((value) => value.contains('2,500,000 Toman')), isTrue);
+    expect(texts.any((value) => value.contains('1,000,000 Toman')), isTrue);
+    expect(texts.any((value) => value.contains('500,000 Toman')), isTrue);
+    expect(texts.any((value) => value.contains('400,000 Toman')), isTrue);
+  });
 }
