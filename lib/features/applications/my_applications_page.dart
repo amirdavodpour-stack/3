@@ -26,6 +26,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  bool get _isEnglish =>
+      Localizations.localeOf(context).languageCode == 'en';
+
   @override
   void initState() {
     super.initState();
@@ -150,7 +153,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                               id: '', jobId: '', jobTitle: '', jobCity: null,
                               jobKind: '', resumeText: '', skills: '',
                               status: s, createdAt: null, updatedAt: null,
-                            ).statusLabel, counts[s]!)),
+                            ).statusLabelFor(english: _isEnglish), counts[s]!)),
                   ],
                 ),
               ),
@@ -227,7 +230,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                         spacing: 7,
                         runSpacing: 6,
                         children: [
-                          StatusPill(item.statusLabel, color: color, icon: Icons.circle),
+                          StatusPill(item.statusLabelFor(english: _isEnglish), color: color, icon: Icons.circle),
                           if (item.jobCity?.isNotEmpty == true)
                             StatusPill(item.jobCity!, color: Theme.of(context).colorScheme.outline,
                                 icon: Icons.location_on_outlined),
