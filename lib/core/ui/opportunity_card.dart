@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -140,7 +142,7 @@ class OpportunityCard extends StatelessWidget {
         ],
         const SizedBox(width: 4),
         Icon(
-          Directionality.of(context) == TextDirection.rtl
+          Directionality.of(context) == ui.TextDirection.rtl
               ? Icons.chevron_left_rounded
               : Icons.chevron_right_rounded,
           semanticLabel: _t(context, 'مشاهده جزئیات', 'View details'),
