@@ -23,14 +23,14 @@ class _FakeWallet implements WalletRepository {
   final String payoutCurrency;
 
   @override
-  Future<HopeWallet> getWallet() async => const HopeWallet(
-        id: 'wallet-1',
-        userId: 'u1',
-        currency: 'TOMAN',
-        availableBalance: 2500000,
-        lockedBalance: 1000000,
-        status: 'ACTIVE',
-      );
+  Future<HopeWallet> getWallet() async => HopeWallet.fromMap({
+        'id': 'wallet-1',
+        'userId': 'u1',
+        'currency': currency,
+        'availableBalance': 2500000,
+        'lockedBalance': 1000000,
+        'status': 'ACTIVE',
+      });
 
   @override
   Future<WalletTransactionsPage> listTransactions({
