@@ -20,6 +20,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   List<HopeApplication> _items = const [];
   bool _loading = true;
   String? _loadError;
+  int _loadRequestId = 0;
   String _filter = 'ALL';
   String? _busyId;
 
@@ -38,6 +39,8 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final requestId = ++_loadRequestId;
     final hasExistingItems = _items.isNotEmpty;
     setState(() {
       _loadError = null;
@@ -45,14 +48,14 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     });
     try {
       final items = await _registry.listApplications();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _items = items;
         _loading = false;
         _loadError = null;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _loading = false;
         _loadError = apiErrorMessage(
