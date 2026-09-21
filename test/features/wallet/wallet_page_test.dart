@@ -7,6 +7,7 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/transactions/wallet_repository.dart';
 import 'package:hope_mobile/features/wallet/wallet_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -128,12 +129,12 @@ void main() {
         find.textContaining('1,000,000 تومان'),
         findsWidgets,
       );
+      final statCards = tester.widgetList<PremiumStatCard>(
+        find.byType(PremiumStatCard),
+      );
       expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Text && widget.data == '1',
-        ),
-        findsAtLeastNWidgets(1),
+        statCards.any((card) => card.label == 'برداشت‌های در جریان' && card.value == '1'),
+        isTrue,
       );
       expect(find.text('موجودی قابل استفاده'), findsWidgets);
       expect(find.text('قفل‌شده'), findsWidgets);
