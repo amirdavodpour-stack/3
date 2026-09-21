@@ -27,6 +27,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Checkout pinned Android Emulator Runner
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: soloturn/android-emulator-runner
+          ref: ab495a9b42f2af30f5222bd978136f9b0a85b68a
+          path: .ci/android-emulator-runner
+          fetch-depth: 1
+
+      - name: Install pinned Android Emulator Runner dependencies
+        working-directory: .ci/android-emulator-runner
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify pinned Android Emulator Runner
+        run: |
+          test -s .ci/android-emulator-runner/action.yml
+          test -s .ci/android-emulator-runner/lib/main.js
+          test -f .ci/android-emulator-runner/node_modules/@actions/core/package.json
+
       - name: Setup Flutter 3.47.2
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
@@ -68,8 +86,8 @@ jobs:
         run: test -s "$HOPE_PREBUILT_APK"
 
       - name: Android runtime evidence
-        # Immutable pin to PR #495 fix commit for android-emulator-runner issue #432 (unmerged upstream fork commit).
-        uses: soloturn/android-emulator-runner@ab495a9b42f2af30f5222bd978136f9b0a85b68a
+        # Local execution of the immutable PR #495 fix commit avoids relying on fork-packaged node_modules.
+        uses: ./.ci/android-emulator-runner
         with:
           api-level: 35
           arch: x86_64
