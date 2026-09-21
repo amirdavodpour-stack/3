@@ -34,18 +34,31 @@ class HopeApplication {
   };
   bool get canWithdraw => _withdrawable.contains(status.toUpperCase());
 
-  String get statusLabel {
-    switch (status.toUpperCase()) {
-      case 'PENDING': return 'در انتظار بررسی';
-      case 'SHORTLISTED': return 'منتخب اولیه';
-      case 'FORWARDED': return 'ارسال شده برای بررسی';
-      case 'INTERVIEW': return 'مصاحبه';
-      case 'OFFERED': return 'پیشنهاد همکاری';
-      case 'ACCEPTED': return 'پذیرفته شد';
-      case 'REJECTED': return 'رد شد';
-      case 'WITHDRAWN': return 'پس گرفته شد';
-      default: return status;
-    }
+  String get statusLabel => statusLabelFor(english: false);
+
+  String statusLabelFor({required bool english}) {
+    final labels = english
+        ? const <String, String>{
+            'PENDING': 'Pending',
+            'SHORTLISTED': 'Shortlisted',
+            'FORWARDED': 'Forwarded for review',
+            'INTERVIEW': 'Interview',
+            'OFFERED': 'Offer received',
+            'ACCEPTED': 'Accepted',
+            'REJECTED': 'Rejected',
+            'WITHDRAWN': 'Withdrawn',
+          }
+        : const <String, String>{
+            'PENDING': 'در انتظار بررسی',
+            'SHORTLISTED': 'منتخب اولیه',
+            'FORWARDED': 'ارسال شده برای بررسی',
+            'INTERVIEW': 'مصاحبه',
+            'OFFERED': 'پیشنهاد همکاری',
+            'ACCEPTED': 'پذیرفته شد',
+            'REJECTED': 'رد شد',
+            'WITHDRAWN': 'پس گرفته شد',
+          };
+    return labels[status.toUpperCase()] ?? status;
   }
 
   bool get isTerminal => const {'ACCEPTED', 'REJECTED', 'WITHDRAWN'}.contains(status.toUpperCase());
