@@ -65,7 +65,7 @@ jobs:
         run: test -s "$HOPE_PREBUILT_APK"
 
       - name: Android runtime evidence
-        # Immutable pin to upstream fix PR #495 for android-emulator-runner issue #432.
+        # Immutable pin to PR #495 fix commit for android-emulator-runner issue #432 (unmerged upstream fork commit).
         uses: reactivecircus/android-emulator-runner@ab495a9b42f2af30f5222bd978136f9b0a85b68a
         with:
           api-level: 35
