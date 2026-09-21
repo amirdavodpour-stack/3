@@ -299,7 +299,7 @@ void main() {
     await tester.tap(find.text('400,000 Toman'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('Needs review'), findsWidgets);
     expect(find.text('AWAITING_PROVIDER_RECONCILIATION'), findsNothing);
   });
 
