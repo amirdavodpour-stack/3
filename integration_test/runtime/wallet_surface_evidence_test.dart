@@ -105,11 +105,18 @@ Future<void> _pumpWallet(
   WidgetTester tester, {
   required Locale locale,
 }) async {
+  print(
+    'HOPE_TEST_PROGRESS:\${locale.languageCode}:auth-prepare',
+  );
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
     'id': 'runtime-user',
     'displayName': 'HOPE Runtime',
   });
+  print(
+    'HOPE_TEST_PROGRESS:\${locale.languageCode}:auth-ready',
+  );
+
   final repository = _EvidenceWalletRepository();
 
   await tester.pumpWidget(
@@ -132,11 +139,14 @@ Future<void> _pumpWallet(
       ),
     ),
   );
+  print(
+    'HOPE_TEST_PROGRESS:\${locale.languageCode}:widget-pumped',
+  );
 
-  // WalletPage contains a repeating shimmer while data is pending.
-  // Do not wait for global animation quiescence; advance a bounded frame
-  // window so the real rendered surface can be asserted and captured.
   await tester.pump(const Duration(milliseconds: 800));
+  print(
+    'HOPE_TEST_PROGRESS:\${locale.languageCode}:frame-advanced',
+  );
 
   expect(find.byType(WalletPage), findsOneWidget);
   expect(
@@ -153,23 +163,24 @@ Future<void> _pumpWallet(
     ),
     findsWidgets,
   );
+  print(
+    'HOPE_TEST_PROGRESS:\${locale.languageCode}:assertions-passed',
+  );
 }
 
 void main() {
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('Wallet runtime rendered evidence — fa RTL', (tester) async {
+    print('HOPE_TEST_STARTED:wallet-fa-rtl');
     await _pumpWallet(tester, locale: const Locale('fa'));
-    // The runtime harness captures the native Android surface with adb.
-    // convertFlutterSurfaceToImage() is intentionally avoided here because
-    // Flutter documents it as an expensive Android operation and it is not
-    // needed for host-side native screencap evidence.
     await tester.pump();
     print('HOPE_SCREENSHOT_READY:wallet-fa-rtl');
     await Future<void>.delayed(const Duration(seconds: 4));
   });
 
   testWidgets('Wallet runtime rendered evidence — en LTR', (tester) async {
+    print('HOPE_TEST_STARTED:wallet-en-ltr');
     await _pumpWallet(tester, locale: const Locale('en'));
     await tester.pump();
     print('HOPE_SCREENSHOT_READY:wallet-en-ltr');

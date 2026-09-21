@@ -1,15 +1,13 @@
 name: HOPE UI Runtime Evidence
 
 on:
-  push:
-    branches:
-      - feat/google-sign-in-2026-09-20
   pull_request:
     branches:
       - Main
+  workflow_dispatch:
 
 concurrency:
-  group: hope-ui-runtime-evidence-${{ github.ref }}
+  group: hope-ui-runtime-evidence-\${{ github.workflow }}-\${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -19,11 +17,9 @@ jobs:
   wallet-runtime-evidence:
     name: Wallet Android runtime evidence
     runs-on: ubuntu-latest
-    # Cold API-35 emulator boot plus the first Gradle/CMake build and APK
-    # installation can consume >30 minutes before the first evidence marker.
-    # The harness has a bounded 900s post-launch marker window; give the job
-    # enough total headroom without changing any product/runtime assertions.
     timeout-minutes: 50
+    env:
+      HOPE_PREBUILT_APK: \${{ github.workspace }}/build/app/outputs/flutter-apk/app-debug.apk
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -35,11 +31,38 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Setup Gradle caching
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic
+
+      - name: Cache Android SDK components
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.0.1
+        with:
+          path: |
+            /usr/local/lib/android/sdk/cmake/3.22.1
+            /usr/local/lib/android/sdk/system-images/android-35/google_apis/x86_64
+          key: hope-android-sdk-api35-cmake3.22.1-\${{ runner.os }}-v1
+
+      - name: Cache Android AVD
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.0.1
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: hope-android-avd-api35-google-apis-pixel2-\${{ runner.os }}-v1
+
       - name: Verify HOPE design/runtime guardrails
         run: bash tools/verify-design-quality.sh
 
       - name: Prepare Flutter dependencies
         run: flutter pub get --enforce-lockfile
+
+      - name: Build reusable debug APK
+        run: flutter build apk --debug --no-pub
+
+      - name: Verify reusable debug APK
+        run: test -s "$HOPE_PREBUILT_APK"
 
       - name: Android runtime evidence
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
@@ -48,19 +71,20 @@ jobs:
           arch: x86_64
           target: google_apis
           profile: pixel_2
+          force-avd-creation: false
           cores: 4
           ram-size: 4096M
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
 
       - name: Upload Wallet runtime evidence
-        if: ${{ always() }}
+        if: \${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
         with:
-          name: hope-wallet-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
+          name: hope-wallet-runtime-evidence-\${{ github.sha }}-\${{ github.run_id }}
           path: |
             docs/audit/evidence/android-runtime/**
-            ${{ runner.temp }}/hope-wallet-runtime.log
+            \${{ runner.temp }}/hope-wallet-runtime.log
           if-no-files-found: warn
