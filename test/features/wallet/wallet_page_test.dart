@@ -28,9 +28,12 @@ class _FakeWallet implements WalletRepository {
   final String payoutStatus;
   final String entryType;
   Object? transferError;
+  bool failLoad = false;
 
   @override
-  Future<HopeWallet> getWallet() async => HopeWallet.fromMap({
+  Future<HopeWallet> getWallet() async {
+    if (failLoad) throw StateError('wallet refresh unavailable');
+    return HopeWallet.fromMap({
         'id': 'wallet-1',
         'userId': 'u1',
         'currency': currency,
@@ -38,6 +41,7 @@ class _FakeWallet implements WalletRepository {
         'lockedBalance': 1000000,
         'status': 'ACTIVE',
       });
+  }
 
   @override
   Future<WalletTransactionsPage> listTransactions({
@@ -167,6 +171,49 @@ void main() {
       expect(find.text('برداشت‌های در جریان'), findsOneWidget);
     },
   );
+
+  testWidgets('wallet refresh failure keeps stale wallet visible with retry error',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('2,500,000 Toman'), findsWidgets);
+    wallet.failLoad = true;
+
+    await tester.fling(
+      find.byType(ListView).first,
+      const Offset(0, 400),
+      1000,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.textContaining('2,500,000 Toman'), findsWidgets);
+    expect(find.text('Wallet could not be loaded'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+  });
 
   testWidgets('wallet transaction rows expose grouped finance semantics',
       (tester) async {

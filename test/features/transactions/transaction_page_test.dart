@@ -241,6 +241,34 @@ void main() {
     expect(find.text('Fund payment'), findsOneWidget);
   });
 
+  testWidgets('refresh failure with existing payment shows retry error without hiding stale data',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'HELD',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo, ownerId: 'u1');
+
+    expect(find.text('Design landing page'), findsOneWidget);
+    repo.failLoad = true;
+
+    await tester.fling(
+      find.byType(ListView).first,
+      const Offset(0, 400),
+      1000,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Design landing page'), findsOneWidget);
+    expect(find.text('Operation failed.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+  });
+
   testWidgets('no-transaction view offers fund payment', (tester) async {
     final repo = _FakeTx()
       ..payment = Future.value(HopePayment.fromMap({

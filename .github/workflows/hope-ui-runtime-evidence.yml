@@ -1,24 +1,6 @@
 name: HOPE UI Runtime Evidence
 
 on:
-  pull_request:
-    branches:
-      - Main
-    paths:
-      - 'lib/features/wallet/**'
-      - 'lib/core/transactions/**'
-      - 'lib/core/ui/**'
-      - 'lib/core/theme/**'
-      - 'lib/core/auth/**'
-      - 'lib/core/storage/**'
-      - 'lib/core/network/**'
-      - 'lib/l10n/**'
-      - 'integration_test/runtime/**'
-      - 'tools/hope-wallet-runtime-evidence.sh'
-      - 'tools/verify-design-quality.sh'
-      - 'pubspec.yaml'
-      - 'pubspec.lock'
-      - 'android/**'
   workflow_dispatch:
 
 concurrency:

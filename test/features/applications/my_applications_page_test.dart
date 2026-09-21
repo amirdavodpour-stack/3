@@ -182,6 +182,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
+    await tester.scrollUntilVisible(
+      find.text('Design task'),
+      600,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Design task'), findsOneWidget);
     expect(find.text('Could not load applications.'), findsWidgets);
     expect(find.text('Retry'), findsOneWidget);
