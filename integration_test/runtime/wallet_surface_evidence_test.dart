@@ -106,7 +106,7 @@ Future<void> _pumpWallet(
   required Locale locale,
 }) async {
   print(
-    'HOPE_TEST_PROGRESS:\${locale.languageCode}:auth-prepare',
+    'HOPE_TEST_PROGRESS:${locale.languageCode}:auth-prepare',
   );
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
@@ -114,7 +114,7 @@ Future<void> _pumpWallet(
     'displayName': 'HOPE Runtime',
   });
   print(
-    'HOPE_TEST_PROGRESS:\${locale.languageCode}:auth-ready',
+    'HOPE_TEST_PROGRESS:${locale.languageCode}:auth-ready',
   );
 
   final repository = _EvidenceWalletRepository();
@@ -140,12 +140,12 @@ Future<void> _pumpWallet(
     ),
   );
   print(
-    'HOPE_TEST_PROGRESS:\${locale.languageCode}:widget-pumped',
+    'HOPE_TEST_PROGRESS:${locale.languageCode}:widget-pumped',
   );
 
   await tester.pump(const Duration(milliseconds: 800));
   print(
-    'HOPE_TEST_PROGRESS:\${locale.languageCode}:frame-advanced',
+    'HOPE_TEST_PROGRESS:${locale.languageCode}:frame-advanced',
   );
 
   expect(find.byType(WalletPage), findsOneWidget);
@@ -164,7 +164,7 @@ Future<void> _pumpWallet(
     findsWidgets,
   );
   print(
-    'HOPE_TEST_PROGRESS:\${locale.languageCode}:assertions-passed',
+    'HOPE_TEST_PROGRESS:${locale.languageCode}:assertions-passed',
   );
 }
 

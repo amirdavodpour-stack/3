@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-evidence_dir="\${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
-runner_temp="\${RUNNER_TEMP:-/tmp}"
+evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
+runner_temp="${RUNNER_TEMP:-/tmp}"
 log_file="$runner_temp/hope-wallet-runtime.log"
-apk="\${HOPE_PREBUILT_APK:-\${GITHUB_WORKSPACE:-$PWD}/build/app/outputs/flutter-apk/app-debug.apk}"
+apk="${HOPE_PREBUILT_APK:-${GITHUB_WORKSPACE:-$PWD}/build/app/outputs/flutter-apk/app-debug.apk}"
 
 mkdir -p "$evidence_dir"
 rm -f "$log_file"
@@ -63,7 +63,7 @@ capture_screen() {
     sleep 2
   done
 
-  echo "Timed out waiting for screenshot marker after \${timeout_seconds}s: $marker" >&2
+  echo "Timed out waiting for screenshot marker after ${timeout_seconds}s: $marker" >&2
   echo "Collecting Android diagnostics before emulator cleanup..." >&2
   adb devices -l > "$evidence_dir/adb-devices-timeout.txt" 2>&1 || true
   adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-timeout.txt" 2>&1 || true
@@ -95,10 +95,10 @@ adb shell wm size > "$evidence_dir/viewport.txt"
 
 cat > "$evidence_dir/metadata.json" <<EOF
 {
-  "workflow": "\${GITHUB_WORKFLOW}",
-  "run_id": "\${GITHUB_RUN_ID}",
-  "ref": "\${GITHUB_REF_NAME}",
-  "sha": "\${GITHUB_SHA}",
+  "workflow": "$GITHUB_WORKFLOW",
+  "run_id": "$GITHUB_RUN_ID",
+  "ref": "$GITHUB_REF_NAME",
+  "sha": "$GITHUB_SHA",
   "surface": "WalletPage",
   "evidence_type": "rendered_android_runtime",
   "locales": ["fa-RTL", "en-LTR"],

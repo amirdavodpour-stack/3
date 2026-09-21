@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: hope-ui-runtime-evidence-\${{ github.workflow }}-\${{ github.ref }}
+  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      HOPE_PREBUILT_APK: \${{ github.workspace }}/build/app/outputs/flutter-apk/app-debug.apk
+      HOPE_PREBUILT_APK: ${{ github.workspace }}/build/app/outputs/flutter-apk/app-debug.apk
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -42,7 +42,7 @@ jobs:
           path: |
             /usr/local/lib/android/sdk/cmake/3.22.1
             /usr/local/lib/android/sdk/system-images/android-35/google_apis/x86_64
-          key: hope-android-sdk-api35-cmake3.22.1-\${{ runner.os }}-v1
+          key: hope-android-sdk-api35-cmake3.22.1-${{ runner.os }}-v1
 
       - name: Cache Android AVD
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.0.1
@@ -50,7 +50,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: hope-android-avd-api35-google-apis-pixel2-\${{ runner.os }}-v1
+          key: hope-android-avd-api35-google-apis-pixel2-${{ runner.os }}-v1
 
       - name: Verify HOPE design/runtime guardrails
         run: bash tools/verify-design-quality.sh
@@ -80,11 +80,11 @@ jobs:
           script: bash tools/hope-wallet-runtime-evidence.sh
 
       - name: Upload Wallet runtime evidence
-        if: \${{ always() }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
         with:
-          name: hope-wallet-runtime-evidence-\${{ github.sha }}-\${{ github.run_id }}
+          name: hope-wallet-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
           path: |
             docs/audit/evidence/android-runtime/**
-            \${{ runner.temp }}/hope-wallet-runtime.log
+            ${{ runner.temp }}/hope-wallet-runtime.log
           if-no-files-found: warn
