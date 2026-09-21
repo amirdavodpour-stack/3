@@ -132,6 +132,15 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
+  String _providerLabel(String provider) {
+    switch (provider.toUpperCase()) {
+      case 'INTERNAL':
+        return _t('کیف پول داخلی', 'Internal wallet');
+      default:
+        return _t('ارائه‌دهنده پرداخت', 'Payment provider');
+    }
+  }
+
   String _referenceTypeLabel(String value) {
     final type = value.toUpperCase();
     if (type.contains('TRANSFER')) return _t('انتقال داخلی', 'Internal transfer');
@@ -453,7 +462,7 @@ class _WalletPageState extends State<WalletPage> {
               const SizedBox(height: 18),
               _DetailRow(label: _t('مبلغ', 'Amount'), value: _money(payout.amount)),
               _DetailRow(label: _t('وضعیت', 'Status'), value: _payoutLabel(status)),
-              _DetailRow(label: _t('ارائه‌دهنده', 'Provider'), value: payout.provider),
+              _DetailRow(label: _t('ارائه‌دهنده', 'Provider'), value: _providerLabel(payout.provider)),
               _DetailRow(label: _t('زمان ثبت', 'Created'), value: _date(payout.createdAt)),
               if (status == 'UNKNOWN')
                 HopeSurface(
@@ -764,7 +773,7 @@ class _WalletPageState extends State<WalletPage> {
           const SizedBox(height: 24),
           SectionTitle(
             title: _t('تاریخچه کیف پول', 'Wallet history'),
-            subtitle: _t('Ledger entries به ترتیب زمانی، با صفحه‌بندی cursor.', 'Immutable ledger entries with cursor pagination.'),
+            subtitle: _t('ثبت‌های مالی به ترتیب زمانی، با بارگذاری مرحله‌ای.', 'Financial entries in chronological order, loaded in pages.'),
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
@@ -849,7 +858,7 @@ class _WalletPageState extends State<WalletPage> {
                     size: 44,
                   ),
                   title: Text(_money(payout.amount), style: const TextStyle(fontWeight: FontWeight.w900)),
-                  subtitle: Text('${_date(payout.createdAt)}\n${payout.provider}'),
+                  subtitle: Text('${_date(payout.createdAt)}\n${_providerLabel(payout.provider)}'),
                   isThreeLine: true,
                   trailing: StatusPill(
                     _payoutLabel(payout.status),
