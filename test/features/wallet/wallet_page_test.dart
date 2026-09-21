@@ -415,12 +415,14 @@ void main() {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: MultiProvider(
-          providers: [
-            ChangeNotifierProvider.value(value: auth),
-            Provider<WalletRepository>.value(value: wallet),
-          ],
-          child: WalletPage(repository: wallet),
+        home: Scaffold(
+          body: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
         ),
       ),
     );
