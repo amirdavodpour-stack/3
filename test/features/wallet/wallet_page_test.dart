@@ -129,6 +129,13 @@ void main() {
         find.textContaining('1,000,000 تومان'),
         findsWidgets,
       );
+      await tester.scrollUntilVisible(
+        find.text('برداشت‌های در جریان'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
       final statCards = tester.widgetList<PremiumStatCard>(
         find.byType(PremiumStatCard),
       ).toList();
