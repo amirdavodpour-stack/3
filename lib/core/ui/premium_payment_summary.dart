@@ -29,7 +29,8 @@ class PremiumPaymentSummary extends StatelessWidget {
       'RELEASE_FAILED': 'نیازمند تلاش مجدد',
       'NO_TRANSACTION': 'هنوز تأمین نشده',
     };
-    return labels[payment.status] ?? payment.status;
+    return labels[payment.status] ??
+        _label(context, 'نیازمند بررسی', 'Needs review');
   }
 
   String _label(BuildContext context, String fa, String en) =>
