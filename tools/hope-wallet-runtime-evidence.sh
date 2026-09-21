@@ -35,15 +35,47 @@ wait_for_marker() {
   return 1
 }
 
+capture_android_diagnostics() {
+  local prefix="$1"
+  adb devices -l > "$evidence_dir/adb-devices-${prefix}.txt" 2>&1 || true
+  adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-${prefix}.txt" 2>&1 || true
+  adb shell dumpsys activity activities > "$evidence_dir/activity-${prefix}.txt" 2>&1 || true
+  adb shell dumpsys window windows > "$evidence_dir/window-${prefix}.txt" 2>&1 || true
+  adb shell logcat -d -t 1000 > "$evidence_dir/logcat-${prefix}.txt" 2>&1 || true
+}
+
+assert_hope_focused() {
+  local prefix="$1"
+  local window_dump="$evidence_dir/window-${prefix}.txt"
+
+  adb shell dumpsys window windows > "$window_dump" 2>&1 || true
+
+  if ! grep -E "mCurrentFocus=|mFocusedApp=" "$window_dump" | grep -q "com.hope.marketplace"; then
+    echo "Rendered evidence rejected: HOPE app is not the focused Android window." >&2
+    capture_android_diagnostics "$prefix"
+    return 1
+  fi
+
+  if grep -qiE "not responding|Application Error" "$window_dump"; then
+    echo "Rendered evidence rejected: Android reports a system/application error dialog." >&2
+    capture_android_diagnostics "$prefix"
+    return 1
+  fi
+}
+
 capture_screen() {
   local marker="$1"
   local output="$2"
-  local timeout_seconds="$3"
+  local prefix="$3"
+  local timeout_seconds="$4"
   local deadline=$((SECONDS + timeout_seconds))
 
   while (( SECONDS < deadline )); do
     if grep -q -- "$marker" "$log_file"; then
       adb wait-for-device
+      if ! assert_hope_focused "$prefix"; then
+        return 1
+      fi
       adb exec-out screencap -p > "$evidence_dir/$output"
       return 0
     fi
@@ -57,24 +89,18 @@ capture_screen() {
 
   echo "Timed out waiting for screenshot marker after ${timeout_seconds}s: $marker" >&2
   echo "Collecting Android diagnostics before emulator cleanup..." >&2
-  adb devices -l > "$evidence_dir/adb-devices-timeout.txt" 2>&1 || true
-  adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-timeout.txt" 2>&1 || true
-  adb shell dumpsys activity activities > "$evidence_dir/activity-timeout.txt" 2>&1 || true
-  adb shell logcat -d -t 1000 > "$evidence_dir/logcat-timeout.txt" 2>&1 || true
+  capture_android_diagnostics "$prefix-timeout"
   return 1
 }
 
 if ! wait_for_marker "HOPE_TEST_STARTED:wallet-fa-rtl" 1200; then
   echo "Timed out waiting for Wallet test body to start." >&2
-  adb devices -l > "$evidence_dir/adb-devices-start-timeout.txt" 2>&1 || true
-  adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-start-timeout.txt" 2>&1 || true
-  adb shell dumpsys activity activities > "$evidence_dir/activity-start-timeout.txt" 2>&1 || true
-  adb shell logcat -d -t 1000 > "$evidence_dir/logcat-start-timeout.txt" 2>&1 || true
+  capture_android_diagnostics "start-timeout"
   exit 1
 fi
 
-capture_screen "HOPE_SCREENSHOT_READY:wallet-fa-rtl" "wallet-fa-rtl.png" 180
-capture_screen "HOPE_SCREENSHOT_READY:wallet-en-ltr" "wallet-en-ltr.png" 120
+capture_screen "HOPE_SCREENSHOT_READY:wallet-fa-rtl" "wallet-fa-rtl.png" "wallet-fa-rtl" 180
+capture_screen "HOPE_SCREENSHOT_READY:wallet-en-ltr" "wallet-en-ltr.png" "wallet-en-ltr" 120
 
 set +e
 wait "$test_pid"
