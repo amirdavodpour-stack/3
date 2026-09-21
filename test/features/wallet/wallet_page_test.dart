@@ -17,12 +17,14 @@ class _FakeWallet implements WalletRepository {
     this.transactionCurrency = 'TOMAN',
     this.payoutCurrency = 'TOMAN',
     this.payoutStatus = 'REQUESTED',
+    this.entryType = 'TRANSFER',
   });
 
   final String currency;
   final String transactionCurrency;
   final String payoutCurrency;
   final String payoutStatus;
+  final String entryType;
 
   @override
   Future<HopeWallet> getWallet() async => HopeWallet.fromMap({
@@ -43,7 +45,7 @@ class _FakeWallet implements WalletRepository {
         items: [
           HopeWalletTransaction.fromMap({
             'id': 'tx-1',
-            'entryType': 'TRANSFER',
+            'entryType': entryType,
             'direction': 'CREDIT',
             'amount': 500000,
             'currency': transactionCurrency,
@@ -261,6 +263,46 @@ void main() {
     expect(find.text('CREDIT'), findsNothing);
     expect(find.text('Entry type'), findsOneWidget);
     expect(find.text('Reference type'), findsOneWidget);
+  });
+
+  testWidgets('wallet does not expose raw unknown ledger entry types',
+      (tester) async {
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet(entryType: 'RECONCILIATION_ENTRY');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Wallet history'),
+      600,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('RECONCILIATION_ENTRY').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ledger entry'), findsNothing);
+    expect(find.text('RECONCILIATION_ENTRY'), findsNothing);
   });
 
   testWidgets('wallet uses a safe localized fallback for unknown payout statuses',
