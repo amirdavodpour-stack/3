@@ -15,6 +15,7 @@ import '../../core/application/application_registry.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/premium_lifecycle.dart';
 import '../../core/ui/premium_payment_summary.dart';
+import '../../core/ui/hope_async_state.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key, this.repository});
@@ -26,6 +27,8 @@ class TransactionsPage extends StatefulWidget {
 class _TransactionsPageState extends State<TransactionsPage> {
   Future<List<HopeJob>>? future;
   String? loadedUserId;
+  String? _reloadError;
+  int _reloadRequestId = 0;
   final Map<String, Future<HopePayment?>> _paymentFutures =
       <String, Future<HopePayment?>>{};
   @override
@@ -34,6 +37,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final id = context.read<AuthController>().user?['id']?.toString();
     if (id != loadedUserId) {
       loadedUserId = id;
+      _reloadError = null;
       final ApplicationRegistry registry = applicationRegistryOf(context);
       final source = widget.repository;
       future = id == null
@@ -45,11 +49,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   Future<void> reload() async {
     if (!mounted) return;
+    final requestId = ++_reloadRequestId;
     final source = widget.repository ?? applicationRegistryOf(context).transactionsOrThrow;
     final next = source.listMyJobs();
-    _paymentFutures.clear();
-    setState(() => future = next);
-    await next.catchError((_) => const <HopeJob>[]);
+    try {
+      final items = await next;
+      if (!mounted || requestId != _reloadRequestId) return;
+      setState(() {
+        _reloadError = null;
+        future = Future<List<HopeJob>>.value(items);
+      });
+      _paymentFutures.clear();
+    } catch (_) {
+      if (!mounted || requestId != _reloadRequestId) return;
+      setState(() {
+        _reloadError = HopeCopy.of(context).copy_could_not_load_activity_335b923;
+      });
+    }
   }
 
   Future<HopePayment?> _tryGetPayment(String jobId) {
@@ -251,6 +267,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
+                    if (_reloadError != null) ...[
+                      HopeAsyncState(
+                        kind: HopeStateKind.error,
+                        title: _reloadError!,
+                        message: HopeCopy.of(context).copy_pull_down_to_try_again_c41d215,
+                        action: FilledButton.icon(
+                          onPressed: reload,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final metrics = [
