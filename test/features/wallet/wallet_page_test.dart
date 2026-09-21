@@ -292,7 +292,7 @@ void main() {
     expect(find.textContaining('cursor'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.text('برداشت‌ها'),
+      find.text('400,000 تومان'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
