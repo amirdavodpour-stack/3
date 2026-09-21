@@ -30,8 +30,16 @@ class OpportunityCard extends StatelessWidget {
         .split(' – ')
         .map((part) {
           final trimmed = part.trim();
-          if (!RegExp(r'^\\d+
-    const fa = {
+          if (!RegExp(r'^\d+$').hasMatch(trimmed)) return part;
+          return trimmed.replaceAllMapped(
+            RegExp(r'\B(?=(\d{3})+(?!\d))'),
+            (_) => ',',
+          );
+        })
+        .join(' – ');
+  }
+
+  String _reason(BuildContext context, String value) {    const fa = {
       'SKILL_MATCH': 'مهارت مرتبط',
       'CATEGORY_MATCH': 'دسته‌بندی مرتبط',
       'VERY_NEAR': 'خیلی نزدیک',
