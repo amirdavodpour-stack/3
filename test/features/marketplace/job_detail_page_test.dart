@@ -135,6 +135,9 @@ class _FakeQueue implements UploadQueue {
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -151,10 +154,11 @@ HopeJob _job({
   String visibility = 'PUBLIC',
   String? ownerId = 'u1',
   String? city = 'Tehran',
+  String? title,
 }) =>
     HopeJob.fromMap({
       'id': id,
-      'title': kind == 'JOB' ? 'Flutter developer' : 'Design a logo',
+      'title': title ?? (kind == 'JOB' ? 'Flutter developer' : 'Design a logo'),
       'description': 'A clear, concise deliverable description for the page.',
       'categoryId': 'c1',
       'category': 'Design',
@@ -252,6 +256,23 @@ void main() {
     expect(find.textContaining('2026-09-30'), findsOneWidget);
     expect(find.textContaining('reviewed by an admin'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
+  });
+
+  testWidgets('long opportunity titles stay contained in the hero',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(
+        title:
+            'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل',
+      ),
+    );
+
+    final title = find.textContaining('طراحی و پیاده‌سازی کامل');
+    expect(title, findsOneWidget);
+    final widget = tester.widget<Text>(title);
+    expect(widget.maxLines, 2);
+    expect(widget.overflow, TextOverflow.ellipsis);
   });
 
   testWidgets('owner job with forwarded candidates renders candidate actions',

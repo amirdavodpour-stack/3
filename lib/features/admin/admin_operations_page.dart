@@ -102,15 +102,19 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             ],
           ),
         ),
-        body: TabBarView(
-          controller: _tabs,
-          children: [
-            _financeTab(),
-            _reportsTab(),
-            _payoutsTab(),
-            _analyticsTab(),
-            _crashTab(),
-          ],
+        body: PremiumPageFrame(
+          maxWidth: 1280,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 56),
+          child: TabBarView(
+            controller: _tabs,
+            children: [
+              _financeTab(),
+              _reportsTab(),
+              _payoutsTab(),
+              _analyticsTab(),
+              _crashTab(),
+            ],
+          ),
         ),
       ),
     );
@@ -390,22 +394,63 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       );
 
   Widget _metricGrid(List<MapEntry<String, dynamic>> entries) {
-    if (entries.isEmpty) return _empty(Icons.info_outline, _t('داده‌ای نیست', 'No metrics'));
-    return GridView.count(
-      crossAxisCount: MediaQuery.sizeOf(context).width >= 900 ? 4 : 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.8,
-      children: entries.take(20).map((e) => PremiumPanel(
-        padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(_value(e.value), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          Text(e.key, maxLines: 2, overflow: TextOverflow.ellipsis),
-        ]),
-      )).toList(),
+    if (entries.isEmpty) {
+      return _empty(
+        Icons.info_outline,
+        _t('داده‌ای نیست', 'No metrics'),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1100
+            ? 4
+            : constraints.maxWidth >= 700
+                ? 3
+                : constraints.maxWidth >= 420
+                    ? 2
+                    : 1;
+
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            mainAxisExtent: columns == 1 ? 82 : 96,
+          ),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: entries.take(20).length,
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            return PremiumPanel(
+              padding: const EdgeInsets.all(13),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _value(entry.value),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.key,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

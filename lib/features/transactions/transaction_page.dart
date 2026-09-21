@@ -12,6 +12,7 @@ import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/copy.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/ui/premium_components.dart';
 import 'transaction_controller.dart';
 import '../../core/marketplace/job.dart';
 part 'transaction_evidence.part.dart';
@@ -89,6 +90,18 @@ class _TransactionPageState extends State<TransactionPage> {
   bool _isOwner(HopeJob? job) =>
       context.read<AuthController>().user?['id']?.toString() == job?.ownerId?.toString();
 
+  String _jobStatusLabel(String? raw) => switch (raw?.toUpperCase()) {
+        'DRAFT' => _t('پیش‌نویس', 'Draft'),
+        'PUBLISHED' => _t('منتشر شده', 'Published'),
+        'FUNDED' => _t('تأمین وجه شده', 'Funded'),
+        'IN_PROGRESS' => _t('در حال انجام', 'In progress'),
+        'DELIVERED' => _t('تحویل شده', 'Delivered'),
+        'UNDER_REVIEW' => _t('در حال بررسی', 'Under review'),
+        'COMPLETED' => _t('تکمیل شده', 'Completed'),
+        'CANCELLED' => _t('لغو شده', 'Cancelled'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
   bool _isProvider(HopeJob? job) =>
       context.read<AuthController>().user?['id']?.toString() == job?.providerId?.toString();
 
@@ -134,7 +147,7 @@ class _TransactionPageState extends State<TransactionPage> {
         'RELEASE_PENDING' => _t('تسویه در حال انجام', 'Settlement pending'),
         'RELEASE_FAILED' => _t('تسویه ناموفق', 'Settlement needs retry'),
         'RELEASED' => _t('تسویه نهایی شد', 'Settled'),
-        _ => status,
+        _ => _t('نیازمند بررسی', 'Needs review'),
       };
 
   int _stepFor(HopeJob? job, String paymentStatus) {
@@ -217,12 +230,31 @@ class _TransactionPageState extends State<TransactionPage> {
   Widget build(BuildContext context) => _buildPage(context);
 }
 
-Widget _moneyRow(BuildContext context, String label, dynamic value, {bool strong = false}) => Padding(
+Widget _moneyRow(BuildContext context, String label, dynamic value, {bool strong = false}) =>
+    Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Expanded(child: Text(label)),
-        Text(moneyLabel(context, value ?? '—'),
-            style: TextStyle(
-                fontWeight: strong ? FontWeight.w800 : FontWeight.w500))
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              moneyLabel(context, value ?? '—'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );

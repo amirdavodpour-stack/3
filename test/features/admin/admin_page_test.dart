@@ -275,7 +275,7 @@ void main() {
     expect(find.text('No applications'), findsOneWidget);
 
     await _openTab(tester, 'Users');
-    expect(find.text('The server did not return data. Try again.'),
+    expect(find.text('No data was returned by the server. Please try again.'),
         findsOneWidget);
   });
 

@@ -3,10 +3,12 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/google_sign_in_service.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -26,6 +28,40 @@ class _LoginPageState extends State<LoginPage> {
     email.dispose();
     password.dispose();
     super.dispose();
+  }
+
+  Future<void> submitGoogle() async {
+    final l10n = AppLocalizations.of(context);
+    final google = context.read<GoogleSignInService?>();
+    if (google == null || !google.isConfigured) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.loginFailedGeneric)),
+        );
+      }
+      return;
+    }
+    setState(() => loading = true);
+    try {
+      await context
+          .read<AuthController>()
+          .loginWithGoogle(google);
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              apiErrorMessage(error, fallback: l10n.loginFailedGeneric),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 
   Future<void> submit() async {
@@ -79,39 +115,109 @@ class _LoginPageState extends State<LoginPage> {
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
                     icon: Icon(
-                        Localizations.localeOf(context).languageCode == 'en'
-                            ? Icons.arrow_back_rounded
-                            : Icons.arrow_forward_rounded),
+                      Localizations.localeOf(context).languageCode == 'en'
+                          ? Icons.arrow_back_rounded
+                          : Icons.arrow_forward_rounded,
+                    ),
                     tooltip: l10n.backButtonTooltip,
                   ),
                   const Spacer(),
-                  const HopeMark(size: 40),
+                  const HopeMark(size: 38),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 22),
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(17),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: const Icon(
+                        Icons.lock_open_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.loginWelcomeBack,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 23,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            l10n.loginWelcomeBackSubtitle,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
               AnimatedEntrance(
-                child: HopeSurface(
-                  padding: const EdgeInsets.all(22),
-                  highlight: true,
+                child: PremiumPanel(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const HopeIconTile(
-                        Icons.waving_hand_rounded,
-                        size: 62,
-                        filled: true,
-                      ),
-                      const SizedBox(height: 18),
+                      if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: loading ? null : submitGoogle,
+                            icon: const Icon(Icons.account_circle_outlined),
+                            label: Text(l10n.signInWithGoogle),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: Theme.of(context).dividerColor)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(l10n.orDivider),
+                            ),
+                            Expanded(child: Divider(color: Theme.of(context).dividerColor)),
+                          ],
+                        ),
+                        const SizedBox(height: 9),
+                      ],
                       Text(
-                        l10n.loginWelcomeBack,
-                        style: Theme.of(context).textTheme.displaySmall,
+                        Localizations.localeOf(context).languageCode == 'en'
+                            ? 'Account email'
+                            : 'ایمیل حساب',
+                        style: Theme.of(context).textTheme.labelLarge,
                       ),
-                      const SizedBox(height: 7),
-                      Text(
-                        l10n.loginWelcomeBackSubtitle,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 23),
+                      const SizedBox(height: 9),
                       TextField(
                         controller: email,
                         keyboardType: TextInputType.emailAddress,
@@ -143,7 +249,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       Align(
-                        alignment: Alignment.centerRight,
+                        alignment: AlignmentDirectional.centerEnd,
                         child: TextButton(
                           onPressed: () => Navigator.push(
                               context, HopeRoutes.passwordReset()),
@@ -157,9 +263,7 @@ class _LoginPageState extends State<LoginPage> {
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Text(l10n.loginButton),
                       ),

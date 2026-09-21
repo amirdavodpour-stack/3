@@ -224,55 +224,55 @@ class _JobsPageState extends State<JobsPage> {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
-    return Material(
-        color: Colors.transparent,
-        child: RefreshIndicator(
-            onRefresh: _refresh,
-            child: FutureBuilder<List<HopeJob>>(
-                future: _future,
-                builder: (context, snapshot) {
-                  final jobs = _filter(snapshot.data ?? const <HopeJob>[]);
-                  return CustomScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                            sliver: SliverToBoxAdapter(
-                                child: _JobsFilterHeader(
-                              kind: _kind,
-                              visibility: _visibility,
-                              categoryError: _categoryError,
-                              cityLabel: _city == 'AUTO'
-                                  ? '${HopeCopy.of(context).copy_near_1df6db0} ${settings.city}'
-                                  : _city,
-                              categoryLabel: _categoryLabel(context),
-                              resultCount: jobs.length,
-                              onQueryChanged: (v) {
-                                setState(() => _query = v);
-                              },
-                              onKindChanged: (v) => setState(() => _kind = v),
-                              onVisibilityChanged: (v) =>
-                                  setState(() => _visibility = v),
-                              onRetryCategories: () {
-                                setState(() {
-                                  _categoryError = null;
-                                  _loadCategories();
-                                });
-                              },
-                              onPickCity: () => _pickCity(context, settings),
-                              onPickCategory: () => _pickCategory(context),
-                              savedSearchCount: _savedSearches.length,
-                              onSaveSearch: _saveCurrentSearch,
-                              onOpenSavedSearches: _openSavedSearches,
-                            ))),
-                        _JobsResultsSliver(
-                          jobs: jobs,
-                          isLoading: snapshot.connectionState ==
-                              ConnectionState.waiting,
-                          hasError: snapshot.hasError,
-                        ),
-                      ]);
-                })));
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: FutureBuilder<List<HopeJob>>(
+        future: _future,
+        builder: (context, snapshot) {
+          final jobs = _filter(snapshot.data ?? const <HopeJob>[]);
+          return PremiumPageFrame(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _JobsFilterHeader(
+                    kind: _kind,
+                    visibility: _visibility,
+                    categoryError: _categoryError,
+                    cityLabel: _city == 'AUTO'
+                        ? '${HopeCopy.of(context).copy_near_1df6db0} ${settings.city}'
+                        : _city,
+                    categoryLabel: _categoryLabel(context),
+                    resultCount: jobs.length,
+                    onQueryChanged: (v) => setState(() => _query = v),
+                    onKindChanged: (v) => setState(() => _kind = v),
+                    onVisibilityChanged: (v) => setState(() => _visibility = v),
+                    onRetryCategories: () {
+                      setState(() {
+                        _categoryError = null;
+                        _loadCategories();
+                      });
+                    },
+                    onPickCity: () => _pickCity(context, settings),
+                    onPickCategory: () => _pickCategory(context),
+                    savedSearchCount: _savedSearches.length,
+                    onSaveSearch: _saveCurrentSearch,
+                    onOpenSavedSearches: _openSavedSearches,
+                  ),
+                ),
+                _JobsResultsSliver(
+                  jobs: jobs,
+                  isLoading:
+                      snapshot.connectionState == ConnectionState.waiting,
+                  hasError: snapshot.hasError,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _pickCity(

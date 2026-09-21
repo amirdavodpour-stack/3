@@ -60,4 +60,10 @@ void main() {
       expect(application.canWithdraw, isTrue);
     });
   });
+  test('statusLabelFor localizes application states', () {
+    final application = HopeApplication.fromMap(payload(status: 'PENDING'));
+    expect(application.statusLabelFor(english: true), 'Pending');
+    expect(application.statusLabelFor(english: false), 'در انتظار بررسی');
+  });
+
 }

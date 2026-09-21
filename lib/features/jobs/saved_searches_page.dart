@@ -203,21 +203,36 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
         icon: const Icon(Icons.add_rounded),
         label: Text(_t('جست‌وجوی جدید', 'New search')),
       ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
+      body: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
-              eyebrow: _t('بازار', 'MARKETPLACE'),
-              title: _t('جست‌وجوهایت را مدیریت کن', 'Manage your saved searches'),
+              eyebrow: _t('جست‌وجو', 'SEARCH'),
+              title: _t('جست‌وجوهای ذخیره‌شده', 'Saved searches'),
               subtitle: _t(
-                'فیلترهای واقعی ذخیره‌شده در حساب را ویرایش یا حذف کن.',
+                'فیلترهای ذخیره‌شده حساب را ویرایش یا حذف کنید.',
                 'Edit or delete the real saved-search filters stored on your account.',
               ),
               trailing: const HopeIconTile(Icons.bookmark_rounded, size: 50, filled: true),
             ),
             const SizedBox(height: 18),
+            if (!_loading && _error == null && _items.isNotEmpty)
+              PremiumStatCard(
+                label: _t('جست‌وجوهای فعال', 'Saved searches'),
+                value: _items.length.toString(),
+                icon: Icons.bookmark_rounded,
+                accent: Theme.of(context).colorScheme.primary,
+                caption: _t(
+                  'فیلترهای ذخیره‌شده حساب شما',
+                  'Saved filters on your account',
+                ),
+              ),
+            if (!_loading && _error == null && _items.isNotEmpty)
+              const SizedBox(height: 12),
             if (_loading)
               const PremiumPanel(
                 child: SizedBox(
@@ -250,14 +265,14 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                     const Icon(Icons.bookmark_border_rounded, size: 40),
                     const SizedBox(height: 12),
                     Text(
-                      _t('هنوز جست‌وجوی ذخیره‌شده‌ای نداری.',
+                      _t('هنوز جست‌وجوی ذخیره‌شده‌ای ندارید.',
                           'You have no saved searches yet.'),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _t('از بخش Explore یک جست‌وجو را ذخیره کن یا از دکمه پایین شروع کن.',
+                      _t('از بخش Explore یک جست‌وجو را ذخیره کنید یا یک جست‌وجوی جدید بسازید.',
                           'Save a search from Explore or start with the button below.'),
                       textAlign: TextAlign.center,
                     ),
@@ -305,7 +320,8 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                   }).toList(),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );

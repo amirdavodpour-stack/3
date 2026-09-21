@@ -10,6 +10,7 @@ import '../../core/transactions/wallet_repository.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
 import '../jobs/jobs_page.dart';
 import '../profile/profile_page.dart';
 import '../transactions/transactions_page.dart';
@@ -36,6 +37,7 @@ class _HomePageState extends State<HomePage> {
             context,
             () => _selectTab(1),
             () => _scaffoldKey.currentState?.openDrawer(),
+            () => _openCreate(context),
           ),
         1 => const JobsPage(key: ValueKey('explore')),
         2 => TransactionsPage(
@@ -76,22 +78,21 @@ class _HomePageState extends State<HomePage> {
         child: isDesktop
             ? Row(
                 children: [
-                  NavigationRail(
+                  PremiumNavigationRail(
                     selectedIndex: tab,
                     onDestinationSelected: _selectTab,
-                    extended: MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded,
-                    minExtendedWidth: 210,
-                    labelType: MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded
-                        ? NavigationRailLabelType.none
-                        : NavigationRailLabelType.all,
-                    leading: const Padding(
-                      padding: EdgeInsets.fromLTRB(8, 12, 8, 22),
-                      child: HopeMark(size: 44, showText: false),
+                    extended:
+                        MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded,
+                    leading: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 12, 8, 22),
+                      child: HopeMark(
+                        size: 44,
+                        showText:
+                            MediaQuery.sizeOf(context).width >=
+                            HopeV2Breakpoints.expanded,
+                      ),
                     ),
-                    destinations: [
-                      for (final d in destinations)
-                        NavigationRailDestination(icon: d.icon, selectedIcon: d.selectedIcon, label: Text(d.label)),
-                    ],
+                    destinations: destinations,
                   ),
                   const VerticalDivider(width: 1),
                   Expanded(child: content),
@@ -101,7 +102,7 @@ class _HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: isDesktop
           ? null
-          : NavigationBar(
+          : PremiumNavigationBar(
               selectedIndex: tab,
               onDestinationSelected: _selectTab,
               destinations: destinations,
@@ -120,9 +121,9 @@ class _HomePageState extends State<HomePage> {
             children: [
               const HopeMark(size: 48),
               const SizedBox(height: 18),
-              Text(_t(context, 'مسیر حرفه‌ای شما', 'Your professional path'), style: Theme.of(context).textTheme.headlineSmall),
+              Text(_t(context, 'منوی برنامه', 'App menu'), style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 6),
-              Text(_t(context, 'دسترسی سریع به فرصت‌ها، کار و تنظیمات.', 'Quick access to opportunities, work, and settings.'), style: Theme.of(context).textTheme.bodyMedium),
+              Text(_t(context, 'دسترسی به بخش‌های برنامه.', 'App sections.'), style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 20),
               _drawerTile(context, Icons.explore_rounded, _t(context, 'کاوش فرصت‌ها', 'Explore opportunities'), () { Navigator.pop(context); _selectTab(1); }),
               if (!auth.isGuest) _drawerTile(context, Icons.local_offer_outlined, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
@@ -135,7 +136,7 @@ class _HomePageState extends State<HomePage> {
                   settings.language == 'en' ? 'Language: English' : 'زبان: فارسی',
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
-                subtitle: Text(_t(context, 'برای تغییر زبان لمس کنید.', 'Tap to switch language.')),
+                subtitle: Text(_t(context, 'تغییر زبان', 'Change language')),
                 onTap: () => settings.setLanguage(settings.language == 'en' ? 'fa' : 'en'),
               ),
               const Divider(height: 26),

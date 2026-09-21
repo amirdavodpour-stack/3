@@ -1,30 +1,37 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class AppColors {
-  static const primary = Color(0xFF6C4DFF);
-  static const primaryDark = Color(0xFFB3A2FF);
-  static const secondary = Color(0xFF22B8A7);
-  static const secondaryStrong = Color(0xFF0C7D70);
-  static const secondaryDark = Color(0xFF3AC3B1);
-  static const ink = Color(0xFF151326);
-  static const muted = Color(0xFF6B6780);
-  static const surface = Color(0xFFFFFFFF);
-  static const background = Color(0xFFF6F5FC);
-  static const success = Color(0xFF0B7A58);
-  static const successDark = Color(0xFF4CD4A3);
-  static const warning = Color(0xFF8F5C0E);
-  static const warningDark = Color(0xFFFFD54F);
-  static const danger = Color(0xFFBA454D);
-  static const dangerDark = Color(0xFFFF8A80);
-  static const softPrimary = Color(0xFFEAE5FF);
-  static const darkBackground = Color(0xFF0C0A12);
-  static const darkSurface = Color(0xFF15131D);
-  static const darkCard = Color(0xFF1C1925);
-  static const darkText = Color(0xFFF8F7FC);
-  static const darkMuted = Color(0xFFAAA6B8);
-}
+import 'hope_v2_design.dart';
 
+class AppColors {
+  // Compatibility facade. New UI code should consume HopeV2Colors directly.
+  const AppColors._();
+
+  static const primary = HopeV2Colors.primary;
+  static const primaryDark = HopeV2Colors.primaryDark;
+  static const secondary = HopeV2Colors.secondary;
+  static const secondaryStrong = HopeV2Colors.secondaryStrong;
+  static const secondaryDark = HopeV2Colors.secondaryDark;
+  static const accent = HopeV2Colors.accent;
+  static const inkSoft = HopeV2Colors.inkSoft;
+  static const backgroundWarm = HopeV2Colors.backgroundWarm;
+  static const ink = HopeV2Colors.ink;
+  static const muted = HopeV2Colors.muted;
+  static const surface = HopeV2Colors.surface;
+  static const background = HopeV2Colors.background;
+  static const success = HopeV2Colors.success;
+  static const successDark = HopeV2Colors.successDark;
+  static const warning = HopeV2Colors.warning;
+  static const warningDark = HopeV2Colors.warningDark;
+  static const danger = HopeV2Colors.danger;
+  static const dangerDark = HopeV2Colors.dangerDark;
+  static const softPrimary = HopeV2Colors.softPrimary;
+  static const darkBackground = HopeV2Colors.darkBackground;
+  static const darkSurface = HopeV2Colors.darkSurface;
+  static const darkCard = HopeV2Colors.darkCard;
+  static const darkText = HopeV2Colors.darkText;
+  static const darkMuted = HopeV2Colors.darkMuted;
+}
 class AppTheme {
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
@@ -42,9 +49,11 @@ class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      fontFamily: 'Vazirmatn',
+      fontFamilyFallback: const ['Roboto'],
       colorScheme: scheme,
       scaffoldBackgroundColor:
-          dark ? AppColors.darkBackground : AppColors.background,
+          dark ? AppColors.darkBackground : AppColors.backgroundWarm,
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
       focusColor: (dark ? AppColors.primaryDark : AppColors.primary)
@@ -71,18 +80,57 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         foregroundColor: textColor,
         centerTitle: false,
+        toolbarHeight: 64,
+        titleSpacing: 16,
+        iconTheme: IconThemeData(color: textColor, size: 23),
         titleTextStyle: TextStyle(
-            fontSize: 21,
-            fontWeight: FontWeight.w900,
-            color: textColor,
-            letterSpacing: -.3),
+          fontSize: 20,
+          fontWeight: FontWeight.w900,
+          color: textColor,
+          letterSpacing: -.3,
+        ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: dark ? const Color(0x287660FF) : AppColors.softPrimary,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        labelColor: scheme.primary,
+        unselectedLabelColor: mutedColor,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+        unselectedLabelStyle:
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        overlayColor: WidgetStatePropertyAll(Colors.transparent),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: dark ? const Color(0x1AFFFFFF) : const Color(0xFFF1EFF7),
+        selectedColor: dark ? const Color(0x337660FF) : AppColors.softPrimary,
+        disabledColor: dark ? Colors.white10 : const Color(0xFFEAE7F0),
+        side: BorderSide(
+          color: dark ? Colors.white10 : const Color(0xFFE1DDEA),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        labelStyle: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+        secondaryLabelStyle: TextStyle(
+          color: mutedColor,
+          fontWeight: FontWeight.w700,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: dark ? AppColors.darkCard : AppColors.surface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       dividerTheme: DividerThemeData(
           color: dark ? Colors.white10 : const Color(0xFFE8E5F0), space: 1),
@@ -113,7 +161,7 @@ class AppTheme {
           minimumSize: const Size.fromHeight(54),
           padding: const EdgeInsets.symmetric(horizontal: 18),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle:
               const TextStyle(fontWeight: FontWeight.w900, letterSpacing: -.1),
         ),
@@ -124,7 +172,7 @@ class AppTheme {
           side: BorderSide(
               color: dark ? Colors.white12 : const Color(0xFFDED9EA)),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -142,8 +190,46 @@ class AppTheme {
             dark ? const Color(0xF714121B) : const Color(0xFDFEFEFF),
         surfaceTintColor: Colors.transparent,
         indicatorColor: dark ? const Color(0x4D7660FF) : AppColors.softPrimary,
-        labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w900
+                : FontWeight.w700,
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : mutedColor,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            size: 23,
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : mutedColor,
+          ),
+        ),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        indicatorColor:
+            dark ? const Color(0x3D7660FF) : AppColors.softPrimary,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        selectedIconTheme: IconThemeData(color: scheme.primary, size: 24),
+        unselectedIconTheme: IconThemeData(color: mutedColor, size: 23),
+        selectedLabelTextStyle: TextStyle(
+          color: scheme.primary,
+          fontWeight: FontWeight.w900,
+        ),
+        unselectedLabelTextStyle: TextStyle(
+          color: mutedColor,
+          fontWeight: FontWeight.w700,
+        ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
@@ -161,18 +247,18 @@ class AppTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       textTheme: TextTheme(
         displaySmall: TextStyle(
-            fontSize: 34,
+            fontSize: 31,
             fontWeight: FontWeight.w900,
             height: 1.08,
             letterSpacing: -.65,
             color: textColor),
         headlineMedium: TextStyle(
-            fontSize: 29,
+            fontSize: 27,
             fontWeight: FontWeight.w900,
             letterSpacing: -.6,
             color: textColor),
         headlineSmall: TextStyle(
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: FontWeight.w900,
             height: 1.08,
             letterSpacing: -.45,
