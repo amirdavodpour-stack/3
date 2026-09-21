@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -23,6 +24,7 @@ class _FakeTx implements TransactionRepository {
   _FakeTx({this.failLoad = false});
 
   Future<HopePayment>? payment;
+  final List<Future<HopePayment>> paymentResponses = [];
   bool failLoad = false;
   final List<String> calls = [];
 
@@ -30,6 +32,9 @@ class _FakeTx implements TransactionRepository {
   Future<HopePayment> getPayment(String jobId) async {
     calls.add('get:$jobId');
     if (failLoad) throw Exception('load boom');
+    if (paymentResponses.isNotEmpty) {
+      return paymentResponses.removeAt(0);
+    }
     return (await payment)!;
   }
 
@@ -267,6 +272,61 @@ void main() {
     expect(find.text('Design landing page'), findsOneWidget);
     expect(find.text('Operation failed.'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('latest transaction refresh wins over an older in-flight refresh',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'HELD',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo, ownerId: 'u1');
+
+    final stale = Completer<HopePayment>();
+    final fresh = Completer<HopePayment>();
+    repo.paymentResponses.addAll([stale.future, fresh.future]);
+
+    final refreshButton = find.byTooltip('Refresh status');
+    expect(refreshButton, findsOneWidget);
+    await tester.tap(refreshButton);
+    await tester.pump();
+    await tester.tap(refreshButton);
+    await tester.pump();
+
+    fresh.complete(HopePayment.fromMap({
+      'id': 'p2',
+      'status': 'HELD',
+      'amount': 2000000,
+      'providerRef': 'ref-2',
+      'job': {
+        ..._job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        'title': 'Fresh landing page',
+      },
+    }));
+    await tester.pumpAndSettle();
+    expect(find.text('Fresh landing page'), findsOneWidget);
+    expect(find.text('2,000,000 TOMAN'), findsOneWidget);
+
+    stale.complete(HopePayment.fromMap({
+      'id': 'p1-old',
+      'status': 'HELD',
+      'amount': 1000000,
+      'providerRef': 'ref-old',
+      'job': {
+        ..._job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        'title': 'Stale landing page',
+      },
+    }));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fresh landing page'), findsOneWidget);
+    expect(find.text('Stale landing page'), findsNothing);
+    expect(find.text('2,000,000 TOMAN'), findsOneWidget);
+    expect(find.text('1,000,000 TOMAN'), findsNothing);
   });
 
   testWidgets('no-transaction view offers fund payment', (tester) async {
