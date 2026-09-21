@@ -389,7 +389,11 @@ class _WalletPageState extends State<WalletPage> {
       if (_isTerminalClientError(error)) await clearPendingOnError?.call();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('عملیات انجام نشد: $error', 'Action failed: $error'))),
+        SnackBar(
+          content: Text(
+            _t('عملیات انجام نشد.', 'Action could not be completed.'),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _actionBusy = false);
