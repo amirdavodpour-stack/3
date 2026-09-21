@@ -131,10 +131,10 @@ void main() {
       );
       final statCards = tester.widgetList<PremiumStatCard>(
         find.byType(PremiumStatCard),
-      );
+      ).toList();
       expect(
-        statCards.any((card) => card.label == 'برداشت‌های در جریان' && card.value == '1'),
-        isTrue,
+        statCards.map((card) => '${card.label}=${card.value}').toList(),
+        contains('برداشت‌های در جریان=1'),
       );
       expect(find.text('موجودی قابل استفاده'), findsWidgets);
       expect(find.text('قفل‌شده'), findsWidgets);
