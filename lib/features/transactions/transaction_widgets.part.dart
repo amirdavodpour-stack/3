@@ -197,6 +197,19 @@ extension on _TransactionPageState {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
               children: [
+              if (error != null) ...[
+                HopeAsyncState(
+                  kind: HopeStateKind.error,
+                  title: _t('به‌روزرسانی پرداخت ناموفق بود', 'Payment refresh failed'),
+                  message: error!,
+                  action: FilledButton.icon(
+                    onPressed: loading ? null : refresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
               LayoutBuilder(
                 builder: (context, constraints) {
                   final compact = constraints.maxWidth < 500;
