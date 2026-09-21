@@ -31,8 +31,12 @@ class _AuthRepo implements AuthRepository {
 class _Transactions implements TransactionRepository {
   List<HopeJob> jobs = const [];
   bool paymentUnavailable = false;
+  bool failList = false;
   @override
-  Future<List<HopeJob>> listMyJobs() async => jobs;
+  Future<List<HopeJob>> listMyJobs() async {
+    if (failList) throw StateError('activity unavailable');
+    return jobs;
+  }
   @override
   Future<HopePayment> getPayment(String id) async {
     if (paymentUnavailable) {
@@ -162,6 +166,27 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('پروژه b'), findsOneWidget);
+  });
+
+  testWidgets('activity refresh failure preserves existing items and shows retry state',
+      (tester) async {
+    final repo = _Transactions()..jobs = [_job('refresh-stale', status: 'IN_PROGRESS')];
+    await _pump(tester, repo);
+
+    expect(find.text('پروژه refresh-stale'), findsOneWidget);
+    repo.failList = true;
+
+    await tester.fling(
+      find.byType(ListView).first,
+      const Offset(0, 400),
+      1000,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('پروژه refresh-stale'), findsOneWidget);
+    expect(find.text('دریافت فعالیت ناموفق بود'), findsOneWidget);
+    expect(find.text('تلاش دوباره'), findsOneWidget);
   });
 
   testWidgets('transactions safely localize unknown job status',
