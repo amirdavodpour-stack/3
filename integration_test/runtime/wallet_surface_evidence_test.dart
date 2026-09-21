@@ -196,8 +196,8 @@ void main() {
     await _pumpBenchmark(
       tester,
       Scaffold(
-        body: const Padding(
-          padding: EdgeInsets.all(16),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
               HopeSurface(child: Text('surface-1')),
