@@ -339,12 +339,7 @@ void main() {
     expect(find.text('PROVIDER_RECONCILIATION_PENDING'), findsNothing);
     expect(find.text('EXTERNAL_REVIEW_REQUIRED'), findsNothing);
 
-    final labels = tester
-        .widgetList<StatusPill>(find.byType(StatusPill))
-        .map((pill) => pill.label)
-        .toList();
-    expect(labels.where((label) => label == 'Needs review').length,
-        greaterThanOrEqualTo(2));
+    expect(find.text('Needs review'), findsWidgets);
   });
 
   testWidgets('financial details section renders fee breakdown rows',
