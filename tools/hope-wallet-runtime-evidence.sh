@@ -50,14 +50,21 @@ assert_hope_focused() {
 
   adb shell dumpsys window windows > "$window_dump" 2>&1 || true
 
-  if ! grep -E "mCurrentFocus=|mFocusedApp=" "$window_dump" | grep -q "com.hope.marketplace"; then
+  local current_focus
+  current_focus="$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
+
+  if ! grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus"; then
     echo "Rendered evidence rejected: HOPE app is not the focused Android window." >&2
     capture_android_diagnostics "$prefix"
     return 1
   fi
 
-  if grep -qiE "not responding|Application Error" "$window_dump"; then
-    echo "Rendered evidence rejected: Android reports a system/application error dialog." >&2
+  # An Android ANR dialog can itself contain the HOPE package name
+  # (e.g. "Application Not Responding: com.hope.marketplace"), so checking only
+  # for the package name is insufficient. Reject any visible ANR/error dialog
+  # before accepting a screenshot as rendered evidence.
+  if grep -qiE "Application Not Responding:|AppErrorDialog|Application Error" "$window_dump"; then
+    echo "Rendered evidence rejected: Android reports an ANR/application-error dialog." >&2
     capture_android_diagnostics "$prefix"
     return 1
   fi
