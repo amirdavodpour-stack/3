@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
@@ -126,7 +127,10 @@ void main() {
         'Payment status: Funds held, amount 1,000,000 Toman',
       );
       final directChildren = <SemanticsNode>[];
-      node.visitChildren(directChildren.add);
+      node.visitChildren((child) {
+        directChildren.add(child);
+        return true;
+      });
       expect(
         directChildren.where(
           (child) => child.label == 'Payment details, Funds held',
