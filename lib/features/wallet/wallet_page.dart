@@ -168,7 +168,7 @@ class _WalletPageState extends State<WalletPage> {
       case 'REFUND':
         return _t('بازگشت وجه', 'Refund');
       default:
-        return _t('ثبت مالی', 'Ledger entry');
+        return _t('سایر فعالیت‌ها', 'Other activity');
     }
   }
 
