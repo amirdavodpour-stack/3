@@ -197,10 +197,21 @@ void main() {
 
     expect(texts.where((value) => value.contains('IRR')), isEmpty);
     expect(texts.any((value) => value.contains('2,500,000 Toman')), isTrue);
+    await tester.scrollUntilVisible(
+      find.textContaining('Locked:'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    texts = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((text) => text.data ?? '')
+        .toList();
     expect(texts.any((value) => value.contains('1,000,000 Toman')), isTrue);
 
     await tester.scrollUntilVisible(
-      find.text('تاریخچه کیف پول'),
+      find.text('Wallet history'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
@@ -213,7 +224,7 @@ void main() {
     expect(texts.any((value) => value.contains('500,000 Toman')), isTrue);
 
     await tester.scrollUntilVisible(
-      find.text('برداشت‌ها'),
+      find.text('Withdrawals'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
