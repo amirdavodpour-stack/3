@@ -204,10 +204,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.bySemanticsLabel('انتقال داخلی، ورودی، +500,000 تومان'),
-      findsOneWidget,
-    );
+    final row = find.ancestor(
+      of: find.text('انتقال داخلی'),
+      matching: find.byType(Semantics),
+    ).first;
+    final node = tester.getSemantics(row);
+    expect(node.label, 'انتقال داخلی، ورودی، +500,000 تومان');
   });
 
   testWidgets('wallet treats backend ledger currencies as internal Toman',
