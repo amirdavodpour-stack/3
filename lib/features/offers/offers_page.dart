@@ -163,45 +163,85 @@ class _OffersPageState extends State<OffersPage> {
     );
   }
 
-  Widget _card(HopeOffer o)=>Padding(
-    padding:const EdgeInsets.only(bottom:10),
-    child:Semantics(
-      container:true,
-      explicitChildNodes:true,
-      button:true,
-      label:_t('پیشنهاد ${o.id}، مبلغ ${_money(o.price)}، ${_statusLabel(o.status)}','Offer ${o.id}, amount ${_money(o.price)}, ${_statusLabel(o.status)}'),
-      onTap:()=>_showDetails(o),
-      child:InkWell(
-        excludeFromSemantics:true,
-        borderRadius:BorderRadius.circular(18),
-        child:PremiumPanel(
-          padding:const EdgeInsets.all(15),
-          child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Row(children:[
-              const HopeIconTile(Icons.sell_outlined,filled:true),
-              const SizedBox(width:10),
-              Expanded(child:Text('${_t('مبلغ','Amount')}: ${_money(o.price)}',style:Theme.of(context).textTheme.titleMedium)),
-              StatusPill(_statusLabel(o.status), color: _statusColor(context, o.status)),
-            ]),
-            if(o.message.trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:10),child:Text(o.message,maxLines:3,overflow:TextOverflow.ellipsis)),
-            const SizedBox(height:8),
-            Text('${_t('شناسه فرصت','Job')}: ${o.jobId}',style:Theme.of(context).textTheme.bodySmall),
-            if(o.createdAt!=null)Text('${_t('ایجاد','Created')}: ${o.createdAt}',style:Theme.of(context).textTheme.bodySmall),
-            if(widget.jobId!=null && o.isPending)Padding(
-              padding:const EdgeInsets.only(top:12),
-              child:FilledButton.icon(
-                onPressed:()=>_accept(o),
-                icon:const Icon(Icons.check_rounded),
-                label:Text(_t('پذیرش پیشنهاد','Accept offer')),
+  Widget _card(HopeOffer o) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: PremiumPanel(
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            container: true,
+            button: true,
+            excludeSemantics: true,
+            label: _t(
+              'پیشنهاد ${o.id}، مبلغ ${_money(o.price)}، ${_statusLabel(o.status)}',
+              'Offer ${o.id}, amount ${_money(o.price)}, ${_statusLabel(o.status)}',
+            ),
+            onTap: () => _showDetails(o),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => _showDetails(o),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const HopeIconTile(Icons.sell_outlined, filled: true),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${_t('مبلغ', 'Amount')}: ${_money(o.price)}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      StatusPill(
+                        _statusLabel(o.status),
+                        color: _statusColor(context, o.status),
+                      ),
+                    ],
+                  ),
+                  if (o.message.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        o.message,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_t('شناسه فرصت', 'Job')}: ${o.jobId}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  if (o.createdAt != null)
+                    Text(
+                      '${_t('ایجاد', 'Created')}: ${o.createdAt}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      _t('برای جزئیات لمس کنید', 'Tap for details'),
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height:4),
-            Align(
-              alignment:AlignmentDirectional.centerEnd,
-              child:Text(_t('برای جزئیات لمس کنید','Tap for details'),style:Theme.of(context).textTheme.labelMedium),
+          ),
+          if (widget.jobId != null && o.isPending)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: FilledButton.icon(
+                onPressed: () => _accept(o),
+                icon: const Icon(Icons.check_rounded),
+                label: Text(_t('پذیرش پیشنهاد', 'Accept offer')),
+              ),
             ),
-          ]),
-        ),
+        ],
       ),
     ),
   );
