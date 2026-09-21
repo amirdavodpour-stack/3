@@ -19,7 +19,6 @@ on:
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - 'android/**'
-      - '.github/workflows/hope-ui-runtime-evidence.yml'
   workflow_dispatch:
 
 concurrency:
