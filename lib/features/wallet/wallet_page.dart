@@ -699,7 +699,7 @@ class _WalletPageState extends State<WalletPage> {
               ];
               return GridView.count(
                 crossAxisCount: wide ? 3 : 1,
-                childAspectRatio: wide ? 1.55 : 2.9,
+                mainAxisExtent: wide ? 156 : 140,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
                 shrinkWrap: true,
