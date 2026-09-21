@@ -195,8 +195,8 @@ void main() {
   testWidgets('Wallet primitives render benchmark', (tester) async {
     await _pumpBenchmark(
       tester,
-      const Scaffold(
-        body: Padding(
+      Scaffold(
+        body: const Padding(
           padding: EdgeInsets.all(16),
           child: ListView(
             children: [
