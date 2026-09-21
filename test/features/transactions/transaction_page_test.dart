@@ -324,6 +324,29 @@ void main() {
     expect(find.text('This financial cycle is fully settled.'), findsOneWidget);
   });
 
+  testWidgets('transaction status surfaces never leak unknown backend states',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'PROVIDER_RECONCILIATION_PENDING',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'EXTERNAL_REVIEW_REQUIRED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo);
+
+    expect(find.text('PROVIDER_RECONCILIATION_PENDING'), findsNothing);
+    expect(find.text('EXTERNAL_REVIEW_REQUIRED'), findsNothing);
+
+    final labels = tester
+        .widgetList<StatusPill>(find.byType(StatusPill))
+        .map((pill) => pill.label)
+        .toList();
+    expect(labels.where((label) => label == 'Needs review').length,
+        greaterThanOrEqualTo(2));
+  });
+
   testWidgets('financial details section renders fee breakdown rows',
       (tester) async {
     final repo = _FakeTx()
