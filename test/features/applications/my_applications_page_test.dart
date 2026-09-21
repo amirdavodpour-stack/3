@@ -117,10 +117,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Could not load applications.'), findsOneWidget);
+    expect(find.text('Could not load applications.'), findsWidgets);
     expect(find.text('Retry'), findsOneWidget);
     expect(
       find.text('You have not submitted any applications yet.'),
+      findsNothing,
+    );
+
+    profile.fail = false;
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Design task'), findsOneWidget);
+    expect(find.text('Retry'), findsNothing);
+    expect(
+      find.text('Could not load applications.'),
       findsNothing,
     );
   });
