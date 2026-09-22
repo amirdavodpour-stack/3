@@ -115,8 +115,15 @@ screens=(
   "password-reset-en-ltr"
 )
 
-for marker in "${screens[@]}"; do
-  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" 120
+first_marker_timeout=900
+
+for index in "${!screens[@]}"; do
+  marker="${screens[$index]}"
+  timeout_seconds=120
+  if [ "$index" -eq 0 ]; then
+    timeout_seconds="$first_marker_timeout"
+  fi
+  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" "$timeout_seconds"
 done
 
 set +e
