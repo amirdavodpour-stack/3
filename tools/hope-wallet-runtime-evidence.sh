@@ -12,6 +12,9 @@ ack_dir="$runner_temp/hope-screen-acks"
 rm -rf "$ack_dir"
 mkdir -p "$ack_dir"
 
+adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
+adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
+
 set +e
 stdbuf -oL -eL env HOPE_SCREENSHOT_ACK_DIR="$ack_dir" flutter test --no-pub \
   integration_test/runtime/critical_screens_evidence_test.dart \
@@ -74,6 +77,9 @@ capture_screen() {
       adb wait-for-device
       assert_hope_focused "$prefix"
       adb exec-out screencap -p > "$evidence_dir/$output"
+      adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
+      adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
+      adb exec-out cat /sdcard/hope-ui-hierarchy.xml > "$evidence_dir/ui-hierarchy-$prefix.xml" 2>/dev/null || true
       : > "$ack_dir/$marker"
       return 0
     fi
@@ -136,12 +142,64 @@ done
 
 set +e
 wait "$test_pid"
-test_status=$?
+baseline_status=$?
 set -e
+
+if [ "$baseline_status" -ne 0 ]; then
+  test_status="$baseline_status"
+else
+  test_status=0
+fi
+
+adb shell wm size 720x1280
+sleep 2
+rm -rf "$ack_dir"
+mkdir -p "$ack_dir"
+: > "$runner_temp/hope-responsive-runtime.log"
+
+set +e
+HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL env HOPE_SCREENSHOT_ACK_DIR="$ack_dir" flutter test --no-pub \
+  integration_test/runtime/critical_screens_evidence_test.dart \
+  -r expanded 2>&1 | tee "$runner_temp/hope-responsive-runtime.log" &
+responsive_test_pid=$!
+set -e
+
+responsive_screens=(
+  "responsive-720x1280-home-fa-rtl"
+  "responsive-720x1280-jobs-fa-rtl"
+  "responsive-720x1280-job-detail-fa-rtl"
+  "responsive-720x1280-wallet-fa-rtl"
+  "responsive-720x1280-profile-fa-rtl"
+  "responsive-720x1280-transactions-fa-rtl"
+  "responsive-720x1280-home-en-ltr"
+  "responsive-720x1280-jobs-en-ltr"
+  "responsive-720x1280-job-detail-en-ltr"
+  "responsive-720x1280-wallet-en-ltr"
+  "responsive-720x1280-profile-en-ltr"
+  "responsive-720x1280-transactions-en-ltr"
+)
+
+for marker in "${responsive_screens[@]}"; do
+  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" 180
+done
+
+set +e
+wait "$responsive_test_pid"
+responsive_status=$?
+set -e
+
+adb shell wm size reset || true
+adb shell sleep 1 >/dev/null 2>&1 || true
+
+if [ "$responsive_status" -ne 0 ] && [ "$test_status" -eq 0 ]; then
+  test_status="$responsive_status"
+fi
 
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
 adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || true
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
+printf '%s
+' '720x1280' > "$evidence_dir/responsive-viewport.txt"
 
 cat > "$evidence_dir/metadata.json" <<EOF
 {
@@ -151,6 +209,8 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "sha": "$GITHUB_SHA",
   "evidence_type": "rendered_android_runtime",
   "screens": 30,
+  "responsive_screens": 12,
+  "responsive_viewport": "720x1280",
   "locales": ["fa-RTL", "en-LTR"],
   "theme": "light",
   "interactive_target_contract": "48px",
