@@ -218,7 +218,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         HopeCopy.of(context).copy_work_profile_885ecac,
                       ),
                       subtitle: Text(
-                        '${data?.providerType.isNotEmpty == true ? data!.providerType : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? data!.capacity : HopeCopy.of(context).copy_open_to_work_aa59263}',
+                        '${data?.providerType.isNotEmpty == true ? _providerTypeLabel(context, data!.providerType) : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? data!.capacity : HopeCopy.of(context).copy_open_to_work_aa59263}',
                       ),
                     ),
                     const Divider(height: 1),
@@ -230,7 +230,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           runSpacing: 10,
                           children: [
                             _trustMetric(context, Icons.verified_rounded, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : AppColors.muted),
-                            if (data.providerType.isNotEmpty) _trustMetric(context, Icons.work_outline_rounded, data.providerType, Theme.of(context).colorScheme.secondary),
+                            if (data.providerType.isNotEmpty)
+                              _trustMetric(
+                                context,
+                                Icons.work_outline_rounded,
+                                _providerTypeLabel(context, data.providerType),
+                                Theme.of(context).colorScheme.secondary,
+                              ),
                             if (data.capacity.isNotEmpty) _trustMetric(context, Icons.timelapse_rounded, data.capacity, AppColors.warning),
                             if (data.completedJobs > 0) _trustMetric(context, Icons.task_alt_rounded, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', AppColors.success),
                             if (data.activeJobs > 0) _trustMetric(context, Icons.play_circle_outline_rounded, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
@@ -249,7 +255,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       subtitle: Text(
                         data?.verificationStatus.isNotEmpty == true
-                            ? data!.verificationStatus
+                            ? _verificationStatusLabel(
+                                context, data!.verificationStatus)
                             : HopeCopy.of(context).copy_not_completed_f8a6746,
                       ),
                     ),
@@ -477,6 +484,31 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _providerTypeLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'INDIVIDUAL':
+      case 'FREELANCER':
+        return _t(context, 'مجری مستقل', 'Independent provider');
+      case 'BUSINESS':
+        return _t(context, 'کسب‌وکار', 'Business');
+      default:
+        return HopeCopy.of(context).copy_professional_user_54818b8;
+    }
+  }
+
+  String _verificationStatusLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'VERIFIED':
+        return _t(context, 'تأییدشده', 'Verified');
+      case 'UNVERIFIED':
+        return _t(context, 'تأیید نشده', 'Not verified');
+      case 'PENDING':
+        return _t(context, 'در انتظار بررسی', 'Pending review');
+      default:
+        return _t(context, 'نیازمند بررسی', 'Needs review');
+    }
+  }
 
   Widget _guest(
     BuildContext context,

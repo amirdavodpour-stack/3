@@ -209,14 +209,9 @@ testWidgets('withdrawing an application disables the action until completion',
     expect(find.text('کاربر'), findsWidgets);
     expect(find.text('سلام، کاربر'), findsNothing);
 
-    final individual = find.text('INDIVIDUAL');
-    var attempts = 0;
-    while (attempts < 6 && individual.evaluate().isEmpty) {
-      await tester.drag(find.byType(ListView), const Offset(0, -200));
-      await tester.pump();
-      attempts++;
-    }
-    expect(individual, findsOneWidget);
-    expect(find.textContaining('VERIFIED'), findsOneWidget);
+    expect(find.text('مجری مستقل'), findsOneWidget);
+    expect(find.text('INDIVIDUAL'), findsNothing);
+    expect(find.text('تأییدشده'), findsOneWidget);
+    expect(find.textContaining('VERIFIED'), findsNothing);
   });
 }
