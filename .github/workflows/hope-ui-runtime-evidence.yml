@@ -58,7 +58,7 @@ jobs:
           key: hope-android-sdk-api35-cmake3.22.1-default-${{ runner.os }}-v1
 
       - name: Cache Android AVD
-        uses: actions/cache@caa296126883cff596d87d8935842fbfb # v5.0.1
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.0.1
         with:
           path: |
             ~/.android/avd/*
