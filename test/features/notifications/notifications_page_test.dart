@@ -139,11 +139,11 @@ testWidgets('latest notification refresh wins over an older in-flight load',
 
     expect(find.text('عنوان اعلان'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Refresh'));
+    await tester.tap(find.byTooltip('بازخوانی'));
     await tester.pump();
     expect(repo.listCalls, 2);
 
-    await tester.tap(find.byTooltip('Refresh'));
+    await tester.tap(find.byTooltip('بازخوانی'));
     await tester.pumpAndSettle();
 
     expect(repo.listCalls, 3);
