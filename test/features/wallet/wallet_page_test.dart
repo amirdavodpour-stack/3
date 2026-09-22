@@ -170,6 +170,57 @@ class _PagedWallet implements WalletRepository {
   }) async => const {};
 }
 
+
+class _ConcurrentWallet implements WalletRepository {
+  int _getWalletCalls = 0;
+  final Completer<HopeWallet> firstRefresh = Completer<HopeWallet>();
+
+  HopeWallet _wallet(int balance) => HopeWallet.fromMap({
+        'id': 'wallet-concurrent',
+        'userId': 'u1',
+        'currency': 'TOMAN',
+        'availableBalance': balance,
+        'lockedBalance': 0,
+        'status': 'ACTIVE',
+      });
+
+  @override
+  Future<HopeWallet> getWallet() async {
+    _getWalletCalls += 1;
+    if (_getWalletCalls == 1) return _wallet(2500000);
+    if (_getWalletCalls == 2) return firstRefresh.future;
+    return _wallet(9900000);
+  }
+
+  @override
+  Future<WalletTransactionsPage> listTransactions({
+    int limit = 30,
+    String? cursor,
+  }) async => const WalletTransactionsPage(items: []);
+
+  @override
+  Future<List<HopePayout>> listPayouts() async => const [];
+
+  @override
+  Future<Map<String, dynamic>> transfer({
+    required String destinationWalletId,
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+
+  @override
+  Future<Map<String, dynamic>> requestPayout({
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+
+  @override
+  Future<Map<String, dynamic>> topUp({
+    required int amount,
+    required String idempotencyKey,
+  }) async => const {};
+}
+
 class _AuthRepo implements AuthRepository {
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
@@ -186,6 +237,58 @@ class _AuthRepo implements AuthRepository {
 }
 
 void main() {
+
+  testWidgets(
+    'an older refresh response cannot overwrite a newer refresh result',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _ConcurrentWallet();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('2,500,000 Toman'), findsWidgets);
+
+      final refreshIndicator =
+          tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
+      final olderRefresh = refreshIndicator.onRefresh();
+      await tester.pump();
+
+      final newerRefresh = refreshIndicator.onRefresh();
+      await newerRefresh;
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('9,900,000 Toman'), findsWidgets);
+
+      wallet.firstRefresh.complete(wallet._wallet(2500000));
+      await olderRefresh;
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('9,900,000 Toman'), findsWidgets);
+      expect(find.textContaining('2,500,000 Toman'), findsNothing);
+    },
+  );
+
+
   testWidgets(
     'refresh invalidates an older wallet load-more response',
     (tester) async {
