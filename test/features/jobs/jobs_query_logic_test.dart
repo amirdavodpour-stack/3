@@ -367,7 +367,10 @@ void main() {
       expect(source, contains('bool _savedSearchMutationBusy = false;'));
       expect(source, contains('if (_savedSearchMutationBusy) return;'));
       expect(source, contains('setState(() => _savedSearchMutationBusy = true);'));
-      expect(source, contains('_savedSearchMutationBusy ? null : _saveCurrentSearch'));
+      expect(
+        source,
+        contains('_savedSearchMutationBusy ? null : _saveCurrentSearch'),
+      );
       expect(source, contains('StatefulBuilder'));
       expect(source, contains('deleteBusyId'));
     });
