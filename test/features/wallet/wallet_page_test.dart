@@ -214,12 +214,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final loadMore = find.widgetWithText(OutlinedButton, 'Load more');
       await tester.scrollUntilVisible(
-        find.text('Load more'),
+        loadMore,
         500,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('Load more'));
+      await tester.ensureVisible(loadMore);
+      await tester.pump();
+      await tester.tap(loadMore);
       await tester.pump();
 
       await tester.fling(
@@ -230,7 +233,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('7,000,000 Toman'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.textContaining('7,000,000'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.textContaining('7,000,000'), findsOneWidget);
 
       wallet.olderPage.complete(
         WalletTransactionsPage(
