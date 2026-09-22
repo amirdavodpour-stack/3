@@ -186,6 +186,42 @@ Future<void> _openTab(WidgetTester tester, String label) async {
 }
 
 void main() {
+  testWidgets('admin presentation localizes backend enum fields', (tester) async {
+    final repo = _FakeAdmin()
+      ..jobs = [_job('j1', kind: 'MISSION', status: 'CANCELLED')]
+      ..applications = [
+        HopeApplication.fromMap({
+          'id': 'a1',
+          'jobId': 'j1',
+          'jobTitle': 'Mission',
+          'status': 'FORWARDED',
+        }),
+      ]
+      ..users = [
+        const HopeAdminUser(
+          id: 'u1',
+          displayName: 'Sara',
+          email: 'sara@example.com',
+          role: 'USER',
+          status: 'SUSPENDED',
+        ),
+      ];
+    await _pump(tester, repo);
+
+    expect(find.textContaining('Mission'), findsWidgets);
+    expect(find.textContaining('Cancelled'), findsOneWidget);
+    expect(find.textContaining('FORWARDED'), findsNothing);
+
+    await _openTab(tester, 'Applications');
+    expect(find.textContaining('Forwarded'), findsOneWidget);
+    expect(find.textContaining('FORWARDED'), findsNothing);
+
+    await _openTab(tester, 'Users');
+    expect(find.textContaining('User'), findsWidgets);
+    expect(find.textContaining('Suspended'), findsOneWidget);
+    expect(find.textContaining('SUSPENDED'), findsNothing);
+  });
+
 testWidgets('admin action runner ignores duplicate submissions while busy',
       (tester) async {
     final repo = _FakeAdmin()
@@ -266,7 +302,8 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
 
     // Opportunities tab: draft rows offer the publish action.
     expect(find.text('Design a logo'), findsOneWidget);
-    expect(find.textContaining('DRAFT'), findsOneWidget);
+    expect(find.textContaining('Draft'), findsOneWidget);
+    expect(find.textContaining('DRAFT'), findsNothing);
     final publish = find.byTooltip('Publish');
     expect(publish, findsOneWidget);
     await tester.ensureVisible(publish);
@@ -294,7 +331,8 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
 
     // Audit log tab: system actor fallback for empty actor name.
     await _openTab(tester, 'Audit log');
-    expect(find.text('JOB_MODERATED'), findsOneWidget);
+    expect(find.text('Opportunity moderation'), findsOneWidget);
+    expect(find.text('JOB_MODERATED'), findsNothing);
     expect(find.textContaining('System'), findsOneWidget);
   });
 

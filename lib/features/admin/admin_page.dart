@@ -78,6 +78,72 @@ class _AdminPageState extends State<AdminPage>
     return text.isEmpty ? '?' : text.characters.first.toUpperCase();
   }
 
+  String _t(String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _jobKindLabel(String value) => switch (value.trim().toUpperCase()) {
+        'MISSION' => _t('ماموریت', 'Mission'),
+        'JOB' => _t('شغل', 'Job'),
+        _ => _t('سایر', 'Other'),
+      };
+
+  String _jobStatusLabel(String value) => switch (value.trim().toUpperCase()) {
+        'DRAFT' => _t('پیش‌نویس', 'Draft'),
+        'PUBLISHED' => _t('منتشر شده', 'Published'),
+        'FUNDED' => _t('تأمین وجه شده', 'Funded'),
+        'ASSIGNED' => _t('اختصاص داده شده', 'Assigned'),
+        'IN_PROGRESS' => _t('در حال انجام', 'In progress'),
+        'DELIVERED' => _t('تحویل شده', 'Delivered'),
+        'UNDER_REVIEW' => _t('در حال بررسی', 'Under review'),
+        'COMPLETED' => _t('تکمیل شده', 'Completed'),
+        'CANCELLED' => _t('لغو شده', 'Cancelled'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _applicationStatusLabel(String value) => switch (value.trim().toUpperCase()) {
+        'PENDING' => _t('در انتظار بررسی', 'Pending'),
+        'SHORTLISTED' => _t('در فهرست کوتاه', 'Shortlisted'),
+        'FORWARDED' => _t('ارسال‌شده', 'Forwarded'),
+        'INTERVIEW' => _t('مصاحبه', 'Interview'),
+        'OFFERED' => _t('پیشنهاد داده شد', 'Offer sent'),
+        'HIRED' => _t('استخدام شد', 'Hired'),
+        'REJECTED' => _t('رد شده', 'Rejected'),
+        'WITHDRAWN' => _t('پس گرفته شد', 'Withdrawn'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _userRoleLabel(String value) => switch (value.trim().toUpperCase()) {
+        'USER' => _t('کاربر', 'User'),
+        'ADMIN' => _t('مدیر', 'Admin'),
+        _ => _t('سایر', 'Other'),
+      };
+
+  String _userStatusLabel(String value) => switch (value.trim().toUpperCase()) {
+        'ACTIVE' => _t('فعال', 'Active'),
+        'SUSPENDED' => _t('معلق', 'Suspended'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _auditActionLabel(String value) => switch (value.trim().toUpperCase()) {
+        'ADMIN_JOB_MODERATE' => _t('مدیریت فرصت', 'Opportunity moderation'),
+        'ADMIN_JOB_DELETE' => _t('حذف فرصت', 'Opportunity deletion'),
+        'ADMIN_USER_STATUS' => _t('تغییر وضعیت کاربر', 'User status change'),
+        'ADMIN_APPLICATION_SHORTLIST' => _t('انتخاب اولیه درخواست', 'Application shortlist'),
+        'ADMIN_APPLICATION_FORWARD' => _t('ارسال درخواست', 'Application forwarding'),
+        'ADMIN_APPLICATION_REJECT' => _t('رد درخواست', 'Application rejection'),
+        'TRUST_REPORT_STATUS' => _t('تغییر وضعیت گزارش اعتماد', 'Trust report status'),
+        _ => _t('رویداد سیستمی', 'System event'),
+      };
+
+  String _entityTypeLabel(String value) => switch (value.trim().toUpperCase()) {
+        'USER' => _t('کاربر', 'User'),
+        'JOB' => _t('فرصت', 'Opportunity'),
+        'JOB_APPLICATION' => _t('درخواست', 'Application'),
+        'TRUST_REPORT' => _t('گزارش اعتماد', 'Trust report'),
+        'PAYOUT' => _t('تسویه', 'Payout'),
+        _ => _t('سایر', 'Other'),
+      };
+
   @override
   Widget build(BuildContext context) => Directionality(
         textDirection: Localizations.localeOf(context).languageCode == 'en'
@@ -251,7 +317,7 @@ class _AdminPageState extends State<AdminPage>
                                       Theme.of(context).textTheme.titleMedium),
                               const SizedBox(height: 3),
                               Text(
-                                  '${job.kind} • ${job.city ?? HopeCopy.of(context).copy_remote_dcbb625} • $status')
+                                  '${_jobKindLabel(job.kind)} • ${job.city ?? HopeCopy.of(context).copy_remote_dcbb625} • ${_jobStatusLabel(status)}')
                             ])),
                         if (status == 'DRAFT')
                           IconButton(
@@ -311,7 +377,7 @@ class _AdminPageState extends State<AdminPage>
                             title: Text(
                                 HopeCopy.of(context).copy_candidate_c67d7bf),
                             subtitle: Text(
-                                '${a.jobTitle.isEmpty ? HopeCopy.of(context).copy_job_ce2feba : a.jobTitle} • $status')),
+                                '${a.jobTitle.isEmpty ? HopeCopy.of(context).copy_job_ce2feba : a.jobTitle} • ${_applicationStatusLabel(status)}')),
                         if (status == 'PENDING')
                           Row(children: [
                             Expanded(
@@ -390,7 +456,7 @@ class _AdminPageState extends State<AdminPage>
                               child: Text(_initial(u.displayName))),
                           title: Text(u.displayName),
                           subtitle: Text(
-                              '${u.email.isEmpty ? '—' : u.email} • ${u.role} • $status'),
+                              '${u.email.isEmpty ? '—' : u.email} • ${_userRoleLabel(u.role)} • ${_userStatusLabel(status)}'),
                           trailing: u.role == 'ADMIN'
                               ? null
                               : IconButton(
@@ -432,9 +498,9 @@ class _AdminPageState extends State<AdminPage>
                               contentPadding: EdgeInsets.zero,
                               leading:
                                   const HopeIconTile(Icons.history_rounded),
-                              title: Text(a.action),
+                              title: Text(_auditActionLabel(a.action)),
                               subtitle: Text(
-                                  '${a.actorName.isEmpty ? HopeCopy.of(context).copy_system_bf4e081 : a.actorName} • ${a.entityType} • ${a.createdAt}'))));
+                                  '${a.actorName.isEmpty ? HopeCopy.of(context).copy_system_bf4e081 : a.actorName} • ${_entityTypeLabel(a.entityType)} • ${a.createdAt}'))));
                 }).toList());
           });
 

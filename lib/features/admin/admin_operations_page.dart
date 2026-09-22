@@ -55,6 +55,38 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  String _reportStatusLabel(Object? value) =>
+      switch (value?.toString().trim().toUpperCase()) {
+        'OPEN' => _t('باز', 'Open'),
+        'REVIEWING' => _t('در حال بررسی', 'Reviewing'),
+        'RESOLVED' => _t('حل‌شده', 'Resolved'),
+        'DISMISSED' => _t('ردشده', 'Dismissed'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _reportEntityTypeLabel(Object? value) =>
+      switch (value?.toString().trim().toUpperCase()) {
+        'USER' => _t('کاربر', 'User'),
+        'JOB' => _t('فرصت', 'Opportunity'),
+        _ => _t('سایر', 'Other'),
+      };
+
+  String _payoutStatusLabel(Object? value) =>
+      switch (value?.toString().trim().toUpperCase()) {
+        'SUCCEEDED' => _t('موفق', 'Succeeded'),
+        'FAILED' => _t('ناموفق', 'Failed'),
+        'PENDING' => _t('در انتظار', 'Pending'),
+        'UNKNOWN' => _t('نیازمند بررسی', 'Needs review'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _reportNextLabel(String value) => switch (value) {
+        'REVIEWING' => _t('در حال بررسی', 'Reviewing'),
+        'RESOLVED' => _t('حل‌شده', 'Resolved'),
+        'DISMISSED' => _t('ردشده', 'Dismissed'),
+        _ => _t('تغییر وضعیت', 'Change status'),
+      };
+
   String _value(dynamic v) {
     if (v == null) return '—';
     if (v is num) return v.toString();
@@ -203,14 +235,14 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               '${row['reason'] ?? _t('گزارش', 'Report')}',
               style: Theme.of(context).textTheme.titleMedium,
             )),
-            StatusPill(status, icon: Icons.circle_outlined, color: secondaryAccent(context)),
+            StatusPill(_reportStatusLabel(status), icon: Icons.circle_outlined, color: secondaryAccent(context)),
           ]),
           if ('${row['details'] ?? ''}'.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('${row['details']}'),
           ],
           const SizedBox(height: 8),
-          Text('${row['entityType'] ?? '—'} • ${row['entityId'] ?? '—'} • ${row['createdAt'] ?? '—'}',
+          Text('${_reportEntityTypeLabel(row['entityType'])} • ${row['entityId'] ?? '—'} • ${row['createdAt'] ?? '—'}',
               style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
@@ -218,7 +250,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               if (next != status)
                 OutlinedButton(
                   onPressed: id.isEmpty || _operationBusy ? null : () => _setReportStatus(id, next),
-                  child: Text(next),
+                  child: Text(_reportNextLabel(next)),
                 ),
           ]),
         ]),
@@ -274,7 +306,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             const SizedBox(width: 10),
             Expanded(child: Text('${_t('تسویه', 'Payout')} ${id.isEmpty ? '—' : id}',
                 style: Theme.of(context).textTheme.titleMedium)),
-            StatusPill('${row['status'] ?? 'UNKNOWN'}', color: AppColors.warning),
+            StatusPill(_payoutStatusLabel(row['status']), color: AppColors.warning),
           ]),
           const SizedBox(height: 8),
           Text(row.entries

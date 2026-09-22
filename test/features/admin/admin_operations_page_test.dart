@@ -20,6 +20,17 @@ class _FakeAdminOperations implements AdminRepository {
       'currency': 'TOMAN',
     },
   ];
+  List<Map<String, dynamic>> reports = const [
+    {
+      'id': 'r1',
+      'status': 'OPEN',
+      'entityType': 'JOB',
+      'entityId': 'j1',
+      'reason': 'Spam',
+      'details': '',
+      'createdAt': '2026-09-22T00:00:00Z',
+    },
+  ];
 
   @override
   Future<HopeAdminSummary> getSummary() async =>
@@ -59,8 +70,7 @@ class _FakeAdminOperations implements AdminRepository {
   Future<Map<String, dynamic>> getFinanceSummary() async => const {};
 
   @override
-  Future<List<Map<String, dynamic>>> listTrustReports({String? status}) async =>
-      const [];
+  Future<List<Map<String, dynamic>>> listTrustReports({String? status}) async => reports;
 
   @override
   Future<void> updateTrustReportStatus(String id, String status) async {}
@@ -101,6 +111,22 @@ Widget _host(_FakeAdminOperations repository) => MaterialApp(
     );
 
 void main() {
+  testWidgets('trust report enum fields use localized presentation', (tester) async {
+    final repository = _FakeAdminOperations();
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Trust & Safety'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open'), findsOneWidget);
+    expect(find.text('Job'), findsOneWidget);
+    expect(find.text('OPEN'), findsNothing);
+    expect(find.text('JOB'), findsNothing);
+    expect(find.text('Reviewing'), findsOneWidget);
+    expect(find.text('Resolved'), findsOneWidget);
+    expect(find.text('Dismissed'), findsOneWidget);
+  });
+
   testWidgets(
     'unknown payout resolution disables duplicate operational actions until completion',
     (tester) async {
