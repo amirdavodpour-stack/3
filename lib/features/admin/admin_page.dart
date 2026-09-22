@@ -29,6 +29,7 @@ class _AdminPageState extends State<AdminPage>
   late Future<List<HopeAdminUser>> _users;
   late Future<List<HopeAdminAuditEvent>> _audit;
   late TabController _tabs;
+  bool _actionBusy = false;
 
   @override
   void initState() {
@@ -54,6 +55,8 @@ class _AdminPageState extends State<AdminPage>
   }
 
   Future<void> _runAction(Future<void> Function() action) async {
+    if (_actionBusy) return;
+    setState(() => _actionBusy = true);
     try {
       await action();
       if (!mounted) return;
@@ -65,6 +68,8 @@ class _AdminPageState extends State<AdminPage>
             content: Text(apiErrorMessage(error,
                 fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c))),
       );
+    } finally {
+      if (mounted) setState(() => _actionBusy = false);
     }
   }
 

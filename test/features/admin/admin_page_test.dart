@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +23,8 @@ class _FakeAdmin implements AdminRepository {
 
   /// When true the next state-mutating action throws (error-path coverage).
   bool failNextAction = false;
+  bool holdNextAction = false;
+  final Completer<void> actionGate = Completer<void>();
 
   final List<String> calls = [];
 
@@ -68,6 +72,7 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<void> shortlistApplication(String id) async {
     calls.add('shortlist:$id');
+    if (holdNextAction) await actionGate.future;
     if (failNextAction) throw Exception('action boom');
   }
 
@@ -179,6 +184,35 @@ Future<void> _openTab(WidgetTester tester, String label) async {
       find.descendant(of: find.byType(TabBar), matching: find.text(label)));
   await tester.pumpAndSettle();
 }
+
+  testWidgets('admin action runner ignores duplicate submissions while busy',
+      (tester) async {
+    final repo = _FakeAdmin()
+      ..applications = [
+        HopeApplication.fromMap({
+          'id': 'a1',
+          'jobId': 'j1',
+          'jobTitle': 'Job',
+          'status': 'PENDING'
+        }),
+      ]
+      ..holdNextAction = true;
+    await _pump(tester, repo);
+    await _openTab(tester, 'Applications');
+
+    final shortlist = find.widgetWithText(OutlinedButton, 'Shortlist');
+    await tester.tap(shortlist);
+    await tester.pump();
+
+    await tester.tap(shortlist);
+    await tester.pump();
+
+    expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
+
+    repo.actionGate.complete();
+    await tester.pumpAndSettle();
+    expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
+  });
 
 void main() {
   testWidgets('admin renders summary metrics and moderation actions',
