@@ -34,6 +34,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Future<List<HopeJob>>? _activeJobs;
   Future<HopeWallet>? _wallet;
   String? _error;
+  int _refreshRequestId = 0;
 
   @override
   void didChangeDependencies() {
@@ -72,6 +73,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   }
 
   Future<void> _refresh() async {
+    if (!mounted) return;
+    final requestId = ++_refreshRequestId;
     setState(() {
       _error = null;
       _opportunities = null;
@@ -79,10 +82,13 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       _wallet = null;
     });
     _load();
+    final opportunities = _opportunities;
     try {
-      await _opportunities;
+      await opportunities;
     } catch (_) {
-      if (mounted) setState(() => _error = 'load');
+      if (mounted && requestId == _refreshRequestId) {
+        setState(() => _error = 'load');
+      }
     }
   }
 
@@ -109,10 +115,21 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 'فرصت، کار فعال و وضعیت مالی را یکجا ببینید.',
                 'Opportunities, active work, and finances in one place.',
               ),
-              action: IconButton.filledTonal(
-                onPressed: widget.onOpenMenu,
-                tooltip: _t(context, 'منوی برنامه', 'App menu'),
-                icon: const Icon(Icons.menu_rounded),
+              action: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton.filledTonal(
+                    onPressed: _refresh,
+                    tooltip: _t(context, 'بازخوانی', 'Refresh'),
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton.filledTonal(
+                    onPressed: widget.onOpenMenu,
+                    tooltip: _t(context, 'منوی برنامه', 'App menu'),
+                    icon: const Icon(Icons.menu_rounded),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: HopeV2Spacing.lg),
