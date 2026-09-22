@@ -70,6 +70,7 @@ capture_screen() {
       adb wait-for-device
       assert_hope_focused "$prefix"
       adb exec-out screencap -p > "$evidence_dir/$output"
+      : > "$ack_dir/$marker"
       return 0
     fi
 
