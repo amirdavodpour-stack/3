@@ -198,8 +198,7 @@ fi
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
 adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || true
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
-printf '%s
-' '720x1280' > "$evidence_dir/responsive-viewport.txt"
+printf '%s\n' '720x1280' > "$evidence_dir/responsive-viewport.txt"
 
 cat > "$evidence_dir/metadata.json" <<EOF
 {
