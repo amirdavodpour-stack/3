@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme/hope_v2_design.dart';
-import '../theme/app_theme.dart';
 import 'premium_components.dart';
 
 class PremiumLifecycleStep {
