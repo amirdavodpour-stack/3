@@ -129,7 +129,7 @@ testWidgets('withdrawing an application disables the action until completion',
     await tester.scrollUntilVisible(
       find.text('Flutter developer'),
       300,
-      scrollable: find.byType(ListView).first,
+      scrollable: find.byType(Scrollable).first,
     );
     final undo = find.widgetWithIcon(IconButton, Icons.undo_rounded);
     expect(undo, findsOneWidget);
@@ -172,7 +172,7 @@ testWidgets('withdrawing an application disables the action until completion',
     await tester.scrollUntilVisible(
       find.text('Backend engineer'),
       300,
-      scrollable: find.byType(ListView).first,
+      scrollable: find.byType(Scrollable).first,
     );
 
     await tester.tap(find.widgetWithIcon(IconButton, Icons.undo_rounded));
