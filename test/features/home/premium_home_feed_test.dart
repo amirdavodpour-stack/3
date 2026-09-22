@@ -136,7 +136,7 @@ testWidgets('settings changes reload home opportunities',
     expect(repository.calls, 1);
 
     await harness.settings.setCity('مشهد');
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(repository.calls, 2);
   });
