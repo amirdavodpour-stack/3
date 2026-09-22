@@ -26,6 +26,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   late Future<Map<String, dynamic>> _analytics;
   late Future<Map<String, dynamic>> _funnel;
   late Future<Map<String, dynamic>> _crashes;
+  bool _operationBusy = false;
 
   @override
   void initState() {
@@ -216,7 +217,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             for (final next in const ['REVIEWING', 'RESOLVED', 'DISMISSED'])
               if (next != status)
                 OutlinedButton(
-                  onPressed: id.isEmpty ? null : () => _setReportStatus(id, next),
+                  onPressed: id.isEmpty || _operationBusy ? null : () => _setReportStatus(id, next),
                   child: Text(next),
                 ),
           ]),
@@ -226,14 +227,18 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   }
 
   Future<void> _setReportStatus(String id, String status) async {
+    if (_operationBusy || !mounted) return;
+    setState(() => _operationBusy = true);
     try {
       await context.read<AdminRepository>().updateTrustReportStatus(id, status);
-      _reload();
+      if (mounted) _reload();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(apiErrorMessage(e))),
       );
+    } finally {
+      if (mounted) setState(() => _operationBusy = false);
     }
   }
 
@@ -280,12 +285,12 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           const SizedBox(height: 10),
           Row(children: [
             Expanded(child: OutlinedButton(
-              onPressed: id.isEmpty ? null : () => _resolvePayout(id, 'FAILED'),
+              onPressed: id.isEmpty || _operationBusy ? null : () => _resolvePayout(id, 'FAILED'),
               child: Text(_t('ثبت ناموفق', 'Mark failed')),
             )),
             const SizedBox(width: 8),
             Expanded(child: FilledButton(
-              onPressed: id.isEmpty ? null : () => _resolvePayout(id, 'SUCCEEDED'),
+              onPressed: id.isEmpty || _operationBusy ? null : () => _resolvePayout(id, 'SUCCEEDED'),
               child: Text(_t('ثبت موفق', 'Mark succeeded')),
             )),
           ]),
@@ -295,10 +300,13 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   }
 
   Future<void> _resolvePayout(String id, String decision) async {
+    if (_operationBusy || !mounted) return;
+    setState(() => _operationBusy = true);
     final repository = context.read<AdminRepository>();
     String providerRef = '';
     String reason = '';
-    if (decision == 'SUCCEEDED') {
+    try {
+      if (decision == 'SUCCEEDED') {
       final ref = TextEditingController();
       final result = await showDialog<bool>(
         context: context,
@@ -318,17 +326,21 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       ref.dispose();
       if (result != true) return;
     }
-    try {
       await repository.resolveUnknownPayout(
         id,
         decision: decision,
         providerRef: providerRef.isEmpty ? null : providerRef,
         reason: reason.isEmpty ? null : reason,
       );
-      _reload();
+      if (mounted) _reload();
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _operationBusy = false);
     }
   }
 
