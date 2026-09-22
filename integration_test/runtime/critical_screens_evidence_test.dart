@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
+import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
@@ -486,6 +487,8 @@ ApplicationRegistry _registry() => ApplicationRegistry(
       savedSearches: _EvidenceSavedSearchRepository(),
     );
 
+late GoogleSignInService _runtimeGoogleSignIn;
+
 Future<({AuthController auth, HopeSettingsController settings, ApplicationRegistry registry})>
     _prepare() async {
   await loadVazirmatnFont();
@@ -497,6 +500,16 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
     'displayName': 'HOPE Runtime',
     'email': 'runtime@example.invalid',
   });
+  _runtimeGoogleSignIn = GoogleSignInService();
+  await _runtimeGoogleSignIn.initialize();
+  final requireGoogle =
+      Platform.environment['HOPE_REQUIRE_GOOGLE_AUTH'] == '1';
+  if (requireGoogle && !_runtimeGoogleSignIn.isConfigured) {
+    throw StateError(
+      'GOOGLE_SERVER_CLIENT_ID is required for runtime auth evidence.',
+    );
+  }
+  print('HOPE_GOOGLE_AUTH_CONFIGURED:${_runtimeGoogleSignIn.isConfigured}');
   return (auth: auth, settings: settings, registry: _registry());
 }
 
@@ -514,6 +527,7 @@ Widget _host({
         create: (_) => ThemeController(settings),
       ),
       ChangeNotifierProvider<AuthController>.value(value: auth),
+      Provider<GoogleSignInService>.value(value: _runtimeGoogleSignIn),
       Provider<ApplicationRegistry>.value(value: registry),
       Provider<MarketplaceRepository>.value(value: registry.marketplace!),
       Provider<JobDetailRepository>.value(value: registry.jobDetail!),
