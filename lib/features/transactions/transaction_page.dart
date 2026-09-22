@@ -47,7 +47,12 @@ class _TransactionPageState extends State<TransactionPage> {
   Future<void> refresh() async {
     final requestId = ++_refreshRequestId;
     try {
-      if (mounted) setState(() => error = null);
+      if (mounted) {
+        setState(() {
+          loading = true;
+          error = null;
+        });
+      }
       final data = await TransactionController(
               repository: widget.repository, jobId: widget.jobId)
           .load();
