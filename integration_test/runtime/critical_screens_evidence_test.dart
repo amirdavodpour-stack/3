@@ -625,12 +625,36 @@ void main() {
       'create-job': () => const CreateJobPage(),
     };
 
+    final responsiveOnly =
+        Platform.environment['HOPE_RESPONSIVE_ONLY'] == '1';
+    const responsiveKeys = {
+      'home',
+      'jobs',
+      'job-detail',
+      'wallet',
+      'profile',
+      'transactions',
+    };
+    final selectedEntries = responsiveOnly
+        ? screens.entries.where((entry) => responsiveKeys.contains(entry.key))
+        : screens.entries;
+    final markerPrefix = responsiveOnly ? 'responsive-720x1280-' : '';
+
     for (final locale in const [Locale('fa'), Locale('en')]) {
       final suffix = locale.languageCode == 'fa' ? 'fa-rtl' : 'en-ltr';
-      for (final entry in screens.entries) {
+      for (final entry in selectedEntries) {
         await _render(
           tester,
-          marker: '${entry.key}-$suffix',
+          marker: '
+  });
+}
++'{markerPrefix}
+  });
+}
++'{entry.key}-
+  });
+}
++'{suffix}',
           locale: locale,
           child: entry.value(),
           auth: prepared.auth,
@@ -638,9 +662,14 @@ void main() {
           registry: prepared.registry,
         );
       }
+      if (responsiveOnly) continue;
+
       await _render(
         tester,
-        marker: 'login-$suffix',
+        marker: 'login-
+  });
+}
++'{suffix}',
         locale: locale,
         child: const LoginPage(),
         auth: prepared.auth,
@@ -649,7 +678,10 @@ void main() {
       );
       await _render(
         tester,
-        marker: 'register-$suffix',
+        marker: 'register-
+  });
+}
++'{suffix}',
         locale: locale,
         child: const RegisterPage(),
         auth: prepared.auth,
@@ -658,7 +690,10 @@ void main() {
       );
       await _render(
         tester,
-        marker: 'password-reset-$suffix',
+        marker: 'password-reset-
+  });
+}
++'{suffix}',
         locale: locale,
         child: const PasswordResetPage(),
         auth: prepared.auth,
