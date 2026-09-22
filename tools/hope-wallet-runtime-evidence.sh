@@ -70,6 +70,12 @@ capture_screen() {
   local prefix="$3"
   local timeout_seconds="$4"
   local deadline=$((SECONDS + timeout_seconds))
+  local ack_marker="${marker#HOPE_SCREENSHOT_READY:}"
+
+  if [ -z "$ack_marker" ] || [ "$ack_marker" = "$marker" ]; then
+    echo "Invalid runtime ACK marker: $marker" >&2
+    return 1
+  fi
 
   while (( SECONDS < deadline )); do
     if grep -q -- "$marker" "$log_file"; then
@@ -105,7 +111,7 @@ capture_screen() {
         return 1
       fi
 
-      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace touch "files/hope-screen-acks/$marker" >/dev/null; then
+      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace touch "files/hope-screen-acks/$ack_marker" >/dev/null; then
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:ack-write" >&2
         return 1
       fi
