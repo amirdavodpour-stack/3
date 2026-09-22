@@ -20,6 +20,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
   List<HopeSavedSearch> _items = const [];
   bool _loading = true;
   String? _error;
+  int _loadRequestId = 0;
   String? _busyId;
 
   String _t(String fa, String en) =>
@@ -34,19 +35,22 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final requestId = ++_loadRequestId;
+    final hasExistingItems = _items.isNotEmpty;
     setState(() {
-      _loading = true;
       _error = null;
+      if (!hasExistingItems) _loading = true;
     });
     try {
       final items = await _repo.list();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _items = items.where((e) => e.isUsable).toList(growable: false);
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _loading = false;
         _error = apiErrorMessage(e,
@@ -197,6 +201,13 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('جست‌وجوهای ذخیره‌شده', 'Saved searches')),
+        actions: [
+          IconButton(
+            onPressed: _load,
+            tooltip: _t('بازخوانی', 'Refresh'),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _edit(),
