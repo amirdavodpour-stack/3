@@ -31,7 +31,7 @@ class _SequencedProfileRepository implements ProfileRepository {
   final Completer<List<HopeApplication>> initialLoad =
       Completer<List<HopeApplication>>();
 
-  final HopeApplication staleApplication = HopeApplication(
+  final HopeApplication staleApplication = const HopeApplication(
     id: 'stale-app',
     jobId: 'stale-job',
     jobTitle: 'Stale application',
@@ -44,7 +44,7 @@ class _SequencedProfileRepository implements ProfileRepository {
     updatedAt: null,
   );
 
-  final HopeApplication freshApplication = HopeApplication(
+  final HopeApplication freshApplication = const HopeApplication(
     id: 'fresh-app',
     jobId: 'fresh-job',
     jobTitle: 'Fresh application',
@@ -78,7 +78,7 @@ class _SequencedProfileRepository implements ProfileRepository {
 class _FailingProfileRepository implements ProfileRepository {
   bool fail = true;
 
-  final HopeApplication application = HopeApplication(
+  final HopeApplication application = const HopeApplication(
     id: 'app-1',
     jobId: 'job-1',
     jobTitle: 'Design task',
@@ -109,7 +109,7 @@ class _FailingProfileRepository implements ProfileRepository {
 void main() {
   testWidgets('applications do not expose unknown backend statuses',
       (tester) async {
-    final application = HopeApplication(
+    final application = const HopeApplication(
       id: 'app-1',
       jobId: 'job-1',
       jobTitle: 'Design task',
