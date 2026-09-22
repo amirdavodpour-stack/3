@@ -102,7 +102,7 @@ class AppTheme {
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
         unselectedLabelStyle:
             const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-        overlayColor: WidgetStatePropertyAll(Colors.transparent),
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: dark ? const Color(0x1AFFFFFF) : const Color(0xFFF1EFF7),
