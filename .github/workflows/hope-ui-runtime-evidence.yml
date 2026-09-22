@@ -90,6 +90,9 @@ jobs:
       - name: Android runtime evidence
         # Execute the pinned emulator-runner checkout from this repository without relying on fork-packaged node_modules.
         uses: ./.ci/android-emulator-runner
+        env:
+          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+          HOPE_REQUIRE_GOOGLE_AUTH: '1'
         with:
           api-level: 35
           arch: x86_64
