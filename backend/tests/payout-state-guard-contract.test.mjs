@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const migration = fs.readFileSync(new URL('../src/db/migrations/012_payout_state_guards.js', import.meta.url), 'utf8');
+const payouts = fs.readFileSync(new URL('../src/repository/payouts.js', import.meta.url), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 test('payout database guard covers every lifecycle transition used by the repository', () => {
@@ -22,4 +23,16 @@ test('payout identity and terminal timestamp invariants are database-enforced', 
 
 test('migration checker includes payout state guard migration', () => {
   assert.match(pkg.scripts['check:migrations'], /012_payout_state_guards\.js/);
+});
+
+
+test('unknown payout marks the financial operation referenced by the payout hold', () => {
+  assert.match(
+    payouts,
+    /UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=\$1\`, \[payout\.financial_operation_id\]\);/,
+  );
+  assert.doesNotMatch(
+    payouts,
+    /UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=\(SELECT id FROM wallet_holds[\\s\\S]*?\)\`, \[payoutId\]\);/,
+  );
 });
