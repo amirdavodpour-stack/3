@@ -200,7 +200,6 @@ if [ "$baseline_status" -eq 0 ]; then
 else
   responsive_status=1
 fi
-fi
 
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
 adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || true
