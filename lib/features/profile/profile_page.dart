@@ -159,13 +159,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: _t(context, 'اطلاعات حرفه‌ای در دسترس نیست', 'Professional profile unavailable'),
                   message: _t(context, 'وضعیت تأیید و شاخص‌های اعتماد فعلاً قابل دریافت نیست.', 'Verification and trust signals are temporarily unavailable.'),
                   action: OutlinedButton.icon(
-                     onPressed: () {
-                       final nextApplications =
-                           _controller.loadApplications();
-                       setState(() {
-                         applications = nextApplications;
-                       });
-                     },
+                    onPressed: () {
+                      final nextApplications = _controller.loadApplications();
+                      setState(() {
+                        applications = nextApplications;
+                      });
+                    },
                                         } catch (error) {
                                           if (!mounted || !context.mounted) return;
                                           ScaffoldMessenger.of(context).showSnackBar(
