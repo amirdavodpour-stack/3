@@ -395,6 +395,18 @@ void main() {
     expect(find.text('Needs review'), findsOneWidget);
     expect(find.text('FUTURE_STATE'), findsNothing);
   });
+  testWidgets('unknown lifecycle status does not mark a stage complete', (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1', status: 'FUTURE_STATE'),
+      userId: 'u1',
+    );
+
+    final completedIcons = find.byIcon(Icons.check_circle_rounded);
+    expect(completedIcons, findsNothing);
+    expect(find.text('Needs review'), findsOneWidget);
+  });
+
   testWidgets('non-owner never sees the candidate pipeline', (tester) async {
     final detail = _FakeDetail(candidates: const [
       HopeCandidate(

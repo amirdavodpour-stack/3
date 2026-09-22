@@ -80,6 +80,26 @@ void main() {
     expect(find.text('MISSION'), findsNothing);
     expect(find.text('SPECIALIZED'), findsNothing);
   });
+  testWidgets('unknown saved-search enums use safe localized fallback', (tester) async {
+    final repository = _SequencedSavedSearchRepository();
+    repository.itemsOverride = [
+      _search(
+        'unknown',
+        'Unknown search',
+        kind: 'FUTURE_KIND',
+        visibility: 'FUTURE_VISIBILITY',
+      ),
+    ];
+
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unknown search'), findsOneWidget);
+    expect(find.text('Other'), findsNWidgets(2));
+    expect(find.text('FUTURE_KIND'), findsNothing);
+    expect(find.text('FUTURE_VISIBILITY'), findsNothing);
+  });
+
   testWidgets('latest saved-search refresh wins over an older in-flight load',
       (tester) async {
     final repository = _SequencedSavedSearchRepository();

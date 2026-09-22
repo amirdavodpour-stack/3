@@ -1160,8 +1160,7 @@ class _JobLifecycleCard extends StatelessWidget {
     final status = job.status?.toUpperCase();
     final index = stages.indexOf(status ?? '');
     if (index >= 0) return index;
-    if (status == 'CANCELLED') return -1;
-    return 0;
+    return -1;
   }
 
   String _label(BuildContext context, String status) => switch (status) {

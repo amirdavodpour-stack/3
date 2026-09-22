@@ -191,7 +191,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
       case 'JOB':
         return HopeCopy.of(context).copy_jobs_ebf9a80;
       default:
-        return item.kind;
+        return _t('سایر', 'Other');
     }
   }
 
@@ -202,7 +202,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
       case 'SPECIALIZED':
         return HopeCopy.of(context).copy_specialized_5d1ca04;
       default:
-        return item.visibility;
+        return _t('سایر', 'Other');
     }
   }
 
