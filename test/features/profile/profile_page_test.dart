@@ -46,7 +46,6 @@ class _ProfileRepo implements ProfileRepository {
           verificationStatus: 'VERIFIED',
           trustSignals: {'verified': true});
 
-  @override
   bool failApplicationReload = false;
 
   @override
