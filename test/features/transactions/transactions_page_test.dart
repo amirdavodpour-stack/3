@@ -176,10 +176,9 @@ void main() {
     expect(find.text('پروژه refresh-stale'), findsOneWidget);
     repo.failList = true;
 
-    await tester.fling(
+    await tester.drag(
       find.byType(Scrollable).first,
       const Offset(0, 500),
-      1000,
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
