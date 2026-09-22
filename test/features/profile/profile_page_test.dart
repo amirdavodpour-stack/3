@@ -111,7 +111,7 @@ Future<void> _pump(
 void main() {
 testWidgets('withdrawing an application disables the action until completion',
       (tester) async {
-    final application = HopeApplication(
+    final application = const HopeApplication(
       id: 'a1',
       jobId: 'j1',
       jobTitle: 'Flutter developer',
@@ -154,7 +154,7 @@ testWidgets('withdrawing an application disables the action until completion',
 
   testWidgets('withdraw refresh failure stays visible instead of becoming empty',
       (tester) async {
-    final application = HopeApplication(
+    final application = const HopeApplication(
       id: 'a2',
       jobId: 'j2',
       jobTitle: 'Backend engineer',
