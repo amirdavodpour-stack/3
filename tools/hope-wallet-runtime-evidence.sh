@@ -9,7 +9,6 @@ rm -f "$log_file"
 : > "$log_file"
 
 ack_root="/data/user/0/com.hope.marketplace/files/hope-screen-acks"
-adb shell run-as com.hope.marketplace sh -c 'rm -rf files/hope-screen-acks && mkdir -p files/hope-screen-acks'
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
