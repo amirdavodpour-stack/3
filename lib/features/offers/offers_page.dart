@@ -22,6 +22,7 @@ class _OffersPageState extends State<OffersPage> {
   bool _loading = true;
   int _reloadRequestId = 0;
   String _filter='ALL';
+  String? _acceptingId;
 
   @override
   void initState() {
@@ -262,9 +263,13 @@ class _OffersPageState extends State<OffersPage> {
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: FilledButton.icon(
-                onPressed: () => _accept(o),
-                icon: const Icon(Icons.check_rounded),
-                label: Text(_t('پذیرش پیشنهاد', 'Accept offer')),
+                onPressed: _acceptingId == o.id ? null : () => _accept(o),
+                icon: _acceptingId == o.id
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.check_rounded),
+                label: Text(_acceptingId == o.id
+                    ? _t('در حال پذیرش...', 'Accepting...')
+                    : _t('پذیرش پیشنهاد', 'Accept offer')),
               ),
             ),
         ],
@@ -323,10 +328,12 @@ class _OffersPageState extends State<OffersPage> {
                   ),
                 if (widget.jobId != null && detail.isPending)
                   FilledButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      await _accept(detail);
-                    },
+                    onPressed: _acceptingId == detail.id
+                        ? null
+                        : () async {
+                            Navigator.pop(ctx);
+                            await _accept(detail);
+                          },
                     icon: const Icon(Icons.check_rounded),
                     label: Text(_t('پذیرش پیشنهاد','Accept offer')),
                   ),
@@ -343,16 +350,46 @@ class _OffersPageState extends State<OffersPage> {
     }
   }
 
-  Future<void> _accept(HopeOffer o)async{
+  Future<void> _accept(HopeOffer o) async {
+    if (_acceptingId != null || !mounted) return;
     final repository = context.read<OfferRepository>();
-    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
-      title:Text(_t('پذیرش پیشنهاد؟','Accept this offer?')),
-      content:Text(_t('پذیرش پیشنهاد یک اقدام مالی/قراردادی است. قبل از تأیید مبلغ و شرایط را بررسی کنید.','Accepting an offer is a contractual/financial action. Review the amount and terms before confirming.')),
-      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:Text(_t('لغو','Cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:Text(_t('تأیید','Confirm')))]
-    ));
-    if(ok!=true)return;
-    if (!mounted) return;
-    try{await repository.accept(o.id);if(mounted){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(_t('پیشنهاد پذیرفته شد','Offer accepted'))));_reload();}}
-    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(apiErrorMessage(e))));}
+    setState(() => _acceptingId = o.id);
+    try {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(_t('پذیرش پیشنهاد؟', 'Accept this offer?')),
+          content: Text(_t(
+            'پذیرش پیشنهاد یک اقدام مالی/قراردادی است. قبل از تأیید مبلغ و شرایط را بررسی کنید.',
+            'Accepting an offer is a contractual/financial action. Review the amount and terms before confirming.',
+          )),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(_t('لغو', 'Cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(_t('تأیید', 'Confirm')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+      await repository.accept(o.id);
+      await _reload();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('پیشنهاد پذیرفته شد', 'Offer accepted'))),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _acceptingId = null);
+    }
   }
 }

@@ -42,6 +42,35 @@ class _SequencedOfferRepository implements OfferRepository {
   Future<Map<String, dynamic>> accept(String offerId) => throw UnimplementedError();
 }
 
+class _AcceptGuardOfferRepository implements OfferRepository {
+  final Completer<Map<String, dynamic>> acceptResult =
+      Completer<Map<String, dynamic>>();
+  int acceptCalls = 0;
+  final pending = _offer(id: 'pending', status: 'PENDING');
+
+  @override
+  Future<List<HopeOffer>> listMine() async => [pending];
+
+  @override
+  Future<List<HopeOffer>> listForJob(String jobId) async => [pending];
+
+  @override
+  Future<HopeOffer> get(String offerId) => Future.value(pending);
+
+  @override
+  Future<HopeOffer> submit(
+    String jobId, {
+    required String price,
+    String message = '',
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Map<String, dynamic>> accept(String offerId) {
+    acceptCalls += 1;
+    return acceptResult.future;
+  }
+}
+
 class _RefreshFailureOfferRepository implements OfferRepository {
   int calls = 0;
   final existing = _offer(id: 'existing', status: 'PENDING');
@@ -76,6 +105,46 @@ Widget _host(OfferRepository repository) => MaterialApp(
     child: const OffersPage(),
   ),
 );
+
+Widget _hostWithJob(OfferRepository repository) => MaterialApp(
+  locale: const Locale('en'),
+  supportedLocales: const [Locale('fa'), Locale('en')],
+  localizationsDelegates: const [
+    AppLocalizations.delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ],
+  home: Provider<OfferRepository>.value(
+    value: repository,
+    child: const OffersPage(jobId: 'job-1'),
+  ),
+);
+
+  testWidgets('accepting an offer disables the financial action until completion',
+      (tester) async {
+    final repository = _AcceptGuardOfferRepository();
+    await tester.pumpWidget(_hostWithJob(repository));
+    await tester.pumpAndSettle();
+
+    final acceptButton = find.widgetWithText(FilledButton, 'Accept offer');
+    expect(acceptButton, findsOneWidget);
+
+    await tester.tap(acceptButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
+    await tester.pump();
+
+    expect(repository.acceptCalls, 1);
+    final disabledButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Accepting...'),
+    );
+    expect(disabledButton.onPressed, isNull);
+
+    repository.acceptResult.complete(const {});
+    await tester.pumpAndSettle();
+    expect(repository.acceptCalls, 1);
+  });
 
 void main() {
   testWidgets('latest offer refresh wins over an older in-flight load', (tester) async {
