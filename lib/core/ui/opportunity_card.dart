@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 
 import '../marketplace/job.dart';
 import '../router/app_routes.dart';
-import '../theme/app_theme.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
 import 'premium_components.dart';
