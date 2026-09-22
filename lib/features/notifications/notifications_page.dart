@@ -26,6 +26,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   String? error;
   HopeNotificationPreferences? preferences;
   bool preferencesLoading = false;
+  int _loadRequestId = 0;
 
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -37,20 +38,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final requestId = ++_loadRequestId;
+    final hasExistingItems = items.isNotEmpty;
     setState(() {
-      loading = true;
       error = null;
+      if (!hasExistingItems) loading = true;
     });
     try {
       final page =
           await _applicationRegistry(context).listNotifications();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         items = page.items;
         loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         error = apiErrorMessage(e,
             fallback:
@@ -278,6 +282,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   Navigator.push(context, HopeRoutes.notificationDevices()),
               icon: const Icon(Icons.devices_rounded),
               tooltip: _t('دستگاه‌های اعلان', 'Notification devices'),
+            ),
+            IconButton(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: _t('بازخوانی', 'Refresh'),
             ),
             IconButton(
               onPressed: _openPreferences,

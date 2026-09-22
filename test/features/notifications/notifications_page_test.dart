@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,6 +80,40 @@ class _Repo implements NotificationRepository {
 
 }
 
+class _SequencedNotificationRepository extends _Repo {
+  int listCalls = 0;
+  final Completer<HopeNotificationPage> staleRefresh =
+      Completer<HopeNotificationPage>();
+
+  @override
+  Future<HopeNotificationPage> listNotifications({
+    int limit = 50,
+    int offset = 0,
+  }) {
+    listCalls += 1;
+    if (listCalls == 1) {
+      return Future.value(HopeNotificationPage(
+        items: items,
+        unreadCount: items.where((e) => e.isUnread).length,
+      ));
+    }
+    if (listCalls == 2) return staleRefresh.future;
+    return Future.value(const HopeNotificationPage(
+      items: [
+        HopeNotification(
+          id: 'fresh',
+          type: 'JOB',
+          title: 'Fresh notification',
+          body: 'Fresh',
+          createdAt: null,
+          readAt: null,
+        ),
+      ],
+      unreadCount: 1,
+    ));
+  }
+}
+
 Widget _app(_Repo repo) => MaterialApp(
       theme: ThemeData.light(),
       locale: const Locale('fa'),
@@ -93,6 +129,43 @@ Widget _app(_Repo repo) => MaterialApp(
         child: const NotificationsPage(),
       ),
     );
+
+  testWidgets('latest notification refresh wins over an older in-flight load',
+      (tester) async {
+    final repo = _SequencedNotificationRepository();
+    await tester.pumpWidget(_app(repo));
+    await tester.pumpAndSettle();
+
+    expect(find.text('عنوان اعلان'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Refresh'));
+    await tester.pump();
+    expect(repo.listCalls, 2);
+
+    await tester.tap(find.byTooltip('Refresh'));
+    await tester.pumpAndSettle();
+
+    expect(repo.listCalls, 3);
+    expect(find.text('Fresh notification'), findsOneWidget);
+
+    repo.staleRefresh.complete(const HopeNotificationPage(
+      items: [
+        HopeNotification(
+          id: 'stale',
+          type: 'JOB',
+          title: 'عنوان اعلان',
+          body: 'متن اعلان',
+          createdAt: null,
+          readAt: null,
+        ),
+      ],
+      unreadCount: 1,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fresh notification'), findsOneWidget);
+    expect(find.text('عنوان اعلان'), findsNothing);
+  });
 
 void main() {
   testWidgets('notifications page renders unread content', (tester) async {
