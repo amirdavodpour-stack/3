@@ -889,7 +889,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   ),
                                   if (list.length >= 2)
                                     OutlinedButton.icon(
-                                      onPressed: () => _compareCandidates(list),
+                                      onPressed: _candidateBusyId == null
+                                          ? () => _compareCandidates(list)
+                                          : null,
                                       icon: const Icon(
                                         Icons.compare_arrows_rounded,
                                         size: 18,
@@ -947,13 +949,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                           children: [
                                             if (status == 'FORWARDED')
                                               OutlinedButton.icon(
-                                                onPressed: _candidateBusyId ==
-                                                        candidate.id
-                                                    ? null
-                                                    : () => _candidateAction(
+                                                onPressed: _candidateBusyId == null
+                                                    ? () => _candidateAction(
                                                           candidate.id,
                                                           'interview',
-                                                        ),
+                                                        )
+                                                    : null,
                                                 icon: _candidateBusyId ==
                                                         candidate.id
                                                     ? const SizedBox(
@@ -975,13 +976,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                               ),
                                             if (status == 'INTERVIEW')
                                               OutlinedButton.icon(
-                                                onPressed: _candidateBusyId ==
-                                                        candidate.id
-                                                    ? null
-                                                    : () => _candidateAction(
+                                                onPressed: _candidateBusyId == null
+                                                    ? () => _candidateAction(
                                                           candidate.id,
                                                           'offer',
-                                                        ),
+                                                        )
+                                                    : null,
                                                 icon: _candidateBusyId ==
                                                         candidate.id
                                                     ? const SizedBox(
@@ -1004,13 +1004,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                               ),
                                             if (status == 'OFFERED')
                                               FilledButton.icon(
-                                                onPressed: _candidateBusyId ==
-                                                        candidate.id
-                                                    ? null
-                                                    : () => _candidateAction(
+                                                onPressed: _candidateBusyId == null
+                                                    ? () => _candidateAction(
                                                           candidate.id,
                                                           'hire',
-                                                        ),
+                                                        )
+                                                    : null,
                                                 icon: _candidateBusyId ==
                                                         candidate.id
                                                     ? const SizedBox(
