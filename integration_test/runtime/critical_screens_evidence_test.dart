@@ -568,10 +568,8 @@ Future<void> _render(
   required HopeSettingsController settings,
   required ApplicationRegistry registry,
 }) async {
-  final ackRoot = Platform.environment['HOPE_SCREENSHOT_ACK_DIR'];
-  final ackFile = ackRoot == null || ackRoot.isEmpty
-      ? null
-      : File('$ackRoot/$marker');
+  const ackRoot = String.fromEnvironment('HOPE_SCREENSHOT_ACK_ROOT');
+  final ackFile = ackRoot.isEmpty ? null : File('$ackRoot/$marker');
   if (ackFile != null) {
     await ackFile.parent.create(recursive: true);
     if (await ackFile.exists()) {

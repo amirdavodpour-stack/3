@@ -8,16 +8,16 @@ mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
 
-ack_dir="$runner_temp/hope-screen-acks"
-rm -rf "$ack_dir"
-mkdir -p "$ack_dir"
+ack_root="/data/user/0/com.hope.marketplace/files/hope-screen-acks"
+adb shell run-as com.hope.marketplace sh -c 'rm -rf files/hope-screen-acks && mkdir -p files/hope-screen-acks'
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
 
 set +e
-stdbuf -oL -eL env HOPE_SCREENSHOT_ACK_DIR="$ack_dir" flutter test --no-pub \
+stdbuf -oL -eL flutter test --no-pub \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+  --dart-define=HOPE_SCREENSHOT_ACK_ROOT="$ack_root" \
   integration_test/runtime/critical_screens_evidence_test.dart \
   -r expanded 2>&1 | tee "$log_file" &
 test_pid=$!
@@ -81,7 +81,7 @@ capture_screen() {
       adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
       adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
       adb exec-out cat /sdcard/hope-ui-hierarchy.xml > "$evidence_dir/ui-hierarchy-$prefix.xml" 2>/dev/null || true
-      : > "$ack_dir/$marker"
+      adb shell run-as com.hope.marketplace sh -c "mkdir -p files/hope-screen-acks && : > 'files/hope-screen-acks/$marker'" >/dev/null
       return 0
     fi
 
@@ -155,13 +155,13 @@ fi
 if [ "$baseline_status" -eq 0 ]; then
   adb shell wm size 720x1280
   sleep 2
-  rm -rf "$ack_dir"
-  mkdir -p "$ack_dir"
   : > "$runner_temp/hope-responsive-runtime.log"
+  adb shell run-as com.hope.marketplace sh -c 'rm -rf files/hope-screen-acks && mkdir -p files/hope-screen-acks'
 
 set +e
-HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL env HOPE_SCREENSHOT_ACK_DIR="$ack_dir" flutter test --no-pub \
+HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL flutter test --no-pub \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+  --dart-define=HOPE_SCREENSHOT_ACK_ROOT="$ack_root" \
   integration_test/runtime/critical_screens_evidence_test.dart \
   -r expanded 2>&1 | tee -a "$log_file" "$runner_temp/hope-responsive-runtime.log" &
 responsive_test_pid=$!
