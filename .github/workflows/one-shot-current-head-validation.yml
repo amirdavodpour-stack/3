@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: hope-one-shot-current-head-validation
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
