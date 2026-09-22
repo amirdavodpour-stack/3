@@ -1,9 +1,9 @@
 name: HOPE One-Shot Current HEAD Validation
 
 on:
-  pull_request:
+  push:
     branches:
-      - Main
+      - feat/google-sign-in-2026-09-20
   workflow_dispatch:
 
 concurrency:
