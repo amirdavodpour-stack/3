@@ -78,7 +78,6 @@ class _ProfilePageState extends State<ProfilePage> {
         _applicationsReloadError = apiErrorMessage(
           error,
           fallback: _t(
-            context,
             'درخواست‌ها قابل دریافت نیستند.',
             'Could not load applications.',
           ),
