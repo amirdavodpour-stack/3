@@ -318,7 +318,7 @@ class _EvidenceJobDetailRepository implements JobDetailRepository {
     String jobId,
     String candidateId,
     String action,
-  }) async {}
+  ) async {}
 
   @override
   Future<Map<String, dynamic>> compareCandidates(
@@ -595,7 +595,7 @@ void main() {
       for (final entry in screens.entries) {
         await _render(
           tester,
-          marker: '\${entry.key}-\${suffix}',
+          marker: '${entry.key}-$suffix',
           locale: locale,
           child: entry.value(),
           auth: prepared.auth,
@@ -605,7 +605,7 @@ void main() {
       }
       await _render(
         tester,
-        marker: 'login-\${suffix}',
+        marker: 'login-$suffix',
         locale: locale,
         child: const LoginPage(),
         auth: prepared.auth,
@@ -614,7 +614,7 @@ void main() {
       );
       await _render(
         tester,
-        marker: 'register-\${suffix}',
+        marker: 'register-$suffix',
         locale: locale,
         child: const RegisterPage(),
         auth: prepared.auth,
@@ -623,7 +623,7 @@ void main() {
       );
       await _render(
         tester,
-        marker: 'password-reset-\${suffix}',
+        marker: 'password-reset-$suffix',
         locale: locale,
         child: const PasswordResetPage(),
         auth: prepared.auth,
