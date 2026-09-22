@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/saved_search_repository.dart';
 import 'package:hope_mobile/features/jobs/saved_searches_page.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 HopeSavedSearch _search(
@@ -52,6 +54,13 @@ class _SequencedSavedSearchRepository implements SavedSearchRepository {
 Widget _host(_SequencedSavedSearchRepository repository) {
   return MaterialApp(
     locale: const Locale('en'),
+    supportedLocales: const [Locale('en'), Locale('fa')],
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
     home: Provider<ApplicationRegistry>.value(
       value: ApplicationRegistry(savedSearches: repository),
       child: const SavedSearchesPage(),

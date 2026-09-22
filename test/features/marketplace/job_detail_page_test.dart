@@ -381,7 +381,15 @@ void main() {
     await tester.tap(find.text('Compare'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Offer sent'), findsOneWidget);
+    final dialog = find.byType(AlertDialog);
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text('Offer sent'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('OFFERED'), findsNothing);
   });
 
