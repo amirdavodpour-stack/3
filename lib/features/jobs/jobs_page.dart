@@ -176,7 +176,7 @@ class _JobsPageState extends State<JobsPage> {
     final selected = await showModalBottomSheet<HopeSavedSearch>(
       context: context,
       showDragHandle: true,
-      builder: (sheetContext) {
+      builder: (context) {
         String? deleteBusyId;
         return StatefulBuilder(
           builder: (context, setSheetState) => ListView.separated(
