@@ -619,7 +619,9 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             trailing: Switch(
               value: settings.locationEnabled,
-              onChanged: (value) async {
+              onChanged: settings.locationBusy
+                  ? null
+                  : (value) async {
                 if (value) {
                   final ok = await settings.enableLocation();
                   if (!ok && mounted && context.mounted) {
