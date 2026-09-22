@@ -47,7 +47,15 @@ class _ProfileRepo implements ProfileRepository {
           trustSignals: {'verified': true});
 
   @override
-  Future<List<HopeApplication>> listApplications() async => applications;
+  bool failApplicationReload = false;
+
+  @override
+  Future<List<HopeApplication>> listApplications() async {
+    if (failApplicationReload) {
+      throw StateError('applications unavailable');
+    }
+    return applications;
+  }
 
   @override
   Future<HopeApplication> withdrawApplication(String applicationId) {
@@ -141,6 +149,39 @@ Future<void> _pump(
     repo.withdrawResult.complete(application);
     await tester.pumpAndSettle();
     expect(repo.withdrawCalls, 1);
+  });
+
+  testWidgets('withdraw refresh failure stays visible instead of becoming empty',
+      (tester) async {
+    final application = HopeApplication(
+      id: 'a2',
+      jobId: 'j2',
+      jobTitle: 'Backend engineer',
+      jobCity: 'تهران',
+      jobKind: 'JOB',
+      resumeText: 'A concise resume with enough detail.',
+      skills: 'Dart',
+      status: 'PENDING',
+      createdAt: null,
+      updatedAt: null,
+    );
+    final repo = _ProfileRepo(applications: [application]);
+    await _pump(tester, authenticated: true, repository: repo);
+
+    await tester.scrollUntilVisible(
+      find.text('Backend engineer'),
+      300,
+      scrollable: find.byType(ListView).first,
+    );
+
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.undo_rounded));
+    await tester.pump();
+    repo.failApplicationReload = true;
+    repo.withdrawResult.complete(application);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Applications unavailable'), findsOneWidget);
+    expect(find.text('Backend engineer'), findsNothing);
   });
 
 void main() {

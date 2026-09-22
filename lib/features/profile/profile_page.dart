@@ -294,10 +294,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                           await _controller.withdrawApplication(a.id);
                                           if (!mounted) return;
                                           setState(() {
-                                            applications = _controller
-                                                .loadApplications()
-                                                .catchError(
-                                                    (_) => const <HopeApplication>[]);
+                                            applications =
+                                                _controller.loadApplications();
                                           });
                                         } catch (error) {
                                           if (!mounted || !context.mounted) return;
