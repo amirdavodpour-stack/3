@@ -129,31 +129,61 @@ void main() {
   });
 
   testWidgets("shared motion primitives honor reduced-motion", (tester) async {
-      await tester.pumpWidget(
-        _app(
-          MediaQuery(
-            data: const MediaQueryData(disableAnimations: true),
-            child: Column(
-              children: [
-                AnimatedEntrance(child: Text("motion content")),
-                SkeletonBox(width: 120, height: 20),
-                PressableScale(
-                  semanticLabel: "آزمایشی",
-                  onTap: () {},
-                  child: const SizedBox(width: 48, height: 48),
-                ),
-              ],
-            ),
+    await tester.pumpWidget(
+      _app(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: Column(
+            children: [
+              AnimatedEntrance(
+                key: const ValueKey("reduced-motion-entrance"),
+                child: const Text("motion content"),
+              ),
+              const SkeletonBox(
+                key: ValueKey("reduced-motion-skeleton"),
+                width: 120,
+                height: 20,
+              ),
+              PressableScale(
+                key: const ValueKey("reduced-motion-pressable"),
+                semanticLabel: "آزمایشی",
+                onTap: _noopAction,
+                child: const SizedBox(width: 48, height: 48),
+              ),
+            ],
           ),
         ),
-      );
-      await tester.pump();
-  
-      expect(find.text("motion content"), findsOneWidget);
-      expect(find.byType(TweenAnimationBuilder), findsNothing);
-      expect(find.byType(AnimatedBuilder), findsNothing);
-      expect(find.byType(AnimatedScale), findsNothing);
-    });
+      ),
+    );
+    await tester.pump();
+
+    final entrance = find.byKey(const ValueKey("reduced-motion-entrance"));
+    final skeleton = find.byKey(const ValueKey("reduced-motion-skeleton"));
+    final pressable = find.byKey(const ValueKey("reduced-motion-pressable"));
+
+    expect(find.text("motion content"), findsOneWidget);
+    expect(
+      find.descendant(
+        of: entrance,
+        matching: find.byType(TweenAnimationBuilder),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: skeleton,
+        matching: find.byType(AnimatedBuilder),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: pressable,
+        matching: find.byType(AnimatedScale),
+      ),
+      findsNothing,
+    );
+  });
 }
 
 void _noop(String _) {}
