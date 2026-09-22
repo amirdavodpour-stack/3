@@ -46,30 +46,32 @@ class _TransactionPageState extends State<TransactionPage> {
 
   Future<void> refresh() async {
     final requestId = ++_refreshRequestId;
+    if (mounted) {
+      setState(() {
+        loading = true;
+        error = null;
+      });
+    }
+
     try {
-      if (mounted) {
-        setState(() {
-          loading = true;
-          error = null;
-        });
-      }
       final data = await TransactionController(
               repository: widget.repository, jobId: widget.jobId)
           .load();
-      if (mounted && requestId == _refreshRequestId) {
-        setState(() {
-          payment = data;
-          error = null;
-        });
-      }
+      if (!mounted || requestId != _refreshRequestId) return;
+      setState(() {
+        payment = data;
+        error = null;
+        loading = false;
+      });
     } catch (e) {
-      if (mounted && requestId == _refreshRequestId) {
-        setState(() => error = apiErrorMessage(e,
-            fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c));
-      }
-    }
-    if (mounted && requestId == _refreshRequestId) {
-      setState(() => loading = false);
+      if (!mounted || requestId != _refreshRequestId) return;
+      setState(() {
+        error = apiErrorMessage(
+          e,
+          fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c,
+        );
+        loading = false;
+      });
     }
   }
 

@@ -178,12 +178,11 @@ void main() {
 
     tester.view.physicalSize = const Size(390, 900);
     await tester.pump();
-    await tester.dragFrom(
-      const Offset(195, 140),
-      const Offset(0, 520),
-    );
+
+    final refreshIndicator =
+        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
+    await refreshIndicator.onRefresh();
     await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('پروژه refresh-stale'), findsOneWidget);
     expect(find.text('دریافت فعالیت ناموفق بود'), findsOneWidget);

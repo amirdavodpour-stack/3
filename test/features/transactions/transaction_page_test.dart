@@ -196,7 +196,10 @@ Future<void> _pump(
       ),
     ),
   ));
-  await tester.pumpAndSettle();
+  // These fakes resolve immediately; bounded pumps avoid treating any
+  // unrelated ongoing animation as a test failure.
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {

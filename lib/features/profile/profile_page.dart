@@ -184,7 +184,7 @@ class _ProfilePageState extends State<ProfilePage> {
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
-              if (snapshot.hasError) {
+              if (snapshot.hasError && _applicationsReloadError == null) {
                 return HopeAsyncState(
                   kind: HopeStateKind.error,
                   title: _t(context, 'اطلاعات حرفه‌ای در دسترس نیست', 'Professional profile unavailable'),
@@ -285,9 +285,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: _t(context, 'درخواست‌ها در دسترس نیستند', 'Applications unavailable'),
                   message: _t(context, 'امکان دریافت وضعیت درخواست‌ها وجود ندارد.', 'Application status could not be loaded.'),
                   action: OutlinedButton.icon(
-                    onPressed: () => setState(() {
-                      applications = _controller.loadApplications();
-                    }),
+                    onPressed: _reloadApplications,
                     icon: const Icon(Icons.refresh_rounded),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),

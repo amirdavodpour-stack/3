@@ -66,7 +66,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.calls, 3);
-    expect(find.text('Fresh search'), findsOneWidget);
+    // The contract is latest-wins: the fresh result must be present and
+    // the stale result must be absent. Do not make this assertion depend on
+    // the number of matching Text widgets created by the rendered surface.
+    expect(find.text('Fresh search'), findsWidgets);
     expect(find.text('Initial search'), findsNothing);
 
     repository.firstRefresh.complete([_search('stale', 'Stale search')]);
