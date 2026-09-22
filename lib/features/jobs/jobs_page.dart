@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,13 @@ class _JobsPageState extends State<JobsPage> {
   List<HopeCategory> _categories = const [];
   List<HopeSavedSearch> _savedSearches = const [];
   String? _categoryError;
+  Timer? _searchDebounce;
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -88,6 +96,21 @@ class _JobsPageState extends State<JobsPage> {
     if (_category != 'ALL') parts.add(_category);
     if (_city != 'AUTO') parts.add(_city);
     return parts.isEmpty ? (Localizations.localeOf(context).languageCode == 'en' ? 'All opportunities' : 'همه فرصت‌ها') : parts.join(' • ');
+  }
+
+  void _setQuery(String value) {
+    setState(() => _query = value);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) _reloadForCurrentFilters();
+    });
+  }
+
+  Future<void> _reloadForCurrentFilters() async {
+    if (!mounted) return;
+    final next = _loadOpportunities();
+    setState(() => _future = next);
+    await next.catchError((_) => const <HopeJob>[]);
   }
 
   Future<void> _saveCurrentSearch() async {
@@ -245,9 +268,15 @@ class _JobsPageState extends State<JobsPage> {
                         : _city,
                     categoryLabel: _categoryLabel(context),
                     resultCount: jobs.length,
-                    onQueryChanged: (v) => setState(() => _query = v),
-                    onKindChanged: (v) => setState(() => _kind = v),
-                    onVisibilityChanged: (v) => setState(() => _visibility = v),
+                    onQueryChanged: _setQuery,
+                    onKindChanged: (v) {
+                      setState(() => _kind = v);
+                      _reloadForCurrentFilters();
+                    },
+                    onVisibilityChanged: (v) {
+                      setState(() => _visibility = v);
+                      _reloadForCurrentFilters();
+                    },
                     onRetryCategories: () {
                       setState(() {
                         _categoryError = null;
@@ -329,6 +358,9 @@ class _JobsPageState extends State<JobsPage> {
                           x.description.isEmpty ? null : Text(x.description),
                       onTap: () => Navigator.pop(context, x.slug)))
                 ]));
-    if (c != null && mounted) setState(() => _category = c);
+    if (c != null && mounted) {
+      setState(() => _category = c);
+      await _reloadForCurrentFilters();
+    }
   }
 }
