@@ -107,6 +107,8 @@ void main() {
       final repository = _FakeAdminOperations();
       await tester.pumpWidget(_host(repository));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Unknown payouts'));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Mark failed'));
       await tester.pump();
