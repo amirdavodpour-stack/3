@@ -127,7 +127,6 @@ void main() {
     await tester.pump();
     expect(tapped, isTrue);
   });
-}
 
   testWidgets("shared motion primitives honor reduced-motion", (tester) async {
       await tester.pumpWidget(
