@@ -27,6 +27,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   HopeNotificationPreferences? preferences;
   bool preferencesLoading = false;
   int _loadRequestId = 0;
+  String? _preferenceBusyKey;
 
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -101,12 +102,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   const SizedBox(height: 8),
                   Text(_t('کانال‌ها و دسته‌بندی اعلان‌ها را کنترل کنید.', 'Control notification channels and categories.')),
                   const SizedBox(height: 12),
-                  _preferenceSwitch(_t('اعلان داخل برنامه', 'In-app notifications'), current.inApp, (value) async { current = await _savePreference('inApp', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch('Push', current.push, (value) async { current = await _savePreference('push', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch(_t('ایمیل', 'Email'), current.email, (value) async { current = await _savePreference('email', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch(_t('به‌روزرسانی درخواست‌ها', 'Application updates'), current.applicationUpdates, (value) async { current = await _savePreference('applicationUpdates', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch(_t('به‌روزرسانی پرداخت‌ها', 'Payment updates'), current.paymentUpdates, (value) async { current = await _savePreference('paymentUpdates', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch(_t('بازاریابی', 'Marketing'), current.marketing, (value) async { current = await _savePreference('marketing', value, current); setSheetState(() {}); }),
+                  _preferenceSwitch('inApp', _t('اعلان داخل برنامه', 'In-app notifications'), current.inApp, (value) async { await _changePreference('inApp', () async { current = await _savePreference('inApp', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch('push', 'Push', current.push, (value) async { await _changePreference('push', () async { current = await _savePreference('push', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch('email', _t('ایمیل', 'Email'), current.email, (value) async { await _changePreference('email', () async { current = await _savePreference('email', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch('applicationUpdates', _t('به‌روزرسانی درخواست‌ها', 'Application updates'), current.applicationUpdates, (value) async { await _changePreference('applicationUpdates', () async { current = await _savePreference('applicationUpdates', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch('paymentUpdates', _t('به‌روزرسانی پرداخت‌ها', 'Payment updates'), current.paymentUpdates, (value) async { await _changePreference('paymentUpdates', () async { current = await _savePreference('paymentUpdates', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch('marketing', _t('بازاریابی', 'Marketing'), current.marketing, (value) async { await _changePreference('marketing', () async { current = await _savePreference('marketing', value, current); setSheetState(() {}); }); }),
                 ],
               ),
             ),
@@ -128,12 +129,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  Widget _preferenceSwitch(String title, bool value, Future<void> Function(bool) onChanged) =>
+  Future<void> _changePreference(
+      String key, Future<void> Function() action) async {
+    if (_preferenceBusyKey != null || !mounted) return;
+    setState(() => _preferenceBusyKey = key);
+    try {
+      await action();
+    } finally {
+      if (mounted) setState(() => _preferenceBusyKey = null);
+    }
+  }
+
+  Widget _preferenceSwitch(
+      String key, String title, bool value, Future<void> Function(bool) onChanged) =>
       SwitchListTile.adaptive(
         contentPadding: EdgeInsets.zero,
         title: Text(title),
         value: value,
-        onChanged: (next) { onChanged(next); },
+        onChanged: _preferenceBusyKey != null
+            ? null
+            : (next) => onChanged(next),
       );
 
   Future<HopeNotificationPreferences> _savePreference(
