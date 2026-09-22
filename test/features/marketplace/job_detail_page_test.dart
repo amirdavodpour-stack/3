@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -59,6 +60,7 @@ class _FakeDetail implements JobDetailRepository {
   Future<void> candidateAction(
       String jobId, String candidateId, String action) async {
     calls.add('candidate:$candidateId:$action');
+    if (candidateGate != null) await candidateGate!.future;
   }
 
   @override
@@ -302,6 +304,28 @@ void main() {
     expect(find.text('Flutter'), findsOneWidget);
     expect(find.text('Interview'), findsOneWidget);
     expect(find.text('Hire'), findsOneWidget);
+
+    // A candidate action is serialized across the whole pipeline; another
+    // candidate cannot submit a concurrent transition while one is pending.
+    detail.candidateGate = Completer<void>();
+    await tester.ensureVisible(find.text('Interview'));
+    await tester.tap(find.text('Interview'));
+    await tester.pump();
+    expect(
+      tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Interview')).onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Hire')).onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Compare')).onPressed,
+      isNull,
+    );
+    detail.candidateGate!.complete();
+    await tester.pumpAndSettle();
+    expect(detail.calls, contains('candidate:c1:interview'));
 
     await tester.ensureVisible(find.text('Interview'));
     await tester.tap(find.text('Interview'));
