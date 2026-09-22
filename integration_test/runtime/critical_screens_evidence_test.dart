@@ -645,16 +645,7 @@ void main() {
       for (final entry in selectedEntries) {
         await _render(
           tester,
-          marker: '
-  });
-}
-+'{markerPrefix}
-  });
-}
-+'{entry.key}-
-  });
-}
-+'{suffix}',
+          marker: '${markerPrefix}${entry.key}-${suffix}',
           locale: locale,
           child: entry.value(),
           auth: prepared.auth,
