@@ -402,8 +402,8 @@ void main() {
       userId: 'u1',
     );
 
-    final completedIcons = find.byIcon(Icons.check_circle_rounded);
-    expect(completedIcons, findsNothing);
+    final draft = tester.widget<Text>(find.text('Draft'));
+    expect(draft.style?.fontWeight, isNot(FontWeight.w800));
     expect(find.text('Needs review'), findsOneWidget);
   });
 

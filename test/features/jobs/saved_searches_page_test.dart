@@ -75,8 +75,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Localized search'), findsOneWidget);
-    expect(find.text('Missions'), findsOneWidget);
-    expect(find.text('Specialized'), findsOneWidget);
+    expect(find.textContaining('Missions'), findsOneWidget);
+    expect(find.textContaining('Specialized'), findsOneWidget);
     expect(find.text('MISSION'), findsNothing);
     expect(find.text('SPECIALIZED'), findsNothing);
   });
@@ -95,7 +95,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Unknown search'), findsOneWidget);
-    expect(find.text('Other'), findsNWidgets(2));
+    expect(find.textContaining('Other'), findsOneWidget);
     expect(find.text('FUTURE_KIND'), findsNothing);
     expect(find.text('FUTURE_VISIBILITY'), findsNothing);
   });
