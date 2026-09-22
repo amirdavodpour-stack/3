@@ -110,7 +110,7 @@ class _JobsPageState extends State<JobsPage> {
   Future<void> _reloadForCurrentFilters() async {
     if (!mounted) return;
     final next = _loadOpportunities();
-    setState(() => _future = next);
+    setState(() { _future = next; });
     await next.catchError((_) => const <HopeJob>[]);
   }
 
@@ -264,7 +264,7 @@ class _JobsPageState extends State<JobsPage> {
   Future<void> _refresh() async {
     if (!mounted) return;
     final next = _loadOpportunities();
-    setState(() => _future = next);
+    setState(() { _future = next; });
     await next.catchError((_) => const <HopeJob>[]);
   }
 
