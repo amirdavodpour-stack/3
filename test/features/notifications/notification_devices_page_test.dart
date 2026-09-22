@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hope_mobile/core/notifications/notification.dart';
 import 'package:hope_mobile/core/notifications/notification_repository.dart';
 import 'package:hope_mobile/features/notifications/notification_devices_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
