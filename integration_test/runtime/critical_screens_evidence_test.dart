@@ -657,10 +657,7 @@ void main() {
 
       await _render(
         tester,
-        marker: 'login-
-  });
-}
-+'{suffix}',
+        marker: 'login-${suffix}',
         locale: locale,
         child: const LoginPage(),
         auth: prepared.auth,
@@ -669,10 +666,7 @@ void main() {
       );
       await _render(
         tester,
-        marker: 'register-
-  });
-}
-+'{suffix}',
+        marker: 'register-${suffix}',
         locale: locale,
         child: const RegisterPage(),
         auth: prepared.auth,
@@ -681,10 +675,7 @@ void main() {
       );
       await _render(
         tester,
-        marker: 'password-reset-
-  });
-}
-+'{suffix}',
+        marker: 'password-reset-${suffix}',
         locale: locale,
         child: const PasswordResetPage(),
         auth: prepared.auth,
