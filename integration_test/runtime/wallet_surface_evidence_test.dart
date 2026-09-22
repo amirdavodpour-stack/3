@@ -202,13 +202,13 @@ void main() {
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
-              HopeSurface(child: Text('surface-1')),
+              const HopeSurface(child: Text('surface-1')),
+              const SizedBox(height: 8),
+              const HopeSurface(child: Text('surface-2')),
               SizedBox(height: 8),
-              HopeSurface(child: Text('surface-2')),
+              const HopeSurface(child: Text('surface-3')),
               SizedBox(height: 8),
-              HopeSurface(child: Text('surface-3')),
-              SizedBox(height: 8),
-              MetricTile(label: 'Metric', value: '2,500,000 Toman'),
+              const MetricTile(label: 'Metric', value: '2,500,000 Toman'),
             ],
           ),
         ),
