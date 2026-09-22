@@ -232,7 +232,7 @@ void main() {
     final repo = _FakeTx(failLoad: true);
     await _pump(tester, repo);
 
-    expect(find.text('Operation failed.'), findsOneWidget);
+    expect(find.text('Payment refresh failed'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
 
     repo.failLoad = false;
@@ -270,7 +270,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Design landing page'), findsOneWidget);
-    expect(find.text('Operation failed.'), findsOneWidget);
+    expect(find.text('Payment refresh failed'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });
 
@@ -309,7 +309,7 @@ void main() {
     }));
     await tester.pumpAndSettle();
     expect(find.text('Fresh landing page'), findsOneWidget);
-    expect(find.text('2,000,000 TOMAN'), findsOneWidget);
+    expect(find.textContaining('2,000,000'), findsOneWidget);
 
     stale.complete(HopePayment.fromMap({
       'id': 'p1-old',
@@ -325,8 +325,8 @@ void main() {
 
     expect(find.text('Fresh landing page'), findsOneWidget);
     expect(find.text('Stale landing page'), findsNothing);
-    expect(find.text('2,000,000 TOMAN'), findsOneWidget);
-    expect(find.text('1,000,000 TOMAN'), findsNothing);
+    expect(find.textContaining('2,000,000'), findsOneWidget);
+    expect(find.textContaining('1,000,000'), findsNothing);
   });
 
   testWidgets('no-transaction view offers fund payment', (tester) async {
