@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,7 +41,7 @@ void main() {
 
     final semantics = tester.getSemantics(chip);
     expect(semantics.flagsCollection.isButton, isTrue);
-    expect(semantics.flagsCollection.isEnabled, isNot(Tristate.none));
-    expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+    expect(semantics.flagsCollection.isEnabled, isNot(ui.Tristate.none));
+    expect(semantics.flagsCollection.isEnabled, ui.Tristate.isFalse);
   });
 }
