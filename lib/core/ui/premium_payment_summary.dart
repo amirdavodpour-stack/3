@@ -43,9 +43,12 @@ class PremiumPaymentSummary extends StatelessWidget {
     final normalized = parsed != null && parsed == parsed.truncate()
         ? parsed.toInt().toString()
         : raw;
-    final grouped = RegExp(r'^\d+
+    final grouped = RegExp(r'^\d+$').hasMatch(normalized)
+        ? normalized.replaceAllMapped(
+            RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')
+        : normalized;
+    return '$grouped ${_label(context, 'تومان', 'Toman')}';
   }
-
   IconData _statusIcon() {
     switch (payment.status) {
       case 'RELEASED':
