@@ -35,17 +35,31 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Future<HopeWallet>? _wallet;
   String? _error;
   int _refreshRequestId = 0;
+  String? _loadSignature;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_opportunities != null) return;
+    final settings = context.read<HopeSettingsController>();
+    final auth = context.read<AuthController>();
+    final signature = [
+      settings.city,
+      settings.personalizedRecommendations,
+      settings.locationEnabled,
+      settings.latitude,
+      settings.longitude,
+      auth.isGuest,
+      auth.user?['id']?.toString(),
+    ].join('|');
+    if (signature == _loadSignature) return;
+    _loadSignature = signature;
     _load();
   }
 
   void _load() {
     final settings = context.read<HopeSettingsController>();
     final registry = applicationRegistryOf(context);
+    _error = null;
     try {
       _opportunities = registry.listOpportunities(
         city: settings.personalizedRecommendations ? settings.city : null,
@@ -99,8 +113,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();
-    if (_opportunities == null) _load();
-
     return PremiumPageFrame(
       maxWidth: 1180,
       child: RefreshIndicator(

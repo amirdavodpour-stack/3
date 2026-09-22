@@ -113,6 +113,26 @@ Future<Widget> _host(_SequencedMarketplaceRepository repository) async {
 
 void _noop() {}
 
+  testWidgets('settings changes reload home opportunities',
+      (tester) async {
+    final repository = _SequencedMarketplaceRepository();
+    final widget = await _host(repository);
+    final material = widget as MaterialApp;
+    final providers = material.home;
+    await tester.pumpWidget(widget);
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, 1);
+
+    final settings = tester.widget<ChangeNotifierProvider<HopeSettingsController>>(
+      find.byType(ChangeNotifierProvider<HopeSettingsController>).first,
+    ).value;
+    await settings.setCity('مشهد');
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, 2);
+  });
+
 void main() {
   testWidgets('latest home refresh wins over an older failed refresh',
       (tester) async {
