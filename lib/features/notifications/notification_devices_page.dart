@@ -18,6 +18,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
   bool _loading = true;
   String? _error;
   String? _busyId;
+  int _loadRequestId = 0;
 
   NotificationRepository get _repo => context.read<NotificationRepository>();
 
@@ -31,19 +32,22 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final requestId = ++_loadRequestId;
+    final hasExistingDevices = _devices.isNotEmpty;
     setState(() {
-      _loading = true;
       _error = null;
+      if (!hasExistingDevices) _loading = true;
     });
     try {
       final devices = await _repo.listDevices();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _devices = devices;
         _loading = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _loading = false;
         _error = apiErrorMessage(error,
@@ -101,7 +105,16 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_t('دستگاه‌های اعلان', 'Notification devices'))),
+      appBar: AppBar(
+        title: Text(_t('دستگاه‌های اعلان', 'Notification devices')),
+        actions: [
+          IconButton(
+            onPressed: _load,
+            tooltip: _t('بازخوانی', 'Refresh'),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
       body: PremiumPageFrame(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
         child: RefreshIndicator(
