@@ -31,8 +31,10 @@ test('unknown payout marks the financial operation referenced by the payout hold
     payouts,
     /UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=\$1\`, \[payout\.financial_operation_id\]\);/,
   );
-  assert.doesNotMatch(
-    payouts,
-    /UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=\(SELECT id FROM wallet_holds[\\s\\S]*?\)\`, \[payoutId\]\);/,
-  );
+  assert.equal(
+    payouts.includes(
+      "WHERE id=(SELECT id FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' LIMIT 1)",
+    ),
+    false,
+  )
 });
