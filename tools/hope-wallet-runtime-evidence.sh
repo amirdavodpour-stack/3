@@ -80,7 +80,8 @@ capture_screen() {
       adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
       adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
       adb exec-out cat /sdcard/hope-ui-hierarchy.xml > "$evidence_dir/ui-hierarchy-$prefix.xml" 2>/dev/null || true
-      adb shell run-as com.hope.marketplace sh -c "mkdir -p files/hope-screen-acks && : > 'files/hope-screen-acks/$marker'" >/dev/null
+      adb shell run-as com.hope.marketplace mkdir -p files/hope-screen-acks >/dev/null
+      adb shell run-as com.hope.marketplace touch "files/hope-screen-acks/$marker" >/dev/null
       return 0
     fi
 
@@ -155,7 +156,8 @@ if [ "$baseline_status" -eq 0 ]; then
   adb shell wm size 720x1280
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
-  adb shell run-as com.hope.marketplace sh -c 'rm -rf files/hope-screen-acks && mkdir -p files/hope-screen-acks'
+  adb shell run-as com.hope.marketplace rm -rf files/hope-screen-acks
+  adb shell run-as com.hope.marketplace mkdir -p files/hope-screen-acks
 
 set +e
 HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL flutter test --no-pub \
