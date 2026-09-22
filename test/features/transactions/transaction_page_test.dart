@@ -274,7 +274,7 @@ void main() {
     expect(find.text('Retry'), findsOneWidget);
   });
 
-  testWidgets('latest transaction refresh wins over an older in-flight refresh',
+  testWidgets('transaction refresh disables duplicate requests while pending',
       (tester) async {
     final repo = _FakeTx()
       ..payment = Future.value(HopePayment.fromMap({
@@ -284,20 +284,19 @@ void main() {
         'providerRef': 'ref-1',
         'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
       }));
+    final pending = Completer<HopePayment>();
+    repo.paymentResponses.add(pending.future);
     await _pump(tester, repo, ownerId: 'u1');
-
-    final stale = Completer<HopePayment>();
-    final fresh = Completer<HopePayment>();
-    repo.paymentResponses.addAll([stale.future, fresh.future]);
 
     final refreshButton = find.byTooltip('Refresh status');
     expect(refreshButton, findsOneWidget);
     await tester.tap(refreshButton);
     await tester.pump();
-    await tester.tap(refreshButton);
-    await tester.pump();
 
-    fresh.complete(HopePayment.fromMap({
+    expect(repo.calls.where((call) => call == 'get:j1').length, 2);
+    expect(tester.widget<IconButton>(refreshButton).onPressed, isNull);
+
+    pending.complete(HopePayment.fromMap({
       'id': 'p2',
       'status': 'HELD',
       'amount': 2000000,
@@ -308,25 +307,9 @@ void main() {
       },
     }));
     await tester.pumpAndSettle();
-    expect(find.text('Fresh landing page'), findsOneWidget);
-    expect(find.textContaining('2,000,000'), findsOneWidget);
-
-    stale.complete(HopePayment.fromMap({
-      'id': 'p1-old',
-      'status': 'HELD',
-      'amount': 1000000,
-      'providerRef': 'ref-old',
-      'job': {
-        ..._job('j1', 'FUNDED', providerId: 'u1').toMap(),
-        'title': 'Stale landing page',
-      },
-    }));
-    await tester.pumpAndSettle();
 
     expect(find.text('Fresh landing page'), findsOneWidget);
-    expect(find.text('Stale landing page'), findsNothing);
     expect(find.textContaining('2,000,000'), findsOneWidget);
-    expect(find.textContaining('1,000,000'), findsNothing);
   });
 
   testWidgets('no-transaction view offers fund payment', (tester) async {
