@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/admin/admin_repository.dart';
+import 'package:hope_mobile/core/marketplace/application.dart';
+import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/features/admin/admin_operations_page.dart';
 import 'package:provider/provider.dart';
 
