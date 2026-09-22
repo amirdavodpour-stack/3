@@ -883,7 +883,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String copy_value_irr_ed45261(Object value) {
-    return '\$$value تومان';
+    return '$value تومان';
   }
 
   @override
