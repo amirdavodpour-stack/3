@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-evidence_dir="\${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
-runner_temp="\${RUNNER_TEMP:-/tmp}"
+evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
+runner_temp="${RUNNER_TEMP:-/tmp}"
 log_file="$runner_temp/hope-critical-screens-runtime.log"
 mkdir -p "$evidence_dir"
 rm -f "$log_file"
@@ -21,6 +21,7 @@ capture_android_diagnostics() {
   adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-$prefix.txt" 2>&1 || true
   adb shell dumpsys activity activities > "$evidence_dir/activity-$prefix.txt" 2>&1 || true
   adb shell dumpsys window windows > "$evidence_dir/window-$prefix.txt" 2>&1 || true
+  adb shell logcat -d -t 1000 > "$evidence_dir/logcat-$prefix.txt" 2>&1 || true
 }
 
 assert_hope_focused() {
@@ -29,7 +30,7 @@ assert_hope_focused() {
 
   adb shell dumpsys window windows > "$window_dump" 2>&1 || true
   local current_focus
-  current_focus="\$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
+  current_focus="$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
 
   if [ -n "$current_focus" ]; then
     if ! grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus"; then
@@ -59,7 +60,7 @@ capture_screen() {
   local output="$2"
   local prefix="$3"
   local timeout_seconds="$4"
-  local deadline=\$((SECONDS + timeout_seconds))
+  local deadline=$((SECONDS + timeout_seconds))
 
   while (( SECONDS < deadline )); do
     if grep -q -- "$marker" "$log_file"; then
@@ -76,7 +77,7 @@ capture_screen() {
     sleep 2
   done
 
-  echo "Timed out waiting for screenshot marker after \${timeout_seconds}s: $marker" >&2
+  echo "Timed out waiting for screenshot marker after ${timeout_seconds}s: $marker" >&2
   capture_android_diagnostics "$prefix-timeout"
   return 1
 }
@@ -116,7 +117,7 @@ screens=(
 
 capture_screen "HOPE_SCREEN_STARTED:home-fa-rtl" "screen-start-fa-rtl.png" "screen-start-fa-rtl" 1200
 
-for marker in "\${screens[@]}"; do
+for marker in "${screens[@]}"; do
   capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" 120
 done
 
