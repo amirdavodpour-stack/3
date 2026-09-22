@@ -161,7 +161,7 @@ if [ "$baseline_status" -eq 0 ]; then
 set +e
 HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL env HOPE_SCREENSHOT_ACK_DIR="$ack_dir" flutter test --no-pub \
   integration_test/runtime/critical_screens_evidence_test.dart \
-  -r expanded 2>&1 | tee "$runner_temp/hope-responsive-runtime.log" &
+  -r expanded 2>&1 | tee -a "$log_file" "$runner_temp/hope-responsive-runtime.log" &
 responsive_test_pid=$!
 test_pid="$responsive_test_pid"
 set -e
