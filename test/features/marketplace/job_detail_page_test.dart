@@ -26,9 +26,13 @@ import 'package:provider/provider.dart';
 /// candidate pipeline, owner transaction navigation, non-owner candidate
 /// suppression. Fresh fakes per test, no network.
 class _FakeDetail implements JobDetailRepository {
-  _FakeDetail({this.candidates = const []});
+  _FakeDetail({
+    this.candidates = const [],
+    this.compareResult = const {},
+  });
 
   List<HopeCandidate> candidates;
+  final Map<String, dynamic> compareResult;
   final List<String> calls = [];
   Completer<void>? candidateGate;
 
@@ -67,7 +71,7 @@ class _FakeDetail implements JobDetailRepository {
   @override
   Future<Map<String, dynamic>> compareCandidates(
           String jobId, List<String> applicationIds) async =>
-      const {};
+      compareResult;
 
   @override
   Future<void> reportJob(String jobId,
@@ -158,6 +162,7 @@ HopeJob _job({
   String? ownerId = 'u1',
   String? city = 'Tehran',
   String? title,
+  String status = 'PUBLISHED',
 }) =>
     HopeJob.fromMap({
       'id': id,
@@ -171,7 +176,7 @@ HopeJob _job({
       'budgetMax': '1500000',
       'duration': '8',
       'acceptanceCriteria': 'Acceptance criteria are listed here.',
-      'status': 'PUBLISHED',
+      'status': status,
       'ownerId': ownerId,
       'providerId': 'p1',
       'city': city,
@@ -339,6 +344,57 @@ void main() {
     expect(detail.calls, contains('candidate:c2:hire'));
   });
 
+  testWidgets('candidate comparison localizes backend status enums', (tester) async {
+    final detail = _FakeDetail(
+      candidates: const [
+        HopeCandidate(
+          id: 'c1',
+          skills: 'Flutter',
+          resumeText: 'Cross-platform experience.',
+          status: 'FORWARDED',
+        ),
+        HopeCandidate(
+          id: 'c2',
+          skills: 'Dart',
+          resumeText: 'Backend experience.',
+          status: 'OFFERED',
+        ),
+      ],
+      compareResult: {
+        'candidates': [
+          {
+            'skills': 'Flutter',
+            'resumeHighlights': 'Cross-platform experience.',
+            'status': 'OFFERED',
+          },
+        ],
+      },
+    );
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      detail: detail,
+      userId: 'u1',
+    );
+
+    await tester.ensureVisible(find.text('Compare'));
+    await tester.tap(find.text('Compare'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Offer sent'), findsOneWidget);
+    expect(find.text('OFFERED'), findsNothing);
+  });
+
+  testWidgets('unknown job lifecycle status is presented safely', (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1', status: 'FUTURE_STATE'),
+      userId: 'u1',
+    );
+
+    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('FUTURE_STATE'), findsNothing);
+  });
   testWidgets('non-owner never sees the candidate pipeline', (tester) async {
     final detail = _FakeDetail(candidates: const [
       HopeCandidate(

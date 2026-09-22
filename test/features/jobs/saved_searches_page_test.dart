@@ -7,12 +7,17 @@ import 'package:hope_mobile/core/marketplace/saved_search_repository.dart';
 import 'package:hope_mobile/features/jobs/saved_searches_page.dart';
 import 'package:provider/provider.dart';
 
-HopeSavedSearch _search(String id, String name) => HopeSavedSearch(
+HopeSavedSearch _search(
+  String id,
+  String name, {
+  String kind = 'ALL',
+  String visibility = 'ALL',
+}) => HopeSavedSearch(
   id: id,
   name: name,
   query: 'query for $name',
-  kind: 'ALL',
-  visibility: 'ALL',
+  kind: kind,
+  visibility: visibility,
   city: 'AUTO',
   category: 'ALL',
   updatedAt: '2026-09-22T00:00:00Z',
@@ -20,13 +25,18 @@ HopeSavedSearch _search(String id, String name) => HopeSavedSearch(
 
 class _SequencedSavedSearchRepository implements SavedSearchRepository {
   int calls = 0;
+  List<HopeSavedSearch>? itemsOverride;
   final Completer<List<HopeSavedSearch>> firstRefresh =
       Completer<List<HopeSavedSearch>>();
 
   @override
   Future<List<HopeSavedSearch>> list() {
     calls += 1;
-    if (calls == 1) return Future.value([_search('initial', 'Initial search')]);
+    if (calls == 1) {
+      return Future.value(
+        itemsOverride ?? [_search('initial', 'Initial search')],
+      );
+    }
     if (calls == 2) return firstRefresh.future;
     return Future.value([_search('fresh', 'Fresh search')]);
   }
@@ -50,6 +60,26 @@ Widget _host(_SequencedSavedSearchRepository repository) {
 }
 
 void main() {
+  testWidgets('saved-search enum filters use localized labels', (tester) async {
+    final repository = _SequencedSavedSearchRepository();
+    repository.itemsOverride = [
+      _search(
+        'localized',
+        'Localized search',
+        kind: 'MISSION',
+        visibility: 'SPECIALIZED',
+      ),
+    ];
+
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Localized search'), findsOneWidget);
+    expect(find.text('Missions'), findsOneWidget);
+    expect(find.text('Specialized'), findsOneWidget);
+    expect(find.text('MISSION'), findsNothing);
+    expect(find.text('SPECIALIZED'), findsNothing);
+  });
   testWidgets('latest saved-search refresh wins over an older in-flight load',
       (tester) async {
     final repository = _SequencedSavedSearchRepository();

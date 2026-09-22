@@ -184,12 +184,34 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
     }
   }
 
+  String _kindLabel(HopeSavedSearch item) {
+    switch (item.kind.trim().toUpperCase()) {
+      case 'MISSION':
+        return HopeCopy.of(context).copy_missions_a833d13;
+      case 'JOB':
+        return HopeCopy.of(context).copy_jobs_ebf9a80;
+      default:
+        return item.kind;
+    }
+  }
+
+  String _visibilityLabel(HopeSavedSearch item) {
+    switch (item.visibility.trim().toUpperCase()) {
+      case 'PUBLIC':
+        return HopeCopy.of(context).copy_public_21e97be;
+      case 'SPECIALIZED':
+        return HopeCopy.of(context).copy_specialized_5d1ca04;
+      default:
+        return item.visibility;
+    }
+  }
+
   String _scope(HopeSavedSearch item) {
     final parts = <String>[];
     if (item.query.isNotEmpty) parts.add(item.query);
     if (item.city.isNotEmpty && item.city != 'AUTO') parts.add(item.city);
-    if (item.kind != 'ALL') parts.add(item.kind);
-    if (item.visibility != 'ALL') parts.add(item.visibility);
+    if (item.kind != 'ALL') parts.add(_kindLabel(item));
+    if (item.visibility != 'ALL') parts.add(_visibilityLabel(item));
     if (item.category != 'ALL') parts.add(item.category);
     return parts.isEmpty
         ? _t('بدون فیلتر اضافی', 'No additional filters')

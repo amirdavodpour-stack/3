@@ -54,6 +54,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
         'REJECTED' => _t('رد شده', 'Rejected'),
         _ => _t('در حال بررسی', 'Under review'),
       };
+  String _candidateComparisonStatusLabel(Object? value) {
+    final raw = value?.toString().trim();
+    if (raw == null || raw.isEmpty || raw == 'null') return '—';
+    return _candidateStatusLabel(raw);
+  }
 
   Future<void> action() async {
     final auth = context.read<AuthController?>();
@@ -408,7 +413,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                     ),
                                     const SizedBox(height: 5),
                                     Text(
-                                      '${row['status'] ?? '—'}',
+                                      _candidateComparisonStatusLabel(row['status']),
                                       style: Theme.of(ctx).textTheme.bodySmall,
                                     ),
                                   ],
@@ -1167,7 +1172,8 @@ class _JobLifecycleCard extends StatelessWidget {
         'DELIVERED' => _t(context, 'تحویل شده', 'Delivered'),
         'UNDER_REVIEW' => _t(context, 'در حال بررسی', 'Under review'),
         'COMPLETED' => _t(context, 'تکمیل شده', 'Completed'),
-        _ => status,
+        'CANCELLED' => _t(context, 'لغو شده', 'Cancelled'),
+        _ => _t(context, 'نیازمند بررسی', 'Needs review'),
       };
 
   @override
