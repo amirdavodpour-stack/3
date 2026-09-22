@@ -39,16 +39,13 @@ class PremiumPaymentSummary extends StatelessWidget {
   String _money(BuildContext context, dynamic value) {
     if (value == null) return '—';
     final raw = '$value'.trim();
-    final parsed = num.tryParse(raw);
-    final normalized = parsed != null && parsed == parsed.truncate()
-        ? parsed.toInt().toString()
-        : raw;
-    final grouped = RegExp(r'^\d+$').hasMatch(normalized)
-        ? normalized.replaceAllMapped(
-            RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')
+    final normalized = raw.endsWith('.0') ? raw.substring(0, raw.length - 2) : raw;
+    final grouped = RegExp(r'^\d+
+        ? normalized.replaceAllMapped(RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')
         : normalized;
     return '$grouped ${_label(context, 'تومان', 'Toman')}';
   }
+
   IconData _statusIcon() {
     switch (payment.status) {
       case 'RELEASED':
@@ -159,9 +156,8 @@ class _Metric extends StatelessWidget {
       );
 }
 ).hasMatch(normalized)
-        ? normalized.replaceAllMapped(
-            RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')
-        : normalized;
+        ? raw.replaceAllMapped(RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')
+        : raw;
     return '$grouped ${_label(context, 'تومان', 'Toman')}';
   }
 
