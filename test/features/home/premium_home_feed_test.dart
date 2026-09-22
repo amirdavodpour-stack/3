@@ -79,35 +79,46 @@ HopeJob _job(String id, String title) => HopeJob.fromMap({
   'category': 'فناوری',
 });
 
-Future<Widget> _host(_SequencedMarketplaceRepository repository) async {
+class _HomeHarness {
+  const _HomeHarness(this.widget, this.settings);
+
+  final Widget widget;
+  final HopeSettingsController settings;
+}
+
+Future<_HomeHarness> _host(
+    _SequencedMarketplaceRepository repository) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
   final auth = AuthController(_AuthRepo(), SecureStore());
   auth.continueAsGuest();
-  return MaterialApp(
-    locale: const Locale('en'),
-    supportedLocales: const [Locale('fa'), Locale('en')],
-    localizationsDelegates: const [
-      AppLocalizations.delegate,
-      GlobalMaterialLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-    ],
-    home: MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: settings),
-        ChangeNotifierProvider.value(value: auth),
-        Provider<ApplicationRegistry>.value(
-          value: ApplicationRegistry(marketplace: repository),
-        ),
+  return _HomeHarness(
+    MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: const [Locale('fa'), Locale('en')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
-      child: const PremiumHomeFeed(
-        onOpenExplore: _noop,
-        onOpenMenu: _noop,
-        onOpenCreate: _noop,
+      home: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: settings),
+          ChangeNotifierProvider.value(value: auth),
+          Provider<ApplicationRegistry>.value(
+            value: ApplicationRegistry(marketplace: repository),
+          ),
+        ],
+        child: const PremiumHomeFeed(
+          onOpenExplore: _noop,
+          onOpenMenu: _noop,
+          onOpenCreate: _noop,
+        ),
       ),
     ),
+    settings,
   );
 }
 
@@ -116,18 +127,13 @@ void _noop() {}
   testWidgets('settings changes reload home opportunities',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();
-    final widget = await _host(repository);
-    final material = widget as MaterialApp;
-    final providers = material.home;
-    await tester.pumpWidget(widget);
+    final harness = await _host(repository);
+    await tester.pumpWidget(harness.widget);
     await tester.pumpAndSettle();
 
     expect(repository.calls, 1);
 
-    final settings = tester.widget<ChangeNotifierProvider<HopeSettingsController>>(
-      find.byType(ChangeNotifierProvider<HopeSettingsController>).first,
-    ).value;
-    await settings.setCity('مشهد');
+    await harness.settings.setCity('مشهد');
     await tester.pumpAndSettle();
 
     expect(repository.calls, 2);
@@ -137,7 +143,8 @@ void main() {
   testWidgets('latest home refresh wins over an older failed refresh',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();
-    await tester.pumpWidget(await _host(repository));
+    final harness = await _host(repository);
+    await tester.pumpWidget(harness.widget);
     await tester.pumpAndSettle();
 
     expect(find.text('Initial opportunity'), findsOneWidget);
