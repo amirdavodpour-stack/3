@@ -126,6 +126,7 @@ class _AdminPageState extends State<AdminPage>
 
   String _auditActionLabel(String value) => switch (value.trim().toUpperCase()) {
         'ADMIN_JOB_MODERATE' => _t('مدیریت فرصت', 'Opportunity moderation'),
+        'JOB_MODERATED' => _t('مدیریت فرصت', 'Opportunity moderation'),
         'ADMIN_JOB_DELETE' => _t('حذف فرصت', 'Opportunity deletion'),
         'ADMIN_USER_STATUS' => _t('تغییر وضعیت کاربر', 'User status change'),
         'ADMIN_APPLICATION_SHORTLIST' => _t('انتخاب اولیه درخواست', 'Application shortlist'),
