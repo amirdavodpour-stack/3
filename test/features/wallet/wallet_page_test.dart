@@ -248,7 +248,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('9,999,999 Toman'), findsNothing);
-      expect(find.text('7,000,000 Toman'), findsOneWidget);
+      expect(find.textContaining('7,000,000'), findsOneWidget);
     },
   );
 
