@@ -38,8 +38,8 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     final semantics = tester.getSemantics(chip);
-    expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
-    expect(semantics.hasFlag(SemanticsFlag.hasEnabledState), isTrue);
-    expect(semantics.hasFlag(SemanticsFlag.isEnabled), isFalse);
+    expect(semantics.flagsCollection.isButton, isTrue);
+    expect(semantics.flagsCollection.isEnabled, isNot(Tristate.none));
+    expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
   });
 }
