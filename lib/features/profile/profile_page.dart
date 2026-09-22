@@ -218,7 +218,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         HopeCopy.of(context).copy_work_profile_885ecac,
                       ),
                       subtitle: Text(
-                        '${data?.providerType.isNotEmpty == true ? _providerTypeLabel(context, data!.providerType) : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? data!.capacity : HopeCopy.of(context).copy_open_to_work_aa59263}',
+                        '${data?.providerType.isNotEmpty == true ? _providerTypeLabel(context, data!.providerType) : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? _capacityLabel(context, data!.capacity) : HopeCopy.of(context).copy_open_to_work_aa59263}',
                       ),
                     ),
                     const Divider(height: 1),
@@ -237,7 +237,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                 _providerTypeLabel(context, data.providerType),
                                 Theme.of(context).colorScheme.secondary,
                               ),
-                            if (data.capacity.isNotEmpty) _trustMetric(context, Icons.timelapse_rounded, data.capacity, AppColors.warning),
+                            if (data.capacity.isNotEmpty)
+                              _trustMetric(
+                                context,
+                                Icons.timelapse_rounded,
+                                _capacityLabel(context, data.capacity),
+                                AppColors.warning,
+                              ),
                             if (data.completedJobs > 0) _trustMetric(context, Icons.task_alt_rounded, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', AppColors.success),
                             if (data.activeJobs > 0) _trustMetric(context, Icons.play_circle_outline_rounded, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
                           ],
@@ -494,6 +500,22 @@ class _ProfilePageState extends State<ProfilePage> {
         return _t(context, 'کسب‌وکار', 'Business');
       default:
         return HopeCopy.of(context).copy_professional_user_54818b8;
+    }
+  }
+
+  String _capacityLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'OPEN':
+        return HopeCopy.of(context).copy_open_to_work_aa59263;
+      case 'FULL_TIME':
+        return HopeCopy.of(context).copy_full_time_1e4bd4e;
+      case 'PART_TIME':
+        return HopeCopy.of(context).copy_part_time_086787b;
+      case 'PART_FULL_TIME':
+      case 'FULL_TIME_PART_TIME':
+        return HopeCopy.of(context).copy_part_full_time_4d952a9;
+      default:
+        return value;
     }
   }
 

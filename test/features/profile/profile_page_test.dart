@@ -42,7 +42,7 @@ class _ProfileRepo implements ProfileRepository {
   Future<HopeProviderProfile> getProviderProfile() async =>
       const HopeProviderProfile(
           providerType: 'INDIVIDUAL',
-          capacity: '3',
+          capacity: 'OPEN',
           verificationStatus: 'VERIFIED',
           trustSignals: {'verified': true});
 
@@ -210,6 +210,8 @@ testWidgets('withdrawing an application disables the action until completion',
     expect(find.text('سلام، کاربر'), findsNothing);
 
     expect(find.text('مجری مستقل'), findsOneWidget);
+    expect(find.text('آماده همکاری'), findsWidgets);
+    expect(find.text('OPEN'), findsNothing);
     expect(find.text('INDIVIDUAL'), findsNothing);
     expect(find.text('تأییدشده'), findsWidgets);
     expect(find.textContaining('VERIFIED'), findsNothing);
