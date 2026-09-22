@@ -139,6 +139,12 @@ void main() {
       await tester.tap(find.text('Mark failed'));
       await tester.pump();
 
+      expect(find.text('Needs review'), findsOneWidget);
+      expect(find.text('UNKNOWN'), findsNothing);
+      expect(find.text('status: UNKNOWN'), findsNothing);
+      expect(find.text('TOMAN'), findsNothing);
+      expect(find.text('currency: TOMAN'), findsNothing);
+
       expect(repository.resolveCalls, 1);
       expect(
         tester.widget<OutlinedButton>(find.widgetWithText(

@@ -309,11 +309,17 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             StatusPill(_payoutStatusLabel(row['status']), color: AppColors.warning),
           ]),
           const SizedBox(height: 8),
-          Text(row.entries
-              .where((e) => !{'id', 'payoutId'}.contains(e.key) && (e.value is String || e.value is num))
-              .take(6)
-              .map((e) => '${e.key}: ${e.value}')
-              .join(' • ')),
+          Text(
+            row.entries
+                .where(
+                  (e) =>
+                      !{'id', 'payoutId', 'status', 'currency'}.contains(e.key) &&
+                      (e.value is String || e.value is num),
+                )
+                .take(6)
+                .map((e) => '${e.key}: ${e.value}')
+                .join(' • '),
+          ),
           const SizedBox(height: 10),
           Row(children: [
             Expanded(child: OutlinedButton(
