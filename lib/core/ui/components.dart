@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'hope_l10n.dart';
-import '../../core/theme/app_theme.dart';
 import '../theme/hope_v2_design.dart';
 
 /// Resolves the accessible secondary accent for the current brightness.
