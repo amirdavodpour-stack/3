@@ -65,6 +65,41 @@ void main() {
   });
 
   testWidgets(
+      'PremiumPaymentSummary groups integral decimal amounts without exposing a decimal suffix',
+      (tester) async {
+    final payment = _payment();
+    final decimalPayment = HopePayment(
+      id: payment.id,
+      status: payment.status,
+      amount: '2000000.0',
+      providerRef: payment.providerRef,
+      job: payment.job,
+      fees: payment.fees,
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en'), Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: PremiumPaymentSummary(payment: decimalPayment),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2,000,000 Toman'), findsOneWidget);
+    expect(find.text('2000000.0 Toman'), findsNothing);
+  });
+
+  testWidgets(
       'PremiumPaymentSummary always presents the current internal ledger as Toman',
       (tester) async {
     await tester.pumpWidget(
