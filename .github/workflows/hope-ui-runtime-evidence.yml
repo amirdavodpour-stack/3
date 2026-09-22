@@ -88,7 +88,7 @@ jobs:
           test -w /dev/kvm
 
       - name: Android runtime evidence
-        # Local execution of the immutable PR #495 fix commit avoids relying on fork-packaged node_modules.
+        # Execute the pinned emulator-runner checkout from this repository without relying on fork-packaged node_modules.
         uses: ./.ci/android-emulator-runner
         with:
           api-level: 35
@@ -111,5 +111,5 @@ jobs:
           name: hope-critical-screens-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
           path: |
             docs/audit/evidence/android-runtime/**
-            ${{ runner.temp }}/hope-wallet-runtime.log
+            ${{ runner.temp }}/hope-critical-screens-runtime.log
           if-no-files-found: warn
