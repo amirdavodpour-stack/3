@@ -64,6 +64,11 @@ capture_screen() {
 
   while (( SECONDS < deadline )); do
     if grep -q -- "$marker" "$log_file"; then
+      # The marker is emitted from the Flutter isolate; allow the Android
+      # surface to present the newly pumped frame before taking the host-side
+      # screenshot. Without this settling window, sequential screens can
+      # produce a screenshot of the previous surface or a transient loader.
+      sleep 2
       adb wait-for-device
       assert_hope_focused "$prefix"
       adb exec-out screencap -p > "$evidence_dir/$output"
