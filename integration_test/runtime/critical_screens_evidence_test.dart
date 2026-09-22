@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_print
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,8 @@ import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/vazirmatn_loader.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/transactions/wallet.dart';
@@ -484,6 +488,7 @@ ApplicationRegistry _registry() => ApplicationRegistry(
 
 Future<({AuthController auth, HopeSettingsController settings, ApplicationRegistry registry})>
     _prepare() async {
+  await loadVazirmatnFont();
   final settings = HopeSettingsController();
   await settings.load();
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
@@ -520,6 +525,7 @@ Widget _host({
       Provider<OfferRepository>.value(value: _EvidenceOfferRepository()),
     ],
     child: MaterialApp(
+      debugShowCheckedModeBanner: false,
       locale: locale,
       supportedLocales: const [Locale('fa'), Locale('en')],
       localizationsDelegates: const [
@@ -528,8 +534,13 @@ Widget _host({
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData.light(),
-      home: child,
+      theme: AppTheme.light(),
+      home: Directionality(
+        textDirection: locale.languageCode == 'en'
+            ? TextDirection.ltr
+            : TextDirection.rtl,
+        child: child,
+      ),
     ),
   );
 }
@@ -543,6 +554,17 @@ Future<void> _render(
   required HopeSettingsController settings,
   required ApplicationRegistry registry,
 }) async {
+  final ackRoot = Platform.environment['HOPE_SCREENSHOT_ACK_DIR'];
+  final ackFile = ackRoot == null || ackRoot.isEmpty
+      ? null
+      : File('$ackRoot/$marker');
+  if (ackFile != null) {
+    await ackFile.parent.create(recursive: true);
+    if (await ackFile.exists()) {
+      await ackFile.delete();
+    }
+  }
+
   print('HOPE_SCREEN_STARTED:$marker');
   await tester.pumpWidget(
     _host(
@@ -556,7 +578,20 @@ Future<void> _render(
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.pump();
   print('HOPE_SCREENSHOT_READY:$marker');
-  await Future<void>.delayed(const Duration(milliseconds: 600));
+
+  if (ackFile == null) {
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    return;
+  }
+
+  final deadline = DateTime.now().add(const Duration(seconds: 60));
+  while (DateTime.now().isBefore(deadline)) {
+    if (await ackFile.exists()) return;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw StateError(
+    'Timed out waiting for host screenshot acknowledgement: $marker',
+  );
 }
 
 void main() {
