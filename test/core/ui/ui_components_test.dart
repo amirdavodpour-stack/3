@@ -156,5 +156,7 @@ testWidgets("shared motion primitives honor reduced-motion", (tester) async {
     expect(find.byType(AnimatedScale), findsNothing);
   });
 
+}
+
 void _noop(String _) {}
 void _noopAction() {}
