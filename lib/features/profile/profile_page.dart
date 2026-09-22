@@ -37,6 +37,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<HopeProviderProfile>? profile;
   Future<List<HopeApplication>>? applications;
   String? _loadedUserId;
+  String? _applicationBusyId;
 
   @override
   void didChangeDependencies() {
@@ -284,29 +285,46 @@ class _ProfilePageState extends State<ProfilePage> {
                         subtitle: Text(a.statusLabel),
                         trailing: a.canWithdraw
                             ? IconButton(
-                                onPressed: () async {
-                                  try {
-                                    await _controller.withdrawApplication(a.id);
-                                    if (!mounted) return;
-                                    setState(() {
-                                      applications = _controller
-                                          .loadApplications()
-                                          .catchError(
-                                              (_) => const <HopeApplication>[]);
-                                    });
-                                  } catch (error) {
-                                    if (!mounted || !context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(apiErrorMessage(error,
-                                              fallback: HopeCopy.of(context)
-                                                  .copy_operation_failed_eb38c4c))),
-                                    );
-                                  }
-                                },
+                                onPressed: _applicationBusyId == a.id
+                                    ? null
+                                    : () async {
+                                        if (_applicationBusyId != null) return;
+                                        setState(() => _applicationBusyId = a.id);
+                                        try {
+                                          await _controller.withdrawApplication(a.id);
+                                          if (!mounted) return;
+                                          setState(() {
+                                            applications = _controller
+                                                .loadApplications()
+                                                .catchError(
+                                                    (_) => const <HopeApplication>[]);
+                                          });
+                                        } catch (error) {
+                                          if (!mounted || !context.mounted) return;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(apiErrorMessage(
+                                                error,
+                                                fallback: HopeCopy.of(context)
+                                                    .copy_operation_failed_eb38c4c,
+                                              )),
+                                            ),
+                                          );
+                                        } finally {
+                                          if (mounted) {
+                                            setState(() => _applicationBusyId = null);
+                                          }
+                                        }
+                                      },
                                 tooltip:
                                     HopeCopy.of(context).copy_cancel_9955c4b,
-                                icon: const Icon(Icons.undo_rounded),
+                                icon: _applicationBusyId == a.id
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.undo_rounded),
                               )
                             : null,
                       );

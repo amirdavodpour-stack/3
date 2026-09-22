@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +31,13 @@ class _AuthRepo implements AuthRepository {
 }
 
 class _ProfileRepo implements ProfileRepository {
+  _ProfileRepo({this.applications = const []});
+
+  final List<HopeApplication> applications;
+  final Completer<HopeApplication> withdrawResult =
+      Completer<HopeApplication>();
+  int withdrawCalls = 0;
+
   @override
   Future<HopeProviderProfile> getProviderProfile() async =>
       const HopeProviderProfile(
@@ -36,17 +45,22 @@ class _ProfileRepo implements ProfileRepository {
           capacity: '3',
           verificationStatus: 'VERIFIED',
           trustSignals: {'verified': true});
+
   @override
-  Future<List<HopeApplication>> listApplications() async => const [];
+  Future<List<HopeApplication>> listApplications() async => applications;
+
   @override
-  Future<HopeApplication> withdrawApplication(String applicationId) =>
-      throw UnimplementedError();
+  Future<HopeApplication> withdrawApplication(String applicationId) {
+    withdrawCalls += 1;
+    return withdrawResult.future;
+  }
 }
 
 Future<void> _pump(
   WidgetTester tester, {
   bool authenticated = false,
   double width = 900,
+  ProfileRepository? repository,
 }) async {
   tester.view.physicalSize = Size(width, 2400);
   tester.view.devicePixelRatio = 1.0;
@@ -77,7 +91,7 @@ Future<void> _pump(
           ChangeNotifierProvider.value(value: settings),
           ChangeNotifierProvider(create: (_) => ThemeController(settings)),
           ChangeNotifierProvider.value(value: auth),
-          Provider<ProfileRepository>.value(value: _ProfileRepo()),
+          Provider<ProfileRepository>.value(value: repository ?? _ProfileRepo()),
         ],
         child: const ProfilePage(),
       ),
@@ -85,6 +99,49 @@ Future<void> _pump(
   ));
   await tester.pumpAndSettle();
 }
+
+  testWidgets('withdrawing an application disables the action until completion',
+      (tester) async {
+    final application = HopeApplication(
+      id: 'a1',
+      jobId: 'j1',
+      jobTitle: 'Flutter developer',
+      jobCity: 'تهران',
+      jobKind: 'JOB',
+      resumeText: 'A concise resume with enough detail.',
+      skills: 'Flutter',
+      status: 'PENDING',
+      createdAt: null,
+      updatedAt: null,
+    );
+    final repo = _ProfileRepo(applications: [application]);
+    await _pump(tester, authenticated: true, repository: repo);
+
+    await tester.scrollUntilVisible(
+      find.text('Flutter developer'),
+      300,
+      scrollable: find.byType(ListView).first,
+    );
+    final undo = find.widgetWithIcon(IconButton, Icons.undo_rounded);
+    expect(undo, findsOneWidget);
+
+    await tester.tap(undo);
+    await tester.pump();
+
+    expect(repo.withdrawCalls, 1);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is IconButton &&
+            widget.icon is SizedBox &&
+            widget.onPressed == null,
+      ),
+      findsOneWidget,
+    );
+
+    repo.withdrawResult.complete(application);
+    await tester.pumpAndSettle();
+    expect(repo.withdrawCalls, 1);
+  });
 
 void main() {
   testWidgets('guest profile explains sign-in requirement', (tester) async {
