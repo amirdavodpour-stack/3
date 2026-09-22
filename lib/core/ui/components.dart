@@ -68,26 +68,37 @@ class _PressableScaleState extends State<PressableScale> {
   bool pressed = false;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: widget.semanticLabel,
-        excludeSemantics: true,
-        child: GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            widget.onTap();
-          },
-          onTapDown: (_) => setState(() => pressed = true),
-          onTapCancel: () => setState(() => pressed = false),
-          onTapUp: (_) => setState(() => pressed = false),
-          child: AnimatedScale(
-            scale: pressed ? .975 : 1,
-            duration: const Duration(milliseconds: 110),
-            curve: Curves.easeOut,
-            child: widget.child,
-          ),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      button: true,
+      label: widget.semanticLabel,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          widget.onTap();
+        },
+        onTapDown: (_) {
+          if (!reduceMotion) setState(() => pressed = true);
+        },
+        onTapCancel: () {
+          if (!reduceMotion) setState(() => pressed = false);
+        },
+        onTapUp: (_) {
+          if (!reduceMotion) setState(() => pressed = false);
+        },
+        child: reduceMotion
+            ? widget.child
+            : AnimatedScale(
+                scale: pressed ? .975 : 1,
+                duration: const Duration(milliseconds: 110),
+                curve: Curves.easeOut,
+                child: widget.child,
+              ),
+      ),
+    );
+  }
 }
 
 class HopeSurface extends StatelessWidget {
