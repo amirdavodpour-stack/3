@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  wallet-runtime-evidence:
-    name: Wallet Android runtime evidence
+  critical-screens-runtime-evidence:
+    name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -104,11 +104,11 @@ jobs:
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
 
-      - name: Upload Wallet runtime evidence
+      - name: Upload critical-screen runtime evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
         with:
-          name: hope-wallet-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
+          name: hope-critical-screens-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
           path: |
             docs/audit/evidence/android-runtime/**
             ${{ runner.temp }}/hope-wallet-runtime.log
