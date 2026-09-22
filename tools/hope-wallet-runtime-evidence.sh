@@ -8,8 +8,12 @@ mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
 
+ack_dir="$runner_temp/hope-screen-acks"
+rm -rf "$ack_dir"
+mkdir -p "$ack_dir"
+
 set +e
-stdbuf -oL -eL flutter test --no-pub \
+stdbuf -oL -eL env HOPE_SCREENSHOT_ACK_DIR="$ack_dir" flutter test --no-pub \
   integration_test/runtime/critical_screens_evidence_test.dart \
   -r expanded 2>&1 | tee "$log_file" &
 test_pid=$!
