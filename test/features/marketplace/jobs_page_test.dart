@@ -155,6 +155,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Flutter');
     await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump(const Duration(milliseconds: 100));
     expect(repo.calls.where((call) => call.startsWith('jobs:')).length,
         greaterThanOrEqualTo(2));
     expect(find.text('استخدام Flutter'), findsOneWidget);
