@@ -176,9 +176,11 @@ void main() {
     expect(find.text('پروژه refresh-stale'), findsOneWidget);
     repo.failList = true;
 
-    await tester.drag(
-      find.byType(Scrollable).first,
-      const Offset(0, 500),
+    tester.view.physicalSize = const Size(390, 900);
+    await tester.pump();
+    await tester.dragFrom(
+      const Offset(195, 140),
+      const Offset(0, 520),
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));

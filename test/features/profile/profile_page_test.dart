@@ -183,7 +183,7 @@ testWidgets('withdrawing an application disables the action until completion',
     await tester.pumpAndSettle();
 
     expect(find.text('درخواست‌ها در دسترس نیستند'), findsOneWidget);
-    expect(find.text('Backend engineer'), findsNothing);
+    expect(find.text('Backend engineer'), findsOneWidget);
   });
 
   testWidgets('guest profile explains sign-in requirement', (tester) async {

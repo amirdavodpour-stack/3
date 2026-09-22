@@ -38,6 +38,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<List<HopeApplication>>? applications;
   String? _loadedUserId;
   String? _applicationBusyId;
+  String? _applicationsReloadError;
+  int _applicationsReloadRequestId = 0;
 
   @override
   void didChangeDependencies() {
@@ -45,6 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final id = context.read<AuthController>().user?['id']?.toString();
     if (id == _loadedUserId) return;
     _loadedUserId = id;
+    _applicationsReloadError = null;
     if (id == null) {
       profile = null;
       applications = null;
@@ -54,6 +57,34 @@ class _ProfilePageState extends State<ProfilePage> {
     // verification/trust state instead of silently presenting empty data.
     profile = _controller.loadProfile();
     applications = _controller.loadApplications();
+  }
+
+  Future<void> _reloadApplications() async {
+    if (!mounted) return;
+    final requestId = ++_applicationsReloadRequestId;
+    if (_applicationBusyId == null) {
+      setState(() => _applicationsReloadError = null);
+    }
+    try {
+      final items = await _controller.loadApplications();
+      if (!mounted || requestId != _applicationsReloadRequestId) return;
+      setState(() {
+        applications = Future<List<HopeApplication>>.value(items);
+        _applicationsReloadError = null;
+      });
+    } catch (error) {
+      if (!mounted || requestId != _applicationsReloadRequestId) return;
+      setState(() {
+        _applicationsReloadError = apiErrorMessage(
+          error,
+          fallback: _t(
+            context,
+            'درخواست‌ها قابل دریافت نیستند.',
+            'Could not load applications.',
+          ),
+        );
+      });
+    }
   }
 
   @override
@@ -228,6 +259,23 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           const SizedBox(height: 14),
+          if (_applicationsReloadError != null) ...[
+            HopeAsyncState(
+              kind: HopeStateKind.error,
+              title: _t(
+                context,
+                'درخواست‌ها در دسترس نیستند',
+                'Applications unavailable',
+              ),
+              message: _applicationsReloadError!,
+              action: OutlinedButton.icon(
+                onPressed: _applicationBusyId != null ? null : _reloadApplications,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(_t(context, 'تلاش دوباره', 'Retry')),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           FutureBuilder<List<HopeApplication>>(
             future: applications,
             builder: (context, snapshot) {
@@ -292,9 +340,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                         try {
                                           await _controller.withdrawApplication(a.id);
                                           if (!mounted) return;
-                                          setState(() {
-                                            applications = _controller.loadApplications();
-                                          });
+                                          await _reloadApplications();
                                         } catch (error) {
                                           if (!mounted || !context.mounted) return;
                                           ScaffoldMessenger.of(context).showSnackBar(

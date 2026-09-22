@@ -261,10 +261,7 @@ void main() {
     expect(find.text('Design landing page'), findsOneWidget);
     repo.failLoad = true;
 
-    await tester.drag(
-      find.byType(ListView).first,
-      const Offset(0, 400),
-    );
+    await tester.tap(find.byTooltip('Refresh status'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
@@ -287,9 +284,14 @@ void main() {
     await _pump(tester, repo, ownerId: 'u1');
     repo.paymentResponses.add(pending.future);
 
-    final refreshButton = find.byTooltip('Refresh status');
+    final refreshTooltip = find.byTooltip('Refresh status');
+    expect(refreshTooltip, findsOneWidget);
+    final refreshButton = find.ancestor(
+      of: refreshTooltip,
+      matching: find.byType(IconButton),
+    );
     expect(refreshButton, findsOneWidget);
-    await tester.tap(refreshButton);
+    await tester.tap(refreshTooltip);
     await tester.pump();
 
     expect(repo.calls.where((call) => call == 'get:j1').length, 2);
