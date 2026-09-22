@@ -129,33 +129,32 @@ void main() {
   });
 }
 
-testWidgets("shared motion primitives honor reduced-motion", (tester) async {
-    await tester.pumpWidget(
-      _app(
-        MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: Column(
-            children: [
-              AnimatedEntrance(child: Text("motion content")),
-              SkeletonBox(width: 120, height: 20),
-              PressableScale(
-                semanticLabel: "آزمایشی",
-                onTap: () {},
-                child: const SizedBox(width: 48, height: 48),
-              ),
-            ],
+  testWidgets("shared motion primitives honor reduced-motion", (tester) async {
+      await tester.pumpWidget(
+        _app(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: Column(
+              children: [
+                AnimatedEntrance(child: Text("motion content")),
+                SkeletonBox(width: 120, height: 20),
+                PressableScale(
+                  semanticLabel: "آزمایشی",
+                  onTap: () {},
+                  child: const SizedBox(width: 48, height: 48),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
-
-    expect(find.text("motion content"), findsOneWidget);
-    expect(find.byType(TweenAnimationBuilder), findsNothing);
-    expect(find.byType(AnimatedBuilder), findsNothing);
-    expect(find.byType(AnimatedScale), findsNothing);
-  });
-
+      );
+      await tester.pump();
+  
+      expect(find.text("motion content"), findsOneWidget);
+      expect(find.byType(TweenAnimationBuilder), findsNothing);
+      expect(find.byType(AnimatedBuilder), findsNothing);
+      expect(find.byType(AnimatedScale), findsNothing);
+    });
 }
 
 void _noop(String _) {}
