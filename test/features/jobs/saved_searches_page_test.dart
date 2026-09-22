@@ -56,7 +56,7 @@ void main() {
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    expect(find.text('Initial search'), findsOneWidget);
+    expect(find.text('Initial search').first, findsOneWidget);
 
     await tester.tap(find.byTooltip('Refresh'));
     await tester.pump();
