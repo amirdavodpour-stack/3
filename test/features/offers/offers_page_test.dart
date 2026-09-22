@@ -21,7 +21,8 @@ HopeOffer _offer({required String id, required String status}) => HopeOffer(
 );
 
 class _SequencedOfferRepository implements OfferRepository {
-  final Completer<List<HopeOffer>> firstLoad = Completer<List<HopeOffer>>();
+  final Completer<List<HopeOffer>> staleRefresh =
+      Completer<List<HopeOffer>>();
   int calls = 0;
   final stale = _offer(id: 'stale', status: 'PENDING');
   final fresh = _offer(id: 'fresh', status: 'ACCEPTED');
@@ -29,7 +30,8 @@ class _SequencedOfferRepository implements OfferRepository {
   @override
   Future<List<HopeOffer>> listMine() {
     calls += 1;
-    if (calls == 1) return firstLoad.future;
+    if (calls == 1) return Future<List<HopeOffer>>.value([stale]);
+    if (calls == 2) return staleRefresh.future;
     return Future<List<HopeOffer>>.value([fresh]);
   }
   @override
@@ -132,7 +134,7 @@ testWidgets('accepting an offer disables the financial action until completion',
     expect(acceptButton, findsOneWidget);
 
     await tester.tap(acceptButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
     await tester.pump();
 
@@ -150,15 +152,19 @@ testWidgets('accepting an offer disables the financial action until completion',
   testWidgets('latest offer refresh wins over an older in-flight load', (tester) async {
     final repository = _SequencedOfferRepository();
     await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Refresh'));
     await tester.pump();
+    expect(repository.calls, 2);
 
     await tester.tap(find.byTooltip('Refresh'));
     await tester.pumpAndSettle();
 
-    expect(repository.calls, 2);
+    expect(repository.calls, 3);
     expect(find.bySemanticsLabel(RegExp('Offer fresh')), findsOneWidget);
 
-    repository.firstLoad.complete([repository.stale]);
+    repository.staleRefresh.complete([repository.stale]);
     await tester.pumpAndSettle();
 
     expect(find.bySemanticsLabel(RegExp('Offer fresh')), findsOneWidget);
