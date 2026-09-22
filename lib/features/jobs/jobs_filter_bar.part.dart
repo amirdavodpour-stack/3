@@ -32,7 +32,7 @@ class _JobsFilterHeader extends StatelessWidget {
   final VoidCallback onPickCity;
   final VoidCallback onPickCategory;
   final int savedSearchCount;
-  final VoidCallback onSaveSearch;
+  final VoidCallback? onSaveSearch;
   final VoidCallback onOpenSavedSearches;
 
   String _t(BuildContext context, String fa, String en) =>
@@ -74,8 +74,22 @@ class _JobsFilterHeader extends StatelessWidget {
                 children: [
                   OutlinedButton.icon(
                     onPressed: onSaveSearch,
-                    icon: const Icon(Icons.bookmark_add_outlined, size: 18),
-                    label: Text(Localizations.localeOf(context).languageCode == 'en' ? 'Save search' : 'ذخیره جست‌وجو'),
+                    icon: onSaveSearch == null
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.bookmark_add_outlined, size: 18),
+                    label: Text(
+                      onSaveSearch == null
+                          ? (Localizations.localeOf(context).languageCode == 'en'
+                              ? 'Saving...'
+                              : 'در حال ذخیره…')
+                          : (Localizations.localeOf(context).languageCode == 'en'
+                              ? 'Save search'
+                              : 'ذخیره جست‌وجو'),
+                    ),
                   ),
                   if (savedSearchCount > 0)
                     OutlinedButton.icon(
