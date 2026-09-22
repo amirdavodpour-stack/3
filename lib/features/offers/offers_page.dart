@@ -62,9 +62,7 @@ class _OffersPageState extends State<OffersPage> {
   String _money(String value) {
     final parsed = int.tryParse(value.trim());
     if (parsed == null) return value;
-    return NumberFormat.decimalPattern('en_US').format(parsed) +
-        ' ' +
-        _t('تومان', 'Toman');
+    return '${NumberFormat.decimalPattern('en_US').format(parsed)} ${_t('تومان', 'Toman')}';
   }
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
