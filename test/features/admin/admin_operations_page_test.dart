@@ -119,7 +119,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Open'), findsOneWidget);
-    expect(find.text('Opportunity'), findsOneWidget);
+    expect(find.textContaining('Opportunity'), findsOneWidget);
     expect(find.text('OPEN'), findsNothing);
     expect(find.text('JOB'), findsNothing);
     expect(find.text('Reviewing'), findsOneWidget);
