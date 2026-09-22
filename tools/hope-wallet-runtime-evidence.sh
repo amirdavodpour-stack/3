@@ -115,8 +115,6 @@ screens=(
   "password-reset-en-ltr"
 )
 
-capture_screen "HOPE_SCREEN_STARTED:home-fa-rtl" "screen-start-fa-rtl.png" "screen-start-fa-rtl" 1200
-
 for marker in "${screens[@]}"; do
   capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" 120
 done
