@@ -109,7 +109,7 @@ class _FailingProfileRepository implements ProfileRepository {
 void main() {
   testWidgets('applications do not expose unknown backend statuses',
       (tester) async {
-    final application = const HopeApplication(
+    const application = HopeApplication(
       id: 'app-1',
       jobId: 'job-1',
       jobTitle: 'Design task',
