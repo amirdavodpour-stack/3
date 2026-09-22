@@ -15,7 +15,6 @@ import '../../core/ui/premium_components.dart';
 import '../../core/ui/copy.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 
 class JobDetailPage extends StatefulWidget {
