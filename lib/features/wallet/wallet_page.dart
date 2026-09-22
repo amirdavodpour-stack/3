@@ -1021,8 +1021,8 @@ class _TransferDialogState extends State<_TransferDialog> {
                 helperText: widget.maxAmountLabel == null
                     ? null
                     : t(
-                        'حداکثر: ' + widget.maxAmountLabel!,
-                        'Maximum: ' + widget.maxAmountLabel!,
+                        'حداکثر: ${widget.maxAmountLabel!}',
+                        'Maximum: ${widget.maxAmountLabel!}',
                       ),
                 errorText: errorText,
               ),
