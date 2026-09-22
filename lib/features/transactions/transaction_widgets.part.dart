@@ -162,16 +162,28 @@ extension on _TransactionPageState {
     }
     if (error != null && payment == null) {
       return Scaffold(
-          body: Center(
-              child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(error!, textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                        onPressed: loading ? null : refresh,
-                        child: Text(HopeCopy.of(context).copy_retry_49f3eba))
-                  ]))));
+        body: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: HopeAsyncState(
+                kind: HopeStateKind.error,
+                title: _t(
+                  'به‌روزرسانی پرداخت ناموفق بود',
+                  'Payment refresh failed',
+                ),
+                message: error!,
+                action: FilledButton.icon(
+                  onPressed: loading ? null : refresh,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
     }
     final status = payment?.status ?? 'NO_TRANSACTION';
     final job = payment?.job;

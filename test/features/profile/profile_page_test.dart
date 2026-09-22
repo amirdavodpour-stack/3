@@ -51,6 +51,7 @@ class _ProfileRepo implements ProfileRepository {
 
   @override
   Future<List<HopeApplication>> listApplications() async {
+    await Future<void>.delayed(Duration.zero);
     if (failApplicationReload) {
       throw StateError('applications unavailable');
     }
@@ -181,7 +182,7 @@ testWidgets('withdrawing an application disables the action until completion',
     repo.withdrawResult.complete(application);
     await tester.pumpAndSettle();
 
-    expect(find.text('Applications unavailable'), findsOneWidget);
+    expect(find.text('درخواست‌ها در دسترس نیستند'), findsOneWidget);
     expect(find.text('Backend engineer'), findsNothing);
   });
 

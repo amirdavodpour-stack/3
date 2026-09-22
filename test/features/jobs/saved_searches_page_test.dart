@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 HopeSavedSearch _search(String id, String name) => HopeSavedSearch(
   id: id,
   name: name,
-  query: name,
+  query: 'query for $name',
   kind: 'ALL',
   visibility: 'ALL',
   city: 'AUTO',
