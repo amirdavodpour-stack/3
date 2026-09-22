@@ -177,8 +177,8 @@ void main() {
     repo.failList = true;
 
     await tester.fling(
-      find.byType(ListView).first,
-      const Offset(0, 400),
+      find.byType(Scrollable).first,
+      const Offset(0, 500),
       1000,
     );
     await tester.pump();
