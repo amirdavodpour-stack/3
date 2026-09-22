@@ -151,17 +151,19 @@ else
   test_status=0
 fi
 
-adb shell wm size 720x1280
-sleep 2
-rm -rf "$ack_dir"
-mkdir -p "$ack_dir"
-: > "$runner_temp/hope-responsive-runtime.log"
+if [ "$baseline_status" -eq 0 ]; then
+  adb shell wm size 720x1280
+  sleep 2
+  rm -rf "$ack_dir"
+  mkdir -p "$ack_dir"
+  : > "$runner_temp/hope-responsive-runtime.log"
 
 set +e
 HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL env HOPE_SCREENSHOT_ACK_DIR="$ack_dir" flutter test --no-pub \
   integration_test/runtime/critical_screens_evidence_test.dart \
   -r expanded 2>&1 | tee "$runner_temp/hope-responsive-runtime.log" &
 responsive_test_pid=$!
+test_pid="$responsive_test_pid"
 set -e
 
 responsive_screens=(
@@ -191,8 +193,13 @@ set -e
 adb shell wm size reset || true
 adb shell sleep 1 >/dev/null 2>&1 || true
 
-if [ "$responsive_status" -ne 0 ] && [ "$test_status" -eq 0 ]; then
-  test_status="$responsive_status"
+if [ "$baseline_status" -eq 0 ]; then
+  if [ "$responsive_status" -ne 0 ] && [ "$test_status" -eq 0 ]; then
+    test_status="$responsive_status"
+  fi
+else
+  responsive_status=1
+fi
 fi
 
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
