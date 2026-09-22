@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
+import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
@@ -124,7 +125,8 @@ Future<_HomeHarness> _host(
 
 void _noop() {}
 
-  testWidgets('settings changes reload home opportunities',
+void main() {
+testWidgets('settings changes reload home opportunities',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();
     final harness = await _host(repository);
@@ -139,7 +141,6 @@ void _noop() {}
     expect(repository.calls, 2);
   });
 
-void main() {
   testWidgets('latest home refresh wins over an older failed refresh',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();

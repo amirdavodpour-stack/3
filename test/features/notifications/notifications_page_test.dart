@@ -130,7 +130,8 @@ Widget _app(_Repo repo) => MaterialApp(
       ),
     );
 
-  testWidgets('latest notification refresh wins over an older in-flight load',
+void main() {
+testWidgets('latest notification refresh wins over an older in-flight load',
       (tester) async {
     final repo = _SequencedNotificationRepository();
     await tester.pumpWidget(_app(repo));
@@ -167,7 +168,6 @@ Widget _app(_Repo repo) => MaterialApp(
     expect(find.text('عنوان اعلان'), findsNothing);
   });
 
-void main() {
   testWidgets('notifications page renders unread content', (tester) async {
     final repo = _Repo();
     await tester.pumpWidget(_app(repo));

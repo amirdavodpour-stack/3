@@ -121,7 +121,8 @@ Widget _hostWithJob(OfferRepository repository) => MaterialApp(
   ),
 );
 
-  testWidgets('accepting an offer disables the financial action until completion',
+void main() {
+testWidgets('accepting an offer disables the financial action until completion',
       (tester) async {
     final repository = _AcceptGuardOfferRepository();
     await tester.pumpWidget(_hostWithJob(repository));
@@ -146,7 +147,6 @@ Widget _hostWithJob(OfferRepository repository) => MaterialApp(
     expect(repository.acceptCalls, 1);
   });
 
-void main() {
   testWidgets('latest offer refresh wins over an older in-flight load', (tester) async {
     final repository = _SequencedOfferRepository();
     await tester.pumpWidget(_host(repository));

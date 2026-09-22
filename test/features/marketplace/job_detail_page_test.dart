@@ -30,6 +30,7 @@ class _FakeDetail implements JobDetailRepository {
 
   List<HopeCandidate> candidates;
   final List<String> calls = [];
+  Completer<void>? candidateGate;
 
   @override
   Future<List<HopeCandidate>> listCandidates(String jobId) async => candidates;

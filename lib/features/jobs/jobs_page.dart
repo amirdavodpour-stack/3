@@ -180,16 +180,26 @@ class _JobsPageState extends State<JobsPage> {
         String? deleteBusyId;
         return StatefulBuilder(
           builder: (context, setSheetState) => ListView.separated(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        shrinkWrap: true,
-        itemCount: _savedSearches.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, index) {
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            shrinkWrap: true,
+            itemCount: _savedSearches.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
               final item = _savedSearches[index];
               final deleting = deleteBusyId == item.id;
               return ListTile(
-            title: Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: Text([item.query, item.kind == 'ALL' ? '' : item.kind, item.visibility == 'ALL' ? '' : item.visibility].where((value) => value.isNotEmpty).join(' • ')),
+                title: Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  [
+                    item.query,
+                    item.kind == 'ALL' ? '' : item.kind,
+                    item.visibility == 'ALL' ? '' : item.visibility,
+                  ].where((value) => value.isNotEmpty).join(' • '),
+                ),
                 onTap: deleting ? null : () => Navigator.pop(context, item),
                 trailing: IconButton(
                   tooltip: Localizations.localeOf(context).languageCode == 'en'
@@ -200,7 +210,9 @@ class _JobsPageState extends State<JobsPage> {
                       : () async {
                           setSheetState(() => deleteBusyId = item.id);
                           try {
-                            await _applicationRegistry(context).savedSearches.delete(item.id);
+                            await _applicationRegistry(context)
+                                .savedSearches
+                                .delete(item.id);
                             if (!context.mounted) return;
                             Navigator.pop(context);
                             await _loadSavedSearches();
@@ -212,9 +224,12 @@ class _JobsPageState extends State<JobsPage> {
                                 content: Text(
                                   apiErrorMessage(
                                     error,
-                                    fallback: Localizations.localeOf(context).languageCode == 'en'
-                                        ? 'Could not delete the saved search.'
-                                        : 'حذف جست‌وجو ناموفق بود.',
+                                    fallback:
+                                        Localizations.localeOf(context)
+                                                    .languageCode ==
+                                                'en'
+                                            ? 'Could not delete the saved search.'
+                                            : 'حذف جست‌وجو ناموفق بود.',
                                   ),
                                 ),
                               ),
@@ -229,10 +244,11 @@ class _JobsPageState extends State<JobsPage> {
                         )
                       : const Icon(Icons.delete_outline_rounded),
                 ),
-          );
-        },
-      );
-    },
+              );
+            },
+          ),
+        );
+      },
     );
     if (!mounted || selected == null) return;
     setState(() {

@@ -185,7 +185,8 @@ Future<void> _openTab(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
-  testWidgets('admin action runner ignores duplicate submissions while busy',
+void main() {
+testWidgets('admin action runner ignores duplicate submissions while busy',
       (tester) async {
     final repo = _FakeAdmin()
       ..applications = [
@@ -214,7 +215,6 @@ Future<void> _openTab(WidgetTester tester, String label) async {
     expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
   });
 
-void main() {
   testWidgets('admin renders summary metrics and moderation actions',
       (tester) async {
     final repo = _FakeAdmin()

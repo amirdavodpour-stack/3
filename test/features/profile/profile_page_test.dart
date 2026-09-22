@@ -108,7 +108,8 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
-  testWidgets('withdrawing an application disables the action until completion',
+void main() {
+testWidgets('withdrawing an application disables the action until completion',
       (tester) async {
     final application = HopeApplication(
       id: 'a1',
@@ -184,7 +185,6 @@ Future<void> _pump(
     expect(find.text('Backend engineer'), findsNothing);
   });
 
-void main() {
   testWidgets('guest profile explains sign-in requirement', (tester) async {
     await _pump(tester);
     expect(find.byType(ProfilePage), findsOneWidget);
