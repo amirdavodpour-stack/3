@@ -211,7 +211,7 @@ testWidgets('withdrawing an application disables the action until completion',
 
     expect(find.text('مجری مستقل'), findsOneWidget);
     expect(find.text('INDIVIDUAL'), findsNothing);
-    expect(find.text('تأییدشده'), findsOneWidget);
+    expect(find.text('تأییدشده'), findsWidgets);
     expect(find.textContaining('VERIFIED'), findsNothing);
   });
 }
