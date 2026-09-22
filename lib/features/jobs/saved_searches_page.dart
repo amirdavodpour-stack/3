@@ -5,6 +5,7 @@ import '../../core/application/application_registry.dart';
 import '../../core/application/application_registry_context.dart';
 import '../../core/marketplace/saved_search_repository.dart';
 import '../../core/network/api_error_presenter.dart';
+import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/premium_components.dart';
 
 ApplicationRegistry _registry(BuildContext context) => applicationRegistryOf(context);
