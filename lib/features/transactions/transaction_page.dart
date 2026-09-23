@@ -130,13 +130,13 @@ class _TransactionPageState extends State<TransactionPage> {
     };
   }
 
-  IconData _statusIcon(String status) {
+  Object _statusIcon(String status) {
     return switch (status) {
-      'RELEASED' || 'REFUNDED' => Icons.check_circle_outline_rounded,
-      'HOLD_FAILED' || 'RELEASE_FAILED' => Icons.error_outline_rounded,
-      'HOLD_PENDING' || 'RELEASE_PENDING' || 'REFUND_PENDING' => Icons.schedule_rounded,
-      'HELD' => Icons.lock_clock_rounded,
-      _ => Icons.account_balance_wallet_outlined,
+      'RELEASED' || 'REFUNDED' => HopeV2Icons.completed,
+      'HOLD_FAILED' || 'RELEASE_FAILED' => HopeV2Icons.error,
+      'HOLD_PENDING' || 'RELEASE_PENDING' || 'REFUND_PENDING' => HopeV2Icons.pending,
+      'HELD' => HopeV2Icons.secure,
+      _ => HopeV2Icons.wallet,
     };
   }
 
