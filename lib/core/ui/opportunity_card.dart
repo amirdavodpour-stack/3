@@ -232,7 +232,7 @@ class OpportunityCard extends StatelessWidget {
                               : (job.isMission
                                   ? HopeV2Icons.mission
                                   : HopeV2Icons.job),
-                          color: featured ? featuredAccent : primary,
+                          color: featured ? HopeV2Colors.orange : primary,
                         ),
                       ),
                       if (featured && job.recommendationScore != null) ...[
