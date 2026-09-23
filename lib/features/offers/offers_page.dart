@@ -7,6 +7,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_async_state.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/theme/app_theme.dart';
 
 class OffersPage extends StatefulWidget {
@@ -109,7 +110,7 @@ class _OffersPageState extends State<OffersPage> {
         actions: [
           IconButton(
             onPressed: _reload,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: HopeIcon(HopeV2Icons.refresh, size: 19),
             tooltip: _t('بازخوانی', 'Refresh'),
           ),
         ],
@@ -129,7 +130,7 @@ class _OffersPageState extends State<OffersPage> {
                   'Review amount, status, and the next allowed action for each offer.',
                 ),
                 trailing: PremiumTag(
-                  icon: Icons.local_offer_outlined,
+                  icon: HopeV2Icons.featured,
                   label: all.length.toString(),
                 ),
               ),
@@ -171,7 +172,7 @@ class _OffersPageState extends State<OffersPage> {
               const SizedBox(height: 14),
               if (rows.isEmpty)
                 EmptyState(
-                  icon: Icons.inbox_outlined,
+                  icon: HopeV2Icons.featured,
                   title: _t('پیشنهادی وجود ندارد', 'No offers'),
                   message: _t(
                     'در این وضعیت پیشنهادی برای نمایش وجود ندارد.',
@@ -211,7 +212,7 @@ class _OffersPageState extends State<OffersPage> {
                 children: [
                   Row(
                     children: [
-                      const HopeIconTile(Icons.sell_outlined, filled: true),
+                      const HopeIconTile(HopeV2Icons.payments, filled: true),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -293,33 +294,33 @@ class _OffersPageState extends State<OffersPage> {
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.payments_outlined),
+                  leading: HopeIcon(HopeV2Icons.payments, size: 20),
                   title: Text(_t('مبلغ','Amount')),
                   subtitle: Text(_money(detail.price)),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.flag_outlined),
+                  leading: HopeIcon(HopeV2Icons.pending, size: 20),
                   title: Text(_t('وضعیت','Status')),
                   subtitle: Text(_statusLabel(detail.status)),
                 ),
                 if (detail.message.trim().isNotEmpty)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.notes_outlined),
+                    leading: HopeIcon(HopeV2Icons.activity, size: 20),
                     title: Text(_t('پیام','Message')),
                     subtitle: Text(detail.message),
                   ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.work_outline_rounded),
+                  leading: HopeIcon(HopeV2Icons.job, size: 20),
                   title: Text(_t('فرصت','Opportunity')),
                   subtitle: Text(detail.jobId),
                 ),
                 if (detail.createdAt != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.schedule_outlined),
+                    leading: HopeIcon(HopeV2Icons.pending, size: 20),
                     title: Text(_t('ایجاد شده','Created')),
                     subtitle: Text(detail.createdAt!),
                   ),
@@ -331,7 +332,7 @@ class _OffersPageState extends State<OffersPage> {
                             Navigator.pop(ctx);
                             await _accept(detail);
                           },
-                    icon: const Icon(Icons.check_rounded),
+                    icon: HopeIcon(HopeV2Icons.completed, size: 19),
                     label: Text(_t('پذیرش پیشنهاد','Accept offer')),
                   ),
               ],
