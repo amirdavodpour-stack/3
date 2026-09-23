@@ -1122,7 +1122,7 @@ class _TransferDialogState extends State<_TransferDialog> {
               onChanged: (_) { if (errorText != null) setState(() => errorText = null); },
               decoration: InputDecoration(
                 labelText: t('مبلغ به تومان', 'Amount in Toman'),
-                suffixText: t('تومان', 'Toman'),
+                suffixText: t('تومان', 'TOMAN'),
                 helperText: widget.maxAmountLabel == null
                     ? null
                     : t(
