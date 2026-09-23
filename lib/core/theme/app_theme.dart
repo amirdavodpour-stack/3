@@ -109,7 +109,7 @@ class AppTheme {
         selectedColor: dark ? HopeV2Colors.chipSelectedDark : AppColors.softPrimary,
         disabledColor: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.disabledLight,
         side: BorderSide(
-          color: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.borderControlLight,
+          color: HopeV2Surfaces.controlBorder(context),
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
@@ -133,7 +133,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.lg)),
       ),
       dividerTheme: DividerThemeData(
-          color: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.dividerLight, space: 1),
+          color: HopeV2Surfaces.divider(context), space: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: dark ? HopeV2Colors.inputDark : HopeV2Colors.panelSoftLight,
@@ -148,9 +148,7 @@ class AppTheme {
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(
-                color: dark
-                    ? const Color(0x1AFFFFFF)
-                    : HopeV2Colors.borderControlLight)),
+                color: HopeV2Surfaces.controlBorder(context))),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(color: scheme.primary, width: 1.6)),
@@ -172,7 +170,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
           side: BorderSide(
-              color: dark ? const Color(0x12FFFFFF) : HopeV2Colors.outlinedButtonBorderLight),
+              color: HopeV2Surfaces.outlinedButtonBorder(context)),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
@@ -188,10 +186,9 @@ class AppTheme {
               tapTargetSize: MaterialTapTargetSize.padded)),
       navigationBarTheme: NavigationBarThemeData(
         height: 78,
-        backgroundColor:
-            dark ? HopeV2Colors.navigationDark : HopeV2Colors.navigationLight,
+        backgroundColor: HopeV2Surfaces.navigation(context),
         surfaceTintColor: Colors.transparent,
-        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : AppColors.softPrimary,
+        indicatorColor: HopeV2Surfaces.navigationIndicator(context),
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
@@ -216,9 +213,8 @@ class AppTheme {
         ),
       ),
       navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
-        indicatorColor:
-            dark ? HopeV2Colors.navigationIndicatorDark.withValues(alpha: .80) : AppColors.softPrimary,
+        backgroundColor: HopeV2Surfaces.navigation(context),
+        indicatorColor: HopeV2Surfaces.navigationIndicator(context),
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
@@ -235,7 +231,7 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: dark ? AppColors.darkBackground : Colors.white,
         elevation: 7,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.fab)),
       ),
