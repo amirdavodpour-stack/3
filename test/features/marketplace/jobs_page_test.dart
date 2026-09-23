@@ -277,7 +277,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'همه شهرها'), 200,
         scrollable: find.byType(Scrollable).last);
-    await tester.ensureVisible(find.widgetWithText(ListTile, 'همه'));
+    await tester.ensureVisible(find.widgetWithText(ListTile, 'همه شهرها'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'همه شهرها'));
     await tester.pumpAndSettle();
