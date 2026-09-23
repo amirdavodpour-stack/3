@@ -44,7 +44,22 @@ grep -Fq 'HOPE_SCREENSHOT_READY:$marker' "$dart_test"
 # Flutter emits the screenshot-ready marker only after the PNG has been atomically
 # published. Android focus may already be lost while integration_test teardown
 # proceeds, so focus observation must never gate a rendered screenshot capture.
-if grep -Fq 'assert_hope_focused "$prefix"' "$script"; then
+if grep -Eq '^[[:space:]]*assert_hope_focused "\$prefix"[[:space:]]*
+  echo "runtime harness contract: FAIL — Android focus must not gate rendered screenshot capture" >&2
+  exit 1
+fi
+
+# Baseline and responsive runs both receive the same output root.
+test "$(grep -Fc -- '--dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root"' "$script")" -eq 2
+
+# The legacy handshake must not return.
+if grep -Eq 'HOPE_SCREENSHOT_ACK_ROOT|HOPE_HOST_ACK_WRITTEN|.ready-$ack_marker|adb .*screencap -p|ack_marker=' "$script" "$dart_test"; then
+  echo "runtime harness contract: FAIL — legacy host ACK/screencap handshake remains" >&2
+  exit 1
+fi
+
+echo "runtime harness contract: PASS"
+ "$script"; then
   echo "runtime harness contract: FAIL — Android focus must not gate rendered screenshot capture" >&2
   exit 1
 fi
