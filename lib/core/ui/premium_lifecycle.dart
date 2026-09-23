@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme/hope_v2_design.dart';
-import '../theme/app_theme.dart';
 import 'premium_components.dart';
 
 class PremiumLifecycleStep {
@@ -69,7 +68,7 @@ class _StepRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final highlighted = step.active || step.complete;
-    final iconColor = highlighted ? AppColors.primary : AppColors.muted;
+    final iconColor = highlighted ? HopeV2Colors.primary : HopeV2Colors.muted;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

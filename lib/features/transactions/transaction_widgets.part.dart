@@ -162,16 +162,28 @@ extension on _TransactionPageState {
     }
     if (error != null && payment == null) {
       return Scaffold(
-          body: Center(
-              child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(error!, textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                        onPressed: loading ? null : refresh,
-                        child: Text(HopeCopy.of(context).copy_retry_49f3eba))
-                  ]))));
+        body: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: HopeAsyncState(
+                kind: HopeStateKind.error,
+                title: _t(
+                  'به‌روزرسانی پرداخت ناموفق بود',
+                  'Payment refresh failed',
+                ),
+                message: error!,
+                action: FilledButton.icon(
+                  onPressed: loading ? null : refresh,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
     }
     final status = payment?.status ?? 'NO_TRANSACTION';
     final job = payment?.job;
@@ -188,18 +200,47 @@ extension on _TransactionPageState {
                     : Icons.arrow_forward_rounded),
                 tooltip: HopeCopy.of(context).copy_back_6e09f79),
             title: Text(HopeCopy.of(context).copy_transaction_7e0ea3b)),
-        body: RefreshIndicator(
-          onRefresh: refresh,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-            children: [
-              Row(children: [
-                const HopeMark(size: 38),
-                const Spacer(),
-                StatusPill(_statusLabel(status),
-                    color: _statusColor(status), icon: _statusIcon(status))
-              ]),
+        body: PremiumPageFrame(
+          maxWidth: 980,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 72),
+          child: RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              children: [
+              if (error != null) ...[
+                HopeAsyncState(
+                  kind: HopeStateKind.error,
+                  title: _t('به‌روزرسانی پرداخت ناموفق بود', 'Payment refresh failed'),
+                  message: error!,
+                  action: FilledButton.icon(
+                    onPressed: loading ? null : refresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 500;
+                  return Row(
+                    children: [
+                      HopeMark(
+                        size: 38,
+                        showText: !compact,
+                      ),
+                      const Spacer(),
+                      StatusPill(
+                        _statusLabel(status),
+                        color: _statusColor(status),
+                        icon: _statusIcon(status),
+                      ),
+                    ],
+                  );
+                },
+              ),
               const SizedBox(height: 20),
               if (job != null) ...[
                 Text(job.title,
@@ -208,7 +249,7 @@ extension on _TransactionPageState {
                 Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: StatusPill(
-                    job.status ?? 'UNKNOWN',
+                    _jobStatusLabel(job.status),
                     color: AppColors.muted,
                     icon: Icons.work_history_outlined,
                   ),
@@ -240,18 +281,32 @@ extension on _TransactionPageState {
               HopeSurface(
                   padding: const EdgeInsets.all(18),
                   child: Column(children: [
-                    Row(children: [
-                      Expanded(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
                           child: Text(
-                              HopeCopy.of(context).copy_payment_status_e1b6f0c,
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      Text(_statusLabel(status),
-                          textAlign: TextAlign.end,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800))
-                    ]),
+                            HopeCopy.of(context).copy_payment_status_e1b6f0c,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            _statusLabel(status),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ],
+                    ),
                     if (status == 'NO_TRANSACTION') ...[
                       const SizedBox(height: 8),
                       Align(
@@ -274,13 +329,27 @@ extension on _TransactionPageState {
                       ),
                     ],
                     const SizedBox(height: 14),
-                    Row(children: [
-                      Expanded(
-                          child: Text(HopeCopy.of(context).copy_amount_6400812,
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      Text(moneyLabel(context, payment?.amount ?? '—'),
-                          style: Theme.of(context).textTheme.titleMedium)
-                    ]),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            HopeCopy.of(context).copy_amount_6400812,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            moneyLabel(context, payment?.amount ?? '—'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 14),
                     Row(children: [
                       Expanded(
@@ -288,9 +357,14 @@ extension on _TransactionPageState {
                               HopeCopy.of(context).copy_reference_aa63360,
                               style: Theme.of(context).textTheme.bodyMedium)),
                       Flexible(
-                          child: Text(payment?.providerRef ?? '—',
-                              textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.titleMedium))
+                        child: Text(
+                          payment?.providerRef ?? '—',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      )
                     ]),
                   ])),
               const SizedBox(height: 10),
@@ -364,7 +438,8 @@ extension on _TransactionPageState {
                     },
                     onChanged: refresh),
               ],
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -24,6 +24,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// no shared mutable state between tests.
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -172,9 +175,9 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More menu'));
+    await tester.tap(find.byTooltip('App menu'));
     await tester.pumpAndSettle();
-    expect(find.text('Your professional path'), findsOneWidget);
+    expect(find.text('App menu'), findsOneWidget);
     // A non-admin member sees notifications but no admin panel.
     expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Admin panel'), findsNothing);
@@ -186,7 +189,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true, admin: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More menu'));
+    await tester.tap(find.byTooltip('App menu'));
     await tester.pumpAndSettle();
     expect(find.text('Admin panel'), findsOneWidget);
   });
@@ -196,7 +199,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More menu'));
+    await tester.tap(find.byTooltip('App menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Notifications'));
     await tester.pumpAndSettle();
@@ -207,7 +210,7 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More menu'));
+    await tester.tap(find.byTooltip('App menu'));
     await tester.pumpAndSettle();
     expect(find.text('Language: English'), findsOneWidget);
     await tester.tap(find.text('Language: English'));
@@ -226,10 +229,10 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Profile')));
     await tester.pumpAndSettle();
     expect(find.text('Profile'), findsWidgets);
-    await tester.tap(find.text('Home'));
+    await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Home')));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);
   });

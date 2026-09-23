@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:flutter_test/flutter_test.dart";
 import "package:flutter_localizations/flutter_localizations.dart";
 import "package:hope_mobile/core/ui/components.dart";
+import "package:hope_mobile/core/ui/premium_components.dart";
 import "package:hope_mobile/l10n/generated/app_localizations.dart";
 import "package:hope_mobile/core/theme/app_theme.dart";
 
@@ -42,7 +43,66 @@ void main() {
 
     expect(find.text("منتشر شده"), findsOneWidget);
     expect(find.byIcon(Icons.work_rounded), findsOneWidget);
-    expect(find.bySemanticsLabel("جست‌وجو کن..."), findsOneWidget);
+    expect(find.bySemanticsLabel("جست‌وجو..."), findsOneWidget);
+  });
+
+  testWidgets("premium hero follows RTL text alignment", (tester) async {
+    tester.view.physicalSize = const Size(800, 500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(16),
+            child: PremiumHero(
+              eyebrow: "فرصت‌ها",
+              title: "فرصت‌های کاری",
+              message: "فرصت‌های موجود",
+              height: 260,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final title = find.text("فرصت‌های کاری");
+    expect(title, findsOneWidget);
+    final left = tester.getTopLeft(title).dx;
+    final right = tester.getBottomRight(title).dx;
+    expect(right, greaterThan(520));
+    expect(left, greaterThan(300));
+  });
+
+  testWidgets("section title stacks action on narrow screens",
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(16),
+            child: SectionTitle(
+              title: "فرصت‌ها",
+              subtitle: "آخرین فرصت‌های کاری",
+              action: TextButton(onPressed: _noopAction, child: Text("مشاهده همه")),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final titleTop = tester.getTopLeft(find.text("فرصت‌ها")).dy;
+    final actionTop = tester.getTopLeft(find.text("مشاهده همه")).dy;
+    expect(actionTop, greaterThan(titleTop));
   });
 
   testWidgets("pressable scale exposes button semantics", (tester) async {
@@ -67,6 +127,64 @@ void main() {
     await tester.pump();
     expect(tapped, isTrue);
   });
+
+  testWidgets("shared motion primitives honor reduced-motion", (tester) async {
+    await tester.pumpWidget(
+      _app(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: Column(
+            children: [
+              AnimatedEntrance(
+                key: const ValueKey("reduced-motion-entrance"),
+                child: const Text("motion content"),
+              ),
+              const SkeletonBox(
+                key: ValueKey("reduced-motion-skeleton"),
+                width: 120,
+                height: 20,
+              ),
+              PressableScale(
+                key: const ValueKey("reduced-motion-pressable"),
+                semanticLabel: "آزمایشی",
+                onTap: _noopAction,
+                child: const SizedBox(width: 48, height: 48),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final entrance = find.byKey(const ValueKey("reduced-motion-entrance"));
+    final skeleton = find.byKey(const ValueKey("reduced-motion-skeleton"));
+    final pressable = find.byKey(const ValueKey("reduced-motion-pressable"));
+
+    expect(find.text("motion content"), findsOneWidget);
+    expect(
+      find.descendant(
+        of: entrance,
+        matching: find.byType(TweenAnimationBuilder),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: skeleton,
+        matching: find.byType(AnimatedBuilder),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: pressable,
+        matching: find.byType(AnimatedScale),
+      ),
+      findsNothing,
+    );
+  });
 }
 
 void _noop(String _) {}
+void _noopAction() {}

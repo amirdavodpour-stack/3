@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/features/jobs/jobs_query_logic.dart';
@@ -358,4 +360,23 @@ void main() {
       expect(result, isEmpty);
     });
   });
+  group('JobsPage saved-search mutation contract', () {
+    test('save and delete actions are protected against duplicate taps', () {
+      final source =
+          File('lib/features/jobs/jobs_page.dart').readAsStringSync();
+      expect(source, contains('bool _savedSearchMutationBusy = false;'));
+      expect(source, contains('if (_savedSearchMutationBusy) return;'));
+      expect(source, contains('setState(() => _savedSearchMutationBusy = true);'));
+      expect(
+        source,
+        contains('_savedSearchMutationBusy ? null : _saveCurrentSearch'),
+      );
+      expect(source, contains('StatefulBuilder'));
+      expect(source, contains('deleteBusyId'));
+    });
+  });
+
 }
+
+
+  

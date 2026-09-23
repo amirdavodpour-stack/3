@@ -1,12 +1,15 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../marketplace/job.dart';
 import '../router/app_routes.dart';
-import '../theme/app_theme.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
 import 'premium_components.dart';
 
+// Core marketplace card pattern for the HOPE visual system.
 enum OpportunityCardVariant { compact, standard, featured, expanded }
 
 class OpportunityCard extends StatelessWidget {
@@ -24,8 +27,18 @@ class OpportunityCard extends StatelessWidget {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _reason(BuildContext context, String value) {
-    const fa = {
+  String _formatAmount(String value) {
+    final formatter = NumberFormat.decimalPattern('en_US');
+    return value
+        .split(' – ')
+        .map((part) {
+          final trimmed = part.trim();
+          final parsed = int.tryParse(trimmed);
+          return parsed == null ? part : formatter.format(parsed);
+        })
+        .join(' – ');
+  }
+  String _reason(BuildContext context, String value) {    const fa = {
       'SKILL_MATCH': 'مهارت مرتبط',
       'CATEGORY_MATCH': 'دسته‌بندی مرتبط',
       'VERY_NEAR': 'خیلی نزدیک',
@@ -63,7 +76,7 @@ class OpportunityCard extends StatelessWidget {
         ? [job.budgetMin, job.budgetMax].where((v) => v?.isNotEmpty == true).join(' – ')
         : (job.monthlySalary ?? job.budgetMin ?? '');
     final title = job.title.trim().isEmpty ? _t(context, 'فرصت بدون عنوان', 'Untitled opportunity') : job.title;
-    final primary = job.isMission ? AppColors.primary : secondaryAccent(context);
+    final primary = job.isMission ? HopeV2Colors.primary : secondaryAccent(context);
     final reasons = job.recommendationReasons.take(3).toList(growable: false);
 
     return Semantics(
@@ -73,11 +86,27 @@ class OpportunityCard extends StatelessWidget {
         onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            gradient: featured
+                ? LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      primary.withValues(alpha: .09),
+                      Theme.of(context).colorScheme.surface,
+                      Theme.of(context).colorScheme.surface,
+                    ],
+                    stops: const [0, .34, 1],
+                  )
+                : null,
+            color: featured ? null : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(
               featured ? HopeV2Radii.xl : HopeV2Radii.lg,
             ),
-            border: Border.all(color: HopeV2Surfaces.border(context)),
+            border: Border.all(
+              color: featured
+                  ? primary.withValues(alpha: .24)
+                  : HopeV2Surfaces.border(context),
+            ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
                 ? const []
                 : HopeV2Shadows.card,
@@ -112,7 +141,7 @@ class OpportunityCard extends StatelessWidget {
         ],
         const SizedBox(width: 4),
         Icon(
-          Directionality.of(context) == TextDirection.rtl
+          Directionality.of(context) == ui.TextDirection.rtl
               ? Icons.chevron_left_rounded
               : Icons.chevron_right_rounded,
           semanticLabel: _t(context, 'مشاهده جزئیات', 'View details'),
@@ -137,12 +166,39 @@ class OpportunityCard extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: Text(title, maxLines: featured ? 3 : 2, overflow: TextOverflow.ellipsis, style: featured ? HopeV2Type.hero(context) : Theme.of(context).textTheme.titleLarge)),
-            const SizedBox(width: HopeV2Spacing.sm),
-            PremiumTag(
-              label: job.isMission ? _t(context, 'ماموریت', 'Mission') : _t(context, 'استخدام', 'Job'),
-              icon: job.isMission ? Icons.bolt_rounded : Icons.business_center_rounded,
+            HopeIconTile(
+              job.isMission
+                  ? Icons.bolt_rounded
+                  : Icons.business_center_rounded,
               color: primary,
+              filled: true,
+              size: featured ? 50 : 46,
+            ),
+            const SizedBox(width: HopeV2Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PremiumTag(
+                    label: job.isMission
+                        ? _t(context, 'ماموریت', 'Mission')
+                        : _t(context, 'استخدام', 'Job'),
+                    icon: job.isMission
+                        ? Icons.bolt_rounded
+                        : Icons.business_center_rounded,
+                    color: primary,
+                  ),
+                  const SizedBox(height: HopeV2Spacing.sm),
+                  Text(
+                    title,
+                    maxLines: featured ? 3 : 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: featured
+                        ? HopeV2Type.hero(context)
+                        : Theme.of(context).textTheme.titleLarge,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -153,22 +209,58 @@ class OpportunityCard extends StatelessWidget {
           children: [
             PremiumTag(icon: Icons.location_on_outlined, label: city, color: secondaryAccent(context)),
             if ((job.category ?? '').isNotEmpty)
-              PremiumTag(icon: Icons.category_outlined, label: job.category!, color: AppColors.muted),
+              PremiumTag(icon: Icons.category_outlined, label: job.category!, color: HopeV2Colors.muted),
             if (job.distanceKm != null)
               PremiumTag(icon: Icons.near_me_rounded, label: '${job.distanceKm!.toStringAsFixed(1)} km', color: secondaryAccent(context)),
             if (job.visibility == 'SPECIALIZED')
-              PremiumTag(icon: Icons.lock_outline_rounded, label: _t(context, 'تخصصی', 'Specialized'), color: AppColors.warning),
+              PremiumTag(icon: Icons.lock_outline_rounded, label: _t(context, 'تخصصی', 'Specialized'), color: HopeV2Colors.warning),
           ],
         ),
         if (amount.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.lg),
-          Text(
-            amount,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: featured ? 22 : 19, fontWeight: FontWeight.w900, color: primary),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: HopeV2Spacing.md,
+              vertical: HopeV2Spacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: .07),
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
+              border: Border.all(color: primary.withValues(alpha: .12)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.payments_outlined, color: primary, size: 21),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job.isMission
+                            ? _t(context, 'مبلغ پروژه', 'Project budget')
+                            : _t(context, 'درآمد ماهانه', 'Monthly compensation'),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_formatAmount(amount)} ${_t(context, 'تومان', 'Toman')}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: featured ? 22 : 19,
+                          fontWeight: FontWeight.w900,
+                          color: primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          Text(job.isMission ? _t(context, 'مبلغ پروژه', 'Project budget') : _t(context, 'درآمد ماهانه', 'Monthly compensation'), style: Theme.of(context).textTheme.bodySmall),
         ],
         if (reasons.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.md),
@@ -189,7 +281,7 @@ class OpportunityCard extends StatelessWidget {
           children: [
             Expanded(child: Text(job.isMission ? _t(context, 'مشاهده و اقدام برای ماموریت', 'View and act on mission') : _t(context, 'مشاهده جزئیات و اقدام', 'View details and act'), style: Theme.of(context).textTheme.bodyMedium)),
             Icon(
-              Directionality.of(context) == TextDirection.rtl
+              Directionality.of(context) == ui.TextDirection.rtl
                   ? Icons.arrow_back_rounded
                   : Icons.arrow_forward_rounded,
               size: 20,

@@ -6,6 +6,7 @@ import '../../core/application/application_registry_context.dart';
 import '../../core/marketplace/application.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/premium_components.dart';
 
 class MyApplicationsPage extends StatefulWidget {
@@ -18,6 +19,8 @@ class MyApplicationsPage extends StatefulWidget {
 class _MyApplicationsPageState extends State<MyApplicationsPage> {
   List<HopeApplication> _items = const [];
   bool _loading = true;
+  String? _loadError;
+  int _loadRequestId = 0;
   String _filter = 'ALL';
   String? _busyId;
 
@@ -26,6 +29,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  bool get _isEnglish =>
+      Localizations.localeOf(context).languageCode == 'en';
+
   @override
   void initState() {
     super.initState();
@@ -33,21 +39,33 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (!mounted) return;
+    final requestId = ++_loadRequestId;
+    final hasExistingItems = _items.isNotEmpty;
+    setState(() {
+      _loadError = null;
+      if (!hasExistingItems) _loading = true;
+    });
     try {
       final items = await _registry.listApplications();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _items = items;
         _loading = false;
+        _loadError = null;
       });
     } catch (error) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(apiErrorMessage(error,
-            fallback: _t('درخواست‌ها قابل دریافت نیستند.', 'Could not load applications.')))),
-      );
+      if (!mounted || requestId != _loadRequestId) return;
+      setState(() {
+        _loading = false;
+        _loadError = apiErrorMessage(
+          error,
+          fallback: _t(
+            'درخواست‌ها قابل دریافت نیستند.',
+            'Could not load applications.',
+          ),
+        );
+      });
     }
   }
 
@@ -121,19 +139,21 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(_t('درخواست‌های من', 'My applications'))),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      body: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
-              eyebrow: _t('مسیر حرفه‌ای', 'PROFESSIONAL PATH'),
-              title: _t('همه درخواست‌ها در یک نما', 'Every application in one view'),
+              eyebrow: _t('درخواست‌ها', 'APPLICATIONS'),
+              title: _t('درخواست‌های من', 'My applications'),
               subtitle: _t(
-                'وضعیت هر درخواست را دنبال کن و فقط در وضعیت‌های مجاز آن را پس بگیر.',
+                'وضعیت هر درخواست را بررسی کنید و فقط در وضعیت‌های مجاز آن را پس بگیرید.',
                 'Track every application and withdraw only while its workflow still allows it.',
               ),
-              trailing: const HopeIconTile(Icons.assignment_rounded, size: 50, filled: true),
+              trailing: PremiumTag(icon: Icons.assignment_rounded, label: _items.length.toString()),
             ),
             const SizedBox(height: 16),
             if (!_loading)
@@ -148,15 +168,34 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                               id: '', jobId: '', jobTitle: '', jobCity: null,
                               jobKind: '', resumeText: '', skills: '',
                               status: s, createdAt: null, updatedAt: null,
-                            ).statusLabel, counts[s]!)),
+                            ).statusLabelFor(english: _isEnglish), counts[s]!)),
                   ],
                 ),
               ),
             const SizedBox(height: 12),
             if (_loading)
               const PremiumPanel(
-                child: SizedBox(height: 220, child: Center(child: CircularProgressIndicator())),
+                child: SizedBox(
+                  height: 220,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
               )
+            else if (_loadError != null)
+              ...[
+                HopeAsyncState(
+                  kind: HopeStateKind.error,
+                  title: _t(
+                    'درخواست‌ها قابل دریافت نیستند.',
+                    'Could not load applications.',
+                  ),
+                  message: _loadError!,
+                  action: FilledButton(
+                    onPressed: _load,
+                    child: Text(_t('تلاش دوباره', 'Retry')),
+                  ),
+                ),
+                ...visible.map(_applicationCard),
+              ]
             else if (visible.isEmpty)
               PremiumPanel(
                 padding: const EdgeInsets.all(26),
@@ -166,7 +205,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     const SizedBox(height: 12),
                     Text(
                       _filter == 'ALL'
-                          ? _t('هنوز درخواستی ثبت نکرده‌ای.', 'You have not submitted any applications yet.')
+                          ? _t('هنوز درخواستی ثبت نکرده‌اید.', 'You have not submitted any applications yet.')
                           : _t('در این وضعیت درخواستی وجود ندارد.', 'No applications match this status.'),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.titleMedium,
@@ -176,7 +215,8 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               )
             else
               ...visible.map(_applicationCard),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -185,10 +225,11 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   Widget _filterChip(String value, String label, int count) {
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 8),
-      child: ChoiceChip(
+      child: PremiumFilterChip(
+        label: '$label  $count',
         selected: _filter == value,
-        label: Text('$label  $count'),
-        onSelected: (_) => setState(() => _filter = value),
+        onTap: () => setState(() => _filter = value),
+        color: _statusColor(context, value),
       ),
     );
   }
@@ -223,7 +264,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                         spacing: 7,
                         runSpacing: 6,
                         children: [
-                          StatusPill(item.statusLabel, color: color, icon: Icons.circle),
+                          StatusPill(item.statusLabelFor(english: _isEnglish), color: color, icon: Icons.circle),
                           if (item.jobCity?.isNotEmpty == true)
                             StatusPill(item.jobCity!, color: Theme.of(context).colorScheme.outline,
                                 icon: Icons.location_on_outlined),

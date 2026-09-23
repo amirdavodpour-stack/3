@@ -29,6 +29,7 @@ class _AdminPageState extends State<AdminPage>
   late Future<List<HopeAdminUser>> _users;
   late Future<List<HopeAdminAuditEvent>> _audit;
   late TabController _tabs;
+  bool _actionBusy = false;
 
   @override
   void initState() {
@@ -54,6 +55,8 @@ class _AdminPageState extends State<AdminPage>
   }
 
   Future<void> _runAction(Future<void> Function() action) async {
+    if (_actionBusy) return;
+    setState(() => _actionBusy = true);
     try {
       await action();
       if (!mounted) return;
@@ -65,6 +68,8 @@ class _AdminPageState extends State<AdminPage>
             content: Text(apiErrorMessage(error,
                 fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c))),
       );
+    } finally {
+      if (mounted) setState(() => _actionBusy = false);
     }
   }
 
@@ -72,6 +77,73 @@ class _AdminPageState extends State<AdminPage>
     final text = value.trim();
     return text.isEmpty ? '?' : text.characters.first.toUpperCase();
   }
+
+  String _t(String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _jobKindLabel(String value) => switch (value.trim().toUpperCase()) {
+        'MISSION' => _t('ماموریت', 'Mission'),
+        'JOB' => _t('شغل', 'Job'),
+        _ => _t('سایر', 'Other'),
+      };
+
+  String _jobStatusLabel(String value) => switch (value.trim().toUpperCase()) {
+        'DRAFT' => _t('پیش‌نویس', 'Draft'),
+        'PUBLISHED' => _t('منتشر شده', 'Published'),
+        'FUNDED' => _t('تأمین وجه شده', 'Funded'),
+        'ASSIGNED' => _t('اختصاص داده شده', 'Assigned'),
+        'IN_PROGRESS' => _t('در حال انجام', 'In progress'),
+        'DELIVERED' => _t('تحویل شده', 'Delivered'),
+        'UNDER_REVIEW' => _t('در حال بررسی', 'Under review'),
+        'COMPLETED' => _t('تکمیل شده', 'Completed'),
+        'CANCELLED' => _t('لغو شده', 'Cancelled'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _applicationStatusLabel(String value) => switch (value.trim().toUpperCase()) {
+        'PENDING' => _t('در انتظار بررسی', 'Pending'),
+        'SHORTLISTED' => _t('در فهرست کوتاه', 'Shortlisted'),
+        'FORWARDED' => _t('ارسال‌شده', 'Forwarded'),
+        'INTERVIEW' => _t('مصاحبه', 'Interview'),
+        'OFFERED' => _t('پیشنهاد داده شد', 'Offer sent'),
+        'HIRED' => _t('استخدام شد', 'Hired'),
+        'REJECTED' => _t('رد شده', 'Rejected'),
+        'WITHDRAWN' => _t('پس گرفته شد', 'Withdrawn'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _userRoleLabel(String value) => switch (value.trim().toUpperCase()) {
+        'USER' => _t('کاربر', 'User'),
+        'ADMIN' => _t('مدیر', 'Admin'),
+        _ => _t('سایر', 'Other'),
+      };
+
+  String _userStatusLabel(String value) => switch (value.trim().toUpperCase()) {
+        'ACTIVE' => _t('فعال', 'Active'),
+        'SUSPENDED' => _t('معلق', 'Suspended'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _auditActionLabel(String value) => switch (value.trim().toUpperCase()) {
+        'ADMIN_JOB_MODERATE' => _t('مدیریت فرصت', 'Opportunity moderation'),
+        'JOB_MODERATED' => _t('مدیریت فرصت', 'Opportunity moderation'),
+        'ADMIN_JOB_DELETE' => _t('حذف فرصت', 'Opportunity deletion'),
+        'ADMIN_USER_STATUS' => _t('تغییر وضعیت کاربر', 'User status change'),
+        'ADMIN_APPLICATION_SHORTLIST' => _t('انتخاب اولیه درخواست', 'Application shortlist'),
+        'ADMIN_APPLICATION_FORWARD' => _t('ارسال درخواست', 'Application forwarding'),
+        'ADMIN_APPLICATION_REJECT' => _t('رد درخواست', 'Application rejection'),
+        'TRUST_REPORT_STATUS' => _t('تغییر وضعیت گزارش اعتماد', 'Trust report status'),
+        _ => _t('رویداد سیستمی', 'System event'),
+      };
+
+  String _entityTypeLabel(String value) => switch (value.trim().toUpperCase()) {
+        'USER' => _t('کاربر', 'User'),
+        'JOB' => _t('فرصت', 'Opportunity'),
+        'JOB_APPLICATION' => _t('درخواست', 'Application'),
+        'TRUST_REPORT' => _t('گزارش اعتماد', 'Trust report'),
+        'PAYOUT' => _t('تسویه', 'Payout'),
+        _ => _t('سایر', 'Other'),
+      };
 
   @override
   Widget build(BuildContext context) => Directionality(
@@ -138,68 +210,57 @@ class _AdminPageState extends State<AdminPage>
 
   Widget _summaryGrid(BuildContext context, HopeAdminSummary? raw) {
     final m = raw;
-    final items = [
-      [
-        'users',
-        HopeCopy.of(context).copy_users_200338b,
-        Icons.people_alt_outlined
-      ],
-      [
-        'published_opportunities',
-        HopeCopy.of(context).copy_published_1a00f35,
-        Icons.public_rounded
-      ],
-      [
-        'missions',
-        HopeCopy.of(context).copy_missions_a833d13,
-        Icons.task_alt_rounded
-      ],
-      [
-        'jobs',
-        HopeCopy.of(context).copy_jobs_ebf9a80,
-        Icons.work_outline_rounded
-      ],
-      [
-        'pending_applications',
-        HopeCopy.of(context).copy_pending_86ad26d,
-        Icons.hourglass_top_rounded
-      ],
-      [
-        'audit_events',
-        HopeCopy.of(context).copy_audit_events_7f47fd5,
-        Icons.fact_check_outlined
-      ],
+    final items = <Map<String, Object>>[
+      {
+        'key': 'users',
+        'label': HopeCopy.of(context).copy_users_200338b,
+        'icon': Icons.people_alt_outlined,
+      },
+      {
+        'key': 'published_opportunities',
+        'label': HopeCopy.of(context).copy_published_1a00f35,
+        'icon': Icons.public_rounded,
+      },
+      {
+        'key': 'missions',
+        'label': HopeCopy.of(context).copy_missions_a833d13,
+        'icon': Icons.task_alt_rounded,
+      },
+      {
+        'key': 'jobs',
+        'label': HopeCopy.of(context).copy_jobs_ebf9a80,
+        'icon': Icons.work_outline_rounded,
+      },
+      {
+        'key': 'pending_applications',
+        'label': HopeCopy.of(context).copy_pending_86ad26d,
+        'icon': Icons.hourglass_top_rounded,
+      },
+      {
+        'key': 'audit_events',
+        'label': HopeCopy.of(context).copy_audit_events_7f47fd5,
+        'icon': Icons.fact_check_outlined,
+      },
     ];
-    return GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: 2.25,
-        children: items
-            .map((e) => PremiumPanel(
-                padding: const EdgeInsets.all(13),
-                child: Row(children: [
-                  HopeIconTile(e[2] as IconData, filled: true, size: 40),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                        Text('${m?[e[0] as String] ?? 0}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w800)),
-                        Text('${e[1]}',
-                            style: Theme.of(context).textTheme.bodySmall)
-                      ]))
-                ])))
-            .toList());
-  }
 
+    return GridView.extent(
+      maxCrossAxisExtent: 340,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 2.2,
+      children: items.map((item) {
+        final key = item['key']! as String;
+        return PremiumStatCard(
+          label: item['label']! as String,
+          value: '${m?[key] ?? 0}',
+          icon: item['icon']! as IconData,
+          accent: Theme.of(context).colorScheme.primary,
+        );
+      }).toList(),
+    );
+  }
   Widget _errorState(BuildContext context, Object? error,
       {required VoidCallback retry}) {
     if (error == null) return const SizedBox.shrink();
@@ -257,7 +318,7 @@ class _AdminPageState extends State<AdminPage>
                                       Theme.of(context).textTheme.titleMedium),
                               const SizedBox(height: 3),
                               Text(
-                                  '${job.kind} • ${job.city ?? HopeCopy.of(context).copy_remote_dcbb625} • $status')
+                                  '${_jobKindLabel(job.kind)} • ${job.city ?? HopeCopy.of(context).copy_remote_dcbb625} • ${_jobStatusLabel(status)}')
                             ])),
                         if (status == 'DRAFT')
                           IconButton(
@@ -317,7 +378,7 @@ class _AdminPageState extends State<AdminPage>
                             title: Text(
                                 HopeCopy.of(context).copy_candidate_c67d7bf),
                             subtitle: Text(
-                                '${a.jobTitle.isEmpty ? HopeCopy.of(context).copy_job_ce2feba : a.jobTitle} • $status')),
+                                '${a.jobTitle.isEmpty ? HopeCopy.of(context).copy_job_ce2feba : a.jobTitle} • ${_applicationStatusLabel(status)}')),
                         if (status == 'PENDING')
                           Row(children: [
                             Expanded(
@@ -396,7 +457,7 @@ class _AdminPageState extends State<AdminPage>
                               child: Text(_initial(u.displayName))),
                           title: Text(u.displayName),
                           subtitle: Text(
-                              '${u.email.isEmpty ? '—' : u.email} • ${u.role} • $status'),
+                              '${u.email.isEmpty ? '—' : u.email} • ${_userRoleLabel(u.role)} • ${_userStatusLabel(status)}'),
                           trailing: u.role == 'ADMIN'
                               ? null
                               : IconButton(
@@ -438,9 +499,9 @@ class _AdminPageState extends State<AdminPage>
                               contentPadding: EdgeInsets.zero,
                               leading:
                                   const HopeIconTile(Icons.history_rounded),
-                              title: Text(a.action),
+                              title: Text(_auditActionLabel(a.action)),
                               subtitle: Text(
-                                  '${a.actorName.isEmpty ? HopeCopy.of(context).copy_system_bf4e081 : a.actorName} • ${a.entityType} • ${a.createdAt}'))));
+                                  '${a.actorName.isEmpty ? HopeCopy.of(context).copy_system_bf4e081 : a.actorName} • ${_entityTypeLabel(a.entityType)} • ${a.createdAt}'))));
                 }).toList());
           });
 
