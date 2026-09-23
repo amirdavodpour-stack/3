@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
 
@@ -285,7 +286,7 @@ class PremiumHero extends StatelessWidget {
   final String title;
   final String message;
   final Widget? action;
-  final IconData? icon;
+  final Object? icon;
   final double height;
   final String? semanticLabel;
 
@@ -335,7 +336,14 @@ class PremiumHero extends StatelessWidget {
                         color: Colors.white.withValues(alpha: .16),
                       ),
                     ),
-                    child: Icon(icon, color: Colors.white, size: 28),
+                    child: icon is IconData
+                        ? Icon(icon as IconData, color: Colors.white, size: 28)
+                        : HugeIcon(
+                            icon: icon as List<List>,
+                            color: Colors.white,
+                            size: 28,
+                            strokeWidth: 2.1,
+                          ),
                   ),
                 ),
               ),
@@ -442,7 +450,7 @@ class PremiumStatCard extends StatelessWidget {
 
   final String label;
   final String value;
-  final IconData icon;
+  final Object icon;
   final Color? accent;
   final String? caption;
 
@@ -535,7 +543,7 @@ class PremiumTag extends StatelessWidget {
   });
 
   final String label;
-  final IconData? icon;
+  final Object? icon;
   final Color? color;
   final bool inverse;
 
@@ -563,7 +571,16 @@ class PremiumTag extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              ExcludeSemantics(child: Icon(icon, size: 14, color: foreground)),
+              ExcludeSemantics(
+                child: icon is IconData
+                    ? Icon(icon as IconData, size: 14, color: foreground)
+                    : HugeIcon(
+                        icon: icon as List<List>,
+                        size: 14,
+                        color: foreground,
+                        strokeWidth: 1.9,
+                      ),
+              ),
               const SizedBox(width: 5),
             ],
             Flexible(
