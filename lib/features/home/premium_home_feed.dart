@@ -702,48 +702,49 @@ class _HomeQuickAction extends StatelessWidget {
           child: SizedBox(
             height: 82,
             child: Ink(
-            padding: const EdgeInsets.all(HopeV2Spacing.md),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .055),
-              borderRadius: BorderRadius.circular(HopeV2Radii.md),
-              border: Border.all(color: color.withValues(alpha: .13)),
-            ),
-            child: Row(
-              children: [
-                ExcludeSemantics(
-                  child: HopeIconTile(icon, color: color, filled: true, size: 42),
-                ),
-                const SizedBox(width: HopeV2Spacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        caption,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
+              padding: const EdgeInsets.all(HopeV2Spacing.md),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .055),
+                borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                border: Border.all(color: color.withValues(alpha: .13)),
+              ),
+              child: Row(
+                children: [
+                  ExcludeSemantics(
+                    child: HopeIconTile(icon, color: color, filled: true, size: 42),
                   ),
-                ),
-                const SizedBox(width: HopeV2Spacing.xs),
-                HugeIcon(
-                  icon: Directionality.of(context) == TextDirection.rtl
-                      ? HopeV2Icons.arrowLeft
-                      : HopeV2Icons.arrowRight,
-                  size: 18,
-                  color: color,
-                ),
-              ],
+                  const SizedBox(width: HopeV2Spacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          caption,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: HopeV2Spacing.xs),
+                  HugeIcon(
+                    icon: Directionality.of(context) == TextDirection.rtl
+                        ? HopeV2Icons.arrowLeft
+                        : HopeV2Icons.arrowRight,
+                    size: 18,
+                    color: color,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
