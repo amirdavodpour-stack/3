@@ -160,6 +160,11 @@ testWidgets('settings changes reload home opportunities',
     await tester.pump();
     expect(repository.calls, 2);
 
+    await tester.scrollUntilVisible(
+      find.bySemanticsLabel('Refresh'),
+      -300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.bySemanticsLabel('Refresh'));
     await tester.pumpAndSettle();
 
