@@ -172,6 +172,70 @@ class PremiumPageFrame extends StatelessWidget {
   }
 }
 
+class PremiumIconButton extends StatelessWidget {
+  const PremiumIconButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.color,
+    this.selected = false,
+  });
+
+  final Object icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final Color? color;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = color ?? Theme.of(context).colorScheme.primary;
+    final enabled = onPressed != null;
+    final foreground = enabled
+        ? (selected ? base : Theme.of(context).colorScheme.onSurface)
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    final background = selected
+        ? base.withValues(alpha: .10)
+        : HopeV2Surfaces.panel(context);
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: tooltip,
+      selected: selected,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(HopeV2Radii.button),
+          child: Ink(
+            width: HopeV2Touch.minimum,
+            height: HopeV2Touch.minimum,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(HopeV2Radii.button),
+              border: Border.all(
+                color: selected
+                    ? base.withValues(alpha: .18)
+                    : HopeV2Surfaces.border(context),
+              ),
+            ),
+            child: Center(
+              child: HopeIcon(
+                icon,
+                size: 21,
+                color: foreground,
+                strokeWidth: 1.9,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumHeader extends StatelessWidget {
   const PremiumHeader({
     super.key,
