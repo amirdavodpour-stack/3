@@ -139,10 +139,7 @@ testWidgets('withdrawing an application disables the action until completion',
     await tester.pump();
 
     expect(repo.withdrawCalls, 1);
-    expect(
-      find.widgetWithText(IconButton, 'انصراف'),
-      findsOneWidget,
-    );
+    expect(tester.widget<IconButton>(undo).onPressed, isNull);
 
     repo.withdrawResult.complete(application);
     await tester.pumpAndSettle();
