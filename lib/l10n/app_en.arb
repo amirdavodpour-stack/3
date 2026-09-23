@@ -1175,5 +1175,53 @@
   "copy_all_cities": "All cities",
   "@copy_all_cities": {
     "description": "Marketplace city filter sentinel label."
+  },
+  "copy_toman": "Toman",
+  "@copy_toman": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_signals": "Match signals",
+  "@copy_match_signals": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_skill": "Skill match",
+  "@copy_match_skill": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_category": "Category match",
+  "@copy_match_category": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_very_near": "Very near",
+  "@copy_match_very_near": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_work_mode": "Work mode fit",
+  "@copy_match_work_mode": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_salary_fit": "Salary fit",
+  "@copy_match_salary_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_preference_fit": "Preference fit",
+  "@copy_match_preference_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_general_fit": "General fit",
+  "@copy_match_general_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_and_act_on_mission": "View and act on mission",
+  "@copy_view_and_act_on_mission": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_details_and_act": "View details and act",
+  "@copy_view_details_and_act": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_details": "View details",
+  "@copy_view_details": {
+    "description": "Canonical OpportunityCard localization."
   }
 }

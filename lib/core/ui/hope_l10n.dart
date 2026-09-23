@@ -446,5 +446,17 @@ class HopeCopy {
   String get copy_could_not_save_search => value.copy_could_not_save_search;
   String get copy_could_not_delete_saved_search => value.copy_could_not_delete_saved_search;
   String get copy_categories_load_failed => value.copy_categories_load_failed;
+  String get copy_toman => value.copy_toman;
+  String get copy_match_signals => value.copy_match_signals;
+  String get copy_match_skill => value.copy_match_skill;
+  String get copy_match_category => value.copy_match_category;
+  String get copy_match_very_near => value.copy_match_very_near;
+  String get copy_match_work_mode => value.copy_match_work_mode;
+  String get copy_match_salary_fit => value.copy_match_salary_fit;
+  String get copy_match_preference_fit => value.copy_match_preference_fit;
+  String get copy_match_general_fit => value.copy_match_general_fit;
+  String get copy_view_and_act_on_mission => value.copy_view_and_act_on_mission;
+  String get copy_view_details_and_act => value.copy_view_details_and_act;
+  String get copy_view_details => value.copy_view_details;
   String get copy_all_cities => value.copy_all_cities;
 }

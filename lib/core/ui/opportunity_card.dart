@@ -7,6 +7,7 @@ import '../marketplace/job.dart';
 import '../router/app_routes.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
+import 'hope_l10n.dart';
 import 'premium_components.dart';
 
 // Core marketplace card pattern for the HOPE visual system.
@@ -24,9 +25,6 @@ class OpportunityCard extends StatelessWidget {
   final OpportunityCardVariant variant;
   final VoidCallback? onTap;
 
-  String _t(BuildContext context, String fa, String en) =>
-      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
-
   String _formatAmount(String value) {
     final formatter = NumberFormat.decimalPattern('en_US');
     return value
@@ -38,32 +36,20 @@ class OpportunityCard extends StatelessWidget {
         })
         .join(' – ');
   }
-  String _reason(BuildContext context, String value) {    const fa = {
-      'SKILL_MATCH': 'مهارت مرتبط',
-      'CATEGORY_MATCH': 'دسته‌بندی مرتبط',
-      'VERY_NEAR': 'خیلی نزدیک',
-      'NEARBY': 'نزدیک',
-      'REMOTE': 'قابل انجام آنلاین',
-      'WORK_MODE_MATCH': 'نوع همکاری مناسب',
-      'SALARY_FIT': 'تناسب درآمد',
-      'BEHAVIOR_MATCH': 'متناسب با ترجیحات',
-      'GENERAL_MATCH': 'تناسب کلی',
+  String _reason(BuildContext context, String value) {
+    final copy = HopeCopy.of(context);
+    return switch (value) {
+      'SKILL_MATCH' => copy.copy_match_skill,
+      'CATEGORY_MATCH' => copy.copy_match_category,
+      'VERY_NEAR' => copy.copy_match_very_near,
+      'NEARBY' => copy.copy_near_1df6db0,
+      'REMOTE' => copy.copy_remote_dcbb625,
+      'WORK_MODE_MATCH' => copy.copy_match_work_mode,
+      'SALARY_FIT' => copy.copy_match_salary_fit,
+      'BEHAVIOR_MATCH' => copy.copy_match_preference_fit,
+      'GENERAL_MATCH' => copy.copy_match_general_fit,
+      _ => value,
     };
-    const en = {
-      'SKILL_MATCH': 'Skill match',
-      'CATEGORY_MATCH': 'Category match',
-      'VERY_NEAR': 'Very near',
-      'NEARBY': 'Nearby',
-      'REMOTE': 'Remote',
-      'WORK_MODE_MATCH': 'Work mode fit',
-      'SALARY_FIT': 'Salary fit',
-      'BEHAVIOR_MATCH': 'Preference fit',
-      'GENERAL_MATCH': 'General fit',
-    };
-    return (Localizations.localeOf(context).languageCode == 'en'
-            ? en[value]
-            : fa[value]) ??
-        value;
   }
 
   @override
@@ -71,11 +57,12 @@ class OpportunityCard extends StatelessWidget {
     final compact = variant == OpportunityCardVariant.compact;
     final featured = variant == OpportunityCardVariant.featured;
     final expanded = variant == OpportunityCardVariant.expanded;
-    final city = job.city?.trim().isNotEmpty == true ? job.city! : _t(context, 'آنلاین', 'Online');
+    final copy = HopeCopy.of(context);
+    final city = job.city?.trim().isNotEmpty == true ? job.city! : copy.copy_remote_dcbb625;
     final amount = job.isMission
         ? [job.budgetMin, job.budgetMax].where((v) => v?.isNotEmpty == true).join(' – ')
         : (job.monthlySalary ?? job.budgetMin ?? '');
-    final title = job.title.trim().isEmpty ? _t(context, 'فرصت بدون عنوان', 'Untitled opportunity') : job.title;
+    final title = job.title.trim().isEmpty ? copy.copy_untitled_d89410e : job.title;
     final primary = job.isMission ? HopeV2Colors.primary : secondaryAccent(context);
     final reasons = job.recommendationReasons.take(3).toList(growable: false);
 
@@ -113,14 +100,14 @@ class OpportunityCard extends StatelessWidget {
           ),
           padding: EdgeInsets.all(compact ? HopeV2Spacing.md : HopeV2Spacing.lg),
           child: compact
-              ? _compact(context, title, city, amount, primary)
-              : _standard(context, title, city, amount, primary, reasons, expanded, featured),
+              ? _compact(context, title, city, amount, primary, copy)
+              : _standard(context, title, city, amount, primary, reasons, expanded, featured, copy),
         ),
       ),
     );
   }
 
-  Widget _compact(BuildContext context, String title, String city, String amount, Color primary) {
+  Widget _compact(BuildContext context, String title, String city, String amount, Color primary, HopeCopy copy) {
     return Row(
       children: [
         HopeIconTile(job.isMission ? Icons.bolt_rounded : Icons.business_center_rounded, color: primary, filled: true, size: 46),
@@ -144,7 +131,7 @@ class OpportunityCard extends StatelessWidget {
           Directionality.of(context) == ui.TextDirection.rtl
               ? Icons.chevron_left_rounded
               : Icons.chevron_right_rounded,
-          semanticLabel: _t(context, 'مشاهده جزئیات', 'View details'),
+          semanticLabel: copy.copy_view_details,
         ),
       ],
     );
@@ -159,6 +146,7 @@ class OpportunityCard extends StatelessWidget {
     List<String> reasons,
     bool expanded,
     bool featured,
+    HopeCopy copy,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,9 +168,7 @@ class OpportunityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   PremiumTag(
-                    label: job.isMission
-                        ? _t(context, 'ماموریت', 'Mission')
-                        : _t(context, 'استخدام', 'Job'),
+                    label: job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
                     icon: job.isMission
                         ? Icons.bolt_rounded
                         : Icons.business_center_rounded,
@@ -213,7 +199,7 @@ class OpportunityCard extends StatelessWidget {
             if (job.distanceKm != null)
               PremiumTag(icon: Icons.near_me_rounded, label: '${job.distanceKm!.toStringAsFixed(1)} km', color: secondaryAccent(context)),
             if (job.visibility == 'SPECIALIZED')
-              PremiumTag(icon: Icons.lock_outline_rounded, label: _t(context, 'تخصصی', 'Specialized'), color: HopeV2Colors.warning),
+              PremiumTag(icon: Icons.lock_outline_rounded, label: copy.copy_specialized_5d1ca04, color: HopeV2Colors.warning),
           ],
         ),
         if (amount.isNotEmpty) ...[
@@ -239,14 +225,12 @@ class OpportunityCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        job.isMission
-                            ? _t(context, 'مبلغ پروژه', 'Project budget')
-                            : _t(context, 'درآمد ماهانه', 'Monthly compensation'),
+                        job.isMission ? copy.copy_mission_budget_923bb6e : copy.copy_monthly_salary_1d770dc,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${_formatAmount(amount)} ${_t(context, 'تومان', 'Toman')}',
+                        '${_formatAmount(amount)} ${copy.copy_toman}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -264,7 +248,7 @@ class OpportunityCard extends StatelessWidget {
         ],
         if (reasons.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.md),
-          Text(_t(context, 'دلایل تطابق', 'Match signals'), style: Theme.of(context).textTheme.labelLarge),
+          Text(copy.copy_match_signals, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: HopeV2Spacing.xs),
           Wrap(
             spacing: HopeV2Spacing.sm,
@@ -279,14 +263,14 @@ class OpportunityCard extends StatelessWidget {
         const SizedBox(height: HopeV2Spacing.lg),
         Row(
           children: [
-            Expanded(child: Text(job.isMission ? _t(context, 'مشاهده و اقدام برای ماموریت', 'View and act on mission') : _t(context, 'مشاهده جزئیات و اقدام', 'View details and act'), style: Theme.of(context).textTheme.bodyMedium)),
+            Expanded(child: Text(job.isMission ? copy.copy_view_and_act_on_mission : copy.copy_view_details_and_act, style: Theme.of(context).textTheme.bodyMedium)),
             Icon(
               Directionality.of(context) == ui.TextDirection.rtl
                   ? Icons.arrow_back_rounded
                   : Icons.arrow_forward_rounded,
               size: 20,
               color: primary,
-              semanticLabel: _t(context, 'مشاهده جزئیات', 'View details'),
+              semanticLabel: copy.copy_view_details,
             ),
           ],
         ),

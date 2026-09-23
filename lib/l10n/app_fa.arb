@@ -1220,5 +1220,53 @@
   "copy_all_cities": "همه شهرها",
   "@copy_all_cities": {
     "description": "برچسب گزینه بدون محدودیت شهر در فیلتر بازار کار."
+  },
+  "copy_toman": "تومان",
+  "@copy_toman": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_signals": "دلایل تطابق",
+  "@copy_match_signals": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_skill": "مهارت مرتبط",
+  "@copy_match_skill": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_category": "دسته‌بندی مرتبط",
+  "@copy_match_category": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_very_near": "خیلی نزدیک",
+  "@copy_match_very_near": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_work_mode": "نوع همکاری مناسب",
+  "@copy_match_work_mode": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_salary_fit": "تناسب درآمد",
+  "@copy_match_salary_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_preference_fit": "متناسب با ترجیحات",
+  "@copy_match_preference_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_general_fit": "تناسب کلی",
+  "@copy_match_general_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_and_act_on_mission": "مشاهده و اقدام برای ماموریت",
+  "@copy_view_and_act_on_mission": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_details_and_act": "مشاهده جزئیات و اقدام",
+  "@copy_view_details_and_act": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_details": "مشاهده جزئیات",
+  "@copy_view_details": {
+    "description": "Canonical OpportunityCard localization."
   }
 }
