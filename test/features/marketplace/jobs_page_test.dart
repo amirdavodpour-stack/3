@@ -135,41 +135,15 @@ Future<void> _pump(WidgetTester tester, _Repo repo,
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-Finder _choiceChip(String label) => find.bySemanticsLabel(label);
-
-Finder _horizontalFilterScroll() => find.byWidgetPredicate(
-      (widget) =>
-          widget is ListView && widget.scrollDirection == Axis.horizontal,
-    );
-
-Future<void> _tapHorizontalFilter(
+Future<void> _tapFilter(
   WidgetTester tester,
   String label,
 ) async {
   final text = find.text(label, skipOffstage: false);
-  await tester.scrollUntilVisible(
-    text,
-    200,
-    scrollable: _horizontalFilterScroll(),
-  );
-  final semantic = _choiceChip(label);
-  expect(semantic, findsOneWidget);
-  await tester.tap(semantic);
-}
-
-Future<void> _tapPageFilter(
-  WidgetTester tester,
-  String label,
-) async {
-  final text = find.text(label, skipOffstage: false);
-  await tester.scrollUntilVisible(
-    text,
-    200,
-    scrollable: find.byType(Scrollable).first,
-  );
-  final semantic = _choiceChip(label);
-  expect(semantic, findsOneWidget);
-  await tester.tap(semantic);
+  await tester.ensureVisible(text);
+  final visibleText = find.text(label);
+  expect(visibleText, findsOneWidget);
+  await tester.tap(visibleText);
 }
 
 void main() {
@@ -210,7 +184,7 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await _tapHorizontalFilter(tester, 'ماموریت‌ها');
+    await _tapFilter(tester, 'ماموریت‌ها');
     await tester.pumpAndSettle();
     expect(find.text('طراحی اپ'), findsOneWidget);
     expect(find.text('استخدام Flutter'), findsNothing);
@@ -220,7 +194,7 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await _tapHorizontalFilter(tester, 'شغل‌ها');
+    await _tapFilter(tester, 'شغل‌ها');
     await tester.pumpAndSettle();
     expect(find.text('استخدام Flutter'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
@@ -231,7 +205,7 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await _tapHorizontalFilter(tester, 'تخصصی');
+    await _tapFilter(tester, 'تخصصی');
     await tester.pumpAndSettle();
     expect(find.text('همکاری تخصصی'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
@@ -242,10 +216,10 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await _tapHorizontalFilter(tester, 'تخصصی');
+    await _tapFilter(tester, 'تخصصی');
     await tester.pumpAndSettle();
     expect(find.text('طراحی اپ'), findsNothing);
-    await _tapHorizontalFilter(tester, 'عمومی');
+    await _tapFilter(tester, 'عمومی');
     await tester.pumpAndSettle();
     expect(find.text('طراحی اپ'), findsOneWidget);
     expect(find.text('همکاری تخصصی'), findsNothing);
@@ -259,7 +233,7 @@ void main() {
     await _pump(tester, repo);
     await tester.pumpAndSettle();
 
-    await _tapPageFilter(tester, 'همه حوزه‌ها');
+    await _tapFilter(tester, 'همه حوزه‌ها');
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ListTile, 'طراحی'), findsOneWidget);
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
@@ -278,12 +252,12 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await _tapPageFilter(tester, 'همه حوزه‌ها');
+    await _tapFilter(tester, 'همه حوزه‌ها');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    await _tapPageFilter(tester, 'طراحی');
+    await _tapFilter(tester, 'طراحی');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
@@ -308,7 +282,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('طراحی در شیراز'), findsNothing);
-    await _tapPageFilter(tester, 'اطراف تهران');
+    await _tapFilter(tester, 'اطراف تهران');
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'همه شهرها'), 200,
         scrollable: find.byType(Scrollable).last);
@@ -336,7 +310,7 @@ void main() {
     await _pump(tester, repo, settings: settings);
     await tester.pumpAndSettle();
 
-    await _tapPageFilter(tester, 'اطراف تهران');
+    await _tapFilter(tester, 'اطراف تهران');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'شیراز'));
     await tester.pumpAndSettle();
