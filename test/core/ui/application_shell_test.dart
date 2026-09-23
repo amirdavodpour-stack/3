@@ -90,7 +90,7 @@ void main() {
 
   testWidgets('drawer opens for the guest shell', (tester) async {
     await _pump(tester);
-    final menu = find.byIcon(Icons.menu_rounded);
+    final menu = find.byTooltip('منو');
     if (menu.evaluate().isNotEmpty) {
       await tester.tap(menu);
     } else {
@@ -105,7 +105,7 @@ void main() {
       'language can be changed from the drawer without replacing MaterialApp',
       (tester) async {
     await _pump(tester);
-    final menu = find.byIcon(Icons.menu_rounded);
+    final menu = find.byTooltip('منو');
     await tester.tap(menu);
     await tester.pumpAndSettle();
     expect(find.byType(Drawer), findsOneWidget);
