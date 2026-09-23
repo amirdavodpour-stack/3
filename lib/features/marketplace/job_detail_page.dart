@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -15,6 +16,7 @@ import '../../core/ui/premium_components.dart';
 import '../../core/ui/copy.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 
 class JobDetailPage extends StatefulWidget {
@@ -611,7 +613,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     runSpacing: HopeV2Spacing.sm,
                     children: [
                       PremiumTag(
-                        isJob
+                        label: isJob
                             ? HopeCopy.of(context).copy_job_ce2feba
                             : HopeCopy.of(context).copy_mission_fb4c5e1,
                         color: isJob
@@ -622,7 +624,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             : HopeV2Icons.mission,
                       ),
                       PremiumTag(
-                        visibility == 'SPECIALIZED'
+                        label: visibility == 'SPECIALIZED'
                             ? HopeCopy.of(context).copy_specialized_5d1ca04
                             : HopeCopy.of(context).copy_public_21e97be,
                         color: visibility == 'SPECIALIZED'
@@ -634,7 +636,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       ),
                       if (j.city != null)
                         PremiumTag(
-                          j.city!,
+                          label: j.city!,
                           color: AppColors.muted,
                           icon: HopeV2Icons.location,
                         ),
@@ -918,8 +920,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const Icon(
-                                                        HopeV2Icons.userAdd,
+                                                    : HugeIcon(
+                                                        icon: HopeV2Icons.userAdd,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -945,8 +947,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const Icon(
-                                                        HopeV2Icons.payments,
+                                                    : HugeIcon(
+                                                        icon: HopeV2Icons.payments,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -972,8 +974,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const Icon(
-                                                        HopeV2Icons.completed,
+                                                    : HugeIcon(
+                                                        icon: HopeV2Icons.completed,
                                                         size: 18,
                                                       ),
                                                 label: Text(
