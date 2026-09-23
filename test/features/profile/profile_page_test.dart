@@ -140,7 +140,7 @@ testWidgets('withdrawing an application disables the action until completion',
 
     expect(repo.withdrawCalls, 1);
     final undoButton =
-        find.descendant(of: undo, matching: find.byType(IconButton));
+        find.ancestor(of: undo, matching: find.byType(IconButton));
     expect(undoButton, findsOneWidget);
     expect(tester.widget<IconButton>(undoButton).onPressed, isNull);
 
