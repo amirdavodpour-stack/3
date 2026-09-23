@@ -142,7 +142,10 @@ class HopeV2SemanticColors {
   static Color textPrimary(BuildContext context) => Theme.of(context).colorScheme.onSurface;
   static Color textSecondary(BuildContext context) => Theme.of(context).colorScheme.onSurfaceVariant;
   static Color success(BuildContext context) => Theme.of(context).colorScheme.tertiary;
-  static Color warning(BuildContext context) => Colors.orange.shade700;
+  static Color warning(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? HopeV2Colors.warningDark
+          : HopeV2Colors.warning;
   static Color error(BuildContext context) => Theme.of(context).colorScheme.error;
   static Color info(BuildContext context) => Theme.of(context).colorScheme.primary;
 }
