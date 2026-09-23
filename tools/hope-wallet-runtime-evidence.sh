@@ -12,6 +12,7 @@ rm -f "$log_file"
 ack_root="/data/user/0/com.hope.marketplace/files/hope-screen-acks"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
+READY_CHECK_TIMEOUT_SECONDS="${HOPE_READY_CHECK_TIMEOUT_SECONDS:-2}"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -81,9 +82,13 @@ capture_screen() {
   fi
 
   while (( SECONDS < deadline )); do
-    if grep -q -- "$marker" "$active_runtime_log" || \
+    if ! kill -0 "$test_pid" 2>/dev/null; then
+      break
+    fi
+
+    if grep -Fq -- "$marker" "$active_runtime_log" || \
        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
-       "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace \
+       "${READY_CHECK_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace \
        test -e "files/hope-screen-acks/.ready-$ack_marker" >/dev/null 2>&1; then
       # Capture as soon as the marker is observable. stdout/tee is retained for
       # diagnostics, but the READY file is the authoritative handshake.
@@ -126,10 +131,6 @@ capture_screen() {
 
       echo "HOPE_HOST_ACK_WRITTEN:$marker"
       return 0
-    fi
-
-    if ! kill -0 "$test_pid" 2>/dev/null; then
-      break
     fi
 
     sleep 0.2
