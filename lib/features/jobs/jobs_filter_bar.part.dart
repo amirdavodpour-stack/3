@@ -101,7 +101,7 @@ class _JobsFilterHeader extends StatelessWidget {
               ),
               const SizedBox(height: HopeV2Spacing.md),
               SizedBox(
-                height: 44,
+                height: HopeV2Touch.minimum,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
@@ -161,8 +161,8 @@ class _JobsFilterHeader extends StatelessWidget {
                   ),
                 ),
               Wrap(
-                spacing: 7,
-                runSpacing: 7,
+                spacing: HopeV2Spacing.sm,
+                runSpacing: HopeV2Spacing.sm,
                 children: [
                   ActionChip(
                     avatar: const Icon(Icons.location_on_outlined, size: 17),
