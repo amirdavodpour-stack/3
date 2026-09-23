@@ -195,6 +195,7 @@ if [ "$baseline_status" -eq 0 ]; then
 set +e
 HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL flutter test --no-pub \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+  --dart-define=HOPE_RESPONSIVE_ONLY=true \
   --dart-define=HOPE_SCREENSHOT_ACK_ROOT="$ack_root" \
   integration_test/runtime/critical_screens_evidence_test.dart \
   -r expanded 2>&1 | tee -a "$log_file" "$runner_temp/hope-responsive-runtime.log" &
