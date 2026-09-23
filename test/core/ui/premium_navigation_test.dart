@@ -6,18 +6,18 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 void main() {
   const destinations = <NavigationDestination>[
     NavigationDestination(
-      icon: Icon(Icons.home_outlined),
-      selectedIcon: Icon(Icons.home_rounded),
+      icon: Icon(Icons.space_dashboard_outlined),
+      selectedIcon: Icon(Icons.space_dashboard_rounded),
       label: 'خانه',
     ),
     NavigationDestination(
-      icon: Icon(Icons.explore_outlined),
-      selectedIcon: Icon(Icons.explore_rounded),
+      icon: Icon(Icons.workspaces_outlined),
+      selectedIcon: Icon(Icons.workspaces_rounded),
       label: 'کارگاه',
     ),
     NavigationDestination(
-      icon: Icon(Icons.inbox_outlined),
-      selectedIcon: Icon(Icons.inbox_rounded),
+      icon: Icon(Icons.insights_outlined),
+      selectedIcon: Icon(Icons.insights_rounded),
       label: 'فعالیت',
     ),
     NavigationDestination(
