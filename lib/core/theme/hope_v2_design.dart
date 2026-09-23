@@ -10,48 +10,48 @@ import 'package:flutter/material.dart';
 class HopeV2Colors {
   const HopeV2Colors._();
 
-  static const primary = Color(0xFF6C4DFF);
-  static const primaryDark = Color(0xFFB3A2FF);
-  static const secondary = Color(0xFF22B8A7);
-  static const secondaryStrong = Color(0xFF0C7D70);
-  static const secondaryDark = Color(0xFF3AC3B1);
-  static const accent = Color(0xFFFFB45C);
+  static const primary = Color(0xFF6366F1);
+  static const primaryDark = Color(0xFF818CF8);
+  static const secondary = Color(0xFF10B981);
+  static const secondaryStrong = Color(0xFF047857);
+  static const secondaryDark = Color(0xFF34D399);
+  static const accent = Color(0xFFF59E0B);
   static const inkSoft = Color(0xFF26223A);
-  static const backgroundWarm = Color(0xFFF8F7FC);
+  static const backgroundWarm = Color(0xFFF8FAFC);
   static const ink = Color(0xFF151326);
   static const muted = Color(0xFF6B6780);
   static const surface = Color(0xFFFFFFFF);
   static const background = Color(0xFFF6F5FC);
-  static const success = Color(0xFF0B7A58);
-  static const successDark = Color(0xFF4CD4A3);
-  static const warning = Color(0xFF8F5C0E);
-  static const warningDark = Color(0xFFFFD54F);
-  static const danger = Color(0xFFBA454D);
-  static const dangerDark = Color(0xFFFF8A80);
+  static const success = Color(0xFF10B981);
+  static const successDark = Color(0xFF34D399);
+  static const warning = Color(0xFFF59E0B);
+  static const warningDark = Color(0xFFFBBF24);
+  static const danger = Color(0xFFEF4444);
+  static const dangerDark = Color(0xFFF87171);
   static const softPrimary = Color(0xFFEAE5FF);
-  static const darkBackground = Color(0xFF0C0A12);
-  static const darkSurface = Color(0xFF15131D);
-  static const darkCard = Color(0xFF1C1925);
-  static const darkText = Color(0xFFF8F7FC);
-  static const darkMuted = Color(0xFFAAA6B8);
+  static const darkBackground = Color(0xFF0B0F19);
+  static const darkSurface = Color(0xFF0F111A);
+  static const darkCard = Color(0xFF141A28);
+  static const darkText = Color(0xFFF8FAFC);
+  static const darkMuted = Color(0xFF94A3B8);
 
   static const pageLight = Color(0xFFF7F7FB);
-  static const pageDark = Color(0xFF090811);
+  static const pageDark = Color(0xFF080C16);
   static const panelLight = Color(0xFFFFFFFF);
-  static const panelDark = Color(0xFF15131D);
+  static const panelDark = Color(0xFF0F111A);
   static const panelSoftLight = Color(0xFFFCFBFF);
-  static const panelSoftDark = Color(0xFF1C1926);
+  static const panelSoftDark = Color(0xFF121A2A);
   static const chipLight = Color(0xFFF1EFF7);
   static const chipDark = Color(0x1AFFFFFF);
-  static const chipSelectedDark = Color(0x337660FF);
+  static const chipSelectedDark = Color(0x336366F1);
   static const disabledLight = Color(0xFFEAE7F0);
   static const borderControlLight = Color(0xFFE6E2F0);
   static const dividerLight = Color(0xFFE8E5F0);
   static const outlinedButtonBorderLight = Color(0xFFDED9EA);
   static const navigationLight = Color(0xFDFEFEFF);
-  static const navigationDark = Color(0xF714121B);
-  static const navigationIndicatorDark = Color(0x4D7660FF);
-  static const inputDark = Color(0xFF201D28);
+  static const navigationDark = Color(0xF70B101A);
+  static const navigationIndicatorDark = Color(0x3D6366F1);
+  static const inputDark = Color(0xFF111827);
   static const darkBorder = Color(0x14FFFFFF);
   static const darkBorderStrong = Color(0x24FFFFFF);
   static const darkDivider = Color(0x12FFFFFF);
@@ -211,9 +211,9 @@ class HopeV2Gradients {
 
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF2D1C67),
-      Color(0xFF145A55),
-      Color(0xFF101225),
+      Color(0xFF312E81),
+      Color(0xFF115E59),
+      Color(0xFF0B1020),
     ],
     stops: [0, .55, 1],
     begin: Alignment.topRight,
@@ -270,7 +270,7 @@ class HopeV2Shadows {
 
   static const gradientHero = [
     BoxShadow(
-      color: Color(0x2B6C4DFF),
+      color: Color(0x336366F1),
       blurRadius: 32,
       offset: Offset(0, 16),
     ),
