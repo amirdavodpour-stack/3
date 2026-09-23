@@ -239,7 +239,10 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    expect(find.text('طراحی'), findsOneWidget);
+    expect(
+      find.widgetWithText(PremiumFilterChip, 'طراحی'),
+      findsOneWidget,
+    );
     expect(find.text('design'), findsNothing);
     expect(find.text('طراحی گرافیک'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
