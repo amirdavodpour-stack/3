@@ -275,11 +275,11 @@ void main() {
     expect(find.text('طراحی در شیراز'), findsNothing);
     await tester.tap(find.widgetWithText(ActionChip, 'اطراف تهران'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'همه'), 200,
+    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'همه شهرها'), 200,
         scrollable: find.byType(Scrollable).last);
     await tester.ensureVisible(find.widgetWithText(ListTile, 'همه'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'همه'));
+    await tester.tap(find.widgetWithText(ListTile, 'همه شهرها'));
     await tester.pumpAndSettle();
 
     expect(find.text('طراحی اپ'), findsOneWidget);
