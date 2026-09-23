@@ -33,8 +33,8 @@ grep -Fq 'HOPE_SCREENSHOT_READY:$marker' "$dart_test"
 
 # Focus can be transiently unavailable while Android resumes the Flutter activity.
 # Regression contract: runtime evidence must use a bounded retry, not a one-shot focus dump.
-grep -Fq 'HOPE_FOCUS_CHECK_TIMEOUT_SECONDS' "$script"
-grep -Fq 'focus_deadline=$((SECONDS + HOPE_FOCUS_CHECK_TIMEOUT_SECONDS))' "$script"
+grep -Fq 'FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"' "$script"
+grep -Fq 'focus_deadline=$((SECONDS + FOCUS_CHECK_TIMEOUT_SECONDS))' "$script"
 grep -Fq 'while (( SECONDS < focus_deadline )); do' "$script"
 grep -Fq 'sleep 0.2' "$script"
 
