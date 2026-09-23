@@ -90,6 +90,7 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
+    expect(find.byType(PremiumHeader), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
