@@ -109,7 +109,7 @@ class AppTheme {
         selectedColor: dark ? HopeV2Colors.chipSelectedDark : AppColors.softPrimary,
         disabledColor: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.disabledLight,
         side: BorderSide(
-          color: HopeV2Surfaces.controlBorder(context),
+          color: dark ? HopeV2Colors.darkBorderStrong : HopeV2Colors.borderControlLight,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
@@ -133,7 +133,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.lg)),
       ),
       dividerTheme: DividerThemeData(
-          color: HopeV2Surfaces.divider(context), space: 1),
+          color: dark ? HopeV2Colors.darkDivider : HopeV2Colors.dividerLight, space: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: dark ? HopeV2Colors.inputDark : HopeV2Colors.panelSoftLight,
@@ -148,7 +148,7 @@ class AppTheme {
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(
-                color: HopeV2Surfaces.controlBorder(context))),
+                color: dark ? HopeV2Colors.darkBorderStrong : HopeV2Colors.borderControlLight)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(color: scheme.primary, width: 1.6)),
@@ -170,7 +170,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
           side: BorderSide(
-              color: HopeV2Surfaces.outlinedButtonBorder(context)),
+              color: dark ? HopeV2Colors.darkBorder : HopeV2Colors.outlinedButtonBorderLight),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
@@ -186,9 +186,9 @@ class AppTheme {
               tapTargetSize: MaterialTapTargetSize.padded)),
       navigationBarTheme: NavigationBarThemeData(
         height: 78,
-        backgroundColor: HopeV2Surfaces.navigation(context),
+        backgroundColor: dark ? HopeV2Colors.navigationDark : HopeV2Colors.navigationLight,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: HopeV2Surfaces.navigationIndicator(context),
+        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : AppColors.softPrimary,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
