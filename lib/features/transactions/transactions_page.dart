@@ -8,6 +8,7 @@ import '../../core/marketplace/job.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/ui/components.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/uploads/upload_queue.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/application/application_registry.dart';
