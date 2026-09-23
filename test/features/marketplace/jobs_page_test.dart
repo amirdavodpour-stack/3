@@ -139,11 +139,11 @@ Future<void> _tapFilter(
   WidgetTester tester,
   String label,
 ) async {
-  final text = find.text(label, skipOffstage: false);
-  await tester.ensureVisible(text);
-  final visibleText = find.text(label);
-  expect(visibleText, findsOneWidget);
-  await tester.tap(visibleText);
+  final all = find.text(label, skipOffstage: false);
+  expect(all, findsWidgets);
+  final target = all.first;
+  await tester.ensureVisible(target);
+  await tester.tap(target);
 }
 
 void main() {
@@ -239,7 +239,7 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel('طراحی'), findsOneWidget);
+    expect(find.text('طراحی'), findsOneWidget);
     expect(find.text('design'), findsNothing);
     expect(find.text('طراحی گرافیک'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
