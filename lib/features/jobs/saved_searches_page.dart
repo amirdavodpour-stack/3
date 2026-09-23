@@ -7,6 +7,7 @@ import '../../core/marketplace/saved_search_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 ApplicationRegistry _registry(BuildContext context) => applicationRegistryOf(context);
 
@@ -228,13 +229,13 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
           IconButton(
             onPressed: _load,
             tooltip: _t('بازخوانی', 'Refresh'),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: HopeIcon(HopeV2Icons.refresh, size: 19),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _edit(),
-        icon: const Icon(Icons.add_rounded),
+        icon: HopeIcon(HopeV2Icons.add, size: 20),
         label: Text(_t('جست‌وجوی جدید', 'New search')),
       ),
       body: PremiumPageFrame(
@@ -251,14 +252,14 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 'فیلترهای ذخیره‌شده حساب را ویرایش یا حذف کنید.',
                 'Edit or delete the real saved-search filters stored on your account.',
               ),
-              trailing: const HopeIconTile(Icons.bookmark_rounded, size: 50, filled: true),
+              trailing: const HopeIconTile(HopeV2Icons.savedSearches, size: 50, filled: true),
             ),
             const SizedBox(height: 18),
             if (!_loading && _error == null && _items.isNotEmpty)
               PremiumStatCard(
                 label: _t('جست‌وجوهای فعال', 'Saved searches'),
                 value: _items.length.toString(),
-                icon: Icons.bookmark_rounded,
+                icon: HopeV2Icons.savedSearches,
                 accent: Theme.of(context).colorScheme.primary,
                 caption: _t(
                   'فیلترهای ذخیره‌شده حساب شما',
@@ -285,7 +286,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: _load,
-                      icon: const Icon(Icons.refresh_rounded),
+                      icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                       label: Text(_t('تلاش دوباره', 'Retry')),
                     ),
                   ],
@@ -321,7 +322,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                     final busy = _busyId == item.id;
                     return ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      leading: const HopeIconTile(Icons.bookmark_rounded, filled: true),
+                      leading: const HopeIconTile(HopeV2Icons.savedSearches, filled: true),
                       title: Text(item.name,
                           style: const TextStyle(fontWeight: FontWeight.w800)),
                       subtitle: Padding(
@@ -334,7 +335,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                           IconButton(
                             tooltip: _t('ویرایش', 'Edit'),
                             onPressed: busy ? null : () => _edit(item),
-                            icon: const Icon(Icons.edit_outlined),
+                            icon: HopeIcon(HopeV2Icons.insights, size: 19),
                           ),
                           IconButton(
                             tooltip: _t('حذف', 'Delete'),
@@ -345,8 +346,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                                     height: 20,
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
-                                : Icon(Icons.delete_outline_rounded,
-                                    color: Theme.of(context).colorScheme.error),
+                               : HopeIcon(HopeV2Icons.close, size: 19, color: Theme.of(context).colorScheme.error),
                           ),
                         ],
                       ),
