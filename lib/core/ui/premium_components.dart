@@ -383,7 +383,7 @@ class PremiumHero extends StatelessWidget {
                     height: 58,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(HopeV2Radii.iconTile),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: .16),
                       ),
