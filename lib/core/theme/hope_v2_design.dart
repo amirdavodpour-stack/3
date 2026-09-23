@@ -260,6 +260,14 @@ class HopeV2Shadows {
     ),
   ];
 
+  static const heroDark = [
+    BoxShadow(
+      color: Color(0x301C1738),
+      blurRadius: 28,
+      offset: Offset(0, 12),
+    ),
+  ];
+
   static const gradientHero = [
     BoxShadow(
       color: Color(0x2B6C4DFF),
