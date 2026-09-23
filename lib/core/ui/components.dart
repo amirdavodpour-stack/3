@@ -123,7 +123,7 @@ class _PressableScaleState extends State<PressableScale> {
             child: DecoratedBox(
               decoration: focused
                   ? BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(HopeV2Radii.button),
                       border: Border.all(
                         color: Theme.of(context).colorScheme.primary,
                         width: 2,
@@ -144,7 +144,7 @@ class HopeSurface extends StatelessWidget {
       {super.key,
       required this.child,
       this.padding = EdgeInsets.zero,
-      this.radius = 22,
+      this.radius = HopeV2Radii.lg,
       this.highlight = false});
   final Widget child;
   final EdgeInsets padding;
@@ -163,9 +163,7 @@ class HopeSurface extends StatelessWidget {
                 ? HopeV2Colors.darkCard.withValues(alpha: .92)
                 : HopeV2Colors.softPrimary)
             : HopeV2Surfaces.panel(context),
-        borderRadius: BorderRadius.circular(
-          radius == 22 ? HopeV2Radii.lg : radius,
-        ),
+        borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
               ? HopeV2Colors.primary.withValues(alpha: .24)
