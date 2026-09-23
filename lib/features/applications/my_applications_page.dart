@@ -9,6 +9,7 @@ import '../../core/router/app_routes.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class MyApplicationsPage extends StatefulWidget {
   const MyApplicationsPage({super.key});
@@ -151,7 +152,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 'وضعیت هر درخواست را بررسی کنید و فقط در وضعیت‌های مجاز آن را پس بگیرید.',
                 'Track every application and withdraw only while its workflow still allows it.',
               ),
-              trailing: PremiumTag(icon: Icons.assignment_rounded, label: _items.length.toString()),
+              trailing: PremiumTag(icon: HopeV2Icons.mission, label: _items.length.toString()),
             ),
             const SizedBox(height: 16),
             if (!_loading)
@@ -246,8 +247,8 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               children: [
                 HopeIconTile(
                   item.status == 'ACCEPTED'
-                      ? Icons.check_circle_rounded
-                      : Icons.assignment_outlined,
+                      ? HopeV2Icons.completed
+                      : HopeV2Icons.mission,
                   filled: true,
                 ),
                 const SizedBox(width: 11),
@@ -262,9 +263,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                         spacing: 7,
                         runSpacing: 6,
                         children: [
-                          PremiumTag(icon: Icons.circle, label: item.statusLabelFor(english: _isEnglish), color: color),
+                          PremiumTag(icon: HopeV2Icons.activity, label: item.statusLabelFor(english: _isEnglish), color: color),
                           if (item.jobCity?.isNotEmpty == true)
-                            PremiumTag(icon: Icons.location_on_outlined, label: item.jobCity!, color: Theme.of(context).colorScheme.outline),
+                            PremiumTag(icon: HopeV2Icons.location, label: item.jobCity!, color: Theme.of(context).colorScheme.outline),
                         ],
                       ),
                     ],
@@ -291,7 +292,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                               HopeFeedback.show(context, apiErrorMessage(error, fallback: _t('فرصت در دسترس نیست.', 'Opportunity is unavailable.')), tone: HopeFeedbackTone.error);
                             }
                           },
-                    icon: const Icon(Icons.open_in_new_rounded),
+                    icon: HopeIcon(HopeV2Icons.arrowRight, size: 19),
                     label: Text(_t('مشاهده فرصت', 'View opportunity')),
                   ),
                 ),
@@ -302,7 +303,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     onPressed: _busyId == item.id ? null : () => _withdraw(item),
                     icon: _busyId == item.id
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.undo_rounded),
+                        : HopeIcon(HopeV2Icons.transferOut, size: 19),
                   ),
                 ],
               ],
