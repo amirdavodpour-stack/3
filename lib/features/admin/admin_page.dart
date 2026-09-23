@@ -12,6 +12,7 @@ import '../../core/ui/components.dart';
 import '../../core/theme/app_theme.dart';
 
 import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 ApplicationRegistry _applicationRegistry(BuildContext context) => applicationRegistryOf(context);
 
@@ -167,7 +168,7 @@ class _AdminPageState extends State<AdminPage>
                     subtitle: HopeCopy.of(context)
                         .copy_review_users_opportunities_applications_an_e30b9d2,
                     trailing: const HopeIconTile(
-                      Icons.admin_panel_settings_rounded,
+                      HopeV2Icons.secure,
                       size: 50,
                       filled: true,
                     ),
@@ -179,7 +180,7 @@ class _AdminPageState extends State<AdminPage>
                 const SizedBox(height: 14),
                 FilledButton.tonalIcon(
                   onPressed: () => Navigator.push(context, HopeRoutes.adminOperations()),
-                  icon: const Icon(Icons.insights_rounded),
+                  icon: HopeIcon(HopeV2Icons.insights, size: 19),
                   label: Text(
                     Localizations.localeOf(context).languageCode == 'en'
                         ? 'Open Operations Center'
@@ -214,32 +215,32 @@ class _AdminPageState extends State<AdminPage>
       {
         'key': 'users',
         'label': HopeCopy.of(context).copy_users_200338b,
-        'icon': Icons.people_alt_outlined,
+        'icon': HopeV2Icons.profile,
       },
       {
         'key': 'published_opportunities',
         'label': HopeCopy.of(context).copy_published_1a00f35,
-        'icon': Icons.public_rounded,
+        'icon': HopeV2Icons.insights,
       },
       {
         'key': 'missions',
         'label': HopeCopy.of(context).copy_missions_a833d13,
-        'icon': Icons.task_alt_rounded,
+        'icon': HopeV2Icons.mission,
       },
       {
         'key': 'jobs',
         'label': HopeCopy.of(context).copy_jobs_ebf9a80,
-        'icon': Icons.work_outline_rounded,
+        'icon': HopeV2Icons.job,
       },
       {
         'key': 'pending_applications',
         'label': HopeCopy.of(context).copy_pending_86ad26d,
-        'icon': Icons.hourglass_top_rounded,
+        'icon': HopeV2Icons.pending,
       },
       {
         'key': 'audit_events',
         'label': HopeCopy.of(context).copy_audit_events_7f47fd5,
-        'icon': Icons.fact_check_outlined,
+        'icon': HopeV2Icons.completed,
       },
     ];
 
@@ -255,7 +256,7 @@ class _AdminPageState extends State<AdminPage>
         return PremiumStatCard(
           label: item['label']! as String,
           value: '${m?[key] ?? 0}',
-          icon: item['icon']! as IconData,
+          icon: item['icon']! as Object,
           accent: Theme.of(context).colorScheme.primary,
         );
       }).toList(),
@@ -305,8 +306,8 @@ class _AdminPageState extends State<AdminPage>
                       child: Row(children: [
                         HopeIconTile(
                             job.isJob
-                                ? Icons.work_outline_rounded
-                                : Icons.task_alt_rounded,
+                                ? HopeV2Icons.job
+                                : HopeV2Icons.mission,
                             filled: true),
                         const SizedBox(width: 10),
                         Expanded(
@@ -326,19 +327,18 @@ class _AdminPageState extends State<AdminPage>
                                   _moderateJob(job.id, 'PUBLISHED'),
                               tooltip:
                                   HopeCopy.of(context).copy_publish_5cfd26b,
-                              icon: const Icon(Icons.publish_rounded)),
+                              icon: HopeIcon(HopeV2Icons.completed, size: 19)),
                         if (status == 'PUBLISHED')
                           IconButton(
                               onPressed: () =>
                                   _moderateJob(job.id, 'CANCELLED'),
                               tooltip:
                                   HopeCopy.of(context).copy_disable_73bea34,
-                              icon: const Icon(Icons.block_outlined)),
+                              icon: HopeIcon(HopeV2Icons.secure, size: 19)),
                         IconButton(
                             onPressed: () => _removeJob(job.id),
                             tooltip: HopeCopy.of(context).copy_delete_b17eb9d,
-                            icon: const Icon(Icons.delete_outline_rounded,
-                                color: AppColors.danger)),
+                            icon: HopeIcon(HopeV2Icons.close, size: 19, color: AppColors.danger)),
                       ])));
             }).toList());
       });
@@ -373,7 +373,7 @@ class _AdminPageState extends State<AdminPage>
                         ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: const HopeIconTile(
-                                Icons.description_outlined,
+                                HopeV2Icons.mission,
                                 filled: true),
                             title: Text(
                                 HopeCopy.of(context).copy_candidate_c67d7bf),
@@ -385,7 +385,7 @@ class _AdminPageState extends State<AdminPage>
                                 child: OutlinedButton.icon(
                                     onPressed: () =>
                                         _applicationAction(a.id, 'shortlist'),
-                                    icon: const Icon(Icons.star_border_rounded),
+                                    icon: HopeIcon(HopeV2Icons.featured, size: 19),
                                     label: Text(HopeCopy.of(context)
                                         .copy_shortlist_8a78995))),
                             const SizedBox(width: 8),
@@ -393,7 +393,7 @@ class _AdminPageState extends State<AdminPage>
                                 child: FilledButton.icon(
                                     onPressed: () =>
                                         _applicationAction(a.id, 'select'),
-                                    icon: const Icon(Icons.send_rounded),
+                                    icon: HopeIcon(HopeV2Icons.arrowRight, size: 19),
                                     label: Text(HopeCopy.of(context)
                                         .copy_forward_5ec70ea))),
                             const SizedBox(width: 8),
@@ -402,8 +402,7 @@ class _AdminPageState extends State<AdminPage>
                                     _applicationAction(a.id, 'reject'),
                                 tooltip: HopeCopy.of(context)
                                     .copy_reject_application_9682e01,
-                                icon: const Icon(Icons.close_rounded,
-                                    color: AppColors.danger))
+                                icon: HopeIcon(HopeV2Icons.close, size: 19, color: AppColors.danger))
                           ]),
                         if (status == 'SHORTLISTED')
                           Row(children: [
@@ -411,7 +410,7 @@ class _AdminPageState extends State<AdminPage>
                                 child: FilledButton.icon(
                                     onPressed: () =>
                                         _applicationAction(a.id, 'select'),
-                                    icon: const Icon(Icons.send_rounded),
+                                    icon: HopeIcon(HopeV2Icons.arrowRight, size: 19),
                                     label: Text(HopeCopy.of(context)
                                         .copy_forward_to_employer_0baa2e1))),
                             IconButton(
@@ -419,8 +418,7 @@ class _AdminPageState extends State<AdminPage>
                                     _applicationAction(a.id, 'reject'),
                                 tooltip: HopeCopy.of(context)
                                     .copy_reject_application_9682e01,
-                                icon: const Icon(Icons.close_rounded,
-                                    color: AppColors.danger))
+                                icon: HopeIcon(HopeV2Icons.close, size: 19, color: AppColors.danger))
                           ])
                       ])));
             }).toList());
