@@ -305,7 +305,9 @@ class PremiumHero extends StatelessWidget {
         height: heroHeight,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
-          boxShadow: HopeV2Shadows.hero,
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? HopeV2Shadows.heroDark
+              : HopeV2Shadows.hero,
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
