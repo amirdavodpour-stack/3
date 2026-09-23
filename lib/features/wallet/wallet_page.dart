@@ -915,7 +915,6 @@ class _WalletPageState extends State<WalletPage> {
                   child: Semantics(
                     container: true,
                     button: true,
-                    excludeSemantics: true,
                     label:
                         '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${item.isCredit ? '+' : '-'}${_money(item.amount)}',
                     onTap: () => _showTransaction(item),
