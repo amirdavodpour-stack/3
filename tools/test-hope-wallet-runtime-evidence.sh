@@ -21,4 +21,7 @@ if grep -Fq 'adb shell run-as com.hope.marketplace rm -rf files/hope-screen-acks
 fi
 test "$(grep -Fc 'adb shell run-as com.hope.marketplace mkdir -p files/hope-screen-acks' "$script")" -eq 1
 
+grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY=true' "$script"
+grep -Fq "const responsiveOnly = bool.fromEnvironment('HOPE_RESPONSIVE_ONLY');" integration_test/runtime/critical_screens_evidence_test.dart
+
 echo "runtime harness contract: PASS"
