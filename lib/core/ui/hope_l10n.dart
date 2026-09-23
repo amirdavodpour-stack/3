@@ -437,4 +437,14 @@ class HopeCopy {
       value.copy_your_professional_path_2da0026;
   String get copy_your_projects_applications_and_payments_wi_bec5340 =>
       value.copy_your_projects_applications_and_payments_wi_bec5340;
+  String get copy_find_the_right_opportunity => value.copy_find_the_right_opportunity;
+  String get copy_all_opportunities => value.copy_all_opportunities;
+  String get copy_save_search => value.copy_save_search;
+  String get copy_saving => value.copy_saving;
+  String get copy_saved_searches => value.copy_saved_searches;
+  String get copy_search_name => value.copy_search_name;
+  String get copy_could_not_save_search => value.copy_could_not_save_search;
+  String get copy_could_not_delete_saved_search => value.copy_could_not_delete_saved_search;
+  String get copy_categories_load_failed => value.copy_categories_load_failed;
+  String get copy_all_cities => value.copy_all_cities;
 }
