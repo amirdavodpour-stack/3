@@ -11,6 +11,7 @@ import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/auth/password_reset_page.dart';
 import 'package:hope_mobile/features/auth/register_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {

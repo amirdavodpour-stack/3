@@ -27,7 +27,7 @@ class HopeFeedback {
           duration: duration,
           content: Row(
             children: [
-              Icon(_iconFor(tone), semanticLabel: _semanticLabelFor(tone)),
+              ExcludeSemantics(child: Icon(_iconFor(tone))),
               const SizedBox(width: 10),
               Expanded(child: Text(message)),
             ],
@@ -41,12 +41,5 @@ class HopeFeedback {
         HopeFeedbackTone.success => Icons.check_circle_outline_rounded,
         HopeFeedbackTone.warning => Icons.warning_amber_rounded,
         HopeFeedbackTone.error => Icons.error_outline_rounded,
-      };
-
-  static String _semanticLabelFor(HopeFeedbackTone tone) => switch (tone) {
-        HopeFeedbackTone.info => 'Information',
-        HopeFeedbackTone.success => 'Success',
-        HopeFeedbackTone.warning => 'Warning',
-        HopeFeedbackTone.error => 'Error',
       };
 }
