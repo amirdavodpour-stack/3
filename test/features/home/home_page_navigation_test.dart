@@ -5,6 +5,8 @@ import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
+import 'package:hope_mobile/core/marketplace/category.dart';
+import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/notifications/notification.dart';
 import 'package:hope_mobile/core/notifications/notification_repository.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
@@ -61,6 +63,34 @@ class _AuthRepo implements AuthRepository {
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String e) async {}
+}
+
+class _Marketplace implements MarketplaceRepository {
+  @override
+  Future<List<HopeCategory>> listCategories() async => const [];
+
+  @override
+  Future<HopeJob> getOpportunity(String id) => throw UnimplementedError();
+
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async =>
+      const [];
+
+  @override
+  Future<HopeJob> createOpportunity(Map<String, dynamic> body) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> publishOpportunity(String id) async {}
 }
 
 class _Transactions implements TransactionRepository {
@@ -182,6 +212,7 @@ Future<Widget> _app({
         ChangeNotifierProvider(create: (_) => ThemeController(settings)),
         ChangeNotifierProvider.value(value: auth),
         Provider<TransactionRepository>.value(value: _Transactions()),
+        Provider<MarketplaceRepository>.value(value: _Marketplace()),
         Provider<NotificationRepository>.value(value: _Notifications()),
         Provider<ProfileRepository>.value(value: _ProfileRepo()),
       ],
