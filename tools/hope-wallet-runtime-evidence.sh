@@ -9,10 +9,9 @@ mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
 
-ack_root="/data/user/0/com.hope.marketplace/files/hope-screen-acks"
+capture_root="/data/user/0/com.hope.marketplace/files/hope-screen-captures"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
-READY_CHECK_TIMEOUT_SECONDS="${HOPE_READY_CHECK_TIMEOUT_SECONDS:-2}"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -22,7 +21,7 @@ set +e
 # which can outlive Flutter and makes timeout/exit detection flaky.
 flutter test --no-pub \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-  --dart-define=HOPE_SCREENSHOT_ACK_ROOT="$ack_root" \
+  --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root" \
   integration_test/runtime/critical_screens_evidence_test.dart \
   -r expanded > "$log_file" 2>&1 &
 test_pid=$!
@@ -74,82 +73,48 @@ capture_screen() {
   local prefix="$3"
   local timeout_seconds="$4"
   local deadline=$((SECONDS + timeout_seconds))
-  local ack_marker="${marker#HOPE_SCREENSHOT_READY:}"
-
-  if [ -z "$ack_marker" ] || [ "$ack_marker" = "$marker" ]; then
-    echo "Invalid runtime ACK marker: $marker" >&2
-    return 1
-  fi
+  local remote_path="files/hope-screen-captures/$output"
 
   while (( SECONDS < deadline )); do
-    if ! kill -0 "$test_pid" 2>/dev/null; then
-      break
-    fi
-
-    if grep -Fq -- "$marker" "$active_runtime_log"; then
-      ready_detected=1
-    else
-      remaining=$((deadline - SECONDS))
-      ready_detected=0
-      if (( remaining > 0 )) && \
-         timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
-         "${remaining}s" adb shell run-as com.hope.marketplace sh -c \
-         "until [ -e 'files/hope-screen-acks/.ready-$ack_marker' ]; do sleep 0.1; done" \
-         >/dev/null 2>&1; then
-        ready_detected=1
-      fi
-    fi
-
-    if (( ready_detected == 1 )); then
-      # Capture as soon as the marker is observable. stdout/tee is retained for
-      # diagnostics, but the READY file is the authoritative handshake.
+    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"       "${ADB_TIMEOUT_SECONDS}s"       adb shell run-as com.hope.marketplace test -s "$remote_path"       >/dev/null 2>&1; then
       echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
-
-      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb wait-for-device; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:wait-for-device" >&2
-        return 1
-      fi
 
       assert_hope_focused "$prefix"
 
-      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out screencap -p > "$evidence_dir/$output"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:screencap" >&2
+      local tmp_output="$evidence_dir/.$output.tmp"
+      rm -f -- "$tmp_output"
+      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out run-as com.hope.marketplace cat "$remote_path"         > "$tmp_output"; then
+        rm -f -- "$tmp_output"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
         return 1
       fi
 
-      if ! test -s "$evidence_dir/$output"; then
+      if ! test -s "$tmp_output"; then
+        rm -f -- "$tmp_output"
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:empty-screenshot" >&2
         return 1
       fi
+
+      mv -- "$tmp_output" "$evidence_dir/$output"
       echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
 
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out cat /sdcard/hope-ui-hierarchy.xml > "$evidence_dir/ui-hierarchy-$prefix.xml" 2>/dev/null || true
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out cat /sdcard/hope-ui-hierarchy.xml         > "$evidence_dir/ui-hierarchy-$prefix.xml" 2>/dev/null || true
 
-      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace mkdir -p files/hope-screen-acks >/dev/null; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:ack-mkdir" >&2
-        return 1
-      fi
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell run-as com.hope.marketplace rm -f "$remote_path"         >/dev/null 2>&1 || true
 
-      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace touch "files/hope-screen-acks/$ack_marker" >/dev/null; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:ack-write" >&2
-        return 1
-      fi
-
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-        adb shell run-as com.hope.marketplace rm -f "files/hope-screen-acks/.ready-$ack_marker" >/dev/null 2>&1 || true
-
-      echo "HOPE_HOST_ACK_WRITTEN:$marker"
+      echo "HOPE_HOST_CAPTURE_CLEANED:$marker"
       return 0
     fi
 
+    if ! kill -0 "$test_pid" 2>/dev/null; then
+      break
+    fi
     sleep 0.2
   done
 
-  echo "Timed out waiting for screenshot marker after ${timeout_seconds}s: $marker" >&2
-  # Preserve the Flutter runtime stream at the exact timeout boundary. This is
-  # required to distinguish pump/layout hangs from host-side capture failures.
+  echo "Timed out waiting for rendered screenshot file after ${timeout_seconds}s: $marker" >&2
   if test -f "$active_runtime_log"; then
     cp -- "$active_runtime_log" "$evidence_dir/runtime-log-$prefix-timeout.txt" || true
   fi
@@ -222,7 +187,7 @@ set +e
 HOPE_RESPONSIVE_ONLY=1 flutter test --no-pub \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_RESPONSIVE_ONLY=true \
-  --dart-define=HOPE_SCREENSHOT_ACK_ROOT="$ack_root" \
+  --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root" \
   integration_test/runtime/critical_screens_evidence_test.dart \
   -r expanded > "$runner_temp/hope-responsive-runtime.log" 2>&1 &
 responsive_test_pid=$!

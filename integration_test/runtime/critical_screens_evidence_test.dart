@@ -559,6 +559,51 @@ Widget _host({
   );
 }
 
+Future<void> _captureRuntimeScreenshot(
+  WidgetTester tester,
+  String marker,
+) async {
+  const outputRoot =
+      String.fromEnvironment('HOPE_SCREENSHOT_OUTPUT_ROOT');
+  if (outputRoot.isEmpty) {
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    print('HOPE_SCREENSHOT_SKIPPED:$marker');
+    return;
+  }
+
+  final binding = IntegrationTestWidgetsFlutterBinding.instance;
+  final outputDirectory = Directory(outputRoot);
+  await outputDirectory.create(recursive: true);
+
+  final outputFile = File('$outputRoot/$marker.png');
+  final tempFile = File('$outputRoot/.$marker.png.tmp');
+  if (await outputFile.exists()) {
+    await outputFile.delete();
+  }
+  if (await tempFile.exists()) {
+    await tempFile.delete();
+  }
+
+  if (!_runtimeScreenshotSurfacePrepared) {
+    print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
+    await binding.convertFlutterSurfaceToImage();
+    await tester.pump();
+    _runtimeScreenshotSurfacePrepared = true;
+    print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
+  }
+
+  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+  final bytes = await binding.takeScreenshot(marker);
+  if (bytes.isEmpty) {
+    throw StateError('Runtime screenshot capture returned no bytes: $marker');
+  }
+
+  await tempFile.writeAsBytes(bytes, flush: true);
+  await tempFile.rename(outputFile.path);
+  print('HOPE_SCREENSHOT_CAPTURED:$marker:${bytes.length}');
+  print('HOPE_SCREENSHOT_READY:$marker');
+}
+
 Future<void> _render(
   WidgetTester tester, {
   required String marker,
@@ -568,19 +613,6 @@ Future<void> _render(
   required HopeSettingsController settings,
   required ApplicationRegistry registry,
 }) async {
-  const ackRoot = String.fromEnvironment('HOPE_SCREENSHOT_ACK_ROOT');
-  final ackFile = ackRoot.isEmpty ? null : File('$ackRoot/$marker');
-  final readyFile =
-      ackRoot.isEmpty ? null : File('$ackRoot/.ready-$marker');
-  if (ackFile != null && readyFile != null) {
-    await ackFile.parent.create(recursive: true);
-    for (final file in [ackFile, readyFile]) {
-      if (await file.exists()) {
-        await file.delete();
-      }
-    }
-  }
-
   print('HOPE_SCREEN_STARTED:$marker');
   print('HOPE_SCREEN_PUMP_WIDGET_START:$marker');
   await tester.pumpWidget(
@@ -595,7 +627,9 @@ Future<void> _render(
   print('HOPE_SCREEN_PUMP_WIDGET_DONE:$marker');
   final pumpWidgetException = tester.takeException();
   if (pumpWidgetException != null) {
-    print('HOPE_SCREEN_EXCEPTION_AFTER_PUMP_WIDGET:$marker:$pumpWidgetException');
+    print(
+      'HOPE_SCREEN_EXCEPTION_AFTER_PUMP_WIDGET:$marker:$pumpWidgetException',
+    );
   }
   print('HOPE_SCREEN_FRAME_PUMP_START:$marker');
   await tester.pump(const Duration(milliseconds: 1200));
@@ -605,29 +639,11 @@ Future<void> _render(
   if (frameException != null) {
     print('HOPE_SCREEN_EXCEPTION_AFTER_FRAME_PUMP:$marker:$frameException');
   }
-  print('HOPE_SCREENSHOT_READY:$marker');
 
-  // Do not make the host depend on stdout/tee flushing. The host-side
-  // harness watches this file over adb/run-as as the authoritative READY
-  // handshake, then writes the ackFile after the screenshot is captured.
-  if (readyFile != null) {
-    await readyFile.writeAsString('ready\\n', flush: true);
-  }
-
-  if (ackFile == null) {
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    return;
-  }
-
-  final deadline = DateTime.now().add(const Duration(seconds: 60));
-  while (DateTime.now().isBefore(deadline)) {
-    if (await ackFile.exists()) return;
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-  }
-  throw StateError(
-    'Timed out waiting for host screenshot acknowledgement: $marker',
-  );
+  await _captureRuntimeScreenshot(tester, marker);
 }
+
+var _runtimeScreenshotSurfacePrepared = false;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
