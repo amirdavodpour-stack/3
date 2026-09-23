@@ -163,8 +163,6 @@ void main() {
     final decoration = decorated.decoration as BoxDecoration;
     expect(decoration.border, isA<BorderDirectional>());
   });
-}
-
 
   testWidgets('premium icon button keeps a 48dp target with a quiet surface',
       (tester) async {
@@ -187,3 +185,5 @@ void main() {
     expect(find.byType(HugeIcon), findsOneWidget);
     expect(find.byType(InkWell), findsOneWidget);
   });
+
+}
