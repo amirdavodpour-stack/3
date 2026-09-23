@@ -21,11 +21,11 @@ class HopeV2Colors {
   static const orange = Color(0xFFF97316);
   static const orangeDark = Color(0xFFFF9A4D);
   static const inkSoft = Color(0xFF26223A);
-  static const backgroundWarm = Color(0xFFEFE4D8);
+  static const backgroundWarm = Color(0xFFF4F0FB);
   static const ink = Color(0xFF151326);
   static const muted = Color(0xFF6B6780);
   static const surface = Color(0xFFFFFFFF);
-  static const background = Color(0xFFEAE0D4);
+  static const background = Color(0xFFF0ECF8);
   static const success = Color(0xFF22B8A7);
   static const successDark = Color(0xFF34D8C8);
   static const warning = Color(0xFFFFB45C);
@@ -39,19 +39,19 @@ class HopeV2Colors {
   static const darkText = Color(0xFFF8F7FC);
   static const darkMuted = Color(0xFF9A95AA);
 
-  static const pageLight = Color(0xFFEEE4D9);
+  static const pageLight = Color(0xFFF1EDF8);
   static const pageDark = Color(0xFF100D0B);
   static const panelLight = Color(0xFFFFFFFF);
   static const panelDark = Color(0xFF15131D);
-  static const panelSoftLight = Color(0xFFFAF5EF);
+  static const panelSoftLight = Color(0xFFFBF9FE);
   static const panelSoftDark = Color(0xFF191513);
-  static const chipLight = Color(0xFFE9DED2);
+  static const chipLight = Color(0xFFEFEBF8);
   static const chipDark = Color(0x1AFFFFFF);
   static const chipSelectedDark = Color(0x336366F1);
-  static const disabledLight = Color(0xFFE4DAD0);
-  static const borderControlLight = Color(0xFFD8CCC0);
-  static const dividerLight = Color(0xFFE2D8CE);
-  static const outlinedButtonBorderLight = Color(0xFFD1C3B6);
+  static const disabledLight = Color(0xFFE8E3F0);
+  static const borderControlLight = Color(0xFFDED9E8);
+  static const dividerLight = Color(0xFFE4E0EA);
+  static const outlinedButtonBorderLight = Color(0xFFDAD4E5);
   static const navigationLight = Color(0xFFFBF8F4);
   static const navigationDark = Color(0xF70B101A);
   static const navigationIndicatorDark = Color(0x3D6366F1);
@@ -59,6 +59,9 @@ class HopeV2Colors {
   static const darkBorder = Color(0x14FFFFFF);
   static const darkBorderStrong = Color(0x24FFFFFF);
   static const darkDivider = Color(0x12FFFFFF);
+  /// Soft warm-brown halo used over the lavender page base.
+  static const warmHalo = Color(0x7A9A7658);
+  static const warmHaloDark = Color(0x3A9A7658);
 }
 
 /// Canonical icon vocabulary. Keep navigation and recurring product concepts
@@ -190,6 +193,24 @@ class HopeV2Surfaces {
   static Color page(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return dark ? HopeV2Colors.pageDark : HopeV2Colors.pageLight;
+  }
+
+  static Gradient pageHalo(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return RadialGradient(
+      center: AlignmentDirectional.topEnd,
+      radius: 1.05,
+      colors: [
+        dark
+            ? HopeV2Colors.warmHaloDark.withValues(alpha: .34)
+            : HopeV2Colors.warmHalo.withValues(alpha: .20),
+        dark
+            ? HopeV2Colors.warmHaloDark.withValues(alpha: .10)
+            : HopeV2Colors.warmHalo.withValues(alpha: .07),
+        Colors.transparent,
+      ],
+      stops: const [0.0, 0.42, 1.0],
+    );
   }
 
   static Color panel(BuildContext context) {
