@@ -52,6 +52,9 @@ class HopeV2Colors {
   static const navigationDark = Color(0xF714121B);
   static const navigationIndicatorDark = Color(0x4D7660FF);
   static const inputDark = Color(0xFF201D28);
+  static const darkBorder = Color(0x14FFFFFF);
+  static const darkBorderStrong = Color(0x24FFFFFF);
+  static const darkDivider = Color(0x12FFFFFF);
 }
 
 class HopeV2Spacing {
@@ -148,7 +151,7 @@ class HopeV2Surfaces {
 
   static Color border(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? Colors.white.withValues(alpha: .075) : const Color(0xFFE5E2EC);
+    return dark ? HopeV2Colors.darkBorder : const Color(0xFFE5E2EC);
   }
 
   static Color chip(BuildContext context) {
@@ -163,12 +166,12 @@ class HopeV2Surfaces {
 
   static Color divider(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? const Color(0x1AFFFFFF) : HopeV2Colors.dividerLight;
+    return dark ? HopeV2Colors.darkDivider : HopeV2Colors.dividerLight;
   }
 
   static Color controlBorder(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? const Color(0x1AFFFFFF) : HopeV2Colors.borderControlLight;
+    return dark ? HopeV2Colors.darkBorderStrong : HopeV2Colors.borderControlLight;
   }
 
   static Color navigation(BuildContext context) {
@@ -185,7 +188,7 @@ class HopeV2Surfaces {
 
   static Color outlinedButtonBorder(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? const Color(0x12FFFFFF) : HopeV2Colors.outlinedButtonBorderLight;
+    return dark ? HopeV2Colors.darkBorder : HopeV2Colors.outlinedButtonBorderLight;
   }
 }
 
@@ -200,6 +203,17 @@ class HopeV2Gradients {
       Color(0xFF5D43E8),
       Color(0xFF8B73FF),
       Color(0xFFB09FFF),
+    ],
+    stops: [0, .55, 1],
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+  );
+
+  static const heroDark = LinearGradient(
+    colors: [
+      Color(0xFF2D1C67),
+      Color(0xFF145A55),
+      Color(0xFF101225),
     ],
     stops: [0, .55, 1],
     begin: Alignment.topRight,
