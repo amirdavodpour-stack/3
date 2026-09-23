@@ -24,9 +24,14 @@ class PremiumNavigationBar extends StatelessWidget {
     final surface = HopeV2Surfaces.navigation(context);
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      minimum: const EdgeInsets.fromLTRB(
+        HopeV2Spacing.md,
+        0,
+        HopeV2Spacing.md,
+        HopeV2Spacing.md,
+      ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(HopeV2Radii.xl),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: surface,
