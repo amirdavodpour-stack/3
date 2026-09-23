@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -719,7 +720,7 @@ class _WalletPageState extends State<WalletPage> {
             const SizedBox(height: 9),
             OutlinedButton.icon(
               onPressed: canAct ? _openWithdraw : null,
-              icon: const Icon(HopeV2Icons.transferIn),
+              icon: HugeIcon(icon: HopeV2Icons.transferIn, size: 18),
               label: Text(_t('درخواست برداشت', 'Request withdrawal')),
             ),
             if (!wallet.isActive) ...[
