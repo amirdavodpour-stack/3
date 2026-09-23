@@ -70,16 +70,15 @@ void main() {
       ),
     );
 
-    expect(find.byType(ClipRRect), findsOneWidget);
-    final material = tester.widget<Material>(
+    final clip = tester.widget<ClipRRect>(
       find
           .descendant(
             of: find.byType(PremiumNavigationBar),
-            matching: find.byType(Material),
+            matching: find.byType(ClipRRect),
           )
           .first,
     );
-    expect(material.type, MaterialType.transparency);
+    expect(clip.borderRadius, BorderRadius.circular(HopeV2Radii.xl));
   });
 
   testWidgets('highlighted premium panels expose a restrained gradient layer',
