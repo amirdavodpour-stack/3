@@ -336,10 +336,7 @@ extension on _TransactionPageState {
               ),
               const SizedBox(height: HopeV2Spacing.lg),
               if (job != null) ...[
-                Text(job.title,
-                    style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 8),
-                Align(
+                 Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: StatusPill(
                     _jobStatusLabel(job.status),
