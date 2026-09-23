@@ -200,41 +200,53 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                               RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'),
                               (_) => ',',
                             );
-                        Widget metric(String value, String label, Object icon) {
-                          return Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                HopeIcon(
-                                  icon,
-                                  size: 17,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  strokeWidth: 1.9,
-                                ),
-                                const SizedBox(height: 7),
-                                Text(
-                                  value,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+
+                        final metrics = <Widget>[
+                          PremiumStatCard(
+                            value: pulseSnapshot.connectionState ==
+                                    ConnectionState.done
+                                ? '$matchCount'
+                                : '—',
+                            label: _t(context, 'تطابق', 'matches'),
+                            icon: HopeV2Icons.match,
+                            accent: HopeV2Colors.primary,
+                          ),
+                          PremiumStatCard(
+                            value: pulseSnapshot.connectionState ==
+                                    ConnectionState.done
+                                ? '$nearbyCount'
+                                : '—',
+                            label: _t(context, 'نزدیک شما', 'near you'),
+                            icon: HopeV2Icons.distance,
+                            accent: HopeV2Colors.secondary,
+                          ),
+                          PremiumStatCard(
+                            value: auth.isGuest
+                                ? '—'
+                                : _activeJobs == null
+                                    ? '—'
+                                    : _activeJobCount?.toString() ?? '—',
+                            label: _t(context, 'کار فعال', 'active'),
+                            icon: HopeV2Icons.mission,
+                            accent: HopeV2Colors.primary,
+                          ),
+                          if (!auth.isGuest)
+                            PremiumStatCard(
+                              value: _walletData?.lockedBalance == null
+                                  ? '—'
+                                  : money(_walletData!.lockedBalance),
+                              label: _t(context, 'قفل‌شده', 'protected'),
+                              icon: HopeV2Icons.protectedFunds,
+                              accent: HopeV2Colors.warning,
                             ),
-                          );
-                        }
+                        ];
+
                         return PremiumPanel(
                           padding: const EdgeInsets.fromLTRB(
                             HopeV2Spacing.lg,
                             HopeV2Spacing.md,
                             HopeV2Spacing.lg,
-                            HopeV2Spacing.md,
+                            HopeV2Spacing.lg,
                           ),
                           highlight: true,
                           child: Column(
@@ -254,74 +266,46 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                     style: Theme.of(context).textTheme.labelLarge,
                                   ),
                                   const Spacer(),
-                                  Text(
-                                    _t(context, 'وضعیت زنده', 'Live status'),
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                  PremiumTag(
+                                    icon: HopeV2Icons.insights,
+                                    label: _t(
+                                      context,
+                                      'وضعیت زنده',
+                                      'Live status',
+                                    ),
+                                    color: HopeV2Colors.secondary,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: HopeV2Spacing.lg),
+                              const SizedBox(height: HopeV2Spacing.md),
                               LayoutBuilder(
                                 builder: (context, constraints) {
-                                  final compact = constraints.maxWidth < 520;
-                                  final items = <Widget>[
-                                    metric(
-                                      pulseSnapshot.connectionState ==
-                                              ConnectionState.done
-                                          ? '$matchCount'
-                                          : '—',
-                                      _t(context, 'تطابق', 'matches'),
-                                      HopeV2Icons.match,
-                                    ),
-                                    metric(
-                                      pulseSnapshot.connectionState ==
-                                              ConnectionState.done
-                                          ? '$nearbyCount'
-                                          : '—',
-                                      _t(context, 'نزدیک شما', 'near you'),
-                                      HopeV2Icons.distance,
-                                    ),
-                                    metric(
-                                      auth.isGuest
-                                          ? '—'
-                                          : _activeJobs == null
-                                              ? '—'
-                                              : _activeJobCount?.toString() ?? '—',
-                                      _t(context, 'کار فعال', 'active'),
-                                      HopeV2Icons.mission,
-                                    ),
-                                    if (!auth.isGuest)
-                                      metric(
-                                        locked == null ? '—' : money(locked),
-                                        _t(context, 'قفل‌شده', 'protected'),
-                                        HopeV2Icons.protectedFunds,
-                                      ),
-                                  ];
-                                  if (!compact) {
-                                    return Row(
-                                      children: [
-                                        for (var i = 0; i < items.length; i++) ...[
-                                          if (i > 0) const SizedBox(width: 12),
-                                          Expanded(child: items[i]),
-                                        ],
-                                      ],
-                                    );
-                                  }
-                                  final columns = items.length == 1 ? 1 : 2;
-                                  final gap = 12.0;
-                                  final itemWidth =
-                                      (constraints.maxWidth - gap * (columns - 1)) /
+                                  final columns = constraints.maxWidth >= 760
+                                      ? metrics.length
+                                      : constraints.maxWidth >= 500
+                                          ? 2
+                                          : 1;
+                                  final gap = HopeV2Spacing.md;
+                                  final width =
+                                      (constraints.maxWidth -
+                                              gap * (columns - 1)) /
                                           columns;
                                   return Wrap(
                                     spacing: gap,
-                                    runSpacing: 16,
+                                    runSpacing: gap,
                                     children: [
-                                      for (final item in items)
-                                        SizedBox(width: itemWidth, child: item),
+                                      for (final metric in metrics)
+                                        SizedBox(
+                                          width: width,
+                                          child: metric,
+                                        ),
                                     ],
                                   );
                                 },
                               ),
+                            ],
+                          ),
+                        );
                             ],
                           ),
                         );
