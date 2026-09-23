@@ -125,7 +125,6 @@ void main() {
         'خیلی نزدیک',
         'آنلاین',
         'مشاهده و اقدام برای ماموریت',
-        'مشاهده جزئیات',
       ],
       'en': const [
         'Untitled',
@@ -138,7 +137,6 @@ void main() {
         'Very near',
         'Remote',
         'View and act on mission',
-        'View details',
       ],
     };
 
@@ -169,6 +167,14 @@ void main() {
         ),
         findsOneWidget,
         reason: 'missing ${locale.languageCode} currency label',
+      );
+
+      expect(
+        find.bySemanticsLabel(
+          locale.languageCode == 'fa' ? 'مشاهده جزئیات' : 'View details',
+        ),
+        findsOneWidget,
+        reason: 'missing ${locale.languageCode} detail accessibility label',
       );
     }
   });
