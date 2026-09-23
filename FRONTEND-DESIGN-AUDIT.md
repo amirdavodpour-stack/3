@@ -79,6 +79,8 @@ Changes landed on `feat/google-sign-in-2026-09-20` include:
 - canonical theme surface/geometry mapping in AppTheme;
 - durable DESIGN.md token ownership update.
 
+Marketplace filter touch height was also normalized to `HopeV2Touch.minimum` (48px), removing a 44px container from the shared Explore filter flow.
+
 Latest runtime verification remains pending in GitHub Actions; static inspection is not treated as runtime PASS.
 
 ## Design direction
