@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 /// HOPE V2 design primitives.
 ///
@@ -66,32 +67,35 @@ class HopeV2Colors {
 class HopeV2Icons {
   const HopeV2Icons._();
 
-  static const home = Icons.dashboard_customize_outlined;
-  static const homeSelected = Icons.dashboard_customize_rounded;
-  static const workshop = Icons.hub_outlined;
-  static const workshopSelected = Icons.hub_rounded;
-  static const activity = Icons.timeline_outlined;
-  static const activitySelected = Icons.timeline_rounded;
-  static const wallet = Icons.account_balance_wallet_outlined;
-  static const walletSelected = Icons.account_balance_wallet_rounded;
-  static const profile = Icons.manage_accounts_outlined;
-  static const profileSelected = Icons.manage_accounts_rounded;
+  // HOPE's product icon language is Hugeicons Stroke Rounded. The package
+  // provides 6,000+ consistent SVG icons with controlled stroke weight.
+  // Keep recurring concepts here so screens never pick arbitrary glyphs.
+  static const home = HugeIcons.strokeRoundedHome01;
+  static const homeSelected = HugeIcons.strokeRoundedHome02;
+  static const workshop = HugeIcons.strokeRoundedBriefcase01;
+  static const workshopSelected = HugeIcons.strokeRoundedBriefcase02;
+  static const activity = HugeIcons.strokeRoundedActivity01;
+  static const activitySelected = HugeIcons.strokeRoundedActivity02;
+  static const wallet = HugeIcons.strokeRoundedWallet01;
+  static const walletSelected = HugeIcons.strokeRoundedWallet02;
+  static const profile = HugeIcons.strokeRoundedUser;
+  static const profileSelected = HugeIcons.strokeRoundedUserAccount;
 
-  static const mission = Icons.bolt_rounded;
-  static const job = Icons.work_history_rounded;
-  static const featured = Icons.auto_awesome_rounded;
-  static const match = Icons.verified_rounded;
-  static const location = Icons.location_on_outlined;
-  static const category = Icons.category_outlined;
-  static const distance = Icons.near_me_rounded;
-  static const protectedFunds = Icons.shield_outlined;
-  static const payments = Icons.payments_outlined;
-  static const transferIn = Icons.south_west_rounded;
-  static const transferOut = Icons.north_east_rounded;
-  static const completed = Icons.task_alt_rounded;
-  static const pending = Icons.schedule_rounded;
-  static const secure = Icons.lock_person_outlined;
-  static const insights = Icons.query_stats_rounded;
+  static const mission = HugeIcons.strokeRoundedBolt;
+  static const job = HugeIcons.strokeRoundedWorkHistory;
+  static const featured = HugeIcons.strokeRoundedSparkles;
+  static const match = HugeIcons.strokeRoundedUserCheck01;
+  static const location = HugeIcons.strokeRoundedLocation01;
+  static const category = HugeIcons.strokeRoundedTag01;
+  static const distance = HugeIcons.strokeRoundedLocationUser01;
+  static const protectedFunds = HugeIcons.strokeRoundedShield01;
+  static const payments = HugeIcons.strokeRoundedMoney02;
+  static const transferIn = HugeIcons.strokeRoundedMoneyReceive01;
+  static const transferOut = HugeIcons.strokeRoundedMoneySend01;
+  static const completed = HugeIcons.strokeRoundedTaskDone01;
+  static const pending = HugeIcons.strokeRoundedHourglass;
+  static const secure = HugeIcons.strokeRoundedLock;
+  static const insights = HugeIcons.strokeRoundedActivitySpark;
 }
 
 class HopeV2Spacing {
