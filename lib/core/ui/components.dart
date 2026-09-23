@@ -256,7 +256,7 @@ class StatusPill extends StatelessWidget {
       {super.key, this.color = HopeV2Colors.primary, this.icon});
   final String label;
   final Color color;
-  final IconData? icon;
+  final Object? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +275,7 @@ class StatusPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: resolved),
+            HopeIcon(icon!, size: 14, color: resolved, strokeWidth: 1.9),
             const SizedBox(width: 5),
           ],
           Flexible(
@@ -447,7 +447,7 @@ class EmptyState extends StatelessWidget {
       required this.title,
       required this.message,
       this.action});
-  final IconData icon;
+  final Object icon;
   final String title;
   final String message;
   final Widget? action;
