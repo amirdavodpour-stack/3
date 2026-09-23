@@ -275,7 +275,7 @@ class HopeV2Type {
   static TextStyle display(BuildContext context) => Theme.of(context)
       .textTheme
       .displaySmall!
-      .copyWith(fontSize: 38, letterSpacing: -1.0, height: 1.02);
+      .copyWith(fontSize: 34, letterSpacing: -.85, height: 1.06);
 
   static TextStyle hero(BuildContext context) => Theme.of(context)
       .textTheme
