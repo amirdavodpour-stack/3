@@ -200,7 +200,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 padding: const EdgeInsets.all(26),
                 child: Column(
                   children: [
-                    const Icon(Icons.inbox_outlined, size: 40),
+                    HopeIcon(HopeV2Icons.mission, size: 40),
                     const SizedBox(height: 12),
                     Text(
                       _filter == 'ALL'
