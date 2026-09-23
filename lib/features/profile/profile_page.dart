@@ -367,9 +367,13 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           const SizedBox(height: 14),
-          SectionTitle(
+          PremiumSectionHeader(
             title: _t(context, 'مرکز کنترل حساب', 'Account control center'),
-            subtitle: _t(context, 'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کنید.', 'Manage privacy, devices, and your work applications in one place.'),
+            subtitle: _t(
+              context,
+              'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کنید.',
+              'Manage privacy, devices, and your work applications in one place.',
+            ),
           ),
           const SizedBox(height: 10),
           PremiumPanel(
