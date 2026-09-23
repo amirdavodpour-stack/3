@@ -3,6 +3,7 @@ set -euo pipefail
 
 script="tools/hope-wallet-runtime-evidence.sh"
 test -f "$script"
+bash -n "$script"
 
 grep -Eq 'HOPE_HOST_CAPTURE_DETECTED:' "$script"
 grep -Eq 'HOPE_HOST_SCREENSHOT_CAPTURED:' "$script"
