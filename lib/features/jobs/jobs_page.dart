@@ -244,7 +244,7 @@ class _JobsPageState extends State<JobsPage> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.delete_outline_rounded),
+                     : HopeIcon(HopeV2Icons.close, size: 19, color: Theme.of(context).colorScheme.error),
                 ),
               );
             },
@@ -405,7 +405,7 @@ class _JobsPageState extends State<JobsPage> {
                 ),
                 trailing: (_city == city ||
                         (_city == 'AUTO' && city == settings.city))
-                    ? const Icon(Icons.check_rounded)
+                    ? HopeIcon(HopeV2Icons.completed, size: 18)
                     : null,
                 onTap: () => Navigator.pop(context, city),
               )),
