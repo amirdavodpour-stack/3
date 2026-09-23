@@ -33,9 +33,9 @@ class HopeV2Colors {
   static const danger = Color(0xFFBA454D);
   static const dangerDark = Color(0xFFF87171);
   static const softPrimary = Color(0xFFEAE5FF);
-  static const darkBackground = Color(0xFF100D0B);
-  static const darkSurface = Color(0xFF171411);
-  static const darkCard = Color(0xFF201A16);
+  static const darkBackground = Color(0xFF090811);
+  static const darkSurface = Color(0xFF15131D);
+  static const darkCard = Color(0xFF1C1925);
   static const darkText = Color(0xFFF8F7FC);
   static const darkMuted = Color(0xFF9A95AA);
 
@@ -44,7 +44,7 @@ class HopeV2Colors {
   static const panelLight = Color(0xFFFFFFFF);
   static const panelDark = Color(0xFF15131D);
   static const panelSoftLight = Color(0xFFFBF9FE);
-  static const panelSoftDark = Color(0xFF191513);
+  static const panelSoftDark = Color(0xFF121A2A);
   static const chipLight = Color(0xFFEFEBF8);
   static const chipDark = Color(0x1AFFFFFF);
   static const chipSelectedDark = Color(0x336366F1);
@@ -55,13 +55,13 @@ class HopeV2Colors {
   static const navigationLight = Color(0xFFFBF8F4);
   static const navigationDark = Color(0xF70B101A);
   static const navigationIndicatorDark = Color(0x3D6366F1);
-  static const inputDark = Color(0xFF15110F);
+  static const inputDark = Color(0xFF12111A);
   static const darkBorder = Color(0x14FFFFFF);
   static const darkBorderStrong = Color(0x24FFFFFF);
   static const darkDivider = Color(0x12FFFFFF);
-  /// Soft warm-brown halo used over the lavender page base.
-  static const warmHalo = Color(0x7A9A7658);
-  static const warmHaloDark = Color(0x3A9A7658);
+  /// Light warm-brown accent used only as a restrained atmospheric underlay.
+  static const warmHalo = Color(0xFFC2A487);
+  static const warmHaloDark = Color(0xFF826D59);
 }
 
 /// Canonical icon vocabulary. Keep navigation and recurring product concepts
@@ -199,17 +199,17 @@ class HopeV2Surfaces {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return RadialGradient(
       center: AlignmentDirectional.topEnd,
-      radius: 1.05,
+      radius: 1.10,
       colors: [
         dark
-            ? HopeV2Colors.warmHaloDark.withValues(alpha: .34)
-            : HopeV2Colors.warmHalo.withValues(alpha: .20),
+            ? HopeV2Colors.primaryDark.withValues(alpha: .10)
+            : HopeV2Colors.warmHalo.withValues(alpha: .045),
         dark
-            ? HopeV2Colors.warmHaloDark.withValues(alpha: .10)
-            : HopeV2Colors.warmHalo.withValues(alpha: .07),
+            ? HopeV2Colors.primary.withValues(alpha: .025)
+            : HopeV2Colors.warmHalo.withValues(alpha: .015),
         Colors.transparent,
       ],
-      stops: const [0.0, 0.42, 1.0],
+      stops: const [0.0, 0.36, 1.0],
     );
   }
 
