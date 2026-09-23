@@ -227,7 +227,7 @@ extension on _TransactionPageState {
       ));
     }
     if (actions.isEmpty && paymentStatus == 'RELEASED') {
-      actions.add(HopeSurface(
+      actions.add(PremiumPanel(
         highlight: true,
         padding: const EdgeInsets.all(14),
         child: Row(children: [
@@ -319,26 +319,21 @@ extension on _TransactionPageState {
                 ),
                 const SizedBox(height: 14),
               ],
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final compact = constraints.maxWidth < 500;
-                  return Row(
-                    children: [
-                      HopeMark(
-                        size: 38,
-                        showText: !compact,
-                      ),
-                      const Spacer(),
-                      StatusPill(
-                        _statusLabel(status),
-                        color: _statusColor(status),
-                        icon: _statusIcon(status),
-                      ),
-                    ],
-                  );
-                },
+              PremiumHeader(
+                eyebrow: HopeCopy.of(context).copy_transaction_7e0ea3b,
+                title: job?.title ??
+                    HopeCopy.of(context).copy_transaction_7e0ea3b,
+                subtitle: _t(
+                  'وضعیت، مبلغ و مسیر انجام کار را در یک نگاه پیگیری کنید.',
+                  'Track status, amount, and the full work flow in one place.',
+                ),
+                trailing: PremiumTag(
+                  icon: _statusIcon(status),
+                  label: _statusLabel(status),
+                  color: _statusColor(status),
+                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: HopeV2Spacing.lg),
               if (job != null) ...[
                 Text(job.title,
                     style: Theme.of(context).textTheme.headlineSmall),
@@ -375,7 +370,7 @@ extension on _TransactionPageState {
                 ],
               ),
               const SizedBox(height: 14),
-              HopeSurface(
+              PremiumPanel(
                   padding: const EdgeInsets.all(18),
                   child: Column(children: [
                     Row(
@@ -465,7 +460,7 @@ extension on _TransactionPageState {
                     ]),
                   ])),
               const SizedBox(height: 10),
-              HopeSurface(
+              PremiumPanel(
                 padding: const EdgeInsets.all(14),
                 highlight: status == 'HELD' || status == 'RELEASED',
                 child: Row(
@@ -484,7 +479,7 @@ extension on _TransactionPageState {
               ),
               if (payment?.fees != null) ...[
                 const SizedBox(height: 12),
-                HopeSurface(
+                PremiumPanel(
                     padding: const EdgeInsets.all(18),
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,

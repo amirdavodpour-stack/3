@@ -160,19 +160,39 @@ class HopeSurface extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: highlight
-            ? (dark
-                ? HopeV2Colors.darkCard.withValues(alpha: .92)
-                : HopeV2Colors.softPrimary)
-            : HopeV2Surfaces.panel(context),
+        color: highlight ? null : HopeV2Surfaces.panel(context),
+        gradient: highlight
+            ? LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  HopeV2Colors.primary.withValues(
+                    alpha: dark ? .12 : .075,
+                  ),
+                  HopeV2Surfaces.panel(context),
+                  HopeV2Surfaces.panel(context),
+                ],
+                stops: const [0, .34, 1],
+              )
+            : null,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? HopeV2Colors.primary.withValues(alpha: .24)
+              ? HopeV2Colors.primary.withValues(alpha: .20)
               : border,
           width: highlight ? 1.1 : 1,
         ),
-        boxShadow: dark ? const [] : HopeV2Shadows.card,
+        boxShadow: dark
+            ? const []
+            : [
+                BoxShadow(
+                  color: highlight
+                      ? HopeV2Colors.primary.withValues(alpha: .06)
+                      : const Color(0x081B1638),
+                  blurRadius: highlight ? 26 : 22,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -195,7 +215,7 @@ class SectionTitle extends StatelessWidget {
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              Text(title, style: HopeV2Type.section(context)),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
                 Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
@@ -240,26 +260,41 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Dark surfaces need brighter status hues to keep text >= 4.5:1.
     final resolved = _accessible(context, color);
     return Container(
+      constraints: const BoxConstraints(minHeight: 32),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-          color: resolved.withValues(alpha: .10),
-          borderRadius: BorderRadius.circular(999)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (icon != null) ...[
-          Icon(icon, size: 14, color: resolved),
-          const SizedBox(width: 5)
-        ],
-        Semantics(
-            label: label,
-            child: Text(label,
+        color: resolved.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+        border: Border.all(
+          color: resolved.withValues(alpha: .08),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: resolved),
+            const SizedBox(width: 5),
+          ],
+          Flexible(
+            child: Semantics(
+              label: label,
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    color: resolved,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900))),
-      ]),
+                  color: resolved,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

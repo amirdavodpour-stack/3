@@ -109,98 +109,50 @@ class _ProfilePageState extends State<ProfilePage> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
             children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 520;
-              final identity = Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 31,
-                    backgroundColor: Colors.white.withValues(alpha: .13),
-                    foregroundColor: Colors.white,
-                    child: Text(
-                      initial,
-                      style: const TextStyle(
-                        fontSize: 23,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          HopeCopy.of(context).copy_profile_8b081d3,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 25,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          user['email']?.toString() ?? '',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        const SizedBox(height: 10),
-                        StatusPill(
-                          HopeCopy.of(context).copy_active_account_bef80da,
-                          color: Colors.white,
-                          icon: Icons.person_outline_rounded,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-
-              return Container(
-                padding: EdgeInsets.all(compact ? 16 : 20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(HopeV2Radii.hero),
-                  gradient: HopeV2Gradients.heroDark,
-                  boxShadow: HopeV2Shadows.heroDark,
+          PremiumHeader(
+            eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
+            title: name,
+            subtitle: user['email']?.toString().trim().isEmpty == true
+                ? null
+                : user['email']?.toString(),
+            trailing: CircleAvatar(
+              radius: 25,
+              backgroundColor:
+                  HopeV2Colors.primary.withValues(alpha: .14),
+              child: Text(
+                initial,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
                 ),
-                child: compact
-                    ? identity
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: identity),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const HopeMark(size: 42, showText: false),
-                              const SizedBox(height: 12),
-                              PremiumTag(
-                                icon: Icons.shield_outlined,
-                                label: _t(context, 'حساب فعال', 'Active account'),
-                                color: Colors.white,
-                                inverse: true,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-              );
-            },
+              ),
+            ),
+          ),
+          const SizedBox(height: HopeV2Spacing.md),
+          PremiumPanel(
+            padding: const EdgeInsets.symmetric(
+              horizontal: HopeV2Spacing.lg,
+              vertical: HopeV2Spacing.md,
+            ),
+            highlight: true,
+            child: Row(
+              children: [
+                HopeIconTile(HopeV2Icons.secure, filled: true),
+                const SizedBox(width: HopeV2Spacing.md),
+                Expanded(
+                  child: Text(
+                    HopeCopy.of(context).copy_active_account_bef80da,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                PremiumTag(
+                  icon: HopeV2Icons.completed,
+                  label: _t(context, 'حساب فعال', 'Active account'),
+                  color: HopeV2Colors.secondaryStrong,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
           PremiumSectionHeader(

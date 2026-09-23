@@ -390,7 +390,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           .map(
                             (row) => Padding(
                               padding: const EdgeInsets.only(bottom: 10),
-                              child: HopeSurface(
+                              child: PremiumPanel(
                                 padding: const EdgeInsets.all(12),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -591,69 +591,18 @@ class _JobDetailPageState extends State<JobDetailPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
-                    child: SizedBox(
-                      height: 198,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topRight,
-                                end: Alignment.bottomLeft,
-                                colors: [
-                                  Theme.of(context).colorScheme.primary,
-                                  Theme.of(context).colorScheme.secondary,
-                                  Theme.of(context).colorScheme.surfaceContainerHighest,
-                                ],
-                              ),
-                            ),
-                          ),
-                          PositionedDirectional(
-                            top: 18,
-                            end: 18,
-                            child: ExcludeSemantics(
-                              child: Container(
-                                width: 54,
-                                height: 54,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: .12),
-                                  borderRadius: BorderRadius.circular(17),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: .18),
-                                  ),
-                                ),
-                                child: Icon(
-                                  isJob
-                                      ? Icons.business_center_rounded
-                                      : Icons.bolt_rounded,
-                                  color: Colors.white,
-                                  size: 27,
-                                ),
-                              ),
-                            ),
-                          ),
-                          PositionedDirectional(
-                            start: 16,
-                            bottom: 16,
-                            end: 16,
-                            child: Text(
-                              j.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 25,
-                                height: 1.12,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  PremiumHero(
+                    eyebrow: isJob
+                        ? HopeCopy.of(context).copy_job_ce2feba
+                        : HopeCopy.of(context).copy_mission_fb4c5e1,
+                    title: j.title,
+                    message: [
+                      j.category ?? j.categoryId,
+                      if (j.city != null && j.city!.trim().isNotEmpty) j.city,
+                    ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
+                    icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
+                    height: 228,
+                    semanticLabel: j.title,
                   ),
                   const SizedBox(height: 14),
                   Wrap(
@@ -745,7 +694,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     },
                   ),
                   const SizedBox(height: 14),
-                  HopeSurface(
+                  PremiumPanel(
                     padding: const EdgeInsets.all(17),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,7 +739,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   ),
                   if (isJob) ...[
                     const SizedBox(height: 13),
-                    HopeSurface(
+                    PremiumPanel(
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -832,7 +781,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           );
                         }
                         if (snapshot.hasError) {
-                          return HopeSurface(
+                          return PremiumPanel(
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -863,7 +812,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         final list = snapshot.data ?? const <HopeCandidate>[];
 
                         if (list.isEmpty) {
-                          return HopeSurface(
+                          return PremiumPanel(
                             padding: const EdgeInsets.all(16),
                             child: Text(
                               _t(
@@ -875,7 +824,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           );
                         }
 
-                        return HopeSurface(
+                        return PremiumPanel(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -910,7 +859,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
 
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 9),
-                                  child: HopeSurface(
+                                  child: PremiumPanel(
                                     padding: const EdgeInsets.all(12),
                                     child: Column(
                                       crossAxisAlignment:
@@ -1056,7 +1005,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       ),
                     ),
                   if (canViewFinance)
-                    HopeSurface(
+                    PremiumPanel(
                       padding: const EdgeInsets.all(16),
                       highlight: true,
                       child: Column(
@@ -1188,7 +1137,7 @@ class _JobLifecycleCard extends StatelessWidget {
     final current = _current();
     final status = job.status?.toUpperCase() ?? 'UNKNOWN';
 
-    return HopeSurface(
+    return PremiumPanel(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1314,7 +1263,7 @@ class _MatchIntelligence extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = job.recommendationScore;
-    return HopeSurface(
+    return PremiumPanel(
       padding: const EdgeInsets.all(17),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
