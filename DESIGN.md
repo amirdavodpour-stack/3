@@ -38,7 +38,7 @@ Avoid generic AI-dashboard patterns: excessive gradients, decorative statistics,
 - Success: `#0B7A58`
 - Danger: `#BA454D`
 
-Runtime ownership: `lib/core/theme/hope_v2_design.dart` is the canonical token source; `app_theme.dart` is the Material compatibility/theme adapter.
+Runtime ownership: `lib/core/theme/hope_v2_design.dart` is the canonical token source; `app_theme.dart` is the Material compatibility/theme adapter. Shared surface mappings (input, chip, navigation, divider, control border) must resolve through this source rather than new screen-local literals.
 
 ## Typography
 - Runtime font: Vazirmatn.
