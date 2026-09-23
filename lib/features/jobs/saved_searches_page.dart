@@ -280,7 +280,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    const Icon(Icons.cloud_off_rounded, size: 36),
+                    HopeIcon(HopeV2Icons.pending, size: 36),
                     const SizedBox(height: 10),
                     Text(_error!, textAlign: TextAlign.center),
                     const SizedBox(height: 12),
@@ -297,7 +297,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    const Icon(Icons.bookmark_border_rounded, size: 40),
+                    HopeIcon(HopeV2Icons.savedSearches, size: 40),
                     const SizedBox(height: 12),
                     Text(
                       _t('هنوز جست‌وجوی ذخیره‌شده‌ای ندارید.',
