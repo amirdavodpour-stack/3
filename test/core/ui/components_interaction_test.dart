@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
@@ -56,6 +57,23 @@ void main() {
     expect(style.color, HopeV2Colors.warning);
   });
 
+  testWidgets('AppTheme uses canonical geometry tokens',
+      (tester) async {
+    final theme = AppTheme.light();
+
+    final cardShape = theme.cardTheme.shape as RoundedRectangleBorder;
+    expect(cardShape.borderRadius, BorderRadius.circular(HopeV2Radii.lg));
+
+    final inputShape =
+        theme.inputDecorationTheme.border as OutlineInputBorder;
+    expect(inputShape.borderRadius, BorderRadius.circular(HopeV2Radii.input));
+
+    final buttonShape =
+        theme.filledButtonTheme.style?.shape?.resolve(<WidgetState>{})
+            as RoundedRectangleBorder;
+    expect(buttonShape.borderRadius, BorderRadius.circular(HopeV2Radii.button));
+  });
+
   testWidgets('PressableScale is keyboard-focusable and exposes button semantics',
       (tester) async {
     var taps = 0;
@@ -77,7 +95,14 @@ void main() {
     expect(semantics.flagsCollection.isButton, isTrue);
     expect(semantics.label, 'Open opportunity');
 
-    await tester.tap(find.text('Open'));
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(tester.binding.focusManager.primaryFocus, isNotNull);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     expect(taps, 1);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    expect(taps, 2);
   });
 }
