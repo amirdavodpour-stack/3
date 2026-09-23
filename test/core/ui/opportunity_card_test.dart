@@ -119,7 +119,6 @@ void main() {
         'ماموریت',
         'تخصصی',
         'بودجه ماموریت',
-        'تومان',
         'دلایل تطابق',
         'مهارت مرتبط',
         'دسته‌بندی مرتبط',
@@ -138,7 +137,6 @@ void main() {
         'Mission',
         'Specialized',
         'Mission budget',
-        'Toman',
         'Match signals',
         'Skill match',
         'Category match',
@@ -174,6 +172,14 @@ void main() {
         expect(find.text(label), findsOneWidget,
             reason: 'missing ${locale.languageCode} localization: $label');
       }
+
+      expect(
+        find.textContaining(
+          locale.languageCode == 'fa' ? 'تومان' : 'Toman',
+        ),
+        findsOneWidget,
+        reason: 'missing ${locale.languageCode} currency label',
+      );
     }
   });
 }
