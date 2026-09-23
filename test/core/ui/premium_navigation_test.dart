@@ -164,3 +164,26 @@ void main() {
     expect(decoration.border, isA<BorderDirectional>());
   });
 }
+
+
+  testWidgets('premium icon button keeps a 48dp target with a quiet surface',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumIconButton(
+            icon: HopeV2Icons.refresh,
+            tooltip: 'Refresh',
+            onPressed: () {},
+          ),
+        ),
+      ),
+    );
+
+    final button = find.byType(PremiumIconButton);
+    expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
+    expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
+    expect(find.byType(HugeIcon), findsOneWidget);
+    expect(find.byType(InkWell), findsOneWidget);
+  });
