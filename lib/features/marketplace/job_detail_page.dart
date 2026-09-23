@@ -561,12 +561,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 ),
                               )
                           : action,
-                  icon: Icon(
-                    canViewFinance
-                        ? Icons.account_balance_wallet_rounded
+                  icon: HugeIcon(
+                    icon: canViewFinance
+                        ? HopeV2Icons.wallet
                         : isJob
-                            ? Icons.send_rounded
-                            : Icons.bolt_rounded,
+                            ? HopeV2Icons.userAdd
+                            : HopeV2Icons.payments,
+                    size: 20,
                   ),
                   label: Text(
                     loading
@@ -606,10 +607,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   ),
                   const SizedBox(height: 14),
                   Wrap(
-                    spacing: 7,
-                    runSpacing: 7,
+                    spacing: HopeV2Spacing.sm,
+                    runSpacing: HopeV2Spacing.sm,
                     children: [
-                      StatusPill(
+                      PremiumTag(
                         isJob
                             ? HopeCopy.of(context).copy_job_ce2feba
                             : HopeCopy.of(context).copy_mission_fb4c5e1,
@@ -617,23 +618,25 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             ? secondaryAccent(context)
                             : AppColors.primary,
                         icon: isJob
-                            ? Icons.business_center_rounded
-                            : Icons.bolt_rounded,
+                            ? HopeV2Icons.job
+                            : HopeV2Icons.mission,
                       ),
-                      StatusPill(
+                      PremiumTag(
                         visibility == 'SPECIALIZED'
                             ? HopeCopy.of(context).copy_specialized_5d1ca04
                             : HopeCopy.of(context).copy_public_21e97be,
                         color: visibility == 'SPECIALIZED'
                             ? AppColors.warning
                             : secondaryAccent(context),
-                        icon: Icons.visibility_outlined,
+                        icon: visibility == 'SPECIALIZED'
+                            ? HopeV2Icons.secure
+                            : HopeV2Icons.insights,
                       ),
                       if (j.city != null)
-                        StatusPill(
+                        PremiumTag(
                           j.city!,
                           color: AppColors.muted,
-                          icon: Icons.location_on_outlined,
+                          icon: HopeV2Icons.location,
                         ),
                     ],
                   ),
@@ -665,13 +668,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   context,
                                   '${j.budgetMin ?? '—'} تا ${j.budgetMax ?? '—'}',
                                 ),
-                          icon: Icons.payments_outlined,
+                          icon: HopeV2Icons.payments,
                           accent: Theme.of(context).colorScheme.primary,
                         ),
                         PremiumStatCard(
                           label: HopeCopy.of(context).copy_field_fcb7b26,
                           value: j.category ?? j.categoryId ?? '—',
-                          icon: Icons.category_outlined,
+                          icon: HopeV2Icons.category,
                           accent: secondaryAccent(context),
                         ),
                       ];
@@ -707,7 +710,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         if (isJob) ...[
                           _line(
                             context,
-                            Icons.schedule_rounded,
+                            HopeV2Icons.pending,
                             HopeCopy.of(context).copy_schedule_3af1939,
                             j.schedule == 'PART_TIME'
                                 ? HopeCopy.of(context).copy_part_time_086787b
@@ -715,7 +718,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           ),
                           _line(
                             context,
-                            Icons.event_outlined,
+                            HopeV2Icons.activity,
                             HopeCopy.of(context)
                                 .copy_application_deadline_0a6c25c,
                             j.applicationDeadline ?? '—',
@@ -724,13 +727,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         if (!isJob)
                           _line(
                             context,
-                            Icons.timelapse_rounded,
+                            HopeV2Icons.pending,
                             HopeCopy.of(context).copy_duration_cc42be6,
                             '${j.duration ?? '—'} ${HopeCopy.of(context).copy_hours_7408608}',
                           ),
                         _line(
                           context,
-                          Icons.fact_check_outlined,
+                          HopeV2Icons.completed,
                           HopeCopy.of(context).copy_acceptance_criteria_f213cb2,
                           j.acceptanceCriteria ?? '—',
                         ),
@@ -744,7 +747,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.verified_user_outlined),
+                          HugeIcon(icon: HopeV2Icons.secure, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -845,10 +848,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                       onPressed: _candidateBusyId == null
                                           ? () => _compareCandidates(list)
                                           : null,
-                                      icon: const Icon(
-                                        Icons.compare_arrows_rounded,
-                                        size: 18,
-                                      ),
+                                      icon: HugeIcon(icon: HopeV2Icons.insights, size: 18),
                                       label: Text(_t('مقایسه', 'Compare')),
                                     ),
                                 ],
@@ -868,7 +868,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                         Row(
                                           children: [
                                             const HopeIconTile(
-                                              Icons.person_search_rounded,
+                                              HopeV2Icons.userAdd,
                                             ),
                                             const SizedBox(width: 9),
                                             Expanded(
@@ -883,7 +883,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                             ),
                                             StatusPill(
                                               _candidateStatusLabel(status),
-                                              icon: Icons.flag_outlined,
+                                              icon: HopeV2Icons.pending,
                                               color: secondaryAccent(context),
                                             ),
                                           ],
@@ -919,7 +919,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                         ),
                                                       )
                                                     : const Icon(
-                                                        Icons.forum_outlined,
+                                                        HopeV2Icons.userAdd,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -946,8 +946,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                         ),
                                                       )
                                                     : const Icon(
-                                                        Icons
-                                                            .request_quote_outlined,
+                                                        HopeV2Icons.payments,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -974,7 +973,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                         ),
                                                       )
                                                     : const Icon(
-                                                        Icons.verified_rounded,
+                                                        HopeV2Icons.completed,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -1000,7 +999,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       alignment: AlignmentDirectional.centerStart,
                       child: TextButton.icon(
                         onPressed: _reportJob,
-                        icon: const Icon(Icons.flag_outlined),
+                        icon: HugeIcon(icon: HopeV2Icons.notifications, size: 18),
                         label: Text(_t('گزارش فرصت', 'Report opportunity')),
                       ),
                     ),
@@ -1013,7 +1012,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.account_balance_wallet_rounded),
+                              HugeIcon(icon: HopeV2Icons.wallet, size: 20),
                               const SizedBox(width: 9),
                               Expanded(
                                 child: Text(
@@ -1062,7 +1061,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
 
   Widget _line(
     BuildContext context,
-    IconData icon,
+    Object icon,
     String label,
     String value,
   ) {
@@ -1070,7 +1069,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Icon(icon, size: 19, color: AppColors.primary),
+          HopeIcon(icon, size: 19, color: AppColors.primary, strokeWidth: 1.9),
           const SizedBox(width: 9),
           Expanded(
             child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
