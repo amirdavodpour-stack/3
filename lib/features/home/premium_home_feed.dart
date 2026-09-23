@@ -337,20 +337,41 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 
   Widget _opportunitySections(BuildContext context, List<HopeJob> jobs, HopeSettingsController settings) {
     final recommended = jobs.where((j) => j.isRecommended).toList();
-    final nearby = jobs.where((j) => j.distanceKm != null || j.city == settings.city).toList();
+    final nearby = jobs
+        .where((j) => j.distanceKm != null || j.city == settings.city)
+        .toList();
     final used = {...recommended, ...nearby};
     final remaining = jobs.where((j) => !used.contains(j)).toList();
+
     if (jobs.isEmpty) {
       return PremiumPanel(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(_t(context, 'فعلاً فرصت مرتبطی پیدا نشد', 'No matching opportunities yet'), style: HopeV2Type.section(context)),
-          const SizedBox(height: HopeV2Spacing.sm),
-          Text(_t(context, 'می‌توانید در Explore فیلترها را بازتر کنید.', 'Try broadening filters in Explore.'), style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: HopeV2Spacing.lg),
-          OutlinedButton.icon(onPressed: widget.onOpenExplore, icon: const Icon(Icons.explore_outlined), label: Text(_t(context, 'رفتن به Explore', 'Open Explore'))),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _t(context, 'فعلاً فرصت مرتبطی پیدا نشد', 'No matching opportunities yet'),
+              style: HopeV2Type.section(context),
+            ),
+            const SizedBox(height: HopeV2Spacing.sm),
+            Text(
+              _t(
+                context,
+                'می‌توانید در Explore فیلترها را بازتر کنید.',
+                'Try broadening filters in Explore.',
+              ),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: HopeV2Spacing.lg),
+            OutlinedButton.icon(
+              onPressed: widget.onOpenExplore,
+              icon: const Icon(Icons.explore_outlined),
+              label: Text(_t(context, 'رفتن به Explore', 'Open Explore')),
+            ),
+          ],
+        ),
       );
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -369,7 +390,13 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             variant: OpportunityCardVariant.featured,
           ),
           const SizedBox(height: HopeV2Spacing.xl),
-        ] else
+          _section(
+            context,
+            _t(context, 'تطابق‌ها', 'Matches'),
+            recommended.skip(1).take(3).toList(),
+            widget.onOpenExplore,
+          ),
+        ] else ...[
           PremiumSectionHeader(
             title: _t(context, 'فرصت‌ها', 'Opportunities'),
             subtitle: _t(
@@ -378,24 +405,26 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               '${jobs.length} opportunities',
             ),
           ),
-        if (recommended.isNotEmpty)
-          _section(
-            context,
-            _t(context, 'تطابق‌ها', 'Matches'),
-            recommended.skip(1).take(3).toList(),
-            widget.onOpenExplore,
-          ),
-        , 'Matches'), recommended.skip(recommended.isNotEmpty ? 1 : 0).take(3).toList(), widget.onOpenExplore),
+        ],
         const SizedBox(height: HopeV2Spacing.section),
-        _section(context, _t(context, 'نزدیک شما', 'Near you'), nearby.take(3).toList(), widget.onOpenExplore),
+        _section(
+          context,
+          _t(context, 'نزدیک شما', 'Near you'),
+          nearby.take(3).toList(),
+          widget.onOpenExplore,
+        ),
         if (remaining.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.section),
-          _section(context, _t(context, 'سایر فرصت‌ها', 'Other opportunities'), remaining.take(4).toList(), widget.onOpenExplore),
+          _section(
+            context,
+            _t(context, 'سایر فرصت‌ها', 'Other opportunities'),
+            remaining.take(4).toList(),
+            widget.onOpenExplore,
+          ),
         ],
       ],
     );
   }
-
   Widget _section(BuildContext context, String title, List<HopeJob> jobs, VoidCallback action) {
     if (jobs.isEmpty) return const SizedBox.shrink();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
