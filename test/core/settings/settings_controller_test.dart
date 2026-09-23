@@ -27,6 +27,7 @@ void main() {
         expect(settings.personalizedRecommendations, isTrue);
         expect(settings.quietHours, isFalse);
         expect(settings.compactCards, isFalse);
+        expect(settings.financialPrivacy, isFalse);
       },
     );
 
@@ -69,6 +70,25 @@ void main() {
       await settings.setLanguage('fr');
 
       expect(settings.language, 'fa');
+    });
+  });
+
+  group('financialPrivacy', () {
+    test('rehydrates and persists the privacy preference', () async {
+      SharedPreferences.setMockInitialValues({
+        'financialPrivacy': true,
+      });
+      final settings = HopeSettingsController();
+
+      await settings.load();
+
+      expect(settings.financialPrivacy, isTrue);
+
+      await settings.setFinancialPrivacy(false);
+
+      expect(settings.financialPrivacy, isFalse);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('financialPrivacy'), isFalse);
     });
   });
 
