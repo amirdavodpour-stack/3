@@ -604,6 +604,21 @@ Future<void> _captureRuntimeScreenshot(
   print('HOPE_SCREENSHOT_READY:$marker');
 }
 
+Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
+  for (var attempt = 0; attempt < 30; attempt++) {
+    if (find.byType(CircularProgressIndicator).evaluate().isEmpty) {
+      return;
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  if (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
+    throw StateError(
+      'Runtime render remained in loading state after bounded settle',
+    );
+  }
+}
+
 Future<void> _render(
   WidgetTester tester, {
   required String marker,
@@ -640,6 +655,8 @@ Future<void> _render(
     print('HOPE_SCREEN_EXCEPTION_AFTER_FRAME_PUMP:$marker:$frameException');
   }
 
+  await _waitForRuntimeRenderToSettle(tester);
+  await tester.pump();
   await _captureRuntimeScreenshot(tester, marker);
 }
 
