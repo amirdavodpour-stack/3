@@ -159,16 +159,16 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton.filledTonal(
+                          PremiumIconButton(
                             onPressed: widget.onOpenMenu,
                             tooltip: _t(context, 'منو', 'App menu'),
-                            icon: HugeIcon(icon: HopeV2Icons.menu, size: 21),
+                            icon: HopeV2Icons.menu,
                           ),
                           const SizedBox(width: HopeV2Spacing.xs),
-                          IconButton.filledTonal(
+                          PremiumIconButton(
                             onPressed: _refresh,
                             tooltip: _t(context, 'بازخوانی', 'Refresh'),
-                            icon: HugeIcon(icon: HopeV2Icons.refresh, size: 21),
+                            icon: HopeV2Icons.refresh,
                           ),
                           const SizedBox(width: HopeV2Spacing.xs),
                           CircleAvatar(
