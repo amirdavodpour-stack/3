@@ -148,52 +148,43 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _t(context, 'فضای کاری', 'Workspace'),
-                                style: HopeV2Type.eyebrow(context),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: HopeV2Type.hero(context),
-                              ),
-                            ],
+                    PremiumHeader(
+                      eyebrow: _t(context, 'فضای کاری', 'Workspace'),
+                      title: displayName,
+                      subtitle: settings.city.trim().isEmpty
+                          ? null
+                          : settings.city,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton.filledTonal(
+                            onPressed: widget.onOpenMenu,
+                            tooltip: _t(context, 'منو', 'App menu'),
+                            icon: HugeIcon(icon: HopeV2Icons.menu, size: 21),
                           ),
-                        ),
-                        IconButton.filledTonal(
-                          onPressed: widget.onOpenMenu,
-                          tooltip: _t(context, 'منو', 'App menu'),
-                          icon: HugeIcon(icon: HopeV2Icons.menu, size: 21),
-                        ),
-                        const SizedBox(width: 6),
-                        IconButton.filledTonal(
-                          onPressed: _refresh,
-                          tooltip: _t(context, 'بازخوانی', 'Refresh'),
-                          icon: HugeIcon(icon: HopeV2Icons.refresh, size: 21),
-                        ),
-                        const SizedBox(width: 6),
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: HopeV2Colors.primary.withValues(alpha: .16),
-                          child: Text(
-                            initial,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w900,
+                          const SizedBox(width: HopeV2Spacing.xs),
+                          IconButton.filledTonal(
+                            onPressed: _refresh,
+                            tooltip: _t(context, 'بازخوانی', 'Refresh'),
+                            icon: HugeIcon(icon: HopeV2Icons.refresh, size: 21),
+                          ),
+                          const SizedBox(width: HopeV2Spacing.xs),
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor:
+                                HopeV2Colors.primary.withValues(alpha: .16),
+                            child: Text(
+                              initial,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: HopeV2Spacing.lg),
+                    const SizedBox(height: HopeV2Spacing.xl),
                     FutureBuilder<List<HopeJob>>(
                       future: _opportunities,
                       builder: (context, pulseSnapshot) {
