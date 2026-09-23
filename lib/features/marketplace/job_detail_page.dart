@@ -1271,7 +1271,7 @@ class _MatchIntelligence extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
+              HopeIcon(
                 HopeV2Icons.featured,
                 color: Theme.of(context).colorScheme.primary,
               ),
