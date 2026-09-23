@@ -327,7 +327,7 @@ class _WalletPageState extends State<WalletPage> {
                 onChanged: (_) { if (errorText != null) setDialogState(() => errorText = null); },
                 decoration: InputDecoration(
                   labelText: _t('مبلغ به تومان', 'Amount in Toman'),
-                  suffixText: _t('تومان', 'Toman'),
+                  suffixText: _t('تومان', 'TOMAN'),
                   helperText: maxAmount == null
                       ? _t('عدد صحیح وارد کنید.', 'Enter a whole-number amount.')
                       : _t('حداکثر قابل استفاده: ${_money(maxAmount)}', 'Maximum available: ${_money(maxAmount)}'),
