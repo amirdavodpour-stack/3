@@ -55,7 +55,7 @@ class _JobsFilterHeader extends StatelessWidget {
             const SizedBox(width: HopeV2Spacing.md),
             PremiumTag(
               icon: HopeV2Icons.workshop,
-              label: '\$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
+              label: '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
             ),
           ],
         ),
@@ -213,7 +213,7 @@ class _JobsFilterHeader extends StatelessWidget {
     String text,
     bool selected,
     VoidCallback onTap, {
-    IconData? icon,
+    Object? icon,
   }) =>
       Padding(
         padding: const EdgeInsetsDirectional.only(end: HopeV2Spacing.sm),
