@@ -112,7 +112,7 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: tab == 0
           ? FloatingActionButton.extended(
               onPressed: () => _openCreate(context),
-              icon: const Icon(Icons.add_rounded),
+              icon: HugeIcon(icon: HopeV2Icons.add, size: 22),
               label: Text(_t(context, 'ثبت فرصت جدید', 'Post new opportunity')),
             )
           : null,
@@ -128,11 +128,11 @@ class _HomePageState extends State<HomePage> {
               Text(_t(context, 'دسترسی به بخش‌های برنامه.', 'App sections.'), style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 20),
               _drawerTile(context, HopeV2Icons.workshopSelected, _t(context, 'کارگاه فرصت‌ها', 'Workshop opportunities'), () { Navigator.pop(context); _selectTab(1); }),
-              if (!auth.isGuest) _drawerTile(context, Icons.local_offer_outlined, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
-              if (!auth.isGuest) _drawerTile(context, Icons.notifications_rounded, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
-              if (auth.user?['role'] == 'ADMIN') _drawerTile(context, Icons.admin_panel_settings_rounded, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
+              if (!auth.isGuest) _drawerTile(context, HopeV2Icons.featured, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
+              if (!auth.isGuest) _drawerTile(context, HopeV2Icons.notifications, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
+              if (auth.user?['role'] == 'ADMIN') _drawerTile(context, HopeV2Icons.secure, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
               ListTile(
-                leading: const HopeIconTile(Icons.translate_rounded),
+                leading: const HopeIconTile(HopeV2Icons.translate),
                 title: Text(
                   settings.language == 'en' ? 'Language: English' : 'زبان: فارسی',
                   style: const TextStyle(fontWeight: FontWeight.w800),
@@ -142,7 +142,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const Divider(height: 26),
               ListTile(
-                leading: const HopeIconTile(Icons.location_on_outlined),
+                leading: const HopeIconTile(HopeV2Icons.location),
                 title: Text(_t(context, 'موقعیت فعلی', 'Current location')),
                 subtitle: Text(settings.city),
                 onTap: () { Navigator.pop(context); _selectTab(4); },
@@ -157,7 +157,7 @@ class _HomePageState extends State<HomePage> {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  Widget _drawerTile(BuildContext context, IconData icon, String label, VoidCallback tap) =>
+  Widget _drawerTile(BuildContext context, Object icon, String label, VoidCallback tap) =>
       ListTile(
         leading: HopeIconTile(icon, filled: true, size: 42),
         title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -215,7 +215,7 @@ void _showSignIn(BuildContext context) {
                 Navigator.pop(sheetContext);
                 _resumeCreateAfterAuth(context, register: true);
               },
-              icon: const Icon(Icons.person_add_alt_1_rounded),
+              icon: HugeIcon(icon: HopeV2Icons.userAdd, size: 21),
               label: Text(HopeCopy.of(context).copy_create_account_bfa3517),
             ),
             const SizedBox(height: 9),
@@ -224,7 +224,7 @@ void _showSignIn(BuildContext context) {
                 Navigator.pop(sheetContext);
                 _resumeCreateAfterAuth(context, register: false);
               },
-              icon: const Icon(Icons.login_rounded),
+              icon: HugeIcon(icon: HopeV2Icons.login, size: 21),
               label: Text(HopeCopy.of(context).copy_log_in_b4c960b),
             ),
           ],
