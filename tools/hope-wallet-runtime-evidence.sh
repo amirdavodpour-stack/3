@@ -16,11 +16,13 @@ adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibili
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
 
 set +e
-stdbuf -oL -eL flutter test --no-pub \
+# Track the Flutter PID directly. A background pipeline stores the tee PID in $!,
+# which can outlive Flutter and makes timeout/exit detection flaky.
+flutter test --no-pub \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_SCREENSHOT_ACK_ROOT="$ack_root" \
   integration_test/runtime/critical_screens_evidence_test.dart \
-  -r expanded 2>&1 | tee "$log_file" &
+  -r expanded > "$log_file" 2>&1 &
 test_pid=$!
 set -e
 
@@ -198,12 +200,12 @@ if [ "$baseline_status" -eq 0 ]; then
   : > "$runner_temp/hope-responsive-runtime.log"
 
 set +e
-HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL flutter test --no-pub \
+HOPE_RESPONSIVE_ONLY=1 flutter test --no-pub \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_RESPONSIVE_ONLY=true \
   --dart-define=HOPE_SCREENSHOT_ACK_ROOT="$ack_root" \
   integration_test/runtime/critical_screens_evidence_test.dart \
-  -r expanded 2>&1 | tee -a "$log_file" "$runner_temp/hope-responsive-runtime.log" &
+  -r expanded > "$runner_temp/hope-responsive-runtime.log" 2>&1 &
 responsive_test_pid=$!
 test_pid="$responsive_test_pid"
 set -e
