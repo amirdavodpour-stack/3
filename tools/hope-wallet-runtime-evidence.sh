@@ -13,6 +13,7 @@ capture_root="/data/user/0/com.hope.marketplace/files/hope-screen-captures-${GIT
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 CAPTURE_CHECK_TIMEOUT_SECONDS="${HOPE_CAPTURE_CHECK_TIMEOUT_SECONDS:-2}"
+FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -40,32 +41,40 @@ capture_android_diagnostics() {
 assert_hope_focused() {
   local prefix="$1"
   local window_dump="$evidence_dir/window-$prefix.txt"
+  local activity_dump="$evidence_dir/activity-$prefix.txt"
+  local focus_deadline=$((SECONDS + FOCUS_CHECK_TIMEOUT_SECONDS))
 
-  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell dumpsys window windows > "$window_dump" 2>&1 || true
-  local current_focus
-  current_focus="$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
+  while (( SECONDS < focus_deadline )); do
+    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb shell dumpsys window windows > "$window_dump" 2>&1 || true
+    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb shell dumpsys activity activities > "$activity_dump" 2>&1 || true
 
-  if [ -n "$current_focus" ]; then
-    if ! grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus"; then
-      echo "Rendered evidence rejected: HOPE app is not the focused Android window." >&2
+    local current_focus
+    local top_resumed
+    current_focus="$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
+    top_resumed="$(grep -E "topResumedActivity=" "$activity_dump" | tail -n 1 || true)"
+
+    if grep -qiE "Application Not Responding:|AppErrorDialog|Application Error" "$window_dump"; then
+      echo "Rendered evidence rejected: Android reports an ANR/application-error dialog." >&2
       capture_android_diagnostics "$prefix"
       return 1
     fi
+
+    if grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus" ||
+       grep -q "topResumedActivity=.*com.hope.marketplace/.MainActivity" <<< "$top_resumed"; then
+      return 0
+    fi
+
+    sleep 0.2
+  done
+
+  if [ -n "$current_focus" ] &&
+     ! grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus"; then
+    echo "Rendered evidence rejected: HOPE app is not the focused Android window after ${FOCUS_CHECK_TIMEOUT_SECONDS}s." >&2
   else
-    local activity_dump="$evidence_dir/activity-$prefix.txt"
-    timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell dumpsys activity activities > "$activity_dump" 2>&1 || true
-    if ! grep -q "topResumedActivity=.*com.hope.marketplace/.MainActivity" "$activity_dump"; then
-      echo "Rendered evidence rejected: HOPE MainActivity is not the top resumed Android activity." >&2
-      capture_android_diagnostics "$prefix"
-      return 1
-    fi
+    echo "Rendered evidence rejected: HOPE MainActivity is not the top resumed Android activity after ${FOCUS_CHECK_TIMEOUT_SECONDS}s." >&2
   fi
-
-  if grep -qiE "Application Not Responding:|AppErrorDialog|Application Error" "$window_dump"; then
-    echo "Rendered evidence rejected: Android reports an ANR/application-error dialog." >&2
-    capture_android_diagnostics "$prefix"
-    return 1
-  fi
+  capture_android_diagnostics "$prefix"
+  return 1
 }
 
 capture_screen() {
