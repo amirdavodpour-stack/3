@@ -637,8 +637,8 @@ void main() {
       'create-job': () => const CreateJobPage(),
     };
 
-    final responsiveOnly =
-        Platform.environment['HOPE_RESPONSIVE_ONLY'] == '1';
+    const responsiveOnly =
+        bool.fromEnvironment('HOPE_RESPONSIVE_ONLY');
     const responsiveKeys = {
       'home',
       'jobs',
