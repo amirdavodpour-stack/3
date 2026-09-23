@@ -12,6 +12,7 @@ import '../../core/marketplace/saved_search_repository.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/opportunity_card.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_feedback.dart';
 import '../../core/theme/hope_v2_design.dart';
 import 'jobs_query_logic.dart';
 

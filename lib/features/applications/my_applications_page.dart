@@ -8,6 +8,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_feedback.dart';
 
 class MyApplicationsPage extends StatefulWidget {
   const MyApplicationsPage({super.key});
@@ -104,10 +105,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       await _load();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(apiErrorMessage(error,
-            fallback: _t('پس گرفتن درخواست ناموفق بود.', 'Could not withdraw application.')))),
-      );
+      HopeFeedback.show(context, apiErrorMessage(error, fallback: _t('پس گرفتن درخواست ناموفق بود.', 'Could not withdraw application.')), tone: HopeFeedbackTone.error);
     } finally {
       if (mounted) setState(() => _busyId = null);
     }
@@ -264,10 +262,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                         spacing: 7,
                         runSpacing: 6,
                         children: [
-                          StatusPill(item.statusLabelFor(english: _isEnglish), color: color, icon: Icons.circle),
+                          PremiumTag(icon: Icons.circle, label: item.statusLabelFor(english: _isEnglish), color: color),
                           if (item.jobCity?.isNotEmpty == true)
-                            StatusPill(item.jobCity!, color: Theme.of(context).colorScheme.outline,
-                                icon: Icons.location_on_outlined),
+                            PremiumTag(icon: Icons.location_on_outlined, label: item.jobCity!, color: Theme.of(context).colorScheme.outline),
                         ],
                       ),
                     ],
@@ -291,10 +288,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                               Navigator.push(context, HopeRoutes.jobDetail(job));
                             } catch (error) {
                               if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(apiErrorMessage(error,
-                                    fallback: _t('فرصت در دسترس نیست.', 'Opportunity is unavailable.')))),
-                              );
+                              HopeFeedback.show(context, apiErrorMessage(error, fallback: _t('فرصت در دسترس نیست.', 'Opportunity is unavailable.')), tone: HopeFeedbackTone.error);
                             }
                           },
                     icon: const Icon(Icons.open_in_new_rounded),
