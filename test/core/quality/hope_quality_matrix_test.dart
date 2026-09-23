@@ -59,6 +59,10 @@ void main() {
             tester.getSize(find.byType(PremiumIconButton)).height,
             greaterThanOrEqualTo(HopeV2Touch.minimum),
           );
+          final animatedFilter = tester.widget<AnimatedContainer>(
+            find.byType(AnimatedContainer).last,
+          );
+          expect(animatedFilter.duration, Duration.zero);
           expect(tester.takeException(), isNull);
         }
       }
