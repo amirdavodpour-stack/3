@@ -103,15 +103,38 @@ capture_screen() {
         return 1
       fi
 
+      local screenshot_magic
+      screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
+      if [ "$screenshot_magic" != "89504e470d0a1a0a" ]; then
+        rm -f -- "$tmp_output"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
+        return 1
+      fi
       mv -- "$tmp_output" "$evidence_dir/$output"
       echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
 
       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out cat /sdcard/hope-ui-hierarchy.xml         > "$evidence_dir/ui-hierarchy-$prefix.xml" 2>/dev/null || true
+
+      local tmp_hierarchy="$evidence_dir/.ui-hierarchy-$prefix.xml.tmp"
+      rm -f -- "$tmp_hierarchy"
+      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out cat /sdcard/hope-ui-hierarchy.xml         > "$tmp_hierarchy" 2>/dev/null; then
+        rm -f -- "$tmp_output" "$tmp_hierarchy"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:ui-hierarchy-read" >&2
+        return 1
+      fi
+
+      if ! grep -Fq 'package="com.hope.marketplace"' "$tmp_hierarchy"; then
+        rm -f -- "$tmp_output" "$tmp_hierarchy"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:ui-hierarchy-not-hope" >&2
+        return 1
+      fi
+
+      mv -- "$tmp_output" "$evidence_dir/$output"
+      mv -- "$tmp_hierarchy" "$evidence_dir/ui-hierarchy-$prefix.xml"
+      echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
 
       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell run-as com.hope.marketplace rm -f "$remote_path"         >/dev/null 2>&1 || true
-
       echo "HOPE_HOST_CAPTURE_CLEANED:$marker"
       return 0
     fi
