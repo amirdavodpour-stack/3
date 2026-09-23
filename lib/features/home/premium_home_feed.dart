@@ -194,7 +194,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                         String money(int value) => value
                             .toString()
                             .replaceAllMapped(
-                              RegExp(r'(?<=\\d)(?=(\\d{3})+(?!\\d))'),
+                              RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'),
                               (_) => ',',
                             );
                         Widget metric(String value, String label, IconData icon) {
