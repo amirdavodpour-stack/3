@@ -8,7 +8,7 @@ class _TypeHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HopeSurface(
+    return PremiumPanel(
       highlight: true,
       padding: const EdgeInsets.all(17),
       child: Column(
@@ -141,7 +141,7 @@ class _VisibilityCard extends StatelessWidget {
     return PressableScale(
       onTap: () => onSelected(value),
       semanticLabel: '$title. $sub',
-      child: HopeSurface(
+      child: PremiumPanel(
         highlight: selected,
         padding: const EdgeInsets.all(14),
         child: Row(
@@ -239,7 +239,7 @@ class _CreateJobForm extends StatelessWidget {
             onChanged: onKindChanged,
           ),
           const SizedBox(height: 18),
-          SectionTitle(
+          PremiumSectionHeader(
             title: HopeCopy.of(context).copy_audience_visibility_5a0ddcb,
             subtitle:
                 HopeCopy.of(context).copy_make_it_public_or_specialized_e890215,
@@ -286,7 +286,7 @@ class _CreateJobForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 20),
-          HopeSurface(
+          PremiumPanel(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -313,7 +313,7 @@ class _CreateJobForm extends StatelessWidget {
                   future: categoriesFuture,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
-                      return HopeSurface(
+                      return PremiumPanel(
                         padding: const EdgeInsets.all(14),
                         child: Row(
                           children: [
@@ -386,7 +386,7 @@ class _CreateJobForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          SectionTitle(
+          PremiumSectionHeader(
             title: kind == 'MISSION'
                 ? HopeCopy.of(context).copy_price_time_4d31a36
                 : HopeCopy.of(context).copy_salary_schedule_bab0cb3,
@@ -513,7 +513,7 @@ class _CreateJobForm extends StatelessWidget {
               ],
             ),
           const SizedBox(height: 20),
-          HopeSurface(
+          PremiumPanel(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
