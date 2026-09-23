@@ -17,9 +17,9 @@ void main() {
   });
 
   test('HOPE warm background tokens use the premium warm-neutral palette', () {
-    expect(HopeV2Colors.backgroundWarm, const Color(0xFFF3EDE5));
-    expect(HopeV2Colors.pageLight, const Color(0xFFF2ECE4));
-    expect(HopeV2Colors.panelSoftLight, const Color(0xFFFBF7F1));
+    expect(HopeV2Colors.backgroundWarm, const Color(0xFFEFE4D8));
+    expect(HopeV2Colors.pageLight, const Color(0xFFEEE4D9));
+    expect(HopeV2Colors.panelSoftLight, const Color(0xFFFAF5EF));
   });
 
   test('HOPE action icon vocabulary is backed by Hugeicons data', () {
