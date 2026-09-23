@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/notifications/notification.dart';
 import '../../core/application/application_registry.dart';
 import '../../core/application/application_registry_context.dart';
@@ -237,8 +238,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
               children: [
                 HopeIconTile(
                   unread
-                      ? Icons.notifications_active_rounded
-                      : Icons.notifications_none_rounded,
+                      ? HopeV2Icons.notifications
+                      : HopeV2Icons.notifications,
                   filled: unread,
                   color: unread
                       ? Theme.of(context).colorScheme.primary
@@ -280,7 +281,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         const SizedBox(height: 10),
                         FilledButton.tonalIcon(
                           onPressed: () => _openNotification(n),
-                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                          icon: HopeIcon(HopeV2Icons.arrowRight, size: 18),
                           label: Text(n.actionLabel),
                         ),
                       ],
@@ -311,22 +312,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
             IconButton(
               onPressed: () =>
                   Navigator.push(context, HopeRoutes.notificationDevices()),
-              icon: const Icon(Icons.devices_rounded),
+              icon: HopeIcon(HopeV2Icons.secure, size: 19),
               tooltip: _t('دستگاه‌های اعلان', 'Notification devices'),
             ),
             IconButton(
               onPressed: _load,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: HopeIcon(HopeV2Icons.refresh, size: 19),
               tooltip: _t('بازخوانی', 'Refresh'),
             ),
             IconButton(
               onPressed: _openPreferences,
-              icon: const Icon(Icons.tune_rounded),
+              icon: HopeIcon(HopeV2Icons.insights, size: 19),
               tooltip: _t('تنظیمات اعلان‌ها', 'Notification settings'),
             ),
             IconButton(
               onPressed: unreadCount == 0 ? null : _readAll,
-              icon: const Icon(Icons.done_all_rounded),
+              icon: HopeIcon(HopeV2Icons.completed, size: 19),
               tooltip: HopeCopy.of(context).copy_mark_all_read_500a31c,
             ),
           ],
@@ -384,8 +385,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 ),
                                 trailing: PremiumTag(
                                   icon: unreadCount > 0
-                                      ? Icons.notifications_active_outlined
-                                      : Icons.done_all_rounded,
+                                      ? HopeV2Icons.notifications
+                                      : HopeV2Icons.completed,
                                   label: unreadCount > 0
                                       ? '$unreadCount ${_t('جدید', 'new')}'
                                       : _t('همه خوانده شده', 'All read'),
