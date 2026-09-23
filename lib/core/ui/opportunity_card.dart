@@ -19,7 +19,7 @@ class _MatchBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final value = score.clamp(0, 1) * 100;
+    final value = (score <= 1 ? score * 100 : score).clamp(0, 100);
     return Container(
       constraints: const BoxConstraints(minHeight: 32),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
