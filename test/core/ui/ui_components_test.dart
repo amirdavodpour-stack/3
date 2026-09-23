@@ -162,6 +162,31 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets("premium filter chip removes motion and spinner under reduced-motion",
+      (tester) async {
+    await tester.pumpWidget(
+      _app(
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: PremiumFilterChip(
+              label: "در حال فیلتر",
+              selected: false,
+              loading: true,
+              onTap: _noopAction,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    final animated = tester.widget<AnimatedContainer>(
+      find.byType(AnimatedContainer),
+    );
+    expect(animated.duration, Duration.zero);
+  });
+
   testWidgets("shared motion primitives honor reduced-motion", (tester) async {
     await tester.pumpWidget(
       _app(
