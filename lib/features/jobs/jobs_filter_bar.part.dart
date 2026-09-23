@@ -35,8 +35,6 @@ class _JobsFilterHeader extends StatelessWidget {
   final VoidCallback? onSaveSearch;
   final VoidCallback onOpenSavedSearches;
 
-  String _t(BuildContext context, String fa, String en) =>
-      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
   @override
   Widget build(BuildContext context) {
@@ -45,11 +43,7 @@ class _JobsFilterHeader extends StatelessWidget {
       children: [
         PremiumHeader(
           eyebrow: HopeCopy.of(context).copy_explore_115e9fd,
-          title: _t(
-            context,
-            'فرصت مناسب خود را پیدا کنید',
-            'Find the right opportunity',
-          ),
+          title: HopeCopy.of(context).copy_find_the_right_opportunity,
           subtitle: HopeCopy.of(context)
               .copy_see_missions_and_jobs_together_then_narrow_7e573a3,
           trailing: PremiumTag(
@@ -83,19 +77,17 @@ class _JobsFilterHeader extends StatelessWidget {
                         : const Icon(Icons.bookmark_add_outlined, size: 18),
                     label: Text(
                       onSaveSearch == null
-                          ? (Localizations.localeOf(context).languageCode == 'en'
-                              ? 'Saving...'
-                              : 'در حال ذخیره…')
-                          : (Localizations.localeOf(context).languageCode == 'en'
-                              ? 'Save search'
-                              : 'ذخیره جست‌وجو'),
+                          ? HopeCopy.of(context).copy_saving
+                          : HopeCopy.of(context).copy_save_search,
                     ),
                   ),
                   if (savedSearchCount > 0)
                     OutlinedButton.icon(
                       onPressed: onOpenSavedSearches,
                       icon: const Icon(Icons.bookmarks_outlined, size: 18),
-                      label: Text(Localizations.localeOf(context).languageCode == 'en' ? 'Saved ($savedSearchCount)' : 'ذخیره‌شده ($savedSearchCount)'),
+                      label: Text(
+                        '${HopeCopy.of(context).copy_saved_searches} ($savedSearchCount)',
+                      ),
                     ),
                 ],
               ),
