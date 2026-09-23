@@ -90,24 +90,24 @@ capture_screen() {
       echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
 
       local tmp_output="$evidence_dir/.$output.tmp"
-      rm -f -- "$tmp_output"
-      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out run-as com.hope.marketplace cat "$remote_path"         > "$tmp_output"; then
+      local read_succeeded=false
+      local screenshot_magic=""
+      for attempt in 1 2 3 4 5; do
+        rm -f -- "$tmp_output"
+        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out run-as com.hope.marketplace cat "$remote_path"         > "$tmp_output" 2>/dev/null || true
+        if test -s "$tmp_output"; then
+          screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
+          if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
+            read_succeeded=true
+            break
+          fi
+        fi
+        sleep 0.5
+      done
+
+      if [ "$read_succeeded" != true ]; then
         rm -f -- "$tmp_output"
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
-        return 1
-      fi
-
-      if ! test -s "$tmp_output"; then
-        rm -f -- "$tmp_output"
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:empty-screenshot" >&2
-        return 1
-      fi
-
-      local screenshot_magic
-      screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
-      if [ "$screenshot_magic" != "89504e470d0a1a0a" ]; then
-        rm -f -- "$tmp_output"
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
         return 1
       fi
       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
