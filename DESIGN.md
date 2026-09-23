@@ -20,6 +20,7 @@ HOPE should feel like a **premium work instrument** rather than a generic SaaS d
 - confident violet as the primary brand signal;
 - restrained teal for positive/secondary actions;
 - focused orange for featured/recommended opportunity signals, used as a small visual counterpoint to violet;
+- navigation icons use a restrained, product-specific vocabulary: dashboard for home, workspaces for Workshop, insights for Activity, wallet for finance, and person for identity; avoid literal/tool-like icons where a broader product concept is intended;
 - warm amber for caution/attention;
 - generous but disciplined spacing;
 - rounded surfaces used as functional grouping, not decoration;
