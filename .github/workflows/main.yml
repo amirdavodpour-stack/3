@@ -91,6 +91,13 @@ jobs:
           channel: stable
           cache: true
 
+      - name: TEMP generate lockfile evidence
+        run: |
+          flutter pub get
+          echo '--- HOPE GENERATED PUBSPEC.LOCK START ---'
+          cat pubspec.lock
+          echo '--- HOPE GENERATED PUBSPEC.LOCK END ---'
+
       - name: Verify Flutter lockfile
         shell: bash
         run: bash tools/verify-pubspec-lock-fresh.sh
