@@ -49,8 +49,8 @@ class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      fontFamily: 'Vazirmatn',
-      fontFamilyFallback: const ['Roboto'],
+      fontFamily: HopeV2Typography.primaryFontFamily,
+      fontFamilyFallback: HopeV2Typography.fontFamilyFallback,
       colorScheme: scheme,
       scaffoldBackgroundColor:
           dark ? AppColors.darkBackground : AppColors.backgroundWarm,
