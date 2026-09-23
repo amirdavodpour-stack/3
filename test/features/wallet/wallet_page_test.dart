@@ -490,15 +490,16 @@ void main() {
 
     final semanticAncestors = find.ancestor(
       of: find.text('انتقال داخلی'),
-      matching: find.byType(Semantics),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is Semantics &&
+            widget.container == true &&
+            widget.button == true,
+      ),
     );
-    final labels = <String>[];
-    for (var i = 0; i < semanticAncestors.evaluate().length; i++) {
-      labels.add(tester.getSemantics(semanticAncestors.at(i)).label);
-    }
+    expect(semanticAncestors, findsOneWidget);
     expect(
-      labels,
-      contains('انتقال داخلی، ورودی، +500,000 تومان'),
+      tester.getSemantics(semanticAncestors.first).label,
+      'انتقال داخلی، ورودی، +500,000 تومان',
     );
     } finally {
       semantics.dispose();
