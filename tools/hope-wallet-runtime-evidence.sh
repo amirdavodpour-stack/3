@@ -110,9 +110,6 @@ capture_screen() {
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
         return 1
       fi
-      mv -- "$tmp_output" "$evidence_dir/$output"
-      echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-
       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
 
