@@ -10,6 +10,7 @@ import '../../core/account/account_privacy_repository.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class PrivacyCenterPage extends StatefulWidget {
   const PrivacyCenterPage({super.key});
@@ -154,7 +155,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                 'Export your account data or permanently delete the account from one clear place.',
               ),
               trailing: const HopeIconTile(
-                Icons.privacy_tip_outlined,
+                HopeV2Icons.secure,
                 size: 50,
                 filled: true,
               ),
@@ -183,7 +184,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.download_rounded),
+                        : HopeIcon(HopeV2Icons.insights, size: 19),
                     label: Text(
                       _loading
                           ? _t('در حال آماده‌سازی…', 'Preparing…')
@@ -211,7 +212,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                         IconButton(
                           tooltip: _t('کپی JSON', 'Copy JSON'),
                           onPressed: _copyExport,
-                          icon: const Icon(Icons.copy_all_rounded),
+                          icon: HopeIcon(HopeV2Icons.copy, size: 19),
                         ),
                       ],
                     ),
@@ -254,7 +255,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.delete_forever_rounded),
+                        : HopeIcon(HopeV2Icons.close, size: 19),
                     label: Text(
                       _deleting
                           ? _t('در حال حذف…', 'Deleting…')
