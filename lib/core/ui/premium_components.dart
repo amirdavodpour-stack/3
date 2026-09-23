@@ -180,6 +180,7 @@ class PremiumIconButton extends StatelessWidget {
     required this.onPressed,
     this.color,
     this.selected = false,
+    this.semanticsIdentifier,
   });
 
   final Object icon;
@@ -187,6 +188,9 @@ class PremiumIconButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Color? color;
   final bool selected;
+
+  /// Stable native-accessibility/test identifier for this action.
+  final String? semanticsIdentifier;
 
   @override
   Widget build(BuildContext context) {
@@ -204,6 +208,7 @@ class PremiumIconButton extends StatelessWidget {
       enabled: enabled,
       label: tooltip,
       selected: selected,
+      identifier: semanticsIdentifier,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
