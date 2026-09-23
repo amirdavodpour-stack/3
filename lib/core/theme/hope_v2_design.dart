@@ -109,6 +109,10 @@ class HopeV2Icons {
   static const copy = HugeIcons.strokeRoundedCopy01;
   static const verified = HugeIcons.strokeRoundedCheckmarkBadge02;
   static const error = HugeIcons.strokeRoundedCancelCircle;
+  static const description = HugeIcons.strokeRoundedFile01;
+  static const skills = HugeIcons.strokeRoundedBrain02;
+  static const message = HugeIcons.strokeRoundedMessage01;
+  static const route = HugeIcons.strokeRoundedRoute01;
   static const add = HugeIcons.strokeRoundedAdd01;
   static const menu = HugeIcons.strokeRoundedMenu01;
   static const refresh = HugeIcons.strokeRoundedRefresh;
