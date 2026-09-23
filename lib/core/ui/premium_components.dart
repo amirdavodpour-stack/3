@@ -735,10 +735,11 @@ class PremiumFilterChip extends StatelessWidget {
                 if (loading)
                   ExcludeSemantics(
                     child: reduceMotion
-                        ? Icon(
-                            Icons.hourglass_empty_rounded,
+                        ? HopeIcon(
+                            HopeV2Icons.pending,
                             size: 16,
                             color: foreground,
+                            strokeWidth: 1.9,
                           )
                         : SizedBox(
                             width: 16,
@@ -753,7 +754,7 @@ class PremiumFilterChip extends StatelessWidget {
                   HopeIcon(icon!, size: 16, color: foreground, strokeWidth: 1.9),
                 if (loading || icon != null) const SizedBox(width: 5),
                 if (!loading && selected) ...[
-                  Icon(Icons.check_rounded, size: 16, color: foreground),
+                  HopeIcon(HopeV2Icons.completed, size: 16, color: foreground, strokeWidth: 1.9),
                   const SizedBox(width: 5),
                 ],
                 Text(
