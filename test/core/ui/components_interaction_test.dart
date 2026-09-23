@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 
 void main() {
@@ -35,6 +36,24 @@ void main() {
     expect(tester.widget<TextField>(find.byType(TextField)).controller?.text ?? '',
         '');
     expect(values.last, '');
+  });
+
+  testWidgets('semantic warning color uses the canonical warning token',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Builder(
+          builder: (context) => Text(
+            'Warning',
+            style: TextStyle(color: HopeV2SemanticColors.warning(context)),
+          ),
+        ),
+      ),
+    );
+
+    final style = tester.widget<Text>(find.text('Warning')).style!;
+    expect(style.color, HopeV2Colors.warning);
   });
 
   testWidgets('PressableScale is keyboard-focusable and exposes button semantics',
