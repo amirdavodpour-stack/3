@@ -18,7 +18,6 @@ class HopeSettingsController extends ChangeNotifier {
   static const _recommendationsKey = 'personalizedRecommendations';
   static const _quietKey = 'quietHours';
   static const _compactKey = 'compactCards';
-  static const _financialPrivacyKey = 'financialPrivacy';
   static const _latitudeKey = 'locationLatitude';
   static const _longitudeKey = 'locationLongitude';
 
@@ -31,7 +30,6 @@ class HopeSettingsController extends ChangeNotifier {
   bool _personalizedRecommendations = true;
   bool _quietHours = false;
   bool _compactCards = false;
-  bool _financialPrivacy = false;
   double? _latitude;
   double? _longitude;
   bool _loading = true;
@@ -51,7 +49,6 @@ class HopeSettingsController extends ChangeNotifier {
   bool get personalizedRecommendations => _personalizedRecommendations;
   bool get quietHours => _quietHours;
   bool get compactCards => _compactCards;
-  bool get financialPrivacy => _financialPrivacy;
   bool get locationBusy => _locationBusy;
   double? get latitude => _latitude;
   double? get longitude => _longitude;
@@ -67,7 +64,6 @@ class HopeSettingsController extends ChangeNotifier {
     _personalizedRecommendations = _prefs!.getBool(_recommendationsKey) ?? true;
     _quietHours = _prefs!.getBool(_quietKey) ?? false;
     _compactCards = _prefs!.getBool(_compactKey) ?? false;
-    _financialPrivacy = _prefs!.getBool(_financialPrivacyKey) ?? false;
     _latitude = _prefs!.getDouble(_latitudeKey);
     _longitude = _prefs!.getDouble(_longitudeKey);
     _loading = false;
@@ -217,12 +213,6 @@ class HopeSettingsController extends ChangeNotifier {
   Future<void> setCompactCards(bool value) async {
     _compactCards = value;
     await _prefs?.setBool(_compactKey, value);
-    notifyListeners();
-  }
-
-  Future<void> setFinancialPrivacy(bool value) async {
-    _financialPrivacy = value;
-    await _prefs?.setBool(_financialPrivacyKey, value);
     notifyListeners();
   }
 
