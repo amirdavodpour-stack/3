@@ -182,7 +182,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
                   'Set the opportunity type, details, budget, and requirements.',
                 ),
                 trailing: const HopeIconTile(
-                  Icons.add_business_rounded,
+                  HopeV2Icons.add,
                   size: 52,
                   filled: true,
                 ),
