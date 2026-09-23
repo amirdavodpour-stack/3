@@ -518,7 +518,7 @@ class _SearchFieldState extends State<SearchField> {
       excludeSemantics: true,
       child: TextField(
         controller: _controller,
-        onChanged: (_) => setState(() {}),
+        onChanged: (value) {\n          widget.onChanged(value);\n          setState(() {});\n        },
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search_rounded),
