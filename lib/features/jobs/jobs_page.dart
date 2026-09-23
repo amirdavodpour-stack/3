@@ -153,17 +153,15 @@ class _JobsPageState extends State<JobsPage> {
       await _loadSavedSearches();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              apiErrorMessage(
-                error,
-                fallback: locale == 'en'
-                    ? 'Could not save the search.'
-                    : 'ذخیره جست‌وجو ناموفق بود.',
-              ),
-            ),
+        HopeFeedback.show(
+          context,
+          apiErrorMessage(
+            error,
+            fallback: locale == 'en'
+                ? 'Could not save the search.'
+                : 'ذخیره جست‌وجو ناموفق بود.',
           ),
+          tone: HopeFeedbackTone.error,
         );
       }
     } finally {
@@ -220,20 +218,18 @@ class _JobsPageState extends State<JobsPage> {
                           } catch (error) {
                             if (!context.mounted) return;
                             setSheetState(() => deleteBusyId = null);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  apiErrorMessage(
-                                    error,
-                                    fallback:
-                                        Localizations.localeOf(context)
-                                                    .languageCode ==
-                                                'en'
-                                            ? 'Could not delete the saved search.'
-                                            : 'حذف جست‌وجو ناموفق بود.',
-                                  ),
-                                ),
+                            HopeFeedback.show(
+                              context,
+                              apiErrorMessage(
+                                error,
+                                fallback:
+                                    Localizations.localeOf(context)
+                                                .languageCode ==
+                                            'en'
+                                        ? 'Could not delete the saved search.'
+                                        : 'حذف جست‌وجو ناموفق بود.',
                               ),
+                              tone: HopeFeedbackTone.error,
                             );
                           }
                         },
