@@ -348,7 +348,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         padding: const EdgeInsets.all(24),
                         children: [
                           EmptyState(
-                            icon: Icons.cloud_off_rounded,
+                            icon: HopeV2Icons.pending,
                             title: HopeCopy.of(context)
                                 .copy_could_not_load_notifications_a904a88,
                             message: error!,
@@ -365,7 +365,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             padding: const EdgeInsets.all(24),
                             children: [
                               EmptyState(
-                                icon: Icons.notifications_none_rounded,
+                                icon: HopeV2Icons.notifications,
                                 title: _t('اعلانی وجود ندارد', 'No notifications'),
                                 message: HopeCopy.of(context)
                                     .copy_you_have_no_new_notifications_45f9685,
