@@ -19,9 +19,6 @@ if grep -Fq 'adb shell run-as com.hope.marketplace rm -rf files/hope-screen-acks
   echo "runtime harness contract: FAIL — responsive preflight uses run-as after the app may have exited" >&2
   exit 1
 fi
-if grep -Fq 'adb shell run-as com.hope.marketplace mkdir -p files/hope-screen-acks' "$script"; then
-  echo "runtime harness contract: FAIL — responsive preflight creates ACK storage before app installation" >&2
-  exit 1
-fi
+test "$(grep -Fc 'adb shell run-as com.hope.marketplace mkdir -p files/hope-screen-acks' "$script")" -eq 1
 
 echo "runtime harness contract: PASS"
