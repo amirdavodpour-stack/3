@@ -360,11 +360,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    SectionTitle(
-                        title:
-                            HopeCopy.of(context).copy_latest_activity_a05277b,
-                        subtitle: HopeCopy.of(context)
-                            .copy_the_most_recent_project_updates_5e402d8),
+                    PremiumSectionHeader(
+                      title: HopeCopy.of(context).copy_latest_activity_a05277b,
+                      subtitle: HopeCopy.of(context)
+                          .copy_the_most_recent_project_updates_5e402d8,
+                    ),
                     const SizedBox(height: 12),
                     ...items.map((job) {
                       final status = job.status ?? '—';

@@ -97,9 +97,12 @@ class _LoginPageState extends State<LoginPage> {
           : TextDirection.rtl,
       child: Scaffold(
         body: SafeArea(
-          child: ListView(
+          child: PremiumPageFrame(
+            maxWidth: 760,
             padding: const EdgeInsets.fromLTRB(20, 15, 20, 30),
-            children: [
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
               Row(
                 children: [
                   IconButton(
@@ -246,7 +249,8 @@ class _LoginPageState extends State<LoginPage> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

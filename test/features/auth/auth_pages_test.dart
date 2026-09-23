@@ -68,6 +68,8 @@ void main() {
     expect(find.byType(LoginPage), findsOneWidget);
     await tester.scrollUntilVisible(find.text('ادامه به‌عنوان مهمان'), 250,
         scrollable: find.byType(Scrollable).first);
+    expect(find.byType(PremiumHero), findsOneWidget);
+    expect(find.byType(PremiumPageFrame), findsOneWidget);
     expect(find.text('ادامه به‌عنوان مهمان'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('ساخت حساب'), 200,
         scrollable: find.byType(Scrollable).first);

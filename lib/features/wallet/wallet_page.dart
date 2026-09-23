@@ -480,7 +480,7 @@ class _WalletPageState extends State<WalletPage> {
               _DetailRow(label: _t('ارائه‌دهنده', 'Provider'), value: _providerLabel(payout.provider)),
               _DetailRow(label: _t('زمان ثبت', 'Created'), value: _date(payout.createdAt)),
               if (status == 'UNKNOWN')
-                HopeSurface(
+                PremiumPanel(
                   padding: const EdgeInsets.all(14),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
