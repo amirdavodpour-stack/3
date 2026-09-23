@@ -13,6 +13,49 @@ import 'premium_components.dart';
 // Core marketplace card pattern for the HOPE visual system.
 enum OpportunityCardVariant { compact, standard, featured, expanded }
 
+class _MatchBadge extends StatelessWidget {
+  const _MatchBadge({required this.score});
+  final double score;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = score.clamp(0, 1) * 100;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: HopeV2Colors.secondary.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+        border: Border.all(
+          color: HopeV2Colors.secondary.withValues(alpha: .24),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.check_circle_rounded,
+            size: 14,
+            color: HopeV2Colors.secondary,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            value.round().toString() + '% ' + _t(context, 'تطابق', 'match'),
+            style: const TextStyle(
+              color: HopeV2Colors.secondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+}
+
 class OpportunityCard extends StatelessWidget {
   const OpportunityCard({
     super.key,
@@ -167,12 +210,28 @@ class OpportunityCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  PremiumTag(
-                    label: job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
-                    icon: job.isMission
-                        ? Icons.bolt_rounded
-                        : Icons.business_center_rounded,
-                    color: primary,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: PremiumTag(
+                          label: featured
+                              ? _t(context, 'پیشنهاد ویژه', 'Best match')
+                              : (job.isMission
+                                  ? copy.copy_mission_fb4c5e1
+                                  : copy.copy_job_ce2feba),
+                          icon: featured
+                              ? Icons.auto_awesome_rounded
+                              : (job.isMission
+                                  ? Icons.bolt_rounded
+                                  : Icons.business_center_rounded),
+                          color: primary,
+                        ),
+                      ),
+                      if (featured && job.recommendationScore != null) ...[
+                        const SizedBox(width: 8),
+                        _MatchBadge(score: job.recommendationScore!),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: HopeV2Spacing.sm),
                   Text(
