@@ -477,8 +477,13 @@ class GradientHero extends StatelessWidget {
 }
 
 class SearchField extends StatefulWidget {
-  const SearchField(
-      {super.key, required this.onChanged, this.onFilter, this.hint});
+  const SearchField({
+    super.key,
+    required this.onChanged,
+    this.onFilter,
+    this.hint,
+  });
+
   final ValueChanged<String> onChanged;
   final VoidCallback? onFilter;
   final String? hint;
@@ -492,52 +497,55 @@ class _SearchFieldState extends State<SearchField> {
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   void _clear() {
     _controller.clear();
     widget.onChanged('');
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    final resolvedHint = widget.hint ?? HopeCopy.of(context).copy_search_dd58413;
+    final resolvedHint =
+        widget.hint ?? HopeCopy.of(context).copy_search_dd58413;
     final hasQuery = _controller.text.isNotEmpty;
-    return Semantics(
-      label: resolvedHint,
-      textField: true,
-      excludeSemantics: true,
-      child: TextField(
-        controller: _controller,
-        onChanged: (value) {\n          widget.onChanged(value);\n          setState(() {});\n        },
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search_rounded),
-          hintText: resolvedHint,
-          suffixIcon: hasQuery || widget.onFilter != null
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (hasQuery)
-                      IconButton(
-                        tooltip: Localizations.localeOf(context).languageCode == 'en'
-                            ? 'Clear search'
-                            : 'پاک کردن جست‌وجو',
-                        onPressed: _clear,
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    if (widget.onFilter != null)
-                      IconButton(
-                        tooltip: HopeCopy.of(context).copy_filters_df4d10e,
-                        onPressed: widget.onFilter,
-                        icon: const Icon(Icons.tune_rounded),
-                      ),
-                  ],
-                )
-              : null,
-        ),
+
+    return TextField(
+      controller: _controller,
+      onChanged: (value) {
+        widget.onChanged(value);
+        setState(() {});
+      },
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.search_rounded),
+        hintText: resolvedHint,
+        suffixIcon: hasQuery || widget.onFilter != null
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasQuery)
+                    IconButton(
+                      tooltip:
+                          Localizations.localeOf(context).languageCode == 'en'
+                              ? 'Clear search'
+                              : 'پاک کردن جست‌وجو',
+                      onPressed: _clear,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  if (widget.onFilter != null)
+                    IconButton(
+                      tooltip: HopeCopy.of(context).copy_filters_df4d10e,
+                      onPressed: widget.onFilter,
+                      icon: const Icon(Icons.tune_rounded),
+                    ),
+                ],
+              )
+            : null,
+      ),
     );
   }
 }
