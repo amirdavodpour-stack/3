@@ -177,3 +177,8 @@ void main() {
           fallback: 'تهران',
         );
         expect(HopeSettingsController.cities, contains(result));
+        );
+      },
+    );
+  });
+}
