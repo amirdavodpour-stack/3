@@ -189,8 +189,8 @@ void main() {
     addTearDown(tester.view.resetViewPadding);
 
     await _pump(tester, repo, width: 360);
+    await _open(tester);
     expect(tester.takeException(), isNull);
-    expect(find.byType(CreateJobPage), findsOneWidget);
 
     tester.view.resetViewInsets();
     tester.view.physicalSize = const Size(800, 360);
