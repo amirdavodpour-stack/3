@@ -196,7 +196,7 @@ testWidgets('latest notification refresh wins over an older in-flight load',
     final markAll = find.byTooltip('همه را خواندم');
     expect(markAll, findsOneWidget);
     final markAllButton =
-        find.descendant(of: markAll, matching: find.byType(IconButton));
+        find.ancestor(of: markAll, matching: find.byType(IconButton));
     expect(markAllButton, findsOneWidget);
     expect(tester.widget<IconButton>(markAllButton).onPressed, isNull);
   });
