@@ -181,16 +181,18 @@ void main() {
 
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1.0;
-    tester.view.viewInsets = const EdgeInsets.only(bottom: 320);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 320);
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 16);
     addTearDown(tester.view.resetViewInsets);
+    addTearDown(tester.view.resetViewPadding);
 
     await _pump(tester, repo, width: 360);
     expect(tester.takeException(), isNull);
     expect(find.byType(TextField), findsWidgets);
 
-    tester.view.viewInsets = EdgeInsets.zero;
+    tester.view.resetViewInsets();
     tester.view.physicalSize = const Size(800, 360);
     await tester.pumpAndSettle();
 
