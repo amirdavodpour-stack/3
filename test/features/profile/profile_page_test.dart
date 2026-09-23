@@ -191,15 +191,16 @@ testWidgets('withdrawing an application disables the action until completion',
     expect(find.textContaining('ورود'), findsWidgets);
   });
 
-  testWidgets('profile settings stay usable on narrow screens',
+  testWidgets('profile stays stable across the compact-to-medium device matrix',
       (tester) async {
-    await _pump(tester, authenticated: true, width: 360);
-    await tester.pumpAndSettle();
+    for (final width in const [320.0, 360.0, 390.0, 412.0, 600.0]) {
+      await _pump(tester, authenticated: true, width: width);
 
-    expect(find.text('کاربر'), findsWidgets);
-    expect(find.text('فارسی'), findsOneWidget);
-    expect(find.text('انگلیسی'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+      expect(find.text('کاربر'), findsWidgets, reason: 'profile missing at $width dp');
+      expect(find.text('فارسی'), findsOneWidget, reason: 'Persian control missing at $width dp');
+      expect(find.text('انگلیسی'), findsOneWidget, reason: 'English control missing at $width dp');
+      expect(tester.takeException(), isNull, reason: 'render exception at $width dp');
+    }
   });
 
   testWidgets('authenticated profile displays account and provider data',
