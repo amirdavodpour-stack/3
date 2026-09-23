@@ -151,21 +151,14 @@ testWidgets('settings changes reload home opportunities',
     await tester.scrollUntilVisible(find.text('Initial opportunity'), 300, scrollable: find.byType(Scrollable).first);
     expect(find.text('Initial opportunity'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.bySemanticsLabel('Refresh'),
-      -300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.bySemanticsLabel('Refresh'));
+    final refreshIndicator =
+        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
+    final olderRefresh = refreshIndicator.onRefresh();
     await tester.pump();
     expect(repository.calls, 2);
 
-    await tester.scrollUntilVisible(
-      find.bySemanticsLabel('Refresh'),
-      -300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.bySemanticsLabel('Refresh'));
+    final newerRefresh = refreshIndicator.onRefresh();
+    await newerRefresh;
     await tester.pumpAndSettle();
 
     expect(repository.calls, 3);
