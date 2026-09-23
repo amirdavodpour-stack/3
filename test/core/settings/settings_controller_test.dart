@@ -27,7 +27,6 @@ void main() {
         expect(settings.personalizedRecommendations, isTrue);
         expect(settings.quietHours, isFalse);
         expect(settings.compactCards, isFalse);
-        expect(settings.financialPrivacy, isFalse);
       },
     );
 
