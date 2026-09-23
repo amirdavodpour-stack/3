@@ -148,6 +148,7 @@ testWidgets('settings changes reload home opportunities',
     await tester.pumpWidget(harness.widget);
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Initial opportunity'), 300, scrollable: find.byType(Scrollable).first);
     expect(find.text('Initial opportunity'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Refresh'));
