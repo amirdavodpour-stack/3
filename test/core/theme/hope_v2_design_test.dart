@@ -33,6 +33,25 @@ void main() {
     expect(HopeV2Radii.hero, greaterThan(HopeV2Radii.lg));
   });
 
+  testWidgets('premium hero renders with the shared expressive surface', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumHero(
+            eyebrow: 'FEATURED',
+            title: 'فرصت پیشنهادی',
+            message: 'جزئیات فرصت',
+            icon: HopeV2Icons.featured,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(PremiumHero), findsOneWidget);
+    expect(find.byType(RadialGradient), findsWidgets);
+  });
+
   testWidgets('HOPE page halo stays subtle over the lavender base', (tester) async {
     late Gradient halo;
 

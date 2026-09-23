@@ -318,14 +318,13 @@ class PremiumHero extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             DecoratedBox(
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: Theme.of(context).brightness == Brightness.dark
-                      ? HopeV2Gradients.heroDark
-                      : HopeV2Gradients.hero,
-                ),
+              decoration: BoxDecoration(
+                gradient: Theme.of(context).brightness == Brightness.dark
+                    ? HopeV2Gradients.heroDark
+                    : HopeV2Gradients.hero,
               ),
-              PositionedDirectional(
+            ),
+            PositionedDirectional(
                 end: compact ? -84 : -48,
                 top: compact ? -76 : -54,
                 width: compact ? 190 : 220,

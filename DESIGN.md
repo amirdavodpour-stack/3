@@ -59,7 +59,7 @@ Runtime ownership: `lib/core/theme/hope_v2_design.dart` is the canonical token s
 
 ## Spacing and geometry
 - Base spacing: 4 / 8 / 12 / 16 / 24 / 32 / 40 / 56.
-- Radii: 12 / 16 / 20 / 24 / 28, with pill only for tags/chips; hero surfaces use 28.
+- Radii: 12 / 16 / 18 / 24 / 28, with pill only for tags/chips; hero surfaces use 28.
 - Interactive minimum: 48px.
 - Breakpoints: compact <600, medium 600–899, expanded >=900, wide >=1200.
 

@@ -61,7 +61,6 @@ class HopeV2Colors {
   static const darkBorderStrong = Color(0x24FFFFFF);
   static const darkDivider = Color(0x12FFFFFF);
   static const cardBorderLight = Color(0xFFE5E0EF);
-  static const cardBorderDark = Color(0x2B2737);
   /// Light warm-brown accent used only as a restrained atmospheric underlay.
   static const warmHalo = Color(0xFFC2A487);
   static const warmHaloDark = Color(0xFF826D59);
