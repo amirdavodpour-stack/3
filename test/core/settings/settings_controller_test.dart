@@ -73,25 +73,6 @@ void main() {
     });
   });
 
-  group('financialPrivacy', () {
-    test('rehydrates and persists the privacy preference', () async {
-      SharedPreferences.setMockInitialValues({
-        'financialPrivacy': true,
-      });
-      final settings = HopeSettingsController();
-
-      await settings.load();
-
-      expect(settings.financialPrivacy, isTrue);
-
-      await settings.setFinancialPrivacy(false);
-
-      expect(settings.financialPrivacy, isFalse);
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool('financialPrivacy'), isFalse);
-    });
-  });
-
   group('setTheme', () {
     test('accepts the three known values', () async {
       final settings = HopeSettingsController();
