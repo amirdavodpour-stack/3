@@ -288,14 +288,43 @@ class HopeIconTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fill = filled ? color : color.withValues(alpha: .10);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final radius = BorderRadius.circular(size * .30);
+    final fill = filled ? color : color.withValues(alpha: dark ? .13 : .09);
     final iconColor = filled ? Colors.white : color;
+    final decoration = BoxDecoration(
+      color: fill,
+      borderRadius: radius,
+      border: Border.all(
+        color: filled
+            ? Colors.white.withValues(alpha: dark ? .12 : .20)
+            : color.withValues(alpha: dark ? .22 : .16),
+      ),
+      gradient: filled
+          ? LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [
+                color.withValues(alpha: .98),
+                color.withValues(alpha: .72),
+              ],
+            )
+          : null,
+      boxShadow: filled
+          ? [
+              BoxShadow(
+                color: color.withValues(alpha: dark ? .16 : .12),
+                blurRadius: size * .28,
+                offset: Offset(0, size * .10),
+              ),
+            ]
+          : const [],
+    );
     final child = Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-          color: fill, borderRadius: BorderRadius.circular(size * .30)),
-      child: Icon(icon, color: iconColor, size: size * .48),
+      decoration: decoration,
+      child: Icon(icon, color: iconColor, size: size * .50),
     );
     // Decorative icons (no semanticLabel) are excluded from the accessibility
     // tree so screen readers don't announce an unlabeled generic icon node.
