@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTempEnv, startApiServer, register, closeApi } from './support/hope-test-harness.mjs';
