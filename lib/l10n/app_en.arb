@@ -1135,5 +1135,45 @@
   "copy_about_mission_description": "HOPE is a work marketplace built around two different needs: a mission that has a clear deliverable and a defined price, and a job that continues part-time or full-time with a monthly income. The product is designed to reduce friction between employers and candidates while keeping privacy, clarity and fair selection at the center.",
   "copy_about_mission_fee_short": "10% from employer + 10% from candidate",
   "copy_about_job_fee_short": "30% of the candidate's first-month pay",
-  "copy_pick_file": "Choose file"
+  "copy_pick_file": "Choose file",
+  "copy_find_the_right_opportunity": "Find the right opportunity",
+  "@copy_find_the_right_opportunity": {
+    "description": "Marketplace Jobs header title."
+  },
+  "copy_all_opportunities": "All opportunities",
+  "@copy_all_opportunities": {
+    "description": "Default saved-search name when no filters are active."
+  },
+  "copy_save_search": "Save search",
+  "@copy_save_search": {
+    "description": "Action to save the current marketplace search."
+  },
+  "copy_saving": "Saving…",
+  "@copy_saving": {
+    "description": "Busy label while saving a marketplace search."
+  },
+  "copy_saved_searches": "Saved",
+  "@copy_saved_searches": {
+    "description": "Saved-searches action label."
+  },
+  "copy_search_name": "Search name",
+  "@copy_search_name": {
+    "description": "Input hint for naming a saved marketplace search."
+  },
+  "copy_could_not_save_search": "Could not save the search.",
+  "@copy_could_not_save_search": {
+    "description": "Recoverable error when saving a marketplace search fails."
+  },
+  "copy_could_not_delete_saved_search": "Could not delete the saved search.",
+  "@copy_could_not_delete_saved_search": {
+    "description": "Recoverable error when deleting a saved marketplace search fails."
+  },
+  "copy_categories_load_failed": "Could not load categories.",
+  "@copy_categories_load_failed": {
+    "description": "Recoverable category-loading error in Marketplace filters."
+  },
+  "copy_all_cities": "All cities",
+  "@copy_all_cities": {
+    "description": "Marketplace city filter sentinel label."
+  }
 }
