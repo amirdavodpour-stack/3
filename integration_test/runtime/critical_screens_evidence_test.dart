@@ -570,10 +570,14 @@ Future<void> _render(
 }) async {
   const ackRoot = String.fromEnvironment('HOPE_SCREENSHOT_ACK_ROOT');
   final ackFile = ackRoot.isEmpty ? null : File('$ackRoot/$marker');
-  if (ackFile != null) {
+  final readyFile =
+      ackRoot.isEmpty ? null : File('$ackRoot/.ready-$marker');
+  if (ackFile != null && readyFile != null) {
     await ackFile.parent.create(recursive: true);
-    if (await ackFile.exists()) {
-      await ackFile.delete();
+    for (final file in [ackFile, readyFile]) {
+      if (await file.exists()) {
+        await file.delete();
+      }
     }
   }
 
@@ -590,6 +594,13 @@ Future<void> _render(
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.pump();
   print('HOPE_SCREENSHOT_READY:$marker');
+
+  // Do not make the host depend on stdout/tee flushing. The host-side
+  // harness watches this file over adb/run-as as the authoritative READY
+  // handshake, then writes the ackFile after the screenshot is captured.
+  if (readyFile != null) {
+    await readyFile.writeAsString('ready\\n', flush: true);
+  }
 
   if (ackFile == null) {
     await Future<void>.delayed(const Duration(milliseconds: 600));
