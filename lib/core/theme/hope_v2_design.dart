@@ -131,6 +131,43 @@ class HopeV2Surfaces {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return dark ? Colors.white.withValues(alpha: .075) : const Color(0xFFE5E2EC);
   }
+
+  static Color chip(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return dark ? Colors.white.withValues(alpha: .10) : const Color(0xFFF1EFF7);
+  }
+
+  static Color input(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return dark ? const Color(0xFF201D28) : HopeV2Colors.panelSoftLight;
+  }
+
+  static Color divider(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return dark ? Colors.white.withValues(alpha: .10) : const Color(0xFFE8E5F0);
+  }
+
+  static Color controlBorder(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return dark ? Colors.white.withValues(alpha: .10) : const Color(0xFFE6E2F0);
+  }
+
+  static Color navigation(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return dark ? const Color(0xF714121B) : const Color(0xFDFEFEFF);
+  }
+
+  static Color navigationIndicator(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return dark
+        ? HopeV2Colors.primaryDark.withValues(alpha: .30)
+        : HopeV2Colors.softPrimary;
+  }
+
+  static Color outlinedButtonBorder(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return dark ? Colors.white.withValues(alpha: .07) : const Color(0xFFDED9EA);
+  }
 }
 
 
