@@ -699,8 +699,9 @@ class _HomeQuickAction extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(HopeV2Radii.md),
-          child: Ink(
-            constraints: const BoxConstraints(minHeight: 82),
+          child: SizedBox(
+            height: 82,
+            child: Ink(
             padding: const EdgeInsets.all(HopeV2Spacing.md),
             decoration: BoxDecoration(
               color: color.withValues(alpha: .055),
