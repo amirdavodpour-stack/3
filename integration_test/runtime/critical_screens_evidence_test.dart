@@ -582,6 +582,7 @@ Future<void> _render(
   }
 
   print('HOPE_SCREEN_STARTED:$marker');
+  print('HOPE_SCREEN_PUMP_WIDGET_START:$marker');
   await tester.pumpWidget(
     _host(
       locale: locale,
@@ -591,8 +592,19 @@ Future<void> _render(
       registry: registry,
     ),
   );
+  print('HOPE_SCREEN_PUMP_WIDGET_DONE:$marker');
+  final pumpWidgetException = tester.takeException();
+  if (pumpWidgetException != null) {
+    print('HOPE_SCREEN_EXCEPTION_AFTER_PUMP_WIDGET:$marker:$pumpWidgetException');
+  }
+  print('HOPE_SCREEN_FRAME_PUMP_START:$marker');
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.pump();
+  print('HOPE_SCREEN_FRAME_PUMP_DONE:$marker');
+  final frameException = tester.takeException();
+  if (frameException != null) {
+    print('HOPE_SCREEN_EXCEPTION_AFTER_FRAME_PUMP:$marker:$frameException');
+  }
   print('HOPE_SCREENSHOT_READY:$marker');
 
   // Do not make the host depend on stdout/tee flushing. The host-side
