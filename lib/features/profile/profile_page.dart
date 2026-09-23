@@ -234,7 +234,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const HopeIconTile(
-                        Icons.admin_panel_settings_outlined,
+                        HopeV2Icons.secure,
                       ),
                       title: Text(
                         HopeCopy.of(context).copy_verification_c45fea9,
@@ -312,7 +312,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         contentPadding: EdgeInsets.zero,
                         leading: HopeIconTile(
                           status == 'ACCEPTED'
-                              ? Icons.check_circle_rounded
+                              ? HopeV2Icons.completed
                               : HopeV2Icons.job,
                           filled: status == 'ACCEPTED',
                         ),
@@ -687,7 +687,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const HopeIconTile(Icons.location_on_outlined),
+            leading: const HopeIconTile(HopeV2Icons.location),
             title: Text(
               HopeCopy.of(context).copy_location_city_46ccc39,
             ),
@@ -781,7 +781,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const HopeIconTile(Icons.info_outline_rounded),
+            leading: const HopeIconTile(HopeV2Icons.insights),
             title: Text(
               HopeCopy.of(context).copy_about_hope_f8ee86b,
             ),
@@ -863,7 +863,7 @@ class _ProfilePageState extends State<ProfilePage> {
             (value) => ListTile(
               title: Text(value),
               trailing: value == settings.city
-                  ? const Icon(Icons.check_rounded)
+                  ? HopeIcon(HopeV2Icons.completed, size: 18)
                   : null,
               onTap: () => Navigator.pop(context, value),
             ),
