@@ -1,33 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 
 void main() {
   const destinations = <NavigationDestination>[
     NavigationDestination(
-      icon: Icon(Icons.space_dashboard_outlined),
-      selectedIcon: Icon(Icons.space_dashboard_rounded),
+      icon: Icon(HopeV2Icons.home),
+      selectedIcon: Icon(HopeV2Icons.homeSelected),
       label: 'خانه',
     ),
     NavigationDestination(
-      icon: Icon(Icons.workspaces_outlined),
-      selectedIcon: Icon(Icons.workspaces_rounded),
+      icon: Icon(HopeV2Icons.workshop),
+      selectedIcon: Icon(HopeV2Icons.workshopSelected),
       label: 'کارگاه',
     ),
     NavigationDestination(
-      icon: Icon(Icons.insights_outlined),
-      selectedIcon: Icon(Icons.insights_rounded),
+      icon: Icon(HopeV2Icons.activity),
+      selectedIcon: Icon(HopeV2Icons.activitySelected),
       label: 'فعالیت',
     ),
     NavigationDestination(
-      icon: Icon(Icons.account_balance_wallet_outlined),
-      selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+      icon: Icon(HopeV2Icons.wallet),
+      selectedIcon: Icon(HopeV2Icons.walletSelected),
       label: 'کیف پول',
     ),
     NavigationDestination(
-      icon: Icon(Icons.person_outline_rounded),
-      selectedIcon: Icon(Icons.person_rounded),
+      icon: Icon(HopeV2Icons.profile),
+      selectedIcon: Icon(HopeV2Icons.profileSelected),
       label: 'پروفایل',
     ),
   ];
