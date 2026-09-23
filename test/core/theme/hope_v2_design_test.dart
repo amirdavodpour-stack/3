@@ -16,15 +16,42 @@ void main() {
     expect(HopeV2Motion.standard, const Duration(milliseconds: 240));
   });
 
-  test('HOPE warm background tokens use the premium warm-neutral palette', () {
+  test('HOPE light surfaces stay lavender-led', () {
     expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0FB));
     expect(HopeV2Colors.pageLight, const Color(0xFFF1EDF8));
     expect(HopeV2Colors.panelSoftLight, const Color(0xFFFBF9FE));
   });
 
+  test('HOPE warm-brown accent is a light accent token, not the page base', () {
+    expect(HopeV2Colors.warmHalo, const Color(0xFFC2A487));
+  });
 
-  test('HOPE page background keeps lavender base and warm-brown halo', () {
-    expect(HopeV2Colors.warmHalo, const Color(0x7A9A7658));
+  testWidgets('HOPE page halo stays subtle over the lavender base', (tester) async {
+    late Gradient halo;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Builder(
+          builder: (context) {
+            halo = HopeV2Surfaces.pageHalo(context);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+
+    expect(halo.colors.length, 3);
+    expect(halo.colors.first.alpha, lessThanOrEqualTo(13));
+    expect(halo.colors.last, Colors.transparent);
+  });
+
+  test('HOPE dark surfaces stay cool and avoid the warm-brown palette', () {
+    expect(HopeV2Colors.darkBackground, const Color(0xFF090811));
+    expect(HopeV2Colors.darkSurface, const Color(0xFF15131D));
+    expect(HopeV2Colors.darkCard, const Color(0xFF1C1925));
+    expect(HopeV2Colors.panelSoftDark, const Color(0xFF121A2A));
+    expect(HopeV2Colors.inputDark, const Color(0xFF12111A));
   });
 
   test('HOPE action icon vocabulary is backed by Hugeicons data', () {
