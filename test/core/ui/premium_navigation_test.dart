@@ -55,6 +55,33 @@ void main() {
         greaterThanOrEqualTo(80));
   });
 
+  testWidgets('premium mobile navigation is a floating rounded surface',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumNavigationBar(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            destinations: destinations,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(ClipRRect), findsOneWidget);
+    final material = tester.widget<Material>(
+      find
+          .descendant(
+            of: find.byType(PremiumNavigationBar),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(material.type, MaterialType.transparency);
+  });
+
   testWidgets('premium desktop navigation rail preserves the shell contract',
       (tester) async {
     await tester.pumpWidget(
