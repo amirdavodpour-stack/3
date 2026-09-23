@@ -374,6 +374,16 @@ class HopeV2Type {
       .headlineMedium!
       .copyWith(fontSize: 31, letterSpacing: -.75, height: 1.05);
 
+  static TextStyle metric(BuildContext context) => Theme.of(context)
+      .textTheme
+      .titleLarge!
+      .copyWith(
+        fontSize: 22,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -.45,
+        height: 1.0,
+      );
+
   static TextStyle section(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
