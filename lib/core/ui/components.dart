@@ -101,7 +101,7 @@ class _PressableScaleState extends State<PressableScale> {
       button: true,
       enabled: true,
       label: widget.semanticLabel,
-      excludeSemantics: true,
+      excludeSemantics: widget.semanticLabel != null,
       child: Shortcuts(
         shortcuts: const <ShortcutActivator, Intent>{
           SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
