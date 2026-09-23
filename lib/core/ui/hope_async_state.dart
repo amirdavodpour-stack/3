@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../network/api_client.dart';
 import '../theme/hope_v2_design.dart';
 
 enum HopeStateKind {
@@ -20,6 +21,20 @@ enum HopeStateKind {
   pending,
   submitting,
   success,
+}
+
+HopeStateKind hopeStateKindForError(Object error) {
+  if (error is ApiException) {
+    return switch (error.code) {
+      'UNAUTHENTICATED' || 'INVALID_TOKEN' => HopeStateKind.unauthorized,
+      'FORBIDDEN' => HopeStateKind.forbidden,
+      'VALIDATION_ERROR' => HopeStateKind.validation,
+      'RATE_LIMITED' => HopeStateKind.rateLimited,
+      'NETWORK_ERROR' || 'TIMEOUT' => HopeStateKind.offline,
+      _ => HopeStateKind.error,
+    };
+  }
+  return HopeStateKind.error;
 }
 
 /// Shared semantic state presentation for async/product surfaces.
