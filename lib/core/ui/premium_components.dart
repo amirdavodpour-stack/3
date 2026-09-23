@@ -413,7 +413,7 @@ class PremiumHero extends StatelessWidget {
                 alignment: AlignmentDirectional.bottomStart,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final dense = constraints.maxHeight < 300;
+                    final dense = constraints.maxHeight < 340;
                     return ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 600),
                       child: Column(
