@@ -33,6 +33,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Future<List<HopeJob>>? _opportunities;
   Future<List<HopeJob>>? _activeJobs;
   Future<HopeWallet>? _wallet;
+  HopeWallet? _walletData;
   String? _error;
   int _refreshRequestId = 0;
   String? _loadSignature;
@@ -86,6 +87,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   .contains(job.status?.toUpperCase())).length);
         }).catchError((_) {});
         _wallet = registry.walletsOrThrow.getWallet();
+        _wallet!.then((wallet) {
+          if (!mounted) return;
+          setState(() => _walletData = wallet);
+        }).catchError((_) {});
       } catch (_) {
         _activeJobs = Future.value(const <HopeJob>[]);
         _activeJobCount = 0;
@@ -103,6 +108,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       _activeJobs = null;
       _activeJobCount = null;
       _wallet = null;
+      _walletData = null;
     });
     _load();
     final opportunities = _opportunities;
@@ -189,8 +195,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                         final nearbyCount = jobs.where(
                           (j) => j.distanceKm != null || j.city == settings.city,
                         ).length;
-                        final locked =
-                            _wallet == null ? null : _wallet!.lockedBalance;
+                        final locked = _walletData?.lockedBalance;
                         String money(int value) => value
                             .toString()
                             .replaceAllMapped(

@@ -674,7 +674,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
                 PremiumTag(
                   icon: Icons.shield_outlined,
-                  label: _providerLabel(wallet.provider),
+                  label: _providerLabel('INTERNAL'),
                   color: scheme.tertiary,
                 ),
               ],
@@ -770,7 +770,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
               trailing: PremiumTag(
                 icon: Icons.shield_outlined,
-                label: _providerLabel(wallet.provider),
+                label: _providerLabel('INTERNAL'),
                 color: Theme.of(context).colorScheme.tertiary,
               ),
             ),
@@ -882,18 +882,18 @@ class _WalletPageState extends State<WalletPage> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  for (var i = 0; i < 4; i++) ...[
+                  for (final filter in const ['ALL', 'CREDIT', 'DEBIT', 'HOLD']) ...[
                     PremiumFilterChip(
-                      label: switch (const ['ALL', 'CREDIT', 'DEBIT', 'HOLD'])[i] {
+                      label: switch (filter) {
                         'CREDIT' => _t('ورودی', 'Credits'),
                         'DEBIT' => _t('خروجی', 'Debits'),
                         'HOLD' => _t('قفل‌ها', 'Holds'),
                         _ => _t('همه', 'All'),
                       },
-                      selected: _historyFilter == const ['ALL', 'CREDIT', 'DEBIT', 'HOLD'][i],
-                      onTap: () => setState(() => _historyFilter = const ['ALL', 'CREDIT', 'DEBIT', 'HOLD'][i]),
+                      selected: _historyFilter == filter,
+                      onTap: () => setState(() => _historyFilter = filter),
                     ),
-                    if (i != 3) const SizedBox(width: 8),
+                    if (filter != 'HOLD') const SizedBox(width: 8),
                   ],
                 ],
               ),

@@ -95,6 +95,9 @@ class OpportunityCard extends StatelessWidget {
     };
   }
 
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
   @override
   Widget build(BuildContext context) {
     final compact = variant == OpportunityCardVariant.compact;
