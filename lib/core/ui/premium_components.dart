@@ -608,7 +608,7 @@ class PremiumStatCard extends StatelessWidget {
               children: [
                 Text(label, style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 3),
-                Text(value, style: Theme.of(context).textTheme.titleLarge),
+                Text(value, style: HopeV2Type.metric(context)),
                 if (caption != null)
                   Text(caption!, style: Theme.of(context).textTheme.bodySmall),
               ],
@@ -818,7 +818,12 @@ class PremiumFilterChip extends StatelessWidget {
                   HopeIcon(icon!, size: 16, color: foreground, strokeWidth: 1.9),
                 if (loading || icon != null) const SizedBox(width: 5),
                 if (!loading && selected) ...[
-                  HopeIcon(HopeV2Icons.completed, size: 16, color: foreground, strokeWidth: 1.9),
+                  HopeIcon(
+                    HopeV2Icons.completed,
+                    size: 16,
+                    color: foreground,
+                    strokeWidth: 1.9,
+                  ),
                   const SizedBox(width: 5),
                 ],
                 Text(
