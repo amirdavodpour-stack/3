@@ -16,6 +16,9 @@ class HopeV2Colors {
   static const secondaryStrong = Color(0xFF0C7D70);
   static const secondaryDark = Color(0xFF34D8C8);
   static const accent = Color(0xFFFFB45C);
+  /// Focus accent for featured/recommended work surfaces; use sparingly.
+  static const orange = Color(0xFFF97316);
+  static const orangeDark = Color(0xFFFF9A4D);
   static const inkSoft = Color(0xFF26223A);
   static const backgroundWarm = Color(0xFFF8F7FC);
   static const ink = Color(0xFF151326);
