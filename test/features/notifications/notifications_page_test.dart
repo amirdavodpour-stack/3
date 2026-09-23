@@ -174,7 +174,7 @@ testWidgets('latest notification refresh wins over an older in-flight load',
     await tester.pumpAndSettle();
     expect(find.text('عنوان اعلان'), findsOneWidget);
     expect(find.text('متن اعلان'), findsOneWidget);
-    expect(find.byIcon(Icons.notifications_active_rounded), findsOneWidget);
+    expect(find.text('جدید'), findsOneWidget);
   });
 
   testWidgets('tapping an unread notification marks it read and reloads',
@@ -185,7 +185,7 @@ testWidgets('latest notification refresh wins over an older in-flight load',
     await tester.tap(find.text('عنوان اعلان'));
     await tester.pumpAndSettle();
     expect(repo.markReadCalls, 1);
-    expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+    expect(find.text('جدید'), findsNothing);
   });
 
   testWidgets('empty notification state disables mark-all control',
@@ -193,11 +193,8 @@ testWidgets('latest notification refresh wins over an older in-flight load',
     final repo = _Repo()..items = [];
     await tester.pumpWidget(_app(repo));
     await tester.pumpAndSettle();
-    final buttons = tester.widgetList<IconButton>(find.byType(IconButton));
-    final markAll = buttons.where((button) =>
-        button.icon is Icon &&
-        (button.icon as Icon).icon == Icons.done_all_rounded);
-    expect(markAll, hasLength(1));
-    expect(markAll.single.onPressed, isNull);
+    final markAll = find.byTooltip('همه را خواندم');
+    expect(markAll, findsOneWidget);
+    expect(tester.widget<IconButton>(markAll).onPressed, isNull);
   });
 }
