@@ -305,9 +305,8 @@ class OpportunityCard extends StatelessWidget {
                         '${_formatAmount(amount)} ${copy.copy_toman}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: featured ? 22 : 19,
-                          fontWeight: FontWeight.w900,
+                        style: HopeV2Type.metric(context).copyWith(
+                          fontSize: featured ? 22 : 20,
                           color: primary,
                         ),
                       ),
