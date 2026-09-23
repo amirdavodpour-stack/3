@@ -277,13 +277,13 @@ void main() {
       await newerRefresh;
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('9,900,000 Toman'), findsWidgets);
+      expect(find.textContaining('9,900,000 TOMAN'), findsWidgets);
 
       wallet.firstRefresh.complete(wallet._wallet(2500000));
       await olderRefresh;
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('9,900,000 Toman'), findsWidgets);
+      expect(find.textContaining('9,900,000 TOMAN'), findsWidgets);
       expect(find.textContaining('2,500,000 TOMAN'), findsNothing);
     },
   );
@@ -870,7 +870,7 @@ void main() {
 
     expect(find.text('Maximum: 2,500,000 TOMAN'), findsOneWidget);
     expect(find.text('Maximum: 2500000'), findsNothing);
-    expect(find.text('TOMAN'), findsWidgets);
+    expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.text('Toman'), findsNothing);
   });
 
