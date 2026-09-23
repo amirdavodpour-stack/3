@@ -49,7 +49,7 @@ void main() {
     );
 
     expect(find.byType(PremiumHero), findsOneWidget);
-    expect(find.byType(RadialGradient), findsWidgets);
+    expect(find.byType(DecoratedBox), findsWidgets);
   });
 
   testWidgets('HOPE page halo stays subtle over the lavender base', (tester) async {
