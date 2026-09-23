@@ -40,7 +40,7 @@ class HopeV2Colors {
   static const darkMuted = Color(0xFF9A95AA);
 
   static const pageLight = Color(0xFFF1EDF8);
-  static const pageDark = Color(0xFF100D0B);
+  static const pageDark = darkBackground;
   static const panelLight = Color(0xFFFFFFFF);
   static const panelDark = Color(0xFF15131D);
   static const panelSoftLight = Color(0xFFFBF9FE);
@@ -52,13 +52,16 @@ class HopeV2Colors {
   static const borderControlLight = Color(0xFFDED9E8);
   static const dividerLight = Color(0xFFE4E0EA);
   static const outlinedButtonBorderLight = Color(0xFFDAD4E5);
-  static const navigationLight = Color(0xFFFBF8F4);
+  static const navigationLight = Color(0xFFF7F4FC);
   static const navigationDark = Color(0xF70B101A);
-  static const navigationIndicatorDark = Color(0x3D6366F1);
+  static const navigationIndicatorLight = Color(0xFFE5DFFF);
+  static const navigationIndicatorDark = Color(0x3D8B7CFF);
   static const inputDark = Color(0xFF12111A);
   static const darkBorder = Color(0x14FFFFFF);
   static const darkBorderStrong = Color(0x24FFFFFF);
   static const darkDivider = Color(0x12FFFFFF);
+  static const cardBorderLight = Color(0xFFE5E0EF);
+  static const cardBorderDark = Color(0x2B2737);
   /// Light warm-brown accent used only as a restrained atmospheric underlay.
   static const warmHalo = Color(0xFFC2A487);
   static const warmHaloDark = Color(0xFF826D59);
@@ -131,7 +134,7 @@ class HopeV2Radii {
   static const md = 16.0;
   static const lg = 18.0;
   static const xl = 24.0;
-  static const hero = 24.0;
+  static const hero = 28.0;
   static const input = 14.0;
   static const button = 14.0;
   static const navigation = 14.0;
@@ -225,7 +228,7 @@ class HopeV2Surfaces {
 
   static Color border(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return dark ? HopeV2Colors.darkBorder : const Color(0xFFE5E2EC);
+    return dark ? HopeV2Colors.darkBorder : HopeV2Colors.cardBorderLight;
   }
 
   static Color chip(BuildContext context) {
@@ -257,7 +260,7 @@ class HopeV2Surfaces {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return dark
         ? HopeV2Colors.navigationIndicatorDark
-        : HopeV2Colors.softPrimary;
+        : HopeV2Colors.navigationIndicatorLight;
   }
 
   static Color outlinedButtonBorder(BuildContext context) {
@@ -285,8 +288,8 @@ class HopeV2Gradients {
 
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF312E81),
-      Color(0xFF115E59),
+      Color(0xFF3E2D8F),
+      Color(0xFF185F63),
       Color(0xFF0B1020),
     ],
     stops: [0, .55, 1],

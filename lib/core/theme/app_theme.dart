@@ -185,10 +185,10 @@ class AppTheme {
               minimumSize: const Size(48, 48),
               tapTargetSize: MaterialTapTargetSize.padded)),
       navigationBarTheme: NavigationBarThemeData(
-        height: 78,
+        height: HopeV2Navigation.barHeight,
         backgroundColor: dark ? HopeV2Colors.navigationDark : HopeV2Colors.navigationLight,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : AppColors.softPrimary,
+        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : HopeV2Colors.navigationIndicatorLight,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
@@ -214,7 +214,7 @@ class AppTheme {
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: dark ? HopeV2Colors.navigationDark : HopeV2Colors.navigationLight,
-        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : HopeV2Colors.softPrimary,
+        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : HopeV2Colors.navigationIndicatorLight,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),

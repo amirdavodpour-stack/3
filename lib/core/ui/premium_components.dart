@@ -318,12 +318,55 @@ class PremiumHero extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: Theme.of(context).brightness == Brightness.dark
-                    ? HopeV2Gradients.heroDark
-                    : HopeV2Gradients.hero,
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: Theme.of(context).brightness == Brightness.dark
+                      ? HopeV2Gradients.heroDark
+                      : HopeV2Gradients.hero,
+                ),
               ),
-            ),
+              PositionedDirectional(
+                end: compact ? -84 : -48,
+                top: compact ? -76 : -54,
+                width: compact ? 190 : 220,
+                height: compact ? 190 : 220,
+                child: ExcludeSemantics(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: .14),
+                          Colors.white.withValues(alpha: .0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                start: compact ? -92 : -56,
+                bottom: compact ? -108 : -84,
+                width: compact ? 210 : 250,
+                height: compact ? 210 : 250,
+                child: ExcludeSemantics(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          HopeV2Colors.secondary.withValues(
+                            alpha: Theme.of(context).brightness == Brightness.dark
+                                ? .13
+                                : .10,
+                          ),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (icon != null)
               PositionedDirectional(
                 end: horizontal,

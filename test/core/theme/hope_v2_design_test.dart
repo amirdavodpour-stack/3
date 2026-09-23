@@ -20,10 +20,17 @@ void main() {
     expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0FB));
     expect(HopeV2Colors.pageLight, const Color(0xFFF1EDF8));
     expect(HopeV2Colors.panelSoftLight, const Color(0xFFFBF9FE));
+    expect(HopeV2Colors.navigationLight, const Color(0xFFF7F4FC));
+    expect(HopeV2Colors.navigationIndicatorLight, const Color(0xFFE5DFFF));
   });
 
   test('HOPE warm-brown accent is a light accent token, not the page base', () {
     expect(HopeV2Colors.warmHalo, const Color(0xFFC2A487));
+  });
+
+  test('HOPE hero geometry stays intentionally more expressive than standard cards', () {
+    expect(HopeV2Radii.hero, 28.0);
+    expect(HopeV2Radii.hero, greaterThan(HopeV2Radii.lg));
   });
 
   testWidgets('HOPE page halo stays subtle over the lavender base', (tester) async {
@@ -47,11 +54,13 @@ void main() {
   });
 
   test('HOPE dark surfaces stay cool and avoid the warm-brown palette', () {
+    expect(HopeV2Colors.pageDark, HopeV2Colors.darkBackground);
     expect(HopeV2Colors.darkBackground, const Color(0xFF090811));
     expect(HopeV2Colors.darkSurface, const Color(0xFF15131D));
     expect(HopeV2Colors.darkCard, const Color(0xFF1C1925));
     expect(HopeV2Colors.panelSoftDark, const Color(0xFF121A2A));
     expect(HopeV2Colors.inputDark, const Color(0xFF12111A));
+    expect(HopeV2Colors.navigationIndicatorDark, const Color(0x3D8B7CFF));
   });
 
   test('HOPE action icon vocabulary is backed by Hugeicons data', () {

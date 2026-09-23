@@ -40,9 +40,9 @@ Avoid generic AI-dashboard patterns: excessive gradients, decorative statistics,
 - Featured signal orange: `#F97316` (dark: `#FF9A4D`); reserved for recommendation/attention emphasis, not primary actions
 - Ink: `#151326`
 - Muted text: `#6B6780`
-- Light page: `#F7F7FB`
+- Light page: `#F1EDF8` with a restrained warm atmospheric halo; brown is never used as a surface color.
 - Light panel: `#FFFFFF`
-- Dark page: `#090811`
+- Dark page: `#090811` with cool navy/violet layers; no warm-brown page surfaces.
 - Dark panel: `#15131D`
 - Dark card: `#1C1925`
 - Success: `#0B7A58`
@@ -59,7 +59,7 @@ Runtime ownership: `lib/core/theme/hope_v2_design.dart` is the canonical token s
 
 ## Spacing and geometry
 - Base spacing: 4 / 8 / 12 / 16 / 24 / 32 / 40 / 56.
-- Radii: 12 / 16 / 22 / 28 / 32, with pill only for tags/chips.
+- Radii: 12 / 16 / 20 / 24 / 28, with pill only for tags/chips; hero surfaces use 28.
 - Interactive minimum: 48px.
 - Breakpoints: compact <600, medium 600–899, expanded >=900, wide >=1200.
 
@@ -104,3 +104,12 @@ Do not redesign a screen merely to make it different from a sibling. Improve the
 ### Icon language
 
 Navigation and recurring product icons use a restrained, product-specific vocabulary: dashboard-customize for Home, hub for Workshop, timeline for Activity, wallet for finance, and manage-account for identity; opportunity, matching, protected-funds, payment, and lifecycle states use a dedicated HOPE icon vocabulary rather than ad-hoc Material defaults;
+
+
+## Reference synthesis — 2026-09-24
+The premium reconstruction borrows principles, not assets or copied screens:
+- Nuri / Vivid-style visual language: lavender-led atmospheric canvas, compact hierarchy, restrained gradients.
+- NuDS-style system discipline: semantic tokens as the single visual source of truth.
+- Paychain / OrbitPay-style finance patterns: dense but legible state/value hierarchy and purpose-built wallet navigation.
+- HOPE-specific rule: warm brown is an underlay accent only; the product surface remains lavender in light mode and cool navy/violet in dark mode.
+- Expressive glow is concentrated in hero/opportunity surfaces rather than applied across every card or the whole page.
