@@ -266,7 +266,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('2,500,000 Toman'), findsWidgets);
+      expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
 
       final refreshIndicator =
           tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
@@ -284,7 +284,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('9,900,000 Toman'), findsWidgets);
-      expect(find.textContaining('2,500,000 Toman'), findsNothing);
+      expect(find.textContaining('2,500,000 TOMAN'), findsNothing);
     },
   );
 
@@ -437,7 +437,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('2,500,000 Toman'), findsWidgets);
+    expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
     wallet.failLoad = true;
 
     await tester.fling(
@@ -448,7 +448,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.textContaining('2,500,000 Toman'), findsWidgets);
+    expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
     expect(find.text('Wallet refresh failed'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
@@ -580,27 +580,27 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('2,500,000 Toman'), findsOneWidget);
+    expect(find.textContaining('2,500,000 TOMAN'), findsOneWidget);
     expect(find.textContaining('2,500,000 IRR'), findsNothing);
-    expect(find.textContaining('1,000,000 Toman'), findsOneWidget);
+    expect(find.textContaining('1,000,000 TOMAN'), findsOneWidget);
     expect(find.textContaining('IRR'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.text('+500,000 Toman'),
+      find.text('+500,000 TOMAN'),
       500,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    expect(find.text('+500,000 Toman'), findsOneWidget);
+    expect(find.text('+500,000 TOMAN'), findsOneWidget);
     expect(find.text('+500,000 IRR'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.textContaining('400,000 Toman'),
+      find.textContaining('400,000 TOMAN'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    expect(find.text('400,000 Toman'), findsOneWidget);
+    expect(find.text('400,000 TOMAN'), findsOneWidget);
     expect(find.text('400,000 IRR'), findsNothing);
   });
   testWidgets('wallet presents backend enums as localized user-facing labels',
@@ -720,12 +720,12 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('400,000 Toman'),
+      find.text('400,000 TOMAN'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('400,000 Toman'));
+    await tester.tap(find.text('400,000 TOMAN'));
     await tester.pumpAndSettle();
 
     expect(find.text('Needs review'), findsWidgets);
@@ -868,10 +868,10 @@ void main() {
     await tester.tap(find.text('Transfer').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Maximum: 2,500,000 Toman'), findsOneWidget);
+    expect(find.text('Maximum: 2,500,000 TOMAN'), findsOneWidget);
     expect(find.text('Maximum: 2500000'), findsNothing);
-    expect(find.text('Toman'), findsOneWidget);
-    expect(find.text('TOMAN'), findsNothing);
+    expect(find.text('TOMAN'), findsWidgets);
+    expect(find.text('Toman'), findsNothing);
   });
 
 }
