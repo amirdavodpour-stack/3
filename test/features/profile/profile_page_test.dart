@@ -199,13 +199,7 @@ testWidgets('withdrawing an application disables the action until completion',
       expect(find.text('کاربر'), findsWidgets, reason: 'profile missing at $width dp');
       expect(find.text('فارسی'), findsOneWidget, reason: 'Persian control missing at $width dp');
       expect(find.text('انگلیسی'), findsOneWidget, reason: 'English control missing at $width dp');
-      final renderException = tester.takeException();
-      if (renderException != null) {
-        // Temporary diagnostic: expose Flutter's RenderFlex diagnostics.
-        // ignore: avoid_print
-        print('RESPONSIVE_DIAGNOSTIC_' + width.toString() + ': ' + renderException.toString());
-      }
-      expect(renderException, isNull, reason: 'render exception at $width dp');
+      expect(tester.takeException(), isNull, reason: 'render exception at $width dp');
     }
   });
 
