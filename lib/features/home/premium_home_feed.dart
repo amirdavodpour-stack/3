@@ -193,7 +193,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                         final nearbyCount = jobs.where(
                           (j) => j.distanceKm != null || j.city == settings.city,
                         ).length;
-                        final locked = _walletData?.lockedBalance;
                         String money(int value) => value
                             .toString()
                             .replaceAllMapped(
