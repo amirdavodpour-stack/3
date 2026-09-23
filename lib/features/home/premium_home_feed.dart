@@ -10,6 +10,7 @@ import '../../core/router/app_routes.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/transactions/wallet.dart';
+import '../../core/transactions/transaction_repository.dart';
 import '../transactions/transactions_page.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/opportunity_card.dart';
