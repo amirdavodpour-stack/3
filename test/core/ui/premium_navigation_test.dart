@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -7,28 +8,28 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 void main() {
   const destinations = <NavigationDestination>[
     NavigationDestination(
-      icon: Icon(HopeV2Icons.home),
-      selectedIcon: Icon(HopeV2Icons.homeSelected),
+      icon: HugeIcon(icon: HopeV2Icons.home, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.homeSelected, size: 24),
       label: 'خانه',
     ),
     NavigationDestination(
-      icon: Icon(HopeV2Icons.workshop),
-      selectedIcon: Icon(HopeV2Icons.workshopSelected),
+      icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
       label: 'کارگاه',
     ),
     NavigationDestination(
-      icon: Icon(HopeV2Icons.activity),
-      selectedIcon: Icon(HopeV2Icons.activitySelected),
+      icon: HugeIcon(icon: HopeV2Icons.activity, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.activitySelected, size: 24),
       label: 'فعالیت',
     ),
     NavigationDestination(
-      icon: Icon(HopeV2Icons.wallet),
-      selectedIcon: Icon(HopeV2Icons.walletSelected),
+      icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.walletSelected, size: 24),
       label: 'کیف پول',
     ),
     NavigationDestination(
-      icon: Icon(HopeV2Icons.profile),
-      selectedIcon: Icon(HopeV2Icons.profileSelected),
+      icon: HugeIcon(icon: HopeV2Icons.profile, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.profileSelected, size: 24),
       label: 'پروفایل',
     ),
   ];
