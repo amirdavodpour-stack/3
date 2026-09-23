@@ -2,6 +2,9 @@ name: HOPE UI Runtime Evidence
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/google-sign-in-2026-09-20
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
@@ -71,11 +74,7 @@ jobs:
       - name: Prepare Flutter dependencies
         run: flutter pub get --enforce-lockfile
 
-
       - name: Enable KVM for Android emulator
-        # android-emulator-runner checks /dev/kvm read/write access before choosing
-        # Linux hardware acceleration. GitHub-hosted Linux runners can expose
-        # /dev/kvm without granting the runner user access to it.
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -88,7 +87,6 @@ jobs:
           test -w /dev/kvm
 
       - name: Android runtime evidence
-        # Execute the pinned emulator-runner checkout from this repository without relying on fork-packaged node_modules.
         uses: ./.ci/android-emulator-runner
         env:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
