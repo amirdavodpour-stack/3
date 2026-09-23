@@ -106,6 +106,9 @@ class HopeV2Icons {
   static const view = HugeIcons.strokeRoundedView;
   static const viewOff = HugeIcons.strokeRoundedViewOff;
   static const password = HugeIcons.strokeRoundedLockPassword;
+  static const copy = HugeIcons.strokeRoundedCopy01;
+  static const verified = HugeIcons.strokeRoundedCheckmarkBadge02;
+  static const error = HugeIcons.strokeRoundedCancelCircle;
   static const add = HugeIcons.strokeRoundedAdd01;
   static const menu = HugeIcons.strokeRoundedMenu01;
   static const refresh = HugeIcons.strokeRoundedRefresh;
