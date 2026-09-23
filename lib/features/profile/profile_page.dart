@@ -533,13 +533,13 @@ class _ProfilePageState extends State<ProfilePage> {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 18),
-          GradientHero(
+          PremiumHero(
             eyebrow: HopeCopy.of(context).copy_hope_account_4ba3966,
             title: HopeCopy.of(context)
                 .copy_a_home_for_your_professional_path_52dbb09,
             message: HopeCopy.of(context)
                 .copy_keep_your_profile_opportunities_transactio_39f443d,
-            icon: Icons.person_rounded,
+            icon: HopeV2Icons.profile,
             action: Row(
               children: [
                 Expanded(
@@ -584,7 +584,7 @@ class _ProfilePageState extends State<ProfilePage> {
     HopeSettingsController settings,
     ThemeController theme,
   ) {
-    return HopeSurface(
+    return PremiumPanel(
       child: Column(
         children: [
           Padding(
