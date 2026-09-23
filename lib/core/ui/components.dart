@@ -401,17 +401,9 @@ class GradientHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF5D43E8), Color(0xFF8B73FF), Color(0xFFB09FFF)],
-            stops: [0, .55, 1],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-          ),
+          gradient: HopeV2Gradients.hero,
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
-          boxShadow: const [
-            BoxShadow(
-                color: Color(0x2B6C4DFF), blurRadius: 32, offset: Offset(0, 16))
-          ],
+          boxShadow: HopeV2Shadows.gradientHero,
         ),
         child: Stack(children: [
           Positioned(

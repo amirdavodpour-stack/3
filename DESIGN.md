@@ -55,6 +55,7 @@ Runtime ownership: `lib/core/theme/hope_v2_design.dart` is the canonical token s
 
 ## Signature element
 The HOPE signature is the **opportunity-to-action surface**: a strong contextual hero or opportunity card followed by explicit discovery/action controls. Financial information must remain visually subordinate to the user's immediate work decision unless the current task is finance.
+- Intentional shared hero gradient styling is owned by `HopeV2Gradients.hero`; it is a component variant, not a page-background default.
 
 ## Responsive rules
 - Mobile is the primary composition, not a compressed desktop.

@@ -192,6 +192,21 @@ class HopeV2Surfaces {
 
 /// Semantic color roles used by product states. These intentionally resolve
 /// through ThemeData so light/dark modes retain the same meaning.
+class HopeV2Gradients {
+  const HopeV2Gradients._();
+
+  static const hero = LinearGradient(
+    colors: [
+      Color(0xFF5D43E8),
+      Color(0xFF8B73FF),
+      Color(0xFFB09FFF),
+    ],
+    stops: [0, .55, 1],
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+  );
+}
+
 class HopeV2SemanticColors {
   const HopeV2SemanticColors._();
 
@@ -228,6 +243,14 @@ class HopeV2Shadows {
       color: Color(0x241C1738),
       blurRadius: 36,
       offset: Offset(0, 18),
+    ),
+  ];
+
+  static const gradientHero = [
+    BoxShadow(
+      color: Color(0x2B6C4DFF),
+      blurRadius: 32,
+      offset: Offset(0, 16),
     ),
   ];
 }
