@@ -54,7 +54,7 @@ class _JobsFilterHeader extends StatelessWidget {
             ),
             const SizedBox(width: HopeV2Spacing.md),
             PremiumTag(
-              icon: Icons.grid_view_rounded,
+              icon: HopeV2Icons.workshop,
               label: '\$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
             ),
           ],
@@ -85,13 +85,16 @@ class _JobsFilterHeader extends StatelessWidget {
                                 height: 18,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Icon(Icons.bookmark_add_outlined),
+                            : HugeIcon(
+                                icon: HopeV2Icons.add,
+                                size: 19,
+                              ),
                       ),
                       if (savedSearchCount > 0)
                         IconButton.filledTonal(
                           onPressed: onOpenSavedSearches,
                           tooltip: HopeCopy.of(context).copy_saved_searches,
-                          icon: const Icon(Icons.bookmarks_outlined),
+                          icon: HugeIcon(icon: HopeV2Icons.savedSearches, size: 19),
                         ),
                     ],
                   );
@@ -134,14 +137,14 @@ class _JobsFilterHeader extends StatelessWidget {
                       HopeCopy.of(context).copy_missions_a833d13,
                       kind == 'MISSION',
                       () => onKindChanged('MISSION'),
-                      icon: Icons.bolt_rounded,
+                      icon: HopeV2Icons.mission,
                     ),
                     _chip(
                       context,
                       HopeCopy.of(context).copy_jobs_ebf9a80,
                       kind == 'JOB',
                       () => onKindChanged('JOB'),
-                      icon: Icons.business_center_rounded,
+                      icon: HopeV2Icons.job,
                     ),
                     const SizedBox(width: HopeV2Spacing.sm),
                     _chip(
@@ -182,15 +185,19 @@ class _JobsFilterHeader extends StatelessWidget {
                 spacing: HopeV2Spacing.sm,
                 runSpacing: HopeV2Spacing.sm,
                 children: [
-                  ActionChip(
-                    avatar: const Icon(Icons.location_on_outlined, size: 17),
-                    label: Text(cityLabel),
-                    onPressed: onPickCity,
+                  PremiumFilterChip(
+                    icon: HopeV2Icons.location,
+                    label: cityLabel,
+                    selected: false,
+                    onTap: onPickCity,
+                    color: HopeV2Colors.secondary,
                   ),
-                  ActionChip(
-                    avatar: const Icon(Icons.category_outlined, size: 17),
-                    label: Text(categoryLabel),
-                    onPressed: onPickCategory,
+                  PremiumFilterChip(
+                    icon: HopeV2Icons.category,
+                    label: categoryLabel,
+                    selected: false,
+                    onTap: onPickCategory,
+                    color: HopeV2Colors.primary,
                   ),
                 ],
               ),
