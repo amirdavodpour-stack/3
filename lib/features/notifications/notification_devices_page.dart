@@ -5,6 +5,7 @@ import '../../core/ui/components.dart';
 import '../../core/notifications/notification_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class NotificationDevicesPage extends StatefulWidget {
   const NotificationDevicesPage({super.key});
@@ -111,7 +112,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
           IconButton(
             onPressed: _load,
             tooltip: _t('بازخوانی', 'Refresh'),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: HopeIcon(HopeV2Icons.refresh, size: 19),
           ),
         ],
       ),
@@ -129,14 +130,14 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                 'دستگاه‌هایی که Push برای حساب شما روی آن‌ها فعال است را ببینید و هرکدام را جداگانه غیرفعال کنید.',
                 'Review devices registered for Push notifications and disable any device independently.',
               ),
-              trailing: const HopeIconTile(Icons.devices_rounded, size: 50, filled: true),
+              trailing: const HopeIconTile(HopeV2Icons.secure, size: 50, filled: true),
             ),
             const SizedBox(height: 18),
             if (!_loading && _error == null)
               PremiumStatCard(
                 label: _t('دستگاه فعال برای Push', 'Active Push devices'),
                 value: '${_devices.where((device) => device.enabled).length}',
-                icon: Icons.notifications_active_rounded,
+                icon: HopeV2Icons.notifications,
                 accent: Theme.of(context).colorScheme.primary,
                 caption: _t(
                   'فقط توکن‌ها و وضعیت لازم برای مدیریت اعلان نمایش داده می‌شود.',
@@ -159,7 +160,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: _load,
-                      icon: const Icon(Icons.refresh_rounded),
+                      icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                       label: Text(_t('تلاش دوباره', 'Retry')),
                     ),
                   ],
@@ -202,8 +203,8 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                         children: [
                           PremiumTag(
                             icon: device.enabled
-                                ? Icons.check_circle_rounded
-                                : Icons.pause_circle_outline_rounded,
+                                ? HopeV2Icons.completed
+                                : HopeV2Icons.pending,
                             label: device.enabled
                                 ? _t('فعال', 'Enabled')
                                 : _t('غیرفعال', 'Disabled'),
@@ -235,7 +236,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline_rounded),
+                  HopeIcon(HopeV2Icons.insights, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(_t(
