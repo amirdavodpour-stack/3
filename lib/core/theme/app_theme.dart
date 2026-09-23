@@ -112,7 +112,7 @@ class AppTheme {
           color: dark ? Colors.white10 : const Color(0xFFE1DDEA),
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(HopeV2Radii.chip),
         ),
         labelStyle: TextStyle(
           color: textColor,
@@ -146,7 +146,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(
                 color: dark ? Colors.white10 : const Color(0xFFE6E2F0))),
         focusedBorder: OutlineInputBorder(
@@ -172,7 +172,7 @@ class AppTheme {
           side: BorderSide(
               color: dark ? Colors.white12 : const Color(0xFFDED9EA)),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -191,7 +191,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         indicatorColor: dark ? const Color(0x4D7660FF) : AppColors.softPrimary,
         indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
@@ -235,7 +235,7 @@ class AppTheme {
         backgroundColor: scheme.primary,
         foregroundColor: Colors.white,
         elevation: 7,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.iconTile)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.fab)),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
