@@ -95,7 +95,7 @@ class AppTheme {
         indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(
           color: dark ? const Color(0x287660FF) : AppColors.softPrimary,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(HopeV2Radii.chip),
         ),
         labelColor: scheme.primary,
         unselectedLabelColor: mutedColor,
@@ -130,7 +130,7 @@ class AppTheme {
         color: dark ? AppColors.darkCard : AppColors.surface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.lg)),
       ),
       dividerTheme: DividerThemeData(
           color: dark ? Colors.white10 : const Color(0xFFE8E5F0), space: 1),
@@ -143,7 +143,7 @@ class AppTheme {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 17, vertical: 17),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
@@ -161,7 +161,7 @@ class AppTheme {
           minimumSize: const Size.fromHeight(54),
           padding: const EdgeInsets.symmetric(horizontal: 18),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle:
               const TextStyle(fontWeight: FontWeight.w900, letterSpacing: -.1),
         ),
@@ -218,7 +218,7 @@ class AppTheme {
         indicatorColor:
             dark ? const Color(0x3D7660FF) : AppColors.softPrimary,
         indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
         selectedIconTheme: IconThemeData(color: scheme.primary, size: 24),
         unselectedIconTheme: IconThemeData(color: mutedColor, size: 23),
@@ -235,14 +235,14 @@ class AppTheme {
         backgroundColor: scheme.primary,
         foregroundColor: Colors.white,
         elevation: 7,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(19)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.iconTile)),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: dark ? AppColors.darkCard : AppColors.ink,
         contentTextStyle:
             const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.md)),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       textTheme: TextTheme(
