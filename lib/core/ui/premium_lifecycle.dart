@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/hope_v2_design.dart';
 import 'premium_components.dart';
+import 'components.dart';
 
 class PremiumLifecycleStep {
   const PremiumLifecycleStep({
@@ -13,7 +14,7 @@ class PremiumLifecycleStep {
   });
 
   final String label;
-  final IconData icon;
+  final Object icon;
   final bool active;
   final bool complete;
   final String? caption;
@@ -92,7 +93,7 @@ class _StepRow extends StatelessWidget {
                           : Theme.of(context).dividerColor,
                     ),
                   ),
-                  child: Icon(
+                  child: HopeIcon(
                     step.complete ? Icons.check_rounded : step.icon,
                     size: 18,
                     color: iconColor,
