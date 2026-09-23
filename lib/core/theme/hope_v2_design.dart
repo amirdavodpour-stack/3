@@ -81,7 +81,7 @@ class HopeV2Icons {
   static const profile = HugeIcons.strokeRoundedUser;
   static const profileSelected = HugeIcons.strokeRoundedUserAccount;
 
-  static const mission = HugeIcons.strokeRoundedBolt;
+  static const mission = HugeIcons.strokeRoundedFlash;
   static const job = HugeIcons.strokeRoundedWorkHistory;
   static const featured = HugeIcons.strokeRoundedSparkles;
   static const match = HugeIcons.strokeRoundedUserCheck01;
@@ -89,7 +89,7 @@ class HopeV2Icons {
   static const category = HugeIcons.strokeRoundedTag01;
   static const distance = HugeIcons.strokeRoundedLocationUser01;
   static const protectedFunds = HugeIcons.strokeRoundedShield01;
-  static const payments = HugeIcons.strokeRoundedMoney02;
+  static const payments = HugeIcons.strokeRoundedMoney01;
   static const transferIn = HugeIcons.strokeRoundedMoneyReceive01;
   static const transferOut = HugeIcons.strokeRoundedMoneySend01;
   static const completed = HugeIcons.strokeRoundedTaskDone01;
