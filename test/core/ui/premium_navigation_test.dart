@@ -13,7 +13,7 @@ void main() {
     NavigationDestination(
       icon: Icon(Icons.explore_outlined),
       selectedIcon: Icon(Icons.explore_rounded),
-      label: 'کاوش',
+      label: 'کارگاه',
     ),
     NavigationDestination(
       icon: Icon(Icons.inbox_outlined),
