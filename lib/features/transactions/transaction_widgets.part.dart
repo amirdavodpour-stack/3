@@ -6,12 +6,12 @@ extension on _TransactionPageState {
     const en = ['Fund', 'Hold', 'Work', 'Deliver', 'Approve', 'Payout'];
     const fa = ['تأمین وجه', 'در امانت', 'در حال انجام', 'تحویل', 'تأیید', 'تسویه'];
     const icons = [
-      Icons.account_balance_wallet_rounded,
-      Icons.lock_clock_rounded,
-      Icons.work_outline_rounded,
-      Icons.outbox_rounded,
-      Icons.verified_rounded,
-      Icons.payments_rounded,
+      HopeV2Icons.wallet,
+      HopeV2Icons.secure,
+      HopeV2Icons.job,
+      HopeV2Icons.activity,
+      HopeV2Icons.completed,
+      HopeV2Icons.payments,
     ];
 
     return PremiumPanel(
@@ -64,7 +64,7 @@ extension on _TransactionPageState {
     required int index,
     required int current,
     required String label,
-    required IconData icon,
+    required Object icon,
     required bool last,
   }) {
     final scheme = Theme.of(context).colorScheme;
@@ -98,10 +98,11 @@ extension on _TransactionPageState {
                           : HopeV2Surfaces.border(context),
                     ),
                   ),
-                  child: Icon(
-                    completed ? Icons.check_rounded : icon,
+                  child: HopeIcon(
+                    completed ? HopeV2Icons.completed : icon,
                     size: 15,
                     color: completed ? scheme.onPrimary : color,
+                    strokeWidth: 1.9,
                   ),
                 ),
                 if (!last)
@@ -175,28 +176,28 @@ extension on _TransactionPageState {
     if (paymentStatus == 'NO_TRANSACTION' && owner) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => action('fund'),
-        icon: const Icon(Icons.account_balance_wallet_rounded),
+        icon: HopeIcon(HopeV2Icons.wallet, size: 19),
         label: Text(_t('تأمین وجه', 'Fund payment')),
       ));
     }
     if (paymentStatus == 'HOLD_PENDING' || paymentStatus == 'HOLD_FAILED') {
       actions.add(OutlinedButton.icon(
         onPressed: loading ? null : refresh,
-        icon: const Icon(Icons.sync_rounded),
+        icon: HopeIcon(HopeV2Icons.refresh, size: 19),
         label: Text(_t('بررسی وضعیت تأمین', 'Refresh funding status')),
       ));
     }
     if (paymentStatus == 'HELD' && job?.status == 'FUNDED' && provider) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => _jobAction('start'),
-        icon: const Icon(Icons.play_arrow_rounded),
+        icon: HopeIcon(HopeV2Icons.mission, size: 19),
         label: Text(_t('شروع کار', 'Start work')),
       ));
     }
     if (job?.status == 'IN_PROGRESS' && provider) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => _jobAction('deliver'),
-        icon: const Icon(Icons.outbox_rounded),
+        icon: HopeIcon(HopeV2Icons.activity, size: 19),
         label: Text(_t('تحویل برای بررسی', 'Submit delivery')),
       ));
     }
@@ -205,14 +206,14 @@ extension on _TransactionPageState {
         owner) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => _jobAction('accept'),
-        icon: const Icon(Icons.verified_rounded),
+        icon: HopeIcon(HopeV2Icons.completed, size: 19),
         label: Text(_t('تأیید و تکمیل', 'Approve & complete')),
       ));
     }
     if (paymentStatus == 'HELD' && owner) {
       actions.add(OutlinedButton.icon(
         onPressed: loading ? null : () => _confirmAction('refund'),
-        icon: const Icon(Icons.undo_rounded),
+        icon: HopeIcon(HopeV2Icons.transferOut, size: 19),
         label: Text(_t('درخواست بازپرداخت', 'Request a refund')),
       ));
     }
@@ -222,7 +223,7 @@ extension on _TransactionPageState {
         owner) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => action('release'),
-        icon: const Icon(Icons.payments_rounded),
+        icon: HopeIcon(HopeV2Icons.payments, size: 19),
         label: Text(_t('تسویه با مجری', 'Release payout')),
       ));
     }
@@ -231,7 +232,7 @@ extension on _TransactionPageState {
         highlight: true,
         padding: const EdgeInsets.all(14),
         child: Row(children: [
-          const Icon(Icons.check_circle_rounded, color: AppColors.success),
+          HopeIcon(HopeV2Icons.completed, color: AppColors.success, size: 20),
           const SizedBox(width: 9),
           Expanded(
               child: Text(_t(
@@ -273,7 +274,7 @@ extension on _TransactionPageState {
                 message: error!,
                 action: FilledButton.icon(
                   onPressed: loading ? null : refresh,
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                   label: Text(HopeCopy.of(context).copy_retry_49f3eba),
                 ),
               ),
@@ -313,7 +314,7 @@ extension on _TransactionPageState {
                   message: error!,
                   action: FilledButton.icon(
                     onPressed: loading ? null : refresh,
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                     label: Text(HopeCopy.of(context).copy_retry_49f3eba),
                   ),
                 ),
@@ -365,7 +366,7 @@ extension on _TransactionPageState {
                   IconButton(
                     onPressed: loading ? null : refresh,
                     tooltip: _t('به‌روزرسانی وضعیت', 'Refresh status'),
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                   ),
                 ],
               ),
