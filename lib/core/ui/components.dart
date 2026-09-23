@@ -342,6 +342,34 @@ class HopeIconTile extends StatelessWidget {
   }
 }
 
+class HopeIcon extends StatelessWidget {
+  const HopeIcon(
+    this.icon, {
+    super.key,
+    this.size = 20,
+    this.color,
+    this.strokeWidth = 2.0,
+  });
+
+  final Object icon;
+  final double size;
+  final Color? color;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = color ?? Theme.of(context).colorScheme.onSurface;
+    return icon is IconData
+        ? Icon(icon as IconData, size: size, color: resolved)
+        : HugeIcon(
+            icon: icon as List<List>,
+            size: size,
+            color: resolved,
+            strokeWidth: strokeWidth,
+          );
+  }
+}
+
 class MetricTile extends StatelessWidget {
   const MetricTile(
       {super.key,
@@ -552,7 +580,7 @@ class _SearchFieldState extends State<SearchField> {
       },
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.search_rounded),
+        prefixIcon: HopeIcon(HopeV2Icons.search, size: 21, color: HopeV2Colors.muted, strokeWidth: 1.9),
         hintText: resolvedHint,
         suffixIcon: hasQuery || widget.onFilter != null
             ? Row(
@@ -563,13 +591,13 @@ class _SearchFieldState extends State<SearchField> {
                       tooltip:
                           MaterialLocalizations.of(context).clearButtonTooltip,
                       onPressed: _clear,
-                      icon: const Icon(Icons.close_rounded),
+                      icon: HopeIcon(HopeV2Icons.close, size: 19, color: HopeV2Colors.muted, strokeWidth: 1.9),
                     ),
                   if (widget.onFilter != null)
                     IconButton(
                       tooltip: HopeCopy.of(context).copy_filters_df4d10e,
                       onPressed: widget.onFilter,
-                      icon: const Icon(Icons.tune_rounded),
+                      icon: HopeIcon(HopeV2Icons.filter, size: 19, color: HopeV2Colors.muted, strokeWidth: 1.9),
                     ),
                 ],
               )
