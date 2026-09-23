@@ -267,44 +267,66 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                 ],
                               ),
                               const SizedBox(height: HopeV2Spacing.lg),
-                              Row(
-                                children: [
-                                  metric(
-                                    pulseSnapshot.connectionState ==
-                                            ConnectionState.done
-                                        ? '$matchCount'
-                                        : '—',
-                                    _t(context, 'تطابق', 'matches'),
-                                    Icons.auto_awesome_outlined,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  metric(
-                                    pulseSnapshot.connectionState ==
-                                            ConnectionState.done
-                                        ? '$nearbyCount'
-                                        : '—',
-                                    _t(context, 'نزدیک شما', 'near you'),
-                                    Icons.near_me_outlined,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  metric(
-                                    auth.isGuest
-                                        ? '—'
-                                        : _activeJobs == null
-                                            ? '—'
-                                            : _activeJobCount?.toString() ?? '—',
-                                    _t(context, 'کار فعال', 'active'),
-                                    Icons.bolt_outlined,
-                                  ),
-                                  if (!auth.isGuest) ...[
-                                    const SizedBox(width: 12),
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final compact = constraints.maxWidth < 520;
+                                  final items = <Widget>[
                                     metric(
-                                      locked == null ? '—' : money(locked),
-                                      _t(context, 'قفل‌شده', 'protected'),
-                                      Icons.shield_outlined,
+                                      pulseSnapshot.connectionState ==
+                                              ConnectionState.done
+                                          ? '$matchCount'
+                                          : '—',
+                                      _t(context, 'تطابق', 'matches'),
+                                      Icons.auto_awesome_outlined,
                                     ),
-                                  ],
-                                ],
+                                    metric(
+                                      pulseSnapshot.connectionState ==
+                                              ConnectionState.done
+                                          ? '$nearbyCount'
+                                          : '—',
+                                      _t(context, 'نزدیک شما', 'near you'),
+                                      Icons.near_me_outlined,
+                                    ),
+                                    metric(
+                                      auth.isGuest
+                                          ? '—'
+                                          : _activeJobs == null
+                                              ? '—'
+                                              : _activeJobCount?.toString() ?? '—',
+                                      _t(context, 'کار فعال', 'active'),
+                                      Icons.bolt_outlined,
+                                    ),
+                                    if (!auth.isGuest)
+                                      metric(
+                                        locked == null ? '—' : money(locked),
+                                        _t(context, 'قفل‌شده', 'protected'),
+                                        Icons.shield_outlined,
+                                      ),
+                                  ];
+                                  if (!compact) {
+                                    return Row(
+                                      children: [
+                                        for (var i = 0; i < items.length; i++) ...[
+                                          if (i > 0) const SizedBox(width: 12),
+                                          Expanded(child: items[i]),
+                                        ],
+                                      ],
+                                    );
+                                  }
+                                  final columns = items.length == 1 ? 1 : 2;
+                                  final gap = 12.0;
+                                  final itemWidth =
+                                      (constraints.maxWidth - gap * (columns - 1)) /
+                                          columns;
+                                  return Wrap(
+                                    spacing: gap,
+                                    runSpacing: 16,
+                                    children: [
+                                      for (final item in items)
+                                        SizedBox(width: itemWidth, child: item),
+                                    ],
+                                  );
+                                },
                               ),
                             ],
                           ),
