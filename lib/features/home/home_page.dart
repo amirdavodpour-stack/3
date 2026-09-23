@@ -61,11 +61,11 @@ class _HomePageState extends State<HomePage> {
     final settings = context.watch<HopeSettingsController>();
     final isDesktop = MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium;
     final destinations = [
-      NavigationDestination(icon: const Icon(Icons.space_dashboard_outlined), selectedIcon: const Icon(Icons.space_dashboard_rounded), label: _t(context, 'خانه', 'Home')),
-      NavigationDestination(icon: const Icon(Icons.workspaces_outlined), selectedIcon: const Icon(Icons.workspaces_rounded), label: _t(context, 'کارگاه', 'Workshop')),
-      NavigationDestination(icon: const Icon(Icons.insights_outlined), selectedIcon: const Icon(Icons.insights_rounded), label: _t(context, 'فعالیت', 'Activity')),
-      NavigationDestination(icon: const Icon(Icons.account_balance_wallet_outlined), selectedIcon: const Icon(Icons.account_balance_wallet_rounded), label: _t(context, 'کیف پول', 'Wallet')),
-      NavigationDestination(icon: const Icon(Icons.person_outline_rounded), selectedIcon: const Icon(Icons.person_rounded), label: _t(context, 'پروفایل', 'Profile')),
+      NavigationDestination(icon: const Icon(HopeV2Icons.home), selectedIcon: const Icon(HopeV2Icons.homeSelected), label: _t(context, 'خانه', 'Home')),
+      NavigationDestination(icon: const Icon(HopeV2Icons.workshop), selectedIcon: const Icon(HopeV2Icons.workshopSelected), label: _t(context, 'کارگاه', 'Workshop')),
+      NavigationDestination(icon: const Icon(HopeV2Icons.activity), selectedIcon: const Icon(HopeV2Icons.activitySelected), label: _t(context, 'فعالیت', 'Activity')),
+      NavigationDestination(icon: const Icon(HopeV2Icons.wallet), selectedIcon: const Icon(HopeV2Icons.walletSelected), label: _t(context, 'کیف پول', 'Wallet')),
+      NavigationDestination(icon: const Icon(HopeV2Icons.profile), selectedIcon: const Icon(HopeV2Icons.profileSelected), label: _t(context, 'پروفایل', 'Profile')),
     ];
 
     final content = IndexedStack(
@@ -126,7 +126,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 6),
               Text(_t(context, 'دسترسی به بخش‌های برنامه.', 'App sections.'), style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 20),
-              _drawerTile(context, Icons.workspaces_rounded, _t(context, 'کارگاه فرصت‌ها', 'Workshop opportunities'), () { Navigator.pop(context); _selectTab(1); }),
+              _drawerTile(context, HopeV2Icons.workshopSelected, _t(context, 'کارگاه فرصت‌ها', 'Workshop opportunities'), () { Navigator.pop(context); _selectTab(1); }),
               if (!auth.isGuest) _drawerTile(context, Icons.local_offer_outlined, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
               if (!auth.isGuest) _drawerTile(context, Icons.notifications_rounded, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
               if (auth.user?['role'] == 'ADMIN') _drawerTile(context, Icons.admin_panel_settings_rounded, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
