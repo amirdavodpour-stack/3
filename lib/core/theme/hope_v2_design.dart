@@ -21,11 +21,11 @@ class HopeV2Colors {
   static const orange = Color(0xFFF97316);
   static const orangeDark = Color(0xFFFF9A4D);
   static const inkSoft = Color(0xFF26223A);
-  static const backgroundWarm = Color(0xFFF8F7FC);
+  static const backgroundWarm = Color(0xFFF3EDE5);
   static const ink = Color(0xFF151326);
   static const muted = Color(0xFF6B6780);
   static const surface = Color(0xFFFFFFFF);
-  static const background = Color(0xFFF6F5FC);
+  static const background = Color(0xFFEFE7DD);
   static const success = Color(0xFF22B8A7);
   static const successDark = Color(0xFF34D8C8);
   static const warning = Color(0xFFFFB45C);
@@ -33,29 +33,29 @@ class HopeV2Colors {
   static const danger = Color(0xFFBA454D);
   static const dangerDark = Color(0xFFF87171);
   static const softPrimary = Color(0xFFEAE5FF);
-  static const darkBackground = Color(0xFF090811);
-  static const darkSurface = Color(0xFF15131D);
-  static const darkCard = Color(0xFF1C1925);
+  static const darkBackground = Color(0xFF100D0B);
+  static const darkSurface = Color(0xFF171411);
+  static const darkCard = Color(0xFF201A16);
   static const darkText = Color(0xFFF8F7FC);
   static const darkMuted = Color(0xFF9A95AA);
 
-  static const pageLight = Color(0xFFF7F7FB);
-  static const pageDark = Color(0xFF090811);
+  static const pageLight = Color(0xFFF2ECE4);
+  static const pageDark = Color(0xFF100D0B);
   static const panelLight = Color(0xFFFFFFFF);
   static const panelDark = Color(0xFF15131D);
-  static const panelSoftLight = Color(0xFFFCFBFF);
-  static const panelSoftDark = Color(0xFF121A2A);
-  static const chipLight = Color(0xFFF1EFF7);
+  static const panelSoftLight = Color(0xFFFBF7F1);
+  static const panelSoftDark = Color(0xFF191513);
+  static const chipLight = Color(0xFFEEE6DC);
   static const chipDark = Color(0x1AFFFFFF);
   static const chipSelectedDark = Color(0x336366F1);
-  static const disabledLight = Color(0xFFEAE7F0);
-  static const borderControlLight = Color(0xFFE6E2F0);
-  static const dividerLight = Color(0xFFE8E5F0);
-  static const outlinedButtonBorderLight = Color(0xFFDED9EA);
-  static const navigationLight = Color(0xFDFEFEFF);
+  static const disabledLight = Color(0xFFE8E0D7);
+  static const borderControlLight = Color(0xFFDED5CC);
+  static const dividerLight = Color(0xFFE5DDD4);
+  static const outlinedButtonBorderLight = Color(0xFFD6CCC2);
+  static const navigationLight = Color(0xFCFBF7F3);
   static const navigationDark = Color(0xF70B101A);
   static const navigationIndicatorDark = Color(0x3D6366F1);
-  static const inputDark = Color(0xFF12111A);
+  static const inputDark = Color(0xFF15110F);
   static const darkBorder = Color(0x14FFFFFF);
   static const darkBorderStrong = Color(0x24FFFFFF);
   static const darkDivider = Color(0x12FFFFFF);
@@ -96,6 +96,18 @@ class HopeV2Icons {
   static const pending = HugeIcons.strokeRoundedHourglass;
   static const secure = HugeIcons.strokeRoundedLock;
   static const insights = HugeIcons.strokeRoundedActivitySpark;
+  static const add = HugeIcons.strokeRoundedAdd01;
+  static const menu = HugeIcons.strokeRoundedMenu01;
+  static const refresh = HugeIcons.strokeRoundedRefresh;
+  static const search = HugeIcons.strokeRoundedSearch01;
+  static const filter = HugeIcons.strokeRoundedFilter;
+  static const close = HugeIcons.strokeRoundedCancel01;
+  static const notifications = HugeIcons.strokeRoundedNotification01;
+  static const translate = HugeIcons.strokeRoundedLanguageCircle;
+  static const userAdd = HugeIcons.strokeRoundedUserAdd01;
+  static const login = HugeIcons.strokeRoundedLogin01;
+  static const arrowLeft = HugeIcons.strokeRoundedArrowLeft01;
+  static const arrowRight = HugeIcons.strokeRoundedArrowRight01;
 }
 
 class HopeV2Spacing {
