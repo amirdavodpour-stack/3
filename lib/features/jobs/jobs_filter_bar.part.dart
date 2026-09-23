@@ -66,33 +66,56 @@ class _JobsFilterHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: PremiumSearchBar(
-                      onChanged: onQueryChanged,
-                      hint: HopeCopy.of(context).copy_title_city_or_skill_bccb024,
-                    ),
-                  ),
-                  const SizedBox(width: HopeV2Spacing.sm),
-                  IconButton.filledTonal(
-                    onPressed: onSaveSearch,
-                    tooltip: HopeCopy.of(context).copy_save_search,
-                    icon: onSaveSearch == null
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.bookmark_add_outlined),
-                  ),
-                  if (savedSearchCount > 0)
-                    IconButton.filledTonal(
-                      onPressed: onOpenSavedSearches,
-                      tooltip: HopeCopy.of(context).copy_saved_searches,
-                      icon: const Icon(Icons.bookmarks_outlined),
-                    ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 560;
+                  final search = PremiumSearchBar(
+                    onChanged: onQueryChanged,
+                    hint: HopeCopy.of(context).copy_title_city_or_skill_bccb024,
+                  );
+                  final actions = Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton.filledTonal(
+                        onPressed: onSaveSearch,
+                        tooltip: HopeCopy.of(context).copy_save_search,
+                        icon: onSaveSearch == null
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.bookmark_add_outlined),
+                      ),
+                      if (savedSearchCount > 0)
+                        IconButton.filledTonal(
+                          onPressed: onOpenSavedSearches,
+                          tooltip: HopeCopy.of(context).copy_saved_searches,
+                          icon: const Icon(Icons.bookmarks_outlined),
+                        ),
+                    ],
+                  );
+                  if (compact) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        search,
+                        const SizedBox(height: HopeV2Spacing.sm),
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: actions,
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: search),
+                      const SizedBox(width: HopeV2Spacing.sm),
+                      actions,
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: HopeV2Spacing.md),
               SizedBox(
