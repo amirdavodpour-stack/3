@@ -173,16 +173,9 @@ class _ProfilePageState extends State<ProfilePage> {
               return Container(
                 padding: EdgeInsets.all(compact ? 16 : 20),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  gradient: LinearGradient(
-                    begin: AlignmentDirectional.topStart,
-                    end: AlignmentDirectional.bottomEnd,
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
-                  ),
-                  boxShadow: HopeV2Shadows.hero,
+                  borderRadius: BorderRadius.circular(HopeV2Radii.hero),
+                  gradient: HopeV2Gradients.heroDark,
+                  boxShadow: HopeV2Shadows.heroDark,
                 ),
                 child: compact
                     ? identity
@@ -190,15 +183,27 @@ class _ProfilePageState extends State<ProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(child: identity),
-                          const SizedBox(width: 10),
-                          const HopeMark(size: 42, showText: false),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const HopeMark(size: 42, showText: false),
+                              const SizedBox(height: 12),
+                              PremiumTag(
+                                icon: Icons.shield_outlined,
+                                label: _t(context, 'حساب فعال', 'Active account'),
+                                color: Colors.white,
+                                inverse: true,
+                              ),
+                            ],
+                          ),
                         ],
                       ),
               );
             },
           ),
           const SizedBox(height: 20),
-          SectionTitle(
+          PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: HopeCopy.of(context)
                 .copy_controls_that_make_hope_fit_you_better_ace4c0c,
