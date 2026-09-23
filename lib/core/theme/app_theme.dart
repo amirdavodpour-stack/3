@@ -213,8 +213,8 @@ class AppTheme {
         ),
       ),
       navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: HopeV2Surfaces.navigation(context),
-        indicatorColor: HopeV2Surfaces.navigationIndicator(context),
+        backgroundColor: dark ? HopeV2Colors.navigationDark : HopeV2Colors.navigationLight,
+        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : HopeV2Colors.softPrimary,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
