@@ -30,5 +30,5 @@ test "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-wallet
 
 grep -Fq 'READY_CHECK_TIMEOUT_SECONDS="${HOPE_READY_CHECK_TIMEOUT_SECONDS:-2}"' "$script"
 grep -Fq 'grep -Fq -- "$marker" "$active_runtime_log"' "$script"
-grep -Eq 'timeout .*"\$READY_CHECK_TIMEOUT_SECONDS".*adb shell run-as com.hope.marketplace' "$script"
+grep -Fq ''"${READY_CHECK_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace'' "$script"
 echo "runtime harness contract: PASS"
