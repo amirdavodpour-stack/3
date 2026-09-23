@@ -86,6 +86,7 @@ jobs:
           test -r /dev/kvm
           test -w /dev/kvm
 
+      # Exact-head T10 trigger: the workflow is intentionally push-triggered on the feature branch.
       - name: Android runtime evidence
         uses: ./.ci/android-emulator-runner
         env:
