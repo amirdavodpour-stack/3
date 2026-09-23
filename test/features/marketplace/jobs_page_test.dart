@@ -135,7 +135,7 @@ Future<void> _pump(WidgetTester tester, _Repo repo,
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-Finder _choiceChip(String label) => find.widgetWithText(ChoiceChip, label);
+Finder _choiceChip(String label) => find.bySemanticsLabel(label);
 
 void main() {
   testWidgets('jobs page requests categories and opportunities',
@@ -224,13 +224,13 @@ void main() {
     await _pump(tester, repo);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
+    await tester.tap(find.bySemanticsLabel('همه حوزه‌ها'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ListTile, 'طراحی'), findsOneWidget);
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(ActionChip, 'طراحی'), findsOneWidget);
+    expect(find.bySemanticsLabel('طراحی'), findsOneWidget);
     expect(find.text('design'), findsNothing);
     expect(find.text('طراحی گرافیک'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
@@ -243,12 +243,12 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
+    await tester.tap(find.bySemanticsLabel('همه حوزه‌ها'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ActionChip, 'طراحی'));
+    await tester.tap(find.bySemanticsLabel('طراحی'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
@@ -273,7 +273,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('طراحی در شیراز'), findsNothing);
-    await tester.tap(find.widgetWithText(ActionChip, 'اطراف تهران'));
+    await tester.tap(find.bySemanticsLabel('اطراف تهران'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'همه شهرها'), 200,
         scrollable: find.byType(Scrollable).last);
@@ -301,7 +301,7 @@ void main() {
     await _pump(tester, repo, settings: settings);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ActionChip, 'اطراف تهران'));
+    await tester.tap(find.bySemanticsLabel('اطراف تهران'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'شیراز'));
     await tester.pumpAndSettle();
