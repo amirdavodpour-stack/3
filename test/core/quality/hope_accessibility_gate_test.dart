@@ -33,13 +33,16 @@ void main() {
 
   testWidgets('Premium navigation destinations remain labeled and tappable',
       (tester) async {
+    var tappedIndex = -1;
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
         home: Scaffold(
           body: PremiumNavigationBar(
             selectedIndex: 0,
-            onDestinationSelected: (_) {},
+            onDestinationSelected: (index) {
+              tappedIndex = index;
+            },
             destinations: const [
               NavigationDestination(
                 icon: HugeIcon(icon: HopeV2Icons.home, size: 24),
@@ -77,8 +80,14 @@ void main() {
       ),
     );
 
-    expect(find.bySemanticsLabel('خانه'), findsOneWidget);
-    expect(find.bySemanticsLabel('کیف پول'), findsOneWidget);
+    final homeLabel = find.text('خانه');
+    final walletLabel = find.text('کیف پول');
+    expect(homeLabel, findsOneWidget);
+    expect(walletLabel, findsOneWidget);
+
+    await tester.tap(homeLabel);
+    expect(tappedIndex, 0);
+
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
   });
