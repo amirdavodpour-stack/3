@@ -1180,5 +1180,45 @@
   "copy_about_mission_description": "HOPE یک بازار کار است که دو نیاز متفاوت را از هم جدا می‌کند: «ماموریت» برای کاری مشخص با نتیجه و مبلغ روشن، و «شغل» برای همکاری پاره‌وقت یا تمام‌وقت با دستمزد ماهانه. هدف HOPE این است که مسیر پیدا کردن و پیشنهاد دادن فرصت‌های کاری را ساده‌تر، شفاف‌تر و حرفه‌ای‌تر کند و در عین حال حریم خصوصی کارجو و سلامت فرایند انتخاب را حفظ کند.",
   "copy_about_mission_fee_short": "۱۰٪ از کارفرما + ۱۰٪ از کارجو",
   "copy_about_job_fee_short": "۳۰٪ از دستمزد ماه اول کارجو",
-  "copy_pick_file": "انتخاب فایل"
+  "copy_pick_file": "انتخاب فایل",
+  "copy_find_the_right_opportunity": "فرصت مناسب خود را پیدا کنید",
+  "@copy_find_the_right_opportunity": {
+    "description": "عنوان بخش جست‌وجوی فرصت‌ها در بازار کار."
+  },
+  "copy_all_opportunities": "همه فرصت‌ها",
+  "@copy_all_opportunities": {
+    "description": "نام پیش‌فرض جست‌وجوی ذخیره‌شده وقتی فیلتری فعال نیست."
+  },
+  "copy_save_search": "ذخیره جست‌وجو",
+  "@copy_save_search": {
+    "description": "عملیات ذخیره جست‌وجوی فعلی بازار کار."
+  },
+  "copy_saving": "در حال ذخیره…",
+  "@copy_saving": {
+    "description": "برچسب هنگام ذخیره جست‌وجوی بازار کار."
+  },
+  "copy_saved_searches": "ذخیره‌شده",
+  "@copy_saved_searches": {
+    "description": "برچسب فهرست جست‌وجوهای ذخیره‌شده."
+  },
+  "copy_search_name": "نام جست‌وجو",
+  "@copy_search_name": {
+    "description": "راهنمای نام‌گذاری جست‌وجوی ذخیره‌شده."
+  },
+  "copy_could_not_save_search": "ذخیره جست‌وجو ناموفق بود.",
+  "@copy_could_not_save_search": {
+    "description": "خطای قابل‌بازیابی هنگام ذخیره جست‌وجوی بازار کار."
+  },
+  "copy_could_not_delete_saved_search": "حذف جست‌وجوی ذخیره‌شده ناموفق بود.",
+  "@copy_could_not_delete_saved_search": {
+    "description": "خطای قابل‌بازیابی هنگام حذف جست‌وجوی ذخیره‌شده."
+  },
+  "copy_categories_load_failed": "دریافت دسته‌بندی‌ها ناموفق بود.",
+  "@copy_categories_load_failed": {
+    "description": "خطای قابل‌بازیابی هنگام دریافت دسته‌بندی‌های فیلتر بازار کار."
+  },
+  "copy_all_cities": "همه شهرها",
+  "@copy_all_cities": {
+    "description": "برچسب گزینه بدون محدودیت شهر در فیلتر بازار کار."
+  }
 }
