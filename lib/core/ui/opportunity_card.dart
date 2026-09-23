@@ -24,10 +24,10 @@ class _MatchBadge extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 32),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: HopeV2Colors.secondary.withValues(alpha: .12),
+        color: HopeV2Colors.orange.withValues(alpha: .11),
         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
         border: Border.all(
-          color: HopeV2Colors.secondary.withValues(alpha: .24),
+          color: HopeV2Colors.orange.withValues(alpha: .28),
         ),
       ),
       child: Row(
@@ -36,13 +36,13 @@ class _MatchBadge extends StatelessWidget {
           const Icon(
             Icons.check_circle_rounded,
             size: 14,
-            color: HopeV2Colors.secondary,
+            color: HopeV2Colors.orange,
           ),
           const SizedBox(width: 5),
           Text(
             value.round().toString() + '% ' + _t(context, 'تطابق', 'match'),
             style: const TextStyle(
-              color: HopeV2Colors.secondary,
+              color: HopeV2Colors.orange,
               fontSize: 11,
               fontWeight: FontWeight.w900,
             ),
@@ -110,6 +110,7 @@ class OpportunityCard extends StatelessWidget {
         : (job.monthlySalary ?? job.budgetMin ?? '');
     final title = job.title.trim().isEmpty ? copy.copy_untitled_d89410e : job.title;
     final primary = job.isMission ? HopeV2Colors.primary : secondaryAccent(context);
+    final featuredAccent = HopeV2Colors.orange;
     final reasons = job.recommendationReasons.take(3).toList(growable: false);
 
     return Semantics(
@@ -227,7 +228,7 @@ class OpportunityCard extends StatelessWidget {
                               : (job.isMission
                                   ? Icons.bolt_rounded
                                   : Icons.business_center_rounded),
-                          color: primary,
+                          color: featured ? featuredAccent : primary,
                         ),
                       ),
                       if (featured && job.recommendationScore != null) ...[
