@@ -15,5 +15,6 @@ grep -Eq 'ack_marker="\$\{marker#HOPE_SCREENSHOT_READY:\}"' tools/hope-wallet-ru
 grep -Eq 'touch "files/hope-screen-acks/\$ack_marker"' tools/hope-wallet-runtime-evidence.sh
 grep -Eq 'timeout .*adb shell run-as com.hope.marketplace mkdir -p files/hope-screen-acks' "$script"
 grep -Eq 'timeout .*adb shell run-as com.hope.marketplace touch "files/hope-screen-acks/\$ack_marker"' "$script"
+! grep -Fq 'adb shell run-as com.hope.marketplace rm -rf files/hope-screen-acks' "$script"
 
 echo "runtime harness contract: PASS"
