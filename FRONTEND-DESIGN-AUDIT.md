@@ -1,4 +1,4 @@
-# HOPE Frontend Design Premium Audit — 2026-09-23
+# HOPE Frontend Design Premium Audit — 2026-09-23 (Consolidation Pass)
 
 ## Scope
 Static review of the Flutter frontend at branch `feat/google-sign-in-2026-09-20`, centered on the current Home, Marketplace, Auth, Profile surfaces and the shared theme/UI primitives.
@@ -58,15 +58,28 @@ Multiple screens call `ScaffoldMessenger` directly for failures.
 
 **Action:** verify the canonical feedback owner across Auth, Marketplace, Wallet, Transactions and Profile. If the same feedback behavior repeats, centralize it before adding more screen-local SnackBar behavior.
 
-### 7. Semantic warning color bypasses the token system — MEDIUM
-`HopeV2SemanticColors.warning()` resolves through `Colors.orange.shade700` instead of a HOPE semantic warning token.
+### 7. Semantic warning color bypassed the token system — FIXED IN THIS PASS
+`HopeV2SemanticColors.warning()` now resolves through the canonical HOPE warning token in light/dark modes.
 
-**Action:** route semantic warning through the canonical theme/token mapping.
+### 8. Skeleton animation allocated a controller under reduced motion — FIXED IN THIS PASS
+`SkeletonBox` now creates its animation controller only when motion is enabled.
 
-### 8. Skeleton animation still allocates an animation controller under reduced motion — LOW
-`SkeletonBox` returns a static surface when reduced motion is enabled, but its controller is still created/repeated.
+### 9. Async/filter loading motion ignored reduced-motion — FIXED IN THIS PASS
+`HopeAsyncState` renders a static state icon instead of a spinner when reduced motion is enabled. `PremiumFilterChip` also disables its container transition and replaces its loading spinner with a static hourglass icon in reduced-motion mode.
 
-**Action:** make the controller conditional or use a non-animated path at state initialization if profiling shows this matters.
+### 10. Theme geometry/surface literals drifted outside token ownership — FIXED IN THIS PASS
+`HopeV2Radii` now owns semantic control geometry and `HopeV2Colors` owns shared theme surface literals used by `AppTheme`. Shared components use the same token source rather than maintaining a parallel set of values.
+
+## Consolidation pass — evidence trail
+
+Changes landed on `feat/google-sign-in-2026-09-20` include:
+- canonical semantic warning mapping;
+- reduced-motion-safe SkeletonBox, HopeAsyncState, and PremiumFilterChip behavior;
+- shared interaction tests for SearchField, PressableScale, theme geometry, semantic warning, and async state;
+- canonical theme surface/geometry mapping in AppTheme;
+- durable DESIGN.md token ownership update.
+
+Latest runtime verification remains pending in GitHub Actions; static inspection is not treated as runtime PASS.
 
 ## Design direction
 
