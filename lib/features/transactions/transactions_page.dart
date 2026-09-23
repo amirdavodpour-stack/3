@@ -308,7 +308,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    _activityNavigation(context),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
                         kind: HopeStateKind.error,
@@ -458,6 +457,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           ),
                         );
                     }),
+                    _activityNavigation(context),
                   ],
                 ),
               ));
