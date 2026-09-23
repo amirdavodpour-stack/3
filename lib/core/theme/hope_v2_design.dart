@@ -112,6 +112,14 @@ class HopeV2Touch {
   static const minimum = 48.0;
 }
 
+class HopeV2Navigation {
+  const HopeV2Navigation._();
+
+  static const barHeight = 80.0;
+  static const railMinWidth = 88.0;
+  static const railExtendedWidth = 210.0;
+}
+
 class HopeV2Layer {
   const HopeV2Layer._();
   static const base = 0;

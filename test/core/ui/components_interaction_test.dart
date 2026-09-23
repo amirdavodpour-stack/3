@@ -120,6 +120,50 @@ void main() {
     );
   });
 
+  testWidgets('shared navigation geometry uses canonical tokens',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Column(
+            children: [
+              Expanded(
+                child: PremiumNavigationRail(
+                  selectedIndex: 0,
+                  onDestinationSelected: (_) {},
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.home_outlined),
+                      label: 'Home',
+                    ),
+                  ],
+                ),
+              ),
+              PremiumNavigationBar(
+                selectedIndex: 0,
+                onDestinationSelected: (_) {},
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.home_outlined),
+                    label: 'Home',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+    expect(rail.minWidth, HopeV2Navigation.railMinWidth);
+    expect(rail.minExtendedWidth, HopeV2Navigation.railExtendedWidth);
+
+    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    expect(bar.height, HopeV2Navigation.barHeight);
+  });
+
   testWidgets('PressableScale is keyboard-focusable and exposes button semantics',
       (tester) async {
     var taps = 0;

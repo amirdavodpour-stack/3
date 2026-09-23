@@ -34,7 +34,7 @@ class PremiumNavigationBar extends StatelessWidget {
           selectedIndex: selectedIndex,
           onDestinationSelected: onDestinationSelected,
           destinations: destinations,
-          height: 80,
+          height: HopeV2Navigation.barHeight,
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           indicatorColor: scheme.primary.withValues(alpha: .12),
@@ -90,8 +90,8 @@ class PremiumNavigationRail extends StatelessWidget {
               ),
           ],
           extended: extended,
-          minWidth: 88,
-          minExtendedWidth: 210,
+          minWidth: HopeV2Navigation.railMinWidth,
+          minExtendedWidth: HopeV2Navigation.railExtendedWidth,
           labelType: extended
               ? NavigationRailLabelType.none
               : NavigationRailLabelType.all,

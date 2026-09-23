@@ -407,7 +407,7 @@ class GradientHero extends StatelessWidget {
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
           ),
-          borderRadius: BorderRadius.circular(31),
+          borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           boxShadow: const [
             BoxShadow(
                 color: Color(0x2B6C4DFF), blurRadius: 32, offset: Offset(0, 16))
@@ -433,7 +433,7 @@ class GradientHero extends StatelessWidget {
                       color: Colors.white.withValues(alpha: .06),
                       shape: BoxShape.circle))),
           Padding(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(HopeV2Spacing.xl),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(
                   child: Column(
@@ -641,7 +641,7 @@ class OpportunitySkeletonCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SkeletonBox(height: 110, radius: 26),
           Padding(
-            padding: EdgeInsets.all(17),
+            padding: const EdgeInsets.all(HopeV2Spacing.lg),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SkeletonBox(height: 20, width: 240),

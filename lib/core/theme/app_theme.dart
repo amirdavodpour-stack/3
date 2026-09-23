@@ -141,7 +141,7 @@ class AppTheme {
         labelStyle: TextStyle(color: mutedColor, fontWeight: FontWeight.w700),
         prefixIconColor: mutedColor,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 17, vertical: 17),
+            const EdgeInsets.symmetric(horizontal: HopeV2Spacing.lg, vertical: HopeV2Spacing.lg),
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide.none),
@@ -155,13 +155,13 @@ class AppTheme {
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(color: scheme.primary, width: 1.6)),
         errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: const BorderSide(color: AppColors.danger)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.symmetric(horizontal: HopeV2Spacing.lg),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle:
