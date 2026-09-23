@@ -125,7 +125,10 @@ class PremiumPageFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
     return DecoratedBox(
-      decoration: BoxDecoration(color: HopeV2Surfaces.page(context)),
+      decoration: BoxDecoration(
+        color: HopeV2Surfaces.page(context),
+        gradient: HopeV2Surfaces.pageHalo(context),
+      ),
       child: Stack(
         children: [
           Positioned.fill(
