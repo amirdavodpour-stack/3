@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
@@ -61,11 +62,11 @@ class _HomePageState extends State<HomePage> {
     final settings = context.watch<HopeSettingsController>();
     final isDesktop = MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium;
     final destinations = [
-      NavigationDestination(icon: const Icon(HopeV2Icons.home), selectedIcon: const Icon(HopeV2Icons.homeSelected), label: _t(context, 'خانه', 'Home')),
-      NavigationDestination(icon: const Icon(HopeV2Icons.workshop), selectedIcon: const Icon(HopeV2Icons.workshopSelected), label: _t(context, 'کارگاه', 'Workshop')),
-      NavigationDestination(icon: const Icon(HopeV2Icons.activity), selectedIcon: const Icon(HopeV2Icons.activitySelected), label: _t(context, 'فعالیت', 'Activity')),
-      NavigationDestination(icon: const Icon(HopeV2Icons.wallet), selectedIcon: const Icon(HopeV2Icons.walletSelected), label: _t(context, 'کیف پول', 'Wallet')),
-      NavigationDestination(icon: const Icon(HopeV2Icons.profile), selectedIcon: const Icon(HopeV2Icons.profileSelected), label: _t(context, 'پروفایل', 'Profile')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.home, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.homeSelected, size: 24), label: _t(context, 'خانه', 'Home')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24), label: _t(context, 'کارگاه', 'Workshop')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.activity, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.activitySelected, size: 24), label: _t(context, 'فعالیت', 'Activity')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.walletSelected, size: 24), label: _t(context, 'کیف پول', 'Wallet')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.profile, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.profileSelected, size: 24), label: _t(context, 'پروفایل', 'Profile')),
     ];
 
     final content = IndexedStack(
