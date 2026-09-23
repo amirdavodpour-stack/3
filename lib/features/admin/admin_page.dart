@@ -469,9 +469,10 @@ class _AdminPageState extends State<AdminPage>
                                           .copy_suspend_44bded8
                                       : HopeCopy.of(context)
                                           .copy_activate_2215693,
-                                  icon: Icon(status == 'ACTIVE'
-                                      ? Icons.pause_circle_outline
-                                      : Icons.play_circle_outline)))));
+                                  icon: HopeIcon(status == 'ACTIVE'
+                                      ? HopeV2Icons.secure
+                                      : HopeV2Icons.completed,
+                                    size: 19)))));
             }).toList());
       });
 
@@ -496,7 +497,7 @@ class _AdminPageState extends State<AdminPage>
                           child: ListTile(
                               contentPadding: EdgeInsets.zero,
                               leading:
-                                  const HopeIconTile(Icons.history_rounded),
+                                  const HopeIconTile(HopeV2Icons.activity),
                               title: Text(_auditActionLabel(a.action)),
                               subtitle: Text(
                                   '${a.actorName.isEmpty ? HopeCopy.of(context).copy_system_bf4e081 : a.actorName} • ${_entityTypeLabel(a.entityType)} • ${a.createdAt}'))));
