@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -11,6 +12,7 @@ import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, this.returnIntent});
@@ -107,10 +109,11 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: Icon(
-                      Localizations.localeOf(context).languageCode == 'en'
-                          ? Icons.arrow_back_rounded
-                          : Icons.arrow_forward_rounded,
+                    icon: HugeIcon(
+                      icon: Localizations.localeOf(context).languageCode == 'en'
+                          ? HopeV2Icons.arrowLeft
+                          : HopeV2Icons.arrowRight,
+                      size: 21,
                     ),
                     tooltip: l10n.backButtonTooltip,
                   ),
@@ -123,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
                 eyebrow: l10n.copy_hope_account_4ba3966,
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
-                icon: Icons.lock_open_rounded,
+                icon: HopeV2Icons.login,
                 height: 280,
               ),
               const SizedBox(height: 14),
@@ -138,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: loading ? null : submitGoogle,
-                            icon: const Icon(Icons.account_circle_outlined),
+                            icon: HugeIcon(icon: HopeV2Icons.userAdd, size: 19),
                             label: Text(l10n.signInWithGoogle),
                           ),
                         ),
@@ -161,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.emailLabel,
-                          prefixIcon: const Icon(Icons.mail_outline_rounded),
+                          prefixIcon: HopeIcon(HopeV2Icons.mail, size: 20),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -171,12 +174,13 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
-                          prefixIcon: const Icon(Icons.lock_outline_rounded),
+                          prefixIcon: HopeIcon(HopeV2Icons.password, size: 20),
                           suffixIcon: IconButton(
-                            icon: Icon(
-                              obscure
-                                  ? Icons.visibility_off_rounded
-                                  : Icons.visibility_rounded,
+                            icon: HugeIcon(
+                              icon: obscure
+                                  ? HopeV2Icons.viewOff
+                                  : HopeV2Icons.view,
+                              size: 20,
                             ),
                             tooltip: obscure
                                 ? l10n.showPasswordTooltip
@@ -216,7 +220,7 @@ class _LoginPageState extends State<LoginPage> {
                         context.read<AuthController>().continueAsGuest();
                         Navigator.maybePop(context);
                       },
-                icon: const Icon(Icons.travel_explore_rounded),
+                icon: HugeIcon(icon: HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
               ),
               const SizedBox(height: 14),
