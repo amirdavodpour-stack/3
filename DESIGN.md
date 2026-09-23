@@ -19,6 +19,7 @@ HOPE should feel like a **premium work instrument** rather than a generic SaaS d
 - light mode remains supported as an explicit user-selected alternative;
 - confident violet as the primary brand signal;
 - restrained teal for positive/secondary actions;
+- focused orange for featured/recommended opportunity signals, used as a small visual counterpoint to violet;
 - warm amber for caution/attention;
 - generous but disciplined spacing;
 - rounded surfaces used as functional grouping, not decoration;
@@ -35,6 +36,7 @@ Avoid generic AI-dashboard patterns: excessive gradients, decorative statistics,
 - Secondary: `#22B8A7`
 - Secondary strong/light-mode accessible teal: `#0C7D70`
 - Accent/warning: `#FFB45C`
+- Featured signal orange: `#F97316` (dark: `#FF9A4D`); reserved for recommendation/attention emphasis, not primary actions
 - Ink: `#151326`
 - Muted text: `#6B6780`
 - Light page: `#F7F7FB`
