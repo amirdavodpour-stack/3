@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/copy.dart';
 import 'package:provider/provider.dart';
 import '../../core/application/application_registry.dart';
 import '../../core/application/application_registry_context.dart';
@@ -67,8 +68,10 @@ class _JobsPageState extends State<JobsPage> {
       return parsed;
     } catch (error) {
       if (mounted) {
-        setState(() => _categoryError =
-            apiErrorMessage(error, fallback: 'دسته‌بندی‌ها بارگذاری نشدند.'));
+        setState(() => _categoryError = apiErrorMessage(
+              error,
+              fallback: HopeCopy.of(context).copy_categories_load_failed,
+            ));
       }
       return const [];
     }
@@ -97,7 +100,9 @@ class _JobsPageState extends State<JobsPage> {
     if (_visibility != 'ALL') parts.add(_visibility);
     if (_category != 'ALL') parts.add(_category);
     if (_city != 'AUTO') parts.add(_city);
-    return parts.isEmpty ? (Localizations.localeOf(context).languageCode == 'en' ? 'All opportunities' : 'همه فرصت‌ها') : parts.join(' • ');
+    return parts.isEmpty
+        ? HopeCopy.of(context).copy_all_opportunities
+        : parts.join(' • ');
   }
 
   void _setQuery(String value) {
@@ -124,16 +129,22 @@ class _JobsPageState extends State<JobsPage> {
       final name = await showDialog<String>(
         context: context,
       builder: (context) => AlertDialog(
-        title: Text(locale == 'en' ? 'Save search' : 'ذخیره جست‌وجو'),
+        title: Text(HopeCopy.of(context).copy_save_search),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLength: 60,
-          decoration: InputDecoration(hintText: locale == 'en' ? 'Search name' : 'نام جست‌وجو'),
+          decoration: InputDecoration(hintText: HopeCopy.of(context).copy_search_name),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(locale == 'en' ? 'Cancel' : 'لغو')),
-          FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: Text(locale == 'en' ? 'Save' : 'ذخیره')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(HopeCopy.of(context).copy_cancel_9955c4b),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: Text(HopeCopy.of(context).copy_save_search),
+          ),
         ],
       ),
       );
@@ -157,9 +168,7 @@ class _JobsPageState extends State<JobsPage> {
           context,
           apiErrorMessage(
             error,
-            fallback: locale == 'en'
-                ? 'Could not save the search.'
-                : 'ذخیره جست‌وجو ناموفق بود.',
+            fallback: HopeCopy.of(context).copy_could_not_save_search,
           ),
           tone: HopeFeedbackTone.error,
         );
@@ -195,15 +204,15 @@ class _JobsPageState extends State<JobsPage> {
                 subtitle: Text(
                   [
                     item.query,
-                    item.kind == 'ALL' ? '' : item.kind,
-                    item.visibility == 'ALL' ? '' : item.visibility,
+                    item.kind == 'ALL' ? '' : opportunityKindLabel(context, item.kind),
+                    item.visibility == 'ALL'
+                        ? ''
+                        : opportunityVisibilityLabel(context, item.visibility),
                   ].where((value) => value.isNotEmpty).join(' • '),
                 ),
                 onTap: deleting ? null : () => Navigator.pop(context, item),
                 trailing: IconButton(
-                  tooltip: Localizations.localeOf(context).languageCode == 'en'
-                      ? 'Delete'
-                      : 'حذف',
+                  tooltip: HopeCopy.of(context).copy_delete_b17eb9d,
                   onPressed: deleting
                       ? null
                       : () async {
@@ -395,7 +404,9 @@ class _JobsPageState extends State<JobsPage> {
           Text(HopeCopy.of(context).copy_choose_a_city_a93b334,
               style: Theme.of(context).textTheme.headlineSmall),
           ...[...HopeSettingsController.cities, 'همه'].map((city) => ListTile(
-                title: Text(city),
+                title: Text(
+                  city == 'همه' ? HopeCopy.of(context).copy_all_cities : city,
+                ),
                 trailing: (_city == city ||
                         (_city == 'AUTO' && city == settings.city))
                     ? const Icon(Icons.check_rounded)
