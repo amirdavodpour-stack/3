@@ -111,7 +111,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              final compact = constraints.maxWidth < 380;
+              final compact = constraints.maxWidth < 520;
               final identity = Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
