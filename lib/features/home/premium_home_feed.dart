@@ -101,6 +101,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       _error = null;
       _opportunities = null;
       _activeJobs = null;
+      _activeJobCount = null;
       _wallet = null;
     });
     _load();
