@@ -100,3 +100,7 @@ Business-named variants are preferred over one-off conditional visual forks.
 ## Change discipline
 A durable visual change must update this document and the runtime token/component source in the same changeset.
 Do not redesign a screen merely to make it different from a sibling. Improve the canonical system or document an intentional business variant.
+
+### Icon language
+
+Navigation and recurring product icons use a restrained, product-specific vocabulary: dashboard-customize for Home, hub for Workshop, timeline for Activity, wallet for finance, and manage-account for identity; opportunity, matching, protected-funds, payment, and lifecycle states use a dedicated HOPE icon vocabulary rather than ad-hoc Material defaults;
