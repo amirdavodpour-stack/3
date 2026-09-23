@@ -24,6 +24,11 @@ void main() {
     expect(HopeV2Colors.navigationIndicatorLight, const Color(0xFFE5DFFF));
   });
 
+  test('HOPE typography keeps font selection behind a single design-system token', () {
+    expect(HopeV2Typography.primaryFontFamily, 'Vazirmatn');
+    expect(HopeV2Typography.fontFamilyFallback, contains('Roboto'));
+  });
+
   test('HOPE warm-brown accent is a light accent token, not the page base', () {
     expect(HopeV2Colors.warmHalo, const Color(0xFFC2A487));
   });
