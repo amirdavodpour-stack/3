@@ -18,6 +18,10 @@ if grep -Fq 'adb shell run-as com.hope.marketplace test -s "$remote_path"' "$scr
   exit 1
 fi
 grep -Fq 'test -s "$tmp_output"' "$script"
+grep -Fq 'screenshot_magic="$(od -An -tx1 -N8 "$tmp_output"' "$script"
+grep -Fq 'if [ "$screenshot_magic" != "89504e470d0a1a0a" ]; then' "$script"
+grep -Fq 'ui-hierarchy-not-hope' "$script"
+grep -Fq 'package="com.hope.marketplace"' "$script"
 grep -Fq 'mv -- "$tmp_output" "$evidence_dir/$output"' "$script"
 grep -Fq 'adb shell run-as com.hope.marketplace rm -f "$remote_path"' "$script"
 
