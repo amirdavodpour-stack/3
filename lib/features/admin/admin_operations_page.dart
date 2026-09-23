@@ -163,7 +163,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: EmptyState(
-            icon: Icons.cloud_off_rounded,
+            icon: HopeV2Icons.pending,
             title: _t('دریافت اطلاعات ناموفق بود', 'Could not load data'),
             message: apiErrorMessage(s.error ?? Object()),
             action: FilledButton(
@@ -213,7 +213,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
                       _t('گزارش‌های واقعی کاربران و وضعیت رسیدگی.', 'Real user reports and their review state.')),
                   const SizedBox(height: 12),
                   if (rows.isEmpty)
-                    _empty(Icons.verified_user_outlined, _t('گزارشی وجود ندارد', 'No reports'))
+                    _empty(HopeV2Icons.secure, _t('گزارشی وجود ندارد', 'No reports'))
                   else
                     ...rows.map(_reportCard),
                 ],
@@ -287,7 +287,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
                           'Cases explicitly awaiting backend operational resolution.')),
                   const SizedBox(height: 12),
                   if (rows.isEmpty)
-                    _empty(Icons.task_alt_rounded, _t('تسویه ناشناخته‌ای نیست', 'No unknown payouts'))
+                    _empty(HopeV2Icons.completed, _t('تسویه ناشناخته‌ای نیست', 'No unknown payouts'))
                   else
                     ...rows.map(_payoutCard),
                 ],
@@ -447,7 +447,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   Widget _metricGrid(List<MapEntry<String, dynamic>> entries) {
     if (entries.isEmpty) {
       return _empty(
-        Icons.info_outline,
+        HopeV2Icons.insights,
         _t('داده‌ای نیست', 'No metrics'),
       );
     }
@@ -518,7 +518,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     ),
   );
 
-  Widget _empty(IconData icon, String text) => Padding(
+  Widget _empty(Object icon, String text) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 50),
     child: EmptyState(icon: icon, title: text, message: ''),
   );
