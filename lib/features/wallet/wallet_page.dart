@@ -197,7 +197,7 @@ class _WalletPageState extends State<WalletPage> {
     return credit ? colors.tertiary : colors.error;
   }
 
-  IconData _directionIcon(bool credit) => credit ? HopeV2Icons.transferIn : HopeV2Icons.transferOut;
+  Object _directionIcon(bool credit) => credit ? HopeV2Icons.transferIn : HopeV2Icons.transferOut;
 
   Future<void> _openTopUp() async {
     final amount = await _amountDialog(
@@ -542,7 +542,7 @@ class _WalletPageState extends State<WalletPage> {
         'REQUESTED', 'RESERVED', 'PROCESSING', 'UNKNOWN'
       }.contains(p.status.toUpperCase())).length;
 
-  IconData _payoutIcon(String status) {
+  Object _payoutIcon(String status) {
     switch (status.toUpperCase()) {
       case 'SUCCEEDED': return HopeV2Icons.completed;
       case 'FAILED': return HopeV2Icons.error;
