@@ -113,4 +113,5 @@ jobs:
           path: |
             docs/audit/evidence/android-runtime/**
             ${{ runner.temp }}/hope-critical-screens-runtime.log
+            ${{ runner.temp }}/hope-responsive-runtime.log
           if-no-files-found: warn
