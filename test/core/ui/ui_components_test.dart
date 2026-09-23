@@ -77,6 +77,40 @@ void main() {
     expect(left, greaterThan(300));
   });
 
+  testWidgets("premium hero avoids compact-height overflow", (tester) async {
+    tester.view.physicalSize = const Size(720, 1280);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(24),
+            child: PremiumHero(
+              eyebrow: "فرصت‌های ویژه",
+              title: "برای شروع حرفه‌ای یک فرصت مناسب پیدا کنید",
+              message:
+                  "جزئیات فرصت را بررسی کنید و با اطلاعات کافی برای همکاری اقدام کنید.",
+              height: 360,
+              action: SizedBox(
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _noopAction,
+                  child: Text("مشاهده فرصت"),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets("section title stacks action on narrow screens",
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
