@@ -44,6 +44,6 @@ void main() {
     await tester.pumpWidget(_app(const Locale('en')));
     await tester.pumpAndSettle();
     expect(find.byType(PremiumHero), findsOneWidget);
-    expect(find.textContaining('work marketplace'), findsOneWidget);
+    expect(find.text('A work marketplace built around trust'), findsOneWidget);
   });
 }
