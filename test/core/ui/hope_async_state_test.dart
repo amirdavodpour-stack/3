@@ -41,7 +41,7 @@ void main() {
 
     final semantics = tester.getSemantics(find.byType(HopeAsyncState));
     expect(semantics.flagsCollection.isLiveRegion, isTrue);
-    expect(semantics.label.trim(), 'خطا. دوباره تلاش کنید');
+    expect(semantics.label, 'خطا. دوباره تلاش کنید');
   });
 
   testWidgets('loading state removes animated spinner when reduced motion is enabled',
