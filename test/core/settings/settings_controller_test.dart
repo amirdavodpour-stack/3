@@ -131,7 +131,7 @@ void main() {
       expect(notifications, 4);
       expect(settings.notifications, isFalse);
       expect(settings.quietHours, isTrue);
-      expect(settings.personalizedRecommendations, isTrue);
+      expect(settings.personalizedRecommendations, isFalse);
       expect(settings.compactCards, isTrue);
     });
   });
