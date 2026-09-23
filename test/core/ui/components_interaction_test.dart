@@ -22,15 +22,15 @@ void main() {
       ),
     );
 
-    expect(find.byTooltip('پاک کردن جست‌وجو'), findsNothing);
+    expect(find.byTooltip(MaterialLocalizations.of(tester.element(find.byType(TextField)).context).clearButtonTooltip), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'کار');
     await tester.pump();
 
     expect(values.last, 'کار');
-    expect(find.byTooltip('پاک کردن جست‌وجو'), findsOneWidget);
+    expect(find.byTooltip(MaterialLocalizations.of(tester.element(find.byType(TextField)).context).clearButtonTooltip), findsOneWidget);
 
-    await tester.tap(find.byTooltip('پاک کردن جست‌وجو'));
+    await tester.tap(find.byTooltip(MaterialLocalizations.of(tester.element(find.byType(TextField)).context).clearButtonTooltip));
     await tester.pump();
 
     expect(find.byType(TextField), findsOneWidget);
