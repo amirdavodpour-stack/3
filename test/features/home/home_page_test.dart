@@ -92,6 +92,8 @@ void main() {
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(PremiumHeader), findsOneWidget);
     expect(find.byType(PremiumStatCard), findsWidgets);
+    expect(find.text('دسترسی سریع'), findsOneWidget);
+    expect(find.text('کاوش فرصت‌ها'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
