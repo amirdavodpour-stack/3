@@ -174,6 +174,30 @@ Future<void> _fillMissionForm(WidgetTester tester, {String? category}) async {
 }
 
 void main() {
+  testWidgets(
+      'create job stays render-safe with keyboard inset and landscape orientation',
+      (tester) async {
+    final repo = _FakeMarket();
+
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.viewInsets = const EdgeInsets.only(bottom: 320);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+
+    await _pump(tester, repo, width: 360);
+    expect(tester.takeException(), isNull);
+    expect(find.byType(TextField), findsWidgets);
+
+    tester.view.viewInsets = EdgeInsets.zero;
+    tester.view.physicalSize = const Size(800, 360);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CreateJobPage), findsOneWidget);
+  });
+
   testWidgets('mission publish delegates create then publish and pops back',
       (tester) async {
     final repo = _FakeMarket();
