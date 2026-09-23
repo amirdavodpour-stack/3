@@ -62,7 +62,7 @@ class _HomePageState extends State<HomePage> {
     final isDesktop = MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium;
     final destinations = [
       NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home_rounded), label: _t(context, 'خانه', 'Home')),
-      NavigationDestination(icon: const Icon(Icons.explore_outlined), selectedIcon: const Icon(Icons.explore_rounded), label: _t(context, 'کارگاه', 'Workshop')),
+      NavigationDestination(icon: const Icon(Icons.handyman_outlined), selectedIcon: const Icon(Icons.handyman_rounded), label: _t(context, 'کارگاه', 'Workshop')),
       NavigationDestination(icon: const Icon(Icons.inbox_outlined), selectedIcon: const Icon(Icons.inbox_rounded), label: _t(context, 'فعالیت', 'Activity')),
       NavigationDestination(icon: const Icon(Icons.account_balance_wallet_outlined), selectedIcon: const Icon(Icons.account_balance_wallet_rounded), label: _t(context, 'کیف پول', 'Wallet')),
       NavigationDestination(icon: const Icon(Icons.person_outline_rounded), selectedIcon: const Icon(Icons.person_rounded), label: _t(context, 'پروفایل', 'Profile')),
@@ -126,7 +126,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 6),
               Text(_t(context, 'دسترسی به بخش‌های برنامه.', 'App sections.'), style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 20),
-              _drawerTile(context, Icons.explore_rounded, _t(context, 'کارگاه فرصت‌ها', 'Workshop opportunities'), () { Navigator.pop(context); _selectTab(1); }),
+              _drawerTile(context, Icons.handyman_rounded, _t(context, 'کارگاه فرصت‌ها', 'Workshop opportunities'), () { Navigator.pop(context); _selectTab(1); }),
               if (!auth.isGuest) _drawerTile(context, Icons.local_offer_outlined, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
               if (!auth.isGuest) _drawerTile(context, Icons.notifications_rounded, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
               if (auth.user?['role'] == 'ADMIN') _drawerTile(context, Icons.admin_panel_settings_rounded, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
