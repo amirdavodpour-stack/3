@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/application/application_registry_context.dart';
@@ -397,7 +398,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             const SizedBox(height: HopeV2Spacing.lg),
             OutlinedButton.icon(
               onPressed: widget.onOpenExplore,
-              icon: const Icon(HopeV2Icons.workshop),
+              icon: HugeIcon(icon: HopeV2Icons.workshop, size: 18),
               label: Text(_t(context, 'رفتن به Explore', 'Open Explore')),
             ),
           ],
