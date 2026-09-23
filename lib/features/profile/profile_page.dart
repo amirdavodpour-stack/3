@@ -173,7 +173,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () => setState(() {
                       profile = _controller.loadProfile();
                     }),
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),
                 );
@@ -192,7 +192,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const HopeIconTile(
-                        Icons.work_history_outlined,
+                        HopeV2Icons.job,
                       ),
                       title: Text(
                         HopeCopy.of(context).copy_work_profile_885ecac,
@@ -209,23 +209,23 @@ class _ProfilePageState extends State<ProfilePage> {
                           spacing: 10,
                           runSpacing: 10,
                           children: [
-                            _trustMetric(context, Icons.verified_rounded, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : AppColors.muted),
+                            _trustMetric(context, HopeV2Icons.verified, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : AppColors.muted),
                             if (data.providerType.isNotEmpty)
                               _trustMetric(
                                 context,
-                                Icons.work_outline_rounded,
+                                HopeV2Icons.job,
                                 _providerTypeLabel(context, data.providerType),
                                 Theme.of(context).colorScheme.secondary,
                               ),
                             if (data.capacity.isNotEmpty)
                               _trustMetric(
                                 context,
-                                Icons.timelapse_rounded,
+                                HopeV2Icons.pending,
                                 _capacityLabel(context, data.capacity),
                                 AppColors.warning,
                               ),
-                            if (data.completedJobs > 0) _trustMetric(context, Icons.task_alt_rounded, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', AppColors.success),
-                            if (data.activeJobs > 0) _trustMetric(context, Icons.play_circle_outline_rounded, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
+                            if (data.completedJobs > 0) _trustMetric(context, HopeV2Icons.completed, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', AppColors.success),
+                            if (data.activeJobs > 0) _trustMetric(context, HopeV2Icons.activity, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
                           ],
                         ),
                       ),
@@ -263,7 +263,7 @@ class _ProfilePageState extends State<ProfilePage> {
               message: _applicationsReloadError!,
               action: OutlinedButton.icon(
                 onPressed: _applicationBusyId != null ? null : _reloadApplications,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                 label: Text(_t(context, 'تلاش دوباره', 'Retry')),
               ),
             ),
@@ -279,7 +279,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   message: _t(context, 'امکان دریافت وضعیت درخواست‌ها وجود ندارد.', 'Application status could not be loaded.'),
                   action: OutlinedButton.icon(
                     onPressed: _reloadApplications,
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),
                 );
@@ -313,7 +313,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         leading: HopeIconTile(
                           status == 'ACCEPTED'
                               ? Icons.check_circle_rounded
-                              : Icons.work_outline_rounded,
+                              : HopeV2Icons.job,
                           filled: status == 'ACCEPTED',
                         ),
                         title: Text(
@@ -356,7 +356,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                         height: 20,
                                         child: CircularProgressIndicator(strokeWidth: 2),
                                       )
-                                    : const Icon(Icons.undo_rounded),
+                                    : HopeIcon(HopeV2Icons.transferOut, size: 19),
                               )
                             : null,
                       );
@@ -381,33 +381,33 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               children: [
                 ListTile(
-                  leading: const HopeIconTile(Icons.assignment_rounded, filled: true),
+                  leading: const HopeIconTile(HopeV2Icons.mission, filled: true),
                   title: Text(_t(context, 'درخواست‌های من', 'My applications')),
                   subtitle: Text(_t(context, 'پیگیری مرحله‌به‌مرحله همه درخواست‌های شغلی', 'Track every job application through its workflow')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.myApplications()),
                 ),
                 const Divider(height: 1, indent: 72),
                 ListTile(
-                  leading: const HopeIconTile(Icons.devices_rounded, filled: true),
+                  leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'دستگاه‌های اعلان', 'Notification devices')),
                   subtitle: Text(_t(context, 'مدیریت دستگاه‌های فعال برای Push', 'Manage devices enabled for Push notifications')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.notificationDevices()),
                 ),
                 const Divider(height: 1, indent: 72),
                 ListTile(
-                  leading: const HopeIconTile(Icons.privacy_tip_outlined, filled: true),
+                  leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'حریم خصوصی و داده‌ها', 'Privacy & data')),
                   subtitle: Text(_t(context, 'دریافت خروجی اطلاعات یا حذف حساب', 'Export your data or delete your account')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.privacyCenter()),
                 ),
                 ListTile(
-                  leading: const HopeIconTile(Icons.bookmark_rounded, filled: true),
+                  leading: const HopeIconTile(HopeV2Icons.savedSearches, filled: true),
                   title: Text(_t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches')),
                   subtitle: Text(_t(context, 'ویرایش و مدیریت فیلترهای ذخیره‌شده', 'Edit and manage saved-search filters')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.savedSearches()),
                 ),
               ],
@@ -417,7 +417,7 @@ class _ProfilePageState extends State<ProfilePage> {
           if (auth.user?['role'] == 'ADMIN')
             FilledButton.tonalIcon(
               onPressed: () => Navigator.push(context, HopeRoutes.admin()),
-              icon: const Icon(Icons.admin_panel_settings_rounded),
+              icon: HopeIcon(HopeV2Icons.secure, size: 19),
               label: Text(
                 HopeCopy.of(context).copy_open_admin_panel_39f3cb8,
               ),
@@ -425,13 +425,13 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => Navigator.push(context, HopeRoutes.about()),
-            icon: const Icon(Icons.info_outline_rounded),
+            icon: HopeIcon(HopeV2Icons.insights, size: 19),
             label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
           ),
           const SizedBox(height: 10),
           ListTile(
             leading: const HopeIconTile(
-              Icons.logout_rounded,
+              HopeV2Icons.transferOut,
               color: AppColors.danger,
             ),
             title: Text(
@@ -450,7 +450,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _trustMetric(BuildContext context, IconData icon, String label, Color color) {
+  Widget _trustMetric(BuildContext context, Object icon, String label, Color color) {
     return Container(
       constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
@@ -462,7 +462,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: color),
+          HopeIcon(icon, size: 18, color: color, strokeWidth: 1.9),
           const SizedBox(width: 7),
           Text(label, style: TextStyle(fontWeight: FontWeight.w800, color: color)),
         ],
@@ -596,7 +596,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Row(
               children: [
                 const HopeIconTile(
-                  Icons.tune_rounded,
+                  HopeV2Icons.insights,
                   filled: true,
                   size: 42,
                 ),
@@ -631,7 +631,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               final details = ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-                leading: const HopeIconTile(Icons.translate_rounded),
+                leading: const HopeIconTile(HopeV2Icons.translate),
                 title: Text(
                   HopeCopy.of(context).copy_app_language_789c9c4,
                 ),
@@ -663,7 +663,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-                leading: const HopeIconTile(Icons.translate_rounded),
+                leading: const HopeIconTile(HopeV2Icons.translate),
                 title: Text(
                   HopeCopy.of(context).copy_app_language_789c9c4,
                 ),
@@ -678,7 +678,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const HopeIconTile(Icons.dark_mode_outlined),
+            leading: const HopeIconTile(HopeV2Icons.secure),
             title: Text(
               HopeCopy.of(context).copy_appearance_c90f540,
             ),
@@ -718,7 +718,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           ListTile(
-            leading: const HopeIconTile(Icons.map_outlined),
+            leading: const HopeIconTile(HopeV2Icons.location),
             title: Text(
               HopeCopy.of(context).copy_choose_another_city_1375095,
             ),
@@ -728,7 +728,7 @@ class _ProfilePageState extends State<ProfilePage> {
           SwitchListTile.adaptive(
             contentPadding: const EdgeInsets.symmetric(horizontal: 15),
             secondary: const HopeIconTile(
-              Icons.notifications_none_rounded,
+              HopeV2Icons.notifications,
             ),
             title: Text(
               HopeCopy.of(context).copy_notifications_370b4a1,
@@ -743,7 +743,7 @@ class _ProfilePageState extends State<ProfilePage> {
           SwitchListTile.adaptive(
             contentPadding: const EdgeInsets.symmetric(horizontal: 15),
             secondary: const HopeIconTile(
-              Icons.auto_awesome_outlined,
+              HopeV2Icons.featured,
             ),
             title: Text(
               HopeCopy.of(context).copy_personalized_recommendations_a4e4411,
@@ -757,7 +757,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           SwitchListTile.adaptive(
             contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(Icons.bedtime_outlined),
+            secondary: const HopeIconTile(HopeV2Icons.pending),
             title: Text(
               HopeCopy.of(context).copy_quiet_hours_02885b4,
             ),
@@ -769,7 +769,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           SwitchListTile.adaptive(
             contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(Icons.view_agenda_outlined),
+            secondary: const HopeIconTile(HopeV2Icons.activity),
             title: Text(
               HopeCopy.of(context).copy_compact_cards_71ed24c,
             ),
