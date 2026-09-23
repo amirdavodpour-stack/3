@@ -617,7 +617,7 @@ class PremiumFilterChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final IconData? icon;
+  final Object? icon;
   final Color? color;
   final bool enabled;
   final bool loading;
@@ -678,7 +678,7 @@ class PremiumFilterChip extends StatelessWidget {
                           ),
                   )
                 else if (icon != null)
-                  Icon(icon, size: 16, color: foreground),
+                  HopeIcon(icon!, size: 16, color: foreground, strokeWidth: 1.9),
                 if (loading || icon != null) const SizedBox(width: 5),
                 if (!loading && selected) ...[
                   Icon(Icons.check_rounded, size: 16, color: foreground),
