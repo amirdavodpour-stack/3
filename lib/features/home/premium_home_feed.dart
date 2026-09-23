@@ -356,7 +356,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       children: [
         PremiumSectionHeader(
           title: _t(context, 'فرصت‌ها', 'Opportunities'),
-          subtitle: _t(context, '\${jobs.length} فرصت', '\${jobs.length} opportunities'),
+          subtitle: _t(context, '${jobs.length} فرصت', '\${jobs.length} opportunities'),
         ),
         const SizedBox(height: HopeV2Spacing.lg),
         if (recommended.isNotEmpty) ...[
