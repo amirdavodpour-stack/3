@@ -57,6 +57,28 @@ void main() {
     expect(style.color, HopeV2Colors.warning);
   });
 
+  testWidgets('SearchField preserves text-field semantics and current value',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SearchField(
+            hint: 'Search',
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), 'work');
+    await tester.pump();
+
+    final semantics = tester.getSemantics(find.byType(TextField));
+    expect(semantics.flagsCollection.isTextField, isTrue);
+    expect(semantics.value, 'work');
+  });
+
   testWidgets('PressableScale preserves child semantics when no override label is provided',
       (tester) async {
     await tester.pumpWidget(
