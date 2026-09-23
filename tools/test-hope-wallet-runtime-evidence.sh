@@ -28,3 +28,7 @@ responsive_block="$(sed -n '/responsive_screens=(/,/)/p' "$script")"
 test "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-transactions-fa-rtl"' | cut -d: -f1)" -lt "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-wallet-fa-rtl"' | cut -d: -f1)"
 test "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-wallet-fa-rtl"' | cut -d: -f1)" -lt "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-profile-fa-rtl"' | cut -d: -f1)"
 echo "runtime harness contract: PASS"
+
+grep -Fq 'READY_CHECK_TIMEOUT_SECONDS="${HOPE_READY_CHECK_TIMEOUT_SECONDS:-2}"' "$script"
+grep -Fq 'grep -Fq -- "$marker" "$active_runtime_log"' "$script"
+grep -Eq 'timeout .*"\$READY_CHECK_TIMEOUT_SECONDS".*adb shell run-as com.hope.marketplace' "$script"
