@@ -164,6 +164,27 @@ void main() {
     expect(decoration.border, isA<BorderDirectional>());
   });
 
+  testWidgets('premium icon button exposes a stable semantic identifier', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumIconButton(
+            icon: HopeV2Icons.refresh,
+            tooltip: 'Refresh',
+            semanticsIdentifier: 'home-refresh-action',
+            onPressed: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsIdentifier('home-refresh-action'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('premium icon button keeps a 48dp target with a quiet surface',
       (tester) async {
     await tester.pumpWidget(
