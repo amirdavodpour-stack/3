@@ -138,6 +138,10 @@ void main() {
                       icon: Icon(Icons.home_outlined),
                       label: 'Home',
                     ),
+                    NavigationDestination(
+                      icon: Icon(Icons.person_outline),
+                      label: 'Profile',
+                    ),
                   ],
                 ),
               ),
@@ -148,6 +152,10 @@ void main() {
                   NavigationDestination(
                     icon: Icon(Icons.home_outlined),
                     label: 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline),
+                    label: 'Profile',
                   ),
                 ],
               ),
