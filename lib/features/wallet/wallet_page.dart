@@ -485,7 +485,7 @@ class _WalletPageState extends State<WalletPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.warning_amber_rounded),
+                      HugeIcon(icon: HopeV2Icons.pending, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(_t(
@@ -544,10 +544,10 @@ class _WalletPageState extends State<WalletPage> {
 
   IconData _payoutIcon(String status) {
     switch (status.toUpperCase()) {
-      case 'SUCCEEDED': return Icons.check_circle_outline;
-      case 'FAILED': return Icons.error_outline;
-      case 'UNKNOWN': return Icons.help_outline;
-      default: return Icons.schedule_outlined;
+      case 'SUCCEEDED': return HopeV2Icons.completed;
+      case 'FAILED': return HopeV2Icons.error;
+      case 'UNKNOWN': return HopeV2Icons.pending;
+      default: return HopeV2Icons.pending;
     }
   }
 
@@ -628,8 +628,8 @@ class _WalletPageState extends State<WalletPage> {
                 const Spacer(),
                 PremiumTag(
                   icon: wallet.isActive
-                      ? Icons.verified_rounded
-                      : Icons.pause_circle_outline,
+                      ? HopeV2Icons.verified
+                      : HopeV2Icons.pending,
                   label: _walletStatusLabel(wallet.status),
                   color: Colors.white,
                   inverse: true,
@@ -665,7 +665,7 @@ class _WalletPageState extends State<WalletPage> {
               runSpacing: 8,
               children: [
                 PremiumTag(
-                  icon: Icons.lock_clock_outlined,
+                  icon: HopeV2Icons.secure,
                   label: _t(
                     'قفل‌شده ${_money(wallet.lockedBalance)}',
                     'Locked ${_money(wallet.lockedBalance)}',
@@ -674,7 +674,7 @@ class _WalletPageState extends State<WalletPage> {
                   inverse: true,
                 ),
                 PremiumTag(
-                  icon: Icons.shield_outlined,
+                  icon: HopeV2Icons.secure,
                   label: _providerLabel('INTERNAL'),
                   color: scheme.tertiary,
                 ),
@@ -770,7 +770,7 @@ class _WalletPageState extends State<WalletPage> {
                 'Balance, money movement, and financial history in one view.',
               ),
               trailing: PremiumTag(
-                icon: Icons.shield_outlined,
+                icon: HopeV2Icons.secure,
                 label: _providerLabel('INTERNAL'),
                 color: Theme.of(context).colorScheme.tertiary,
               ),
@@ -806,7 +806,7 @@ class _WalletPageState extends State<WalletPage> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
-                  const HopeIconTile(Icons.badge_outlined, size: 42),
+                  const HopeIconTile(HopeV2Icons.wallet, size: 42),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -828,7 +828,7 @@ class _WalletPageState extends State<WalletPage> {
                   IconButton(
                     tooltip: _t('کپی شناسه', 'Copy wallet ID'),
                     onPressed: wallet.id.isEmpty ? null : () => _copyText(wallet.id),
-                    icon: const Icon(Icons.copy_rounded),
+                    icon: HugeIcon(icon: HopeV2Icons.copy, size: 19),
                   ),
                 ],
               ),
@@ -841,20 +841,20 @@ class _WalletPageState extends State<WalletPage> {
                   PremiumStatCard(
                     label: _t('موجودی قابل‌استفاده', 'Available balance'),
                     value: _money(wallet.availableBalance),
-                    icon: Icons.account_balance_wallet_outlined,
+                    icon: HopeV2Icons.wallet,
                     caption: _t('قابل خرج یا انتقال', 'Ready to spend or transfer'),
                   ),
                   PremiumStatCard(
                     label: _t('قفل‌شده', 'Locked balance'),
                     value: _money(wallet.lockedBalance),
-                    icon: Icons.lock_clock_outlined,
+                    icon: HopeV2Icons.secure,
                     accent: secondaryAccent(context),
                     caption: _t('تا آزادسازی قابل استفاده نیست', 'Unavailable until released'),
                   ),
                   PremiumStatCard(
                     label: _t('برداشت‌های در جریان', 'Pending payouts'),
                     value: '${_pendingPayoutCount}',
-                    icon: Icons.schedule_send_outlined,
+                    icon: HopeV2Icons.pending,
                     accent: AppColors.warning,
                     caption: _t('درخواست‌های نیازمند پیگیری', 'Requests awaiting completion'),
                   ),
