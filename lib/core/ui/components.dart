@@ -467,7 +467,7 @@ class GradientHero extends StatelessWidget {
                   height: 58,
                   decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .14),
-                      borderRadius: BorderRadius.circular(19),
+                      borderRadius: BorderRadius.circular(HopeV2Radii.fab),
                       border: Border.all(color: Colors.white24)),
                   child: Icon(icon, color: Colors.white, size: 29)),
             ]),
@@ -639,7 +639,7 @@ class OpportunitySkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const HopeSurface(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SkeletonBox(height: 110, radius: 26),
+          SkeletonBox(height: 110, radius: HopeV2Radii.xl),
           Padding(
             padding: const EdgeInsets.all(HopeV2Spacing.lg),
             child:
