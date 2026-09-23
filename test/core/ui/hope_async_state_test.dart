@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/hope_async_state.dart';
@@ -64,6 +65,34 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byIcon(Icons.hourglass_empty_rounded), findsOneWidget);
+  });
+
+  test('maps transport and authorization failures to truthful state kinds',
+      () {
+    expect(
+      hopeStateKindForError(ApiException('NETWORK_ERROR', 'network')),
+      HopeStateKind.offline,
+    );
+    expect(
+      hopeStateKindForError(ApiException('TIMEOUT', 'timeout')),
+      HopeStateKind.offline,
+    );
+    expect(
+      hopeStateKindForError(ApiException('UNAUTHENTICATED', 'auth')),
+      HopeStateKind.unauthorized,
+    );
+    expect(
+      hopeStateKindForError(ApiException('FORBIDDEN', 'forbidden')),
+      HopeStateKind.forbidden,
+    );
+    expect(
+      hopeStateKindForError(ApiException('RATE_LIMITED', 'limited')),
+      HopeStateKind.rateLimited,
+    );
+    expect(
+      hopeStateKindForError(StateError('unknown')),
+      HopeStateKind.error,
+    );
   });
 
   testWidgets('async state action is constrained to the shared touch minimum',

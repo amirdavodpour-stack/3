@@ -136,7 +136,7 @@ class _OffersPageState extends State<OffersPage> {
               const SizedBox(height: 20),
               if (_loadError != null) ...[
                 HopeAsyncState(
-                  kind: HopeStateKind.error,
+                  kind: hopeStateKindForError(_loadError!),
                   title: _t(
                     'پیشنهادها در دسترس نیستند',
                     'Offers unavailable',

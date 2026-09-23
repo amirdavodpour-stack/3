@@ -581,7 +581,7 @@ class _WalletPageState extends State<WalletPage> {
           children: [
             const SizedBox(height: 160),
             HopeAsyncState(
-              kind: HopeStateKind.error,
+              kind: hopeStateKindForError(_error ?? StateError('wallet-load')),
               title: _t('کیف پول بارگذاری نشد', 'Wallet could not be loaded'),
               message: _t(
                 'اتصال یا سرویس مالی در دسترس نبود. برای تلاش دوباره، دوباره بارگذاری کنید.',
@@ -608,7 +608,7 @@ class _WalletPageState extends State<WalletPage> {
           children: [
             if (_error != null) ...[
               HopeAsyncState(
-                kind: HopeStateKind.error,
+                kind: hopeStateKindForError(_error!),
                 title: _t('به‌روزرسانی کیف پول ناموفق بود', 'Wallet refresh failed'),
                 message: _t(
                   'اطلاعات قبلی حفظ شده است. وضعیت را دوباره بررسی کنید.',
