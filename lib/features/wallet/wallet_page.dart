@@ -11,6 +11,7 @@ import '../../core/transactions/wallet.dart';
 import '../../core/transactions/wallet_repository.dart';
 import '../../core/network/api_client.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/copy.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/theme/hope_v2_design.dart';
@@ -108,13 +109,8 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  String _money(int amount) {
-    final grouped = amount.toString().replaceAllMapped(
-      RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'),
-      (_) => ',',
-    );
-    return '$grouped ${_t('تومان', 'Toman')}';
-  }
+  String _money(int amount) => moneyLabel(context, amount);
+
 
   String _date(String? raw) {
     if (raw == null || raw.isEmpty) return '';
