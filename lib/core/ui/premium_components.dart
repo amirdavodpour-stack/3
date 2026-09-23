@@ -20,13 +20,14 @@ class PremiumNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: .96),
+        color: HopeV2Surfaces.navigation(context),
         border: Border(
           top: BorderSide(color: HopeV2Surfaces.border(context)),
         ),
-        boxShadow: HopeV2Shadows.card,
+        boxShadow: dark ? const [] : HopeV2Shadows.card,
       ),
       child: SafeArea(
         top: false,
@@ -37,7 +38,7 @@ class PremiumNavigationBar extends StatelessWidget {
           height: HopeV2Navigation.barHeight,
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
-          indicatorColor: scheme.primary.withValues(alpha: .12),
+          indicatorColor: HopeV2Surfaces.navigationIndicator(context),
           elevation: 0,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         ),
@@ -69,7 +70,7 @@ class PremiumNavigationRail extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: .96),
+        color: HopeV2Surfaces.navigation(context),
         border: BorderDirectional(
           end: BorderSide(color: HopeV2Surfaces.border(context)),
         ),
@@ -98,7 +99,7 @@ class PremiumNavigationRail extends StatelessWidget {
           leading: leading,
           trailing: trailing,
           backgroundColor: Colors.transparent,
-          indicatorColor: scheme.primary.withValues(alpha: .12),
+          indicatorColor: HopeV2Surfaces.navigationIndicator(context),
           useIndicator: true,
           groupAlignment: -.6,
         ),
@@ -128,26 +129,6 @@ class PremiumPageFrame extends StatelessWidget {
       decoration: BoxDecoration(color: HopeV2Surfaces.page(context)),
       child: Stack(
         children: [
-          Positioned(
-            top: -120,
-            right: -90,
-            child: ExcludeSemantics(
-              child: _BrandOrb(
-                size: 250,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 300,
-            left: -130,
-            child: ExcludeSemantics(
-              child: _BrandOrb(
-                size: 220,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-            ),
-          ),
           Positioned.fill(
             child: Center(
               child: ConstrainedBox(
@@ -165,34 +146,6 @@ class PremiumPageFrame extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-
-class _BrandOrb extends StatelessWidget {
-  const _BrandOrb({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              color.withValues(alpha: .12),
-              color.withValues(alpha: .035),
-              Colors.transparent,
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -362,15 +315,9 @@ class PremiumHero extends StatelessWidget {
           children: [
             DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                    Theme.of(context).colorScheme.surfaceContainerHighest,
-                  ],
-                ),
+                gradient: Theme.of(context).brightness == Brightness.dark
+                    ? HopeV2Gradients.heroDark
+                    : HopeV2Gradients.hero,
               ),
             ),
             if (icon != null)
