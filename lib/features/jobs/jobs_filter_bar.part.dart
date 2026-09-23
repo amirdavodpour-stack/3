@@ -41,53 +41,56 @@ class _JobsFilterHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PremiumHeader(
-          eyebrow: HopeCopy.of(context).copy_explore_115e9fd,
-          title: HopeCopy.of(context).copy_find_the_right_opportunity,
-          subtitle: HopeCopy.of(context)
-              .copy_see_missions_and_jobs_together_then_narrow_7e573a3,
-          trailing: PremiumTag(
-            icon: Icons.grid_view_rounded,
-            label: '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: PremiumHeader(
+                eyebrow: HopeCopy.of(context).copy_explore_115e9fd,
+                title: HopeCopy.of(context).copy_find_the_right_opportunity,
+                subtitle: HopeCopy.of(context)
+                    .copy_see_missions_and_jobs_together_then_narrow_7e573a3,
+              ),
+            ),
+            const SizedBox(width: HopeV2Spacing.md),
+            PremiumTag(
+              icon: Icons.grid_view_rounded,
+              label: '\$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
+            ),
+          ],
         ),
-        const SizedBox(height: HopeV2Spacing.xl),
+        const SizedBox(height: HopeV2Spacing.lg),
         PremiumPanel(
-          padding: const EdgeInsets.all(HopeV2Spacing.lg),
+          padding: const EdgeInsets.all(HopeV2Spacing.md),
+          highlight: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              PremiumSearchBar(
-                onChanged: onQueryChanged,
-                hint: HopeCopy.of(context).copy_title_city_or_skill_bccb024,
-              ),
-              const SizedBox(height: HopeV2Spacing.sm),
-              Wrap(
-                spacing: HopeV2Spacing.sm,
-                runSpacing: HopeV2Spacing.sm,
+              Row(
                 children: [
-                  OutlinedButton.icon(
+                  Expanded(
+                    child: PremiumSearchBar(
+                      onChanged: onQueryChanged,
+                      hint: HopeCopy.of(context).copy_title_city_or_skill_bccb024,
+                    ),
+                  ),
+                  const SizedBox(width: HopeV2Spacing.sm),
+                  IconButton.filledTonal(
                     onPressed: onSaveSearch,
+                    tooltip: HopeCopy.of(context).copy_save_search,
                     icon: onSaveSearch == null
                         ? const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.bookmark_add_outlined, size: 18),
-                    label: Text(
-                      onSaveSearch == null
-                          ? HopeCopy.of(context).copy_saving
-                          : HopeCopy.of(context).copy_save_search,
-                    ),
+                        : const Icon(Icons.bookmark_add_outlined),
                   ),
                   if (savedSearchCount > 0)
-                    OutlinedButton.icon(
+                    IconButton.filledTonal(
                       onPressed: onOpenSavedSearches,
-                      icon: const Icon(Icons.bookmarks_outlined, size: 18),
-                      label: Text(
-                        '${HopeCopy.of(context).copy_saved_searches} ($savedSearchCount)',
-                      ),
+                      tooltip: HopeCopy.of(context).copy_saved_searches,
+                      icon: const Icon(Icons.bookmarks_outlined),
                     ),
                 ],
               ),
