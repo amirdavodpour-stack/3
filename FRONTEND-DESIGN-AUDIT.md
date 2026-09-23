@@ -48,26 +48,31 @@ The shared `SearchField` previously had no app-owned clear action. It now expose
 ### 4. Shared press interaction was not keyboard-complete — FIXED IN THIS PASS
 `PressableScale` previously relied on `GestureDetector`. It now exposes button semantics, keyboard activation for Enter/Space, and a visible focus treatment while retaining the existing press/motion behavior.
 
-### 5. Auth forms are visually coherent but behaviorally duplicated — MEDIUM
+### 5. Shared interaction/accessibility semantics needed hardening — FIXED IN THIS PASS
+`PressableScale` now preserves child semantics when no override label is supplied, while still supporting explicit semantic labels and keyboard activation.
+
+`SearchField` now leaves native `TextField` semantics intact, including the current value, and uses the platform `MaterialLocalizations.clearButtonTooltip` instead of inline bilingual copy.
+
+### 6. Auth forms are visually coherent but behaviorally duplicated — MEDIUM
 Login and registration each construct their own TextField stacks and validation/feedback paths.
 
 **Action:** create shared business-named auth field/action primitives only when the behavior is proven repeated. Do not introduce abstraction solely for code deduplication.
 
-### 6. Feedback system is not yet obviously centralized — MEDIUM
+### 7. Feedback system is not yet obviously centralized — MEDIUM
 Multiple screens call `ScaffoldMessenger` directly for failures.
 
 **Action:** verify the canonical feedback owner across Auth, Marketplace, Wallet, Transactions and Profile. If the same feedback behavior repeats, centralize it before adding more screen-local SnackBar behavior.
 
-### 7. Semantic warning color bypassed the token system — FIXED IN THIS PASS
+### 8. Semantic warning color bypassed the token system — FIXED IN THIS PASS
 `HopeV2SemanticColors.warning()` now resolves through the canonical HOPE warning token in light/dark modes.
 
-### 8. Skeleton animation allocated a controller under reduced motion — FIXED IN THIS PASS
+### 9. Skeleton animation allocated a controller under reduced motion — FIXED IN THIS PASS
 `SkeletonBox` now creates its animation controller only when motion is enabled.
 
-### 9. Async/filter loading motion ignored reduced-motion — FIXED IN THIS PASS
+### 10. Async/filter loading motion ignored reduced-motion — FIXED IN THIS PASS
 `HopeAsyncState` renders a static state icon instead of a spinner when reduced motion is enabled. `PremiumFilterChip` also disables its container transition and replaces its loading spinner with a static hourglass icon in reduced-motion mode.
 
-### 10. Theme geometry/surface literals drifted outside token ownership — FIXED IN THIS PASS
+### 11. Theme geometry/surface literals drifted outside token ownership — FIXED IN THIS PASS
 `HopeV2Radii` now owns semantic control geometry and `HopeV2Colors` owns shared theme surface literals used by `AppTheme`. Shared components use the same token source rather than maintaining a parallel set of values.
 
 ## Consolidation pass — evidence trail
@@ -81,7 +86,7 @@ Changes landed on `feat/google-sign-in-2026-09-20` include:
 
 Marketplace filter touch height was also normalized to `HopeV2Touch.minimum` (48px), removing a 44px container from the shared Explore filter flow.
 
-Latest runtime verification remains pending in GitHub Actions; static inspection is not treated as runtime PASS.
+Latest head: `08756a29b1f36b9c901a9119d095929537268930`. GitHub Actions has started the corresponding PR run; runtime/full-suite PASS remains unverified until that run completes successfully.
 
 ## Design direction
 
