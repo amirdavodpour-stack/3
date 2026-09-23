@@ -271,10 +271,20 @@ class PremiumHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: HopeV2Spacing.sm),
-              Text(title, style: HopeV2Type.display(context)),
+              Text(
+                title,
+                maxLines: compact ? 2 : 3,
+                overflow: TextOverflow.ellipsis,
+                style: HopeV2Type.display(context),
+              ),
               if (subtitle != null) ...[
                 const SizedBox(height: HopeV2Spacing.sm),
-                Text(subtitle!, style: Theme.of(context).textTheme.bodyLarge),
+                Text(
+                  subtitle!,
+                  maxLines: compact ? 3 : 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
               ],
             ],
           );
