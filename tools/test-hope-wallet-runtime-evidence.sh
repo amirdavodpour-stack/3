@@ -33,6 +33,9 @@ grep -Fq "convertFlutterSurfaceToImage()" "$dart_test"
 grep -Fq "takeScreenshot(marker)" "$dart_test"
 grep -Fq 'writeAsBytes(bytes, flush: true)' "$dart_test"
 grep -Fq 'tempFile.rename(outputFile.path)' "$dart_test"
+grep -Fq 'find.byType(CircularProgressIndicator)' "$dart_test"
+grep -Fq 'Runtime render remained in loading state after bounded settle' "$dart_test"
+grep -Fq 'await tester.pump(const Duration(milliseconds: 100))' "$dart_test"
 grep -Fq 'HOPE_SCREENSHOT_READY:$marker' "$dart_test"
 
 # Flutter emits the screenshot-ready marker only after the PNG has been atomically
