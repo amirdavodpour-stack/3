@@ -6,6 +6,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 /// Operational surface for backend capabilities that are intentionally
 /// separate from the general admin CRUD screen.
@@ -120,7 +121,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             IconButton(
               tooltip: _t('بازخوانی', 'Refresh'),
               onPressed: _reload,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: HopeIcon(HopeV2Icons.refresh, size: 19),
             ),
           ],
           bottom: TabBar(
@@ -188,7 +189,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               padding: const EdgeInsets.all(18),
               children: [
                 _header(
-                  Icons.account_balance_rounded,
+                  HopeV2Icons.wallet,
                   _t('نمای مالی پلتفرم', 'Platform financial overview'),
                   _t('اعداد مستقیماً از کنترل مالی Backend خوانده می‌شوند.',
                       'Values are read directly from the backend financial control.'),
@@ -208,7 +209,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               child: ListView(
                 padding: const EdgeInsets.all(18),
                 children: [
-                  _header(Icons.shield_outlined, _t('Trust & Safety', 'Trust & Safety'),
+                  _header(HopeV2Icons.secure, _t('Trust & Safety', 'Trust & Safety'),
                       _t('گزارش‌های واقعی کاربران و وضعیت رسیدگی.', 'Real user reports and their review state.')),
                   const SizedBox(height: 12),
                   if (rows.isEmpty)
@@ -229,13 +230,13 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const HopeIconTile(Icons.flag_outlined, filled: true),
+            const HopeIconTile(HopeV2Icons.notifications, filled: true),
             const SizedBox(width: 10),
             Expanded(child: Text(
               '${row['reason'] ?? _t('گزارش', 'Report')}',
               style: Theme.of(context).textTheme.titleMedium,
             )),
-            StatusPill(_reportStatusLabel(status), icon: Icons.circle_outlined, color: secondaryAccent(context)),
+            StatusPill(_reportStatusLabel(status), icon: HopeV2Icons.pending, color: secondaryAccent(context)),
           ]),
           if ('${row['details'] ?? ''}'.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -281,7 +282,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               child: ListView(
                 padding: const EdgeInsets.all(18),
                 children: [
-                  _header(Icons.payments_outlined, _t('کنترل تسویه', 'Payout operations'),
+                  _header(HopeV2Icons.payments, _t('کنترل تسویه', 'Payout operations'),
                       _t('مواردی که Backend برای تصمیم عملیاتی علامت‌گذاری کرده است.',
                           'Cases explicitly awaiting backend operational resolution.')),
                   const SizedBox(height: 12),
@@ -302,7 +303,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const HopeIconTile(Icons.warning_amber_rounded, filled: true),
+            const HopeIconTile(HopeV2Icons.pending, filled: true),
             const SizedBox(width: 10),
             Expanded(child: Text('${_t('تسویه', 'Payout')} ${id.isEmpty ? '—' : id}',
                 style: Theme.of(context).textTheme.titleMedium)),
@@ -390,7 +391,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             builder: (_, s) => _loadingOrError(s, (data) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _header(Icons.insights_rounded, _t('تحلیل محصول', 'Product analytics'),
+                _header(HopeV2Icons.insights, _t('تحلیل محصول', 'Product analytics'),
                     _t('خلاصه رویدادهای ثبت‌شده در بازه انتخابی.', 'Recorded product analytics for the selected period.')),
                 const SizedBox(height: 12),
                 _metricGrid(data.entries.where((e) => e.value is num || e.value is String).toList()),
@@ -401,7 +402,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           FutureBuilder<Map<String, dynamic>>(
             future: _funnel,
             builder: (_, s) => _loadingOrError(s, (data) => _mapPanel(
-              Icons.filter_alt_outlined,
+              HopeV2Icons.filter,
               _t('قیف محصول', 'Product funnel'),
               data,
             )),
@@ -418,19 +419,19 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             child: ListView(
               padding: const EdgeInsets.all(18),
               children: [
-                _header(Icons.bug_report_outlined, _t('Crash Center', 'Crash Center'),
+                _header(HopeV2Icons.error, _t('Crash Center', 'Crash Center'),
                     _t('خلاصه خطاهای گزارش‌شده از کلاینت‌ها.', 'Reported client crash summary.')),
                 const SizedBox(height: 12),
                 _metricGrid(rows),
                 const SizedBox(height: 14),
-                _mapPanel(Icons.data_object_rounded, _t('جزئیات', 'Details'), data),
+                _mapPanel(HopeV2Icons.insights, _t('جزئیات', 'Details'), data),
               ],
             ),
           );
         }),
       );
 
-  Widget _header(IconData icon, String title, String subtitle) => PremiumPanel(
+  Widget _header(Object icon, String title, String subtitle) => PremiumPanel(
         padding: const EdgeInsets.all(16),
         child: Row(children: [
           HopeIconTile(icon, filled: true, size: 46),
@@ -504,7 +505,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     );
   }
 
-  Widget _mapPanel(IconData icon, String title, Map<String, dynamic> data) => PremiumPanel(
+  Widget _mapPanel(Object icon, String title, Map<String, dynamic> data) => PremiumPanel(
     padding: const EdgeInsets.all(14),
     child: ExpansionTile(
       leading: HopeIconTile(icon),
