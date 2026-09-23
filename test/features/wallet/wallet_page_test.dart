@@ -488,13 +488,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final rows = find.ancestor(
-      of: find.text('انتقال داخلی'),
-      matching: find.byType(Semantics),
+    expect(
+      find.bySemanticsLabel('انتقال داخلی، ورودی، +500,000 تومان'),
+      findsOneWidget,
     );
-    expect(rows, isNotEmpty);
-    final node = tester.getSemantics(rows.last);
-    expect(node.label, 'انتقال داخلی، ورودی، +500,000 تومان');
     } finally {
       semantics.dispose();
     }
