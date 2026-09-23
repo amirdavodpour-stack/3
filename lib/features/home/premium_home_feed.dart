@@ -354,16 +354,38 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PremiumSectionHeader(
-          title: _t(context, 'فرصت‌ها', 'Opportunities'),
-          subtitle: _t(context, '${jobs.length} فرصت', '\${jobs.length} opportunities'),
-        ),
-        const SizedBox(height: HopeV2Spacing.lg),
         if (recommended.isNotEmpty) ...[
-          OpportunityCard(job: recommended.first, variant: OpportunityCardVariant.featured),
-          const SizedBox(height: HopeV2Spacing.lg),
-        ],
-        _section(context, _t(context, 'تطابق‌ها', 'Matches'), recommended.skip(recommended.isNotEmpty ? 1 : 0).take(3).toList(), widget.onOpenExplore),
+          PremiumSectionHeader(
+            title: _t(context, 'پیشنهاد ویژه', 'Best match'),
+            subtitle: _t(
+              context,
+              'فرصتی که بیشترین سیگنال تطابق را دارد.',
+              'The opportunity with the strongest match signals.',
+            ),
+          ),
+          const SizedBox(height: HopeV2Spacing.md),
+          OpportunityCard(
+            job: recommended.first,
+            variant: OpportunityCardVariant.featured,
+          ),
+          const SizedBox(height: HopeV2Spacing.xl),
+        ] else
+          PremiumSectionHeader(
+            title: _t(context, 'فرصت‌ها', 'Opportunities'),
+            subtitle: _t(
+              context,
+              '${jobs.length} فرصت',
+              '${jobs.length} opportunities',
+            ),
+          ),
+        if (recommended.isNotEmpty)
+          _section(
+            context,
+            _t(context, 'تطابق‌ها', 'Matches'),
+            recommended.skip(1).take(3).toList(),
+            widget.onOpenExplore,
+          ),
+        , 'Matches'), recommended.skip(recommended.isNotEmpty ? 1 : 0).take(3).toList(), widget.onOpenExplore),
         const SizedBox(height: HopeV2Spacing.section),
         _section(context, _t(context, 'نزدیک شما', 'Near you'), nearby.take(3).toList(), widget.onOpenExplore),
         if (remaining.isNotEmpty) ...[
