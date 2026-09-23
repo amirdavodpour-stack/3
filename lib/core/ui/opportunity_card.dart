@@ -34,7 +34,7 @@ class _MatchBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.check_circle_rounded,
+            HopeV2Icons.match,
             size: 14,
             color: HopeV2Colors.orange,
           ),
@@ -157,7 +157,7 @@ class OpportunityCard extends StatelessWidget {
   Widget _compact(BuildContext context, String title, String city, String amount, Color primary, HopeCopy copy) {
     return Row(
       children: [
-        HopeIconTile(job.isMission ? Icons.bolt_rounded : Icons.business_center_rounded, color: primary, filled: true, size: 46),
+        HopeIconTile(job.isMission ? HopeV2Icons.mission : HopeV2Icons.job, color: primary, filled: true, size: 46),
         const SizedBox(width: HopeV2Spacing.md),
         Expanded(
           child: Column(
@@ -203,8 +203,8 @@ class OpportunityCard extends StatelessWidget {
           children: [
             HopeIconTile(
               job.isMission
-                  ? Icons.bolt_rounded
-                  : Icons.business_center_rounded,
+                  ? HopeV2Icons.mission
+                  : HopeV2Icons.job,
               color: primary,
               filled: true,
               size: featured ? 50 : 46,
@@ -224,10 +224,10 @@ class OpportunityCard extends StatelessWidget {
                                   ? copy.copy_mission_fb4c5e1
                                   : copy.copy_job_ce2feba),
                           icon: featured
-                              ? Icons.auto_awesome_rounded
+                              ? HopeV2Icons.featured
                               : (job.isMission
-                                  ? Icons.bolt_rounded
-                                  : Icons.business_center_rounded),
+                                  ? HopeV2Icons.mission
+                                  : HopeV2Icons.job),
                           color: featured ? featuredAccent : primary,
                         ),
                       ),
@@ -256,13 +256,13 @@ class OpportunityCard extends StatelessWidget {
           spacing: HopeV2Spacing.sm,
           runSpacing: HopeV2Spacing.sm,
           children: [
-            PremiumTag(icon: Icons.location_on_outlined, label: city, color: secondaryAccent(context)),
+            PremiumTag(icon: HopeV2Icons.location, label: city, color: secondaryAccent(context)),
             if ((job.category ?? '').isNotEmpty)
-              PremiumTag(icon: Icons.category_outlined, label: job.category!, color: HopeV2Colors.muted),
+              PremiumTag(icon: HopeV2Icons.category, label: job.category!, color: HopeV2Colors.muted),
             if (job.distanceKm != null)
-              PremiumTag(icon: Icons.near_me_rounded, label: '${job.distanceKm!.toStringAsFixed(1)} km', color: secondaryAccent(context)),
+              PremiumTag(icon: HopeV2Icons.distance, label: '${job.distanceKm!.toStringAsFixed(1)} km', color: secondaryAccent(context)),
             if (job.visibility == 'SPECIALIZED')
-              PremiumTag(icon: Icons.lock_outline_rounded, label: copy.copy_specialized_5d1ca04, color: HopeV2Colors.warning),
+              PremiumTag(icon: HopeV2Icons.secure, label: copy.copy_specialized_5d1ca04, color: HopeV2Colors.warning),
           ],
         ),
         if (amount.isNotEmpty) ...[
@@ -281,7 +281,7 @@ class OpportunityCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(Icons.payments_outlined, color: primary, size: 21),
+                Icon(HopeV2Icons.payments, color: primary, size: 21),
                 const SizedBox(width: 9),
                 Expanded(
                   child: Column(
