@@ -592,7 +592,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
