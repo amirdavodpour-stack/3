@@ -57,6 +57,24 @@ void main() {
     expect(style.color, HopeV2Colors.warning);
   });
 
+  testWidgets('PressableScale preserves child semantics when no override label is provided',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PressableScale(
+            onTap: () {},
+            child: const Text('Visible action'),
+          ),
+        ),
+      ),
+    );
+
+    final semantics = tester.getSemantics(find.byType(PressableScale));
+    expect(semantics.label, 'Visible action');
+  });
+
   testWidgets('AppTheme uses canonical geometry tokens',
       (tester) async {
     final theme = AppTheme.light();
