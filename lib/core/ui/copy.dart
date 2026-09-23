@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../finance/toman_formatter.dart';
 import 'hope_l10n.dart';
 
 @Deprecated('Use HopeCopy.of(context).<key> for static UI copy.')
@@ -6,23 +7,7 @@ String tx(BuildContext context, String fa, String en) =>
     Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
 String moneyLabel(BuildContext context, Object value) {
-  final raw = '$value'.trim();
-  final parsed = num.tryParse(raw);
-  final normalized = parsed != null && parsed == parsed.truncate()
-      ? parsed.toInt().toString()
-      : raw;
-  final amount = int.tryParse(normalized);
-  if (amount == null) {
-    return HopeCopy.of(context).copy_value_irr_ed45261(normalized);
-  }
-
-  final digits = amount.abs().toString();
-  final groups = <String>[];
-  for (var end = digits.length; end > 0; end -= 3) {
-    final start = end - 3 < 0 ? 0 : end - 3;
-    groups.insert(0, digits.substring(start, end));
-  }
-  final grouped = amount < 0 ? '-${groups.join(',')}' : groups.join(',');
+  final grouped = HopeTomanFormatter.grouped(value);
   return HopeCopy.of(context).copy_value_irr_ed45261(grouped);
 }
 
