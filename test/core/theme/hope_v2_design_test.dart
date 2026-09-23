@@ -15,6 +15,20 @@ void main() {
     expect(HopeV2Motion.standard, const Duration(milliseconds: 240));
   });
 
+  test('HOPE warm background tokens use the premium warm-neutral palette', () {
+    expect(HopeV2Colors.backgroundWarm, const Color(0xFFF3EDE5));
+    expect(HopeV2Colors.pageLight, const Color(0xFFF2ECE4));
+    expect(HopeV2Colors.panelSoftLight, const Color(0xFFFBF7F1));
+  });
+
+  test('HOPE action icon vocabulary is backed by Hugeicons data', () {
+    expect(HopeV2Icons.search, isA<List<List>>());
+    expect(HopeV2Icons.menu, isA<List<List>>());
+    expect(HopeV2Icons.refresh, isA<List<List>>());
+    expect(HopeV2Icons.add, isA<List<List>>());
+    expect(HopeV2Icons.notifications, isA<List<List>>());
+  });
+
   testWidgets('premium filter chip exposes disabled and loading states',
       (tester) async {
     await tester.pumpWidget(
@@ -42,5 +56,24 @@ void main() {
     expect(semantics.flagsCollection.isButton, isTrue);
     expect(semantics.flagsCollection.isEnabled, isNot(ui.Tristate.none));
     expect(semantics.flagsCollection.isEnabled, ui.Tristate.isFalse);
+  });
+
+  testWidgets('HopeIconTile renders canonical Hugeicons action tokens',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: Center(
+            child: HopeIconTile(
+              HopeV2Icons.search,
+              filled: true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(HugeIcon), findsOneWidget);
   });
 }
