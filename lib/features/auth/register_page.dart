@@ -9,6 +9,7 @@ import '../../core/ui/brand.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
 import '../../core/theme/hope_v2_design.dart';
+import '../../core/ui/components.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, this.returnIntent});
