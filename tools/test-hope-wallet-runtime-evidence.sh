@@ -31,12 +31,13 @@ grep -Fq 'writeAsBytes(bytes, flush: true)' "$dart_test"
 grep -Fq 'tempFile.rename(outputFile.path)' "$dart_test"
 grep -Fq 'HOPE_SCREENSHOT_READY:$marker' "$dart_test"
 
-# Focus can be transiently unavailable while Android resumes the Flutter activity.
-# Regression contract: runtime evidence must use a bounded retry, not a one-shot focus dump.
-grep -Fq 'FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"' "$script"
-grep -Fq 'focus_deadline=$((SECONDS + FOCUS_CHECK_TIMEOUT_SECONDS))' "$script"
-grep -Fq 'while (( SECONDS < focus_deadline )); do' "$script"
-grep -Fq 'sleep 0.2' "$script"
+# Flutter emits the screenshot-ready marker only after the PNG has been atomically
+# published. Android focus may already be lost while integration_test teardown
+# proceeds, so focus observation must never gate a rendered screenshot capture.
+if grep -Fq 'assert_hope_focused "$prefix"' "$script"; then
+  echo "runtime harness contract: FAIL — Android focus must not gate rendered screenshot capture" >&2
+  exit 1
+fi
 
 # Baseline and responsive runs both receive the same output root.
 test "$(grep -Fc -- '--dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root"' "$script")" -eq 2
