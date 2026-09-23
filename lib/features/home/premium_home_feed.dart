@@ -171,13 +171,13 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                         IconButton.filledTonal(
                           onPressed: widget.onOpenMenu,
                           tooltip: _t(context, 'منو', 'App menu'),
-                          icon: const Icon(Icons.menu_rounded),
+                          icon: HugeIcon(icon: HopeV2Icons.menu, size: 21),
                         ),
                         const SizedBox(width: 6),
                         IconButton.filledTonal(
                           onPressed: _refresh,
                           tooltip: _t(context, 'بازخوانی', 'Refresh'),
-                          icon: const Icon(Icons.refresh_rounded),
+                          icon: HugeIcon(icon: HopeV2Icons.refresh, size: 21),
                         ),
                         const SizedBox(width: 6),
                         CircleAvatar(
@@ -209,15 +209,16 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                               RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'),
                               (_) => ',',
                             );
-                        Widget metric(String value, String label, IconData icon) {
+                        Widget metric(String value, String label, Object icon) {
                           return Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
+                                HopeIcon(
                                   icon,
                                   size: 17,
                                   color: Theme.of(context).colorScheme.primary,
+                                  strokeWidth: 1.9,
                                 ),
                                 const SizedBox(height: 7),
                                 Text(
@@ -250,10 +251,11 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(
-                                    HopeV2Icons.featured,
+                                  HugeIcon(
+                                    icon: HopeV2Icons.featured,
                                     size: 17,
                                     color: HopeV2Colors.primaryDark,
+                                    strokeWidth: 1.9,
                                   ),
                                   const SizedBox(width: 7),
                                   Text(
@@ -350,7 +352,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     kind: HopeStateKind.error,
                     title: _t(context, 'فرصت‌ها در دسترس نیستند', 'Opportunities are unavailable'),
                     message: _t(context, 'اتصال را بررسی کنید و دوباره تلاش کنید.', 'Check your connection and try again.'),
-                    action: FilledButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh_rounded), label: Text(_t(context, 'تلاش دوباره', 'Retry'))),
+                    action: FilledButton.icon(onPressed: _refresh, icon: HugeIcon(icon: HopeV2Icons.refresh, size: 20), label: Text(_t(context, 'تلاش دوباره', 'Retry'))),
                   );
                 }
                 final jobs = snapshot.data ?? const <HopeJob>[];
@@ -500,10 +502,11 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             const SizedBox(height: HopeV2Spacing.lg),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
             const SizedBox(height: HopeV2Spacing.md),
-            Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: Icon(
-                              Directionality.of(context) == TextDirection.rtl
-                                  ? Icons.arrow_back_rounded
-                                  : Icons.arrow_forward_rounded,
+            Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: HugeIcon(
+                              icon: Directionality.of(context) == TextDirection.rtl
+                                  ? HopeV2Icons.arrowLeft
+                                  : HopeV2Icons.arrowRight,
+                              size: 19,
                             ), label: Text(action))),
           ]),
         );
@@ -571,7 +574,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                       );
                     },
                     tooltip: _t(context, 'باز کردن کیف پول', 'Open wallet'),
-                    icon: const Icon(Icons.arrow_outward_rounded),
+                    icon: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   ),
                 ],
               );
