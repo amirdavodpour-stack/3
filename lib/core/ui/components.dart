@@ -154,30 +154,25 @@ class HopeSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final border =
-        dark ? Colors.white.withValues(alpha: .07) : const Color(0xFFE7E3F0);
+    final border = HopeV2Surfaces.border(context);
     return Container(
       padding: padding,
       decoration: BoxDecoration(
         color: highlight
-            ? (dark ? const Color(0x1A7660FF) : const Color(0xFFF1EEFF))
-            : (dark ? HopeV2Colors.darkCard : HopeV2Colors.surface),
-        borderRadius: BorderRadius.circular(radius),
+            ? (dark
+                ? HopeV2Colors.darkCard.withValues(alpha: .92)
+                : HopeV2Colors.softPrimary)
+            : HopeV2Surfaces.panel(context),
+        borderRadius: BorderRadius.circular(
+          radius == 22 ? HopeV2Radii.lg : radius,
+        ),
         border: Border.all(
           color: highlight
               ? HopeV2Colors.primary.withValues(alpha: .24)
               : border,
           width: highlight ? 1.1 : 1,
         ),
-        boxShadow: dark
-            ? const []
-            : const [
-                BoxShadow(
-                  color: Color(0x081B1638),
-                  blurRadius: 22,
-                  offset: Offset(0, 8),
-                ),
-              ],
+        boxShadow: dark ? const [] : HopeV2Shadows.card,
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -499,7 +494,7 @@ class _SearchFieldState extends State<SearchField> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -582,9 +577,15 @@ class SkeletonBox extends StatefulWidget {
 
 class _SkeletonBoxState extends State<SkeletonBox>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1200))
-    ..repeat();
+  AnimationController? _controller;
+
+  void _ensureController() {
+    if (_controller != null || MediaQuery.disableAnimationsOf(context)) return;
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
 
   @override
   void dispose() {
@@ -595,6 +596,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    _ensureController();
     final base =
         dark ? Colors.white.withValues(alpha: .06) : const Color(0xFFECEAF2);
     final highlight = dark ? Colors.white.withValues(alpha: .12) : Colors.white;
@@ -610,7 +612,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
       );
     }
     return AnimatedBuilder(
-      animation: _controller,
+      animation: _controller!,
       builder: (context, _) => Container(
         width: widget.width,
         height: widget.height,
