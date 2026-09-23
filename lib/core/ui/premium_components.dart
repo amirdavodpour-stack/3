@@ -21,26 +21,40 @@ class PremiumNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: HopeV2Surfaces.navigation(context),
-        border: Border(
-          top: BorderSide(color: HopeV2Surfaces.border(context)),
-        ),
-        boxShadow: dark ? const [] : HopeV2Shadows.card,
-      ),
-      child: SafeArea(
-        top: false,
-        child: NavigationBar(
-          selectedIndex: selectedIndex,
-          onDestinationSelected: onDestinationSelected,
-          destinations: destinations,
-          height: HopeV2Navigation.barHeight,
-          backgroundColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: HopeV2Surfaces.navigationIndicator(context),
-          elevation: 0,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+    final surface = HopeV2Surfaces.navigation(context);
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: surface,
+            border: Border.all(color: HopeV2Surfaces.border(context)),
+            boxShadow: [
+              if (!dark) ...HopeV2Shadows.card,
+              if (dark)
+                BoxShadow(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: .08),
+                  blurRadius: 22,
+                  offset: const Offset(0, 8),
+                ),
+            ],
+          ),
+          child: NavigationBar(
+            selectedIndex: selectedIndex,
+            onDestinationSelected: onDestinationSelected,
+            destinations: destinations,
+            height: HopeV2Navigation.barHeight,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            indicatorColor: HopeV2Surfaces.navigationIndicator(context),
+            elevation: 0,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          ),
         ),
       ),
     );
