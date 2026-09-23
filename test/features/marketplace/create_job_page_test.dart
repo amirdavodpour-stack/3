@@ -190,7 +190,7 @@ void main() {
 
     await _pump(tester, repo, width: 360);
     expect(tester.takeException(), isNull);
-    expect(find.byType(TextField), findsWidgets);
+    expect(find.byType(CreateJobPage), findsOneWidget);
 
     tester.view.resetViewInsets();
     tester.view.physicalSize = const Size(800, 360);
