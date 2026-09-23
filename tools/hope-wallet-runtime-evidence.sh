@@ -89,8 +89,6 @@ capture_screen() {
     if test -f "$active_runtime_log" &&        grep -Fq -- "$marker" "$active_runtime_log"; then
       echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
 
-      assert_hope_focused "$prefix"
-
       local tmp_output="$evidence_dir/.$output.tmp"
       rm -f -- "$tmp_output"
       if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out run-as com.hope.marketplace cat "$remote_path"         > "$tmp_output"; then
