@@ -120,121 +120,182 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            PremiumSectionHeader(
-              title: _t(context, 'خانه', 'Home'),
-              subtitle: _t(
-                context,
-                'فرصت، کار فعال و وضعیت مالی را یکجا ببینید.',
-                'Opportunities, active work, and finances in one place.',
-              ),
-              action: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton.filledTonal(
-                    onPressed: _refresh,
-                    tooltip: _t(context, 'بازخوانی', 'Refresh'),
-                    icon: const Icon(Icons.refresh_rounded),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton.filledTonal(
-                    onPressed: widget.onOpenMenu,
-                    tooltip: _t(context, 'منوی برنامه', 'App menu'),
-                    icon: const Icon(Icons.menu_rounded),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: HopeV2Spacing.lg),
-            PremiumHero(
-              eyebrow: _t(context, 'بازار کار', 'Work marketplace'),
-              title: _t(context, 'فرصت مناسب خود را پیدا کنید', 'Find the right opportunity'),
-              message: _t(
-                context,
-                'ماموریت و شغل را جست‌وجو کنید یا فرصت جدید ثبت کنید.',
-                'Search missions and jobs, or post a new opportunity.',
-              ),
-              icon: Icons.work_outline_rounded,
-              height: 344,
-              action: Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  FilledButton.icon(
-                    onPressed: widget.onOpenExplore,
-                    icon: const Icon(Icons.search_rounded),
-                    label: Text(_t(context, 'جست‌وجوی فرصت‌ها', 'Explore opportunities')),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: widget.onOpenCreate,
-                    icon: const Icon(Icons.add_rounded),
-                    label: Text(_t(context, 'ثبت فرصت جدید', 'Post opportunity')),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white38),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: HopeV2Spacing.xl),
-            if (!auth.isGuest)
-              PremiumPanel(
-                highlight: true,
-                padding: const EdgeInsets.all(HopeV2Spacing.lg),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final compact = constraints.maxWidth < 560;
-                    final name =
-                        ((auth.user?['displayName'] as String?)?.trim().isNotEmpty ??
-                                false)
-                            ? (auth.user?['displayName'] as String).trim()
-                            : _t(context, 'حساب کاربری', 'Account');
-                    final account = Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            Builder(
+              builder: (context) {
+                final displayName =
+                    ((auth.user?['displayName'] as String?)?.trim().isNotEmpty ?? false)
+                        ? (auth.user?['displayName'] as String).trim()
+                        : _t(context, 'فضای کاری', 'Workspace');
+                final initial = displayName.trim().isNotEmpty
+                    ? displayName.trim().characters.first.toUpperCase()
+                    : 'H';
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          _t(context, 'فضای کاری', 'Workspace'),
-                          style: HopeV2Type.eyebrow(context),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          name,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _t(
-                            context,
-                            'وضعیت حساب، کارهای فعال و کیف پول.',
-                            'Account status, active work, and wallet.',
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _t(context, 'فضای کاری', 'Workspace'),
+                                style: HopeV2Type.eyebrow(context),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: HopeV2Type.hero(context),
+                              ),
+                            ],
                           ),
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        IconButton.filledTonal(
+                          onPressed: _refresh,
+                          tooltip: _t(context, 'بازخوانی', 'Refresh'),
+                          icon: const Icon(Icons.refresh_rounded),
+                        ),
+                        const SizedBox(width: 6),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: HopeV2Colors.primary.withValues(alpha: .16),
+                          child: Text(
+                            initial,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
                       ],
-                    );
-                    final action = FilledButton.tonalIcon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        HopeRoutes.profile(),
-                      ),
-                      icon: const Icon(Icons.person_outline_rounded),
-                      label: Text(_t(context, 'پروفایل', 'Profile')),
-                    );
-                    return compact
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [account, const SizedBox(height: 12), action],
-                          )
-                        : Row(
-                            children: [
-                              Expanded(child: account),
-                              action,
-                            ],
+                    ),
+                    const SizedBox(height: HopeV2Spacing.lg),
+                    FutureBuilder<List<HopeJob>>(
+                      future: _opportunities,
+                      builder: (context, pulseSnapshot) {
+                        final jobs = pulseSnapshot.data ?? const <HopeJob>[];
+                        final matchCount = jobs.where((j) => j.isRecommended).length;
+                        final nearbyCount = jobs.where(
+                          (j) => j.distanceKm != null || j.city == settings.city,
+                        ).length;
+                        final locked =
+                            _wallet == null ? null : _wallet!.lockedBalance;
+                        String money(int value) => value
+                            .toString()
+                            .replaceAllMapped(
+                              RegExp(r'(?<=\\d)(?=(\\d{3})+(?!\\d))'),
+                              (_) => ',',
+                            );
+                        Widget metric(String value, String label, IconData icon) {
+                          return Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  icon,
+                                  size: 17,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(height: 7),
+                                Text(
+                                  value,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
                           );
-                  },
-                ),
-              ),
-            if (!auth.isGuest) const SizedBox(height: HopeV2Spacing.xl),
+                        }
+                        return PremiumPanel(
+                          padding: const EdgeInsets.fromLTRB(
+                            HopeV2Spacing.lg,
+                            HopeV2Spacing.md,
+                            HopeV2Spacing.lg,
+                            HopeV2Spacing.md,
+                          ),
+                          highlight: true,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 17,
+                                    color: HopeV2Colors.primaryDark,
+                                  ),
+                                  const SizedBox(width: 7),
+                                  Text(
+                                    _t(context, 'HOPE Pulse', 'HOPE Pulse'),
+                                    style: Theme.of(context).textTheme.labelLarge,
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    _t(context, 'وضعیت زنده', 'Live status'),
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: HopeV2Spacing.lg),
+                              Row(
+                                children: [
+                                  metric(
+                                    pulseSnapshot.connectionState ==
+                                            ConnectionState.done
+                                        ? '$matchCount'
+                                        : '—',
+                                    _t(context, 'تطابق', 'matches'),
+                                    Icons.auto_awesome_outlined,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  metric(
+                                    pulseSnapshot.connectionState ==
+                                            ConnectionState.done
+                                        ? '$nearbyCount'
+                                        : '—',
+                                    _t(context, 'نزدیک شما', 'near you'),
+                                    Icons.near_me_outlined,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  metric(
+                                    auth.isGuest
+                                        ? '—'
+                                        : _activeJobs == null
+                                            ? '—'
+                                            : '1',
+                                    _t(context, 'کار فعال', 'active'),
+                                    Icons.bolt_outlined,
+                                  ),
+                                  if (!auth.isGuest) ...[
+                                    const SizedBox(width: 12),
+                                    metric(
+                                      locked == null ? '—' : money(locked),
+                                      _t(context, 'قفل‌شده', 'protected'),
+                                      Icons.shield_outlined,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: HopeV2Spacing.xl),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
