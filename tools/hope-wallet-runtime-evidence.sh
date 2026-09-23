@@ -191,8 +191,6 @@ if [ "$baseline_status" -eq 0 ]; then
   adb shell wm size 720x1280
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
-  adb shell run-as com.hope.marketplace rm -rf files/hope-screen-acks
-  adb shell run-as com.hope.marketplace mkdir -p files/hope-screen-acks
 
 set +e
 HOPE_RESPONSIVE_ONLY=1 stdbuf -oL -eL flutter test --no-pub \
