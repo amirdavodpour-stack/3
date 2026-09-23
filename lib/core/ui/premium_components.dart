@@ -698,11 +698,20 @@ class PremiumFilterChip extends StatelessWidget {
               children: [
                 if (loading)
                   ExcludeSemantics(
-                    child: Icon(
-                      reduceMotion ? Icons.hourglass_empty_rounded : Icons.progress_activity_rounded,
-                      size: 16,
-                      color: foreground,
-                    ),
+                    child: reduceMotion
+                        ? Icon(
+                            Icons.hourglass_empty_rounded,
+                            size: 16,
+                            color: foreground,
+                          )
+                        : SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: foreground,
+                            ),
+                          ),
                   )
                 else if (icon != null)
                   Icon(icon, size: 16, color: foreground),
