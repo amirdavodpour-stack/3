@@ -82,6 +82,32 @@ void main() {
     expect(material.type, MaterialType.transparency);
   });
 
+  testWidgets('highlighted premium panels expose a restrained gradient layer',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: PremiumPanel(
+            highlight: true,
+            child: SizedBox(width: 120, height: 80),
+          ),
+        ),
+      ),
+    );
+
+    final panel = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(PremiumPanel),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = panel.decoration as BoxDecoration;
+    expect(decoration.gradient, isA<LinearGradient>());
+  });
+
   testWidgets('premium desktop navigation rail preserves the shell contract',
       (tester) async {
     await tester.pumpWidget(
