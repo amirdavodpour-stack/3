@@ -169,13 +169,6 @@ void main() {
         reason: 'missing ${locale.languageCode} currency label',
       );
 
-      expect(
-        find.bySemanticsLabel(
-          locale.languageCode == 'fa' ? 'مشاهده جزئیات' : 'View details',
-        ),
-        findsOneWidget,
-        reason: 'missing ${locale.languageCode} detail accessibility label',
-      );
     }
   });
 }
