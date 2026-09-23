@@ -123,6 +123,9 @@ void main() {
         'مهارت مرتبط',
         'دسته‌بندی مرتبط',
         'خیلی نزدیک',
+        'آنلاین',
+        'مشاهده و اقدام برای ماموریت',
+        'مشاهده جزئیات',
       ],
       'en': const [
         'Untitled',
@@ -133,6 +136,9 @@ void main() {
         'Skill match',
         'Category match',
         'Very near',
+        'Remote',
+        'View and act on mission',
+        'View details',
       ],
     };
 
