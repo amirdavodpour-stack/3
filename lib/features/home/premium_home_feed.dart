@@ -250,7 +250,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                               Row(
                                 children: [
                                   Icon(
-                                    Icons.auto_awesome_rounded,
+                                    HopeV2Icons.featured,
                                     size: 17,
                                     color: HopeV2Colors.primaryDark,
                                   ),
@@ -277,7 +277,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                           ? '$matchCount'
                                           : '—',
                                       _t(context, 'تطابق', 'matches'),
-                                      Icons.auto_awesome_outlined,
+                                      HopeV2Icons.match,
                                     ),
                                     metric(
                                       pulseSnapshot.connectionState ==
@@ -285,7 +285,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                           ? '$nearbyCount'
                                           : '—',
                                       _t(context, 'نزدیک شما', 'near you'),
-                                      Icons.near_me_outlined,
+                                      HopeV2Icons.distance,
                                     ),
                                     metric(
                                       auth.isGuest
@@ -294,13 +294,13 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                               ? '—'
                                               : _activeJobCount?.toString() ?? '—',
                                       _t(context, 'کار فعال', 'active'),
-                                      Icons.bolt_outlined,
+                                      HopeV2Icons.mission,
                                     ),
                                     if (!auth.isGuest)
                                       metric(
                                         locked == null ? '—' : money(locked),
                                         _t(context, 'قفل‌شده', 'protected'),
-                                        Icons.shield_outlined,
+                                        HopeV2Icons.protectedFunds,
                                       ),
                                   ];
                                   if (!compact) {
@@ -397,7 +397,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             const SizedBox(height: HopeV2Spacing.lg),
             OutlinedButton.icon(
               onPressed: widget.onOpenExplore,
-              icon: const Icon(Icons.explore_outlined),
+              icon: const Icon(HopeV2Icons.workshop),
               label: Text(_t(context, 'رفتن به Explore', 'Open Explore')),
             ),
           ],
@@ -553,7 +553,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 children: [
                   Flexible(
                     child: PremiumTag(
-                      icon: Icons.lock_outline_rounded,
+                      icon: HopeV2Icons.secure,
                       label:
                           '${_t(context, 'قفل‌شده', 'Locked')}: ${money(wallet.lockedBalance)}',
                       color: AppColors.warning,
