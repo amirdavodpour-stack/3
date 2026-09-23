@@ -74,7 +74,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'work');
     await tester.pump();
 
-    final semantics = tester.getSemantics(find.byType(TextField));
+    final semantics = tester.getSemantics(find.byType(EditableText));
     expect(semantics.flagsCollection.isTextField, isTrue);
     expect(semantics.value, 'work');
   });
