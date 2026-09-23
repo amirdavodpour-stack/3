@@ -28,7 +28,6 @@ void main() {
         supportedLocales: const [Locale('fa'), Locale('en')],
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
@@ -72,6 +71,7 @@ void main() {
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa'), Locale('en')],
         localizationsDelegates: const [
+          AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
@@ -123,14 +123,6 @@ void main() {
         'مهارت مرتبط',
         'دسته‌بندی مرتبط',
         'خیلی نزدیک',
-        'نزدیک',
-        'آنلاین',
-        'نوع همکاری مناسب',
-        'تناسب درآمد',
-        'متناسب با ترجیحات',
-        'تناسب کلی',
-        'مشاهده و اقدام برای ماموریت',
-        'مشاهده جزئیات',
       ],
       'en': const [
         'Untitled',
@@ -141,14 +133,6 @@ void main() {
         'Skill match',
         'Category match',
         'Very near',
-        'Near',
-        'Remote',
-        'Work mode fit',
-        'Salary fit',
-        'Preference fit',
-        'General fit',
-        'View and act on mission',
-        'View details',
       ],
     };
 
