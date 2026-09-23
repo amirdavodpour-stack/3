@@ -9,7 +9,8 @@ Primary design job: reduce decision friction without turning the marketplace int
 
 ## Visual direction
 HOPE should feel like a **premium work instrument** rather than a generic SaaS dashboard:
-- calm, high-contrast surfaces;
+- dark-first, high-contrast layered surfaces for the default product experience;
+- light mode remains supported as an explicit user-selected alternative;
 - confident violet as the primary brand signal;
 - restrained teal for positive/secondary actions;
 - warm amber for caution/attention;
