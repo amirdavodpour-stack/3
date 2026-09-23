@@ -94,7 +94,7 @@ class AppTheme {
         dividerColor: Colors.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(
-          color: dark ? const Color(0x287660FF) : AppColors.softPrimary,
+          color: dark ? AppColors.primaryDark.withValues(alpha: .16) : AppColors.softPrimary,
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
         ),
         labelColor: scheme.primary,
@@ -105,11 +105,11 @@ class AppTheme {
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: dark ? const Color(0x1AFFFFFF) : const Color(0xFFF1EFF7),
-        selectedColor: dark ? const Color(0x337660FF) : AppColors.softPrimary,
-        disabledColor: dark ? Colors.white10 : const Color(0xFFEAE7F0),
+        backgroundColor: dark ? HopeV2Colors.chipDark : HopeV2Colors.chipLight,
+        selectedColor: dark ? HopeV2Colors.chipSelectedDark : AppColors.softPrimary,
+        disabledColor: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.disabledLight,
         side: BorderSide(
-          color: dark ? Colors.white10 : const Color(0xFFE1DDEA),
+          color: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.controlBorderLight,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
@@ -133,10 +133,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.lg)),
       ),
       dividerTheme: DividerThemeData(
-          color: dark ? Colors.white10 : const Color(0xFFE8E5F0), space: 1),
+          color: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.dividerLight, space: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: dark ? const Color(0xFF201D28) : const Color(0xFFFCFBFF),
+        fillColor: dark ? HopeV2Colors.inputDark : HopeV2Colors.panelSoftLight,
         hintStyle: TextStyle(color: mutedColor),
         labelStyle: TextStyle(color: mutedColor, fontWeight: FontWeight.w700),
         prefixIconColor: mutedColor,
@@ -148,9 +148,9 @@ class AppTheme {
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(
-                color: dark ? Colors.white10 : const Color(0xFFE6E2F0))),
+                color: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.borderControlLight))),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(color: scheme.primary, width: 1.6)),
         errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
@@ -170,7 +170,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
           side: BorderSide(
-              color: dark ? Colors.white12 : const Color(0xFFDED9EA)),
+              color: dark ? const Color(0x12FFFFFF) : HopeV2Colors.outlinedButtonBorderLight),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
@@ -187,9 +187,9 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 78,
         backgroundColor:
-            dark ? const Color(0xF714121B) : const Color(0xFDFEFEFF),
+            dark ? HopeV2Colors.navigationDark : HopeV2Colors.navigationLight,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: dark ? const Color(0x4D7660FF) : AppColors.softPrimary,
+        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : AppColors.softPrimary,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
@@ -216,7 +216,7 @@ class AppTheme {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
         indicatorColor:
-            dark ? const Color(0x3D7660FF) : AppColors.softPrimary,
+            dark ? HopeV2Colors.navigationIndicatorDark.withValues(alpha: .80) : AppColors.softPrimary,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
         ),
