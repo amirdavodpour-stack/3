@@ -63,6 +63,7 @@ class HopeAsyncState extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       container: true,
+      explicitChildNodes: true,
       label: '$title. $message',
       child: Center(
         child: ConstrainedBox(
