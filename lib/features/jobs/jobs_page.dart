@@ -123,7 +123,6 @@ class _JobsPageState extends State<JobsPage> {
   Future<void> _saveCurrentSearch() async {
     if (_savedSearchMutationBusy) return;
     setState(() => _savedSearchMutationBusy = true);
-    final locale = Localizations.localeOf(context).languageCode;
     final controller = TextEditingController(text: _savedSearchName());
     try {
       final name = await showDialog<String>(
@@ -232,11 +231,8 @@ class _JobsPageState extends State<JobsPage> {
                               apiErrorMessage(
                                 error,
                                 fallback:
-                                    Localizations.localeOf(context)
-                                                .languageCode ==
-                                            'en'
-                                        ? 'Could not delete the saved search.'
-                                        : 'حذف جست‌وجو ناموفق بود.',
+                                    HopeCopy.of(context)
+                                        .copy_could_not_delete_saved_search,
                               ),
                               tone: HopeFeedbackTone.error,
                             );
