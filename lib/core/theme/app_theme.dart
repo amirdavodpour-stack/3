@@ -109,7 +109,7 @@ class AppTheme {
         selectedColor: dark ? HopeV2Colors.chipSelectedDark : AppColors.softPrimary,
         disabledColor: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.disabledLight,
         side: BorderSide(
-          color: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.controlBorderLight,
+          color: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.borderControlLight,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
@@ -148,7 +148,9 @@ class AppTheme {
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(
-                color: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.borderControlLight))),
+                color: dark
+                    ? const Color(0x1AFFFFFF)
+                    : HopeV2Colors.borderControlLight)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(color: scheme.primary, width: 1.6)),
