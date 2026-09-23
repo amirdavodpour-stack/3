@@ -9,9 +9,10 @@ mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
 
-capture_root="/data/user/0/com.hope.marketplace/files/hope-screen-captures"
+capture_root="/data/user/0/com.hope.marketplace/files/hope-screen-captures-${GITHUB_RUN_ID}"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
+CAPTURE_CHECK_TIMEOUT_SECONDS="${HOPE_CAPTURE_CHECK_TIMEOUT_SECONDS:-2}"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -73,17 +74,23 @@ capture_screen() {
   local prefix="$3"
   local timeout_seconds="$4"
   local deadline=$((SECONDS + timeout_seconds))
-  local remote_path="files/hope-screen-captures/$output"
+  local remote_path="files/hope-screen-captures-${GITHUB_RUN_ID}/$output"
 
   while (( SECONDS < deadline )); do
-    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"       "${ADB_TIMEOUT_SECONDS}s"       adb shell run-as com.hope.marketplace test -s "$remote_path"       >/dev/null 2>&1; then
+    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
+      "${CAPTURE_CHECK_TIMEOUT_SECONDS}s" \
+      adb shell run-as com.hope.marketplace test -s "$remote_path" \
+      >/dev/null 2>&1; then
       echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
 
       assert_hope_focused "$prefix"
 
       local tmp_output="$evidence_dir/.$output.tmp"
       rm -f -- "$tmp_output"
-      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out run-as com.hope.marketplace cat "$remote_path"         > "$tmp_output"; then
+      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
+        "${ADB_TIMEOUT_SECONDS}s" \
+        adb exec-out run-as com.hope.marketplace cat "$remote_path" \
+        > "$tmp_output"; then
         rm -f -- "$tmp_output"
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
         return 1
@@ -98,11 +105,21 @@ capture_screen() {
       mv -- "$tmp_output" "$evidence_dir/$output"
       echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
 
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out cat /sdcard/hope-ui-hierarchy.xml         > "$evidence_dir/ui-hierarchy-$prefix.xml" 2>/dev/null || true
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
+        "${ADB_TIMEOUT_SECONDS}s" \
+        adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
+        "${ADB_TIMEOUT_SECONDS}s" \
+        adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
+        "${ADB_TIMEOUT_SECONDS}s" \
+        adb exec-out cat /sdcard/hope-ui-hierarchy.xml \
+        > "$evidence_dir/ui-hierarchy-$prefix.xml" 2>/dev/null || true
 
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell run-as com.hope.marketplace rm -f "$remote_path"         >/dev/null 2>&1 || true
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
+        "${ADB_TIMEOUT_SECONDS}s" \
+        adb shell run-as com.hope.marketplace rm -f "$remote_path" \
+        >/dev/null 2>&1 || true
 
       echo "HOPE_HOST_CAPTURE_CLEANED:$marker"
       return 0
