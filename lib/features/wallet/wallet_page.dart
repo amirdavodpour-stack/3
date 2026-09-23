@@ -594,7 +594,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
               action: OutlinedButton.icon(
                 onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                 label: Text(_t('تلاش دوباره', 'Try again')),
               ),
             ),
@@ -708,19 +708,19 @@ class _WalletPageState extends State<WalletPage> {
             if (_internalTopUpEnabled)
               FilledButton.tonalIcon(
                 onPressed: canAct ? _openTopUp : null,
-                icon: const Icon(Icons.add_rounded),
+                icon: HopeIcon(HopeV2Icons.add, size: 19),
                 label: Text(_t('شارژ کیف پول', 'Top up')),
               ),
             if (_internalTopUpEnabled) const SizedBox(height: 9),
             FilledButton.icon(
               onPressed: canAct ? _openTransfer : null,
-              icon: const Icon(Icons.swap_horiz_rounded),
+              icon: HopeIcon(HopeV2Icons.transferOut, size: 19),
               label: Text(_t('انتقال داخلی', 'Transfer')),
             ),
             const SizedBox(height: 9),
             OutlinedButton.icon(
               onPressed: canAct ? _openWithdraw : null,
-              icon: HugeIcon(icon: HopeV2Icons.transferIn, size: 18),
+              icon: HopeIcon(HopeV2Icons.transferOut, size: 19),
               label: Text(_t('درخواست برداشت', 'Request withdrawal')),
             ),
             if (!wallet.isActive) ...[
@@ -756,7 +756,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
                 action: OutlinedButton.icon(
                   onPressed: _load,
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                   label: Text(_t('تلاش دوباره', 'Try again')),
                 ),
               ),
@@ -1027,7 +1027,7 @@ class _WalletPageState extends State<WalletPage> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.expand_more_rounded),
+                    : HopeIcon(HopeV2Icons.arrowRight, size: 19),
                 label: Text(_t('تراکنش‌های بیشتر', 'Load more')),
               ),
             ],
