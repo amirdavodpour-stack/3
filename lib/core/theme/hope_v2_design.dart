@@ -65,21 +65,21 @@ class HopeV2Spacing {
   static const lg = 16.0;
   static const xl = 24.0;
   static const xxl = 32.0;
-  static const section = 40.0;
-  static const display = 56.0;
+  static const section = 32.0;
+  static const display = 48.0;
 }
 
 class HopeV2Radii {
   const HopeV2Radii._();
   static const sm = 12.0;
   static const md = 16.0;
-  static const lg = 22.0;
-  static const xl = 28.0;
-  static const hero = 32.0;
-  static const input = 18.0;
-  static const button = 16.0;
-  static const navigation = 16.0;
-  static const chip = 14.0;
+  static const lg = 18.0;
+  static const xl = 24.0;
+  static const hero = 24.0;
+  static const input = 14.0;
+  static const button = 14.0;
+  static const navigation = 14.0;
+  static const chip = 12.0;
   static const iconTile = 18.0;
   static const fab = 19.0;
   static const pill = 999.0;
