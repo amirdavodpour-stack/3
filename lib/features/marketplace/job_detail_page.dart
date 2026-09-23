@@ -107,7 +107,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 maxLines: 5,
                 decoration: InputDecoration(
                   labelText: HopeCopy.of(context).copy_resume_summary_a1cc787,
-                  prefixIcon: const Icon(Icons.description_outlined),
+                  prefixIcon: HopeIcon(HopeV2Icons.description, size: 20),
                   alignLabelWithHint: true,
                 ),
               ),
@@ -116,7 +116,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 controller: skills,
                 decoration: InputDecoration(
                   labelText: HopeCopy.of(context).copy_skills_79566c4,
-                  prefixIcon: const Icon(Icons.psychology_outlined),
+                  prefixIcon: HopeIcon(HopeV2Icons.skills, size: 20),
                 ),
               ),
               const SizedBox(height: 16),
@@ -237,7 +237,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               ],
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_offer_price_d8fc5f4,
-                prefixIcon: const Icon(Icons.payments_outlined),
+                prefixIcon: HopeIcon(HopeV2Icons.payments, size: 20),
                 suffixText: _t('تومان', 'Toman'),
                 helperText: _t(
                   'قیمت پیشنهادی را به تومان و به‌صورت عدد صحیح وارد کنید.',
@@ -252,7 +252,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_message_c821412,
                 alignLabelWithHint: true,
-                prefixIcon: const Icon(Icons.chat_bubble_outline_rounded),
+                prefixIcon: HopeIcon(HopeV2Icons.message, size: 20),
               ),
             ),
             const SizedBox(height: 16),
@@ -789,7 +789,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.warning_amber_rounded),
+                                HopeIcon(HopeV2Icons.pending, size: 20),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
@@ -806,7 +806,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                     _candidatesFuture =
                                         _controller.candidatesFuture;
                                   }),
-                                  icon: const Icon(Icons.refresh_rounded),
+                                  icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                                 ),
                               ],
                             ),
@@ -1044,7 +1044,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 jobId: j.id,
                               ),
                             ),
-                            icon: const Icon(Icons.open_in_new_rounded),
+                            icon: HopeIcon(HopeV2Icons.arrowRight, size: 19),
                             label: Text(
                               HopeCopy.of(context)
                                   .copy_view_transaction_a91f1e6,
@@ -1143,7 +1143,7 @@ class _JobLifecycleCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const HopeIconTile(Icons.route_rounded, filled: true),
+              const HopeIconTile(HopeV2Icons.route, filled: true),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -1153,7 +1153,7 @@ class _JobLifecycleCard extends StatelessWidget {
               ),
               StatusPill(
                 _label(context, status),
-                icon: Icons.circle,
+                icon: HopeV2Icons.pending,
                 color: status == 'CANCELLED'
                     ? Theme.of(context).colorScheme.error
                     : Theme.of(context).colorScheme.primary,
@@ -1270,7 +1270,7 @@ class _MatchIntelligence extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.auto_awesome_rounded,
+                HopeV2Icons.featured,
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 9),
@@ -1305,7 +1305,7 @@ class _MatchIntelligence extends StatelessWidget {
                     (r) => StatusPill(
                       _reason(context, r),
                       color: Theme.of(context).colorScheme.primary,
-                      icon: Icons.check_circle_outline_rounded,
+                      icon: HopeV2Icons.completed,
                     ),
                   )
                   .toList(),
