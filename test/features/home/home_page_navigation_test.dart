@@ -288,7 +288,8 @@ void main() {
     await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
     await tester.enterText(find.byType(TextField).at(1), 'password123');
     await tester.tap(find.text('Log in to HOPE'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(LoginPage), findsNothing);
     expect(find.byType(CreateJobPage), findsOneWidget);
@@ -311,7 +312,8 @@ void main() {
     await tester.enterText(find.byType(TextField).at(1), 'ali@example.com');
     await tester.enterText(find.byType(TextField).at(2), 'password123');
     await tester.tap(find.text('Create account'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(RegisterPage), findsNothing);
     expect(find.byType(CreateJobPage), findsOneWidget);
