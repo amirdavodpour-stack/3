@@ -67,6 +67,7 @@ class HopeV2Radii {
   static const navigation = 16.0;
   static const chip = 14.0;
   static const iconTile = 18.0;
+  static const fab = 19.0;
   static const pill = 999.0;
 }
 
