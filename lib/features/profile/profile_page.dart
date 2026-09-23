@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import '../../core/ui/hope_async_state.dart';
 
@@ -384,7 +385,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   leading: const HopeIconTile(HopeV2Icons.mission, filled: true),
                   title: Text(_t(context, 'درخواست‌های من', 'My applications')),
                   subtitle: Text(_t(context, 'پیگیری مرحله‌به‌مرحله همه درخواست‌های شغلی', 'Track every job application through its workflow')),
-                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.myApplications()),
                 ),
                 const Divider(height: 1, indent: 72),
@@ -392,7 +393,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'دستگاه‌های اعلان', 'Notification devices')),
                   subtitle: Text(_t(context, 'مدیریت دستگاه‌های فعال برای Push', 'Manage devices enabled for Push notifications')),
-                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.notificationDevices()),
                 ),
                 const Divider(height: 1, indent: 72),
@@ -400,14 +401,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'حریم خصوصی و داده‌ها', 'Privacy & data')),
                   subtitle: Text(_t(context, 'دریافت خروجی اطلاعات یا حذف حساب', 'Export your data or delete your account')),
-                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.privacyCenter()),
                 ),
                 ListTile(
                   leading: const HopeIconTile(HopeV2Icons.savedSearches, filled: true),
                   title: Text(_t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches')),
                   subtitle: Text(_t(context, 'ویرایش و مدیریت فیلترهای ذخیره‌شده', 'Edit and manage saved-search filters')),
-                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.savedSearches()),
                 ),
               ],
