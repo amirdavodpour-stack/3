@@ -10,6 +10,9 @@ Primary design job: reduce decision friction without turning the marketplace int
 ### Premium reference target — HOPE Futuristic Work Platform UI Showcase
 The target visual language is a dark, high-density work platform: near-black navy surfaces, indigo/violet primary, emerald trust/success, amber warning, restrained red danger, compact rounded cards, thin borders, strong metric/state hierarchy, controlled glow, and deliberate mobile bottom navigation / desktop rail behavior. This is a system reference, not a pixel-copy mandate. Product behavior, backend contracts, wallet/ledger semantics and real data remain authoritative. Opportunity/hero imagery is screen-level, not a page-wide background.
 
+### Visual calibration — HOPE Futuristic Work Platform UI Showcase
+The supplied showcase is the calibration target for the reconstruction. Match its information density, dark layered surfaces, compact card geometry, strong numeric/state hierarchy, controlled violet glow, emerald trust signals, and mobile bottom-navigation rhythm. Preserve HOPE-specific copy, Persian-first RTL behavior, real marketplace/ledger data, permissions, and lifecycle semantics. Use imagery only inside opportunity/hero surfaces where product data supports it; never use a page-wide photographic background.
+
 ## Visual direction
 HOPE should feel like a **premium work instrument** rather than a generic SaaS dashboard:
 - dark-first, high-contrast layered surfaces for the default product experience;
