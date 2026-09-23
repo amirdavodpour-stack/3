@@ -25,7 +25,7 @@ grep -Fq "convertFlutterSurfaceToImage()" "$dart_test"
 grep -Fq "takeScreenshot(marker)" "$dart_test"
 grep -Fq 'writeAsBytes(bytes, flush: true)' "$dart_test"
 grep -Fq 'tempFile.rename(outputFile.path)' "$dart_test"
-grep -Fq "HOPE_SCREENSHOT_READY:$marker" "$dart_test"
+grep -Fq 'HOPE_SCREENSHOT_READY:$marker' "$dart_test"
 
 # Baseline and responsive runs both receive the same output root.
 test "$(grep -Fc -- '--dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root"' "$script")" -eq 2
