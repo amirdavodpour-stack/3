@@ -40,6 +40,7 @@ class HopeAsyncState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final config = switch (kind) {
       HopeStateKind.initial => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.onSurfaceVariant),
       HopeStateKind.loading => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.primary),
@@ -71,7 +72,11 @@ class HopeAsyncState extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (kind == HopeStateKind.loading || kind == HopeStateKind.refreshing || kind == HopeStateKind.retrying || kind == HopeStateKind.submitting)
+                if (!reduceMotion &&
+                    (kind == HopeStateKind.loading ||
+                        kind == HopeStateKind.refreshing ||
+                        kind == HopeStateKind.retrying ||
+                        kind == HopeStateKind.submitting))
                   const SizedBox(
                     width: 28,
                     height: 28,
