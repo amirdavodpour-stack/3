@@ -137,4 +137,30 @@ void main() {
 
     expect(find.byType(HugeIcon), findsOneWidget);
   });
+  testWidgets('compatibility status and empty-state primitives accept canonical icons',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: Column(
+            children: [
+              StatusPill(
+                'Done',
+                icon: HopeV2Icons.completed,
+              ),
+              EmptyState(
+                icon: HopeV2Icons.secure,
+                title: 'Private',
+                message: 'Sign in to continue',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(HugeIcon), findsWidgets);
+  });
+
 }
