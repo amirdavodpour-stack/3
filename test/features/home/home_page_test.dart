@@ -92,6 +92,7 @@ void main() {
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(PremiumHeader), findsOneWidget);
     expect(find.byType(PremiumStatCard), findsWidgets);
+    await tester.scrollUntilVisible(find.text('دسترسی سریع'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('دسترسی سریع'), findsOneWidget);
     expect(find.text('کاوش فرصت‌ها'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
