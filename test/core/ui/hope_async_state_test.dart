@@ -44,6 +44,28 @@ void main() {
     expect(semantics.label, 'خطا. دوباره تلاش کنید');
   });
 
+  testWidgets('loading state removes animated spinner when reduced motion is enabled',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: HopeAsyncState(
+              kind: HopeStateKind.loading,
+              title: 'در حال بارگذاری',
+              message: 'لطفاً صبر کنید',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byIcon(Icons.hourglass_empty_rounded), findsOneWidget);
+  });
+
   testWidgets('async state action is constrained to the shared touch minimum',
       (tester) async {
     await tester.pumpWidget(
