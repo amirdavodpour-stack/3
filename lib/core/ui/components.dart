@@ -497,7 +497,7 @@ class _SearchFieldState extends State<SearchField> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -624,7 +624,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
           gradient: LinearGradient(
             colors: [base, highlight, base],
             stops: const [.2, .5, .8],
-            begin: Alignment(-1.0 + 2 * _controller.value, 0),
+            begin: Alignment(-1.0 + 2 * _controller!.value, 0),
             end: Alignment(1.0 + 2 * _controller.value, 0),
           ),
         ),
