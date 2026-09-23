@@ -369,6 +369,16 @@ class HopeV2Shadows {
   ];
 }
 
+class HopeV2Typography {
+  const HopeV2Typography._();
+
+  /// Single source of truth for the app-wide UI type family. The value stays
+  /// on the legally bundled font until a replacement asset is explicitly
+  /// licensed and added to the repository.
+  static const primaryFontFamily = 'Vazirmatn';
+  static const fontFamilyFallback = <String>['Roboto'];
+}
+
 class HopeV2Type {
   const HopeV2Type._();
 
