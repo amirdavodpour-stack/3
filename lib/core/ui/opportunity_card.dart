@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 
 import '../marketplace/job.dart';
@@ -33,10 +34,11 @@ class _MatchBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            HopeV2Icons.match,
+          const HugeIcon(
+            icon: HopeV2Icons.match,
             size: 14,
             color: HopeV2Colors.orange,
+            strokeWidth: 1.9,
           ),
           const SizedBox(width: 5),
           Text(
@@ -174,11 +176,14 @@ class OpportunityCard extends StatelessWidget {
           Flexible(child: Text(amount, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: TextStyle(fontWeight: FontWeight.w800, color: primary))),
         ],
         const SizedBox(width: 4),
-        Icon(
-          Directionality.of(context) == ui.TextDirection.rtl
-              ? Icons.chevron_left_rounded
-              : Icons.chevron_right_rounded,
+        HugeIcon(
+          icon: Directionality.of(context) == ui.TextDirection.rtl
+              ? HopeV2Icons.arrowLeft
+              : HopeV2Icons.arrowRight,
+          size: 19,
+          color: primary,
           semanticLabel: copy.copy_view_details,
+          strokeWidth: 1.9,
         ),
       ],
     );
@@ -281,7 +286,12 @@ class OpportunityCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(HopeV2Icons.payments, color: primary, size: 21),
+                HugeIcon(
+                  icon: HopeV2Icons.payments,
+                  color: primary,
+                  size: 21,
+                  strokeWidth: 1.9,
+                ),
                 const SizedBox(width: 9),
                 Expanded(
                   child: Column(
@@ -316,7 +326,7 @@ class OpportunityCard extends StatelessWidget {
           Wrap(
             spacing: HopeV2Spacing.sm,
             runSpacing: HopeV2Spacing.sm,
-            children: reasons.map((r) => PremiumTag(icon: Icons.check_circle_outline_rounded, label: _reason(context, r), color: primary)).toList(),
+            children: reasons.map((r) => PremiumTag(icon: HopeV2Icons.completed, label: _reason(context, r), color: primary)).toList(),
           ),
         ],
         if (expanded && job.description.trim().isNotEmpty) ...[
@@ -327,13 +337,14 @@ class OpportunityCard extends StatelessWidget {
         Row(
           children: [
             Expanded(child: Text(job.isMission ? copy.copy_view_and_act_on_mission : copy.copy_view_details_and_act, style: Theme.of(context).textTheme.bodyMedium)),
-            Icon(
-              Directionality.of(context) == ui.TextDirection.rtl
-                  ? Icons.arrow_back_rounded
-                  : Icons.arrow_forward_rounded,
+            HugeIcon(
+              icon: Directionality.of(context) == ui.TextDirection.rtl
+                  ? HopeV2Icons.arrowLeft
+                  : HopeV2Icons.arrowRight,
               size: 20,
               color: primary,
               semanticLabel: copy.copy_view_details,
+              strokeWidth: 1.9,
             ),
           ],
         ),
