@@ -86,10 +86,21 @@ capture_screen() {
       break
     fi
 
-    if grep -Fq -- "$marker" "$active_runtime_log" || \
-       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
-       "${READY_CHECK_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace \
-       test -e "files/hope-screen-acks/.ready-$ack_marker" >/dev/null 2>&1; then
+    if grep -Fq -- "$marker" "$active_runtime_log"; then
+      ready_detected=1
+    else
+      remaining=$((deadline - SECONDS))
+      ready_detected=0
+      if (( remaining > 0 )) && \
+         timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
+         "${remaining}s" adb shell run-as com.hope.marketplace sh -c \
+         "until [ -e 'files/hope-screen-acks/.ready-$ack_marker' ]; do sleep 0.1; done" \
+         >/dev/null 2>&1; then
+        ready_detected=1
+      fi
+    fi
+
+    if (( ready_detected == 1 )); then
       # Capture as soon as the marker is observable. stdout/tee is retained for
       # diagnostics, but the READY file is the authoritative handshake.
       echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
