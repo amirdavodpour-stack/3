@@ -36,6 +36,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   String? _error;
   int _refreshRequestId = 0;
   String? _loadSignature;
+  int? _activeJobCount;
 
   @override
   void didChangeDependencies() {
@@ -78,9 +79,16 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     if (!auth.isGuest) {
       try {
         _activeJobs = registry.listMyJobs();
+        _activeJobs!.then((jobs) {
+          if (!mounted) return;
+          setState(() => _activeJobCount = jobs.where((job) =>
+              {'ASSIGNED', 'IN_PROGRESS', 'DELIVERED', 'UNDER_REVIEW'}
+                  .contains(job.status?.toUpperCase())).length);
+        }).catchError((_) {});
         _wallet = registry.walletsOrThrow.getWallet();
       } catch (_) {
         _activeJobs = Future.value(const <HopeJob>[]);
+        _activeJobCount = 0;
         _wallet = null;
       }
     }
@@ -127,7 +135,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                         ? (auth.user?['displayName'] as String).trim()
                         : _t(context, 'فضای کاری', 'Workspace');
                 final initial = displayName.trim().isNotEmpty
-                    ? displayName.trim().characters.first.toUpperCase()
+                    ? displayName.trim().substring(0, 1).toUpperCase()
                     : 'H';
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +280,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                         ? '—'
                                         : _activeJobs == null
                                             ? '—'
-                                            : '1',
+                                            : _activeJobCount?.toString() ?? '—',
                                     _t(context, 'کار فعال', 'active'),
                                     Icons.bolt_outlined,
                                   ),
