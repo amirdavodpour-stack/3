@@ -4,6 +4,7 @@ set -euo pipefail
 evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
 runner_temp="${RUNNER_TEMP:-/tmp}"
 log_file="$runner_temp/hope-critical-screens-runtime.log"
+active_runtime_log="$log_file"
 mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
@@ -80,7 +81,7 @@ capture_screen() {
   fi
 
   while (( SECONDS < deadline )); do
-    if grep -q -- "$marker" "$log_file" || \
+    if grep -q -- "$marker" "$active_runtime_log" || \
        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
        "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace \
        test -e "files/hope-screen-acks/.ready-$ack_marker" >/dev/null 2>&1; then
@@ -198,6 +199,7 @@ if [ "$baseline_status" -eq 0 ]; then
   adb shell wm size 720x1280
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
+  active_runtime_log="$runner_temp/hope-responsive-runtime.log"
 
 set +e
 HOPE_RESPONSIVE_ONLY=1 flutter test --no-pub \
