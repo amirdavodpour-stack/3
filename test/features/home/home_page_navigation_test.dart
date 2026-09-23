@@ -18,11 +18,12 @@ import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/transactions/transactions_page.dart';
 import 'package:hope_mobile/features/marketplace/create_job_page.dart';
 import 'package:hope_mobile/features/auth/register_page.dart';
-import 'package:hope_mobile/core/router/auth_return_intent.dart';
 import 'package:hope_mobile/features/notifications/notifications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../support/fake_api_server.dart';
 
 /// Home navigation behavior: drawer intents, admin gate, language toggle and
 /// bottom-tab switching. Every test builds its own widgets/fakes, so there is
@@ -151,6 +152,7 @@ Future<Widget> _app({
   bool allowRegister = false,
 }) async {
   SharedPreferences.setMockInitialValues({});
+  installFakeSecureStorage();
   final settings = HopeSettingsController();
   await settings.load();
   // The app defaults to Persian; tests exercise the English navigation
