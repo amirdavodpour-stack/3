@@ -123,7 +123,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       _t('تحویل شده', 'Delivered'),
       _t('تکمیل شده', 'Completed'),
     ];
-    const icons = <IconData>[Icons.campaign_outlined, Icons.assignment_ind_outlined, Icons.play_circle_outline_rounded, Icons.upload_file_outlined, Icons.check_circle_outline_rounded];
+    const icons = <IconData>[Icons.campaign_rounded, Icons.assignment_ind_rounded, Icons.play_circle_rounded, Icons.file_upload_rounded, HopeV2Icons.completed];
     return List.generate(order.length, (i) => PremiumLifecycleStep(
       label: labels[i],
       icon: icons[i],
@@ -186,7 +186,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               subtitle: HopeCopy.of(context)
                   .copy_sign_in_to_view_your_projects_and_payments_32a2bc2,
               trailing: const HopeIconTile(
-                Icons.lock_outline_rounded,
+                HopeV2Icons.secure,
                 size: 50,
                 filled: true,
               ),
@@ -262,7 +262,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       subtitle: HopeCopy.of(context)
                           .copy_your_projects_applications_and_payments_wi_bec5340,
                       trailing: const HopeIconTile(
-                        Icons.auto_graph_rounded,
+                        HopeV2Icons.insights,
                         size: 50,
                         filled: true,
                       ),
@@ -302,7 +302,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       subtitle: HopeCopy.of(context)
                           .copy_projects_progress_and_payments_at_a_glance_a0178c8,
                       trailing: const HopeIconTile(
-                        Icons.swap_horizontal_circle_rounded,
+                        Icons.swap_calls_rounded,
                         size: 50,
                         filled: true,
                       ),
