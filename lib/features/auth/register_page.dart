@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_controller.dart';
@@ -7,6 +8,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, this.returnIntent});
@@ -76,10 +78,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: Icon(
-                          Localizations.localeOf(context).languageCode == 'en'
-                              ? Icons.arrow_back_rounded
-                              : Icons.arrow_forward_rounded,
+                        icon: HugeIcon(
+                          icon: Localizations.localeOf(context).languageCode == 'en'
+                              ? HopeV2Icons.arrowLeft
+                              : HopeV2Icons.arrowRight,
+                          size: 21,
                         ),
                         tooltip: HopeCopy.of(context).copy_back_6e09f79,
                       ),
@@ -92,7 +95,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     eyebrow: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
-                    icon: Icons.person_add_alt_1_rounded,
+                    icon: HopeV2Icons.userAdd,
                     height: 300,
                   ),
                   const SizedBox(height: 16),
@@ -105,7 +108,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_full_name_c7448f1,
-                            prefixIcon: const Icon(Icons.person_outline_rounded),
+                            prefixIcon: HopeIcon(HopeV2Icons.userAdd, size: 20),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -116,7 +119,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const Icon(Icons.mail_outline_rounded),
+                            prefixIcon: HopeIcon(HopeV2Icons.mail, size: 20),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -126,12 +129,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_password_656eabe,
-                            prefixIcon: const Icon(Icons.lock_outline_rounded),
+                            prefixIcon: HopeIcon(HopeV2Icons.password, size: 20),
                             suffixIcon: IconButton(
-                              icon: Icon(
-                                obscure
-                                    ? Icons.visibility_off_rounded
-                                    : Icons.visibility_rounded,
+                              icon: HugeIcon(
+                                icon: obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,
+                                size: 20,
                               ),
                               tooltip: obscure
                                   ? HopeCopy.of(context).showPasswordTooltip
