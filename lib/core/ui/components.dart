@@ -66,36 +66,74 @@ class PressableScale extends StatefulWidget {
 
 class _PressableScaleState extends State<PressableScale> {
   bool pressed = false;
+  bool focused = false;
+
+  void _activate() {
+    HapticFeedback.lightImpact();
+    widget.onTap();
+  }
 
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final content = GestureDetector(
+      onTap: _activate,
+      onTapDown: (_) {
+        if (!reduceMotion) setState(() => pressed = true);
+      },
+      onTapCancel: () {
+        if (!reduceMotion) setState(() => pressed = false);
+      },
+      onTapUp: (_) {
+        if (!reduceMotion) setState(() => pressed = false);
+      },
+      child: reduceMotion
+          ? widget.child
+          : AnimatedScale(
+              scale: pressed ? .975 : 1,
+              duration: const Duration(milliseconds: 110),
+              curve: Curves.easeOut,
+              child: widget.child,
+            ),
+    );
+
     return Semantics(
       button: true,
+      enabled: true,
       label: widget.semanticLabel,
       excludeSemantics: true,
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          widget.onTap();
+      child: Shortcuts(
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
         },
-        onTapDown: (_) {
-          if (!reduceMotion) setState(() => pressed = true);
-        },
-        onTapCancel: () {
-          if (!reduceMotion) setState(() => pressed = false);
-        },
-        onTapUp: (_) {
-          if (!reduceMotion) setState(() => pressed = false);
-        },
-        child: reduceMotion
-            ? widget.child
-            : AnimatedScale(
-                scale: pressed ? .975 : 1,
-                duration: const Duration(milliseconds: 110),
-                curve: Curves.easeOut,
-                child: widget.child,
-              ),
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            ActivateIntent: CallbackAction<ActivateIntent>(
+              onInvoke: (_) {
+                _activate();
+                return null;
+              },
+            ),
+          },
+          child: FocusableActionDetector(
+            onShowFocusHighlight: (value) {
+              if (mounted) setState(() => focused = value);
+            },
+            child: DecoratedBox(
+              decoration: focused
+                  ? BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    )
+                  : const BoxDecoration(),
+              child: content,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -445,7 +483,7 @@ class GradientHero extends StatelessWidget {
       );
 }
 
-class SearchField extends StatelessWidget {
+class SearchField extends StatefulWidget {
   const SearchField(
       {super.key, required this.onChanged, this.onFilter, this.hint});
   final ValueChanged<String> onChanged;
@@ -453,25 +491,59 @@ class SearchField extends StatelessWidget {
   final String? hint;
 
   @override
+  State<SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<SearchField> {
+  late final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    _controller.clear();
+    widget.onChanged('');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final resolvedHint = hint ?? HopeCopy.of(context).copy_search_dd58413;
+    final resolvedHint = widget.hint ?? HopeCopy.of(context).copy_search_dd58413;
+    final hasQuery = _controller.text.isNotEmpty;
     return Semantics(
       label: resolvedHint,
       textField: true,
       excludeSemantics: true,
       child: TextField(
-        onChanged: onChanged,
+        controller: _controller,
+        onChanged: (_) => setState(() {}),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search_rounded),
           hintText: resolvedHint,
-          suffixIcon: onFilter == null
-              ? null
-              : IconButton(
-                  tooltip: HopeCopy.of(context).copy_filters_df4d10e,
-                  onPressed: onFilter,
-                  icon: const Icon(Icons.tune_rounded),
-                ),
+          suffixIcon: hasQuery || widget.onFilter != null
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasQuery)
+                      IconButton(
+                        tooltip: Localizations.localeOf(context).languageCode == 'en'
+                            ? 'Clear search'
+                            : 'پاک کردن جست‌وجو',
+                        onPressed: _clear,
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    if (widget.onFilter != null)
+                      IconButton(
+                        tooltip: HopeCopy.of(context).copy_filters_df4d10e,
+                        onPressed: widget.onFilter,
+                        icon: const Icon(Icons.tune_rounded),
+                      ),
+                  ],
+                )
+              : null,
         ),
       ),
     );
