@@ -467,7 +467,7 @@ extension on _TransactionPageState {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(_statusIcon(status), color: _statusColor(status)),
+                    HopeIcon(_statusIcon(status), color: _statusColor(status)),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
