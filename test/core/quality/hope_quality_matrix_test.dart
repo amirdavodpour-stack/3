@@ -16,13 +16,13 @@ void main() {
                 disableAnimations: true,
                 textScaler: TextScaler.linear(1.8),
               ),
-              child: Directionality(
-                textDirection: direction,
-                child: MaterialApp(
-                  theme: brightness == Brightness.light
-                      ? AppTheme.light()
-                      : AppTheme.dark(),
-                  home: Scaffold(
+              child: MaterialApp(
+                theme: brightness == Brightness.light
+                    ? AppTheme.light()
+                    : AppTheme.dark(),
+                home: Directionality(
+                  textDirection: direction,
+                  child: Scaffold(
                     body: SizedBox(
                       width: 320,
                       child: Column(
