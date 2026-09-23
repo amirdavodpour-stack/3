@@ -5,6 +5,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_feedback.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -31,15 +32,11 @@ class _RegisterPageState extends State<RegisterPage> {
     if (name.text.trim().isEmpty ||
         email.text.trim().isEmpty ||
         password.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              HopeCopy.of(context).copy_please_complete_all_fields_55c07bb)));
+      HopeFeedback.show(context, HopeCopy.of(context).copy_please_complete_all_fields_55c07bb, tone: HopeFeedbackTone.warning);
       return;
     }
     if (password.text.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(HopeCopy.of(context)
-              .copy_password_must_be_at_least_8_characters_8ad17c6)));
+      HopeFeedback.show(context, HopeCopy.of(context).copy_password_must_be_at_least_8_characters_8ad17c6, tone: HopeFeedbackTone.warning);
       return;
     }
     setState(() => loading = true);
@@ -52,10 +49,7 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(apiErrorMessage(error,
-                fallback: HopeCopy.of(context)
-                    .copy_registration_failed_please_try_again_bbb72e2))));
+        HopeFeedback.show(context, apiErrorMessage(error, fallback: HopeCopy.of(context).copy_registration_failed_please_try_again_bbb72e2), tone: HopeFeedbackTone.error);
       }
     } finally {
       if (mounted) setState(() => loading = false);

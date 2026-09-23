@@ -9,6 +9,7 @@ import '../../core/router/app_routes.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_feedback.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -35,9 +36,7 @@ class _LoginPageState extends State<LoginPage> {
     final google = context.read<GoogleSignInService?>();
     if (google == null || !google.isConfigured) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.loginFailedGeneric)),
-        );
+        HopeFeedback.show(context, l10n.loginFailedGeneric, tone: HopeFeedbackTone.error);
       }
       return;
     }
@@ -51,13 +50,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              apiErrorMessage(error, fallback: l10n.loginFailedGeneric),
-            ),
-          ),
-        );
+        HopeFeedback.show(context, apiErrorMessage(error, fallback: l10n.loginFailedGeneric), tone: HopeFeedbackTone.error);
       }
     } finally {
       if (mounted) setState(() => loading = false);
@@ -67,9 +60,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> submit() async {
     final l10n = AppLocalizations.of(context);
     if (email.text.trim().isEmpty || password.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.emailPasswordRequired)),
-      );
+      HopeFeedback.show(context, l10n.emailPasswordRequired, tone: HopeFeedbackTone.warning);
       return;
     }
 
@@ -85,11 +76,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  apiErrorMessage(error, fallback: l10n.loginFailedGeneric))),
-        );
+        HopeFeedback.show(context, apiErrorMessage(error, fallback: l10n.loginFailedGeneric), tone: HopeFeedbackTone.error);
       }
     } finally {
       if (mounted) {
@@ -126,61 +113,12 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
               const SizedBox(height: 22),
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(26),
-                  gradient: LinearGradient(
-                    begin: AlignmentDirectional.topStart,
-                    end: AlignmentDirectional.bottomEnd,
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(17),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: const Icon(
-                        Icons.lock_open_rounded,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 13),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.loginWelcomeBack,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 23,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            l10n.loginWelcomeBackSubtitle,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              PremiumHero(
+                eyebrow: l10n.copy_hope_account_4ba3966,
+                title: l10n.loginWelcomeBack,
+                message: l10n.loginWelcomeBackSubtitle,
+                icon: Icons.lock_open_rounded,
+                height: 280,
               ),
               const SizedBox(height: 14),
               AnimatedEntrance(
@@ -211,13 +149,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 9),
                       ],
-                      Text(
-                        Localizations.localeOf(context).languageCode == 'en'
-                            ? 'Account email'
-                            : 'ایمیل حساب',
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 9),
                       TextField(
                         controller: email,
                         keyboardType: TextInputType.emailAddress,

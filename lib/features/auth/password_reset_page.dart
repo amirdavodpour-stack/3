@@ -6,6 +6,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_feedback.dart';
 
 
 ApplicationRegistry _applicationRegistry(BuildContext context) => applicationRegistryOf(context);
@@ -27,24 +28,18 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
 
   Future<void> submit() async {
     if (email.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(HopeCopy.of(context).copy_enter_your_email_2562106)));
+      HopeFeedback.show(context, HopeCopy.of(context).copy_enter_your_email_2562106, tone: HopeFeedbackTone.warning);
       return;
     }
     setState(() => loading = true);
     try {
       await _applicationRegistry(context).requestPasswordReset(email.text.trim());
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(HopeCopy.of(context)
-                .copy_if_the_account_exists_a_reset_request_has__b974d8e)));
+        HopeFeedback.show(context, HopeCopy.of(context).copy_if_the_account_exists_a_reset_request_has__b974d8e, tone: HopeFeedbackTone.success);
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(apiErrorMessage(error,
-                fallback: HopeCopy.of(context)
-                    .copy_the_reset_request_could_not_be_submitted_475bdfd))));
+        HopeFeedback.show(context, apiErrorMessage(error, fallback: HopeCopy.of(context).copy_the_reset_request_could_not_be_submitted_475bdfd), tone: HopeFeedbackTone.error);
       }
     } finally {
       if (mounted) setState(() => loading = false);

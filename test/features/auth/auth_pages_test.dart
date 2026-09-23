@@ -91,6 +91,18 @@ void main() {
     expect(find.byType(TextField), findsAtLeastNWidgets(3));
   });
 
+  testWidgets('auth entry surfaces use the canonical PremiumHero owner', (tester) async {
+    for (final screen in [
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ]) {
+      await tester.pumpWidget(await _screen(screen));
+      await tester.pumpAndSettle();
+      expect(find.byType(PremiumHero), findsOneWidget);
+    }
+  });
+
   testWidgets('password reset renders an email form', (tester) async {
     await tester.pumpWidget(await _screen(const PasswordResetPage()));
     await tester.pumpAndSettle();
