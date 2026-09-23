@@ -168,6 +168,12 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                           ),
                         ),
                         IconButton.filledTonal(
+                          onPressed: widget.onOpenMenu,
+                          tooltip: _t(context, 'منو', 'App menu'),
+                          icon: const Icon(Icons.menu_rounded),
+                        ),
+                        const SizedBox(width: 6),
+                        IconButton.filledTonal(
                           onPressed: _refresh,
                           tooltip: _t(context, 'بازخوانی', 'Refresh'),
                           icon: const Icon(Icons.refresh_rounded),

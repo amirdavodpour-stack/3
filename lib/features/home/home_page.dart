@@ -112,7 +112,7 @@ class _HomePageState extends State<HomePage> {
           ? FloatingActionButton.extended(
               onPressed: () => _openCreate(context),
               icon: const Icon(Icons.add_rounded),
-              label: Text(HopeCopy.of(context).copy_post_opportunity_0389bce),
+              label: Text(_t(context, 'ثبت فرصت جدید', 'Post new opportunity')),
             )
           : null,
       drawer: Drawer(

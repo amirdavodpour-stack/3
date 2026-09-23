@@ -32,11 +32,11 @@ void main() {
     var notifications = 0;
     theme.addListener(() => notifications++);
 
-    await theme.setMode(ThemeMode.dark);
-    await theme.setMode(ThemeMode.dark);
+    await theme.setMode(ThemeMode.light);
+    await theme.setMode(ThemeMode.light);
 
-    expect(theme.mode, ThemeMode.dark);
-    expect(settings.theme, 'dark');
+    expect(theme.mode, ThemeMode.light);
+    expect(settings.theme, 'light');
     expect(notifications, 1);
     theme.dispose();
   });

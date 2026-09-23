@@ -714,7 +714,7 @@ class _WalletPageState extends State<WalletPage> {
             FilledButton.icon(
               onPressed: canAct ? _openTransfer : null,
               icon: const Icon(Icons.swap_horiz_rounded),
-              label: Text(_t('انتقال داخلی', 'Internal transfer')),
+              label: Text(_t('انتقال داخلی', 'Transfer')),
             ),
             const SizedBox(height: 9),
             OutlinedButton.icon(
@@ -921,9 +921,10 @@ class _WalletPageState extends State<WalletPage> {
                       label:
                           '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${item.isCredit ? '+' : '-'}${_money(item.amount)}',
                       onTap: () => _showTransaction(item),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        onTap: () => _showTransaction(item),
+                      child: ExcludeSemantics(
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          onTap: () => _showTransaction(item),
                         leading: HopeIconTile(
                           _directionIcon(item.isCredit),
                           color: _directionColor(context, item.isCredit),
@@ -947,6 +948,7 @@ class _WalletPageState extends State<WalletPage> {
                             fontWeight: FontWeight.w900,
                             color: _directionColor(context, item.isCredit),
                           ),
+                        ),
                         ),
                       ),
                     ),
