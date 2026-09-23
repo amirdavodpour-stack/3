@@ -41,6 +41,17 @@ class HopeV2Colors {
   static const panelDark = Color(0xFF15131D);
   static const panelSoftLight = Color(0xFFFCFBFF);
   static const panelSoftDark = Color(0xFF1C1926);
+  static const chipLight = Color(0xFFF1EFF7);
+  static const chipDark = Color(0x1AFFFFFF);
+  static const chipSelectedDark = Color(0x337660FF);
+  static const disabledLight = Color(0xFFEAE7F0);
+  static const borderControlLight = Color(0xFFE6E2F0);
+  static const dividerLight = Color(0xFFE8E5F0);
+  static const outlinedButtonBorderLight = Color(0xFFDED9EA);
+  static const navigationLight = Color(0xFDFEFEFF);
+  static const navigationDark = Color(0xF714121B);
+  static const navigationIndicatorDark = Color(0x4D7660FF);
+  static const inputDark = Color(0xFF201D28);
 }
 
 class HopeV2Spacing {
