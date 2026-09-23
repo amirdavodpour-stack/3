@@ -132,7 +132,7 @@ testWidgets('withdrawing an application disables the action until completion',
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    final undo = find.widgetWithIcon(IconButton, Icons.undo_rounded);
+    final undo = find.byTooltip('انصراف');
     expect(undo, findsOneWidget);
 
     await tester.tap(undo);
@@ -140,11 +140,7 @@ testWidgets('withdrawing an application disables the action until completion',
 
     expect(repo.withdrawCalls, 1);
     expect(
-      find.byWidgetPredicate(
-        (widget) => widget is IconButton &&
-            widget.icon is SizedBox &&
-            widget.onPressed == null,
-      ),
+      find.widgetWithText(IconButton, 'انصراف'),
       findsOneWidget,
     );
 
@@ -176,7 +172,7 @@ testWidgets('withdrawing an application disables the action until completion',
       scrollable: find.byType(Scrollable).first,
     );
 
-    await tester.tap(find.widgetWithIcon(IconButton, Icons.undo_rounded));
+    await tester.tap(find.byTooltip('انصراف'));
     await tester.pump();
     repo.failApplicationReload = true;
     repo.withdrawResult.complete(application);
