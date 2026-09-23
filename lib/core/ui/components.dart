@@ -380,3 +380,24 @@ class _SearchFieldState extends State<SearchField> {
         suffixIcon: hasQuery || widget.onFilter != null
             ? Row(
                 mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasQuery)
+                    IconButton(
+                      tooltip:
+                          MaterialLocalizations.of(context).clearButtonTooltip,
+                      onPressed: _clear,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  if (widget.onFilter != null)
+                    IconButton(
+                      tooltip: HopeCopy.of(context).copy_filters_df4d10e,
+                      onPressed: widget.onFilter,
+                      icon: const Icon(Icons.tune_rounded),
+                    ),
+                ],
+              )
+            : null,
+      ),
+    );
+  }
+}
