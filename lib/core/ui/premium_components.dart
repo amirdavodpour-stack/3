@@ -660,6 +660,7 @@ class PremiumFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final interactive = enabled && !loading;
     final base = color ?? Theme.of(context).colorScheme.primary;
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -678,7 +679,7 @@ class PremiumFilterChip extends StatelessWidget {
           onTap: interactive ? onTap : null,
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
           child: AnimatedContainer(
-            duration: HopeV2Motion.fast,
+            duration: reduceMotion ? Duration.zero : HopeV2Motion.fast,
             constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(
@@ -696,11 +697,11 @@ class PremiumFilterChip extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (loading)
-                  const ExcludeSemantics(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                  ExcludeSemantics(
+                    child: Icon(
+                      reduceMotion ? Icons.hourglass_empty_rounded : Icons.progress_activity_rounded,
+                      size: 16,
+                      color: foreground,
                     ),
                   )
                 else if (icon != null)
