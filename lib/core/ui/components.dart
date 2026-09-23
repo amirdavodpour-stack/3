@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'hope_l10n.dart';
 import '../theme/hope_v2_design.dart';
 
@@ -280,7 +281,7 @@ class HopeIconTile extends StatelessWidget {
       this.size = 46,
       this.filled = false,
       this.semanticLabel});
-  final IconData icon;
+  final Object icon;
   final Color color;
   final double size;
   final bool filled;
@@ -324,7 +325,14 @@ class HopeIconTile extends StatelessWidget {
       width: size,
       height: size,
       decoration: decoration,
-      child: Icon(icon, color: iconColor, size: size * .50),
+      child: icon is IconData
+          ? Icon(icon as IconData, color: iconColor, size: size * .50)
+          : HugeIcon(
+              icon: icon as List<List>,
+              color: iconColor,
+              size: size * .50,
+              strokeWidth: 2.1,
+            ),
     );
     // Decorative icons (no semanticLabel) are excluded from the accessibility
     // tree so screen readers don't announce an unlabeled generic icon node.
