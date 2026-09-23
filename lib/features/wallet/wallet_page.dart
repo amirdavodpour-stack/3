@@ -916,37 +916,39 @@ class _WalletPageState extends State<WalletPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     child: Semantics(
                       container: true,
+                      explicitChildNodes: true,
                       button: true,
                       label:
                           '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${item.isCredit ? '+' : '-'}${_money(item.amount)}',
                       onTap: () => _showTransaction(item),
-                      child: ListTile(
+                      child: ExcludeSemantics(
+                        child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           onTap: () => _showTransaction(item),
-                        leading: HopeIconTile(
-                          _directionIcon(item.isCredit),
-                          color: _directionColor(context, item.isCredit),
-                          filled: true,
-                          size: 44,
-                        ),
-                        title: Text(
-                          _entryTitle(item),
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        subtitle: Text(
-                          '${_date(item.createdAt)}\n${_referenceTypeLabel(item.referenceType)}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        isThreeLine: true,
-                        trailing: Text(
-                          '${item.isCredit ? '+' : '-'}${_money(item.amount)}',
-                          textAlign: TextAlign.end,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
+                          leading: HopeIconTile(
+                            _directionIcon(item.isCredit),
                             color: _directionColor(context, item.isCredit),
+                            filled: true,
+                            size: 44,
                           ),
-                        ),
+                          title: Text(
+                            _entryTitle(item),
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          subtitle: Text(
+                            '${_date(item.createdAt)}\n${_referenceTypeLabel(item.referenceType)}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          isThreeLine: true,
+                          trailing: Text(
+                            '${item.isCredit ? '+' : '-'}${_money(item.amount)}',
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: _directionColor(context, item.isCredit),
+                            ),
+                          ),
                         ),
                       ),
                     ),
