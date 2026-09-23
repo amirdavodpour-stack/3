@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/features/about/about_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 
 Widget _app(Locale locale) => MaterialApp(
       theme: AppTheme.light(),
@@ -23,7 +24,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_app(const Locale('fa')));
     await tester.pumpAndSettle();
-    expect(find.byType(HeroBanner), findsOneWidget);
+    expect(find.byType(PremiumHero), findsOneWidget);
     final listView = find.byType(ListView);
     final missionText = find.text('ماموریت');
     final jobText = find.text('شغل');
@@ -42,7 +43,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_app(const Locale('en')));
     await tester.pumpAndSettle();
-    expect(find.byType(HeroBanner), findsOneWidget);
+    expect(find.byType(PremiumHero), findsOneWidget);
     expect(find.textContaining('work marketplace'), findsOneWidget);
   });
 }

@@ -300,7 +300,7 @@ class _AdminPageState extends State<AdminPage>
               final status = job.status ?? '—';
               return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: HopeSurface(
+                  child: PremiumPanel(
                       padding: const EdgeInsets.all(14),
                       child: Row(children: [
                         HopeIconTile(
@@ -367,7 +367,7 @@ class _AdminPageState extends State<AdminPage>
               final status = a.status;
               return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: HopeSurface(
+                  child: PremiumPanel(
                       padding: const EdgeInsets.all(14),
                       child: Column(children: [
                         ListTile(
@@ -449,7 +449,7 @@ class _AdminPageState extends State<AdminPage>
               final status = u.status;
               return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: HopeSurface(
+                  child: PremiumPanel(
                       padding: const EdgeInsets.all(12),
                       child: ListTile(
                           contentPadding: EdgeInsets.zero,
@@ -493,7 +493,7 @@ class _AdminPageState extends State<AdminPage>
                 children: list.take(100).map<Widget>((a) {
                   return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: HopeSurface(
+                      child: PremiumPanel(
                           padding: const EdgeInsets.all(12),
                           child: ListTile(
                               contentPadding: EdgeInsets.zero,

@@ -23,7 +23,13 @@ class AboutHopePage extends StatelessWidget {
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
-            const HeroBanner(),
+            PremiumHero(
+              eyebrow: isEn ? 'ABOUT HOPE' : 'درباره HOPE',
+              title: isEn ? 'A work marketplace built around trust' : 'بازار کار HOPE با محوریت اعتماد',
+              message: HopeCopy.of(context).copy_about_mission_description,
+              icon: HopeV2Icons.insights,
+              height: 248,
+            ),
             const SizedBox(height: 18),
             const Center(child: HopeMark(size: 72, showText: true)),
             const SizedBox(height: 20),
@@ -49,7 +55,7 @@ class AboutHopePage extends StatelessWidget {
                 HopeCopy.of(context)
                     .copy_a_part_time_or_full_time_role_with_monthly_ac5f029),
             const SizedBox(height: 22),
-            HopeSurface(
+            PremiumPanel(
                 highlight: true,
                 padding: const EdgeInsets.all(18),
                 child: Column(
@@ -71,12 +77,12 @@ class AboutHopePage extends StatelessWidget {
                           Icons.calendar_month_rounded),
                     ])),
             const SizedBox(height: 22),
-            SectionTitle(
+            PremiumSectionHeader(
                 title: HopeCopy.of(context).copy_trust_privacy_9f90033,
                 subtitle: HopeCopy.of(context)
                     .copy_transparent_selection_without_unnecessary__32e249a),
             const SizedBox(height: 12),
-            HopeSurface(
+            PremiumPanel(
                 padding: const EdgeInsets.all(18),
                 child: Column(children: [
                   _bullet(
@@ -115,7 +121,7 @@ class AboutHopePage extends StatelessWidget {
 
   Widget _infoCard(
           BuildContext context, IconData icon, String title, String text) =>
-      HopeSurface(
+      PremiumPanel(
           padding: const EdgeInsets.all(16),
           child: Row(children: [
             HopeIconTile(icon, filled: true, size: 46),
@@ -148,96 +154,4 @@ class AboutHopePage extends StatelessWidget {
         Expanded(
             child: Text(text, style: Theme.of(context).textTheme.bodyLarge))
       ]));
-}
-
-class HeroBanner extends StatelessWidget {
-  const HeroBanner({super.key});
-
-  static const _height = 220.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isEn = Localizations.localeOf(context).languageCode == 'en';
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: SizedBox(
-        height: _height,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [
-                scheme.primary,
-                scheme.secondary,
-                scheme.surfaceContainerHighest,
-              ],
-            ),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Positioned(
-                right: -42,
-                top: -56,
-                child: ExcludeSemantics(
-                  child: Container(
-                    width: 190,
-                    height: 190,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: .16),
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: -26,
-                bottom: -74,
-                child: ExcludeSemantics(
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: .08),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(HopeV2Spacing.xl),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isEn ? 'Work marketplace' : 'فرصت‌های کاری',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isEn ? 'Available opportunities' : 'فرصت‌های موجود',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 23,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

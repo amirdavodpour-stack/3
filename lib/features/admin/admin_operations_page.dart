@@ -225,7 +225,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     final status = '${row['status'] ?? 'OPEN'}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: HopeSurface(
+      child: PremiumPanel(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
@@ -298,7 +298,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     final id = '${row['id'] ?? row['payoutId'] ?? ''}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: HopeSurface(
+      child: PremiumPanel(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [

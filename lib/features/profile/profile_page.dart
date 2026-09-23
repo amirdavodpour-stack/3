@@ -101,14 +101,12 @@ class _ProfilePageState extends State<ProfilePage> {
     final name = '${user['displayName'] ?? 'HOPE'}';
     final initial = name.isEmpty ? 'H' : name.characters.first.toUpperCase();
 
-    return Material(
-      color: Colors.transparent,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 920),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
-            children: [
+    return PremiumPageFrame(
+      maxWidth: 920,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
           PremiumHeader(
             eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
             title: name,
@@ -443,9 +441,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             onTap: auth.logout,
           ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
