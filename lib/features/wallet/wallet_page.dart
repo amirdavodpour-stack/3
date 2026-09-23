@@ -196,7 +196,7 @@ class _WalletPageState extends State<WalletPage> {
     return credit ? colors.tertiary : colors.error;
   }
 
-  IconData _directionIcon(bool credit) => credit ? Icons.south_west_rounded : Icons.north_east_rounded;
+  IconData _directionIcon(bool credit) => credit ? HopeV2Icons.transferIn : HopeV2Icons.transferOut;
 
   Future<void> _openTopUp() async {
     final amount = await _amountDialog(
@@ -462,7 +462,7 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Row(
                 children: [
-                  const HopeIconTile(Icons.south_west_rounded),
+                  const HopeIconTile(HopeV2Icons.transferIn),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -556,7 +556,7 @@ class _WalletPageState extends State<WalletPage> {
     if (auth.isGuest) {
       return Center(
         child: EmptyState(
-          icon: Icons.lock_outline_rounded,
+          icon: HopeV2Icons.secure,
           title: _t('کیف پول خصوصی است', 'Your wallet is private'),
           message: _t(
             'برای مشاهده و مدیریت کیف پول وارد حساب شوید.',
@@ -620,7 +620,7 @@ class _WalletPageState extends State<WalletPage> {
             Row(
               children: [
                 const HopeIconTile(
-                  Icons.account_balance_wallet_rounded,
+                  HopeV2Icons.wallet,
                   size: 48,
                   filled: true,
                 ),
@@ -719,7 +719,7 @@ class _WalletPageState extends State<WalletPage> {
             const SizedBox(height: 9),
             OutlinedButton.icon(
               onPressed: canAct ? _openWithdraw : null,
-              icon: const Icon(Icons.south_west_rounded),
+              icon: const Icon(HopeV2Icons.transferIn),
               label: Text(_t('درخواست برداشت', 'Request withdrawal')),
             ),
             if (!wallet.isActive) ...[
