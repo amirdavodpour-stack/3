@@ -2,69 +2,166 @@ part of 'transaction_page.dart';
 
 extension on _TransactionPageState {
   Widget _flow(BuildContext context, HopeJob? job, String paymentStatus) {
-    final current = _stepFor(job, paymentStatus);
+    final current = _stepFor(job, paymentStatus).clamp(0, 5);
     const en = ['Fund', 'Hold', 'Work', 'Deliver', 'Approve', 'Payout'];
-    const fa = ['تأمین', 'نگهداری', 'کار', 'تحویل', 'تأیید', 'تسویه'];
-    return HopeSurface(
-      padding: const EdgeInsets.fromLTRB(15, 15, 15, 13),
-      highlight: current > 0,
+    const fa = ['تأمین وجه', 'در امانت', 'در حال انجام', 'تحویل', 'تأیید', 'تسویه'];
+    const icons = [
+      Icons.account_balance_wallet_rounded,
+      Icons.lock_clock_rounded,
+      Icons.work_outline_rounded,
+      Icons.outbox_rounded,
+      Icons.verified_rounded,
+      Icons.payments_rounded,
+    ];
+
+    return PremiumPanel(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      highlight: paymentStatus == 'HELD' ||
+          paymentStatus == 'RELEASED' ||
+          paymentStatus == 'HOLD_PENDING' ||
+          paymentStatus == 'RELEASE_PENDING',
+      semanticLabel: _t('مسیر کامل مالی و انجام کار', 'Full payment and work lifecycle'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(_t('مسیر مالی و انجام کار', 'Payment & job flow'),
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: 520,
-              child: Row(
-                children: [
-                  for (var i = 0; i < en.length; i++) ...[
-                    Expanded(
-                      child: Column(
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: i <= current
-                                  ? AppColors.success
-                                  : Theme.of(context)
-                                      .dividerColor
-                                      .withValues(alpha: .45),
-                            ),
-                            child: Icon(
-                              i <= current
-                                  ? Icons.check_rounded
-                                  : Icons.circle_outlined,
-                              size: 16,
-                              color:
-                                  i <= current ? Colors.white : AppColors.muted,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _t(fa[i], en[i]),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                        ],
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _t('مسیر مالی و انجام کار', 'Payment & job flow'),
+                  style: HopeV2Type.section(context),
+                ),
+              ),
+              PremiumTag(
+                icon: _statusIcon(paymentStatus),
+                label: _statusLabel(paymentStatus),
+                color: _statusColor(paymentStatus),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          for (var i = 0; i < en.length; i++)
+            _lifecycleStep(
+              context,
+              index: i,
+              current: current,
+              label: _t(fa[i], en[i]),
+              icon: icons[i],
+              last: i == en.length - 1,
+            ),
+          const SizedBox(height: 6),
+          Text(
+            _statusHint(paymentStatus),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _lifecycleStep(
+    BuildContext context, {
+    required int index,
+    required int current,
+    required String label,
+    required IconData icon,
+    required bool last,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final completed = index < current;
+    final active = index == current;
+    final color = completed || active ? scheme.primary : scheme.onSurfaceVariant;
+    final fill = completed
+        ? scheme.primary
+        : active
+            ? scheme.primary.withValues(alpha: .12)
+            : HopeV2Surfaces.panel(context);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 34,
+            child: Column(
+              children: [
+                AnimatedContainer(
+                  duration: HopeV2Motion.fast,
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: fill,
+                    border: Border.all(
+                      color: completed || active
+                          ? scheme.primary.withValues(alpha: .35)
+                          : HopeV2Surfaces.border(context),
+                    ),
+                  ),
+                  child: Icon(
+                    completed ? Icons.check_rounded : icon,
+                    size: 15,
+                    color: completed ? scheme.onPrimary : color,
+                  ),
+                ),
+                if (!last)
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        width: 1,
+                        margin: const EdgeInsets.symmetric(vertical: 3),
+                        color: completed
+                            ? scheme.primary.withValues(alpha: .42)
+                            : HopeV2Surfaces.border(context),
                       ),
                     ),
-                  ],
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          Text(
-            _statusLabel(paymentStatus),
-            style: Theme.of(context).textTheme.bodySmall,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 11),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 42),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+                decoration: BoxDecoration(
+                  color: active
+                      ? scheme.primary.withValues(alpha: .07)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                  border: active
+                      ? Border.all(color: scheme.primary.withValues(alpha: .16))
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: active || completed
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                    if (active)
+                      PremiumTag(
+                        label: _t('مرحله فعلی', 'Current'),
+                        color: scheme.primary,
+                      )
+                    else if (completed)
+                      PremiumTag(
+                        icon: Icons.check_rounded,
+                        label: _t('انجام شد', 'Done'),
+                        color: scheme.primary,
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
