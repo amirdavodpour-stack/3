@@ -268,7 +268,7 @@ class _AdminPageState extends State<AdminPage>
     return Padding(
         padding: const EdgeInsets.all(20),
         child: EmptyState(
-            icon: Icons.cloud_off_rounded,
+            icon: HopeV2Icons.pending,
             title: HopeCopy.of(context).copy_connection_failed_1b34bc9,
             message: apiErrorMessage(error,
                 fallback: HopeCopy.of(context)
@@ -290,7 +290,7 @@ class _AdminPageState extends State<AdminPage>
         final list = snapshot.data ?? const <HopeJob>[];
         if (list.isEmpty) {
           return EmptyState(
-              icon: Icons.work_outline,
+              icon: HopeV2Icons.job,
               title: HopeCopy.of(context).copy_no_opportunities_a112400,
               message:
                   HopeCopy.of(context).copy_opportunities_appear_here_d85bef9);
@@ -356,7 +356,7 @@ class _AdminPageState extends State<AdminPage>
         final list = snapshot.data ?? const <HopeApplication>[];
         if (list.isEmpty) {
           return EmptyState(
-              icon: Icons.inbox_outlined,
+              icon: HopeV2Icons.mission,
               title: HopeCopy.of(context).copy_no_applications_0917e11,
               message: HopeCopy.of(context)
                   .copy_job_applications_are_managed_here_1b21e96);
@@ -436,7 +436,7 @@ class _AdminPageState extends State<AdminPage>
         final list = snapshot.data ?? const <HopeAdminUser>[];
         if (list.isEmpty) {
           return EmptyState(
-              icon: Icons.people_outline,
+              icon: HopeV2Icons.profile,
               title: HopeCopy.of(context).copy_users_200338b,
               message: HopeCopy.of(context)
                   .copy_the_server_did_not_return_data_try_again_bccfbb3);
