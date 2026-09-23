@@ -113,6 +113,10 @@ class HopeV2Icons {
   static const skills = HugeIcons.strokeRoundedBrain02;
   static const message = HugeIcons.strokeRoundedMessage01;
   static const route = HugeIcons.strokeRoundedRoute01;
+  static const android = HugeIcons.strokeRoundedAndroid;
+  static const apple = HugeIcons.strokeRoundedApple;
+  static const web = HugeIcons.strokeRoundedGlobe;
+  static const device = HugeIcons.strokeRoundedDeviceAccess;
   static const add = HugeIcons.strokeRoundedAdd01;
   static const menu = HugeIcons.strokeRoundedMenu01;
   static const refresh = HugeIcons.strokeRoundedRefresh;
