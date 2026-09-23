@@ -2,6 +2,9 @@ name: HOPE UI Runtime Evidence
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - Main
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
