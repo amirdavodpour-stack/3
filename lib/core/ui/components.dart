@@ -414,7 +414,7 @@ class MetricTile extends StatelessWidget {
       this.color = HopeV2Colors.primary});
   final String label;
   final String value;
-  final IconData? icon;
+  final Object? icon;
   final Color color;
 
   @override
@@ -497,7 +497,7 @@ class GradientHero extends StatelessWidget {
   final String eyebrow;
   final String title;
   final String message;
-  final IconData icon;
+  final Object icon;
   final Widget? action;
 
   @override
@@ -563,7 +563,7 @@ class GradientHero extends StatelessWidget {
                       color: Colors.white.withValues(alpha: .14),
                       borderRadius: BorderRadius.circular(HopeV2Radii.fab),
                       border: Border.all(color: Colors.white24)),
-                  child: Icon(icon, color: Colors.white, size: 29)),
+                  child: HopeIcon(icon, color: Colors.white, size: 29, strokeWidth: 2.1)),
             ]),
           ),
         ]),
