@@ -916,6 +916,7 @@ class _WalletPageState extends State<WalletPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     child: Semantics(
                       container: true,
+                      explicitChildNodes: true,
                       button: true,
                       label:
                           '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${item.isCredit ? '+' : '-'}${_money(item.amount)}',
