@@ -72,6 +72,12 @@ void main() {
         theme.filledButtonTheme.style?.shape?.resolve(<WidgetState>{})
             as RoundedRectangleBorder;
     expect(buttonShape.borderRadius, BorderRadius.circular(HopeV2Radii.button));
+    expect(theme.inputDecorationTheme.fillColor, HopeV2Colors.panelSoftLight);
+    expect(theme.chipTheme.backgroundColor, HopeV2Colors.chipLight);
+    expect(
+      theme.navigationBarTheme.backgroundColor,
+      HopeV2Colors.navigationLight,
+    );
   });
 
   testWidgets('PressableScale is keyboard-focusable and exposes button semantics',
