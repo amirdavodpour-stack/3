@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/components.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 
 void main() {
   testWidgets('SearchField exposes a clear action after text is entered',
