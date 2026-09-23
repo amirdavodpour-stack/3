@@ -78,10 +78,12 @@ capture_screen() {
   fi
 
   while (( SECONDS < deadline )); do
-    if grep -q -- "$marker" "$log_file"; then
-      # Capture as soon as the marker appears. The Flutter harness intentionally
-      # holds after the marker, so a long host-side settle delay can let the test
-      # advance to the next screen before screencap runs.
+    if grep -q -- "$marker" "$log_file" || \
+       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" \
+       "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace \
+       test -e "files/hope-screen-acks/.ready-$ack_marker" >/dev/null 2>&1; then
+      # Capture as soon as the marker is observable. stdout/tee is retained for
+      # diagnostics, but the READY file is the authoritative handshake.
       echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
 
       if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb wait-for-device; then
@@ -115,6 +117,9 @@ capture_screen() {
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:ack-write" >&2
         return 1
       fi
+
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
+        adb shell run-as com.hope.marketplace rm -f "files/hope-screen-acks/.ready-$ack_marker" >/dev/null 2>&1 || true
 
       echo "HOPE_HOST_ACK_WRITTEN:$marker"
       return 0
