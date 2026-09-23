@@ -109,68 +109,93 @@ class _ProfilePageState extends State<ProfilePage> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
             children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                begin: AlignmentDirectional.topStart,
-                end: AlignmentDirectional.bottomEnd,
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
-                ],
-              ),
-              boxShadow: HopeV2Shadows.hero,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 31,
-                  backgroundColor: Colors.white.withValues(alpha: .13),
-                  foregroundColor: Colors.white,
-                  child: Text(
-                    initial,
-                    style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 380;
+              final identity = Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 31,
+                    backgroundColor: Colors.white.withValues(alpha: .13),
+                    foregroundColor: Colors.white,
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        HopeCopy.of(context).copy_profile_8b081d3,
-                        style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        user['email']?.toString() ?? '',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      const SizedBox(height: 10),
-                      StatusPill(
-                        HopeCopy.of(context).copy_active_account_bef80da,
-                        color: Colors.white,
-                        icon: Icons.person_outline_rounded,
-                      ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          HopeCopy.of(context).copy_profile_8b081d3,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 25,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          user['email']?.toString() ?? '',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 10),
+                        StatusPill(
+                          HopeCopy.of(context).copy_active_account_bef80da,
+                          color: Colors.white,
+                          icon: Icons.person_outline_rounded,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+
+              return Container(
+                padding: EdgeInsets.all(compact ? 16 : 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
                     ],
                   ),
+                  boxShadow: HopeV2Shadows.hero,
                 ),
-                const SizedBox(width: 10),
-                const HopeMark(size: 42, showText: false),
-              ],
-            ),
+                child: compact
+                    ? identity
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: identity),
+                          const SizedBox(width: 10),
+                          const HopeMark(size: 42, showText: false),
+                        ],
+                      ),
+              );
+            },
           ),
           const SizedBox(height: 20),
           SectionTitle(
