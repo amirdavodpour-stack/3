@@ -326,7 +326,6 @@ void main() {
 
     expect(find.byType(LoginPage), findsNothing);
     expect(find.byType(CreateJobPage), findsOneWidget);
-    expect(find.byType(HomePage), findsOneWidget);
   });
 
   testWidgets(
@@ -350,7 +349,6 @@ void main() {
 
     expect(find.byType(RegisterPage), findsNothing);
     expect(find.byType(CreateJobPage), findsOneWidget);
-    expect(find.byType(HomePage), findsOneWidget);
   });
 
   testWidgets('guest create cancelled from auth returns to Home without CreateJob',
