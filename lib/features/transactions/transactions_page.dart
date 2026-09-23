@@ -148,7 +148,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 context,
                 HopeRoutes.myApplications(),
               ),
-              icon: const Icon(Icons.assignment_outlined),
+              icon: HopeIcon(HopeV2Icons.mission, size: 19),
               label: Text(copy.copy_applications_6655869),
             ),
             OutlinedButton.icon(
@@ -156,7 +156,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 context,
                 HopeRoutes.offers(),
               ),
-              icon: const Icon(Icons.local_offer_outlined),
+              icon: HopeIcon(HopeV2Icons.featured, size: 19),
               label: Text(copy.copy_offers),
             ),
             OutlinedButton.icon(
@@ -164,7 +164,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 context,
                 HopeRoutes.notifications(),
               ),
-              icon: const Icon(Icons.notifications_outlined),
+              icon: HopeIcon(HopeV2Icons.notifications, size: 19),
               label: Text(copy.copy_notifications_370b4a1),
             ),
           ],
