@@ -13,6 +13,9 @@ grep -Eq 'HOPE_HOST_SCREENSHOT_CAPTURED:' "$script"
 grep -Eq 'HOPE_HOST_CAPTURE_CLEANED:' "$script"
 grep -Fq 'grep -Fq -- "$marker" "$active_runtime_log"' "$script"
 grep -Fq 'adb exec-out run-as com.hope.marketplace cat "$remote_path"' "$script"
+grep -Fq 'for attempt in 1 2 3 4 5; do' "$script"
+grep -Fq 'sleep 0.5' "$script"
+grep -Fq 'HOPE_HOST_CAPTURE_FAILED:$marker:file-read' "$script"
 if grep -Fq 'adb shell run-as com.hope.marketplace test -s "$remote_path"' "$script"; then
   echo "runtime harness contract: FAIL — host must not poll remote file existence via run-as" >&2
   exit 1
