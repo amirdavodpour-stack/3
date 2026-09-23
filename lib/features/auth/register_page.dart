@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/router/auth_return_intent.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  const RegisterPage({super.key, this.returnIntent});
+
+  final AuthReturnIntent? returnIntent;
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
@@ -45,7 +48,7 @@ class _RegisterPageState extends State<RegisterPage> {
           .read<AuthController>()
           .register(email.text.trim(), password.text, name.text.trim());
       if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(widget.returnIntent);
       }
     } catch (error) {
       if (mounted) {

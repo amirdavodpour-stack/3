@@ -6,13 +6,16 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/auth/google_sign_in_service.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/router/auth_return_intent.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.returnIntent});
+
+  final AuthReturnIntent? returnIntent;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -46,7 +49,7 @@ class _LoginPageState extends State<LoginPage> {
           .read<AuthController>()
           .loginWithGoogle(google);
       if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(widget.returnIntent);
       }
     } catch (error) {
       if (mounted) {
@@ -72,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
           .login(email.text.trim(), password.text);
 
       if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(widget.returnIntent);
       }
     } catch (error) {
       if (mounted) {

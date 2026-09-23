@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'auth_return_intent.dart';
+
 import '../../features/about/about_page.dart';
 import '../../features/admin/admin_page.dart';
 import '../../features/admin/admin_operations_page.dart';
@@ -33,8 +35,10 @@ import '../uploads/upload_queue.dart';
 /// repositories already live behind abstractions in `lib/core`.
 abstract final class HopeRoutes {
   /// Auth flows.
-  static Route<void> login() => _page(const LoginPage());
-  static Route<void> register() => _page(const RegisterPage());
+  static Route<AuthReturnIntent?> login({AuthReturnIntent? returnIntent}) =>
+      _page(LoginPage(returnIntent: returnIntent));
+  static Route<AuthReturnIntent?> register({AuthReturnIntent? returnIntent}) =>
+      _page(RegisterPage(returnIntent: returnIntent));
   static Route<void> passwordReset() => _page(const PasswordResetPage());
 
   /// Account & content destinations.

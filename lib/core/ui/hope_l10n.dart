@@ -458,5 +458,6 @@ class HopeCopy {
   String get copy_view_and_act_on_mission => value.copy_view_and_act_on_mission;
   String get copy_view_details_and_act => value.copy_view_details_and_act;
   String get copy_view_details => value.copy_view_details;
+  String get copy_offers => value.copy_offers;
   String get copy_all_cities => value.copy_all_cities;
 }

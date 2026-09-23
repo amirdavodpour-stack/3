@@ -17,7 +17,7 @@ import 'package:hope_mobile/features/home/home_page.dart';
 import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/transactions/transactions_page.dart';
 import 'package:hope_mobile/features/marketplace/create_job_page.dart';
-import 'package:hope_mobile/features/auth/register_page.dart';import 'package:hope_mobile/features/applications/my_applications_page.dart';
+import 'package:hope_mobile/features/auth/register_page.dart';
 import 'package:hope_mobile/core/router/auth_return_intent.dart';
 import 'package:hope_mobile/features/notifications/notifications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';

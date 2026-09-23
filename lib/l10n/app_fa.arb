@@ -1268,5 +1268,9 @@
   "copy_view_details": "مشاهده جزئیات",
   "@copy_view_details": {
     "description": "Canonical OpportunityCard localization."
+  },
+  "copy_offers": "پیشنهادها",
+  "@copy_offers": {
+    "description": "Activity navigation destination for offers."
   }
 }

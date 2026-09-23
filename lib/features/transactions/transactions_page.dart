@@ -132,6 +132,46 @@ class _TransactionsPageState extends State<TransactionsPage> {
     ));
   }
 
+  Widget _activityNavigation(BuildContext context) {
+    final copy = HopeCopy.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: PremiumPanel(
+        padding: const EdgeInsets.all(12),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                HopeRoutes.myApplications(),
+              ),
+              icon: const Icon(Icons.assignment_outlined),
+              label: Text(copy.copy_applications_6655869),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                HopeRoutes.offers(),
+              ),
+              icon: const Icon(Icons.local_offer_outlined),
+              label: Text(copy.copy_offers),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                HopeRoutes.notifications(),
+              ),
+              icon: const Icon(Icons.notifications_outlined),
+              label: Text(copy.copy_notifications_370b4a1),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
@@ -228,6 +268,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    _activityNavigation(context),
                     PremiumPanel(
                       padding: const EdgeInsets.all(20),
                       child: FilledButton.icon(
@@ -267,6 +308,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
+                    _activityNavigation(context),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
                         kind: HopeStateKind.error,

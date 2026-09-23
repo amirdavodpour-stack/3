@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/router/auth_return_intent.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/transactions/transaction_repository.dart';
@@ -128,7 +129,6 @@ class _HomePageState extends State<HomePage> {
               _drawerTile(context, Icons.explore_rounded, _t(context, 'کاوش فرصت‌ها', 'Explore opportunities'), () { Navigator.pop(context); _selectTab(1); }),
               if (!auth.isGuest) _drawerTile(context, Icons.local_offer_outlined, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
               if (!auth.isGuest) _drawerTile(context, Icons.notifications_rounded, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
-              if (!auth.isGuest) _drawerTile(context, Icons.account_balance_wallet_rounded, _t(context, 'کیف پول', 'Wallet'), () { Navigator.pop(context); _selectTab(3); }),
               if (auth.user?['role'] == 'ADMIN') _drawerTile(context, Icons.admin_panel_settings_rounded, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
               ListTile(
                 leading: const HopeIconTile(Icons.translate_rounded),
@@ -173,6 +173,24 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+Future<void> _resumeCreateAfterAuth(
+  BuildContext context, {
+  required bool register,
+}) async {
+  final result = await Navigator.push<AuthReturnIntent?>(
+    context,
+    register
+        ? HopeRoutes.register(returnIntent: AuthReturnIntent.createJob)
+        : HopeRoutes.login(returnIntent: AuthReturnIntent.createJob),
+  );
+  if (!context.mounted ||
+      result != AuthReturnIntent.createJob ||
+      !context.read<AuthController>().isAuthenticated) {
+    return;
+  }
+  await Navigator.push(context, HopeRoutes.createJob());
+}
+
 void _showSignIn(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
@@ -192,13 +210,19 @@ void _showSignIn(BuildContext context) {
             Text(HopeCopy.of(context).copy_create_an_account_or_log_in_to_post_opport_6bc74a1, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 18),
             FilledButton.icon(
-              onPressed: () { Navigator.pop(sheetContext); Navigator.push(context, HopeRoutes.register()); },
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                _resumeCreateAfterAuth(context, register: true);
+              },
               icon: const Icon(Icons.person_add_alt_1_rounded),
               label: Text(HopeCopy.of(context).copy_create_account_bfa3517),
             ),
             const SizedBox(height: 9),
             OutlinedButton.icon(
-              onPressed: () { Navigator.pop(sheetContext); Navigator.push(context, HopeRoutes.login()); },
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                _resumeCreateAfterAuth(context, register: false);
+              },
               icon: const Icon(Icons.login_rounded),
               label: Text(HopeCopy.of(context).copy_log_in_b4c960b),
             ),

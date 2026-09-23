@@ -1223,5 +1223,9 @@
   "copy_view_details": "View details",
   "@copy_view_details": {
     "description": "Canonical OpportunityCard localization."
+  },
+  "copy_offers": "Offers",
+  "@copy_offers": {
+    "description": "Activity navigation destination for offers."
   }
 }
