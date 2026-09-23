@@ -97,8 +97,8 @@ void main() {
         },
       });
       expect(payment.fees, isNotNull);
-      expect(payment.fees!.baseAmount, 100);
-      expect(payment.fees!.employerCharge, 110);
+      expect(payment.fees!.baseAmount, '100');
+      expect(payment.fees!.employerCharge, '110');
       expect(payment.fees!.policyVersion, '2026-08-v1');
     });
   });
