@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/application/application_registry.dart';
 import '../../core/application/application_registry_context.dart';
@@ -7,6 +8,7 @@ import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 
 ApplicationRegistry _applicationRegistry(BuildContext context) => applicationRegistryOf(context);
@@ -63,10 +65,11 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: Icon(
-                          Localizations.localeOf(context).languageCode == 'en'
-                              ? Icons.arrow_back_rounded
-                              : Icons.arrow_forward_rounded,
+                        icon: HugeIcon(
+                          icon: Localizations.localeOf(context).languageCode == 'en'
+                              ? HopeV2Icons.arrowLeft
+                              : HopeV2Icons.arrowRight,
+                          size: 21,
                         ),
                         tooltip: HopeCopy.of(context).copy_back_6e09f79,
                       ),
@@ -79,7 +82,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     eyebrow: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     title: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     message: HopeCopy.of(context).copy_enter_your_account_email_and_we_will_start_16caa6e,
-                    icon: Icons.mark_email_unread_outlined,
+                    icon: HopeV2Icons.mail,
                     height: 300,
                   ),
                   const SizedBox(height: 16),
@@ -93,7 +96,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const Icon(Icons.mail_outline_rounded),
+                            prefixIcon: HopeIcon(HopeV2Icons.mail, size: 20),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -115,7 +118,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                   ),
                   const SizedBox(height: 16),
                   EmptyState(
-                    icon: Icons.shield_outlined,
+                    icon: HopeV2Icons.secure,
                     title: HopeCopy.of(context).copy_you_are_covered_1bbe449,
                     message: HopeCopy.of(context).copy_for_security_the_response_is_intentionally_6574fa6,
                   ),
