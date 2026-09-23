@@ -24,4 +24,7 @@ test "$(grep -Fc 'adb shell run-as com.hope.marketplace mkdir -p files/hope-scre
 grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY=true' "$script"
 grep -Fq "bool.fromEnvironment('HOPE_RESPONSIVE_ONLY')" integration_test/runtime/critical_screens_evidence_test.dart
 
+responsive_block="$(sed -n '/responsive_screens=(/,/)/p' "$script")"
+test "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-transactions-fa-rtl"' | cut -d: -f1)" -lt "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-wallet-fa-rtl"' | cut -d: -f1)"
+test "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-wallet-fa-rtl"' | cut -d: -f1)" -lt "$(printf '%s\n' "$responsive_block" | grep -n '"responsive-720x1280-profile-fa-rtl"' | cut -d: -f1)"
 echo "runtime harness contract: PASS"
