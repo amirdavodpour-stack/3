@@ -14,6 +14,11 @@ import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/features/home/home_page.dart';
+import 'package:hope_mobile/features/auth/login_page.dart';
+import 'package:hope_mobile/features/transactions/transactions_page.dart';
+import 'package:hope_mobile/features/marketplace/create_job_page.dart';
+import 'package:hope_mobile/features/auth/register_page.dart';import 'package:hope_mobile/features/applications/my_applications_page.dart';
+import 'package:hope_mobile/core/router/auth_return_intent.dart';
 import 'package:hope_mobile/features/notifications/notifications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -23,14 +28,34 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// bottom-tab switching. Every test builds its own widgets/fakes, so there is
 /// no shared mutable state between tests.
 class _AuthRepo implements AuthRepository {
+  _AuthRepo({this.allowLogin = false, this.allowRegister = false});
+
+  final bool allowLogin;
+  final bool allowRegister;
+
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
       throw UnimplementedError();
+
   @override
-  Future<AuthSession> login(String e, String p) => throw UnimplementedError();
+  Future<AuthSession> login(String e, String p) async {
+    if (!allowLogin) throw UnimplementedError();
+    return const AuthSession(
+      accessToken: 'a',
+      refreshToken: 'r',
+      user: {'id': 'u1', 'displayName': 'Ali'},
+    );
+  }
+
   @override
-  Future<AuthSession> register(String e, String p, String n) =>
-      throw UnimplementedError();
+  Future<AuthSession> register(String e, String p, String n) async {
+    if (!allowRegister) throw UnimplementedError();
+    return const AuthSession(
+      accessToken: 'a',
+      refreshToken: 'r',
+      user: {'id': 'u1', 'displayName': 'Ali'},
+    );
+  }
   @override
   Future<void> logout() async {}
   @override
@@ -122,6 +147,8 @@ void _setView(WidgetTester tester) {
 Future<Widget> _app({
   bool admin = false,
   bool authenticated = false,
+  bool allowLogin = false,
+  bool allowRegister = false,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
@@ -129,7 +156,10 @@ Future<Widget> _app({
   // The app defaults to Persian; tests exercise the English navigation
   // labels, so pin the locale explicitly and deterministically.
   await settings.setLanguage('en');
-  final auth = AuthController(_AuthRepo(), SecureStore());
+  final auth = AuthController(
+    _AuthRepo(allowLogin: allowLogin, allowRegister: allowRegister),
+    SecureStore(),
+  );
   if (authenticated) {
     await auth.applyRefreshedUser({
       'id': 'u1',
@@ -222,6 +252,110 @@ void main() {
         .read<HopeSettingsController>();
     expect(settings.language, 'fa');
     expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
+  testWidgets('authenticated drawer does not duplicate primary Wallet',
+      (tester) async {
+    _setView(tester);
+    await tester.pumpWidget(await _app(authenticated: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('App menu'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(Drawer),
+        matching: find.text('Wallet'),
+      ),
+      findsNothing,
+    );
+    expect(find.text('Wallet'), findsWidgets);
+  });
+
+  testWidgets(
+      'guest create resumes CreateJob exactly once after successful login',
+      (tester) async {
+    _setView(tester);
+    await tester.pumpWidget(await _app(allowLogin: true));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Log in'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginPage), findsOneWidget);
+    await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
+    await tester.enterText(find.byType(TextField).at(1), 'password123');
+    await tester.tap(find.text('Log in to HOPE'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginPage), findsNothing);
+    expect(find.byType(CreateJobPage), findsOneWidget);
+    expect(find.byType(HomePage), findsOneWidget);
+  });
+
+  testWidgets(
+      'guest create resumes CreateJob exactly once after successful registration',
+      (tester) async {
+    _setView(tester);
+    await tester.pumpWidget(await _app(allowRegister: true));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'Ali');
+    await tester.enterText(find.byType(TextField).at(1), 'ali@example.com');
+    await tester.enterText(find.byType(TextField).at(2), 'password123');
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RegisterPage), findsNothing);
+    expect(find.byType(CreateJobPage), findsOneWidget);
+    expect(find.byType(HomePage), findsOneWidget);
+  });
+
+  testWidgets('guest create cancelled from auth returns to Home without CreateJob',
+      (tester) async {
+    _setView(tester);
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Log in'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LoginPage), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginPage), findsNothing);
+    expect(find.byType(CreateJobPage), findsNothing);
+    expect(find.byType(HomePage), findsOneWidget);
+  });
+
+  testWidgets('Activity exposes Applications, Offers and Notifications',
+      (tester) async {
+    _setView(tester);
+    await tester.pumpWidget(await _app(authenticated: true));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Activity'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TransactionsPage), findsOneWidget);
+    expect(find.text('Applications'), findsOneWidget);
+    expect(find.text('Offers'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
   });
 
   testWidgets('bottom navigation switches tabs and shows profile scaffold',
