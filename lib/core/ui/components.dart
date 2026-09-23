@@ -625,7 +625,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
             colors: [base, highlight, base],
             stops: const [.2, .5, .8],
             begin: Alignment(-1.0 + 2 * _controller!.value, 0),
-            end: Alignment(1.0 + 2 * _controller.value, 0),
+            end: Alignment(1.0 + 2 * _controller!.value, 0),
           ),
         ),
       ),
