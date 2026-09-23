@@ -264,7 +264,7 @@ class _OffersPageState extends State<OffersPage> {
                 onPressed: _acceptingId == o.id ? null : () => _accept(o),
                 icon: _acceptingId == o.id
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.check_rounded),
+                    : HopeIcon(HopeV2Icons.completed, size: 19),
                 label: Text(_acceptingId == o.id
                     ? _t('در حال پذیرش...', 'Accepting...')
                     : _t('پذیرش پیشنهاد', 'Accept offer')),
