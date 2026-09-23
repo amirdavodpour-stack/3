@@ -7,6 +7,9 @@ HOPE is a Persian-first, bilingual work marketplace connecting people who post o
 Primary audience: mobile-first users who need to understand an opportunity, its economics, trust/state, and next action quickly.
 Primary design job: reduce decision friction without turning the marketplace into a generic job-board dashboard.
 
+### Premium reference target — HOPE Futuristic Work Platform UI Showcase
+The target visual language is a dark, high-density work platform: near-black navy surfaces, indigo/violet primary, emerald trust/success, amber warning, restrained red danger, compact rounded cards, thin borders, strong metric/state hierarchy, controlled glow, and deliberate mobile bottom navigation / desktop rail behavior. This is a system reference, not a pixel-copy mandate. Product behavior, backend contracts, wallet/ledger semantics and real data remain authoritative. Opportunity/hero imagery is screen-level, not a page-wide background.
+
 ## Visual direction
 HOPE should feel like a **premium work instrument** rather than a generic SaaS dashboard:
 - dark-first, high-contrast layered surfaces for the default product experience;
