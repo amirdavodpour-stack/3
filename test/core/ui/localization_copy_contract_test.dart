@@ -67,6 +67,37 @@ void main() {
     }
   });
 
+  testWidgets('product locales preserve expected text direction',
+      (tester) async {
+    for (final locale in const [Locale('fa'), Locale('en')]) {
+      late TextDirection direction;
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: locale,
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Builder(
+            builder: (context) {
+              direction = Directionality.of(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        direction,
+        locale.languageCode == 'fa' ? TextDirection.rtl : TextDirection.ltr,
+      );
+    }
+  });
+
   test('generated localization delegates load without exceptions', () async {
     final en = await AppLocalizations.delegate.load(const Locale('en'));
     final fa = await AppLocalizations.delegate.load(const Locale('fa'));
