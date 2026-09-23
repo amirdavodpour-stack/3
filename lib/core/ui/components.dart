@@ -530,9 +530,7 @@ class _SearchFieldState extends State<SearchField> {
                   if (hasQuery)
                     IconButton(
                       tooltip:
-                          Localizations.localeOf(context).languageCode == 'en'
-                              ? 'Clear search'
-                              : 'پاک کردن جست‌وجو',
+                          MaterialLocalizations.of(context).clearButtonTooltip,
                       onPressed: _clear,
                       icon: const Icon(Icons.close_rounded),
                     ),
