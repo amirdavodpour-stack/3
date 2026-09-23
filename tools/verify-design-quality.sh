@@ -35,6 +35,11 @@ required_files=(
   integration_test/runtime/app_smoke_test.dart
   integration_test/runtime/flutter_runtime_test.dart
   tools/android-staging-network-preflight.sh
+  test/flutter_test_config.dart
+  test/core/quality/hope_accessibility_gate_test.dart
+  test/core/quality/hope_quality_matrix_test.dart
+  test/core/finance/toman_formatter_test.dart
+  lib/core/finance/toman_formatter.dart
 )
 for f in "${required_files[@]}"; do need_file "$f"; done
 
@@ -66,6 +71,8 @@ grep -q "IntegrationTestWidgetsFlutterBinding.ensureInitialized" integration_tes
 grep -q "continueAsGuest" integration_test/runtime/app_smoke_test.dart || fail "guest smoke path is missing"
 grep -q "loginWithGoogle" lib/features/auth/login_page.dart || fail "Google Sign-In action contract is missing"
 grep -R -q "تومان" lib/features/wallet lib/features/transactions || fail "TOMAN labelling is not present in finance surfaces"
+grep -q "semanticsIdentifier" lib/core/ui/premium_components.dart || fail "stable semantics identifier contract is missing"
+grep -q "HopeTomanFormatter.grouped" lib/core/ui/copy.dart || fail "TOMAN display formatter is not connected"
 
 echo "HOPE design/runtime guardrails PASS"
 echo "  files: ${#required_files[@]}"
