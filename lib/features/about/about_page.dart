@@ -43,14 +43,14 @@ class AboutHopePage extends StatelessWidget {
             const SizedBox(height: 18),
             _infoCard(
                 context,
-                Icons.task_alt_rounded,
+                HopeV2Icons.mission,
                 HopeCopy.of(context).copy_mission_fb4c5e1,
                 HopeCopy.of(context)
                     .copy_a_defined_task_with_a_clear_price_and_deli_bf299f3),
             const SizedBox(height: 10),
             _infoCard(
                 context,
-                Icons.business_center_rounded,
+                HopeV2Icons.job,
                 HopeCopy.of(context).copy_job_ce2feba,
                 HopeCopy.of(context)
                     .copy_a_part_time_or_full_time_role_with_monthly_ac5f029),
@@ -68,13 +68,13 @@ class AboutHopePage extends StatelessWidget {
                           context,
                           HopeCopy.of(context).copy_mission_fb4c5e1,
                           HopeCopy.of(context).copy_about_mission_fee_short,
-                          Icons.percent_rounded),
+                          HopeV2Icons.payments),
                       const Divider(height: 22),
                       _feeRow(
                           context,
                           HopeCopy.of(context).copy_job_ce2feba,
                           HopeCopy.of(context).copy_about_job_fee_short,
-                          Icons.calendar_month_rounded),
+                          HopeV2Icons.pending),
                     ])),
             const SizedBox(height: 22),
             PremiumSectionHeader(
@@ -87,17 +87,17 @@ class AboutHopePage extends StatelessWidget {
                 child: Column(children: [
                   _bullet(
                       context,
-                      Icons.shield_outlined,
+                      HopeV2Icons.secure,
                       HopeCopy.of(context)
                           .copy_for_jobs_admins_send_only_the_professional_e6e694e),
                   _bullet(
                       context,
-                      Icons.visibility_off_outlined,
+                      HopeV2Icons.secure,
                       HopeCopy.of(context)
                           .copy_candidate_identity_stays_hidden_during_sel_6a73883),
                   _bullet(
                       context,
-                      Icons.admin_panel_settings_outlined,
+                      HopeV2Icons.secure,
                       HopeCopy.of(context)
                           .copy_admins_can_remove_opportunities_that_viola_82df522),
                 ])),
@@ -120,7 +120,7 @@ class AboutHopePage extends StatelessWidget {
   }
 
   Widget _infoCard(
-          BuildContext context, IconData icon, String title, String text) =>
+          BuildContext context, Object icon, String title, String text) =>
       PremiumPanel(
           padding: const EdgeInsets.all(16),
           child: Row(children: [
@@ -136,7 +136,7 @@ class AboutHopePage extends StatelessWidget {
                 ]))
           ]));
   Widget _feeRow(
-          BuildContext context, String title, String value, IconData icon) =>
+          BuildContext context, String title, String value, Object icon) =>
       Row(children: [
         HopeIconTile(icon, size: 42),
         const SizedBox(width: 12),
@@ -146,10 +146,10 @@ class AboutHopePage extends StatelessWidget {
             textAlign: TextAlign.end,
             style: Theme.of(context).textTheme.bodyMedium)
       ]);
-  Widget _bullet(BuildContext context, IconData icon, String text) => Padding(
+  Widget _bullet(BuildContext context, Object icon, String text) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: 21, color: secondaryAccent(context)),
+        HopeIcon(icon, size: 21, color: secondaryAccent(context), strokeWidth: 1.9),
         const SizedBox(width: 10),
         Expanded(
             child: Text(text, style: Theme.of(context).textTheme.bodyLarge))
