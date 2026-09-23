@@ -255,11 +255,19 @@ class PremiumPanel extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final panel = Container(
       decoration: BoxDecoration(
-        color: highlight
-            ? (dark
-                ? scheme.primary.withValues(alpha: .09)
-                : scheme.primary.withValues(alpha: .055))
-            : HopeV2Surfaces.panel(context),
+        color: highlight ? null : HopeV2Surfaces.panel(context),
+        gradient: highlight
+            ? LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  scheme.primary.withValues(alpha: dark ? .12 : .075),
+                  HopeV2Surfaces.panel(context),
+                  HopeV2Surfaces.panel(context),
+                ],
+                stops: const [0, .34, 1],
+              )
+            : null,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
