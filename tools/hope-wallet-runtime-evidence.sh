@@ -136,6 +136,11 @@ capture_screen() {
   done
 
   echo "Timed out waiting for screenshot marker after ${timeout_seconds}s: $marker" >&2
+  # Preserve the Flutter runtime stream at the exact timeout boundary. This is
+  # required to distinguish pump/layout hangs from host-side capture failures.
+  if test -f "$active_runtime_log"; then
+    cp -- "$active_runtime_log" "$evidence_dir/runtime-log-$prefix-timeout.txt" || true
+  fi
   capture_android_diagnostics "$prefix-timeout"
   return 1
 }
