@@ -60,6 +60,40 @@ class HopeV2Colors {
   static const darkDivider = Color(0x12FFFFFF);
 }
 
+/// Canonical icon vocabulary. Keep navigation and recurring product concepts
+/// on this set so the interface reads as one designed system rather than a
+/// collection of unrelated Material defaults.
+class HopeV2Icons {
+  const HopeV2Icons._();
+
+  static const home = Icons.dashboard_customize_outlined;
+  static const homeSelected = Icons.dashboard_customize_rounded;
+  static const workshop = Icons.hub_outlined;
+  static const workshopSelected = Icons.hub_rounded;
+  static const activity = Icons.timeline_outlined;
+  static const activitySelected = Icons.timeline_rounded;
+  static const wallet = Icons.account_balance_wallet_outlined;
+  static const walletSelected = Icons.account_balance_wallet_rounded;
+  static const profile = Icons.manage_accounts_outlined;
+  static const profileSelected = Icons.manage_accounts_rounded;
+
+  static const mission = Icons.bolt_rounded;
+  static const job = Icons.work_history_rounded;
+  static const featured = Icons.auto_awesome_rounded;
+  static const match = Icons.verified_rounded;
+  static const location = Icons.location_on_outlined;
+  static const category = Icons.category_outlined;
+  static const distance = Icons.near_me_rounded;
+  static const protectedFunds = Icons.shield_outlined;
+  static const payments = Icons.payments_outlined;
+  static const transferIn = Icons.south_west_rounded;
+  static const transferOut = Icons.north_east_rounded;
+  static const completed = Icons.task_alt_rounded;
+  static const pending = Icons.schedule_rounded;
+  static const secure = Icons.lock_person_outlined;
+  static const insights = Icons.query_stats_rounded;
+}
+
 class HopeV2Spacing {
   const HopeV2Spacing._();
   static const xs = 4.0;
