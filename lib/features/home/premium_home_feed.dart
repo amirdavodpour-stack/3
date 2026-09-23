@@ -312,6 +312,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               },
             ),
             const SizedBox(height: HopeV2Spacing.xl),
+            _quickActions(context, auth),
+            const SizedBox(height: HopeV2Spacing.xl),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -338,6 +340,91 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _quickActions(BuildContext context, AuthController auth) {
+    final actions = <_HomeQuickAction>[
+      _HomeQuickAction(
+        label: _t(context, 'کاوش فرصت‌ها', 'Explore opportunities'),
+        caption: _t(context, 'بازار فرصت‌ها را بررسی کنید.', 'Browse the opportunity marketplace.'),
+        icon: HopeV2Icons.workshop,
+        color: HopeV2Colors.primary,
+        onTap: widget.onOpenExplore,
+      ),
+      _HomeQuickAction(
+        label: _t(context, 'ثبت فرصت جدید', 'Post an opportunity'),
+        caption: _t(context, 'یک نیاز کاری جدید منتشر کنید.', 'Publish a new work request.'),
+        icon: HopeV2Icons.add,
+        color: HopeV2Colors.secondary,
+        onTap: widget.onOpenCreate,
+      ),
+      if (!auth.isGuest)
+        _HomeQuickAction(
+          label: _t(context, 'کیف پول', 'Wallet'),
+          caption: _t(context, 'موجودی و گردش مالی را ببینید.', 'Review balance and money activity.'),
+          icon: HopeV2Icons.wallet,
+          color: HopeV2Colors.warning,
+          onTap: () {
+            final repository = applicationRegistryOf(context).walletsOrThrow;
+            Navigator.push(context, HopeRoutes.wallet(repository: repository));
+          },
+        ),
+      if (!auth.isGuest)
+        _HomeQuickAction(
+          label: _t(context, 'فعالیت‌ها', 'Activity'),
+          caption: _t(context, 'کارها و تراکنش‌های اخیر را ببینید.', 'Review recent work and transactions.'),
+          icon: HopeV2Icons.activity,
+          color: HopeV2Colors.secondaryStrong,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => TransactionsPage(
+                  repository: context.read<TransactionRepository>(),
+                ),
+              ),
+            );
+          },
+        ),
+    ];
+
+    return PremiumPanel(
+      padding: const EdgeInsets.all(HopeV2Spacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PremiumSectionHeader(
+            title: _t(context, 'دسترسی سریع', 'Quick access'),
+            subtitle: _t(
+              context,
+              'مسیرهای اصلی بدون خروج از صفحه اصلی در دسترس‌اند.',
+              'Keep the primary actions close to the home surface.',
+            ),
+          ),
+          const SizedBox(height: HopeV2Spacing.md),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 760
+                  ? actions.length.clamp(2, 4)
+                  : constraints.maxWidth >= 500
+                      ? 2
+                      : 1;
+              final gap = HopeV2Spacing.sm;
+              final width =
+                  (constraints.maxWidth - gap * (columns - 1)) / columns;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final action in actions)
+                    SizedBox(width: width, child: action),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -584,3 +671,80 @@ class _PulseSkeleton extends StatelessWidget {
   ]);
 }
 
+
+class _HomeQuickAction extends StatelessWidget {
+  const _HomeQuickAction({
+    required this.label,
+    required this.caption,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final String caption;
+  final Object icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$label. $caption',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          child: Ink(
+            constraints: const BoxConstraints(minHeight: 82),
+            padding: const EdgeInsets.all(HopeV2Spacing.md),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .055),
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
+              border: Border.all(color: color.withValues(alpha: .13)),
+            ),
+            child: Row(
+              children: [
+                ExcludeSemantics(
+                  child: HopeIconTile(icon, color: color, filled: true, size: 42),
+                ),
+                const SizedBox(width: HopeV2Spacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        caption,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: HopeV2Spacing.xs),
+                HugeIcon(
+                  icon: Directionality.of(context) == ui.TextDirection.rtl
+                      ? HopeV2Icons.arrowLeft
+                      : HopeV2Icons.arrowRight,
+                  size: 18,
+                  color: color,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
