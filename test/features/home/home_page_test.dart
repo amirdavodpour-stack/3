@@ -91,6 +91,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(PremiumHeader), findsOneWidget);
+    expect(find.byType(PremiumStatCard), findsWidgets);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
