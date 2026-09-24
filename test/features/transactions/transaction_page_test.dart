@@ -164,6 +164,7 @@ Future<void> _pump(
   _FakeTx repo, {
   String ownerId = 'u1',
   double width = 900,
+  bool disableAnimations = false,
 }) async {
   tester.view.physicalSize = Size(width, 2200);
   tester.view.devicePixelRatio = 1.0;
@@ -183,7 +184,9 @@ Future<void> _pump(
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: MultiProvider(
+    home: MediaQuery(
+      data: MediaQueryData(disableAnimations: disableAnimations),
+      child: MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: auth),
         Provider<TransactionRepository>.value(value: repo),
@@ -194,8 +197,8 @@ Future<void> _pump(
         uploadQueue: _NoopUploadQueue(),
         jobId: 'j1',
       ),
-    ),
-  ));
+      ),
+    ));
   // These fakes resolve immediately; bounded pumps avoid treating any
   // unrelated ongoing animation as a test failure.
   await tester.pump();
@@ -203,6 +206,26 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets(
+      'transaction lifecycle honors reduced motion',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'HELD',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo, ownerId: 'u1', disableAnimations: true);
+
+    final animated = find.byType(AnimatedContainer);
+    expect(animated, findsWidgets);
+    for (final widget in tester.widgetList<AnimatedContainer>(animated)) {
+      expect(widget.duration, Duration.zero);
+    }
+  });
+
   testWidgets('loading then funded payload shows status, amount and start work',
       (tester) async {
     final repo = _FakeTx()
