@@ -6,6 +6,31 @@ import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/hope_async_state.dart';
 
 void main() {
+  testWidgets('all async state kinds expose a deterministic semantic contract',
+      (tester) async {
+    for (final kind in HopeStateKind.values) {
+      final title = 'State \${kind.name}';
+      final message = 'Message \${kind.name}';
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: HopeAsyncState(
+              kind: kind,
+              title: title,
+              message: message,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final semantics = tester.getSemantics(find.byType(HopeAsyncState));
+      expect(semantics.flagsCollection.isLiveRegion, isTrue);
+      expect(semantics.label, '$title. $message');
+    }
+  });
+void main() {
   testWidgets('pending async state uses the canonical warning semantic token',
       (tester) async {
     await tester.pumpWidget(
