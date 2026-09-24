@@ -187,18 +187,19 @@ Future<void> _pump(
     home: MediaQuery(
       data: MediaQueryData(disableAnimations: disableAnimations),
       child: MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: auth),
-        Provider<TransactionRepository>.value(value: repo),
-        Provider<UploadQueue>.value(value: _NoopUploadQueue()),
-      ],
-      child: TransactionPage(
-        repository: repo,
-        uploadQueue: _NoopUploadQueue(),
-        jobId: 'j1',
+        providers: [
+          ChangeNotifierProvider.value(value: auth),
+          Provider<TransactionRepository>.value(value: repo),
+          Provider<UploadQueue>.value(value: _NoopUploadQueue()),
+        ],
+        child: TransactionPage(
+          repository: repo,
+          uploadQueue: _NoopUploadQueue(),
+          jobId: 'j1',
+        ),
       ),
-      ),
-    ));
+    ),
+  ));
   // These fakes resolve immediately; bounded pumps avoid treating any
   // unrelated ongoing animation as a test failure.
   await tester.pump();
