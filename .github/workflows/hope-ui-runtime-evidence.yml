@@ -2,6 +2,13 @@ name: HOPE UI Runtime Evidence
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/google-sign-in-2026-09-20
+    paths:
+      - integration_test/runtime/**
+      - tools/hope-wallet-runtime-evidence.sh
+      - .github/workflows/hope-ui-runtime-evidence.yml
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
