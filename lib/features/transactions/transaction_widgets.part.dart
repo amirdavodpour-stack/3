@@ -86,7 +86,9 @@ extension on _TransactionPageState {
             child: Column(
               children: [
                 AnimatedContainer(
-                  duration: HopeV2Motion.fast,
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : HopeV2Motion.fast,
                   width: 30,
                   height: 30,
                   decoration: BoxDecoration(
