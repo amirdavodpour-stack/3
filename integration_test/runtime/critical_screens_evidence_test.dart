@@ -558,3 +558,179 @@ Widget _host({
     ),
   );
 }
+const _runtimeScreenshotRoot =
+    String.fromEnvironment('HOPE_SCREENSHOT_OUTPUT_ROOT');
+const _responsiveOnly =
+    bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
+
+class _EvidenceUploadQueue implements UploadQueue {
+  @override
+  late final ApiClient api;
+  @override
+  int get maxAttempts => 1;
+  @override
+  void Function(PendingUpload item, Object error)? onPermanentFailure;
+  @override
+  void Function(PendingUpload item, Object error)? onTransientFailure;
+  @override
+  Future<dynamic> uploadNowWithRetry(String path, File file) async =>
+      <String, String>{'key': 'runtime'};
+  @override
+  Future<void> enqueue(PendingUpload item) async {}
+  @override
+  Future<void> drain() async {}
+  @override
+  int get pendingCount => 0;
+}
+
+typedef _Runtime = ({
+  AuthController auth,
+  HopeSettingsController settings,
+  ApplicationRegistry registry,
+});
+
+Future<void> _captureRuntimeScreen(
+  IntegrationTestWidgetsFlutterBinding binding,
+  WidgetTester tester, {
+  required _Runtime runtime,
+  required Locale locale,
+  required String marker,
+  required Widget child,
+}) async {
+  await tester.pumpWidget(
+    _host(
+      locale: locale,
+      child: child,
+      auth: runtime.auth,
+      settings: runtime.settings,
+      registry: runtime.registry,
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 800));
+  await tester.pump();
+
+  final image = await binding.takeScreenshot(marker);
+  if (_runtimeScreenshotRoot.isNotEmpty) {
+    final file = File('$_runtimeScreenshotRoot/$marker.png');
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(image, flush: true);
+    if (!await file.exists() || await file.length() < 16) {
+      throw StateError('Screenshot file was not materialized: ${file.path}');
+    }
+  }
+  print('HOPE_SCREENSHOT_READY:$marker');
+}
+
+Future<void> _captureBaselineLocale(
+  IntegrationTestWidgetsFlutterBinding binding,
+  WidgetTester tester, {
+  required _Runtime runtime,
+  required Locale locale,
+  required String suffix,
+}) async {
+  final pages = <String, Widget Function()>{
+    'home': () => const HomePage(),
+    'jobs': () => const JobsPage(),
+    'job-detail': () => JobDetailPage(job: _jobFixture()),
+    'applications': () => const MyApplicationsPage(),
+    'saved-searches': () => const SavedSearchesPage(),
+    'transactions': () => TransactionsPage(repository: runtime.registry.transactions),
+    'transaction-detail': () => TransactionPage(
+          repository: runtime.registry.transactions!,
+          uploadQueue: _EvidenceUploadQueue(),
+          jobId: 'job-runtime-1',
+        ),
+    'wallet': () => WalletPage(repository: runtime.registry.wallets!),
+    'profile': () => const ProfilePage(),
+    'notifications': () => const NotificationsPage(),
+    'offers': () => const OffersPage(jobId: 'job-runtime-1'),
+    'create-job': () => const CreateJobPage(),
+    'login': () => const LoginPage(),
+    'register': () => const RegisterPage(),
+    'password-reset': () => const PasswordResetPage(),
+  };
+  for (final entry in pages.entries) {
+    await _captureRuntimeScreen(
+      binding,
+      tester,
+      runtime: runtime,
+      locale: locale,
+      marker: '${entry.key}-$suffix',
+      child: entry.value(),
+    );
+  }
+}
+
+Future<void> _captureResponsiveLocale(
+  IntegrationTestWidgetsFlutterBinding binding,
+  WidgetTester tester, {
+  required _Runtime runtime,
+  required Locale locale,
+  required String suffix,
+}) async {
+  final pages = <String, Widget Function()>{
+    'home': () => const HomePage(),
+    'jobs': () => const JobsPage(),
+    'job-detail': () => JobDetailPage(job: _jobFixture()),
+    'transactions': () => TransactionsPage(repository: runtime.registry.transactions),
+    'wallet': () => WalletPage(repository: runtime.registry.wallets!),
+    'profile': () => const ProfilePage(),
+  };
+  for (final entry in pages.entries) {
+    await _captureRuntimeScreen(
+      binding,
+      tester,
+      runtime: runtime,
+      locale: locale,
+      marker: 'responsive-720x1280-${entry.key}-$suffix',
+      child: entry.value(),
+    );
+  }
+}
+
+void main() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('HOPE critical screens rendered screenshot evidence',
+      (tester) async {
+    await binding.convertFlutterSurfaceToImage();
+    await tester.pump();
+
+    if (_responsiveOnly) {
+      final fa = await _prepare();
+      await _captureResponsiveLocale(
+        binding,
+        tester,
+        runtime: fa,
+        locale: const Locale('fa'),
+        suffix: 'fa-rtl',
+      );
+      final en = await _prepare();
+      await _captureResponsiveLocale(
+        binding,
+        tester,
+        runtime: en,
+        locale: const Locale('en'),
+        suffix: 'en-ltr',
+      );
+      return;
+    }
+
+    final fa = await _prepare();
+    await _captureBaselineLocale(
+      binding,
+      tester,
+      runtime: fa,
+      locale: const Locale('fa'),
+      suffix: 'fa-rtl',
+    );
+    final en = await _prepare();
+    await _captureBaselineLocale(
+      binding,
+      tester,
+      runtime: en,
+      locale: const Locale('en'),
+      suffix: 'en-ltr',
+    );
+  });
+}
