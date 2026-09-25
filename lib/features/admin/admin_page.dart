@@ -256,7 +256,7 @@ class _AdminPageState extends State<AdminPage>
         return PremiumStatCard(
           label: item['label']! as String,
           value: '${m?[key] ?? 0}',
-          icon: item['icon']! as Object,
+          icon: item['icon']!,
           accent: Theme.of(context).colorScheme.primary,
         );
       }).toList(),
