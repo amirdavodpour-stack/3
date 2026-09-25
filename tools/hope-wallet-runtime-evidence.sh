@@ -22,6 +22,7 @@ capture_android_diagnostics() {
   local prefix="$1"
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb devices -l > "$evidence_dir/adb-devices-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-$prefix.txt" 2>&1 || true
+  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell dumpsys meminfo com.hope.marketplace > "$evidence_dir/meminfo-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell dumpsys activity activities > "$evidence_dir/activity-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell dumpsys window windows > "$evidence_dir/window-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell logcat -d -t 1000 > "$evidence_dir/logcat-$prefix.txt" 2>&1 || true
@@ -202,9 +203,14 @@ run_runtime_test "$log_file"   --no-pub   --no-dds   --driver=test_driver/hope_r
 baseline_status=$?
 set -e
 
+if [ "$baseline_status" -ne 0 ]; then
+  capture_android_diagnostics "baseline-test-failure"
+fi
+
 if [ "$baseline_status" -eq 0 ] &&
    ! validate_capture_set "baseline" "$log_file" "${screens[@]}"; then
   baseline_status=1
+  capture_android_diagnostics "baseline-capture-failure"
 fi
 
 if [ "$baseline_status" -ne 0 ]; then
@@ -238,9 +244,14 @@ if [ "$baseline_status" -eq 0 ]; then
     "responsive-720x1280-transactions-en-ltr"
   )
 
+  if [ "$responsive_status" -ne 0 ]; then
+    capture_android_diagnostics "responsive-test-failure"
+  fi
+
   if [ "$responsive_status" -eq 0 ] &&
      ! validate_capture_set "responsive" "$runner_temp/hope-responsive-runtime.log" "${responsive_screens[@]}"; then
     responsive_status=1
+    capture_android_diagnostics "responsive-capture-failure"
   fi
 
   adb shell wm size reset || true
