@@ -231,7 +231,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                         ),
                       ),
                     ),
-                  )),
+                  ),
                 ],
               ),
             ),
