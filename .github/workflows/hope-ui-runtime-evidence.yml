@@ -19,7 +19,8 @@ on:
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
-  # Never cancel a useful screenshot run because a rapid follow-up commit arrived.\n  cancel-in-progress: false
+  # Never cancel a useful screenshot run because a rapid follow-up commit arrived.
+  cancel-in-progress: false
 
 permissions:
   contents: read
