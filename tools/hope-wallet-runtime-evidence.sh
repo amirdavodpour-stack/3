@@ -92,9 +92,11 @@ capture_screen() {
       local tmp_output="$evidence_dir/.$output.tmp"
       local read_succeeded=false
       local screenshot_magic=""
-      for attempt in 1 2 3 4 5; do
+      for attempt in 1 2 3 4 5 6 7 8 9 10; do
         rm -f -- "$tmp_output"
-        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out run-as com.hope.marketplace cat "$remote_path"         > "$tmp_output" 2>/dev/null || true
+        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace test -s "$remote_path" >/dev/null 2>&1; then
+          timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out run-as com.hope.marketplace cat "$remote_path" > "$tmp_output" 2>/dev/null || true
+        fi
         if test -s "$tmp_output"; then
           screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
           if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
@@ -102,7 +104,7 @@ capture_screen() {
             break
           fi
         fi
-        sleep 0.5
+        sleep 1
       done
 
       if [ "$read_succeeded" != true ]; then
@@ -110,34 +112,8 @@ capture_screen() {
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
         return 1
       fi
-      # UI hierarchy is supplemental evidence. Some Flutter/SurfaceView screens or
-      # emulator states can make uiautomator unavailable even while the rendered
-      # screenshot is valid. Never reject the screenshot solely for that condition.
-      local hierarchy_available=false
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell uiautomator dump --compressed /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-      if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell test -s /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1; then
-        hierarchy_available=true
-      fi
-
-      local tmp_hierarchy="$evidence_dir/.ui-hierarchy-$prefix.xml.tmp"
-      rm -f -- "$tmp_hierarchy"
-      if [ "$hierarchy_available" = true ]; then
-        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out cat /sdcard/hope-ui-hierarchy.xml > "$tmp_hierarchy" 2>/dev/null && test -s "$tmp_hierarchy" && grep -Fq '<hierarchy' "$tmp_hierarchy"; then
-          if ! grep -Fq 'package="com.hope.marketplace"' "$tmp_hierarchy"; then
-            echo "HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:not-hope" >&2
-          fi
-          mv -- "$tmp_hierarchy" "$evidence_dir/ui-hierarchy-$prefix.xml"
-        else
-          rm -f -- "$tmp_hierarchy"
-          printf '%s\n' "UI hierarchy became unavailable while screenshot remained capturable." > "$evidence_dir/ui-hierarchy-$prefix.unavailable.txt"
-          echo "HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:unavailable" >&2
-        fi
-      else
-        printf '%s\n' "UI hierarchy unavailable on this rendered screen." > "$evidence_dir/ui-hierarchy-$prefix.unavailable.txt"
-        echo "HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:unavailable" >&2
-      fi
-
+      # Android UI hierarchy is intentionally not collected in the critical screenshot path.
+      # uiautomator/UiAutomation can cause integration-test SemanticsHandle leaks.
       mv -- "$tmp_output" "$evidence_dir/$output"
             echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
 
