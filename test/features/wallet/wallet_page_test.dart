@@ -386,10 +386,6 @@ void main() {
         find.textContaining('2,500,000 تومان'),
         findsWidgets,
       );
-      expect(
-        find.textContaining('1,000,000 تومان'),
-        findsWidgets,
-      );
       await tester.scrollUntilVisible(
         find.text('برداشت‌های در جریان'),
         500,
@@ -397,6 +393,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(
+        find.textContaining('1,000,000 تومان'),
+        findsWidgets,
+      );
       final statCards = tester.widgetList<PremiumStatCard>(
         find.byType(PremiumStatCard),
       ).toList();
@@ -404,7 +404,6 @@ void main() {
         statCards.map((card) => '${card.label}=${card.value}').toList(),
         contains('برداشت‌های در جریان=1'),
       );
-      expect(find.textContaining('2,500,000 تومان'), findsWidgets);
       expect(find.text('قفل‌شده'), findsWidgets);
       expect(find.text('برداشت‌های در جریان'), findsOneWidget);
     },
