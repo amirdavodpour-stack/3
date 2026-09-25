@@ -371,33 +371,66 @@ extension on _TransactionPageState {
               ),
               const SizedBox(height: 14),
               PremiumPanel(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(children: [
+                padding: const EdgeInsets.all(18),
+                highlight: status == 'HELD' ||
+                    status == 'RELEASED' ||
+                    status == 'HOLD_PENDING' ||
+                    status == 'RELEASE_PENDING',
+                semanticLabel:
+                    _t('خلاصه مالی این کار', 'Financial summary for this job'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            HopeCopy.of(context).copy_payment_status_e1b6f0c,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _t('خلاصه مالی', 'Financial summary'),
+                                style: HopeV2Type.section(context),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                HopeCopy.of(context).copy_payment_status_e1b6f0c,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Flexible(
-                          child: Text(
-                            _statusLabel(status),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w800),
-                          ),
+                        PremiumTag(
+                          icon: _statusIcon(status),
+                          label: _statusLabel(status),
+                          color: _statusColor(status),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      HopeCopy.of(context).copy_amount_6400812,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      alignment: AlignmentDirectional.centerStart,
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        moneyLabel(context, payment?.amount ?? '—'),
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -.8,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _statusHint(status),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            height: 1.35,
+                          ),
                     ),
                     if (status == 'NO_TRANSACTION') ...[
                       const SizedBox(height: 8),
@@ -420,63 +453,13 @@ extension on _TransactionPageState {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 14),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            HopeCopy.of(context).copy_amount_6400812,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Text(
-                            moneyLabel(context, payment?.amount ?? '—'),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Row(children: [
-                      Expanded(
-                          child: Text(
-                              HopeCopy.of(context).copy_reference_aa63360,
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      Flexible(
-                        child: Text(
-                          payment?.providerRef ?? '—',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      )
-                    ]),
-                  ])),
-              const SizedBox(height: 10),
-              PremiumPanel(
-                padding: const EdgeInsets.all(14),
-                highlight: status == 'HELD' || status == 'RELEASED',
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    HopeIcon(_statusIcon(status), color: _statusColor(status)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _statusHint(status),
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
                   ],
                 ),
               ),
+              const SizedBox(height: 14),
+              _flow(context, job, status),
+              const SizedBox(height: 14),
+              _actions(context, job, status),
               if (payment?.fees != null) ...[
                 const SizedBox(height: 12),
                 PremiumPanel(
