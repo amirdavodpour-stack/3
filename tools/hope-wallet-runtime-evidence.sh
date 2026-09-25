@@ -157,10 +157,15 @@ run_baseline_locale() {
   return "$status"
 }
 
+# A locale session may still exit non-zero after producing valid screenshots
+# when flutter_driver loses its VM service during teardown. Do not let errexit
+# abort before the second locale session gets a chance to run.
+set +e
 run_baseline_locale "fa" "fa"
 baseline_fa_status=$?
 run_baseline_locale "en" "en"
 baseline_en_status=$?
+set -e
 cat "$runner_temp/hope-critical-screens-runtime-fa.log" "$runner_temp/hope-critical-screens-runtime-en.log" > "$log_file" 2>/dev/null || true
 
 baseline_status=0
