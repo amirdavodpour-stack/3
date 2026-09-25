@@ -6,14 +6,20 @@ on:
     branches:
       - feat/google-sign-in-2026-09-20
     paths:
-      - integration_test/runtime/**
+      - lib/**
+      - assets/**
+      - integration_test/**
+      - test/**
       - test_driver/**
       - tools/hope-wallet-runtime-evidence.sh
+      - tools/verify-design-quality.sh
+      - pubspec.yaml
+      - pubspec.lock
       - .github/workflows/hope-ui-runtime-evidence.yml
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a useful screenshot run because a rapid follow-up commit arrived.\n  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -94,7 +100,7 @@ jobs:
           test -r /dev/kvm
           test -w /dev/kvm
 
-      # Exact-head T10 trigger: the workflow is intentionally push-triggered on the feature branch.
+      # Runtime evidence is tied to this exact feature-branch SHA; lib/assets changes trigger it.
       - name: Android runtime evidence
         uses: ./.ci/android-emulator-runner
         env:
