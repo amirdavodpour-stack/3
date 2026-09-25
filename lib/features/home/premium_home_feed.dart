@@ -131,190 +131,230 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();
+    final displayName =
+        ((auth.user?['displayName'] as String?)?.trim().isNotEmpty ?? false)
+            ? (auth.user?['displayName'] as String).trim()
+            : _t(context, 'فضای کاری', 'Workspace');
+    final initial = displayName.trim().isNotEmpty
+        ? displayName.trim().substring(0, 1).toUpperCase()
+        : 'H';
+
     return PremiumPageFrame(
       maxWidth: 1180,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       child: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            Builder(
-              builder: (context) {
-                final displayName =
-                    ((auth.user?['displayName'] as String?)?.trim().isNotEmpty ?? false)
-                        ? (auth.user?['displayName'] as String).trim()
-                        : _t(context, 'فضای کاری', 'Workspace');
-                final initial = displayName.trim().isNotEmpty
-                    ? displayName.trim().substring(0, 1).toUpperCase()
-                    : 'H';
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    PremiumHeader(
-                      eyebrow: _t(context, 'فضای کاری', 'Workspace'),
-                      title: displayName,
-                      subtitle: settings.city.trim().isEmpty
-                          ? null
-                          : settings.city,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          PremiumIconButton(
-                            onPressed: widget.onOpenMenu,
-                            tooltip: _t(context, 'منو', 'App menu'),
-                            icon: HopeV2Icons.menu,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _t(context, 'فضای کاری', 'Workspace'),
+                          style: HopeV2Type.eyebrow(context).copyWith(
+                            color: HopeV2Colors.secondaryDark,
                           ),
-                          const SizedBox(width: HopeV2Spacing.xs),
-                          PremiumIconButton(
-                            onPressed: _refresh,
-                            tooltip: _t(context, 'بازخوانی', 'Refresh'),
-                            icon: HopeV2Icons.refresh,
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          _t(
+                            context,
+                            'خوش آمدید، $displayName',
+                            'Welcome back, $displayName',
                           ),
-                          const SizedBox(width: HopeV2Spacing.xs),
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor:
-                                HopeV2Colors.primary.withValues(alpha: .16),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontSize: 25,
+                                letterSpacing: -.65,
+                              ),
+                        ),
+                        if (settings.city.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              initial,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w900,
+                              settings.city,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  PremiumIconButton(
+                    onPressed: widget.onOpenMenu,
+                    tooltip: _t(context, 'منو', 'App menu'),
+                    icon: HopeV2Icons.menu,
+                  ),
+                  const SizedBox(width: HopeV2Spacing.xs),
+                  PremiumIconButton(
+                    onPressed: _refresh,
+                    tooltip: _t(context, 'بازخوانی', 'Refresh'),
+                    icon: HopeV2Icons.refresh,
+                  ),
+                  const SizedBox(width: HopeV2Spacing.sm),
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          HopeV2Colors.primary.withValues(alpha: .92),
+                          HopeV2Colors.secondary.withValues(alpha: .72),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: .12),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: HopeV2Colors.primary.withValues(alpha: .22),
+                          blurRadius: 18,
+                          offset: const Offset(0, 7),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: HopeV2Spacing.xl),
+            FutureBuilder<List<HopeJob>>(
+              future: _opportunities,
+              builder: (context, pulseSnapshot) {
+                final jobs = pulseSnapshot.data ?? const <HopeJob>[];
+                final matchCount =
+                    jobs.where((j) => j.isRecommended).length;
+                final nearbyCount = jobs
+                    .where((j) => j.distanceKm != null || j.city == settings.city)
+                    .length;
+                final activeCount = auth.isGuest
+                    ? '—'
+                    : _activeJobCount?.toString() ?? '—';
+                final protected = !auth.isGuest && _walletData != null
+                    ? _walletData!.lockedBalance.toString()
+                    : '—';
+
+                final stats = <({String value, String label, Object icon, Color accent})>[
+                  (
+                    value: pulseSnapshot.connectionState == ConnectionState.done
+                        ? '$matchCount'
+                        : '—',
+                    label: _t(context, 'تطابق', 'matches'),
+                    icon: HopeV2Icons.match,
+                    accent: HopeV2Colors.primary,
+                  ),
+                  (
+                    value: pulseSnapshot.connectionState == ConnectionState.done
+                        ? '$nearbyCount'
+                        : '—',
+                    label: _t(context, 'نزدیک', 'near you'),
+                    icon: HopeV2Icons.distance,
+                    accent: HopeV2Colors.secondary,
+                  ),
+                  (
+                    value: activeCount,
+                    label: _t(context, 'فعال', 'active'),
+                    icon: HopeV2Icons.mission,
+                    accent: HopeV2Colors.primary,
+                  ),
+                  (
+                    value: protected,
+                    label: _t(context, 'محافظت‌شده', 'protected'),
+                    icon: HopeV2Icons.protectedFunds,
+                    accent: HopeV2Colors.warningDark,
+                  ),
+                ];
+
+                return PremiumPanel(
+                  padding: const EdgeInsets.all(HopeV2Spacing.lg),
+                  highlight: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: HopeV2Colors.primary.withValues(alpha: .14),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: HopeV2Colors.primary.withValues(alpha: .26),
                               ),
                             ),
+                            child: Center(
+                              child: HopeIcon(
+                                HopeV2Icons.featured,
+                                size: 15,
+                                color: HopeV2Colors.primaryDark,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 9),
+                          Expanded(
+                            child: Text(
+                              _t(context, 'HOPE Pulse', 'HOPE Pulse'),
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          PremiumTag(
+                            icon: HopeV2Icons.insights,
+                            label: _t(context, 'زنده', 'Live'),
+                            color: HopeV2Colors.secondary,
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: HopeV2Spacing.xl),
-                    FutureBuilder<List<HopeJob>>(
-                      future: _opportunities,
-                      builder: (context, pulseSnapshot) {
-                        final jobs = pulseSnapshot.data ?? const <HopeJob>[];
-                        final matchCount = jobs.where((j) => j.isRecommended).length;
-                        final nearbyCount = jobs.where(
-                          (j) => j.distanceKm != null || j.city == settings.city,
-                        ).length;
-                        String money(int value) => value
-                            .toString()
-                            .replaceAllMapped(
-                              RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'),
-                              (_) => ',',
-                            );
-
-                        final metrics = <Widget>[
-                          PremiumStatCard(
-                            value: pulseSnapshot.connectionState ==
-                                    ConnectionState.done
-                                ? '$matchCount'
-                                : '—',
-                            label: _t(context, 'تطابق', 'matches'),
-                            icon: HopeV2Icons.match,
-                            accent: HopeV2Colors.primary,
-                          ),
-                          PremiumStatCard(
-                            value: pulseSnapshot.connectionState ==
-                                    ConnectionState.done
-                                ? '$nearbyCount'
-                                : '—',
-                            label: _t(context, 'نزدیک شما', 'near you'),
-                            icon: HopeV2Icons.distance,
-                            accent: HopeV2Colors.secondary,
-                          ),
-                          PremiumStatCard(
-                            value: auth.isGuest
-                                ? '—'
-                                : _activeJobs == null
-                                    ? '—'
-                                    : _activeJobCount?.toString() ?? '—',
-                            label: _t(context, 'کار فعال', 'active'),
-                            icon: HopeV2Icons.mission,
-                            accent: HopeV2Colors.primary,
-                          ),
-                          if (!auth.isGuest)
-                            PremiumStatCard(
-                              value: _walletData?.lockedBalance == null
-                                  ? '—'
-                                  : money(_walletData!.lockedBalance),
-                              label: _t(context, 'قفل‌شده', 'protected'),
-                              icon: HopeV2Icons.protectedFunds,
-                              accent: HopeV2Colors.warning,
-                            ),
-                        ];
-
-                        return PremiumPanel(
-                          padding: const EdgeInsets.fromLTRB(
-                            HopeV2Spacing.lg,
-                            HopeV2Spacing.md,
-                            HopeV2Spacing.lg,
-                            HopeV2Spacing.lg,
-                          ),
-                          highlight: true,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: HopeV2Spacing.lg),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final columns = constraints.maxWidth < 340 ? 2 : 4;
+                          final gap = HopeV2Spacing.sm;
+                          final width =
+                              (constraints.maxWidth - gap * (columns - 1)) /
+                                  columns;
+                          return Wrap(
+                            spacing: gap,
+                            runSpacing: gap,
                             children: [
-                              Row(
-                                children: [
-                                  HugeIcon(
-                                    icon: HopeV2Icons.featured,
-                                    size: 17,
-                                    color: HopeV2Colors.primaryDark,
-                                    strokeWidth: 1.9,
+                              for (final stat in stats)
+                                SizedBox(
+                                  width: width,
+                                  child: _homePulseStat(
+                                    context,
+                                    value: stat.value,
+                                    label: stat.label,
+                                    icon: stat.icon,
+                                    accent: stat.accent,
                                   ),
-                                  const SizedBox(width: 7),
-                                  Text(
-                                    _t(context, 'HOPE Pulse', 'HOPE Pulse'),
-                                    style: Theme.of(context).textTheme.labelLarge,
-                                  ),
-                                  const Spacer(),
-                                  PremiumTag(
-                                    icon: HopeV2Icons.insights,
-                                    label: _t(
-                                      context,
-                                      'وضعیت زنده',
-                                      'Live status',
-                                    ),
-                                    color: HopeV2Colors.secondary,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: HopeV2Spacing.md),
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final columns = constraints.maxWidth >= 760
-                                      ? metrics.length
-                                      : constraints.maxWidth >= 500
-                                          ? 2
-                                          : 1;
-                                  final gap = HopeV2Spacing.md;
-                                  final width =
-                                      (constraints.maxWidth -
-                                              gap * (columns - 1)) /
-                                          columns;
-                                  return Wrap(
-                                    spacing: gap,
-                                    runSpacing: gap,
-                                    children: [
-                                      for (final metric in metrics)
-                                        SizedBox(
-                                          width: width,
-                                          child: metric,
-                                        ),
-                                    ],
-                                  );
-                                },
-                              ),
+                                ),
                             ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
-            const SizedBox(height: HopeV2Spacing.xl),
-            _quickActions(context, auth),
             const SizedBox(height: HopeV2Spacing.xl),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
@@ -325,9 +365,24 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 if (snapshot.hasError || _error != null) {
                   return HopeAsyncState(
                     kind: HopeStateKind.error,
-                    title: _t(context, 'فرصت‌ها در دسترس نیستند', 'Opportunities are unavailable'),
-                    message: _t(context, 'اتصال را بررسی کنید و دوباره تلاش کنید.', 'Check your connection and try again.'),
-                    action: FilledButton.icon(onPressed: _refresh, icon: HugeIcon(icon: HopeV2Icons.refresh, size: 20), label: Text(_t(context, 'تلاش دوباره', 'Retry'))),
+                    title: _t(
+                      context,
+                      'فرصت‌ها در دسترس نیستند',
+                      'Opportunities are unavailable',
+                    ),
+                    message: _t(
+                      context,
+                      'اتصال را بررسی کنید و دوباره تلاش کنید.',
+                      'Check your connection and try again.',
+                    ),
+                    action: FilledButton.icon(
+                      onPressed: _refresh,
+                      icon: HugeIcon(
+                        icon: HopeV2Icons.refresh,
+                        size: 20,
+                      ),
+                      label: Text(_t(context, 'تلاش دوباره', 'Retry')),
+                    ),
                   );
                 }
                 final jobs = snapshot.data ?? const <HopeJob>[];
@@ -342,6 +397,68 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _homePulseStat(
+    BuildContext context, {
+    required String value,
+    required String label,
+    required Object icon,
+    required Color accent,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 78),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 11,
+      ),
+      decoration: BoxDecoration(
+        color: HopeV2Colors.panelSoftDark,
+        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        border: Border.all(
+          color: accent.withValues(alpha: .14),
+        ),
+      ),
+      child: Row(
+        children: [
+          ExcludeSemantics(
+            child: HopeIcon(
+              icon,
+              size: 17,
+              color: accent,
+              strokeWidth: 1.9,
+            ),
+          ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: HopeV2Type.metric(context).copyWith(
+                    fontSize: value.length > 7 ? 15 : 20,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10,
+                        color: HopeV2Colors.darkMuted,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
