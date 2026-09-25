@@ -1059,20 +1059,6 @@ class _DetailRow extends StatelessWidget {
       );
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.icon, required this.label, required this.onTap});
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => FilledButton.tonalIcon(
-        onPressed: onTap,
-        icon: Icon(icon),
-        label: Text(label),
-      );
-}
-
 class _TransferDialog extends StatefulWidget {
   const _TransferDialog({
     required this.isEnglish,
