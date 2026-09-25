@@ -83,7 +83,7 @@ capture_host_screenshot() {
       sleep "$SCREENSHOT_CAPTURE_RETRY_DELAY_SECONDS"
       continue
     fi
-    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \\
+    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
       adb -s "$serial" exec-out screencap -p > "$temporary" 2>"$evidence_dir/$marker.capture.log" &&
       test -s "$temporary"; then
       if [ "$(od -An -tx1 -N8 "$temporary" | tr -d '[:space:]')" = "89504e470d0a1a0a" ]; then
@@ -127,7 +127,8 @@ run_runtime_test() {
   local monitor_pid=$!
 
   set +e
-  timeout --foreground --signal=TERM --kill-after=30s     "$RUNTIME_TEST_TIMEOUT_SECONDS"s flutter drive "$@" > "$fifo" 2>&1 &
+  timeout --foreground --signal=TERM --kill-after=30s \
+    "$RUNTIME_TEST_TIMEOUT_SECONDS"s flutter drive "$@" > "$fifo" 2>&1 &
   local driver_pid=$!
   wait "$driver_pid"
   local driver_status=$?
