@@ -187,39 +187,51 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                       ],
                     ),
                   ),
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          HopeV2Colors.primary.withValues(alpha: .92),
-                          HopeV2Colors.secondary.withValues(alpha: .72),
-                        ],
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: .12),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: HopeV2Colors.primary.withValues(alpha: .22),
-                          blurRadius: 18,
-                          offset: const Offset(0, 7),
+                  Semantics(
+                    button: true,
+                    label: _t(context, 'منو', 'App menu'),
+                    container: true,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: widget.onOpenMenu,
+                        child: Ink(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                HopeV2Colors.primary.withValues(alpha: .92),
+                                HopeV2Colors.secondary.withValues(alpha: .72),
+                              ],
+                            ),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: .12),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: HopeV2Colors.primary.withValues(alpha: .22),
+                                blurRadius: 18,
+                                offset: const Offset(0, 7),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            initial,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      initial,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                  ),
+                  )),
                 ],
               ),
             ),
