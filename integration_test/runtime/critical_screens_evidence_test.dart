@@ -701,7 +701,7 @@ void main() {
         locale: const Locale('fa'),
         suffix: 'fa-rtl',
       );
-      final en = await _prepare();
+      final en = fa;
       await _captureResponsiveLocale(
         tester,
         runtime: en,
@@ -721,7 +721,7 @@ void main() {
       locale: const Locale('fa'),
       suffix: 'fa-rtl',
     );
-    final en = await _prepare();
+    final en = fa;
     await _captureBaselineLocale(
       tester,
       runtime: en,
