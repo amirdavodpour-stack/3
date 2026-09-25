@@ -212,7 +212,7 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: 128,
+        height: 168,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -263,8 +263,8 @@ class OpportunityCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
-                  height: 1.05,
+                  fontSize: 20,
+                  height: 1.06,
                   fontWeight: FontWeight.w900,
                   shadows: [
                     Shadow(
