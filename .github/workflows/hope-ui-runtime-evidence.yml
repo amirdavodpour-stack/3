@@ -19,8 +19,10 @@ on:
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
-  # Never cancel a useful screenshot run because a rapid follow-up commit arrived.
-  cancel-in-progress: false
+  # Evidence is exact-SHA bound. A newer feature-branch SHA supersedes an
+  # older runtime run, so cancel stale in-progress captures instead of wasting
+  # GitHub Free runner time and blocking the current evidence run.
+  cancel-in-progress: true
 
 permissions:
   contents: read
