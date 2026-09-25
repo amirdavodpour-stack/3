@@ -396,59 +396,51 @@ class OpportunityCard extends StatelessWidget {
           ),
           const SizedBox(height: HopeV2Spacing.md),
         ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            HopeIconTile(
-              job.isMission
-                  ? HopeV2Icons.mission
-                  : HopeV2Icons.job,
-              color: primary,
-              filled: true,
-              size: featured ? 50 : 46,
-            ),
-            const SizedBox(width: HopeV2Spacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: PremiumTag(
-                          label: featured
-                              ? _t(context, 'پیشنهاد ویژه', 'Best match')
-                              : (job.isMission
-                                  ? copy.copy_mission_fb4c5e1
-                                  : copy.copy_job_ce2feba),
-                          icon: featured
-                              ? HopeV2Icons.featured
-                              : (job.isMission
-                                  ? HopeV2Icons.mission
-                                  : HopeV2Icons.job),
-                          color: featured ? HopeV2Colors.orange : primary,
-                        ),
-                      ),
-                      if (featured && job.recommendationScore != null) ...[
-                        const SizedBox(width: 8),
-                        _MatchBadge(score: job.recommendationScore!),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: HopeV2Spacing.sm),
-                  Text(
-                    title,
-                    maxLines: featured ? 3 : 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: featured
-                        ? HopeV2Type.hero(context)
-                        : Theme.of(context).textTheme.titleLarge,
-                  ),
-                ],
+        if (!featured) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HopeIconTile(
+                job.isMission
+                    ? HopeV2Icons.mission
+                    : HopeV2Icons.job,
+                color: primary,
+                filled: true,
+                size: 46,
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: HopeV2Spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: PremiumTag(
+                            label: job.isMission
+                                ? copy.copy_mission_fb4c5e1
+                                : copy.copy_job_ce2feba,
+                            icon: job.isMission
+                                ? HopeV2Icons.mission
+                                : HopeV2Icons.job,
+                            color: primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: HopeV2Spacing.sm),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: HopeV2Spacing.md),
         Wrap(
           spacing: HopeV2Spacing.sm,
