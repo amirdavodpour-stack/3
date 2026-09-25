@@ -79,7 +79,12 @@ capture_host_screenshot() {
 
   for attempt in $(seq 1 "$SCREENSHOT_CAPTURE_RETRIES"); do
     rm -f "$temporary"
-    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"       adb -s "$serial" exec-out screencap -p > "$temporary" 2>"$evidence_dir/$marker.capture.log" &&
+    if ! assert_hope_focused "screenshot-$marker"; then
+      sleep "$SCREENSHOT_CAPTURE_RETRY_DELAY_SECONDS"
+      continue
+    fi
+    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \\
+      adb -s "$serial" exec-out screencap -p > "$temporary" 2>"$evidence_dir/$marker.capture.log" &&
       test -s "$temporary"; then
       if [ "$(od -An -tx1 -N8 "$temporary" | tr -d '[:space:]')" = "89504e470d0a1a0a" ]; then
         mv "$temporary" "$destination"
