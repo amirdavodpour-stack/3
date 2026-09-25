@@ -548,7 +548,12 @@ Widget _host({
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: AppTheme.light(),
+      // The visual reference and release target are the premium dark system.
+      // Capture it explicitly; relying on device/system theme made runtime evidence
+      // misleadingly certify only the light theme.
+      theme: AppTheme.dark(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.dark,
       home: Directionality(
         textDirection: locale.languageCode == 'en'
             ? TextDirection.ltr
