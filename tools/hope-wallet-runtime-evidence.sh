@@ -12,6 +12,8 @@ ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
+SCREENSHOT_CAPTURE_RETRIES="${HOPE_SCREENSHOT_CAPTURE_RETRIES:-5}"
+SCREENSHOT_CAPTURE_RETRY_DELAY_SECONDS="${HOPE_SCREENSHOT_CAPTURE_RETRY_DELAY_SECONDS:-0.2}"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -62,6 +64,71 @@ assert_hope_focused() {
   fi
   capture_android_diagnostics "$prefix"
   return 1
+}
+
+capture_host_screenshot() {
+  local marker="$1"
+  local serial="${ANDROID_SERIAL:-emulator-${EMULATOR_PORT:-5554}}"
+  local destination="$evidence_dir/$marker.png"
+  local temporary="${destination}.tmp"
+
+  if test -s "$destination"; then
+    return 0
+  fi
+
+  for attempt in $(seq 1 "$SCREENSHOT_CAPTURE_RETRIES"); do
+    rm -f "$temporary"
+    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"       adb -s "$serial" exec-out screencap -p > "$temporary" 2>"$evidence_dir/$marker.capture.log" &&
+      test -s "$temporary"; then
+      if [ "$(od -An -tx1 -N8 "$temporary" | tr -d '[:space:]')" = "89504e470d0a1a0a" ]; then
+        mv "$temporary" "$destination"
+        echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+        return 0
+      fi
+    fi
+    sleep "$SCREENSHOT_CAPTURE_RETRY_DELAY_SECONDS"
+  done
+
+  rm -f "$temporary"
+  echo "HOPE_HOST_CAPTURE_FAILED:baseline:$marker:adb-screencap" >&2
+  return 1
+}
+
+monitor_runtime_markers() {
+  local log_path="$1"
+  tee "$log_path" | while IFS= read -r line; do
+    case "$line" in
+      *"HOPE_SCREENSHOT_READY:"*)
+        local marker="${line##*HOPE_SCREENSHOT_READY:}"
+        if [ -n "$marker" ]; then
+          capture_host_screenshot "$marker" || true
+        fi
+        ;;
+    esac
+  done
+}
+
+run_runtime_test() {
+  local log_path="$1"
+  shift
+
+  local fifo
+  fifo="$(mktemp -u "${runner_temp}/hope-runtime-stream.XXXXXX")"
+  mkfifo "$fifo"
+
+  monitor_runtime_markers "$log_path" < "$fifo" &
+  local monitor_pid=$!
+
+  set +e
+  timeout --foreground --signal=TERM --kill-after=30s     "$RUNTIME_TEST_TIMEOUT_SECONDS"s flutter drive "$@" > "$fifo" 2>&1 &
+  local driver_pid=$!
+  wait "$driver_pid"
+  local driver_status=$?
+  wait "$monitor_pid" || true
+  set -e
+
+  rm -f "$fifo"
+  return "$driver_status"
 }
 
 validate_capture_set() {
@@ -130,7 +197,7 @@ screens=(
 )
 
 set +e
-timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
+run_runtime_test "$log_file"   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
 baseline_status=$?
 set -e
 
@@ -151,7 +218,7 @@ if [ "$baseline_status" -eq 0 ]; then
   : > "$runner_temp/hope-responsive-runtime.log"
 
   set +e
-  timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_RESPONSIVE_ONLY=1 HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     > "$runner_temp/hope-responsive-runtime.log" 2>&1
+  run_runtime_test "$runner_temp/hope-responsive-runtime.log"     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
   responsive_status=$?
   set -e
 
@@ -195,6 +262,8 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "ref": "$GITHUB_REF_NAME",
   "sha": "$GITHUB_SHA",
   "evidence_type": "rendered_android_runtime",
+  "capture_method": "host_adb_exec_out_screencap",
+  "flutter_takeScreenshot_api_used": false,
   "screens": 30,
   "responsive_screens": 12,
   "responsive_viewport": "720x1280",
