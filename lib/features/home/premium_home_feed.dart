@@ -166,8 +166,12 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                         Text(
                           _t(
                             context,
-                            'خوش آمدید، $displayName',
-                            'Welcome back, $displayName',
+                            auth.isGuest
+                                ? 'فرصت‌های مناسب خود را پیدا کنید'
+                                : 'فرصت‌ها و کارهای شما',
+                            auth.isGuest
+                                ? 'Find opportunities that fit you'
+                                : 'Your opportunities and active work',
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -238,6 +242,40 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: HopeV2Spacing.xl),
+            FutureBuilder<List<HopeJob>>(
+              future: _opportunities,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const _PulseSkeleton();
+                }
+                if (snapshot.hasError || _error != null) {
+                  return HopeAsyncState(
+                    kind: HopeStateKind.error,
+                    title: _t(
+                      context,
+                      'فرصت‌ها در دسترس نیستند',
+                      'Opportunities are unavailable',
+                    ),
+                    message: _t(
+                      context,
+                      'اتصال را بررسی کنید و دوباره تلاش کنید.',
+                      'Check your connection and try again.',
+                    ),
+                    action: FilledButton.icon(
+                      onPressed: _refresh,
+                      icon: HugeIcon(
+                        icon: HopeV2Icons.refresh,
+                        size: 20,
+                      ),
+                      label: Text(_t(context, 'تلاش دوباره', 'Retry')),
+                    ),
+                  );
+                }
+                final jobs = snapshot.data ?? const <HopeJob>[];
+                return _opportunitySections(context, jobs, settings);
+              },
             ),
             const SizedBox(height: HopeV2Spacing.xl),
             FutureBuilder<List<HopeJob>>(
@@ -360,39 +398,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               },
             ),
             const SizedBox(height: HopeV2Spacing.xl),
-            FutureBuilder<List<HopeJob>>(
-              future: _opportunities,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const _PulseSkeleton();
-                }
-                if (snapshot.hasError || _error != null) {
-                  return HopeAsyncState(
-                    kind: HopeStateKind.error,
-                    title: _t(
-                      context,
-                      'فرصت‌ها در دسترس نیستند',
-                      'Opportunities are unavailable',
-                    ),
-                    message: _t(
-                      context,
-                      'اتصال را بررسی کنید و دوباره تلاش کنید.',
-                      'Check your connection and try again.',
-                    ),
-                    action: FilledButton.icon(
-                      onPressed: _refresh,
-                      icon: HugeIcon(
-                        icon: HopeV2Icons.refresh,
-                        size: 20,
-                      ),
-                      label: Text(_t(context, 'تلاش دوباره', 'Retry')),
-                    ),
-                  );
-                }
-                final jobs = snapshot.data ?? const <HopeJob>[];
-                return _opportunitySections(context, jobs, settings);
-              },
-            ),
             if (!auth.isGuest) ...[
               const SizedBox(height: HopeV2Spacing.section),
               _activeWork(context),
