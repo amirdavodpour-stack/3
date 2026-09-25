@@ -5,7 +5,7 @@ evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
 runner_temp="${RUNNER_TEMP:-/tmp}"
 log_file="$runner_temp/hope-critical-screens-runtime.log"
 mkdir -p "$evidence_dir"
-rm -f "$log_file"
+rm -f "$log_file" "$runner_temp/hope-critical-screens-runtime-fa.log" "$runner_temp/hope-critical-screens-runtime-en.log"
 : > "$log_file"
 
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
@@ -129,14 +129,46 @@ screens=(
   "password-reset-en-ltr"
 )
 
-set +e
-timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
-baseline_status=$?
-set -e
+run_baseline_locale() {
+  local locale="$1"
+  local suffix="$2"
+  local log_path="$runner_temp/hope-critical-screens-runtime-${suffix}.log"
 
-if [ "$baseline_status" -eq 0 ] &&
-   ! validate_capture_set "baseline" "$log_file" "${screens[@]}"; then
-  baseline_status=1
+  set +e
+  timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env \
+    HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
+    flutter drive --no-pub --no-dds \
+      --driver=test_driver/hope_runtime_screenshot_driver.dart \
+      --target=integration_test/runtime/critical_screens_evidence_test.dart \
+      --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+      --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
+      --dart-define=HOPE_CAPTURE_LOCALE="$locale" \
+      > "$log_path" 2>&1
+  local status=$?
+  set -e
+
+  if [ "$status" -eq 0 ]; then
+    if [ "$suffix" = "fa" ]; then
+      validate_capture_set "baseline-fa" "$log_path" "${screens[@]:0:15}" || status=$?
+    else
+      validate_capture_set "baseline-en" "$log_path" "${screens[@]:15:15}" || status=$?
+    fi
+  fi
+  return "$status"
+}
+
+run_baseline_locale "fa" "fa"
+baseline_fa_status=$?
+run_baseline_locale "en" "en"
+baseline_en_status=$?
+cat "$runner_temp/hope-critical-screens-runtime-fa.log" "$runner_temp/hope-critical-screens-runtime-en.log" > "$log_file" 2>/dev/null || true
+
+baseline_status=0
+if [ "$baseline_fa_status" -ne 0 ]; then
+  baseline_status="$baseline_fa_status"
+fi
+if [ "$baseline_en_status" -ne 0 ] && [ "$baseline_status" -eq 0 ]; then
+  baseline_status="$baseline_en_status"
 fi
 
 if [ "$baseline_status" -ne 0 ]; then
