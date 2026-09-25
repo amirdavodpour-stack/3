@@ -9,7 +9,6 @@ mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
 
-capture_root="/data/user/0/com.hope.marketplace/files/hope-screen-captures-${GITHUB_RUN_ID}"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 CAPTURE_CHECK_TIMEOUT_SECONDS="${HOPE_CAPTURE_CHECK_TIMEOUT_SECONDS:-2}"
@@ -77,63 +76,36 @@ assert_hope_focused() {
   return 1
 }
 
-capture_screen() {
-  local marker="$1"
-  local output="$2"
-  local prefix="$3"
-  local timeout_seconds="$4"
-  local deadline=$((SECONDS + timeout_seconds))
-  local remote_path="files/hope-screen-captures-${GITHUB_RUN_ID}/$output"
+validate_capture_set() {
+  local set_name="$1"
+  local log_path="$2"
+  shift 2
 
-  while (( SECONDS < deadline )); do
-    if test -f "$active_runtime_log" &&        grep -Fq -- "$marker" "$active_runtime_log"; then
-      echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
-
-      local tmp_output="$evidence_dir/.$output.tmp"
-      local read_succeeded=false
-      local screenshot_magic=""
-      for attempt in 1 2 3 4 5 6 7 8 9 10; do
-        rm -f -- "$tmp_output"
-        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace test -s "$remote_path" >/dev/null 2>&1; then
-          timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out run-as com.hope.marketplace cat "$remote_path" > "$tmp_output" 2>/dev/null || true
-        fi
-        if test -s "$tmp_output"; then
-          screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
-          if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
-            read_succeeded=true
-            break
-          fi
-        fi
-        sleep 1
-      done
-
-      if [ "$read_succeeded" != true ]; then
-        rm -f -- "$tmp_output"
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
-        return 1
-      fi
-      # Android UI hierarchy is intentionally not collected in the critical screenshot path.
-      # uiautomator/UiAutomation can cause integration-test SemanticsHandle leaks.
-      mv -- "$tmp_output" "$evidence_dir/$output"
-            echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell run-as com.hope.marketplace rm -f "$remote_path"         >/dev/null 2>&1 || true
-      echo "HOPE_HOST_CAPTURE_CLEANED:$marker"
-      return 0
+  local marker
+  local source
+  local screenshot_magic
+  for marker in "$@"; do
+    if ! grep -Fq -- "HOPE_SCREENSHOT_READY:$marker" "$log_path"; then
+      echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:missing-marker" >&2
+      return 1
     fi
 
-    if ! kill -0 "$test_pid" 2>/dev/null; then
-      break
+    source="$evidence_dir/$marker.png"
+    if ! test -s "$source"; then
+      echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:file-missing" >&2
+      return 1
     fi
-    sleep 0.2
+
+    screenshot_magic="$(od -An -tx1 -N8 "$source" | tr -d '[:space:]')"
+    if [ "$screenshot_magic" != "89504e470d0a1a0a" ]; then
+      echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:invalid-png" >&2
+      return 1
+    fi
+
+    echo "HOPE_HOST_SCREENSHOT_VALIDATED:$marker"
   done
 
-  echo "Timed out waiting for Flutter screenshot marker after ${timeout_seconds}s: $marker" >&2
-  if test -f "$active_runtime_log"; then
-    cp -- "$active_runtime_log" "$evidence_dir/runtime-log-$prefix-timeout.txt" || true
-  fi
-  capture_android_diagnostics "$prefix-timeout"
-  return 1
+  return 0
 }
 
 screens=(
@@ -169,21 +141,15 @@ screens=(
   "password-reset-en-ltr"
 )
 
-first_marker_timeout=900
-
-for index in "${!screens[@]}"; do
-  marker="${screens[$index]}"
-  timeout_seconds=120
-  if [ "$index" -eq 0 ]; then
-    timeout_seconds="$first_marker_timeout"
-  fi
-  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" "$timeout_seconds"
-done
-
 set +e
-wait "$test_pid"
+HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
 baseline_status=$?
 set -e
+
+if [ "$baseline_status" -eq 0 ] &&
+   ! validate_capture_set "baseline" "$log_file" "${screens[@]}"; then
+  baseline_status=1
+fi
 
 if [ "$baseline_status" -ne 0 ]; then
   test_status="$baseline_status"
@@ -195,54 +161,38 @@ if [ "$baseline_status" -eq 0 ]; then
   adb shell wm size 720x1280
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
-  active_runtime_log="$runner_temp/hope-responsive-runtime.log"
 
-set +e
-HOPE_RESPONSIVE_ONLY=1 flutter test --no-pub \
-  --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-  --dart-define=HOPE_RESPONSIVE_ONLY=true \
-  --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root" \
-  integration_test/runtime/critical_screens_evidence_test.dart \
-  -r expanded > "$runner_temp/hope-responsive-runtime.log" 2>&1 &
-responsive_test_pid=$!
-test_pid="$responsive_test_pid"
-set -e
+  set +e
+  HOPE_RESPONSIVE_ONLY=1 HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     > "$runner_temp/hope-responsive-runtime.log" 2>&1
+  responsive_status=$?
+  set -e
 
-responsive_screens=(
-  "responsive-720x1280-home-fa-rtl"
-  "responsive-720x1280-jobs-fa-rtl"
-  "responsive-720x1280-job-detail-fa-rtl"
-  "responsive-720x1280-transactions-fa-rtl"
-  "responsive-720x1280-wallet-fa-rtl"
-  "responsive-720x1280-profile-fa-rtl"
-  "responsive-720x1280-home-en-ltr"
-  "responsive-720x1280-jobs-en-ltr"
-  "responsive-720x1280-job-detail-en-ltr"
-  "responsive-720x1280-wallet-en-ltr"
-  "responsive-720x1280-profile-en-ltr"
-  "responsive-720x1280-transactions-en-ltr"
-)
+  responsive_screens=(
+    "responsive-720x1280-home-fa-rtl"
+    "responsive-720x1280-jobs-fa-rtl"
+    "responsive-720x1280-job-detail-fa-rtl"
+    "responsive-720x1280-transactions-fa-rtl"
+    "responsive-720x1280-wallet-fa-rtl"
+    "responsive-720x1280-profile-fa-rtl"
+    "responsive-720x1280-home-en-ltr"
+    "responsive-720x1280-jobs-en-ltr"
+    "responsive-720x1280-job-detail-en-ltr"
+    "responsive-720x1280-wallet-en-ltr"
+    "responsive-720x1280-profile-en-ltr"
+    "responsive-720x1280-transactions-en-ltr"
+  )
 
-for marker in "${responsive_screens[@]}"; do
-  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" 180
-done
+  if [ "$responsive_status" -eq 0 ] &&
+     ! validate_capture_set "responsive" "$runner_temp/hope-responsive-runtime.log" "${responsive_screens[@]}"; then
+    responsive_status=1
+  fi
 
-set +e
-wait "$responsive_test_pid"
-responsive_status=$?
-set -e
+  adb shell wm size reset || true
+  adb shell sleep 1 >/dev/null 2>&1 || true
 
-adb shell wm size reset || true
-adb shell sleep 1 >/dev/null 2>&1 || true
-
-if [ "$baseline_status" -eq 0 ]; then
   if [ "$responsive_status" -ne 0 ] && [ "$test_status" -eq 0 ]; then
     test_status="$responsive_status"
   fi
-else
-  responsive_status=1
-fi
-
 fi
 
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
