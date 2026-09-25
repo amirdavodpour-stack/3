@@ -41,9 +41,12 @@ class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: brightness,
-      primary: dark ? AppColors.primaryDark : AppColors.primary,
-      secondary: AppColors.secondary,
+      primary: AppColors.primary,
+      onPrimary: Colors.white,
+      secondary: dark ? AppColors.secondaryDark : AppColors.secondary,
+      onSecondary: Colors.white,
       surface: dark ? AppColors.darkSurface : AppColors.surface,
+      onSurface: dark ? AppColors.darkText : AppColors.ink,
     );
 
     final base = ThemeData(
