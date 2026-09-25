@@ -609,7 +609,12 @@ Future<void> _captureRuntimeScreen(
       registry: runtime.registry,
     ),
   );
-  await tester.pump(const Duration(milliseconds: 800));
+  // Async repository-backed screens need a real settled frame before capture.
+  // A fixed 800ms delay previously allowed loading placeholders to become
+  // falsely certified as screen evidence.
+  for (var i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 250));
+  }
   await tester.pump();
 
   await binding.takeScreenshot(marker);
