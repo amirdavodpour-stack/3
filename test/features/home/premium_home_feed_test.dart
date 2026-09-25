@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -153,7 +155,7 @@ testWidgets('settings changes reload home opportunities',
 
     final refreshIndicator =
         tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
-    final olderRefresh = refreshIndicator.onRefresh();
+    unawaited(refreshIndicator.onRefresh());
     await tester.pump();
     expect(repository.calls, 2);
 
