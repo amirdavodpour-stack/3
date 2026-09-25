@@ -678,7 +678,6 @@ Future<void> _captureResponsiveLocale(
   };
   for (final entry in pages.entries) {
     await _captureRuntimeScreen(
-      binding,
       tester,
       runtime: runtime,
       locale: locale,
@@ -697,7 +696,6 @@ void main() {
     if (_responsiveOnly) {
       final fa = await _prepare();
       await _captureResponsiveLocale(
-        binding,
         tester,
         runtime: fa,
         locale: const Locale('fa'),
@@ -705,7 +703,6 @@ void main() {
       );
       final en = await _prepare();
       await _captureResponsiveLocale(
-        binding,
         tester,
         runtime: en,
         locale: const Locale('en'),
@@ -719,7 +716,6 @@ void main() {
 
     final fa = await _prepare();
     await _captureBaselineLocale(
-      binding,
       tester,
       runtime: fa,
       locale: const Locale('fa'),
@@ -727,7 +723,6 @@ void main() {
     );
     final en = await _prepare();
     await _captureBaselineLocale(
-      binding,
       tester,
       runtime: en,
       locale: const Locale('en'),
