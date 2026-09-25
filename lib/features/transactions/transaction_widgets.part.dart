@@ -498,9 +498,6 @@ extension on _TransactionPageState {
                         ])),
               ],
               const SizedBox(height: 14),
-              _flow(context, job, status),
-              const SizedBox(height: 14),
-              _actions(context, job, status),
               if (job != null) ...[
                 const SizedBox(height: 14),
                 EvidenceActions(
