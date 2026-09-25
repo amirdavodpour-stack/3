@@ -94,7 +94,23 @@ capture_screen() {
       local screenshot_magic=""
       for attempt in 1 2 3 4 5; do
         rm -f -- "$tmp_output"
-        # UI hierarchy is supplemental evidence. Some Flutter/SurfaceView screens or
+        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb exec-out run-as com.hope.marketplace cat "$remote_path"         > "$tmp_output" 2>/dev/null || true
+        if test -s "$tmp_output"; then
+          screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
+          if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
+            read_succeeded=true
+            break
+          fi
+        fi
+        sleep 0.5
+      done
+
+      if [ "$read_succeeded" != true ]; then
+        rm -f -- "$tmp_output"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
+        return 1
+      fi
+      # UI hierarchy is supplemental evidence. Some Flutter/SurfaceView screens or
       # emulator states can make uiautomator unavailable even while the rendered
       # screenshot is valid. Never reject the screenshot solely for that condition.
       local hierarchy_available=false
@@ -107,9 +123,7 @@ capture_screen() {
       local tmp_hierarchy="$evidence_dir/.ui-hierarchy-$prefix.xml.tmp"
       rm -f -- "$tmp_hierarchy"
       if [ "$hierarchy_available" = true ]; then
-        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out cat /sdcard/hope-ui-hierarchy.xml > "$tmp_hierarchy" 2>/dev/null &&
-          test -s "$tmp_hierarchy" &&
-          grep -Fq '<hierarchy' "$tmp_hierarchy"; then
+        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out cat /sdcard/hope-ui-hierarchy.xml > "$tmp_hierarchy" 2>/dev/null && test -s "$tmp_hierarchy" && grep -Fq '<hierarchy' "$tmp_hierarchy"; then
           if ! grep -Fq 'package="com.hope.marketplace"' "$tmp_hierarchy"; then
             echo "HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:not-hope" >&2
           fi
@@ -125,8 +139,7 @@ capture_screen() {
       fi
 
       mv -- "$tmp_output" "$evidence_dir/$output"
-     
-      echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+            echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
 
       timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell run-as com.hope.marketplace rm -f "$remote_path"         >/dev/null 2>&1 || true
       echo "HOPE_HOST_CAPTURE_CLEANED:$marker"
