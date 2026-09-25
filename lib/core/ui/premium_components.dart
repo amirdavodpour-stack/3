@@ -420,6 +420,7 @@ class PremiumHero extends StatelessWidget {
     required this.message,
     this.action,
     this.icon,
+    this.mediaUrl,
     this.height = 280,
     this.semanticLabel,
   });
@@ -428,6 +429,9 @@ class PremiumHero extends StatelessWidget {
   final String message;
   final Widget? action;
   final Object? icon;
+  /// Optional real product media used as the hero composition.
+  /// When absent, the canonical HOPE gradient remains the fallback.
+  final String? mediaUrl;
   final double height;
   final String? semanticLabel;
 
@@ -455,13 +459,41 @@ class PremiumHero extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: Theme.of(context).brightness == Brightness.dark
-                    ? HopeV2Gradients.heroDark
-                    : HopeV2Gradients.hero,
+            if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
+              Positioned.fill(
+                child: Image.network(
+                  mediaUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              )
+            else
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: Theme.of(context).brightness == Brightness.dark
+                        ? HopeV2Gradients.heroDark
+                        : HopeV2Gradients.hero,
+                  ),
+                ),
               ),
-            ),
+            if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: AlignmentDirectional.topCenter,
+                      end: AlignmentDirectional.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: .10),
+                        Colors.black.withValues(alpha: .18),
+                        Colors.black.withValues(alpha: .72),
+                      ],
+                      stops: const [0, .42, 1],
+                    ),
+                  ),
+                ),
+              ),
             PositionedDirectional(
                 end: compact ? -84 : -48,
                 top: compact ? -76 : -54,
