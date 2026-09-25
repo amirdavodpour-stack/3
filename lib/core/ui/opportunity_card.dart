@@ -112,8 +112,8 @@ class OpportunityCard extends StatelessWidget {
         : (job.monthlySalary ?? job.budgetMin ?? '');
     final title = job.title.trim().isEmpty ? copy.copy_untitled_d89410e : job.title;
     final primary = job.isMission ? HopeV2Colors.primary : secondaryAccent(context);
-    final featuredAccent = HopeV2Colors.orange;
     final reasons = job.recommendationReasons.take(3).toList(growable: false);
+    final mediaUrl = _mediaUrl(job);
 
     return Semantics(
       button: true,
@@ -126,12 +126,18 @@ class OpportunityCard extends StatelessWidget {
                 ? LinearGradient(
                     begin: AlignmentDirectional.topStart,
                     end: AlignmentDirectional.bottomEnd,
-                    colors: [
-                      primary.withValues(alpha: .09),
-                      Theme.of(context).colorScheme.surface,
-                      Theme.of(context).colorScheme.surface,
-                    ],
-                    stops: const [0, .34, 1],
+                    colors: Theme.of(context).brightness == Brightness.dark
+                        ? [
+                            const Color(0xFF171A2B),
+                            const Color(0xFF10131F),
+                            Theme.of(context).colorScheme.surface,
+                          ]
+                        : [
+                            primary.withValues(alpha: .09),
+                            Theme.of(context).colorScheme.surface,
+                            Theme.of(context).colorScheme.surface,
+                          ],
+                    stops: const [0, .44, 1],
                   )
                 : null,
             color: featured ? null : Theme.of(context).colorScheme.surface,
@@ -140,18 +146,195 @@ class OpportunityCard extends StatelessWidget {
             ),
             border: Border.all(
               color: featured
-                  ? primary.withValues(alpha: .24)
+                  ? primary.withValues(
+                      alpha: Theme.of(context).brightness == Brightness.dark
+                          ? .34
+                          : .24,
+                    )
                   : HopeV2Surfaces.border(context),
             ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
-                ? const []
+                ? [
+                    if (featured)
+                      BoxShadow(
+                        color: primary.withValues(alpha: .13),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
+                      ),
+                  ]
                 : HopeV2Shadows.card,
           ),
           padding: EdgeInsets.all(compact ? HopeV2Spacing.md : HopeV2Spacing.lg),
           child: compact
               ? _compact(context, title, city, amount, primary, copy)
-              : _standard(context, title, city, amount, primary, reasons, expanded, featured, copy),
+              : _standard(
+                  context,
+                  title,
+                  city,
+                  amount,
+                  primary,
+                  reasons,
+                  expanded,
+                  featured,
+                  mediaUrl,
+                  copy,
+                ),
         ),
+      ),
+    );
+  }
+
+  String? _mediaUrl(HopeJob job) {
+    const keys = <String>[
+      'imageUrl',
+      'coverUrl',
+      'thumbnailUrl',
+      'image',
+      'coverImage',
+      'mediaUrl',
+    ];
+    for (final key in keys) {
+      final value = job.raw[key];
+      if (value is String && value.trim().isNotEmpty) return value.trim();
+    }
+    return null;
+  }
+
+  Widget _mediaHeader(
+    BuildContext context, {
+    required String title,
+    required Color primary,
+    required String? mediaUrl,
+    required double? score,
+  }) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final percent = score == null ? null : (score <= 1 ? score * 100 : score);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(HopeV2Radii.lg),
+      child: SizedBox(
+        height: 128,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (mediaUrl != null)
+              Image.network(
+                mediaUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
+              )
+            else
+              _fallbackMedia(context, primary),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topCenter,
+                    end: AlignmentDirectional.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: .08),
+                      Colors.black.withValues(alpha: .22),
+                      Colors.black.withValues(alpha: dark ? .64 : .50),
+                    ],
+                    stops: const [0, .48, 1],
+                  ),
+                ),
+              ),
+            ),
+            PositionedDirectional(
+              start: 10,
+              top: 10,
+              child: PremiumTag(
+                icon: HopeV2Icons.featured,
+                label: percent == null
+                    ? _t(context, 'پیشنهاد ویژه', 'Featured')
+                    : percent.round().toString() + '% ' + _t(context, 'تطابق', 'match'),
+                color: HopeV2Colors.secondaryDark,
+                inverse: true,
+              ),
+            ),
+            PositionedDirectional(
+              start: 14,
+              end: 14,
+              bottom: 11,
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black54,
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _fallbackMedia(BuildContext context, Color primary) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [
+            primary.withValues(alpha: .92),
+            HopeV2Colors.secondary.withValues(alpha: .72),
+            const Color(0xFF0B1020),
+          ],
+          stops: const [0, .48, 1],
+        ),
+      ),
+      child: Stack(
+        children: [
+          PositionedDirectional(
+            end: -24,
+            top: -38,
+            child: Container(
+              width: 148,
+              height: 148,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: .10),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            start: -40,
+            bottom: -62,
+            child: Container(
+              width: 172,
+              height: 172,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: .10),
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: Opacity(
+              opacity: .25,
+              child: HopeIcon(
+                HopeV2Icons.featured,
+                color: Colors.white,
+                size: 58,
+                strokeWidth: 1.6,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -197,11 +380,22 @@ class OpportunityCard extends StatelessWidget {
     List<String> reasons,
     bool expanded,
     bool featured,
+    String? mediaUrl,
     HopeCopy copy,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (featured || expanded) ...[
+          _mediaHeader(
+            context,
+            title: title,
+            primary: primary,
+            mediaUrl: mediaUrl,
+            score: job.recommendationScore,
+          ),
+          const SizedBox(height: HopeV2Spacing.md),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
