@@ -8,7 +8,6 @@ import '../../core/transactions/transaction_repository.dart';
 import '../../core/transactions/payment.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/auth/auth_controller.dart';
-import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/copy.dart';
 import '../../core/theme/app_theme.dart';
