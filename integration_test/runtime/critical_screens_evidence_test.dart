@@ -491,13 +491,11 @@ ApplicationRegistry _registry() => ApplicationRegistry(
       savedSearches: _EvidenceSavedSearchRepository(),
     );
 
-final GoogleSignInService _runtimeGoogleSignIn = GoogleSignInService();
-Future<void>? _runtimeFontLoad;
+late GoogleSignInService _runtimeGoogleSignIn;
 
 Future<({AuthController auth, HopeSettingsController settings, ApplicationRegistry registry})>
     _prepare() async {
-  _runtimeFontLoad ??= loadVazirmatnFont();
-  await _runtimeFontLoad;
+  await loadVazirmatnFont();
   final settings = HopeSettingsController();
   await settings.load();
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
@@ -506,6 +504,7 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
     'displayName': 'HOPE Runtime',
     'email': 'runtime@example.invalid',
   });
+  _runtimeGoogleSignIn = GoogleSignInService();
   await _runtimeGoogleSignIn.initialize();
   final requireGoogle =
       Platform.environment['HOPE_REQUIRE_GOOGLE_AUTH'] == '1';
@@ -570,8 +569,6 @@ Widget _host({
 }
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
-const _captureLocale =
-    String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: 'all');
 
 class _EvidenceUploadQueue implements UploadQueue {
   @override
@@ -726,26 +723,22 @@ void main() {
       return;
     }
 
-    if (_captureLocale != 'en') {
-      final fa = await _prepare();
-      await _captureBaselineLocale(
-        binding,
-        tester,
-        runtime: fa,
-        locale: const Locale('fa'),
-        suffix: 'fa-rtl',
-      );
-    }
-    if (_captureLocale != 'fa') {
-      final en = await _prepare();
-      await _captureBaselineLocale(
-        binding,
-        tester,
-        runtime: en,
-        locale: const Locale('en'),
-        suffix: 'en-ltr',
-      );
-    }
+    final fa = await _prepare();
+    await _captureBaselineLocale(
+      binding,
+      tester,
+      runtime: fa,
+      locale: const Locale('fa'),
+      suffix: 'fa-rtl',
+    );
+    final en = await _prepare();
+    await _captureBaselineLocale(
+      binding,
+      tester,
+      runtime: en,
+      locale: const Locale('en'),
+      suffix: 'en-ltr',
+    );
     // Keep the final capture file accessible long enough for the host-side
     // runtime evidence collector to read it before integration-test teardown.
     await Future<void>.delayed(const Duration(seconds: 1));
