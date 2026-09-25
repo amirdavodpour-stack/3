@@ -14,7 +14,7 @@ Future<void> main() async {
   await integrationDriver(
     responseDataCallback: null,
     onScreenshot: (String name, List<int> image, [Map<String, Object?>? args]) async {
-      final file = File('\${directory.path}/\$name.png');
+      final file = File('${directory.path}/$name.png');
       await file.parent.create(recursive: true);
       await file.writeAsBytes(image, flush: true);
       if (!await file.exists() || await file.length() < 16) {
