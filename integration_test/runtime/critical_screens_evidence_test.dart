@@ -206,7 +206,11 @@ class _EvidenceTransactionRepository implements TransactionRepository {
 }
 
 class _EvidenceMarketplaceRepository implements MarketplaceRepository {
-  final _jobs = <HopeJob>[_jobFixture()];
+  final _jobs = <HopeJob>[
+    _jobFixture(),
+    HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-2', 'title': 'توسعه Flutter برای محصول جدید', 'kind': 'JOB', 'recommendationScore': 87, 'recommendationReasons': ['SKILL_MATCH']}),
+    HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-3', 'title': 'طراحی هویت بصری استارتاپ', 'kind': 'MISSION', 'recommendationScore': 76, 'recommendationReasons': ['CATEGORY_MATCH']}),
+  ];
 
   @override
   Future<List<HopeCategory>> listCategories() async => const [
