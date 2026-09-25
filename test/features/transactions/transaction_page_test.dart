@@ -227,6 +227,23 @@ void main() {
     }
   });
 
+  testWidgets('financial summary leads into the payment lifecycle', (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'HELD',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo, ownerId: 'u1');
+
+    expect(find.text('Financial summary'), findsOneWidget);
+    expect(find.text('Payment status'), findsOneWidget);
+    expect(find.text('Payment & job flow'), findsOneWidget);
+    expect(find.text('Start work'), findsOneWidget);
+  });
+
   testWidgets('loading then funded payload shows status, amount and start work',
       (tester) async {
     final repo = _FakeTx()
