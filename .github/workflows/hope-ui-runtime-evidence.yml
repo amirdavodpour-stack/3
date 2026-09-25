@@ -1,21 +1,9 @@
 name: HOPE UI Runtime Evidence
 
 on:
+  # Android rendered-evidence certification is explicit/manual only.
+  # Routine feature-branch pushes must not consume a full emulator run.
   workflow_dispatch:
-  push:
-    branches:
-      - feat/google-sign-in-2026-09-20
-    paths:
-      - lib/**
-      - assets/**
-      - integration_test/**
-      - test/**
-      - test_driver/**
-      - tools/hope-wallet-runtime-evidence.sh
-      - tools/verify-design-quality.sh
-      - pubspec.yaml
-      - pubspec.lock
-      - .github/workflows/hope-ui-runtime-evidence.yml
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
