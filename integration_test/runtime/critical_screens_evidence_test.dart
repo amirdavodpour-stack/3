@@ -558,8 +558,6 @@ Widget _host({
     ),
   );
 }
-const _runtimeScreenshotRoot =
-    String.fromEnvironment('HOPE_SCREENSHOT_OUTPUT_ROOT');
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 
@@ -609,15 +607,7 @@ Future<void> _captureRuntimeScreen(
   await tester.pump(const Duration(milliseconds: 800));
   await tester.pump();
 
-  final image = await binding.takeScreenshot(marker);
-  if (_runtimeScreenshotRoot.isNotEmpty) {
-    final file = File('$_runtimeScreenshotRoot/$marker.png');
-    await file.parent.create(recursive: true);
-    await file.writeAsBytes(image, flush: true);
-    if (!await file.exists() || await file.length() < 16) {
-      throw StateError('Screenshot file was not materialized: ${file.path}');
-    }
-  }
+  await binding.takeScreenshot(marker);
   print('HOPE_SCREENSHOT_READY:$marker');
 }
 
