@@ -204,6 +204,7 @@ class PremiumIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final base = color ?? Theme.of(context).colorScheme.primary;
     final enabled = onPressed != null;
     final foreground = enabled
