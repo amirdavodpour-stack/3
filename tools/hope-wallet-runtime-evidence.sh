@@ -77,63 +77,75 @@ assert_hope_focused() {
   return 1
 }
 
-capture_screen() {
-  local marker="$1"
-  local output="$2"
-  local prefix="$3"
-  local timeout_seconds="$4"
-  local deadline=$((SECONDS + timeout_seconds))
-  local remote_path="files/hope-screen-captures-${GITHUB_RUN_ID}/$output"
+collect_capture_set() {
+  local set_name="$1"
+  local log_path="$2"
+  shift 2
+  local remote_capture_dir="files/hope-screen-captures-${GITHUB_RUN_ID}"
+  local archive="$evidence_dir/.${set_name}-screens.tar"
+  local extract_dir="$evidence_dir/.${set_name}-screens"
+  rm -f -- "$archive"
+  rm -rf -- "$extract_dir"
+  mkdir -p "$extract_dir"
 
-  while (( SECONDS < deadline )); do
-    if test -f "$active_runtime_log" &&        grep -Fq -- "$marker" "$active_runtime_log"; then
-      echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
+  if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace test -d "$remote_capture_dir" >/dev/null 2>&1; then
+    echo "HOPE_HOST_BULK_CAPTURE_FAILED:$set_name:directory" >&2
+    return 1
+  fi
 
-      local tmp_output="$evidence_dir/.$output.tmp"
-      local read_succeeded=false
-      local screenshot_magic=""
-      for attempt in 1 2 3 4 5 6 7 8 9 10; do
-        rm -f -- "$tmp_output"
-        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace test -s "$remote_path" >/dev/null 2>&1; then
-          timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out run-as com.hope.marketplace cat "$remote_path" > "$tmp_output" 2>/dev/null || true
-        fi
-        if test -s "$tmp_output"; then
-          screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
-          if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
-            read_succeeded=true
-            break
-          fi
-        fi
-        sleep 1
-      done
+  if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out run-as com.hope.marketplace sh -c "cd \"$remote_capture_dir\" && tar -cf - ." > "$archive" 2>/dev/null; then
+    rm -f -- "$archive"
+    rm -rf -- "$extract_dir"
+    echo "HOPE_HOST_BULK_CAPTURE_FAILED:$set_name:archive-read" >&2
+    return 1
+  fi
 
-      if [ "$read_succeeded" != true ]; then
-        rm -f -- "$tmp_output"
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
-        return 1
-      fi
-      # Android UI hierarchy is intentionally not collected in the critical screenshot path.
-      # uiautomator/UiAutomation can cause integration-test SemanticsHandle leaks.
-      mv -- "$tmp_output" "$evidence_dir/$output"
-            echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+  if ! test -s "$archive"; then
+    rm -f -- "$archive"
+    rm -rf -- "$extract_dir"
+    echo "HOPE_HOST_BULK_CAPTURE_FAILED:$set_name:empty-archive" >&2
+    return 1
+  fi
 
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell run-as com.hope.marketplace rm -f "$remote_path"         >/dev/null 2>&1 || true
-      echo "HOPE_HOST_CAPTURE_CLEANED:$marker"
-      return 0
+  if ! tar -xf "$archive" -C "$extract_dir" >/dev/null 2>&1; then
+    rm -f -- "$archive"
+    rm -rf -- "$extract_dir"
+    echo "HOPE_HOST_BULK_CAPTURE_FAILED:$set_name:archive-extract" >&2
+    return 1
+  fi
+
+  local marker
+  local source
+  local screenshot_magic
+  for marker in "$@"; do
+    if ! grep -Fq -- "HOPE_SCREENSHOT_READY:$marker" "$log_path"; then
+      rm -f -- "$archive"
+      rm -rf -- "$extract_dir"
+      echo "HOPE_HOST_BULK_CAPTURE_FAILED:$marker:missing-marker" >&2
+      return 1
     fi
-
-    if ! kill -0 "$test_pid" 2>/dev/null; then
-      break
+    source="$extract_dir/$marker.png"
+    if ! test -s "$source"; then
+      rm -f -- "$archive"
+      rm -rf -- "$extract_dir"
+      echo "HOPE_HOST_BULK_CAPTURE_FAILED:$marker:file-read" >&2
+      return 1
     fi
-    sleep 0.2
+    screenshot_magic="$(od -An -tx1 -N8 "$source" | tr -d '[:space:]')"
+    if [ "$screenshot_magic" != "89504e470d0a1a0a" ]; then
+      rm -f -- "$archive"
+      rm -rf -- "$extract_dir"
+      echo "HOPE_HOST_BULK_CAPTURE_FAILED:$marker:invalid-png" >&2
+      return 1
+    fi
+    cp -- "$source" "$evidence_dir/$marker.png"
+    echo "HOPE_HOST_SCREENSHOT_CAPTURED:HOPE_SCREENSHOT_READY:$marker"
   done
 
-  echo "Timed out waiting for Flutter screenshot marker after ${timeout_seconds}s: $marker" >&2
-  if test -f "$active_runtime_log"; then
-    cp -- "$active_runtime_log" "$evidence_dir/runtime-log-$prefix-timeout.txt" || true
-  fi
-  capture_android_diagnostics "$prefix-timeout"
-  return 1
+  rm -f -- "$archive"
+  rm -rf -- "$extract_dir"
+  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace rm -rf "$remote_capture_dir" >/dev/null 2>&1 || true
+  return 0
 }
 
 screens=(
@@ -171,19 +183,16 @@ screens=(
 
 first_marker_timeout=900
 
-for index in "${!screens[@]}"; do
-  marker="${screens[$index]}"
-  timeout_seconds=120
-  if [ "$index" -eq 0 ]; then
-    timeout_seconds="$first_marker_timeout"
-  fi
-  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" "$timeout_seconds"
-done
-
 set +e
 wait "$test_pid"
 baseline_status=$?
 set -e
+
+if ! collect_capture_set "baseline" "$log_file" "${screens[@]}"; then
+  if [ "$baseline_status" -eq 0 ]; then
+    baseline_status=1
+  fi
+fi
 
 if [ "$baseline_status" -ne 0 ]; then
   test_status="$baseline_status"
@@ -223,14 +232,16 @@ responsive_screens=(
   "responsive-720x1280-transactions-en-ltr"
 )
 
-for marker in "${responsive_screens[@]}"; do
-  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" 180
-done
-
 set +e
 wait "$responsive_test_pid"
 responsive_status=$?
 set -e
+
+if ! collect_capture_set "responsive" "$runner_temp/hope-responsive-runtime.log" "${responsive_screens[@]}"; then
+  if [ "$responsive_status" -eq 0 ]; then
+    responsive_status=1
+  fi
+fi
 
 adb shell wm size reset || true
 adb shell sleep 1 >/dev/null 2>&1 || true
