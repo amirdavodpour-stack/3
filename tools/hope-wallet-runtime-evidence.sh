@@ -15,6 +15,11 @@ RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 SCREENSHOT_CAPTURE_RETRIES="${HOPE_SCREENSHOT_CAPTURE_RETRIES:-5}"
 SCREENSHOT_CAPTURE_RETRY_DELAY_SECONDS="${HOPE_SCREENSHOT_CAPTURE_RETRY_DELAY_SECONDS:-0.2}"
 
+# The host-side driver is a separate Dart process from the app. Pass the
+# screenshot destination through its process environment; --dart-define is
+# consumed by the app build and is not sufficient for driver Platform.environment.
+export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
+
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
 
