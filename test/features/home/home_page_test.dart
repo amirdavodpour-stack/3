@@ -11,7 +11,6 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/features/home/home_page.dart';
-import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/branding/widgets/hope_logo.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -90,12 +89,10 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
-    expect(find.byType(PremiumHeader), findsOneWidget);
-    expect(find.byType(PremiumStatCard), findsWidgets);
-    await tester.scrollUntilVisible(find.text('دسترسی سریع'), 250, scrollable: find.byType(Scrollable).first);
-    expect(find.text('دسترسی سریع'), findsOneWidget);
-    expect(find.text('کاوش فرصت‌ها'), findsOneWidget);
+    expect(find.text('HOPE Pulse'), findsOneWidget);
+    expect(find.bySemanticsLabel('منو'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsOneWidget);
   });
 
   testWidgets(
