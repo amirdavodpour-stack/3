@@ -404,7 +404,7 @@ void main() {
         statCards.map((card) => '${card.label}=${card.value}').toList(),
         contains('برداشت‌های در جریان=1'),
       );
-      expect(find.text('موجودی قابل‌استفاده'), findsWidgets);
+      expect(find.text('موجودی قابل استفاده'), findsWidgets);
       expect(find.text('قفل‌شده'), findsWidgets);
       expect(find.text('برداشت‌های در جریان'), findsOneWidget);
     },
