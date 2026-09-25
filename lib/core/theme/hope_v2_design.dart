@@ -215,22 +215,21 @@ class HopeV2Surfaces {
 
   static Gradient pageHalo(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    // Keep the page atmosphere quiet. A broad, high-opacity radial field
-    // produces visible contour rings on Android rasterization and competes
-    // with the content; the premium reference uses controlled ambient glow.
-    return RadialGradient(
-      center: AlignmentDirectional.topEnd,
-      radius: 1.35,
+    // Avoid visible radial contour rings on Android. The reference uses
+    // a nearly-black canvas with only a controlled atmospheric tint.
+    return LinearGradient(
+      begin: AlignmentDirectional.topEnd,
+      end: AlignmentDirectional.bottomStart,
       colors: [
         dark
-            ? HopeV2Colors.primary.withValues(alpha: .07)
+            ? HopeV2Colors.primary.withValues(alpha: .035)
             : HopeV2Colors.warmHalo.withValues(alpha: .045),
         dark
-            ? HopeV2Colors.secondary.withValues(alpha: .018)
+            ? HopeV2Colors.secondary.withValues(alpha: .012)
             : HopeV2Colors.warmHalo.withValues(alpha: .015),
         Colors.transparent,
       ],
-      stops: const [0.0, 0.42, 1.0],
+      stops: const [0.0, 0.34, 1.0],
     );
   }
 
