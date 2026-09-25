@@ -400,14 +400,35 @@ class OpportunityCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              HopeIconTile(
-                job.isMission
-                    ? HopeV2Icons.mission
-                    : HopeV2Icons.job,
-                color: primary,
-                filled: true,
-                size: 46,
-              ),
+              if (mediaUrl != null && mediaUrl.trim().isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                  child: SizedBox(
+                    width: 58,
+                    height: 58,
+                    child: Image.network(
+                      mediaUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => HopeIconTile(
+                        job.isMission
+                            ? HopeV2Icons.mission
+                            : HopeV2Icons.job,
+                        color: primary,
+                        filled: true,
+                        size: 46,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                HopeIconTile(
+                  job.isMission
+                      ? HopeV2Icons.mission
+                      : HopeV2Icons.job,
+                  color: primary,
+                  filled: true,
+                  size: 46,
+                ),
               const SizedBox(width: HopeV2Spacing.md),
               Expanded(
                 child: Column(
