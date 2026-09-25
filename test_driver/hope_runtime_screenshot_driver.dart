@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:integration_test/integration_test_driver_extended.dart';
 
 Future<void> main() async {
-  final root = Platform.environment['HOPE_SCREENSHOT_OUTPUT_ROOT'];
-  if (root == null || root.isEmpty) {
+  const root = String.fromEnvironment('HOPE_SCREENSHOT_OUTPUT_ROOT');
+  if (root.isEmpty) {
     throw StateError('HOPE_SCREENSHOT_OUTPUT_ROOT is required.');
   }
 
