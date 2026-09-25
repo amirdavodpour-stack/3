@@ -92,14 +92,11 @@ capture_screen() {
       local tmp_output="$evidence_dir/.$output.tmp"
       local read_succeeded=false
       local screenshot_magic=""
-      # The Flutter test emits the marker before the host-side adb filesystem
-      # becomes immediately readable on every emulator/runner combination.
-      # Poll the capture itself to avoid racing a separate existence check.
-      for attempt in $(seq 1 60); do
+      for attempt in 1 2 3 4 5 6 7 8 9 10; do
         rm -f -- "$tmp_output"
-        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-          adb exec-out run-as com.hope.marketplace cat "$remote_path" \
-          > "$tmp_output" 2>/dev/null || true
+        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace test -s "$remote_path" >/dev/null 2>&1; then
+          timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out run-as com.hope.marketplace cat "$remote_path" > "$tmp_output" 2>/dev/null || true
+        fi
         if test -s "$tmp_output"; then
           screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
           if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
