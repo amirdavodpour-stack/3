@@ -42,17 +42,41 @@ class _JobsFilterHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: PremiumHeader(
-                eyebrow: HopeCopy.of(context).copy_explore_115e9fd,
-                title: HopeCopy.of(context).copy_find_the_right_opportunity,
-                subtitle: HopeCopy.of(context)
-                    .copy_see_missions_and_jobs_together_then_narrow_7e573a3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    HopeCopy.of(context).copy_explore_115e9fd.toUpperCase(),
+                    style: HopeV2Type.eyebrow(context).copyWith(
+                      color: HopeV2Colors.secondaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    HopeCopy.of(context).copy_find_the_right_opportunity,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontSize: 26,
+                          letterSpacing: -.65,
+                          height: 1.08,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    HopeCopy.of(context)
+                        .copy_see_missions_and_jobs_together_then_narrow_7e573a3,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: HopeV2Spacing.md),
+            const SizedBox(width: HopeV2Spacing.sm),
             PremiumTag(
               icon: HopeV2Icons.workshop,
               label: '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
