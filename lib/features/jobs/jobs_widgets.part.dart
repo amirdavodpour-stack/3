@@ -77,7 +77,17 @@ class _JobsResultsSliver extends StatelessWidget {
 
             if (columns == 1) {
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  PremiumSectionHeader(
+                    title: _t(context, 'پیشنهاد منتخب', 'Featured opportunity'),
+                    subtitle: _t(
+                      context,
+                      'اولویت با فرصتی است که بیشترین سیگنال تطابق را دارد.',
+                      'Lead with the opportunity carrying the strongest match signal.',
+                    ),
+                  ),
+                  const SizedBox(height: HopeV2Spacing.md),
                   AnimatedEntrance(
                     child: OpportunityCard(
                       job: featuredJob,
