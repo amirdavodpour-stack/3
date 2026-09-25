@@ -47,6 +47,24 @@ class _JobDetailPageState extends State<JobDetailPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  String? _mediaUrl() {
+    const keys = <String>[
+      'imageUrl',
+      'coverUrl',
+      'thumbnailUrl',
+      'image',
+      'coverImage',
+      'mediaUrl',
+    ];
+    for (final key in keys) {
+      final value = widget.job.raw[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
   String _candidateStatusLabel(String status) => switch (status.toUpperCase()) {
         'FORWARDED' => _t('ارسال‌شده', 'Forwarded'),
         'INTERVIEW' => _t('مصاحبه', 'Interview'),
@@ -604,6 +622,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       if (j.city != null && j.city!.trim().isNotEmpty) j.city,
                     ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                     icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
+                    mediaUrl: _mediaUrl(),
                     height: 228,
                     semanticLabel: j.title,
                   ),
