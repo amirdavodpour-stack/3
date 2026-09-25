@@ -86,7 +86,8 @@ class _JobsFilterHeader extends StatelessWidget {
         const SizedBox(height: HopeV2Spacing.lg),
         PremiumPanel(
           padding: const EdgeInsets.all(HopeV2Spacing.md),
-          highlight: true,
+          // Discovery controls stay visually subordinate to the opportunity surface.
+          highlight: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
