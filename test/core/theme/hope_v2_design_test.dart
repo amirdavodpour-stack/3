@@ -80,12 +80,12 @@ void main() {
 
   test('HOPE dark surfaces stay cool and avoid the warm-brown palette', () {
     expect(HopeV2Colors.pageDark, HopeV2Colors.darkBackground);
-    expect(HopeV2Colors.darkBackground, const Color(0xFF090811));
-    expect(HopeV2Colors.darkSurface, const Color(0xFF15131D));
-    expect(HopeV2Colors.darkCard, const Color(0xFF1C1925));
-    expect(HopeV2Colors.panelSoftDark, const Color(0xFF121A2A));
-    expect(HopeV2Colors.inputDark, const Color(0xFF12111A));
-    expect(HopeV2Colors.navigationIndicatorDark, const Color(0x3D8B7CFF));
+    expect(HopeV2Colors.darkBackground, const Color(0xFF070A12));
+    expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
+    expect(HopeV2Colors.darkCard, const Color(0xFF111827));
+    expect(HopeV2Colors.panelSoftDark, const Color(0xFF121726));
+    expect(HopeV2Colors.inputDark, const Color(0xFF0D1320));
+    expect(HopeV2Colors.navigationIndicatorDark, const Color(0x3A6366F1));
   });
 
   test('HOPE action icon vocabulary is backed by Hugeicons data', () {
