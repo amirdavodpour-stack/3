@@ -492,10 +492,12 @@ ApplicationRegistry _registry() => ApplicationRegistry(
     );
 
 final GoogleSignInService _runtimeGoogleSignIn = GoogleSignInService();
+Future<void>? _runtimeFontLoad;
 
 Future<({AuthController auth, HopeSettingsController settings, ApplicationRegistry registry})>
     _prepare() async {
-  await loadVazirmatnFont();
+  _runtimeFontLoad ??= loadVazirmatnFont();
+  await _runtimeFontLoad;
   final settings = HopeSettingsController();
   await settings.load();
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
