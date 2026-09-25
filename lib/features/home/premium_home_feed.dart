@@ -220,9 +220,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                               ),
                             ],
                           ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            initial,
+                          child: Center(
+                            child: Text(
+                              initial,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
