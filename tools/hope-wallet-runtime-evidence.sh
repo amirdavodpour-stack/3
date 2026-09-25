@@ -90,13 +90,14 @@ capture_host_screenshot() {
   done
 
   rm -f "$temporary"
-  echo "HOPE_HOST_CAPTURE_FAILED:baseline:$marker:adb-screencap" >&2
+  echo "HOPE_HOST_CAPTURE_FAILED:runtime:$marker:adb-screencap" >&2
   return 1
 }
 
 monitor_runtime_markers() {
   local log_path="$1"
   tee "$log_path" | while IFS= read -r line; do
+    printf "%s\n" "$line"
     case "$line" in
       *"HOPE_SCREENSHOT_READY:"*)
         local marker="${line##*HOPE_SCREENSHOT_READY:}"
