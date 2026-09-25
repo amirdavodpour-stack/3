@@ -1,0 +1,94 @@
+Install: pkg install <package>
+ - Upgrade: pkg upgrade
+~/hope-release-v4.0.20/extracted $ set -e
+
+cd "$HOME/hope-release-v4.0.20/extracted"
+
+BRANCH="feat/google-sign-in-2026-09-20"
+WORKFLOW=".github/workflows/hope-ui-runtime-evidence.yml"
+REPO="amirdavodpour-stack/3"
+
+echo "=== Remote branch ==="
+SHA="$(git rev-parse "origin/$BRANCH")"
+echo "Branch: $BRANCH"
+echo "SHA:    $SHA"
+
+echo
+echo "=== Workflow check ==="
+git cat-file -e "origin/$BRANCH:$WORKFLOW"
+git show "origin/$BRANCH:$WORKFLOW" | grep -nE 'name:|workflow_dispatch:|hope-wallet-runtime-evidence.sh' || true
+
+echo
+echo "=== GitHub token ==="
+echo "یک GitHub token با دسترسی Actions: Read and write وارد کن."
+read -r -s -p "Token: " GH_TOKEN
+echo
+echo
+
+HTTP_CODE="$(
+  curl -sS \
+    -o /tmp/hope-workflow-dispatch-response.txt \
+    -w "%{http_code}" \
+    -X POST \
+    -H "Accept: application/vnd.github+json" \
+    -H "Authorization: Bearer $GH_TOKEN" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$REPO/actions/workflows/$(basename "$WORKFLOW")/dispatches" \
+    -d "{\"ref\":\"$BRANCH\"}"
+)"
+
+unset GH_TOKEN
+
+echo "HTTP: $HTTP_CODE"
+
+if [ "$HTTP_CODE" = "204" ]; then
+  echo
+  echo "✅ workflow_dispatch با موفقیت ارسال شد."
+  echo "Branch: $BRANCH"
+  echo "Target SHA: $SHA"
+else
+  echo
+  echo "❌ اجرای Workflow ارسال نشد."
+  echo "Response:"
+  cat /tmp/hope-workflow-dispatch-response.txt
+  exit 1
+fi
+
+echo
+echo "=== New runs ==="
+sleep 5
+
+curl -sS \
+  -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/$REPO/actions/workflows/$(basename "$WORKFLOW")/runs?branch=$BRANCH&event=workflow_dispatch&per_page=5" \
+  | grep -E '"id":|"run_number":|"status":|"conclusion":|"head_sha":' \
+  | head -30
+=== Remote branch ===
+Branch: feat/google-sign-in-2026-09-20
+SHA:    0873b5c89f807d6ab6a2169eac615a49fb22f79a
+
+=== Workflow check ===
+1:name: HOPE UI Runtime Evidence
+6:  workflow_dispatch:
+20:    name: Critical screens Android runtime evidence
+24:      - name: Checkout
+27:      - name: Checkout pinned Android Emulator Runner
+35:      - name: Install pinned Android Emulator Runner dependencies
+39:      - name: Verify pinned Android Emulator Runner
+45:      - name: Setup Flutter 3.47.2
+52:      - name: Setup Gradle caching
+57:      - name: Cache Android SDK components
+65:      - name: Cache Android AVD
+73:      - name: Verify HOPE design/runtime guardrails
+76:      - name: Prepare Flutter dependencies
+79:      - name: Validate runtime evidence script syntax
+80:        run: bash -n tools/hope-wallet-runtime-evidence.sh
+82:      - name: Enable KVM for Android emulator
+95:      - name: Android runtime evidence
+112:          script: bash tools/hope-wallet-runtime-evidence.sh
+114:      - name: Upload critical-screen runtime evidence
+118:          name: hope-critical-screens-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
+
+=== GitHub token ===
+یک GitHub token با دسترسی Actions: Read and write وارد کن.
+Token:
