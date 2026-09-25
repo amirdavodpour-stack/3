@@ -293,7 +293,13 @@ class PremiumHeader extends StatelessWidget {
                 title,
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
-                style: HopeV2Type.display(context),
+                style: HopeV2Type.display(context).copyWith(
+                  // Mobile page titles stay editorial rather than consuming
+                  // the entire first viewport.
+                  fontSize: compact ? 28 : 34,
+                  height: compact ? 1.08 : 1.06,
+                  letterSpacing: compact ? -.65 : -.85,
+                ),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: HopeV2Spacing.sm),
