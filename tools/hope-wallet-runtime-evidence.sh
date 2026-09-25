@@ -11,6 +11,7 @@ rm -f "$log_file"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"
+RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -129,7 +130,7 @@ screens=(
 )
 
 set +e
-HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
+timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
 baseline_status=$?
 set -e
 
@@ -150,7 +151,7 @@ if [ "$baseline_status" -eq 0 ]; then
   : > "$runner_temp/hope-responsive-runtime.log"
 
   set +e
-  HOPE_RESPONSIVE_ONLY=1 HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     > "$runner_temp/hope-responsive-runtime.log" 2>&1
+  timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_RESPONSIVE_ONLY=1 HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     > "$runner_temp/hope-responsive-runtime.log" 2>&1
   responsive_status=$?
   set -e
 
@@ -198,7 +199,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "responsive_screens": 12,
   "responsive_viewport": "720x1280",
   "locales": ["fa-RTL", "en-LTR"],
-  "theme": "light",
+  "theme": "dark",
   "interactive_target_contract": "48px",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
