@@ -223,9 +223,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                           child: Center(
                             child: Text(
                               initial,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
                         ),
