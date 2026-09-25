@@ -187,18 +187,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                       ],
                     ),
                   ),
-                  PremiumIconButton(
-                    onPressed: widget.onOpenMenu,
-                    tooltip: _t(context, 'منو', 'App menu'),
-                    icon: HopeV2Icons.menu,
-                  ),
-                  const SizedBox(width: HopeV2Spacing.xs),
-                  PremiumIconButton(
-                    onPressed: _refresh,
-                    tooltip: _t(context, 'بازخوانی', 'Refresh'),
-                    icon: HopeV2Icons.refresh,
-                  ),
-                  const SizedBox(width: HopeV2Spacing.sm),
                   Container(
                     width: 42,
                     height: 42,
@@ -421,44 +409,67 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           color: accent.withValues(alpha: .14),
         ),
       ),
-      child: Row(
-        children: [
-          ExcludeSemantics(
-            child: HopeIcon(
-              icon,
-              size: 17,
-              color: accent,
-              strokeWidth: 1.9,
-            ),
-          ),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 112;
+          final metric = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: HopeV2Type.metric(context).copyWith(
+                  fontSize: compact ? 17 : (value.length > 7 ? 15 : 20),
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 10,
+                      color: HopeV2Colors.darkMuted,
+                    ),
+              ),
+            ],
+          );
+          if (compact) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: HopeV2Type.metric(context).copyWith(
-                    fontSize: value.length > 7 ? 15 : 20,
-                    color: Colors.white,
+                ExcludeSemantics(
+                  child: HopeIcon(
+                    icon,
+                    size: 16,
+                    color: accent,
+                    strokeWidth: 1.9,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: HopeV2Colors.darkMuted,
-                      ),
-                ),
+                const SizedBox(height: 5),
+                metric,
               ],
-            ),
-          ),
-        ],
+            );
+          }
+          return Row(
+            children: [
+              ExcludeSemantics(
+                child: HopeIcon(
+                  icon,
+                  size: 17,
+                  color: accent,
+                  strokeWidth: 1.9,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Expanded(child: metric),
+            ],
+          );
+        },
       ),
     );
   }
