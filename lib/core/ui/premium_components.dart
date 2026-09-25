@@ -464,7 +464,13 @@ class PremiumHero extends StatelessWidget {
                 child: Image.network(
                   mediaUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  errorBuilder: (_, __, ___) => DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: Theme.of(context).brightness == Brightness.dark
+                          ? HopeV2Gradients.heroDark
+                          : HopeV2Gradients.hero,
+                    ),
+                  ),
                 ),
               )
             else
