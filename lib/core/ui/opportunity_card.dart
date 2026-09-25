@@ -14,50 +14,6 @@ import 'premium_components.dart';
 // Core marketplace card pattern for the HOPE visual system.
 enum OpportunityCardVariant { compact, standard, featured, expanded }
 
-class _MatchBadge extends StatelessWidget {
-  const _MatchBadge({required this.score});
-  final double score;
-
-  @override
-  Widget build(BuildContext context) {
-    final value = (score <= 1 ? score * 100 : score).clamp(0, 100);
-    return Container(
-      constraints: const BoxConstraints(minHeight: 32),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: HopeV2Colors.orange.withValues(alpha: .11),
-        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-        border: Border.all(
-          color: HopeV2Colors.orange.withValues(alpha: .28),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const HugeIcon(
-            icon: HopeV2Icons.match,
-            size: 14,
-            color: HopeV2Colors.orange,
-            strokeWidth: 1.9,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            value.round().toString() + '% ' + _t(context, 'تطابق', 'match'),
-            style: const TextStyle(
-              color: HopeV2Colors.orange,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _t(BuildContext context, String fa, String en) =>
-      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
-}
-
 class OpportunityCard extends StatelessWidget {
   const OpportunityCard({
     super.key,
