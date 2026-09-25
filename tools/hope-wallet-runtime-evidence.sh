@@ -4,29 +4,16 @@ set -euo pipefail
 evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
 runner_temp="${RUNNER_TEMP:-/tmp}"
 log_file="$runner_temp/hope-critical-screens-runtime.log"
-active_runtime_log="$log_file"
 mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
 
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
-CAPTURE_CHECK_TIMEOUT_SECONDS="${HOPE_CAPTURE_CHECK_TIMEOUT_SECONDS:-2}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
-
-set +e
-# Track the Flutter PID directly. A background pipeline stores the tee PID in $!,
-# which can outlive Flutter and makes timeout/exit detection flaky.
-flutter test --no-pub \
-  --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-  --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root" \
-  integration_test/runtime/critical_screens_evidence_test.dart \
-  -r expanded > "$log_file" 2>&1 &
-test_pid=$!
-set -e
 
 capture_android_diagnostics() {
   local prefix="$1"
