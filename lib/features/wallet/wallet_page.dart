@@ -832,32 +832,32 @@ class _WalletPageState extends State<WalletPage> {
             const SizedBox(height: 14),
             LayoutBuilder(
               builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 1000 ? 3 : constraints.maxWidth >= 650 ? 2 : 1;
+                final columns = constraints.maxWidth >= 650 ? 2 : 1;
                 final tiles = [
-                  PremiumStatCard(
-                    label: _t('موجودی قابل‌استفاده', 'Available balance'),
-                    value: _money(wallet.availableBalance),
-                    icon: HopeV2Icons.wallet,
-                    caption: _t('قابل خرج یا انتقال', 'Ready to spend or transfer'),
-                  ),
                   PremiumStatCard(
                     label: _t('قفل‌شده', 'Locked balance'),
                     value: _money(wallet.lockedBalance),
                     icon: HopeV2Icons.secure,
                     accent: secondaryAccent(context),
-                    caption: _t('تا آزادسازی قابل استفاده نیست', 'Unavailable until released'),
+                    caption: _t(
+                      'تا آزادسازی قابل استفاده نیست',
+                      'Unavailable until released',
+                    ),
                   ),
                   PremiumStatCard(
                     label: _t('برداشت‌های در جریان', 'Pending payouts'),
                     value: '${_pendingPayoutCount}',
                     icon: HopeV2Icons.pending,
                     accent: AppColors.warning,
-                    caption: _t('درخواست‌های نیازمند پیگیری', 'Requests awaiting completion'),
+                    caption: _t(
+                      'درخواست‌های نیازمند پیگیری',
+                      'Requests awaiting completion',
+                    ),
                   ),
                 ];
                 return GridView.count(
                   crossAxisCount: columns,
-                  childAspectRatio: columns == 1 ? 3.2 : 1.65,
+                  childAspectRatio: columns == 1 ? 3.2 : 1.9,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                   shrinkWrap: true,
