@@ -288,9 +288,9 @@ class OpportunityCard extends StatelessWidget {
           begin: AlignmentDirectional.topStart,
           end: AlignmentDirectional.bottomEnd,
           colors: [
-            primary.withValues(alpha: .92),
-            HopeV2Colors.secondary.withValues(alpha: .72),
-            const Color(0xFF0B1020),
+            primary.withValues(alpha: .62),
+            const Color(0xFF17203A),
+            const Color(0xFF080D18),
           ],
           stops: const [0, .48, 1],
         ),
