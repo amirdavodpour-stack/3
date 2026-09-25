@@ -597,7 +597,6 @@ typedef _Runtime = ({
 });
 
 Future<void> _captureRuntimeScreen(
-  IntegrationTestWidgetsFlutterBinding binding,
   WidgetTester tester, {
   required _Runtime runtime,
   required Locale locale,
@@ -621,12 +620,11 @@ Future<void> _captureRuntimeScreen(
   }
   await tester.pump();
 
-  await binding.takeScreenshot(marker);
   print('HOPE_SCREENSHOT_READY:$marker');
+  await Future<void>.delayed(const Duration(seconds: 1));
 }
 
 Future<void> _captureBaselineLocale(
-  IntegrationTestWidgetsFlutterBinding binding,
   WidgetTester tester, {
   required _Runtime runtime,
   required Locale locale,
@@ -655,7 +653,6 @@ Future<void> _captureBaselineLocale(
   };
   for (final entry in pages.entries) {
     await _captureRuntimeScreen(
-      binding,
       tester,
       runtime: runtime,
       locale: locale,
@@ -666,7 +663,6 @@ Future<void> _captureBaselineLocale(
 }
 
 Future<void> _captureResponsiveLocale(
-  IntegrationTestWidgetsFlutterBinding binding,
   WidgetTester tester, {
   required _Runtime runtime,
   required Locale locale,
@@ -693,12 +689,10 @@ Future<void> _captureResponsiveLocale(
 }
 
 void main() {
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
-    await binding.convertFlutterSurfaceToImage();
-    await tester.pump();
 
     if (_responsiveOnly) {
       final fa = await _prepare();
