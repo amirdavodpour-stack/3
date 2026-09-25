@@ -713,6 +713,9 @@ void main() {
         locale: const Locale('en'),
         suffix: 'en-ltr',
       );
+      // Keep the final capture file accessible long enough for the host-side
+      // runtime evidence collector to read it before integration-test teardown.
+      await Future<void>.delayed(const Duration(seconds: 1));
       return;
     }
 
@@ -732,5 +735,8 @@ void main() {
       locale: const Locale('en'),
       suffix: 'en-ltr',
     );
+    // Keep the final capture file accessible long enough for the host-side
+    // runtime evidence collector to read it before integration-test teardown.
+    await Future<void>.delayed(const Duration(seconds: 1));
   });
 }
