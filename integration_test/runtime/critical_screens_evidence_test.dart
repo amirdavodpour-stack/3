@@ -702,11 +702,16 @@ Future<void> _captureRuntimeScreen(
     ),
   );
   await tester.pump();
+  await tester.binding.endOfFrame;
 
   await tester.pump(const Duration(milliseconds: 1200));
-  await tester.pump();
+  await tester.binding.endOfFrame;
   await _waitForRuntimeRenderToSettle(tester);
   await tester.pump();
+  await tester.binding.endOfFrame;
+  await Future<void>.delayed(const Duration(milliseconds: 250));
+  await tester.pump();
+  await tester.binding.endOfFrame;
 
   await _captureRuntimeScreenshot(tester, marker);
 }
