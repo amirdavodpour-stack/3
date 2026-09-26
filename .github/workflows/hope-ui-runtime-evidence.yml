@@ -4,6 +4,14 @@ on:
   # Android rendered-evidence certification is explicit/manual only.
   # Routine feature-branch pushes must not consume a full emulator run.
   workflow_dispatch:
+    inputs:
+      capture_locale:
+        description: "Locale session to certify"
+        required: true
+        type: choice
+        options:
+          - fa
+          - en
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
@@ -97,6 +105,7 @@ jobs:
         env:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
+          HOPE_CAPTURE_LOCALE: ${{ inputs.capture_locale }}
         with:
           api-level: 35
           arch: x86_64
@@ -118,6 +127,5 @@ jobs:
           name: hope-critical-screens-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
           path: |
             docs/audit/evidence/android-runtime/**
-            ${{ runner.temp }}/hope-critical-screens-runtime.log
-            ${{ runner.temp }}/hope-responsive-runtime.log
+            ${{ runner.temp }}/hope-*-runtime.log
           if-no-files-found: warn
