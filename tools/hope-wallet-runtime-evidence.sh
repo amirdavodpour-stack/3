@@ -220,25 +220,30 @@ capture_host_screenshot() {
       fi
       local temp_output="${output}.tmp"
       rm -f "$temp_output"
-      if ! timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-        adb exec-out screencap -p > "$temp_output" 2>"${output}.adb-error"; then
-        rm -f "$temp_output"
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:screencap" >&2
-        return 1
-      fi
-      if test -s "$temp_output"; then
-        local magic
-        magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
-        if [ "$magic" = "89504e470d0a1a0a" ]; then
-          mv "$temp_output" "$output"
-          rm -f "${output}.adb-error"
-          adb exec-out run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
-          echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-          return 0
+      local attempt
+      for attempt in 1 2 3; do
+        if ! timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb get-state >/dev/null 2>&1; then
+          timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s 10s adb reconnect offline >/dev/null 2>&1 || true
+          timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s 15s adb wait-for-device >/dev/null 2>&1 || true
         fi
-      fi
-      rm -f "$temp_output"
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
+        if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+          adb exec-out screencap -p > "$temp_output" 2>"${output}.adb-error"; then
+          if test -s "$temp_output"; then
+            local magic
+            magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
+            if [ "$magic" = "89504e470d0a1a0a" ]; then
+              mv "$temp_output" "$output"
+              rm -f "${output}.adb-error"
+              adb exec-out run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
+              echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+              return 0
+            fi
+          fi
+        fi
+        rm -f "$temp_output"
+        [ "$attempt" -lt 3 ] && sleep 1
+      done
+      echo "HOPE_HOST_CAPTURE_FAILED:$marker:screencap" >&2
       return 1
     fi
     if ! kill -0 "$process_pid" 2>/dev/null; then
