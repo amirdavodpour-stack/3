@@ -210,7 +210,13 @@ capture_host_screenshot() {
   local deadline=$((SECONDS + 180))
 
   while (( SECONDS < deadline )); do
-    if adb exec-out run-as com.hope.marketplace cat "$request" >/dev/null 2>&1; then
+    # Probe file existence with `test`, not `cat`. On the runner this
+    # distinguishes a missing marker from an actual successful command; a
+    # previous probe could incorrectly treat a `cat: ... No such file`
+    # message as readiness and then read the same error as the PNG payload.
+    if adb exec-out run-as com.hope.marketplace test -f "$request" >/dev/null 2>&1 &&
+       adb exec-out run-as com.hope.marketplace test -f "$remote_png" >/dev/null 2>&1; then
+      echo "HOPE_HOST_CAPTURE_READY_PROBE:$marker"
       if ! assert_hope_focused "$marker"; then
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
         return 1
