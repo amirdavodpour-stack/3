@@ -612,23 +612,16 @@ typedef _Runtime = ({
 
 Future<void> _captureRuntimeScreen(
   WidgetTester tester, {
-  required _Runtime runtime,
+  required ValueNotifier<_RuntimeScreen> screen,
   required Locale locale,
   required String marker,
   required Widget child,
 }) async {
-  await tester.pumpWidget(
-    _host(
-      locale: locale,
-      child: child,
-      auth: runtime.auth,
-      settings: runtime.settings,
-      registry: runtime.registry,
-    ),
-  );
-  // Async repository-backed screens need a real settled frame before capture.
-  // A fixed 800ms delay previously allowed loading placeholders to become
-  // falsely certified as screen evidence.
+  screen.value = _RuntimeScreen(locale: locale, child: child);
+  await tester.pump();
+  // Keep the host/provider tree stable across captures; only the active screen
+  // changes. This avoids repeated provider/plugin lifecycle teardown between
+  // the fa-RTL and en-LTR phases.
   for (var i = 0; i < 12; i++) {
     await tester.pump(const Duration(milliseconds: 250));
   }
@@ -640,9 +633,10 @@ Future<void> _captureRuntimeScreen(
 
 Future<void> _captureBaselineLocale(
   WidgetTester tester, {
-  required _Runtime runtime,
+  required ValueNotifier<_RuntimeScreen> screen,
   required Locale locale,
   required String suffix,
+  required _Runtime runtime,
 }) async {
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
@@ -650,7 +644,8 @@ Future<void> _captureBaselineLocale(
     'job-detail': () => JobDetailPage(job: _jobFixture()),
     'applications': () => const MyApplicationsPage(),
     'saved-searches': () => const SavedSearchesPage(),
-    'transactions': () => TransactionsPage(repository: runtime.registry.transactions),
+    'transactions': () =>
+        TransactionsPage(repository: runtime.registry.transactions),
     'transaction-detail': () => TransactionPage(
           repository: runtime.registry.transactions!,
           uploadQueue: _EvidenceUploadQueue(),
@@ -668,7 +663,7 @@ Future<void> _captureBaselineLocale(
   for (final entry in pages.entries) {
     await _captureRuntimeScreen(
       tester,
-      runtime: runtime,
+      screen: screen,
       locale: locale,
       marker: '${entry.key}-$suffix',
       child: entry.value(),
@@ -678,29 +673,30 @@ Future<void> _captureBaselineLocale(
 
 Future<void> _captureResponsiveLocale(
   WidgetTester tester, {
-  required _Runtime runtime,
+  required ValueNotifier<_RuntimeScreen> screen,
   required Locale locale,
   required String suffix,
+  required _Runtime runtime,
 }) async {
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
     'job-detail': () => JobDetailPage(job: _jobFixture()),
-    'transactions': () => TransactionsPage(repository: runtime.registry.transactions),
+    'transactions': () =>
+        TransactionsPage(repository: runtime.registry.transactions),
     'wallet': () => WalletPage(repository: runtime.registry.wallets!),
     'profile': () => const ProfilePage(),
   };
   for (final entry in pages.entries) {
     await _captureRuntimeScreen(
       tester,
-      runtime: runtime,
+      screen: screen,
       locale: locale,
       marker: 'responsive-720x1280-${entry.key}-$suffix',
       child: entry.value(),
     );
   }
 }
-
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
