@@ -61,9 +61,11 @@ class _JobsFilterHeader extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontSize: 28,
-                          letterSpacing: -.75,
-                          height: 1.04,
+                          // Keep discovery heading compact so the first viewport
+                          // prioritizes search and opportunity content.
+                          fontSize: 24,
+                          letterSpacing: -.45,
+                          height: 1.10,
                         ),
                   ),
                   const SizedBox(height: 6),
