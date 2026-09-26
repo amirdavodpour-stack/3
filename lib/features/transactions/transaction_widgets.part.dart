@@ -157,7 +157,7 @@ extension on _TransactionPageState {
                       )
                     else if (completed)
                       PremiumTag(
-                        icon: Icons.check_rounded,
+                        icon: HopeV2Icons.completed,
                         label: _t('انجام شد', 'Done'),
                         color: scheme.primary,
                       ),
@@ -295,9 +295,12 @@ extension on _TransactionPageState {
         appBar: AppBar(
             leading: IconButton(
                 onPressed: () => Navigator.maybePop(context),
-                icon: Icon(Localizations.localeOf(context).languageCode == 'en'
-                    ? Icons.arrow_back_rounded
-                    : Icons.arrow_forward_rounded),
+                icon: HugeIcon(
+                  icon: Localizations.localeOf(context).languageCode == 'en'
+                      ? HopeV2Icons.arrowLeft
+                      : HopeV2Icons.arrowRight,
+                  size: 21,
+                ),
                 tooltip: HopeCopy.of(context).copy_back_6e09f79),
             title: Text(HopeCopy.of(context).copy_transaction_7e0ea3b)),
         body: PremiumPageFrame(
