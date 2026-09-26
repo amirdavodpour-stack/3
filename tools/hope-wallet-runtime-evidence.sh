@@ -85,6 +85,7 @@ capture_screen() {
       fi
 
       if ! grep -Fq 'package="com.hope.marketplace"' "$tmp_hierarchy"; then
+        echo "HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:not-hope" >&2
         rm -f -- "$tmp_output" "$tmp_hierarchy"
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:ui-hierarchy-not-hope" >&2
         return 1
