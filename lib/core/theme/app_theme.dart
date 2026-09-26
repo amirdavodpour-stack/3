@@ -83,7 +83,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         foregroundColor: textColor,
         centerTitle: false,
-        toolbarHeight: 64,
+        toolbarHeight: 58,
         titleSpacing: 16,
         iconTheme: IconThemeData(color: textColor, size: 23),
         titleTextStyle: TextStyle(
@@ -144,7 +144,7 @@ class AppTheme {
         labelStyle: TextStyle(color: mutedColor, fontWeight: FontWeight.w700),
         prefixIconColor: mutedColor,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: HopeV2Spacing.lg, vertical: HopeV2Spacing.lg),
+            const EdgeInsets.symmetric(horizontal: HopeV2Spacing.lg, vertical: 14),
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide.none),
@@ -161,7 +161,7 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(54),
+          minimumSize: const Size.fromHeight(50),
           padding: const EdgeInsets.symmetric(horizontal: HopeV2Spacing.lg),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
@@ -171,7 +171,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size.fromHeight(48),
           side: BorderSide(
               color: dark ? HopeV2Colors.darkBorder : HopeV2Colors.outlinedButtonBorderLight),
           shape:
@@ -197,7 +197,7 @@ class AppTheme {
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w900
                 : FontWeight.w700,
