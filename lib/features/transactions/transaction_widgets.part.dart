@@ -295,8 +295,8 @@ extension on _TransactionPageState {
         appBar: AppBar(
             leading: IconButton(
                 onPressed: () => Navigator.maybePop(context),
-                icon: HugeIcon(
-                  icon: Localizations.localeOf(context).languageCode == 'en'
+                icon: HopeIcon(
+                  Localizations.localeOf(context).languageCode == 'en'
                       ? HopeV2Icons.arrowLeft
                       : HopeV2Icons.arrowRight,
                   size: 21,
@@ -346,7 +346,7 @@ extension on _TransactionPageState {
                                   'پرداخت هنوز ساخته نشده',
                                   'Payment has not been created yet',
                                 )
-                              : _t('شناسه پرداخت: ' + payment!.id, 'Payment ID: ' + payment!.id),
+                              : _t('شناسه پرداخت: ' + (payment?.id ?? ''), 'Payment ID: ' + (payment?.id ?? '')),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall,
