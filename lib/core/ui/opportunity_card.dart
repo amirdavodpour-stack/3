@@ -120,7 +120,7 @@ class OpportunityCard extends StatelessWidget {
                   ]
                 : HopeV2Shadows.card,
           ),
-          padding: EdgeInsets.all(compact ? HopeV2Spacing.md : HopeV2Spacing.lg),
+          padding: EdgeInsets.all(compact || featured ? HopeV2Spacing.md : HopeV2Spacing.lg),
           child: compact
               ? _compact(context, title, city, amount, primary, copy)
               : _standard(
@@ -168,7 +168,7 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: featured ? 182 : 168,
+        height: featured ? 136 : 168,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
