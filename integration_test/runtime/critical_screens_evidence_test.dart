@@ -628,6 +628,53 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
+Future<void> _captureRuntimeScreenshot(
+  WidgetTester tester,
+  String marker,
+) async {
+  final binding = IntegrationTestWidgetsFlutterBinding.instance;
+
+  if (_adbScreenshotCapture) {
+    if (_screenshotSyncRoot.isEmpty) {
+      throw StateError(
+        'HOPE_SCREENSHOT_SYNC_ROOT is required for ADB screenshot capture.',
+      );
+    }
+    final directory = Directory(_screenshotSyncRoot);
+    await directory.create(recursive: true);
+    final request = File('$_screenshotSyncRoot/$marker.ready');
+    if (await request.exists()) {
+      await request.delete();
+    }
+    print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+    await request.writeAsString('ready', flush: true);
+    print('HOPE_SCREENSHOT_READY:$marker');
+    while (await request.exists()) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    return;
+  }
+
+  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+  await binding.takeScreenshot(marker);
+  print('HOPE_SCREENSHOT_READY:$marker');
+}
+
+Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
+  for (var attempt = 0; attempt < 30; attempt++) {
+    if (find.byType(CircularProgressIndicator).evaluate().isEmpty) {
+      return;
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  if (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
+    throw StateError(
+      'Runtime render remained in loading state after bounded settle',
+    );
+  }
+}
+
 Future<void> _captureRuntimeScreen(
   WidgetTester tester, {
   required _Runtime runtime,
