@@ -136,6 +136,14 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     final initial = displayName.trim().isNotEmpty
         ? displayName.trim().substring(0, 1).toUpperCase()
         : 'H';
+    final avatarUrl = [
+      auth.user?['photoUrl'],
+      auth.user?['avatarUrl'],
+      auth.user?['imageUrl'],
+    ].map((value) => value?.toString().trim()).firstWhere(
+          (value) => value != null && value.isNotEmpty,
+          orElse: () => null,
+        );
 
     return PremiumPageFrame(
       maxWidth: 1180,
@@ -224,15 +232,33 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                 ),
                               ],
                             ),
-                            child: Center(
-                              child: Text(
-                                initial,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
+                            child: avatarUrl != null
+                                ? ClipOval(
+                                    child: Image.network(
+                                      avatarUrl,
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Center(
+                                        child: Text(
+                                          initial,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      initial,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
