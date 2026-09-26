@@ -45,7 +45,7 @@ if $T grep -Fq -- 'if (!_adbScreenshotCapture)' "$test_file"; then
   exit 1
 fi
 $T grep -Fq -- 'FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"' "$script"
-$T grep -Fq -- 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-180}"' "$script"
+$T grep -Fq -- 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"' "$script"
 $T grep -Fq -- 'if ! wait_for_driver_connection "$process_pid" "$log_path"; then' "$script"
 $T grep -Fq -- 'VMServiceFlutterDriver: Connected to Flutter application.' "$script"
 if $T grep -Fq -- 'assert_hope_focused "$mode-start"' "$script"; then
@@ -85,6 +85,14 @@ fi
 
 # EN baseline must pass the host driver's required output root, not only the responsive branch.
 $T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
+
+driver_timeout_default="$(/system/bin/toybox sed -n 's/^DRIVER_CONNECT_TIMEOUT_SECONDS="\${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$script")"
+runtime_timeout_default="$(/system/bin/toybox sed -n 's/^RUNTIME_TEST_TIMEOUT_SECONDS="\${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$script")"
+if [ -z "$driver_timeout_default" ] || [ -z "$runtime_timeout_default" ] ||
+   [ "$driver_timeout_default" -lt "$runtime_timeout_default" ]; then
+  echo "FAIL: driver connection timeout must cover the full runtime test timeout" >&2
+  exit 1
+fi
 
 echo "PASS: runtime driver foreground contract"
 
