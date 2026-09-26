@@ -56,19 +56,19 @@ class PremiumPaymentSummary extends StatelessWidget {
     final grouped = amount < 0 ? '-${parts.join(',')}' : parts.join(',');
     return "$grouped ${_label(context, 'تومان', 'Toman')}";
   }
-  IconData _statusIcon() {
+  Object _statusIcon() {
     switch (payment.status) {
       case 'RELEASED':
-        return Icons.check_circle_rounded;
+        return HopeV2Icons.completed;
       case 'REFUNDED':
-        return Icons.undo_rounded;
+        return HopeV2Icons.transferIn;
       case 'HOLD_FAILED':
       case 'RELEASE_FAILED':
-        return Icons.error_outline_rounded;
+        return HopeV2Icons.error;
       case 'HELD':
-        return Icons.lock_clock_rounded;
+        return HopeV2Icons.secure;
       default:
-        return Icons.payments_outlined;
+        return HopeV2Icons.payments;
     }
   }
 
@@ -92,7 +92,15 @@ class PremiumPaymentSummary extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(_statusIcon(), size: 22),
+                HopeIcon(
+                  _statusIcon(),
+                  size: 22,
+                  color: payment.status == 'RELEASED' || payment.status == 'REFUNDED'
+                      ? HopeV2Colors.success
+                      : payment.status.contains('FAILED')
+                          ? HopeV2Colors.danger
+                          : HopeV2Colors.primary,
+                ),
                 const SizedBox(width: HopeV2Spacing.sm),
                 Expanded(
                   child: Text(
