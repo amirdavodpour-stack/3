@@ -628,8 +628,10 @@ Future<void> _captureRuntimeScreen(
   }
   await tester.pump();
 
+  // The host captures immediately after this marker. Avoid a fixed per-screen
+  // delay so the long-lived Flutter Driver request cannot cross its timeout
+  // while the capture matrix is still running.
   print('HOPE_SCREENSHOT_READY:$marker');
-  await Future<void>.delayed(const Duration(seconds: 1));
 }
 
 Future<void> _captureBaselineLocale(
