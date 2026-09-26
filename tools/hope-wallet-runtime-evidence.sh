@@ -23,7 +23,6 @@ adb shell settings get secure enabled_accessibility_services > "$evidence_dir/ac
 set +e
 # Use the historical host-driven Flutter Driver path. The external driver keeps
 # the VM-service session alive through integrationDriver's final requestData().
-set +e
 flutter drive --no-pub --no-dds \
   --driver=test_driver/hope_runtime_screenshot_driver.dart \
   --target=integration_test/runtime/critical_screens_evidence_test.dart \
@@ -33,7 +32,7 @@ flutter drive --no-pub --no-dds \
 test_pid=$!
 set -e
 
-() {
+capture_android_diagnostics() {
   local prefix="$1"
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb devices -l > "$evidence_dir/adb-devices-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-$prefix.txt" 2>&1 || true
