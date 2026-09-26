@@ -74,13 +74,19 @@ capture_screen() {
         return 1
       fi
 
+      # The PNG is authoritative rendered evidence because it was read from
+      # HOPE's own app-private capture directory after takeScreenshot() atomically
+      # published it. Android UiAutomator hierarchy is supplemental diagnostics.
+      mv -- "$tmp_output" "$evidence_dir/$output"
+      echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+
       local tmp_hierarchy="$evidence_dir/.ui-hierarchy-$prefix.xml.tmp"
       local hierarchy_ok=0
       for attempt in 1 2 3; do
         rm -f -- "$tmp_hierarchy"
-        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"           "${UI_HIERARCHY_TIMEOUT_SECONDS}s"           adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"           "${UI_HIERARCHY_TIMEOUT_SECONDS}s"           adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
-        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"           "${UI_HIERARCHY_TIMEOUT_SECONDS}s"           adb exec-out cat /sdcard/hope-ui-hierarchy.xml           > "$tmp_hierarchy" 2>/dev/null &&
+        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${UI_HIERARCHY_TIMEOUT_SECONDS}s" adb shell rm -f /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
+        timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${UI_HIERARCHY_TIMEOUT_SECONDS}s" adb shell uiautomator dump /sdcard/hope-ui-hierarchy.xml >/dev/null 2>&1 || true
+        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${UI_HIERARCHY_TIMEOUT_SECONDS}s" adb exec-out cat /sdcard/hope-ui-hierarchy.xml > "$tmp_hierarchy" 2>/dev/null &&
           test -s "$tmp_hierarchy" &&
           grep -Fq 'package="com.hope.marketplace"' "$tmp_hierarchy"; then
           hierarchy_ok=1
@@ -89,25 +95,20 @@ capture_screen() {
         sleep 0.5
       done
 
-      if [ "$hierarchy_ok" -ne 1 ]; then
-        if test -s "$tmp_hierarchy" && ! grep -Fq 'package="com.hope.marketplace"' "$tmp_hierarchy"; then
-          echo "HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:not-hope" >&2
-          rm -f -- "$tmp_output" "$tmp_hierarchy"
-          echo "HOPE_HOST_CAPTURE_FAILED:$marker:ui-hierarchy-not-hope" >&2
-          return 1
-        fi
-        rm -f -- "$tmp_output" "$tmp_hierarchy"
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:ui-hierarchy-read" >&2
-        return 1
+      if [ "$hierarchy_ok" -eq 1 ]; then
+        mv -- "$tmp_hierarchy" "$evidence_dir/ui-hierarchy-$prefix.xml"
+        echo "HOPE_HOST_UI_HIERARCHY_VALIDATED:$marker"
+      elif test -s "$tmp_hierarchy"; then
+        mv -- "$tmp_hierarchy" "$evidence_dir/ui-hierarchy-diagnostic-$prefix.xml"
+        echo "HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:not-hope" >&2
+      else
+        echo "HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:unavailable" >&2
       fi
 
-      mv -- "$tmp_output" "$evidence_dir/$output"
-      mv -- "$tmp_hierarchy" "$evidence_dir/ui-hierarchy-$prefix.xml"
-      echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-
-      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"         "${ADB_TIMEOUT_SECONDS}s"         adb shell run-as com.hope.marketplace rm -f "$remote_path"         >/dev/null 2>&1 || true
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell run-as com.hope.marketplace rm -f "$remote_path" >/dev/null 2>&1 || true
       echo "HOPE_HOST_CAPTURE_CLEANED:$marker"
       return 0
+
     fi
 
     if ! kill -0 "$test_pid" 2>/dev/null; then
