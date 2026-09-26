@@ -12,6 +12,15 @@ ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
+CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
+
+case "$CAPTURE_LOCALE" in
+  fa|en) ;;
+  *)
+    echo "Unsupported HOPE_CAPTURE_LOCALE: $CAPTURE_LOCALE" >&2
+    exit 2
+    ;;
+esac
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -129,13 +138,20 @@ screens=(
   "password-reset-en-ltr"
 )
 
+baseline_screens=("${screens[@]}")
+if [ "$CAPTURE_LOCALE" = "fa" ]; then
+  baseline_screens=("${screens[@]:0:15}")
+elif [ "$CAPTURE_LOCALE" = "en" ]; then
+  baseline_screens=("${screens[@]:15:15}")
+fi
+
 set +e
-timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
+timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
 baseline_status=$?
 set -e
 
 if [ "$baseline_status" -eq 0 ] &&
-   ! validate_capture_set "baseline" "$log_file" "${screens[@]}"; then
+   ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$log_file" "${baseline_screens[@]}"; then
   baseline_status=1
 fi
 
@@ -151,7 +167,7 @@ if [ "$baseline_status" -eq 0 ]; then
   : > "$runner_temp/hope-responsive-runtime.log"
 
   set +e
-  timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_RESPONSIVE_ONLY=1 HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     > "$runner_temp/hope-responsive-runtime.log" 2>&1
+  timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_RESPONSIVE_ONLY=1 HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE"     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     > "$runner_temp/hope-responsive-runtime.log" 2>&1
   responsive_status=$?
   set -e
 
@@ -170,8 +186,15 @@ if [ "$baseline_status" -eq 0 ]; then
     "responsive-720x1280-transactions-en-ltr"
   )
 
+  responsive_target_screens=("${responsive_screens[@]}")
+  if [ "$CAPTURE_LOCALE" = "fa" ]; then
+    responsive_target_screens=("${responsive_screens[@]:0:6}")
+  elif [ "$CAPTURE_LOCALE" = "en" ]; then
+    responsive_target_screens=("${responsive_screens[@]:6:6}")
+  fi
+
   if [ "$responsive_status" -eq 0 ] &&
-     ! validate_capture_set "responsive" "$runner_temp/hope-responsive-runtime.log" "${responsive_screens[@]}"; then
+     ! validate_capture_set "responsive-$CAPTURE_LOCALE" "$runner_temp/hope-responsive-runtime.log" "${responsive_target_screens[@]}"; then
     responsive_status=1
   fi
 
@@ -188,6 +211,20 @@ adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || tr
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
 printf '%s\n' '720x1280' > "$evidence_dir/responsive-viewport.txt"
 
+if [ "$CAPTURE_LOCALE" = "fa" ]; then
+  CAPTURED_BASELINE_SCREENS=15
+  CAPTURED_RESPONSIVE_SCREENS=6
+  CAPTURED_LOCALE_LABEL="fa-RTL"
+elif [ "$CAPTURE_LOCALE" = "en" ]; then
+  CAPTURED_BASELINE_SCREENS=15
+  CAPTURED_RESPONSIVE_SCREENS=6
+  CAPTURED_LOCALE_LABEL="en-LTR"
+else
+  CAPTURED_BASELINE_SCREENS=30
+  CAPTURED_RESPONSIVE_SCREENS=12
+  CAPTURED_LOCALE_LABEL="fa-RTL,en-LTR"
+fi
+
 cat > "$evidence_dir/metadata.json" <<EOF
 {
   "workflow": "$GITHUB_WORKFLOW",
@@ -195,10 +232,11 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "ref": "$GITHUB_REF_NAME",
   "sha": "$GITHUB_SHA",
   "evidence_type": "rendered_android_runtime",
-  "screens": 30,
-  "responsive_screens": 12,
+  "screens": $CAPTURED_BASELINE_SCREENS,
+  "responsive_screens": $CAPTURED_RESPONSIVE_SCREENS,
   "responsive_viewport": "720x1280",
-  "locales": ["fa-RTL", "en-LTR"],
+  "capture_locale": "$CAPTURE_LOCALE",
+  "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
   "capture_transport": "flutter_driver_onScreenshot_host_callback",
