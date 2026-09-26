@@ -11,11 +11,11 @@ import 'package:hugeicons/hugeicons.dart';
 class HopeV2Colors {
   const HopeV2Colors._();
 
-  static const primary = Color(0xFF6366F1);
-  static const primaryDark = Color(0xFF818CF8);
-  static const secondary = Color(0xFF10B981);
-  static const secondaryStrong = Color(0xFF059669);
-  static const secondaryDark = Color(0xFF34D399);
+  static const primary = Color(0xFF8B5CF6);
+  static const primaryDark = Color(0xFFA78BFA);
+  static const secondary = Color(0xFF22D3EE);
+  static const secondaryStrong = Color(0xFF06B6D4);
+  static const secondaryDark = Color(0xFF67E8F9);
   static const accent = Color(0xFFF59E0B);
   /// Focus accent for featured/recommended work surfaces; use sparingly.
   static const orange = Color(0xFFF97316);
@@ -363,7 +363,7 @@ class HopeV2Shadows {
       offset: Offset(0, 18),
     ),
     BoxShadow(
-      color: Color(0x3310B981),
+      color: Color(0x3322D3EE),
       blurRadius: 48,
       offset: Offset(-10, 20),
     ),
