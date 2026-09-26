@@ -155,7 +155,7 @@ capture_host_screenshot() {
   local deadline=$((SECONDS + 180))
 
   while (( SECONDS < deadline )); do
-    if adb shell run-as com.hope.marketplace cat "$request" >/dev/null 2>&1; then
+    if adb exec-out run-as com.hope.marketplace cat "$request" >/dev/null 2>&1; then
       if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out screencap -p > "$temp" 2>"$evidence_dir/$marker.capture.log"; then
         local magic
         magic="$(od -An -tx1 -N8 "$temp" | tr -d "[:space:]")"

@@ -62,3 +62,10 @@ if $T grep -Fq -- 'capture_host_screenshot "$marker" "$process_pid" || capture_s
   exit 1
 fi
 $T grep -Fq -- 'capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }' "$script"
+
+# EN READY handshake must use direct adb exec-out; avoid an extra adb shell layer.
+if $T grep -Fq -- 'adb shell run-as com.hope.marketplace cat "$request"' "$script"; then
+  echo "FAIL: EN READY handshake still uses adb shell run-as" >&2
+  exit 1
+fi
+$T grep -Fq -- 'adb exec-out run-as com.hope.marketplace cat "$request"' "$script"
