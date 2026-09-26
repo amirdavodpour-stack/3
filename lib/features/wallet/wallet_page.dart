@@ -703,15 +703,6 @@ class _WalletPageState extends State<WalletPage> {
               children: [
                 PremiumTag(
                   icon: HopeV2Icons.secure,
-                  label: _t(
-                    'قفل‌شده ${_money(wallet.lockedBalance)}',
-                    'Locked ${_money(wallet.lockedBalance)}',
-                  ),
-                  color: Colors.white,
-                  inverse: true,
-                ),
-                PremiumTag(
-                  icon: HopeV2Icons.secure,
                   label: _providerLabel('INTERNAL'),
                   color: scheme.tertiary,
                 ),
@@ -999,9 +990,13 @@ class _WalletPageState extends State<WalletPage> {
                             filled: true,
                             size: 44,
                           ),
-                          title: Text(
-                            _entryTitle(item),
-                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          title: Semantics(
+                            container: true,
+                            label: _entryTitle(item),
+                            child: Text(
+                              _entryTitle(item),
+                              style: const TextStyle(fontWeight: FontWeight.w800),
+                            ),
                           ),
                           subtitle: Text(
                             '${_date(item.createdAt)}\n${_referenceTypeLabel(item.referenceType)}',
