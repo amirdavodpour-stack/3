@@ -110,10 +110,14 @@ class _HomePageState extends State<HomePage> {
               destinations: destinations,
             ),
       floatingActionButton: tab == 0
-          ? FloatingActionButton.extended(
+          ? FloatingActionButton.small(
               onPressed: () => _openCreate(context),
-              icon: HugeIcon(icon: HopeV2Icons.add, size: 22),
-              label: Text(_t(context, 'ثبت فرصت جدید', 'Post new opportunity')),
+              tooltip: _t(
+                context,
+                'ثبت فرصت جدید',
+                'Post new opportunity',
+              ),
+              child: HugeIcon(icon: HopeV2Icons.add, size: 21),
             )
           : null,
       drawer: Drawer(

@@ -103,6 +103,8 @@ void main() {
     await tester.pumpAndSettle();
     final fab = find.byType(FloatingActionButton);
     expect(fab, findsOneWidget);
+    expect(tester.getSize(fab).width, lessThanOrEqualTo(64));
+    expect(find.text('ثبت فرصت جدید'), findsNothing);
     await tester.tap(fab);
     await tester.pumpAndSettle();
     expect(find.text('ورود'), findsOneWidget);
