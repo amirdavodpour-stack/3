@@ -10,10 +10,11 @@ rm -f "$log_file"
 : > "$log_file"
 
 capture_root="/data/user/0/com.hope.marketplace/files/hope-screen-captures-${GITHUB_RUN_ID}"
-export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
+export HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root"
+export HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
-CAPTURE_CHECK_TIMEOUT_SECONDS="${HOPE_CAPTURE_CHECK_TIMEOUT_SECONDS:-2}"
+HOST_SCREENSHOT_TIMEOUT_SECONDS="${HOPE_HOST_SCREENSHOT_TIMEOUT_SECONDS:-20}"
 UI_HIERARCHY_TIMEOUT_SECONDS="${HOPE_UI_HIERARCHY_TIMEOUT_SECONDS:-5}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"
 
@@ -47,39 +48,37 @@ capture_screen() {
   local prefix="$3"
   local timeout_seconds="$4"
   local deadline=$((SECONDS + timeout_seconds))
-  local remote_path="files/hope-screen-captures-${GITHUB_RUN_ID}/$output"
 
   while (( SECONDS < deadline )); do
     if test -f "$active_runtime_log" && grep -Fq -- "$marker" "$active_runtime_log"; then
       echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
 
-      local tmp_output="$evidence_dir/.$output.tmp"
+      local screenshot_path="$evidence_dir/$output"
+      rm -f -- "$screenshot_path"
+      local capture_deadline=$((SECONDS + HOST_SCREENSHOT_TIMEOUT_SECONDS))
       local captured=0
-      for attempt in 1 2 3 4 5; do
-        rm -f -- "$tmp_output"
-        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s"           "${ADB_TIMEOUT_SECONDS}s"           adb exec-out run-as com.hope.marketplace cat "$remote_path"           > "$tmp_output" 2>"$evidence_dir/$prefix.capture.log"; then
-          if test -s "$tmp_output"; then
-            local screenshot_magic
-            screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d '[:space:]')"
-            if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
-              captured=1
-              break
-            fi
+      while (( SECONDS < capture_deadline )); do
+        if test -s "$screenshot_path"; then
+          local screenshot_magic
+          screenshot_magic="$(od -An -tx1 -N8 "$screenshot_path" | tr -d '[:space:]')"
+          if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
+            captured=1
+            break
           fi
         fi
-        sleep 0.5
+        sleep 0.2
       done
 
       if [ "$captured" -ne 1 ]; then
-        rm -f -- "$tmp_output"
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
+        rm -f -- "$screenshot_path"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:host-callback-file" >&2
         return 1
       fi
 
-      # The PNG is authoritative rendered evidence because it was read from
-      # HOPE's own app-private capture directory after takeScreenshot() atomically
-      # published it. Android UiAutomator hierarchy is supplemental diagnostics.
-      mv -- "$tmp_output" "$evidence_dir/$output"
+      # The PNG is authoritative rendered evidence because integrationDriver's
+      # host-side onScreenshot callback received the bytes from the VM service
+      # and wrote them to the evidence directory. Android UiAutomator hierarchy
+      # is supplemental diagnostics.
       echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
 
       local tmp_hierarchy="$evidence_dir/.ui-hierarchy-$prefix.xml.tmp"
@@ -255,7 +254,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["fa-RTL", "en-LTR"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "flutter_driver_takeScreenshot_app_private_file",
+  "capture_transport": "flutter_driver_onScreenshot_host_callback",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
