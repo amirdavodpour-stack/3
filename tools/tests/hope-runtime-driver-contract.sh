@@ -47,7 +47,7 @@ $T grep -Fq -- 'Runtime render remained in loading/skeleton state after bounded 
 $T grep -Fq -- 'await tester.binding.endOfFrame;' "$test_file"
 $T grep -Fq -- 'Future<void>.delayed(const Duration(milliseconds: 250))' "$test_file"
 $T grep -Fq -- 'await binding.convertFlutterSurfaceToImage();' "$test_file"
-$T grep -Fq -- 'await binding.revertFlutterImage();' "$test_file"
+$T grep -Fq -- "integrationTestChannel.invokeMethod<void>('revertFlutterImage')" "$test_file"
 $T grep -Fq -- 'FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"' "$script"
 $T grep -Fq -- 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"' "$script"
 $T grep -Fq -- 'if ! wait_for_driver_connection "$process_pid" "$log_path"; then' "$script"
