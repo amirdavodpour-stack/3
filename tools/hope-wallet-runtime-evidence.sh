@@ -11,7 +11,6 @@ rm -f "$log_file"
 
 capture_root="/data/user/0/com.hope.marketplace/files/hope-screen-captures-${GITHUB_RUN_ID}"
 export HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root"
-export HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 
@@ -39,32 +38,60 @@ capture_android_diagnostics() {
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell logcat -d -t 1000 > "$evidence_dir/logcat-$prefix.txt" 2>&1 || true
 }
 
-verify_runtime_screenshot() {
+capture_screen() {
   local marker="$1"
   local output="$2"
-  local path="$evidence_dir/$output"
-  if ! test -s "$path"; then
-    echo "HOPE_HOST_CAPTURE_FAILED:$marker:missing-host-callback-file" >&2
-    return 1
-  fi
+  local prefix="$3"
+  local timeout_seconds="$4"
+  local deadline=$((SECONDS + timeout_seconds))
+  local remote_path="files/hope-screen-captures-${GITHUB_RUN_ID}/$output"
+  local tmp_output="$evidence_dir/.$output.tmp"
 
-  local screenshot_magic
-  screenshot_magic="$(od -An -tx1 -N8 "$path" | tr -d "[:space:]")"
-  if [ "$screenshot_magic" != "89504e470d0a1a0a" ]; then
-    echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
-    return 1
-  fi
+  while (( SECONDS < deadline )); do
+    if test -f "$active_runtime_log" && grep -Fq -- "$marker" "$active_runtime_log"; then
+      echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
 
-  echo "HOPE_HOST_SCREENSHOT_VERIFIED:$marker"
-  return 0
-}
+      local captured=0
+      for attempt in 1 2 3 4 5; do
+        rm -f -- "$tmp_output"
+        if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"           adb exec-out run-as com.hope.marketplace cat "$remote_path"           > "$tmp_output" 2>"$evidence_dir/$prefix.capture.log"; then
+          if test -s "$tmp_output"; then
+            local screenshot_magic
+            screenshot_magic="$(od -An -tx1 -N8 "$tmp_output" | tr -d "[:space:]")"
+            if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then
+              captured=1
+              break
+            fi
+          fi
+        fi
+        sleep 0.5
+      done
 
-verify_runtime_screenshots() {
-  local verify_status=0
-  for marker in "$@"; do
-    verify_runtime_screenshot "$marker" "$marker.png" || verify_status=1
+      if [ "$captured" -ne 1 ]; then
+        rm -f -- "$tmp_output"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:file-read" >&2
+        return 1
+      fi
+
+      mv -- "$tmp_output" "$evidence_dir/$output"
+      timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"         adb shell run-as com.hope.marketplace rm -f "$remote_path" >/dev/null 2>&1 || true
+      echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+      echo "HOPE_HOST_CAPTURE_CLEANED:$marker"
+      return 0
+    fi
+
+    if ! kill -0 "$test_pid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
   done
-  return "$verify_status"
+
+  echo "Timed out waiting for Flutter screenshot marker after ${timeout_seconds}s: $marker" >&2
+  if test -f "$active_runtime_log"; then
+    cp -- "$active_runtime_log" "$evidence_dir/runtime-log-$prefix-timeout.txt" || true
+  fi
+  capture_android_diagnostics "$prefix-timeout"
+  return 1
 }
 
 screens=(
@@ -100,13 +127,20 @@ screens=(
   "password-reset-en-ltr"
 )
 
+baseline_capture_status=0
+for index in "${!screens[@]}"; do
+  marker="${screens[$index]}"
+  timeout_seconds=120
+  if [ "$index" -eq 0 ]; then
+    timeout_seconds=900
+  fi
+  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" "$timeout_seconds" || baseline_capture_status=1
+done
+
 set +e
 wait "$test_pid"
 baseline_status=$?
 set -e
-
-baseline_capture_status=0
-verify_runtime_screenshots "${screens[@]}" || baseline_capture_status=$?
 
 if [ "$baseline_status" -ne 0 ]; then
   test_status="$baseline_status"
@@ -149,13 +183,15 @@ responsive_screens=(
   "responsive-720x1280-transactions-en-ltr"
 )
 
+responsive_capture_status=0
+for marker in "${responsive_screens[@]}"; do
+  capture_screen "HOPE_SCREENSHOT_READY:$marker" "$marker.png" "$marker" 180 || responsive_capture_status=1
+done
+
 set +e
 wait "$responsive_test_pid"
 responsive_status=$?
 set -e
-
-responsive_capture_status=0
-verify_runtime_screenshots "${responsive_screens[@]}" || responsive_capture_status=$?
 
 adb shell wm size reset || true
 adb shell sleep 1 >/dev/null 2>&1 || true
@@ -191,7 +227,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["fa-RTL", "en-LTR"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "flutter_driver_onScreenshot_host_callback_post_test",
+  "capture_transport": "flutter_callbackManager_app_private_file_live_host",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
