@@ -496,7 +496,14 @@ void main() {
     for (var i = 0; i < semanticAncestors.evaluate().length; i++) {
       labels.add(tester.getSemantics(semanticAncestors.at(i)).label);
     }
-    expect(labels, contains('انتقال داخلی'));
+    expect(
+      labels.any((label) => label.contains('انتقال داخلی')),
+      isTrue,
+    );
+    expect(
+      labels.any((label) => label.contains('500,000 تومان')),
+      isTrue,
+    );
     } finally {
       semantics.dispose();
     }
