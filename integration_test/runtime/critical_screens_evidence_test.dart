@@ -634,10 +634,13 @@ Future<void> _captureRuntimeScreenshot(
 ) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
 
+  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+  await binding.takeScreenshot(marker);
+
   if (_adbScreenshotCapture) {
     if (_screenshotSyncRoot.isEmpty) {
       throw StateError(
-        'HOPE_SCREENSHOT_SYNC_ROOT is required for ADB screenshot capture.',
+        'HOPE_SCREENSHOT_SYNC_ROOT is required for host synchronization.',
       );
     }
     final directory = Directory(_screenshotSyncRoot);
@@ -646,7 +649,6 @@ Future<void> _captureRuntimeScreenshot(
     if (await request.exists()) {
       await request.delete();
     }
-    print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
     await request.writeAsString('ready', flush: true);
     print('HOPE_SCREENSHOT_READY:$marker');
     while (await request.exists()) {
@@ -655,8 +657,6 @@ Future<void> _captureRuntimeScreenshot(
     return;
   }
 
-  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  await binding.takeScreenshot(marker);
   print('HOPE_SCREENSHOT_READY:$marker');
 }
 

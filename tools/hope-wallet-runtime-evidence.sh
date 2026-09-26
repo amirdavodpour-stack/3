@@ -168,28 +168,21 @@ capture_host_screenshot() {
   local process_pid="$2"
   local request="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.ready"
   local output="$evidence_dir/$marker.png"
-  local temp="$evidence_dir/.$marker.png.tmp"
   local deadline=$((SECONDS + 180))
 
   while (( SECONDS < deadline )); do
     if adb exec-out run-as com.hope.marketplace cat "$request" >/dev/null 2>&1; then
-      if ! assert_hope_focused "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
-        return 1
-      fi
-      if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out screencap -p > "$temp" 2>"$evidence_dir/$marker.capture.log"; then
+      if test -s "$output"; then
         local magic
-        magic="$(od -An -tx1 -N8 "$temp" | tr -d "[:space:]")"
+        magic="$(od -An -tx1 -N8 "$output" | tr -d '[:space:]')"
         if [ "$magic" = "89504e470d0a1a0a" ]; then
-          mv "$temp" "$output"
           adb shell run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
           echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
           return 0
         fi
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
+        return 1
       fi
-      rm -f "$temp"
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
-      return 1
     fi
     if ! kill -0 "$process_pid" 2>/dev/null; then
       echo "HOPE_HOST_CAPTURE_FAILED:$marker:driver-exited" >&2
@@ -200,7 +193,6 @@ capture_host_screenshot() {
   echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
   return 1
 }
-
 run_en_host_session() {
   local mode="$1"
   shift
@@ -372,7 +364,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "adb_exec_out_screencap_host_handshake",
+  "capture_transport": "flutter_takeScreenshot_driver_callback_host_handshake",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
