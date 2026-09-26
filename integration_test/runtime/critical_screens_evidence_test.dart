@@ -701,6 +701,15 @@ Future<void> _captureRuntimeScreen(
 
   await _captureRuntimeScreenshot(tester, marker);
 }
+Future<void> _signalRuntimeTestBodyComplete() async {
+  if (!_adbScreenshotCapture || _screenshotSyncRoot.isEmpty) {
+    return;
+  }
+  final marker = File('$_screenshotSyncRoot/test-complete.ready');
+  await marker.writeAsString('complete', flush: true);
+  print('HOPE_RUNTIME_TEST_BODY_COMPLETE');
+}
+
 Future<void> _captureBaselineLocale(
   WidgetTester tester, {
   required Locale locale,
@@ -802,6 +811,7 @@ void main() {
           suffix: 'en-ltr',
         );
       }
+      await _signalRuntimeTestBodyComplete();
       await Future<void>.delayed(const Duration(seconds: 1));
       return;
     }
@@ -822,6 +832,7 @@ void main() {
         suffix: 'en-ltr',
       );
     }
+    await _signalRuntimeTestBodyComplete();
     await Future<void>.delayed(const Duration(seconds: 1));
   });
 }

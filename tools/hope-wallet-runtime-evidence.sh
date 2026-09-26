@@ -199,11 +199,58 @@ run_en_host_session() {
   for marker in "$@"; do
     capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }
   done
+  local completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"
+  local completion_status=1
+  local completion_deadline=$((SECONDS + 30))
+  while (( SECONDS < completion_deadline )); do
+    if adb exec-out run-as com.hope.marketplace cat "$completion_request" >/dev/null 2>&1; then
+      completion_status=0
+      break
+    fi
+    if ! kill -0 "$process_pid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
+  done
+
+  if [ "$completion_status" -ne 0 ]; then
+    echo "HOPE_HOST_RUNTIME_COMPLETE_FAILED:test-body-complete-timeout" >&2
+    capture_status=1
+  fi
+
   set +e
-  wait "$process_pid"
-  driver_status=$?
+  if [ "$completion_status" -eq 0 ]; then
+    # All requested captures exist and the integration test body reported
+    # successful completion. Bound the known final flutter_driver requestData
+    # hang instead of consuming the entire GitHub job timeout.
+    local grace_deadline=$((SECONDS + 5))
+    while kill -0 "$process_pid" 2>/dev/null && (( SECONDS < grace_deadline )); do
+      sleep 0.2
+    done
+    if kill -0 "$process_pid" 2>/dev/null; then
+      kill "$process_pid" >/dev/null 2>&1 || true
+      local kill_deadline=$((SECONDS + 3))
+      while kill -0 "$process_pid" 2>/dev/null && (( SECONDS < kill_deadline )); do
+        sleep 0.2
+      done
+      if kill -0 "$process_pid" 2>/dev/null; then
+        kill -9 "$process_pid" >/dev/null 2>&1 || true
+      fi
+      wait "$process_pid" >/dev/null 2>&1 || true
+      driver_status=0
+    else
+      wait "$process_pid"
+      driver_status=$?
+    fi
+  else
+    wait "$process_pid"
+    driver_status=$?
+  fi
   set -e
-  [ "$driver_status" -ne 0 ] && return "$driver_status"
+
+  if [ "$driver_status" -ne 0 ]; then
+    return "$driver_status"
+  fi
   return "$capture_status"
 }
 

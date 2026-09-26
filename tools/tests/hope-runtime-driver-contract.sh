@@ -39,6 +39,12 @@ $T grep -Fq -- 'await _captureBaselineLocale(' "$test_file"
 $T grep -Fq -- 'await _captureResponsiveLocale(' "$test_file"
 $T grep -Fq -- 'await tester.pumpWidget(' "$test_file"
 $T grep -Fq -- '_EvidenceHost(' "$test_file"
+$T grep -Fq -- 'test-complete.ready' "$test_file"
+$T grep -Fq -- 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$test_file"
+$T grep -Fq -- 'completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"' "$script"
+$T grep -Fq -- 'completion_deadline=$((SECONDS + 30))' "$script"
+$T grep -Fq -- 'grace_deadline=$((SECONDS + 5))' "$script"
+$T grep -Fq -- 'kill "$process_pid"' "$script"
 if $T grep -Fq -- 'ValueNotifier<_RuntimeScreen>' "$test_file" ||
    $T grep -Fq -- 'ValueListenableBuilder<_RuntimeScreen>' "$test_file"; then
   echo "FAIL: runtime capture must rebuild the host between screens" >&2
