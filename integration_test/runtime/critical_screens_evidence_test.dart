@@ -617,7 +617,7 @@ typedef _Runtime = ({
 var _runtimeScreenshotSurfacePrepared = false;
 
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
-  if (_adbScreenshotCapture || _runtimeScreenshotSurfacePrepared) {
+  if (_runtimeScreenshotSurfacePrepared) {
     return;
   }
 
