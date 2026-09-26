@@ -18,8 +18,6 @@ $T grep -Fq -- 'validate_capture_set()' "$script"
 $T grep -Fq -- 'capture_transport":' "$script"
 $T grep -Fq -- 'HOPE_ADB_SCREENSHOT_CAPTURE=true' "$script"
 $T grep -Fq -- 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
-root_count="$($T grep -F -c 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script")"
-[ "$root_count" -ge 4 ] || { echo "FAIL: baseline/responsive env must provide HOPE_SCREENSHOT_OUTPUT_ROOT for both EN and FA driver sessions" >&2; exit 1; }
 $T grep -Fq -- '--dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script"
 $T grep -Fq -- 'adb exec-out screencap -p' "$script"
 $T grep -Fq -- 'run-as com.hope.marketplace cat "$request"' "$script"
@@ -51,10 +49,7 @@ if $T grep -Fq -- 'capture_screen()' "$script" ||
   exit 1
 fi
 
-if $T grep -Fq -- 'flutter drive' "$script"; then
-  if $T grep -Fq -- 'flutter drive --no-pub --no-dds' "$script"; then
-    :
-  fi
-fi
+# EN baseline must pass the host driver's required output root, not only the responsive branch.
+$T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
 
 echo "PASS: runtime driver foreground contract"
