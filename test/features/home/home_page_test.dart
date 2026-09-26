@@ -145,7 +145,7 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('ثبت فرصت جدید'));
+    await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
     expect(find.text('ورود'), findsOneWidget);

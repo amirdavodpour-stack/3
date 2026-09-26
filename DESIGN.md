@@ -72,8 +72,6 @@ The HOPE signature is the **opportunity-to-action surface**: a strong contextual
 - RTL and LTR must preserve hierarchy and interaction semantics.
 - Desktop may introduce navigation rail and wider content, but must not invent a separate product language.
 - Avoid fixed-height page shells that trap document scrolling.
-- On normal mobile widths, the Home HOPE Pulse uses four compact metric cells in one row; it collapses to two columns only when the inner Pulse width falls below 300px to preserve readability on very narrow layouts.
-- On mobile Home, opportunity creation remains available as an icon-only floating action so the primary featured opportunity surface is not visually obscured by an extended control.
 
 ## State rules
 Every meaningful async surface must have deliberate loading, empty, error/retry, and success states. Preserve stale usable data when safe while surfacing refresh failure.
