@@ -328,7 +328,7 @@ class HopeV2SemanticColors {
   static Color border(BuildContext context) => HopeV2Surfaces.border(context);
   static Color textPrimary(BuildContext context) => Theme.of(context).colorScheme.onSurface;
   static Color textSecondary(BuildContext context) => Theme.of(context).colorScheme.onSurfaceVariant;
-  static Color success(BuildContext context) => Theme.of(context).colorScheme.tertiary;
+  static Color success(BuildContext context) => HopeV2Colors.success;
   static Color warning(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
           ? HopeV2Colors.warningDark
