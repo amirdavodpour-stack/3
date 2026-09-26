@@ -26,6 +26,11 @@ grep -Fq 'if [ "$screenshot_magic" = "89504e470d0a1a0a" ]; then' "$script"
 grep -Fq 'HOPE_HOST_UI_HIERARCHY_DIAGNOSTIC:$marker:not-hope' "$script"
 grep -Fq 'package="com.hope.marketplace"' "$script"
 grep -Fq 'mv -- "$tmp_output" "$evidence_dir/$output"' "$script"
+grep -Fq 'HOPE_HOST_UI_HIERARCHY_VALIDATED:$marker' "$script"
+if grep -Fq 'HOPE_HOST_CAPTURE_FAILED:$marker:ui-hierarchy-not-hope' "$script"; then
+  echo "runtime harness contract: FAIL — hierarchy mismatch must remain diagnostic-only after valid PNG capture" >&2
+  exit 1
+fi
 grep -Fq 'adb shell run-as com.hope.marketplace rm -f "$remote_path"' "$script"
 
 # Flutter's official integration_test screenshot API owns capture and the app
