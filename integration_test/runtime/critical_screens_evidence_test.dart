@@ -677,7 +677,9 @@ Future<void> _captureRuntimeScreenshot(
     while (await request.exists()) {
       await Future<void>.delayed(const Duration(milliseconds: 100));
     }
-    await screenshot.delete().catchError((_) {});
+    try {
+      await screenshot.delete();
+    } catch (_) {}
     return;
   }
 
