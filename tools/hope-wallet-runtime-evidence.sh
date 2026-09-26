@@ -13,6 +13,7 @@ ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-5}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
+capture_sync_root="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}"
 
 case "$CAPTURE_LOCALE" in
   fa|en) ;;
@@ -145,10 +146,76 @@ elif [ "$CAPTURE_LOCALE" = "en" ]; then
   baseline_screens=("${screens[@]:15:15}")
 fi
 
-set +e
+capture_host_screenshot() {
+  local marker="$1"
+  local process_pid="$2"
+  local request="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.ready"
+  local output="$evidence_dir/$marker.png"
+  local temp="$evidence_dir/.$marker.png.tmp"
+  local deadline=$((SECONDS + 180))
+
+  while (( SECONDS < deadline )); do
+    if adb shell run-as com.hope.marketplace test -f "$request" >/dev/null 2>&1; then
+      if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out screencap -p > "$temp" 2>"$evidence_dir/$marker.capture.log"; then
+        local magic
+        magic="$(od -An -tx1 -N8 "$temp" | tr -d "[:space:]")"
+        if [ "$magic" = "89504e470d0a1a0a" ]; then
+          mv "$temp" "$output"
+          adb shell run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
+          echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+          return 0
+        fi
+      fi
+      rm -f "$temp"
+      echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
+      return 1
+    fi
+    if ! kill -0 "$process_pid" 2>/dev/null; then
+      echo "HOPE_HOST_CAPTURE_FAILED:$marker:driver-exited" >&2
+      return 1
+    fi
+    sleep 0.2
+  done
+  echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
+  return 1
+}
+
+run_en_host_session() {
+  local mode="$1"
+  shift
+  local log_path="$log_file"
+  [ "$mode" = "responsive" ] && log_path="$runner_temp/hope-responsive-runtime.log"
+  local process_pid
+  local driver_status=0
+  local capture_status=0
+  set +e
+  if [ "$mode" = "responsive" ]; then
+    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_ADB_SCREENSHOT_CAPTURE=true HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" --dart-define=HOPE_RESPONSIVE_ONLY=true > "$log_path" 2>&1 &
+  else
+    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_ADB_SCREENSHOT_CAPTURE=true HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" > "$log_path" 2>&1 &
+  fi
+  process_pid=$!
+  set -e
+  for marker in "$@"; do
+    capture_host_screenshot "$marker" "$process_pid" || capture_status=1
+  done
+  set +e
+  wait "$process_pid"
+  driver_status=$?
+  set -e
+  [ "$driver_status" -ne 0 ] && return "$driver_status"
+  return "$capture_status"
+}
+
+if [ "$CAPTURE_LOCALE" = "en" ]; then
+  baseline_status=0
+  run_en_host_session baseline "${baseline_screens[@]}" || baseline_status=$?
+else
+  set +e
 timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
 baseline_status=$?
 set -e
+fi
 
 if [ "$baseline_status" -eq 0 ] &&
    ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$log_file" "${baseline_screens[@]}"; then
@@ -166,10 +233,15 @@ if [ "$baseline_status" -eq 0 ]; then
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
 
-  set +e
+  responsive_status=0
+  if [ "$CAPTURE_LOCALE" = "en" ]; then
+    run_en_host_session responsive       "responsive-720x1280-home-en-ltr"       "responsive-720x1280-jobs-en-ltr"       "responsive-720x1280-job-detail-en-ltr"       "responsive-720x1280-wallet-en-ltr"       "responsive-720x1280-profile-en-ltr"       "responsive-720x1280-transactions-en-ltr" || responsive_status=$?
+  else
+    set +e
   timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_RESPONSIVE_ONLY=1 HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE"     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     > "$runner_temp/hope-responsive-runtime.log" 2>&1
   responsive_status=$?
   set -e
+  fi
 
   responsive_screens=(
     "responsive-720x1280-home-fa-rtl"
@@ -239,7 +311,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "flutter_driver_onScreenshot_host_callback",
+  "capture_transport": "$([ "$CAPTURE_LOCALE" = "en" ] && echo adb_exec_out_screencap_host_handshake || echo flutter_driver_onScreenshot_host_callback)",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
