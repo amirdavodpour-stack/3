@@ -749,6 +749,7 @@ Future<void> _captureRuntimeScreen(
   // methods directly. The binding API keeps an internal converted-state flag;
   // our app-side immediate revert must not leave that flag stale for the
   // next screen.
+  print('HOPE_CAPTURE_STAGE:$marker:before-surface-convert');
   if (_adbScreenshotCapture) {
     await integrationTestChannel.invokeMethod<void>(
       'convertFlutterSurfaceToImage',
@@ -757,17 +758,24 @@ Future<void> _captureRuntimeScreen(
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.convertFlutterSurfaceToImage();
   }
+  print('HOPE_CAPTURE_STAGE:$marker:surface-convert-done');
   await tester.pump();
+  print('HOPE_CAPTURE_STAGE:$marker:first-pump-done');
   await tester.binding.endOfFrame;
+  print('HOPE_CAPTURE_STAGE:$marker:first-frame-done');
 
   await tester.pump(const Duration(milliseconds: 1200));
+  print('HOPE_CAPTURE_STAGE:$marker:settle-pump-done');
   await tester.binding.endOfFrame;
+  print('HOPE_CAPTURE_STAGE:$marker:settle-frame-done');
   await _waitForRuntimeRenderToSettle(tester);
+  print('HOPE_CAPTURE_STAGE:$marker:loading-settle-done');
   await tester.pump();
   await tester.binding.endOfFrame;
   await Future<void>.delayed(const Duration(milliseconds: 250));
   await tester.pump();
   await tester.binding.endOfFrame;
+  print('HOPE_CAPTURE_STAGE:$marker:pre-capture-done');
 
   await _captureRuntimeScreenshot(tester, marker);
 }
