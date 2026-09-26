@@ -205,6 +205,7 @@ capture_host_screenshot() {
   local marker="$1"
   local process_pid="$2"
   local request="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.ready"
+  local remote_png="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.png"
   local output="$evidence_dir/$marker.png"
   local deadline=$((SECONDS + 180))
 
@@ -218,32 +219,29 @@ capture_host_screenshot() {
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
         return 1
       fi
+
       local temp_output="${output}.tmp"
       rm -f "$temp_output"
-      local attempt
-      for attempt in 1 2 3; do
-        if ! timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb get-state >/dev/null 2>&1; then
-          timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s 10s adb reconnect offline >/dev/null 2>&1 || true
-          timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s 15s adb wait-for-device >/dev/null 2>&1 || true
-        fi
-        if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-          adb exec-out screencap -p > "$temp_output" 2>"${output}.adb-error"; then
-          if test -s "$temp_output"; then
-            local magic
-            magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
-            if [ "$magic" = "89504e470d0a1a0a" ]; then
-              mv "$temp_output" "$output"
-              rm -f "${output}.adb-error"
-              adb exec-out run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
-              echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-              return 0
-            fi
-          fi
-        fi
+      if ! timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+        adb exec-out run-as com.hope.marketplace cat "$remote_png" > "$temp_output" 2>"${output}.adb-error"; then
         rm -f "$temp_output"
-        [ "$attempt" -lt 3 ] && sleep 1
-      done
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:screencap" >&2
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:png-read" >&2
+        return 1
+      fi
+
+      if test -s "$temp_output"; then
+        local magic
+        magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
+        if [ "$magic" = "89504e470d0a1a0a" ]; then
+          mv "$temp_output" "$output"
+          rm -f "${output}.adb-error"
+          adb exec-out run-as com.hope.marketplace rm -f "$request" "$remote_png" >/dev/null 2>&1 || true
+          echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+          return 0
+        fi
+      fi
+      rm -f "$temp_output"
+      echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
       return 1
     fi
     if ! kill -0 "$process_pid" 2>/dev/null; then
@@ -255,6 +253,7 @@ capture_host_screenshot() {
   echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
   return 1
 }
+
 run_en_host_session() {
   local mode="$1"
   shift
@@ -426,7 +425,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "adb_exec_out_screencap_host_handshake",
+  "capture_transport": "integration_test_native_png_app_file_host_pull",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
