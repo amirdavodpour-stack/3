@@ -77,7 +77,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
     }
   }
 
-  IconData _icon(String platform) {
+  Object _icon(String platform) {
     switch (platform.toUpperCase()) {
       case 'ANDROID':
         return HopeV2Icons.android;
