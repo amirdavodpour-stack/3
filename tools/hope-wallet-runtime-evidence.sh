@@ -149,18 +149,19 @@ fi
 capture_host_screenshot() {
   local marker="$1"
   local process_pid="$2"
-  local log_path="$3"
+  local request="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.ready"
   local output="$evidence_dir/$marker.png"
   local temp="$evidence_dir/.$marker.png.tmp"
   local deadline=$((SECONDS + 180))
 
   while (( SECONDS < deadline )); do
-    if test -f "$log_path" && grep -Fq -- "HOPE_SCREENSHOT_READY:$marker" "$log_path"; then
+    if adb shell run-as com.hope.marketplace cat "$request" >/dev/null 2>&1; then
       if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out screencap -p > "$temp" 2>"$evidence_dir/$marker.capture.log"; then
         local magic
         magic="$(od -An -tx1 -N8 "$temp" | tr -d "[:space:]")"
         if [ "$magic" = "89504e470d0a1a0a" ]; then
           mv "$temp" "$output"
+          adb shell run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
           echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
           return 0
         fi
@@ -196,7 +197,7 @@ run_en_host_session() {
   process_pid=$!
   set -e
   for marker in "$@"; do
-    capture_host_screenshot "$marker" "$process_pid" "$log_path" || capture_status=1
+    capture_host_screenshot "$marker" "$process_pid" || capture_status=1
   done
   set +e
   wait "$process_pid"
