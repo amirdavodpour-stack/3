@@ -517,55 +517,69 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   return (auth: auth, settings: settings, registry: _registry());
 }
 
-Widget _host({
-  required Locale locale,
-  required Widget child,
-  required AuthController auth,
-  required HopeSettingsController settings,
-  required ApplicationRegistry registry,
-}) {
-  return MultiProvider(
-    providers: [
-      ChangeNotifierProvider<HopeSettingsController>.value(value: settings),
-      ChangeNotifierProvider<ThemeController>(
-        create: (_) => ThemeController(settings),
-      ),
-      ChangeNotifierProvider<AuthController>.value(value: auth),
-      Provider<GoogleSignInService>.value(value: _runtimeGoogleSignIn),
-      Provider<ApplicationRegistry>.value(value: registry),
-      Provider<MarketplaceRepository>.value(value: registry.marketplace!),
-      Provider<JobDetailRepository>.value(value: registry.jobDetail!),
-      Provider<TransactionRepository>.value(value: registry.transactions!),
-      Provider<WalletRepository>.value(value: registry.wallets!),
-      Provider<SavedSearchRepository>.value(value: registry.savedSearches),
-      Provider<ProfileRepository>.value(value: registry.profile!),
-      Provider<NotificationRepository>.value(value: registry.notifications!),
-      Provider<OfferRepository>.value(value: _EvidenceOfferRepository()),
-    ],
-    child: MaterialApp(
-      debugShowCheckedModeBanner: false,
-      locale: locale,
-      supportedLocales: const [Locale('fa'), Locale('en')],
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+class _RuntimeScreen {
+  const _RuntimeScreen({required this.locale, required this.child});
+
+  final Locale locale;
+  final Widget child;
+}
+
+class _EvidenceHost extends StatelessWidget {
+  const _EvidenceHost({
+    required this.runtime,
+    required this.screen,
+  });
+
+  final _Runtime runtime;
+  final ValueListenable<_RuntimeScreen> screen;
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<HopeSettingsController>.value(
+          value: runtime.settings,
+        ),
+        ChangeNotifierProvider<ThemeController>(
+          create: (_) => ThemeController(runtime.settings),
+        ),
+        ChangeNotifierProvider<AuthController>.value(value: runtime.auth),
+        Provider<GoogleSignInService>.value(value: _runtimeGoogleSignIn),
+        Provider<ApplicationRegistry>.value(value: runtime.registry),
+        Provider<MarketplaceRepository>.value(value: runtime.registry.marketplace!),
+        Provider<JobDetailRepository>.value(value: runtime.registry.jobDetail!),
+        Provider<TransactionRepository>.value(value: runtime.registry.transactions!),
+        Provider<WalletRepository>.value(value: runtime.registry.wallets!),
+        Provider<SavedSearchRepository>.value(value: runtime.registry.savedSearches),
+        Provider<ProfileRepository>.value(value: runtime.registry.profile!),
+        Provider<NotificationRepository>.value(value: runtime.registry.notifications!),
+        Provider<OfferRepository>.value(value: _EvidenceOfferRepository()),
       ],
-      // The visual reference and release target are the premium dark system.
-      // Capture it explicitly; relying on device/system theme made runtime evidence
-      // misleadingly certify only the light theme.
-      theme: AppTheme.dark(),
-      darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.dark,
-      home: Directionality(
-        textDirection: locale.languageCode == 'en'
-            ? TextDirection.ltr
-            : TextDirection.rtl,
-        child: child,
+      child: ValueListenableBuilder<_RuntimeScreen>(
+        valueListenable: screen,
+        builder: (context, view, _) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          locale: view.locale,
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: AppTheme.dark(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.dark,
+          home: Directionality(
+            textDirection: view.locale.languageCode == 'en'
+                ? TextDirection.ltr
+                : TextDirection.rtl,
+            child: view.child,
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
