@@ -358,7 +358,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                       const SizedBox(height: HopeV2Spacing.lg),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final columns = constraints.maxWidth < 300 ? 2 : 4;
+                          // Mobile keeps the pulse readable as a 2x2 metric grid;
+                          // desktop can expand to four compact metrics.
+                          final columns = constraints.maxWidth < 540 ? 2 : 4;
                           final gap = HopeV2Spacing.sm;
                           final width =
                               (constraints.maxWidth - gap * (columns - 1)) /
