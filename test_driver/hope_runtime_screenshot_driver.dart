@@ -2,15 +2,12 @@ import 'dart:io';
 
 import 'package:integration_test/integration_test_driver_extended.dart';
 
-const _dartDefineRoot = String.fromEnvironment('HOPE_SCREENSHOT_OUTPUT_ROOT');
-
 Future<void> main() async {
-  final rootFromEnv = Platform.environment['HOPE_SCREENSHOT_OUTPUT_ROOT'];
-  final root = _dartDefineRoot.isNotEmpty ? _dartDefineRoot : rootFromEnv;
+  final root = Platform.environment['HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT'];
 
   if (root == null || root.isEmpty) {
     throw StateError(
-      'HOPE_SCREENSHOT_OUTPUT_ROOT is required (dart-define or environment).',
+      'HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT is required for host screenshot evidence.',
     );
   }
 
