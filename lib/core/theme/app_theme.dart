@@ -128,6 +128,34 @@ class AppTheme {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.xl),
+        ),
+        titleTextStyle: TextStyle(
+          color: textColor,
+          fontSize: 19,
+          fontWeight: FontWeight.w900,
+        ),
+        contentTextStyle: TextStyle(
+          color: mutedColor,
+          fontSize: 14,
+          height: 1.55,
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(HopeV2Radii.xl),
+          ),
+        ),
+        showDragHandle: true,
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: dark ? AppColors.darkCard : AppColors.surface,
