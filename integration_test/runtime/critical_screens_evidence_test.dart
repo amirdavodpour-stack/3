@@ -657,11 +657,6 @@ Future<void> _captureRuntimeScreenshot(
   await tempFile.writeAsBytes(bytes, flush: true);
   await tempFile.rename(outputFile.path);
 
-  final screenshots = binding.reportData?['screenshots'];
-  if (screenshots is List<dynamic>) {
-    screenshots.clear();
-  }
-
   print('HOPE_SCREENSHOT_CAPTURED:' + marker + ':' + bytes.length.toString());
   print('HOPE_SCREENSHOT_READY:$marker');
 }
