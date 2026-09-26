@@ -13,6 +13,9 @@ grep -Fq -- 'export HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script
 grep -Fq -- 'HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT' "$driver"
 grep -Fq -- 'onScreenshot:' "$driver"
 grep -Fq -- 'flutter_driver_onScreenshot_host_callback' "$script"
+grep -Fq -- 'local screenshot_path="$evidence_dir/$output"
+      rm -f -- "$screenshot_path"
+      local capture_deadline=' "$script"
 
 if grep -Eq 'adb exec-out run-as com\.hope\.marketplace cat .*hope-screen-captures-' "$script"; then
   echo "FAIL: host screenshot evidence must not depend on app-private ADB file reads" >&2
