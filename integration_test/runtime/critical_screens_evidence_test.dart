@@ -620,25 +620,7 @@ Future<void> _captureRuntimeScreenshot(
   WidgetTester tester,
   String marker,
 ) async {
-  const outputRoot = String.fromEnvironment('HOPE_SCREENSHOT_OUTPUT_ROOT');
-  if (outputRoot.isEmpty) {
-    throw StateError(
-      'HOPE_SCREENSHOT_OUTPUT_ROOT is required for runtime evidence.',
-    );
-  }
-
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
-  final outputDirectory = Directory(outputRoot);
-  await outputDirectory.create(recursive: true);
-
-  final outputFile = File('$outputRoot/$marker.png');
-  final tempFile = File('$outputRoot/.$marker.png.tmp');
-  if (await outputFile.exists()) {
-    await outputFile.delete();
-  }
-  if (await tempFile.exists()) {
-    await tempFile.delete();
-  }
 
   if (!_runtimeScreenshotSurfacePrepared) {
     print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
@@ -649,16 +631,7 @@ Future<void> _captureRuntimeScreenshot(
   }
 
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  final data = await binding.callbackManager.takeScreenshot(marker);
-  final bytes = data['bytes'];
-  if (bytes is! List<int> || bytes.isEmpty) {
-    throw StateError('Runtime screenshot capture returned no bytes: $marker');
-  }
-
-  await tempFile.writeAsBytes(bytes, flush: true);
-  await tempFile.rename(outputFile.path);
-
-  print('HOPE_SCREENSHOT_CAPTURED:' + marker + ':' + bytes.length.toString());
+  await binding.takeScreenshot(marker);
   print('HOPE_SCREENSHOT_READY:$marker');
 }
 
