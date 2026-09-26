@@ -24,32 +24,24 @@ $T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT' "$script"
 $T grep -Fq -- 'run_en_host_session baseline "${baseline_screens[@]}" || baseline_status=$?' "$script"
 $T grep -Fq -- 'run_en_host_session responsive' "$script"
 $T grep -Fq -- 'responsive-720x1280-home-fa-rtl' "$script"
-$T grep -Fq -- '"capture_transport": "flutter_takeScreenshot_driver_callback_host_handshake"' "$script"
+$T grep -Fq -- '"capture_transport": "adb_exec_out_screencap_host_handshake"' "$script"
 $T grep -Fq -- 'onScreenshot:' "$driver"
 $T grep -Fq -- 'writeAsBytes(image, flush: true)' "$driver"
 $T grep -Fq -- "Platform.environment['GITHUB_WORKSPACE']" "$driver"
 $T grep -Fq -- 'docs/audit/evidence/android-runtime' "$driver"
+$T grep -Fq -- 'if (_adbScreenshotCapture) {' "$test_file"
+$T grep -Fq -- "await request.writeAsString('ready', flush: true);" "$test_file"
+$T grep -Fq -- 'if (!_adbScreenshotCapture) {' "$test_file"
 $T grep -Fq -- 'binding.takeScreenshot(marker)' "$test_file"
 $T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"
 
-validate_block="$(/system/bin/toybox sed -n '/^validate_capture_set() {/,/^}/p' "$script")"
-if /system/bin/toybox grep -Fq -- 'HOPE_SCREENSHOT_READY:$marker' <<< "$validate_block"; then
-  echo "FAIL: capture validation must not depend on buffered Flutter stdout markers" >&2
-  exit 1
-fi
 $T grep -Fq -- 'HOPE_HOST_SCREENSHOT_VALIDATED:$marker' "$script"
 $T grep -Fq -- 'completion_status=0' "$script"
-$T grep -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
 $T grep -Fq -- 'if (_responsiveOnly) {' "$test_file"
 $T grep -Fq -- 'await _captureBaselineLocale(' "$test_file"
 $T grep -Fq -- 'await _captureResponsiveLocale(' "$test_file"
 $T grep -Fq -- 'await tester.pumpWidget(' "$test_file"
 $T grep -Fq -- '_EvidenceHost(' "$test_file"
-$T grep -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
-if $T grep -Fq -- 'if (!_adbScreenshotCapture)' "$test_file"; then
-  echo "FAIL: screenshot surface conversion cannot be skipped for ADB capture" >&2
-  exit 1
-fi
 $T grep -Fq -- 'FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"' "$script"
 $T grep -Fq -- 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"' "$script"
 $T grep -Fq -- 'if ! wait_for_driver_connection "$process_pid" "$log_path"; then' "$script"
@@ -62,7 +54,7 @@ $T grep -Fq -- 'if ! assert_hope_focused "$marker"; then' "$script"
 $T grep -Fq -- 'DRAW_CHECK_TIMEOUT_SECONDS=' "$script"
 $T grep -Fq -- 'assert_hope_rendered "$marker"' "$script"
 $T grep -Fq -- 'reportedDrawn=true reportedVisible=true' "$script"
-$T grep -Fq -- 'Splash Screen com\.hope\.marketplace' "$script"
+$T grep -Fq -- 'Splash Screen com.hope.marketplace' "$script"
 $T grep -Fq -- 'test-complete.ready' "$test_file"
 $T grep -Fq -- 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$test_file"
 $T grep -Fq -- 'completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"' "$script"
@@ -75,29 +67,24 @@ if $T grep -Fq -- 'ValueNotifier<_RuntimeScreen>' "$test_file" ||
   exit 1
 fi
 
-
 if $T grep -Fq -- 'binding.callbackManager.takeScreenshot(marker)' "$test_file"; then
-  echo "FAIL: runtime screenshot must use integration_test reportData for driver callback" >&2
+  echo "FAIL: runtime screenshot must not bypass the supported capture path" >&2
   exit 1
 fi
 
 if $T grep -Fq -- 'screenshots.clear()' "$test_file"; then
-  echo "FAIL: screenshot reportData must remain available for driver callback" >&2
+  echo "FAIL: screenshot reportData must remain available for non-ADB fallback" >&2
   exit 1
 fi
 
-if $T grep -Fq -- 'capture_screen()' "$script" ||
-   $T grep -Fq -- 'verify_runtime_screenshot()' "$script" ||
-   $T grep -Fq -- 'collect_runtime_screenshot(' "$script"; then
-  echo "FAIL: screenshot capture must be handled by flutter_driver onScreenshot, not ADB live polling" >&2
-  exit 1
-fi
+$T grep -Fq -- 'adb exec-out screencap -p > "$output.tmp"' "$script"
+$T grep -Fq -- 'mv "$output.tmp" "$output"' "$script"
 
 # EN baseline must pass the host driver's required output root, not only the responsive branch.
 $T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
 
-driver_timeout_default="$(/system/bin/toybox sed -n 's/^DRIVER_CONNECT_TIMEOUT_SECONDS="\${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$script")"
-runtime_timeout_default="$(/system/bin/toybox sed -n 's/^RUNTIME_TEST_TIMEOUT_SECONDS="\${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$script")"
+driver_timeout_default="$(/system/bin/toybox sed -n 's/^DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$script")"
+runtime_timeout_default="$(/system/bin/toybox sed -n 's/^RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$script")"
 if [ -z "$driver_timeout_default" ] || [ -z "$runtime_timeout_default" ] ||
    [ "$driver_timeout_default" -lt "$runtime_timeout_default" ]; then
   echo "FAIL: driver connection timeout must cover the full runtime test timeout" >&2
