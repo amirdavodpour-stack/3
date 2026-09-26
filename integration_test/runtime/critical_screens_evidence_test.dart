@@ -702,44 +702,56 @@ void main() {
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
+    final runtime = await _prepare();
+    final screen = ValueNotifier(
+      _RuntimeScreen(
+        locale: const Locale('fa'),
+        child: const HomePage(),
+      ),
+    );
+
+    await tester.pumpWidget(
+      _EvidenceHost(
+        runtime: runtime,
+        screen: screen,
+      ),
+    );
 
     if (_responsiveOnly) {
-      final fa = await _prepare();
       await _captureResponsiveLocale(
         tester,
-        runtime: fa,
+        runtime: runtime,
+        screen: screen,
         locale: const Locale('fa'),
         suffix: 'fa-rtl',
       );
-      final en = fa;
       await _captureResponsiveLocale(
         tester,
-        runtime: en,
+        runtime: runtime,
+        screen: screen,
         locale: const Locale('en'),
         suffix: 'en-ltr',
       );
-      // Keep the final capture file accessible long enough for the host-side
-      // runtime evidence collector to read it before integration-test teardown.
       await Future<void>.delayed(const Duration(seconds: 1));
+      screen.dispose();
       return;
     }
 
-    final fa = await _prepare();
     await _captureBaselineLocale(
       tester,
-      runtime: fa,
+      runtime: runtime,
+      screen: screen,
       locale: const Locale('fa'),
       suffix: 'fa-rtl',
     );
-    final en = fa;
     await _captureBaselineLocale(
       tester,
-      runtime: en,
+      runtime: runtime,
+      screen: screen,
       locale: const Locale('en'),
       suffix: 'en-ltr',
     );
-    // Keep the final capture file accessible long enough for the host-side
-    // runtime evidence collector to read it before integration-test teardown.
     await Future<void>.delayed(const Duration(seconds: 1));
+    screen.dispose();
   });
 }
