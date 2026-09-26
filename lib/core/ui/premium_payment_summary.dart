@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/hope_v2_design.dart';
 import '../transactions/payment.dart';
 import 'premium_components.dart';
+import 'components.dart';
 
 class PremiumPaymentSummary extends StatelessWidget {
   const PremiumPaymentSummary({super.key, required this.payment});
