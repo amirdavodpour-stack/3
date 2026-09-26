@@ -207,16 +207,8 @@ run_en_host_session() {
   return "$capture_status"
 }
 
-if [ "$CAPTURE_LOCALE" = "en" ]; then
-  baseline_status=0
-  run_en_host_session baseline "${baseline_screens[@]}" || baseline_status=$?
-else
-  set +e
-timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive   --no-pub   --no-dds   --driver=test_driver/hope_runtime_screenshot_driver.dart   --target=integration_test/runtime/critical_screens_evidence_test.dart   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"   --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE"   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"   > "$log_file" 2>&1
-baseline_status=$?
-set -e
-fi
-
+baseline_status=0
+run_en_host_session baseline "${baseline_screens[@]}" || baseline_status=$?
 if [ "$baseline_status" -eq 0 ] &&
    ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$log_file" "${baseline_screens[@]}"; then
   baseline_status=1
@@ -237,12 +229,8 @@ if [ "$baseline_status" -eq 0 ]; then
   if [ "$CAPTURE_LOCALE" = "en" ]; then
     run_en_host_session responsive       "responsive-720x1280-home-en-ltr"       "responsive-720x1280-jobs-en-ltr"       "responsive-720x1280-job-detail-en-ltr"       "responsive-720x1280-wallet-en-ltr"       "responsive-720x1280-profile-en-ltr"       "responsive-720x1280-transactions-en-ltr" || responsive_status=$?
   else
-    set +e
-  timeout --foreground --signal=TERM --kill-after=30s "${RUNTIME_TEST_TIMEOUT_SECONDS}s" env HOPE_RESPONSIVE_ONLY=1 HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive     --no-pub     --no-dds     --driver=test_driver/hope_runtime_screenshot_driver.dart     --target=integration_test/runtime/critical_screens_evidence_test.dart     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"     --dart-define=HOPE_RESPONSIVE_ONLY=true     --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE"     --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     > "$runner_temp/hope-responsive-runtime.log" 2>&1
-  responsive_status=$?
-  set -e
+    run_en_host_session responsive       "responsive-720x1280-home-fa-rtl"       "responsive-720x1280-jobs-fa-rtl"       "responsive-720x1280-job-detail-fa-rtl"       "responsive-720x1280-transactions-fa-rtl"       "responsive-720x1280-wallet-fa-rtl"       "responsive-720x1280-profile-fa-rtl" || responsive_status=$?
   fi
-
   responsive_screens=(
     "responsive-720x1280-home-fa-rtl"
     "responsive-720x1280-jobs-fa-rtl"
@@ -311,7 +299,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "$([ "$CAPTURE_LOCALE" = "en" ] && echo adb_exec_out_screencap_host_handshake || echo flutter_driver_onScreenshot_host_callback)",
+  "capture_transport": "adb_exec_out_screencap_host_handshake",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
