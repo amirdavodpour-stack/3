@@ -682,53 +682,89 @@ class _WalletPageState extends State<WalletPage> {
     }
 
     Widget actionsPanel() {
-      return PremiumPanel(
-        highlight: true,
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              _t('عملیات مالی', 'Money movement'),
-              style: HopeV2Type.section(context),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              _t(
-                'عملیات داخلی کیف پول را از همین‌جا مدیریت کنید.',
-                'Manage internal wallet actions from here.',
-              ),
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            if (_internalTopUpEnabled)
-              FilledButton.tonalIcon(
-                onPressed: canAct ? _openTopUp : null,
-                icon: HopeIcon(HopeV2Icons.add, size: 19),
-                label: Text(_t('شارژ کیف پول', 'Top up')),
-              ),
-            if (_internalTopUpEnabled) const SizedBox(height: 9),
-            FilledButton.icon(
-              onPressed: canAct ? _openTransfer : null,
-              icon: HopeIcon(HopeV2Icons.transferOut, size: 19),
-              label: Text(_t('انتقال داخلی', 'Transfer')),
-            ),
-            const SizedBox(height: 9),
-            OutlinedButton.icon(
-              onPressed: canAct ? _openWithdraw : null,
-              icon: HopeIcon(HopeV2Icons.transferOut, size: 19),
-              label: Text(_t('درخواست برداشت', 'Request withdrawal')),
-            ),
-            if (!wallet.isActive) ...[
-              const SizedBox(height: 12),
-              Text(
-                _t(
-                  'کیف پول فعال نیست؛ عملیات مالی جدید در دسترس نیست.',
-                  'This wallet is not active; new financial actions are unavailable.',
+      Widget action({
+        required Object icon,
+        required String fa,
+        required String en,
+        required VoidCallback? onPressed,
+        bool primary = false,
+      }) {
+        final color = primary
+            ? Theme.of(context).colorScheme.primary
+            : HopeV2Colors.secondary;
+        return Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 76),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onPressed,
+                borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                child: Ink(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(
+                      alpha: onPressed == null ? .05 : .09,
+                    ),
+                    borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                    border: Border.all(
+                      color: color.withValues(
+                        alpha: onPressed == null ? .10 : .20,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      HopeIcon(icon, color: color, size: 22, strokeWidth: 1.9),
+                      const SizedBox(height: 6),
+                      Text(
+                        _t(fa, en),
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                style: Theme.of(context).textTheme.bodySmall,
               ),
-            ],
+            ),
+          ),
+        );
+      }
+
+      return PremiumPanel(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            if (_internalTopUpEnabled)
+              action(
+                icon: HopeV2Icons.add,
+                fa: 'شارژ',
+                en: 'Top up',
+                onPressed: canAct ? _openTopUp : null,
+                primary: false,
+              ),
+            if (_internalTopUpEnabled) const SizedBox(width: 8),
+            action(
+              icon: HopeV2Icons.transferOut,
+              fa: 'انتقال',
+              en: 'Transfer',
+              onPressed: canAct ? _openTransfer : null,
+              primary: true,
+            ),
+            const SizedBox(width: 8),
+            action(
+              icon: HopeV2Icons.transferOut,
+              fa: 'برداشت',
+              en: 'Withdraw',
+              onPressed: canAct ? _openWithdraw : null,
+            ),
           ],
         ),
       );
