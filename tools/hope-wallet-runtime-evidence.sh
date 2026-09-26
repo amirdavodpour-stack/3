@@ -197,7 +197,7 @@ run_en_host_session() {
   process_pid=$!
   set -e
   for marker in "$@"; do
-    capture_host_screenshot "$marker" "$process_pid" || capture_status=1
+    capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }
   done
   set +e
   wait "$process_pid"

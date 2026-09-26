@@ -55,3 +55,10 @@ fi
 $T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
 
 echo "PASS: runtime driver foreground contract"
+
+# EN host capture must fail fast instead of spending one full timeout per later marker.
+if $T grep -Fq -- 'capture_host_screenshot "$marker" "$process_pid" || capture_status=1' "$script"; then
+  echo "FAIL: EN host session continues after first capture failure" >&2
+  exit 1
+fi
+$T grep -Fq -- 'capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }' "$script"
