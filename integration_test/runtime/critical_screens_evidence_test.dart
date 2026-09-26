@@ -734,8 +734,19 @@ Future<void> _captureRuntimeScreen(
   // integration_test. After each capture, revert it so the next pump can
   // render a fresh Flutter surface; otherwise ADB framebuffer screenshots
   // can remain frozen on the first converted frame.
-  final binding = IntegrationTestWidgetsFlutterBinding.instance;
-  await binding.convertFlutterSurfaceToImage();
+  // In the native Android capture path, bypass the binding's private
+  // surface-state bookkeeping and invoke the same supported platform-channel
+  // methods directly. The binding API keeps an internal converted-state flag;
+  // our app-side immediate revert must not leave that flag stale for the
+  // next screen.
+  if (_adbScreenshotCapture) {
+    await integrationTestChannel.invokeMethod<void>(
+      'convertFlutterSurfaceToImage',
+    );
+  } else {
+    final binding = IntegrationTestWidgetsFlutterBinding.instance;
+    await binding.convertFlutterSurfaceToImage();
+  }
   await tester.pump();
   await tester.binding.endOfFrame;
 
@@ -749,11 +760,6 @@ Future<void> _captureRuntimeScreen(
   await tester.binding.endOfFrame;
 
   await _captureRuntimeScreenshot(tester, marker);
-  if (_adbScreenshotCapture) {
-    await integrationTestChannel.invokeMethod<void>('revertFlutterImage');
-    await tester.pump();
-    await tester.binding.endOfFrame;
-  }
 }
 Future<void> _signalRuntimeTestBodyComplete() async {
   if (!_adbScreenshotCapture || _screenshotSyncRoot.isEmpty) {
@@ -844,9 +850,7 @@ void main() {
         child: const HomePage(),
       ),
     );
-    await _prepareRuntimeScreenshotSurface(tester);
-
-    if (_responsiveOnly) {
+      if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
           tester,
