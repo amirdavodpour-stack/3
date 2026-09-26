@@ -27,6 +27,7 @@ import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/vazirmatn_loader.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
@@ -661,16 +662,24 @@ Future<void> _captureRuntimeScreenshot(
 }
 
 Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
-  for (var attempt = 0; attempt < 30; attempt++) {
-    if (find.byType(CircularProgressIndicator).evaluate().isEmpty) {
+  for (var attempt = 0; attempt < 100; attempt++) {
+    final hasSpinner =
+        find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+    final hasSkeleton =
+        find.byType(SkeletonBox).evaluate().isNotEmpty;
+    if (!hasSpinner && !hasSkeleton) {
       return;
     }
     await tester.pump(const Duration(milliseconds: 100));
   }
 
-  if (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
+  final hasSpinner =
+      find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+  final hasSkeleton =
+      find.byType(SkeletonBox).evaluate().isNotEmpty;
+  if (hasSpinner || hasSkeleton) {
     throw StateError(
-      'Runtime render remained in loading state after bounded settle',
+      'Runtime render remained in loading/skeleton state after bounded settle',
     );
   }
 }
