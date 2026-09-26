@@ -616,7 +616,7 @@ typedef _Runtime = ({
 var _runtimeScreenshotSurfacePrepared = false;
 
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
-  if (_runtimeScreenshotSurfacePrepared) {
+  if (_adbScreenshotCapture || _runtimeScreenshotSurfacePrepared) {
     return;
   }
 
@@ -635,7 +635,6 @@ Future<void> _captureRuntimeScreenshot(
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
 
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  await binding.takeScreenshot(marker);
 
   if (_adbScreenshotCapture) {
     if (_screenshotSyncRoot.isEmpty) {
@@ -657,6 +656,7 @@ Future<void> _captureRuntimeScreenshot(
     return;
   }
 
+  await binding.takeScreenshot(marker);
   print('HOPE_SCREENSHOT_READY:$marker');
 }
 
