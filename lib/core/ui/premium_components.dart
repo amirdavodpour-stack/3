@@ -296,9 +296,11 @@ class PremiumHeader extends StatelessWidget {
                 style: HopeV2Type.display(context).copyWith(
                   // Mobile page titles stay editorial rather than consuming
                   // the entire first viewport.
-                  fontSize: compact ? 28 : 34,
-                  height: compact ? 1.08 : 1.06,
-                  letterSpacing: compact ? -.65 : -.85,
+                  // Keep compact page headers subordinate to the focal content,
+                  // matching the reference's dense editorial hierarchy.
+                  fontSize: compact ? 24 : 30,
+                  height: compact ? 1.10 : 1.06,
+                  letterSpacing: compact ? -.45 : -.75,
                 ),
               ),
               if (subtitle != null) ...[
@@ -667,6 +669,7 @@ class PremiumStatCard extends StatelessWidget {
     required this.icon,
     this.accent,
     this.caption,
+    this.highlight = false,
   });
 
   final String label;
@@ -674,6 +677,9 @@ class PremiumStatCard extends StatelessWidget {
   final Object icon;
   final Color? accent;
   final String? caption;
+  /// Focal stat surfaces may opt into the stronger gradient treatment.
+  /// Ordinary support metrics stay quiet by default.
+  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
@@ -681,7 +687,7 @@ class PremiumStatCard extends StatelessWidget {
     return PremiumPanel(
       semanticLabel: '$label: $value',
       padding: const EdgeInsets.all(HopeV2Spacing.lg),
-      highlight: Theme.of(context).brightness == Brightness.dark,
+      highlight: highlight,
       child: Row(
         children: [
           ExcludeSemantics(
