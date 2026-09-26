@@ -587,6 +587,8 @@ class _EvidenceHost extends StatelessWidget {
 }
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
+const _captureLocale =
+    String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: 'all');
 
 class _EvidenceUploadQueue implements UploadQueue {
   @override
@@ -746,7 +748,7 @@ void main() {
     final runtime = await _prepare();
     final screen = ValueNotifier(
       _RuntimeScreen(
-        locale: const Locale('fa'),
+        locale: _captureLocale == 'en' ? const Locale('en') : const Locale('fa'),
         child: const HomePage(),
       ),
     );
@@ -759,39 +761,47 @@ void main() {
     );
 
     if (_responsiveOnly) {
-      await _captureResponsiveLocale(
+      if (_captureLocale != 'en') {
+        await _captureResponsiveLocale(
+          tester,
+          runtime: runtime,
+          screen: screen,
+          locale: const Locale('fa'),
+          suffix: 'fa-rtl',
+        );
+      }
+      if (_captureLocale != 'fa') {
+        await _captureResponsiveLocale(
+          tester,
+          runtime: runtime,
+          screen: screen,
+          locale: const Locale('en'),
+          suffix: 'en-ltr',
+        );
+      }
+      await Future<void>.delayed(const Duration(seconds: 1));
+      screen.dispose();
+      return;
+    }
+
+    if (_captureLocale != 'en') {
+      await _captureBaselineLocale(
         tester,
         runtime: runtime,
         screen: screen,
         locale: const Locale('fa'),
         suffix: 'fa-rtl',
       );
-      await _captureResponsiveLocale(
+    }
+    if (_captureLocale != 'fa') {
+      await _captureBaselineLocale(
         tester,
         runtime: runtime,
         screen: screen,
         locale: const Locale('en'),
         suffix: 'en-ltr',
       );
-      await Future<void>.delayed(const Duration(seconds: 1));
-      screen.dispose();
-      return;
     }
-
-    await _captureBaselineLocale(
-      tester,
-      runtime: runtime,
-      screen: screen,
-      locale: const Locale('fa'),
-      suffix: 'fa-rtl',
-    );
-    await _captureBaselineLocale(
-      tester,
-      runtime: runtime,
-      screen: screen,
-      locale: const Locale('en'),
-      suffix: 'en-ltr',
-    );
     await Future<void>.delayed(const Duration(seconds: 1));
     screen.dispose();
   });
