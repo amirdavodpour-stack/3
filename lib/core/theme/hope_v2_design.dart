@@ -26,7 +26,8 @@ class HopeV2Colors {
   static const muted = Color(0xFF6B6780);
   static const surface = Color(0xFFFFFFFF);
   static const background = Color(0xFFF0ECF8);
-  static const success = Color(0xFF22B8A7);
+  // Match the canonical reference semantic green used for trust/success.
+  static const success = Color(0xFF10B981);
   static const successDark = Color(0xFF34D8C8);
   static const warning = Color(0xFFF59E0B);
   static const warningDark = Color(0xFFFBBF24);
