@@ -128,6 +128,17 @@ class AppTheme {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        scrimColor: Colors.black.withValues(alpha: dark ? .58 : .32),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadiusDirectional.horizontal(
+            end: Radius.circular(HopeV2Radii.xl),
+          ),
+        ),
+        width: 320,
+      ),
       dialogTheme: DialogThemeData(
         backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
         surfaceTintColor: Colors.transparent,
