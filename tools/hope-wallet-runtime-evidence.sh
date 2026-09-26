@@ -172,6 +172,10 @@ capture_host_screenshot() {
 
   while (( SECONDS < deadline )); do
     if adb exec-out run-as com.hope.marketplace cat "$request" >/dev/null 2>&1; then
+      if ! assert_hope_focused "$marker"; then
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
+        return 1
+      fi
       if test -s "$output"; then
         local magic
         magic="$(od -An -tx1 -N8 "$output" | tr -d '[:space:]')"
