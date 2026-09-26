@@ -19,6 +19,12 @@ $T grep -Fq -- 'capture_transport": "flutter_driver_onScreenshot_host_callback"'
 $T grep -Fq -- 'onScreenshot:' "$driver"
 $T grep -Fq -- 'writeAsBytes(image, flush: true)' "$driver"
 $T grep -Fq -- 'binding.takeScreenshot(marker)' "$test_file"
+$T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"
+
+$T grep -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
+$T grep -Fq -- 'if (_responsiveOnly) {' "$test_file"
+$T grep -Fq -- 'await _captureBaselineLocale(' "$test_file"
+$T grep -Fq -- 'await _captureResponsiveLocale(' "$test_file"
 
 if $T grep -Fq -- 'binding.callbackManager.takeScreenshot(marker)' "$test_file"; then
   echo "FAIL: runtime screenshot must use integration_test reportData for driver callback" >&2
