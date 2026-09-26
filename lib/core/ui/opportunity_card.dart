@@ -168,7 +168,7 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: 168,
+        height: featured ? 182 : 168,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -495,19 +495,61 @@ class OpportunityCard extends StatelessWidget {
           Text(job.description.trim(), maxLines: 5, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
         ],
         const SizedBox(height: HopeV2Spacing.lg),
-        Row(
-          children: [
-            Expanded(child: Text(job.isMission ? copy.copy_view_and_act_on_mission : copy.copy_view_details_and_act, style: Theme.of(context).textTheme.bodyMedium)),
-            HugeIcon(
-              icon: Directionality.of(context) == ui.TextDirection.rtl
-                  ? HopeV2Icons.arrowLeft
-                  : HopeV2Icons.arrowRight,
-              size: 20,
-              color: primary,
-              strokeWidth: 1.9,
+        if (featured)
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+            padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 12, 10),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: .14),
+              borderRadius: BorderRadius.circular(HopeV2Radii.button),
+              border: Border.all(color: primary.withValues(alpha: .28)),
             ),
-          ],
-        ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    job.isMission
+                        ? copy.copy_view_and_act_on_mission
+                        : copy.copy_view_details_and_act,
+                    style: TextStyle(
+                      color: primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                HugeIcon(
+                  icon: Directionality.of(context) == ui.TextDirection.rtl
+                      ? HopeV2Icons.arrowLeft
+                      : HopeV2Icons.arrowRight,
+                  size: 20,
+                  color: primary,
+                  strokeWidth: 1.9,
+                ),
+              ],
+            ),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  job.isMission
+                      ? copy.copy_view_and_act_on_mission
+                      : copy.copy_view_details_and_act,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+              HugeIcon(
+                icon: Directionality.of(context) == ui.TextDirection.rtl
+                    ? HopeV2Icons.arrowLeft
+                    : HopeV2Icons.arrowRight,
+                size: 20,
+                color: primary,
+                strokeWidth: 1.9,
+              ),
+            ],
+          ),
       ],
     );
   }
