@@ -6,6 +6,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 /// Operational surface for backend capabilities that are intentionally
 /// separate from the general admin CRUD screen.
@@ -26,6 +27,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   late Future<Map<String, dynamic>> _analytics;
   late Future<Map<String, dynamic>> _funnel;
   late Future<Map<String, dynamic>> _crashes;
+  bool _operationBusy = false;
 
   @override
   void initState() {
@@ -53,6 +55,38 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
 
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _reportStatusLabel(Object? value) =>
+      switch (value?.toString().trim().toUpperCase()) {
+        'OPEN' => _t('باز', 'Open'),
+        'REVIEWING' => _t('در حال بررسی', 'Reviewing'),
+        'RESOLVED' => _t('حل‌شده', 'Resolved'),
+        'DISMISSED' => _t('ردشده', 'Dismissed'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _reportEntityTypeLabel(Object? value) =>
+      switch (value?.toString().trim().toUpperCase()) {
+        'USER' => _t('کاربر', 'User'),
+        'JOB' => _t('فرصت', 'Opportunity'),
+        _ => _t('سایر', 'Other'),
+      };
+
+  String _payoutStatusLabel(Object? value) =>
+      switch (value?.toString().trim().toUpperCase()) {
+        'SUCCEEDED' => _t('موفق', 'Succeeded'),
+        'FAILED' => _t('ناموفق', 'Failed'),
+        'PENDING' => _t('در انتظار', 'Pending'),
+        'UNKNOWN' => _t('نیازمند بررسی', 'Needs review'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
+  String _reportNextLabel(String value) => switch (value) {
+        'REVIEWING' => _t('در حال بررسی', 'Reviewing'),
+        'RESOLVED' => _t('حل‌شده', 'Resolved'),
+        'DISMISSED' => _t('ردشده', 'Dismissed'),
+        _ => _t('تغییر وضعیت', 'Change status'),
+      };
 
   String _value(dynamic v) {
     if (v == null) return '—';
@@ -87,7 +121,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             IconButton(
               tooltip: _t('بازخوانی', 'Refresh'),
               onPressed: _reload,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: HopeIcon(HopeV2Icons.refresh, size: 19),
             ),
           ],
           bottom: TabBar(
@@ -102,15 +136,19 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             ],
           ),
         ),
-        body: TabBarView(
-          controller: _tabs,
-          children: [
-            _financeTab(),
-            _reportsTab(),
-            _payoutsTab(),
-            _analyticsTab(),
-            _crashTab(),
-          ],
+        body: PremiumPageFrame(
+          maxWidth: 1280,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 56),
+          child: TabBarView(
+            controller: _tabs,
+            children: [
+              _financeTab(),
+              _reportsTab(),
+              _payoutsTab(),
+              _analyticsTab(),
+              _crashTab(),
+            ],
+          ),
         ),
       ),
     );
@@ -125,7 +163,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: EmptyState(
-            icon: Icons.cloud_off_rounded,
+            icon: HopeV2Icons.pending,
             title: _t('دریافت اطلاعات ناموفق بود', 'Could not load data'),
             message: apiErrorMessage(s.error ?? Object()),
             action: FilledButton(
@@ -151,7 +189,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               padding: const EdgeInsets.all(18),
               children: [
                 _header(
-                  Icons.account_balance_rounded,
+                  HopeV2Icons.wallet,
                   _t('نمای مالی پلتفرم', 'Platform financial overview'),
                   _t('اعداد مستقیماً از کنترل مالی Backend خوانده می‌شوند.',
                       'Values are read directly from the backend financial control.'),
@@ -171,11 +209,11 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               child: ListView(
                 padding: const EdgeInsets.all(18),
                 children: [
-                  _header(Icons.shield_outlined, _t('Trust & Safety', 'Trust & Safety'),
+                  _header(HopeV2Icons.secure, _t('Trust & Safety', 'Trust & Safety'),
                       _t('گزارش‌های واقعی کاربران و وضعیت رسیدگی.', 'Real user reports and their review state.')),
                   const SizedBox(height: 12),
                   if (rows.isEmpty)
-                    _empty(Icons.verified_user_outlined, _t('گزارشی وجود ندارد', 'No reports'))
+                    _empty(HopeV2Icons.secure, _t('گزارشی وجود ندارد', 'No reports'))
                   else
                     ...rows.map(_reportCard),
                 ],
@@ -188,32 +226,32 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     final status = '${row['status'] ?? 'OPEN'}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: HopeSurface(
+      child: PremiumPanel(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const HopeIconTile(Icons.flag_outlined, filled: true),
+            const HopeIconTile(HopeV2Icons.notifications, filled: true),
             const SizedBox(width: 10),
             Expanded(child: Text(
               '${row['reason'] ?? _t('گزارش', 'Report')}',
               style: Theme.of(context).textTheme.titleMedium,
             )),
-            StatusPill(status, icon: Icons.circle_outlined, color: secondaryAccent(context)),
+            StatusPill(_reportStatusLabel(status), icon: HopeV2Icons.pending, color: secondaryAccent(context)),
           ]),
           if ('${row['details'] ?? ''}'.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('${row['details']}'),
           ],
           const SizedBox(height: 8),
-          Text('${row['entityType'] ?? '—'} • ${row['entityId'] ?? '—'} • ${row['createdAt'] ?? '—'}',
+          Text('${_reportEntityTypeLabel(row['entityType'])} • ${row['entityId'] ?? '—'} • ${row['createdAt'] ?? '—'}',
               style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final next in const ['REVIEWING', 'RESOLVED', 'DISMISSED'])
               if (next != status)
                 OutlinedButton(
-                  onPressed: id.isEmpty ? null : () => _setReportStatus(id, next),
-                  child: Text(next),
+                  onPressed: id.isEmpty || _operationBusy ? null : () => _setReportStatus(id, next),
+                  child: Text(_reportNextLabel(next)),
                 ),
           ]),
         ]),
@@ -222,14 +260,18 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   }
 
   Future<void> _setReportStatus(String id, String status) async {
+    if (_operationBusy || !mounted) return;
+    setState(() => _operationBusy = true);
     try {
       await context.read<AdminRepository>().updateTrustReportStatus(id, status);
-      _reload();
+      if (mounted) _reload();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(apiErrorMessage(e))),
       );
+    } finally {
+      if (mounted) setState(() => _operationBusy = false);
     }
   }
 
@@ -240,12 +282,12 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               child: ListView(
                 padding: const EdgeInsets.all(18),
                 children: [
-                  _header(Icons.payments_outlined, _t('کنترل تسویه', 'Payout operations'),
+                  _header(HopeV2Icons.payments, _t('کنترل تسویه', 'Payout operations'),
                       _t('مواردی که Backend برای تصمیم عملیاتی علامت‌گذاری کرده است.',
                           'Cases explicitly awaiting backend operational resolution.')),
                   const SizedBox(height: 12),
                   if (rows.isEmpty)
-                    _empty(Icons.task_alt_rounded, _t('تسویه ناشناخته‌ای نیست', 'No unknown payouts'))
+                    _empty(HopeV2Icons.completed, _t('تسویه ناشناخته‌ای نیست', 'No unknown payouts'))
                   else
                     ...rows.map(_payoutCard),
                 ],
@@ -257,31 +299,37 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     final id = '${row['id'] ?? row['payoutId'] ?? ''}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: HopeSurface(
+      child: PremiumPanel(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const HopeIconTile(Icons.warning_amber_rounded, filled: true),
+            const HopeIconTile(HopeV2Icons.pending, filled: true),
             const SizedBox(width: 10),
             Expanded(child: Text('${_t('تسویه', 'Payout')} ${id.isEmpty ? '—' : id}',
                 style: Theme.of(context).textTheme.titleMedium)),
-            StatusPill('${row['status'] ?? 'UNKNOWN'}', color: AppColors.warning),
+            StatusPill(_payoutStatusLabel(row['status']), color: AppColors.warning),
           ]),
           const SizedBox(height: 8),
-          Text(row.entries
-              .where((e) => !{'id', 'payoutId'}.contains(e.key) && (e.value is String || e.value is num))
-              .take(6)
-              .map((e) => '${e.key}: ${e.value}')
-              .join(' • ')),
+          Text(
+            row.entries
+                .where(
+                  (e) =>
+                      !{'id', 'payoutId', 'status', 'currency'}.contains(e.key) &&
+                      (e.value is String || e.value is num),
+                )
+                .take(6)
+                .map((e) => '${e.key}: ${e.value}')
+                .join(' • '),
+          ),
           const SizedBox(height: 10),
           Row(children: [
             Expanded(child: OutlinedButton(
-              onPressed: id.isEmpty ? null : () => _resolvePayout(id, 'FAILED'),
+              onPressed: id.isEmpty || _operationBusy ? null : () => _resolvePayout(id, 'FAILED'),
               child: Text(_t('ثبت ناموفق', 'Mark failed')),
             )),
             const SizedBox(width: 8),
             Expanded(child: FilledButton(
-              onPressed: id.isEmpty ? null : () => _resolvePayout(id, 'SUCCEEDED'),
+              onPressed: id.isEmpty || _operationBusy ? null : () => _resolvePayout(id, 'SUCCEEDED'),
               child: Text(_t('ثبت موفق', 'Mark succeeded')),
             )),
           ]),
@@ -291,10 +339,13 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   }
 
   Future<void> _resolvePayout(String id, String decision) async {
+    if (_operationBusy || !mounted) return;
+    setState(() => _operationBusy = true);
     final repository = context.read<AdminRepository>();
     String providerRef = '';
     String reason = '';
-    if (decision == 'SUCCEEDED') {
+    try {
+      if (decision == 'SUCCEEDED') {
       final ref = TextEditingController();
       final result = await showDialog<bool>(
         context: context,
@@ -314,17 +365,21 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       ref.dispose();
       if (result != true) return;
     }
-    try {
       await repository.resolveUnknownPayout(
         id,
         decision: decision,
         providerRef: providerRef.isEmpty ? null : providerRef,
         reason: reason.isEmpty ? null : reason,
       );
-      _reload();
+      if (mounted) _reload();
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _operationBusy = false);
     }
   }
 
@@ -336,7 +391,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             builder: (_, s) => _loadingOrError(s, (data) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _header(Icons.insights_rounded, _t('تحلیل محصول', 'Product analytics'),
+                _header(HopeV2Icons.insights, _t('تحلیل محصول', 'Product analytics'),
                     _t('خلاصه رویدادهای ثبت‌شده در بازه انتخابی.', 'Recorded product analytics for the selected period.')),
                 const SizedBox(height: 12),
                 _metricGrid(data.entries.where((e) => e.value is num || e.value is String).toList()),
@@ -347,7 +402,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           FutureBuilder<Map<String, dynamic>>(
             future: _funnel,
             builder: (_, s) => _loadingOrError(s, (data) => _mapPanel(
-              Icons.filter_alt_outlined,
+              HopeV2Icons.filter,
               _t('قیف محصول', 'Product funnel'),
               data,
             )),
@@ -364,19 +419,19 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             child: ListView(
               padding: const EdgeInsets.all(18),
               children: [
-                _header(Icons.bug_report_outlined, _t('Crash Center', 'Crash Center'),
+                _header(HopeV2Icons.error, _t('Crash Center', 'Crash Center'),
                     _t('خلاصه خطاهای گزارش‌شده از کلاینت‌ها.', 'Reported client crash summary.')),
                 const SizedBox(height: 12),
                 _metricGrid(rows),
                 const SizedBox(height: 14),
-                _mapPanel(Icons.data_object_rounded, _t('جزئیات', 'Details'), data),
+                _mapPanel(HopeV2Icons.insights, _t('جزئیات', 'Details'), data),
               ],
             ),
           );
         }),
       );
 
-  Widget _header(IconData icon, String title, String subtitle) => PremiumPanel(
+  Widget _header(Object icon, String title, String subtitle) => PremiumPanel(
         padding: const EdgeInsets.all(16),
         child: Row(children: [
           HopeIconTile(icon, filled: true, size: 46),
@@ -390,26 +445,67 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       );
 
   Widget _metricGrid(List<MapEntry<String, dynamic>> entries) {
-    if (entries.isEmpty) return _empty(Icons.info_outline, _t('داده‌ای نیست', 'No metrics'));
-    return GridView.count(
-      crossAxisCount: MediaQuery.sizeOf(context).width >= 900 ? 4 : 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.8,
-      children: entries.take(20).map((e) => PremiumPanel(
-        padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(_value(e.value), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          Text(e.key, maxLines: 2, overflow: TextOverflow.ellipsis),
-        ]),
-      )).toList(),
+    if (entries.isEmpty) {
+      return _empty(
+        HopeV2Icons.insights,
+        _t('داده‌ای نیست', 'No metrics'),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1100
+            ? 4
+            : constraints.maxWidth >= 700
+                ? 3
+                : constraints.maxWidth >= 420
+                    ? 2
+                    : 1;
+
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            mainAxisExtent: columns == 1 ? 82 : 96,
+          ),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: entries.take(20).length,
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            return PremiumPanel(
+              padding: const EdgeInsets.all(13),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _value(entry.value),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.key,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _mapPanel(IconData icon, String title, Map<String, dynamic> data) => PremiumPanel(
+  Widget _mapPanel(Object icon, String title, Map<String, dynamic> data) => PremiumPanel(
     padding: const EdgeInsets.all(14),
     child: ExpansionTile(
       leading: HopeIconTile(icon),
@@ -422,7 +518,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     ),
   );
 
-  Widget _empty(IconData icon, String text) => Padding(
+  Widget _empty(Object icon, String text) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 50),
     child: EmptyState(icon: icon, title: text, message: ''),
   );

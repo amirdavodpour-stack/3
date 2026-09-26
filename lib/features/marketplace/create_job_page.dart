@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +10,10 @@ import '../../core/application/application_registry_context.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/hope_feedback.dart';
 import 'create_job_payload.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -76,9 +80,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
     final effectiveMax = kind == 'JOB' ? salary.text : max.text;
     final selectedCategory = categoryId;
     if (selectedCategory == null || selectedCategory.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(HopeCopy.of(context)
-              .copy_choose_a_professional_category_b4cf5b8)));
+      HopeFeedback.show(context, HopeCopy.of(context).copy_choose_a_professional_category_b4cf5b8, tone: HopeFeedbackTone.warning);
       return;
     }
     final input = CreateJobPayloadInput(
@@ -102,14 +104,11 @@ class _CreateJobPageState extends State<CreateJobPage> {
           HopeCopy.of(context).copy_as_described_in_the_opportunity_836cb3e,
     );
     if (!validation.isValid) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(validation.error!)));
+      HopeFeedback.show(context, validation.error!, tone: HopeFeedbackTone.warning);
       return;
     }
     if (kind == 'JOB' && deadline.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(HopeCopy.of(context)
-              .copy_set_an_application_deadline_for_jobs_5fd80f8)));
+      HopeFeedback.show(context, HopeCopy.of(context).copy_set_an_application_deadline_for_jobs_5fd80f8, tone: HopeFeedbackTone.warning);
       return;
     }
     setState(() => busy = true);
@@ -135,16 +134,11 @@ class _CreateJobPageState extends State<CreateJobPage> {
       final created = await useCase(body);
       await useCase.publish(created.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text(HopeCopy.of(context).copy_opportunity_published_81a9fd1)));
+      HopeFeedback.show(context, HopeCopy.of(context).copy_opportunity_published_81a9fd1, tone: HopeFeedbackTone.success);
       Navigator.pop(context);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(apiErrorMessage(error,
-              fallback: HopeCopy.of(context)
-                  .copy_the_server_did_not_return_data_try_again_bccfbb3))));
+      HopeFeedback.show(context, apiErrorMessage(error, fallback: HopeCopy.of(context).copy_the_server_did_not_return_data_try_again_bccfbb3), tone: HopeFeedbackTone.error);
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -175,32 +169,61 @@ class _CreateJobPageState extends State<CreateJobPage> {
           HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
         ),
       ),
-      body: _CreateJobForm(
-        title: title,
-        description: desc,
-        minBudget: min,
-        maxBudget: max,
-        duration: duration,
-        salary: salary,
-        deadline: deadline,
-        acceptanceCriteria: accept,
-        busy: busy,
-        kind: kind,
-        visibility: visibility,
-        schedule: schedule,
-        city: city,
-        categoryId: categoryId,
-        categoriesFuture: _categoriesFuture,
-        onKindChanged: (value) => setState(() => kind = value),
-        onVisibilityChanged: (value) => setState(() => visibility = value),
-        onScheduleChanged: (value) => setState(() => schedule = value),
-        onCityChanged: (value) => setState(() => city = value),
-        onCategoryChanged: (value) => setState(() => categoryId = value),
-        onRetryCategories: () =>
-            setState(() => _categoriesFuture = _loadCategories()),
-        onPickDeadline: _pickDeadline,
-        onSubmit: submit,
-        translate: _t,
+      body: PremiumPageFrame(
+        maxWidth: 980,
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
+        child: SizedBox.expand(
+          child: Column(
+            children: [
+              PremiumHeader(
+                eyebrow: HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
+                title: _t('ثبت فرصت جدید', 'Post an opportunity'),
+                subtitle: _t(
+                  'نوع فرصت، مشخصات، مبلغ و شرایط را مشخص کنید.',
+                  'Set the opportunity type, details, budget, and requirements.',
+                ),
+                trailing: const HopeIconTile(
+                  HopeV2Icons.add,
+                  size: 52,
+                  filled: true,
+                ),
+              ),
+              const SizedBox(height: HopeV2Spacing.lg),
+              Expanded(
+                child: _CreateJobForm(
+                  title: title,
+                  description: desc,
+                  minBudget: min,
+                  maxBudget: max,
+                  duration: duration,
+                  salary: salary,
+                  deadline: deadline,
+                  acceptanceCriteria: accept,
+                  busy: busy,
+                  kind: kind,
+                  visibility: visibility,
+                  schedule: schedule,
+                  city: city,
+                  categoryId: categoryId,
+                  categoriesFuture: _categoriesFuture,
+                  onKindChanged: (value) => setState(() => kind = value),
+                  onVisibilityChanged: (value) =>
+                      setState(() => visibility = value),
+                  onScheduleChanged: (value) =>
+                      setState(() => schedule = value),
+                  onCityChanged: (value) => setState(() => city = value),
+                  onCategoryChanged: (value) =>
+                      setState(() => categoryId = value),
+                  onRetryCategories: () =>
+                      setState(() => _categoriesFuture = _loadCategories()),
+                  onPickDeadline: _pickDeadline,
+                  onSubmit: submit,
+                  translate: _t,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

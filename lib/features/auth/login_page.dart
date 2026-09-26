@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/google_sign_in_service.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/router/auth_return_intent.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_feedback.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.returnIntent});
+
+  final AuthReturnIntent? returnIntent;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -28,12 +36,36 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  Future<void> submitGoogle() async {
+    final l10n = AppLocalizations.of(context);
+    final google = context.read<GoogleSignInService?>();
+    if (google == null || !google.isConfigured) {
+      if (mounted) {
+        HopeFeedback.show(context, l10n.loginFailedGeneric, tone: HopeFeedbackTone.error);
+      }
+      return;
+    }
+    setState(() => loading = true);
+    try {
+      await context
+          .read<AuthController>()
+          .loginWithGoogle(google);
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(widget.returnIntent);
+      }
+    } catch (error) {
+      if (mounted) {
+        HopeFeedback.show(context, apiErrorMessage(error, fallback: l10n.loginFailedGeneric), tone: HopeFeedbackTone.error);
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
   Future<void> submit() async {
     final l10n = AppLocalizations.of(context);
     if (email.text.trim().isEmpty || password.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.emailPasswordRequired)),
-      );
+      HopeFeedback.show(context, l10n.emailPasswordRequired, tone: HopeFeedbackTone.warning);
       return;
     }
 
@@ -45,15 +77,11 @@ class _LoginPageState extends State<LoginPage> {
           .login(email.text.trim(), password.text);
 
       if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(widget.returnIntent);
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  apiErrorMessage(error, fallback: l10n.loginFailedGeneric))),
-        );
+        HopeFeedback.show(context, apiErrorMessage(error, fallback: l10n.loginFailedGeneric), tone: HopeFeedbackTone.error);
       }
     } finally {
       if (mounted) {
@@ -71,54 +99,72 @@ class _LoginPageState extends State<LoginPage> {
           : TextDirection.rtl,
       child: Scaffold(
         body: SafeArea(
-          child: ListView(
+          child: PremiumPageFrame(
+            maxWidth: 760,
             padding: const EdgeInsets.fromLTRB(20, 15, 20, 30),
-            children: [
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
               Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: Icon(
-                        Localizations.localeOf(context).languageCode == 'en'
-                            ? Icons.arrow_back_rounded
-                            : Icons.arrow_forward_rounded),
+                    icon: HugeIcon(
+                      icon: Localizations.localeOf(context).languageCode == 'en'
+                          ? HopeV2Icons.arrowLeft
+                          : HopeV2Icons.arrowRight,
+                      size: 21,
+                    ),
                     tooltip: l10n.backButtonTooltip,
                   ),
                   const Spacer(),
-                  const HopeMark(size: 40),
+                  const HopeMark(size: 38),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 22),
+              PremiumHero(
+                eyebrow: l10n.copy_hope_account_4ba3966,
+                title: l10n.loginWelcomeBack,
+                message: l10n.loginWelcomeBackSubtitle,
+                icon: HopeV2Icons.login,
+                height: 280,
+              ),
+              const SizedBox(height: 14),
               AnimatedEntrance(
-                child: HopeSurface(
-                  padding: const EdgeInsets.all(22),
-                  highlight: true,
+                child: PremiumPanel(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const HopeIconTile(
-                        Icons.waving_hand_rounded,
-                        size: 62,
-                        filled: true,
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        l10n.loginWelcomeBack,
-                        style: Theme.of(context).textTheme.displaySmall,
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        l10n.loginWelcomeBackSubtitle,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 23),
+                      if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: loading ? null : submitGoogle,
+                            icon: HugeIcon(icon: HopeV2Icons.userAdd, size: 19),
+                            label: Text(l10n.signInWithGoogle),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: Theme.of(context).dividerColor)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(l10n.orDivider),
+                            ),
+                            Expanded(child: Divider(color: Theme.of(context).dividerColor)),
+                          ],
+                        ),
+                        const SizedBox(height: 9),
+                      ],
                       TextField(
                         controller: email,
                         keyboardType: TextInputType.emailAddress,
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.emailLabel,
-                          prefixIcon: const Icon(Icons.mail_outline_rounded),
+                          prefixIcon: HopeIcon(HopeV2Icons.mail, size: 20),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -128,12 +174,13 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
-                          prefixIcon: const Icon(Icons.lock_outline_rounded),
+                          prefixIcon: HopeIcon(HopeV2Icons.password, size: 20),
                           suffixIcon: IconButton(
-                            icon: Icon(
-                              obscure
-                                  ? Icons.visibility_off_rounded
-                                  : Icons.visibility_rounded,
+                            icon: HugeIcon(
+                              icon: obscure
+                                  ? HopeV2Icons.viewOff
+                                  : HopeV2Icons.view,
+                              size: 20,
                             ),
                             tooltip: obscure
                                 ? l10n.showPasswordTooltip
@@ -143,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       Align(
-                        alignment: Alignment.centerRight,
+                        alignment: AlignmentDirectional.centerEnd,
                         child: TextButton(
                           onPressed: () => Navigator.push(
                               context, HopeRoutes.passwordReset()),
@@ -157,9 +204,7 @@ class _LoginPageState extends State<LoginPage> {
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Text(l10n.loginButton),
                       ),
@@ -175,7 +220,7 @@ class _LoginPageState extends State<LoginPage> {
                         context.read<AuthController>().continueAsGuest();
                         Navigator.maybePop(context);
                       },
-                icon: const Icon(Icons.travel_explore_rounded),
+                icon: HugeIcon(icon: HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
               ),
               const SizedBox(height: 14),
@@ -208,7 +253,8 @@ class _LoginPageState extends State<LoginPage> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

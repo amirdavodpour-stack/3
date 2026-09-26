@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/router/auth_return_intent.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/transactions/transaction_repository.dart';
@@ -10,6 +12,7 @@ import '../../core/transactions/wallet_repository.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
 import '../jobs/jobs_page.dart';
 import '../profile/profile_page.dart';
 import '../transactions/transactions_page.dart';
@@ -36,6 +39,7 @@ class _HomePageState extends State<HomePage> {
             context,
             () => _selectTab(1),
             () => _scaffoldKey.currentState?.openDrawer(),
+            () => _openCreate(context),
           ),
         1 => const JobsPage(key: ValueKey('explore')),
         2 => TransactionsPage(
@@ -58,11 +62,11 @@ class _HomePageState extends State<HomePage> {
     final settings = context.watch<HopeSettingsController>();
     final isDesktop = MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium;
     final destinations = [
-      NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home_rounded), label: _t(context, 'خانه', 'Home')),
-      NavigationDestination(icon: const Icon(Icons.explore_outlined), selectedIcon: const Icon(Icons.explore_rounded), label: _t(context, 'کاوش', 'Explore')),
-      NavigationDestination(icon: const Icon(Icons.inbox_outlined), selectedIcon: const Icon(Icons.inbox_rounded), label: _t(context, 'فعالیت', 'Activity')),
-      NavigationDestination(icon: const Icon(Icons.account_balance_wallet_outlined), selectedIcon: const Icon(Icons.account_balance_wallet_rounded), label: _t(context, 'کیف پول', 'Wallet')),
-      NavigationDestination(icon: const Icon(Icons.person_outline_rounded), selectedIcon: const Icon(Icons.person_rounded), label: _t(context, 'پروفایل', 'Profile')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.home, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.homeSelected, size: 24), label: _t(context, 'خانه', 'Home')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24), label: _t(context, 'کارگاه', 'Workshop')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.activity, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.activitySelected, size: 24), label: _t(context, 'فعالیت', 'Activity')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.walletSelected, size: 24), label: _t(context, 'کیف پول', 'Wallet')),
+      NavigationDestination(icon: HugeIcon(icon: HopeV2Icons.profile, size: 24), selectedIcon: HugeIcon(icon: HopeV2Icons.profileSelected, size: 24), label: _t(context, 'پروفایل', 'Profile')),
     ];
 
     final content = IndexedStack(
@@ -76,22 +80,21 @@ class _HomePageState extends State<HomePage> {
         child: isDesktop
             ? Row(
                 children: [
-                  NavigationRail(
+                  PremiumNavigationRail(
                     selectedIndex: tab,
                     onDestinationSelected: _selectTab,
-                    extended: MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded,
-                    minExtendedWidth: 210,
-                    labelType: MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded
-                        ? NavigationRailLabelType.none
-                        : NavigationRailLabelType.all,
-                    leading: const Padding(
-                      padding: EdgeInsets.fromLTRB(8, 12, 8, 22),
-                      child: HopeMark(size: 44, showText: false),
+                    extended:
+                        MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.expanded,
+                    leading: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 12, 8, 22),
+                      child: HopeMark(
+                        size: 44,
+                        showText:
+                            MediaQuery.sizeOf(context).width >=
+                            HopeV2Breakpoints.expanded,
+                      ),
                     ),
-                    destinations: [
-                      for (final d in destinations)
-                        NavigationRailDestination(icon: d.icon, selectedIcon: d.selectedIcon, label: Text(d.label)),
-                    ],
+                    destinations: destinations,
                   ),
                   const VerticalDivider(width: 1),
                   Expanded(child: content),
@@ -101,16 +104,20 @@ class _HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: isDesktop
           ? null
-          : NavigationBar(
+          : PremiumNavigationBar(
               selectedIndex: tab,
               onDestinationSelected: _selectTab,
               destinations: destinations,
             ),
       floatingActionButton: tab == 0
-          ? FloatingActionButton.extended(
+          ? FloatingActionButton.small(
               onPressed: () => _openCreate(context),
-              icon: const Icon(Icons.add_rounded),
-              label: Text(HopeCopy.of(context).copy_post_opportunity_0389bce),
+              tooltip: _t(
+                context,
+                'ثبت فرصت جدید',
+                'Post new opportunity',
+              ),
+              child: HugeIcon(icon: HopeV2Icons.add, size: 21),
             )
           : null,
       drawer: Drawer(
@@ -120,27 +127,26 @@ class _HomePageState extends State<HomePage> {
             children: [
               const HopeMark(size: 48),
               const SizedBox(height: 18),
-              Text(_t(context, 'مسیر حرفه‌ای شما', 'Your professional path'), style: Theme.of(context).textTheme.headlineSmall),
+              Text(_t(context, 'منوی برنامه', 'App menu'), style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 6),
-              Text(_t(context, 'دسترسی سریع به فرصت‌ها، کار و تنظیمات.', 'Quick access to opportunities, work, and settings.'), style: Theme.of(context).textTheme.bodyMedium),
+              Text(_t(context, 'دسترسی به بخش‌های برنامه.', 'App sections.'), style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 20),
-              _drawerTile(context, Icons.explore_rounded, _t(context, 'کاوش فرصت‌ها', 'Explore opportunities'), () { Navigator.pop(context); _selectTab(1); }),
-              if (!auth.isGuest) _drawerTile(context, Icons.local_offer_outlined, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
-              if (!auth.isGuest) _drawerTile(context, Icons.notifications_rounded, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
-              if (!auth.isGuest) _drawerTile(context, Icons.account_balance_wallet_rounded, _t(context, 'کیف پول', 'Wallet'), () { Navigator.pop(context); _selectTab(3); }),
-              if (auth.user?['role'] == 'ADMIN') _drawerTile(context, Icons.admin_panel_settings_rounded, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
+              _drawerTile(context, HopeV2Icons.workshopSelected, _t(context, 'کارگاه فرصت‌ها', 'Workshop opportunities'), () { Navigator.pop(context); _selectTab(1); }),
+              if (!auth.isGuest) _drawerTile(context, HopeV2Icons.featured, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
+              if (!auth.isGuest) _drawerTile(context, HopeV2Icons.notifications, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
+              if (auth.user?['role'] == 'ADMIN') _drawerTile(context, HopeV2Icons.secure, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
               ListTile(
-                leading: const HopeIconTile(Icons.translate_rounded),
+                leading: const HopeIconTile(HopeV2Icons.translate),
                 title: Text(
                   settings.language == 'en' ? 'Language: English' : 'زبان: فارسی',
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
-                subtitle: Text(_t(context, 'برای تغییر زبان لمس کنید.', 'Tap to switch language.')),
+                subtitle: Text(_t(context, 'تغییر زبان', 'Change language')),
                 onTap: () => settings.setLanguage(settings.language == 'en' ? 'fa' : 'en'),
               ),
               const Divider(height: 26),
               ListTile(
-                leading: const HopeIconTile(Icons.location_on_outlined),
+                leading: const HopeIconTile(HopeV2Icons.location),
                 title: Text(_t(context, 'موقعیت فعلی', 'Current location')),
                 subtitle: Text(settings.city),
                 onTap: () { Navigator.pop(context); _selectTab(4); },
@@ -155,7 +161,7 @@ class _HomePageState extends State<HomePage> {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  Widget _drawerTile(BuildContext context, IconData icon, String label, VoidCallback tap) =>
+  Widget _drawerTile(BuildContext context, Object icon, String label, VoidCallback tap) =>
       ListTile(
         leading: HopeIconTile(icon, filled: true, size: 42),
         title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -170,6 +176,24 @@ class _HomePageState extends State<HomePage> {
     }
     Navigator.push(context, HopeRoutes.createJob());
   }
+}
+
+Future<void> _resumeCreateAfterAuth(
+  BuildContext context, {
+  required bool register,
+}) async {
+  final result = await Navigator.push<AuthReturnIntent?>(
+    context,
+    register
+        ? HopeRoutes.register(returnIntent: AuthReturnIntent.createJob)
+        : HopeRoutes.login(returnIntent: AuthReturnIntent.createJob),
+  );
+  if (!context.mounted ||
+      result != AuthReturnIntent.createJob ||
+      !context.read<AuthController>().isAuthenticated) {
+    return;
+  }
+  await Navigator.push(context, HopeRoutes.createJob());
 }
 
 void _showSignIn(BuildContext context) {
@@ -191,14 +215,20 @@ void _showSignIn(BuildContext context) {
             Text(HopeCopy.of(context).copy_create_an_account_or_log_in_to_post_opport_6bc74a1, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 18),
             FilledButton.icon(
-              onPressed: () { Navigator.pop(sheetContext); Navigator.push(context, HopeRoutes.register()); },
-              icon: const Icon(Icons.person_add_alt_1_rounded),
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                _resumeCreateAfterAuth(context, register: true);
+              },
+              icon: HugeIcon(icon: HopeV2Icons.userAdd, size: 21),
               label: Text(HopeCopy.of(context).copy_create_account_bfa3517),
             ),
             const SizedBox(height: 9),
             OutlinedButton.icon(
-              onPressed: () { Navigator.pop(sheetContext); Navigator.push(context, HopeRoutes.login()); },
-              icon: const Icon(Icons.login_rounded),
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                _resumeCreateAfterAuth(context, register: false);
+              },
+              icon: HugeIcon(icon: HopeV2Icons.login, size: 21),
               label: Text(HopeCopy.of(context).copy_log_in_b4c960b),
             ),
           ],

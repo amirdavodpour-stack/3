@@ -11,9 +11,13 @@ import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/auth/password_reset_page.dart';
 import 'package:hope_mobile/features/auth/register_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
+  @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
   @override
   Future<AuthSession> login(String email, String password) async =>
       const AuthSession(accessToken: 'a', refreshToken: 'r', user: {'id': 'u'});
@@ -62,7 +66,11 @@ void main() {
     await tester.pumpWidget(await _screen(const LoginPage()));
     await tester.pumpAndSettle();
     expect(find.byType(LoginPage), findsOneWidget);
-    expect(find.text('فعلاً به‌عنوان مهمان ادامه بده'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('ادامه به‌عنوان مهمان'), 250,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.byType(PremiumHero), findsOneWidget);
+    expect(find.byType(PremiumPageFrame), findsOneWidget);
+    expect(find.text('ادامه به‌عنوان مهمان'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('ساخت حساب'), 200,
         scrollable: find.byType(Scrollable).first);
     expect(find.textContaining('ساخت حساب'), findsOneWidget);
@@ -75,7 +83,9 @@ void main() {
     final auth = Provider.of<AuthController>(
         tester.element(find.byType(LoginPage)),
         listen: false);
-    await tester.tap(find.text('فعلاً به‌عنوان مهمان ادامه بده'));
+    await tester.scrollUntilVisible(find.text('ادامه به‌عنوان مهمان'), 250,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('ادامه به‌عنوان مهمان'));
     await tester.pumpAndSettle();
     expect(auth.isGuest, isTrue);
     expect(auth.isAuthenticated, isFalse);
@@ -86,6 +96,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(RegisterPage), findsOneWidget);
     expect(find.byType(TextField), findsAtLeastNWidgets(3));
+  });
+
+  testWidgets('auth entry surfaces use the canonical PremiumHero owner', (tester) async {
+    for (final screen in [
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ]) {
+      await tester.pumpWidget(await _screen(screen));
+      await tester.pumpAndSettle();
+      expect(find.byType(PremiumHero), findsOneWidget);
+    }
   });
 
   testWidgets('password reset renders an email form', (tester) async {

@@ -8,7 +8,7 @@
   "@loginWelcomeBack": {
     "description": "Headline shown on the login page."
   },
-  "loginWelcomeBackSubtitle": "به فضای کارت برگرد و ادامه بده.",
+  "loginWelcomeBackSubtitle": "برای ورود، اطلاعات حساب را وارد کنید.",
   "@loginWelcomeBackSubtitle": {
     "description": "Subtitle shown under the login page headline."
   },
@@ -33,10 +33,14 @@
     "description": "Link to the password-reset page from the login page."
   },
   "loginButton": "ورود به HOPE",
+  "signInWithGoogle": "ورود با Google",
+  "@signInWithGoogle": {
+    "description": "Button label for Google authentication on the login page."
+  },
   "@loginButton": {
     "description": "Primary submit button on the login page."
   },
-  "continueAsGuest": "فعلاً به‌عنوان مهمان ادامه بده",
+  "continueAsGuest": "ادامه به‌عنوان مهمان",
   "@continueAsGuest": {
     "description": "Button to skip login and browse as a guest."
   },
@@ -52,11 +56,11 @@
   "@loginTermsNotice": {
     "description": "Fine-print notice at the bottom of the login page."
   },
-  "emailPasswordRequired": "ایمیل و رمز عبور را وارد کن.",
+  "emailPasswordRequired": "ایمیل و رمز عبور را وارد کنید.",
   "@emailPasswordRequired": {
     "description": "Validation message shown when the user submits the login form with an empty email or password."
   },
-  "loginFailedGeneric": "ورود ناموفق بود. دوباره تلاش کن.",
+  "loginFailedGeneric": "ورود ناموفق بود. دوباره تلاش کنید.",
   "@loginFailedGeneric": {
     "description": "Fallback error message shown when login fails without a more specific server-provided message."
   },
@@ -68,11 +72,11 @@
   "@copy_30_of_the_candidate_s_first_month_pay_is_c_d6da53b": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_a_better_path_to_finding_work_5802652": "مسیر بهتر برای پیدا کردن کار",
+  "copy_a_better_path_to_finding_work_5802652": "پیدا کردن فرصت‌های کاری",
   "@copy_a_better_path_to_finding_work_5802652": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_a_clearer_more_human_way_to_find_work_3553ab8": "اینجا قرار است پیدا کردن کار، واضح‌تر و انسانی‌تر باشد.",
+  "copy_a_clearer_more_human_way_to_find_work_3553ab8": "فرصت‌های کاری، ماموریت‌ها و شغل‌ها",
   "@copy_a_clearer_more_human_way_to_find_work_3553ab8": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -84,7 +88,7 @@
   "@copy_a_defined_task_with_defined_pay_77b1068": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_a_home_for_your_professional_path_52dbb09": "یک خانه برای مسیر حرفه‌ای تو.",
+  "copy_a_home_for_your_professional_path_52dbb09": "حساب و اطلاعات حرفه‌ای",
   "@copy_a_home_for_your_professional_path_52dbb09": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -124,7 +128,7 @@
   "@copy_activity_4b38716": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_add_a_concise_resume_and_relevant_skills_298a4f1": "رزومه متنی و مهارت‌های مرتبط را وارد کن.",
+  "copy_add_a_concise_resume_and_relevant_skills_298a4f1": "رزومه متنی و مهارت‌های مرتبط را وارد کنید.",
   "@copy_add_a_concise_resume_and_relevant_skills_298a4f1": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -184,7 +188,7 @@
   "@copy_apply_to_this_job_923b353": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_apply_with_a_strong_professional_profile_13980b1": "با رزومه و پیشنهاد حرفه‌ای وارد شو.",
+  "copy_apply_with_a_strong_professional_profile_13980b1": "رزومه و پیشنهاد خود را ارسال کنید.",
   "@copy_apply_with_a_strong_professional_profile_13980b1": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -224,7 +228,7 @@
   "@copy_based_on_your_city_and_preferences_79e2a31": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_broaden_your_filters_or_try_another_city_e8e32cb": "فیلترها را کمی بازتر کن یا شهر دیگری را امتحان کن.",
+  "copy_broaden_your_filters_or_try_another_city_e8e32cb": "فیلترها را تغییر دهید یا شهر دیگری انتخاب کنید.",
   "@copy_broaden_your_filters_or_try_another_city_e8e32cb": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -240,19 +244,19 @@
   "@copy_candidate_identity_stays_hidden_during_sel_6a73883": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_79a9d79": "انتخاب کن",
+  "copy_choose_79a9d79": "انتخاب",
   "@copy_choose_79a9d79": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_a_category_b77d860": "دسته‌بندی را انتخاب کن",
+  "copy_choose_a_category_b77d860": "دسته‌بندی را انتخاب کنید",
   "@copy_choose_a_category_b77d860": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_a_city_a93b334": "شهر را انتخاب کن",
+  "copy_choose_a_city_a93b334": "شهر را انتخاب کنید",
   "@copy_choose_a_city_a93b334": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_a_professional_category_b4cf5b8": "حوزه تخصصی را انتخاب کن.",
+  "copy_choose_a_professional_category_b4cf5b8": "حوزه تخصصی را انتخاب کنید.",
   "@copy_choose_a_professional_category_b4cf5b8": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -260,7 +264,7 @@
   "@copy_choose_another_city_1375095": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_choose_your_preferred_city_c19f66a": "شهر مورد نظر را انتخاب کن",
+  "copy_choose_your_preferred_city_c19f66a": "شهر مورد نظر را انتخاب کنید",
   "@copy_choose_your_preferred_city_c19f66a": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -284,7 +288,7 @@
   "@copy_control_center_15e20c8": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_controls_that_make_hope_fit_you_better_ace4c0c": "چیزهایی که تجربه HOPE را برای تو دقیق‌تر می‌کنند.",
+  "copy_controls_that_make_hope_fit_you_better_ace4c0c": "تنظیمات حساب و برنامه",
   "@copy_controls_that_make_hope_fit_you_better_ace4c0c": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -300,7 +304,7 @@
   "@copy_could_not_submit_evidence_9d09019": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_create_a_hope_account_and_take_the_first_s_9ccd119": "یک حساب HOPE بساز و قدم اول را بردار.",
+  "copy_create_a_hope_account_and_take_the_first_s_9ccd119": "نام، ایمیل و رمز عبور خود را وارد کنید.",
   "@copy_create_a_hope_account_and_take_the_first_s_9ccd119": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -312,7 +316,7 @@
   "@copy_create_an_account_or_log_in_to_post_opport_6bc74a1": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_create_an_account_to_apply_post_and_person_6fd6b91": "حساب بساز تا پیشنهاد بدهی، فرصت ثبت کنی و تنظیمات شخصی داشته باشی.",
+  "copy_create_an_account_to_apply_post_and_person_6fd6b91": "برای ثبت فرصت یا ارسال درخواست، وارد حساب شوید.",
   "@copy_create_an_account_to_apply_post_and_person_6fd6b91": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -372,11 +376,11 @@
   "@copy_english_8396fe3": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_enter_your_account_email_and_we_will_start_16caa6e": "ایمیل حساب را وارد کن؛ راهنمای بازیابی برایت ارسال می‌شود.",
+  "copy_enter_your_account_email_and_we_will_start_16caa6e": "ایمیل حساب را وارد کنید؛ راهنمای بازیابی برای شما ارسال می‌شود.",
   "@copy_enter_your_account_email_and_we_will_start_16caa6e": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_enter_your_email_2562106": "ایمیل را وارد کن.",
+  "copy_enter_your_email_2562106": "ایمیل را وارد کنید.",
   "@copy_enter_your_email_2562106": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -384,7 +388,7 @@
   "@copy_explore_115e9fd": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_explore_837e4eb": "پیدا کن",
+  "copy_explore_837e4eb": "یافتن",
   "@copy_explore_837e4eb": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -400,7 +404,7 @@
   "@copy_field_fcb7b26": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_filter_by_city_field_and_opportunity_type_1d75340": "شهر، حوزه و نوع فرصت را فیلتر کن.",
+  "copy_filter_by_city_field_and_opportunity_type_1d75340": "بر اساس شهر، حوزه و نوع فرصت فیلتر کنید.",
   "@copy_filter_by_city_field_and_opportunity_type_1d75340": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -412,11 +416,11 @@
   "@copy_financial_details_f24007d": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_find_the_right_opportunity_or_create_one_c8a9e6f": "فرصت مناسب را پیدا کن یا فرصتت را بساز.",
+  "copy_find_the_right_opportunity_or_create_one_c8a9e6f": "فرصت را جست‌وجو کنید یا فرصت جدید ثبت کنید.",
   "@copy_find_the_right_opportunity_or_create_one_c8a9e6f": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_first_choose_what_kind_of_opportunity_you__f035ca9": "اول مشخص کن دنبال چه نوع همکاری هستی.",
+  "copy_first_choose_what_kind_of_opportunity_you__f035ca9": "نوع فرصت را انتخاب کنید.",
   "@copy_first_choose_what_kind_of_opportunity_you__f035ca9": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -436,7 +440,7 @@
   "@copy_for_jobs_admins_send_only_the_professional_e6e694e": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_for_security_the_response_is_intentionally_6574fa6": "برای حفظ امنیت، حتی در صورت نبودن حساب هم پاسخ مشابهی دریافت می‌کنی.",
+  "copy_for_security_the_response_is_intentionally_6574fa6": "برای حفظ امنیت، حتی در صورت نبودن حساب هم پاسخ مشابهی دریافت می‌کنید.",
   "@copy_for_security_the_response_is_intentionally_6574fa6": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -540,7 +544,7 @@
   "@copy_jobs_ebf9a80": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_keep_your_profile_opportunities_transactio_39f443d": "پروفایل، معاملات، فرصت‌های ثبت‌شده و ترجیحاتت یکجا قرار می‌گیرند.",
+  "copy_keep_your_profile_opportunities_transactio_39f443d": "پروفایل، فرصت‌ها، تراکنش‌ها و تنظیمات",
   "@copy_keep_your_profile_opportunities_transactio_39f443d": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -552,7 +556,7 @@
   "@copy_light_096ac39": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_limit_notifications_during_rest_b5e0db3": "اعلان‌ها را در زمان استراحت محدود کن",
+  "copy_limit_notifications_during_rest_b5e0db3": "اعلان‌ها را در زمان استراحت محدود کنید.",
   "@copy_limit_notifications_during_rest_b5e0db3": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -564,11 +568,11 @@
   "@copy_location_on_dad416c": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_location_permission_was_not_enabled_you_ca_ba53b81": "دسترسی مکان فعال نشد؛ می‌توانی شهر را دستی انتخاب کنی.",
+  "copy_location_permission_was_not_enabled_you_ca_ba53b81": "دسترسی مکان فعال نشد؛ می‌توانید شهر را دستی انتخاب کنید.",
   "@copy_location_permission_was_not_enabled_you_ca_ba53b81": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_location_personalization_is_on_you_can_cha_8dd12f4": "موقعیت مکانی روشن است؛ می‌توانی شهر را از تنظیمات عوض کنی.",
+  "copy_location_personalization_is_on_you_can_cha_8dd12f4": "موقعیت مکانی روشن است؛ می‌توانید شهر را از تنظیمات تغییر دهید.",
   "@copy_location_personalization_is_on_you_can_cha_8dd12f4": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -628,7 +632,7 @@
   "@copy_missions_a833d13": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_monitor_and_manage_hope_in_one_place_bea3b7d": "همه‌چیز را یکجا ببین و مدیریت کن.",
+  "copy_monitor_and_manage_hope_in_one_place_bea3b7d": "کارها را از یک داشبورد مدیریت کنید.",
   "@copy_monitor_and_manage_hope_in_one_place_bea3b7d": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -796,7 +800,7 @@
   "@copy_personalized_recommendations_a4e4411": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_please_complete_all_fields_55c07bb": "همه فیلدها را پر کن.",
+  "copy_please_complete_all_fields_55c07bb": "همه فیلدها را کامل کنید.",
   "@copy_please_complete_all_fields_55c07bb": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -864,7 +868,7 @@
   "@copy_quiet_hours_02885b4": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_recommended_for_you_e56d06b": "پیشنهاد متناسب با تو",
+  "copy_recommended_for_you_e56d06b": "پیشنهادها",
   "@copy_recommended_for_you_e56d06b": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -900,7 +904,7 @@
   "@copy_retry_49f3eba": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_review_users_opportunities_applications_an_e30b9d2": "کاربران، فرصت‌ها، درخواست‌ها و رویدادهای حساس را از یک داشبورد بررسی کن.",
+  "copy_review_users_opportunities_applications_an_e30b9d2": "کاربران، فرصت‌ها، درخواست‌ها و رویدادهای حساس را بررسی کنید.",
   "@copy_review_users_opportunities_applications_an_e30b9d2": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -912,11 +916,11 @@
   "@copy_schedule_3af1939": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_search_dd58413": "جست‌وجو کن...",
+  "copy_search_dd58413": "جست‌وجو...",
   "@copy_search_dd58413": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_see_missions_and_jobs_together_then_narrow_7e573a3": "ماموریت و شغل را کنار هم ببین؛ بعد دقیق‌تر فیلتر کن.",
+  "copy_see_missions_and_jobs_together_then_narrow_7e573a3": "ماموریت و شغل را کنار هم ببینید؛ سپس دقیق‌تر فیلتر کنید.",
   "@copy_see_missions_and_jobs_together_then_narrow_7e573a3": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -936,11 +940,11 @@
   "@copy_sending_c4b5575": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_set_a_defined_price_and_delivery_time_1e53f1a": "یک قیمت مشخص و مدت انجام کار تعیین کن.",
+  "copy_set_a_defined_price_and_delivery_time_1e53f1a": "قیمت و مدت انجام کار را مشخص کنید.",
   "@copy_set_a_defined_price_and_delivery_time_1e53f1a": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_set_an_application_deadline_for_jobs_5fd80f8": "برای شغل، مهلت دریافت درخواست را مشخص کن.",
+  "copy_set_an_application_deadline_for_jobs_5fd80f8": "مهلت دریافت درخواست را مشخص کنید.",
   "@copy_set_an_application_deadline_for_jobs_5fd80f8": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -968,7 +972,7 @@
   "@copy_specialized_5d1ca04": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_start_a_good_collaboration_9df52cf": "شروع یک همکاری خوب.",
+  "copy_start_a_good_collaboration_9df52cf": "ساخت حساب کاربری",
   "@copy_start_a_good_collaboration_9df52cf": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -976,7 +980,7 @@
   "@copy_start_here_555e56f": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_start_with_your_city_or_explore_any_other__05a1e84": "کاوش را با شهر خودت شروع کن یا هر شهر دیگری را انتخاب کن.",
+  "copy_start_with_your_city_or_explore_any_other__05a1e84": "شهر را انتخاب کنید یا شهر دیگری را بررسی کنید.",
   "@copy_start_with_your_city_or_explore_any_other__05a1e84": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -1008,7 +1012,7 @@
   "@copy_system_bf4e081": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_tap_to_mark_as_read_5c9917a": "برای خواندن باز کن",
+  "copy_tap_to_mark_as_read_5c9917a": "برای خواندن باز کنید",
   "@copy_tap_to_mark_as_read_5c9917a": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -1024,7 +1028,7 @@
   "@copy_the_reset_request_could_not_be_submitted_475bdfd": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_the_server_did_not_return_data_try_again_bccfbb3": "فعلاً داده‌ها از سرور دریافت نشد. دوباره امتحان کن.",
+  "copy_the_server_did_not_return_data_try_again_bccfbb3": "داده‌ای از سرور دریافت نشد. دوباره تلاش کنید.",
   "@copy_the_server_did_not_return_data_try_again_bccfbb3": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -1072,7 +1076,7 @@
   "@copy_users_200338b": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_value_irr_ed45261": "${value} تومان",
+  "copy_value_irr_ed45261": "{value} تومان",
   "@copy_value_irr_ed45261": {
     "description": "UI copy migrated from manual bilingual text.",
     "placeholders": {
@@ -1125,7 +1129,7 @@
   "@copy_you_have_no_new_notifications_45f9685": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_your_account_data_is_kept_securely_by_hope_b91dd1f": "با ساخت حساب، اطلاعات تو در فضای امن HOPE نگهداری می‌شود.",
+  "copy_your_account_data_is_kept_securely_by_hope_b91dd1f": "اطلاعات حساب شما به‌صورت امن نگهداری می‌شود.",
   "@copy_your_account_data_is_kept_securely_by_hope_b91dd1f": {
     "description": "UI copy migrated from manual bilingual text."
   },
@@ -1141,15 +1145,15 @@
   "@copy_your_offer_was_submitted_75e3409": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_your_professional_path_2da0026": "مسیر حرفه‌ای تو",
+  "copy_your_professional_path_2da0026": "اطلاعات حرفه‌ای",
   "@copy_your_professional_path_2da0026": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_your_projects_applications_and_payments_wi_bec5340": "با ارسال یا قبول پیشنهاد، جریان کار تو اینجا دیده می‌شود.",
+  "copy_your_projects_applications_and_payments_wi_bec5340": "وضعیت ارسال و قبول پیشنهادها را اینجا مشاهده کنید.",
   "@copy_your_projects_applications_and_payments_wi_bec5340": {
     "description": "UI copy migrated from manual bilingual text."
   },
-  "copy_hope_work_grow_together_6a1d9f0": "HOPE • کار • رشد • همراهی",
+  "copy_hope_work_grow_together_6a1d9f0": "HOPE • فرصت‌ها • کار",
   "@copy_hope_work_grow_together_6a1d9f0": {
     "description": "Migrated language selector/brand copy."
   },
@@ -1161,7 +1165,7 @@
   "@copy_language_persian_3ffcd3e": {
     "description": "Migrated language selector/brand copy."
   },
-  "copy_registration_failed_please_try_again_bbb72e2": "ثبت‌نام انجام نشد. دوباره تلاش کن.",
+  "copy_registration_failed_please_try_again_bbb72e2": "ثبت‌نام انجام نشد. دوباره تلاش کنید.",
   "@copy_registration_failed_please_try_again_bbb72e2": {
     "description": "Final direct UI string migration."
   },
@@ -1176,5 +1180,97 @@
   "copy_about_mission_description": "HOPE یک بازار کار است که دو نیاز متفاوت را از هم جدا می‌کند: «ماموریت» برای کاری مشخص با نتیجه و مبلغ روشن، و «شغل» برای همکاری پاره‌وقت یا تمام‌وقت با دستمزد ماهانه. هدف HOPE این است که مسیر پیدا کردن و پیشنهاد دادن فرصت‌های کاری را ساده‌تر، شفاف‌تر و حرفه‌ای‌تر کند و در عین حال حریم خصوصی کارجو و سلامت فرایند انتخاب را حفظ کند.",
   "copy_about_mission_fee_short": "۱۰٪ از کارفرما + ۱۰٪ از کارجو",
   "copy_about_job_fee_short": "۳۰٪ از دستمزد ماه اول کارجو",
-  "copy_pick_file": "انتخاب فایل"
+  "copy_pick_file": "انتخاب فایل",
+  "copy_find_the_right_opportunity": "فرصت مناسب خود را پیدا کنید",
+  "@copy_find_the_right_opportunity": {
+    "description": "عنوان بخش جست‌وجوی فرصت‌ها در بازار کار."
+  },
+  "copy_all_opportunities": "همه فرصت‌ها",
+  "@copy_all_opportunities": {
+    "description": "نام پیش‌فرض جست‌وجوی ذخیره‌شده وقتی فیلتری فعال نیست."
+  },
+  "copy_save_search": "ذخیره جست‌وجو",
+  "@copy_save_search": {
+    "description": "عملیات ذخیره جست‌وجوی فعلی بازار کار."
+  },
+  "copy_saving": "در حال ذخیره…",
+  "@copy_saving": {
+    "description": "برچسب هنگام ذخیره جست‌وجوی بازار کار."
+  },
+  "copy_saved_searches": "ذخیره‌شده",
+  "@copy_saved_searches": {
+    "description": "برچسب فهرست جست‌وجوهای ذخیره‌شده."
+  },
+  "copy_search_name": "نام جست‌وجو",
+  "@copy_search_name": {
+    "description": "راهنمای نام‌گذاری جست‌وجوی ذخیره‌شده."
+  },
+  "copy_could_not_save_search": "ذخیره جست‌وجو ناموفق بود.",
+  "@copy_could_not_save_search": {
+    "description": "خطای قابل‌بازیابی هنگام ذخیره جست‌وجوی بازار کار."
+  },
+  "copy_could_not_delete_saved_search": "حذف جست‌وجوی ذخیره‌شده ناموفق بود.",
+  "@copy_could_not_delete_saved_search": {
+    "description": "خطای قابل‌بازیابی هنگام حذف جست‌وجوی ذخیره‌شده."
+  },
+  "copy_categories_load_failed": "دریافت دسته‌بندی‌ها ناموفق بود.",
+  "@copy_categories_load_failed": {
+    "description": "خطای قابل‌بازیابی هنگام دریافت دسته‌بندی‌های فیلتر بازار کار."
+  },
+  "copy_all_cities": "همه شهرها",
+  "@copy_all_cities": {
+    "description": "برچسب گزینه بدون محدودیت شهر در فیلتر بازار کار."
+  },
+  "copy_toman": "تومان",
+  "@copy_toman": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_signals": "دلایل تطابق",
+  "@copy_match_signals": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_skill": "مهارت مرتبط",
+  "@copy_match_skill": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_category": "دسته‌بندی مرتبط",
+  "@copy_match_category": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_very_near": "خیلی نزدیک",
+  "@copy_match_very_near": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_work_mode": "نوع همکاری مناسب",
+  "@copy_match_work_mode": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_salary_fit": "تناسب درآمد",
+  "@copy_match_salary_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_preference_fit": "متناسب با ترجیحات",
+  "@copy_match_preference_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_match_general_fit": "تناسب کلی",
+  "@copy_match_general_fit": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_and_act_on_mission": "مشاهده و اقدام برای ماموریت",
+  "@copy_view_and_act_on_mission": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_details_and_act": "مشاهده جزئیات و اقدام",
+  "@copy_view_details_and_act": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_view_details": "مشاهده جزئیات",
+  "@copy_view_details": {
+    "description": "Canonical OpportunityCard localization."
+  },
+  "copy_offers": "پیشنهادها",
+  "@copy_offers": {
+    "description": "Activity navigation destination for offers."
+  }
 }

@@ -1,9 +1,6 @@
 name: Main CI
 
 on:
-  push:
-    branches:
-      - Main
   pull_request:
     branches:
       - Main
@@ -97,6 +94,9 @@ jobs:
       - name: Verify Flutter lockfile
         shell: bash
         run: bash tools/verify-pubspec-lock-fresh.sh
+
+      - name: Verify HOPE design/runtime guardrails
+        run: bash tools/verify-design-quality.sh
 
       - name: Flutter dependencies
         run: flutter pub get --enforce-lockfile

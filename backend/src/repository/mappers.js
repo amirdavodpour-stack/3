@@ -16,6 +16,7 @@ export const userFromRow = (r) => ({
   status: r.status,
   sessionVersion: Number(r.session_version || 0),
   createdAt: iso(r.createdAt),
+  googleSubject: r.googleSubject ?? r.google_subject ?? null,
 });
 
 export const jobFromRow = (r) => ({

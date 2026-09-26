@@ -1,30 +1,37 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class AppColors {
-  static const primary = Color(0xFF6C4DFF);
-  static const primaryDark = Color(0xFFB3A2FF);
-  static const secondary = Color(0xFF22B8A7);
-  static const secondaryStrong = Color(0xFF0C7D70);
-  static const secondaryDark = Color(0xFF3AC3B1);
-  static const ink = Color(0xFF151326);
-  static const muted = Color(0xFF6B6780);
-  static const surface = Color(0xFFFFFFFF);
-  static const background = Color(0xFFF6F5FC);
-  static const success = Color(0xFF0B7A58);
-  static const successDark = Color(0xFF4CD4A3);
-  static const warning = Color(0xFF8F5C0E);
-  static const warningDark = Color(0xFFFFD54F);
-  static const danger = Color(0xFFBA454D);
-  static const dangerDark = Color(0xFFFF8A80);
-  static const softPrimary = Color(0xFFEAE5FF);
-  static const darkBackground = Color(0xFF0C0A12);
-  static const darkSurface = Color(0xFF15131D);
-  static const darkCard = Color(0xFF1C1925);
-  static const darkText = Color(0xFFF8F7FC);
-  static const darkMuted = Color(0xFFAAA6B8);
-}
+import 'hope_v2_design.dart';
 
+class AppColors {
+  // Compatibility facade. New UI code should consume HopeV2Colors directly.
+  const AppColors._();
+
+  static const primary = HopeV2Colors.primary;
+  static const primaryDark = HopeV2Colors.primaryDark;
+  static const secondary = HopeV2Colors.secondary;
+  static const secondaryStrong = HopeV2Colors.secondaryStrong;
+  static const secondaryDark = HopeV2Colors.secondaryDark;
+  static const accent = HopeV2Colors.accent;
+  static const inkSoft = HopeV2Colors.inkSoft;
+  static const backgroundWarm = HopeV2Colors.backgroundWarm;
+  static const ink = HopeV2Colors.ink;
+  static const muted = HopeV2Colors.muted;
+  static const surface = HopeV2Colors.surface;
+  static const background = HopeV2Colors.background;
+  static const success = HopeV2Colors.success;
+  static const successDark = HopeV2Colors.successDark;
+  static const warning = HopeV2Colors.warning;
+  static const warningDark = HopeV2Colors.warningDark;
+  static const danger = HopeV2Colors.danger;
+  static const dangerDark = HopeV2Colors.dangerDark;
+  static const softPrimary = HopeV2Colors.softPrimary;
+  static const darkBackground = HopeV2Colors.darkBackground;
+  static const darkSurface = HopeV2Colors.darkSurface;
+  static const darkCard = HopeV2Colors.darkCard;
+  static const darkText = HopeV2Colors.darkText;
+  static const darkMuted = HopeV2Colors.darkMuted;
+}
 class AppTheme {
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
@@ -34,17 +41,22 @@ class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: brightness,
-      primary: dark ? AppColors.primaryDark : AppColors.primary,
-      secondary: AppColors.secondary,
+      primary: AppColors.primary,
+      onPrimary: Colors.white,
+      secondary: dark ? AppColors.secondaryDark : AppColors.secondary,
+      onSecondary: Colors.white,
       surface: dark ? AppColors.darkSurface : AppColors.surface,
+      onSurface: dark ? AppColors.darkText : AppColors.ink,
     );
 
     final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      fontFamily: HopeV2Typography.primaryFontFamily,
+      fontFamilyFallback: HopeV2Typography.fontFamilyFallback,
       colorScheme: scheme,
       scaffoldBackgroundColor:
-          dark ? AppColors.darkBackground : AppColors.background,
+          dark ? AppColors.darkBackground : AppColors.backgroundWarm,
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
       focusColor: (dark ? AppColors.primaryDark : AppColors.primary)
@@ -71,60 +83,138 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         foregroundColor: textColor,
         centerTitle: false,
+        toolbarHeight: 58,
+        titleSpacing: 16,
+        iconTheme: IconThemeData(color: textColor, size: 23),
         titleTextStyle: TextStyle(
-            fontSize: 21,
-            fontWeight: FontWeight.w900,
-            color: textColor,
-            letterSpacing: -.3),
+          fontSize: 20,
+          fontWeight: FontWeight.w900,
+          color: textColor,
+          letterSpacing: -.3,
+        ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: dark ? AppColors.primaryDark.withValues(alpha: .16) : AppColors.softPrimary,
+          borderRadius: BorderRadius.circular(HopeV2Radii.chip),
+        ),
+        labelColor: scheme.primary,
+        unselectedLabelColor: mutedColor,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+        unselectedLabelStyle:
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: dark ? HopeV2Colors.chipDark : HopeV2Colors.chipLight,
+        selectedColor: dark ? HopeV2Colors.chipSelectedDark : AppColors.softPrimary,
+        disabledColor: dark ? const Color(0x1AFFFFFF) : HopeV2Colors.disabledLight,
+        side: BorderSide(
+          color: dark ? HopeV2Colors.darkBorderStrong : HopeV2Colors.borderControlLight,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.chip),
+        ),
+        labelStyle: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+        secondaryLabelStyle: TextStyle(
+          color: mutedColor,
+          fontWeight: FontWeight.w700,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        scrimColor: Colors.black.withValues(alpha: dark ? .58 : .32),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadiusDirectional.horizontal(
+            end: Radius.circular(HopeV2Radii.xl),
+          ),
+        ),
+        width: 320,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.xl),
+        ),
+        titleTextStyle: TextStyle(
+          color: textColor,
+          fontSize: 19,
+          fontWeight: FontWeight.w900,
+        ),
+        contentTextStyle: TextStyle(
+          color: mutedColor,
+          fontSize: 14,
+          height: 1.55,
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: dark ? AppColors.darkSurface : AppColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(HopeV2Radii.xl),
+          ),
+        ),
+        showDragHandle: true,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: dark ? AppColors.darkCard : AppColors.surface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.lg)),
       ),
       dividerTheme: DividerThemeData(
-          color: dark ? Colors.white10 : const Color(0xFFE8E5F0), space: 1),
+          color: dark ? HopeV2Colors.darkDivider : HopeV2Colors.dividerLight, space: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: dark ? const Color(0xFF201D28) : const Color(0xFFFCFBFF),
+        fillColor: dark ? HopeV2Colors.inputDark : HopeV2Colors.panelSoftLight,
         hintStyle: TextStyle(color: mutedColor),
         labelStyle: TextStyle(color: mutedColor, fontWeight: FontWeight.w700),
         prefixIconColor: mutedColor,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 17, vertical: 17),
+            const EdgeInsets.symmetric(horizontal: HopeV2Spacing.lg, vertical: 14),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(
-                color: dark ? Colors.white10 : const Color(0xFFE6E2F0))),
+                color: dark ? HopeV2Colors.darkBorderStrong : HopeV2Colors.borderControlLight)),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: BorderSide(color: scheme.primary, width: 1.6)),
         errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(HopeV2Radii.input),
             borderSide: const BorderSide(color: AppColors.danger)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(54),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          minimumSize: const Size.fromHeight(50),
+          padding: const EdgeInsets.symmetric(horizontal: HopeV2Spacing.lg),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle:
               const TextStyle(fontWeight: FontWeight.w900, letterSpacing: -.1),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size.fromHeight(48),
           side: BorderSide(
-              color: dark ? Colors.white12 : const Color(0xFFDED9EA)),
+              color: dark ? HopeV2Colors.darkBorder : HopeV2Colors.outlinedButtonBorderLight),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -137,42 +227,78 @@ class AppTheme {
               minimumSize: const Size(48, 48),
               tapTargetSize: MaterialTapTargetSize.padded)),
       navigationBarTheme: NavigationBarThemeData(
-        height: 78,
-        backgroundColor:
-            dark ? const Color(0xF714121B) : const Color(0xFDFEFEFF),
+        height: HopeV2Navigation.barHeight,
+        backgroundColor: dark ? HopeV2Colors.navigationDark : HopeV2Colors.navigationLight,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: dark ? const Color(0x4D7660FF) : AppColors.softPrimary,
-        labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : HopeV2Colors.navigationIndicatorLight,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 10,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w900
+                : FontWeight.w700,
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : mutedColor,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            size: 23,
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : mutedColor,
+          ),
+        ),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: dark ? HopeV2Colors.navigationDark : HopeV2Colors.navigationLight,
+        indicatorColor: dark ? HopeV2Colors.navigationIndicatorDark : HopeV2Colors.navigationIndicatorLight,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
+        ),
+        selectedIconTheme: IconThemeData(color: scheme.primary, size: 24),
+        unselectedIconTheme: IconThemeData(color: mutedColor, size: 23),
+        selectedLabelTextStyle: TextStyle(
+          color: scheme.primary,
+          fontWeight: FontWeight.w900,
+        ),
+        unselectedLabelTextStyle: TextStyle(
+          color: mutedColor,
+          fontWeight: FontWeight.w700,
+        ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: dark ? AppColors.darkBackground : Colors.white,
         elevation: 7,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(19)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.fab)),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: dark ? AppColors.darkCard : AppColors.ink,
         contentTextStyle:
             const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.md)),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       textTheme: TextTheme(
         displaySmall: TextStyle(
-            fontSize: 34,
+            fontSize: 31,
             fontWeight: FontWeight.w900,
             height: 1.08,
             letterSpacing: -.65,
             color: textColor),
         headlineMedium: TextStyle(
-            fontSize: 29,
+            fontSize: 27,
             fontWeight: FontWeight.w900,
             letterSpacing: -.6,
             color: textColor),
         headlineSmall: TextStyle(
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: FontWeight.w900,
             height: 1.08,
             letterSpacing: -.45,

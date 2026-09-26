@@ -6,6 +6,9 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import '../network/test_fixtures.dart';
 
 class _Repository implements AuthRepository {
+  @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
   _Repository({this.failLogin = false, this.failRegister = false});
   bool failLogin;
   bool failRegister;

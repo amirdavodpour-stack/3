@@ -1,5 +1,9 @@
 part of 'jobs_page.dart';
 
+String _t(BuildContext context, String fa, String en) =>
+    Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+
 // Opportunity presentation is shared by Home and Explore via OpportunityCard.
 
 class _JobsResultsSliver extends StatelessWidget {
@@ -62,38 +66,84 @@ class _JobsResultsSliver extends StatelessWidget {
                 : constraints.maxWidth >= HopeV2Breakpoints.medium
                     ? 2
                     : 1;
+            final featuredJob = jobs.firstWhere(
+              (job) => job.isRecommended && job.recommendationScore != null,
+              orElse: () => jobs.first,
+            );
+            final remaining = [
+              for (final job in jobs)
+                if (!identical(job, featuredJob)) job,
+            ];
+
             if (columns == 1) {
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (var i = 0; i < jobs.length; i++)
+                  PremiumSectionHeader(
+                    title: _t(context, 'پیشنهاد منتخب', 'Featured opportunity'),
+                    subtitle: _t(
+                      context,
+                      'اولویت با فرصتی است که بیشترین سیگنال تطابق را دارد.',
+                      'Lead with the opportunity carrying the strongest match signal.',
+                    ),
+                  ),
+                  const SizedBox(height: HopeV2Spacing.md),
+                  AnimatedEntrance(
+                    child: OpportunityCard(
+                      job: featuredJob,
+                      variant: OpportunityCardVariant.featured,
+                    ),
+                  ),
+                  if (remaining.isNotEmpty)
+                    const SizedBox(height: HopeV2Spacing.lg),
+                  for (var i = 0; i < remaining.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(
                         bottom: HopeV2Spacing.md,
                       ),
                       child: AnimatedEntrance(
                         delay: Duration(
-                          milliseconds: 35 * i.clamp(0, 10),
+                          milliseconds: 35 * (i + 1).clamp(0, 10),
                         ),
-                        child: OpportunityCard(job: jobs[i]),
+                        child: OpportunityCard(job: remaining[i]),
                       ),
                     ),
                 ],
               );
             }
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: jobs.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                crossAxisSpacing: HopeV2Spacing.md,
-                mainAxisSpacing: HopeV2Spacing.md,
-                childAspectRatio: columns == 3 ? 1.04 : 1.12,
-              ),
-              itemBuilder: (context, index) => AnimatedEntrance(
-                delay: Duration(milliseconds: 35 * index.clamp(0, 10)),
-                child: OpportunityCard(job: jobs[index]),
-              ),
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                OpportunityCard(
+                  job: featuredJob,
+                  variant: OpportunityCardVariant.featured,
+                ),
+                if (remaining.isNotEmpty)
+                  const SizedBox(height: HopeV2Spacing.xl),
+                if (remaining.isNotEmpty)
+                  Text(
+                    _t(context, 'فرصت‌های بیشتر', 'More opportunities'),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                if (remaining.isNotEmpty)
+                  const SizedBox(height: HopeV2Spacing.md),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: remaining.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: HopeV2Spacing.md,
+                    mainAxisSpacing: HopeV2Spacing.md,
+                    childAspectRatio: columns == 3 ? 1.04 : 1.12,
+                  ),
+                  itemBuilder: (context, index) => AnimatedEntrance(
+                    delay: Duration(milliseconds: 35 * index.clamp(0, 10)),
+                    child: OpportunityCard(job: remaining[index]),
+                  ),
+                ),
+              ],
             );
           },
         ),

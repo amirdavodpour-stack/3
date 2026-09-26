@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'hope_l10n.dart';
-import '../../core/theme/app_theme.dart';
+import '../theme/hope_v2_design.dart';
 
 /// Resolves the accessible secondary accent for the current brightness.
 /// Text/icons in the brand teal need >= 4.5:1 against the surface they sit
@@ -9,8 +10,8 @@ import '../../core/theme/app_theme.dart';
 /// uses a darker teal and dark mode a lighter one.
 Color secondaryAccent(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
-        ? AppColors.secondaryDark
-        : AppColors.secondaryStrong;
+        ? HopeV2Colors.secondaryDark
+        : HopeV2Colors.secondaryStrong;
 
 class AnimatedEntrance extends StatelessWidget {
   const AnimatedEntrance(
@@ -66,36 +67,86 @@ class PressableScale extends StatefulWidget {
 
 class _PressableScaleState extends State<PressableScale> {
   bool pressed = false;
+  bool focused = false;
+
+  void _activate() {
+    HapticFeedback.lightImpact();
+    widget.onTap();
+  }
 
   @override
-  Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: widget.semanticLabel,
-        excludeSemantics: true,
-        child: GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            widget.onTap();
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final content = GestureDetector(
+      onTap: _activate,
+      onTapDown: (_) {
+        if (!reduceMotion) setState(() => pressed = true);
+      },
+      onTapCancel: () {
+        if (!reduceMotion) setState(() => pressed = false);
+      },
+      onTapUp: (_) {
+        if (!reduceMotion) setState(() => pressed = false);
+      },
+      child: reduceMotion
+          ? widget.child
+          : AnimatedScale(
+              scale: pressed ? .975 : 1,
+              duration: const Duration(milliseconds: 110),
+              curve: Curves.easeOut,
+              child: widget.child,
+            ),
+    );
+
+    return Semantics(
+      button: true,
+      enabled: true,
+      label: widget.semanticLabel,
+      excludeSemantics: widget.semanticLabel != null,
+      child: Shortcuts(
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            ActivateIntent: CallbackAction<ActivateIntent>(
+              onInvoke: (_) {
+                _activate();
+                return null;
+              },
+            ),
           },
-          onTapDown: (_) => setState(() => pressed = true),
-          onTapCancel: () => setState(() => pressed = false),
-          onTapUp: (_) => setState(() => pressed = false),
-          child: AnimatedScale(
-            scale: pressed ? .975 : 1,
-            duration: const Duration(milliseconds: 110),
-            curve: Curves.easeOut,
-            child: widget.child,
+          child: FocusableActionDetector(
+            onShowFocusHighlight: (value) {
+              if (mounted) setState(() => focused = value);
+            },
+            child: DecoratedBox(
+              decoration: focused
+                  ? BoxDecoration(
+                      borderRadius: BorderRadius.circular(HopeV2Radii.button),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    )
+                  : const BoxDecoration(),
+              child: content,
+            ),
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
+/// Compatibility facade for the canonical premium panel primitive.
 class HopeSurface extends StatelessWidget {
   const HopeSurface(
       {super.key,
       required this.child,
       this.padding = EdgeInsets.zero,
-      this.radius = 26,
+      this.radius = HopeV2Radii.lg,
       this.highlight = false});
   final Widget child;
   final EdgeInsets padding;
@@ -105,23 +156,42 @@ class HopeSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final border =
-        dark ? Colors.white.withValues(alpha: .07) : const Color(0xFFE7E3F0);
+    final border = HopeV2Surfaces.border(context);
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: dark ? AppColors.darkCard : AppColors.surface,
+        color: highlight ? null : HopeV2Surfaces.panel(context),
+        gradient: highlight
+            ? LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  HopeV2Colors.primary.withValues(
+                    alpha: dark ? .12 : .075,
+                  ),
+                  HopeV2Surfaces.panel(context),
+                  HopeV2Surfaces.panel(context),
+                ],
+                stops: const [0, .34, 1],
+              )
+            : null,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-            color:
-                highlight ? AppColors.primary.withValues(alpha: .20) : border),
+          color: highlight
+              ? HopeV2Colors.primary.withValues(alpha: .20)
+              : border,
+          width: highlight ? 1.1 : 1,
+        ),
         boxShadow: dark
             ? const []
-            : const [
+            : [
                 BoxShadow(
-                    color: Color(0x0A211A44),
-                    blurRadius: 26,
-                    offset: Offset(0, 10))
+                  color: highlight
+                      ? HopeV2Colors.primary.withValues(alpha: .06)
+                      : const Color(0x081B1638),
+                  blurRadius: highlight ? 26 : 22,
+                  offset: const Offset(0, 8),
+                ),
               ],
       ),
       child: Material(
@@ -140,63 +210,101 @@ class SectionTitle extends StatelessWidget {
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(title, style: Theme.of(context).textTheme.titleLarge),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium)
-                ],
-              ])),
-          if (action != null) action!,
-        ],
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: HopeV2Type.section(context)),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ],
+          );
+
+          if (action == null) return content;
+
+          if (constraints.maxWidth < 600) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                content,
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: action!,
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: content),
+              const SizedBox(width: 12),
+              action!,
+            ],
+          );
+        },
       );
 }
 
 class StatusPill extends StatelessWidget {
   const StatusPill(this.label,
-      {super.key, this.color = AppColors.primary, this.icon});
+      {super.key, this.color = HopeV2Colors.primary, this.icon});
   final String label;
   final Color color;
-  final IconData? icon;
+  final Object? icon;
 
   @override
   Widget build(BuildContext context) {
-    // Dark surfaces need brighter status hues to keep text >= 4.5:1.
     final resolved = _accessible(context, color);
     return Container(
+      constraints: const BoxConstraints(minHeight: 32),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-          color: resolved.withValues(alpha: .10),
-          borderRadius: BorderRadius.circular(999)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (icon != null) ...[
-          Icon(icon, size: 14, color: resolved),
-          const SizedBox(width: 5)
-        ],
-        Semantics(
-            label: label,
-            child: Text(label,
+        color: resolved.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+        border: Border.all(
+          color: resolved.withValues(alpha: .08),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            HopeIcon(icon!, size: 14, color: resolved, strokeWidth: 1.9),
+            const SizedBox(width: 5),
+          ],
+          Flexible(
+            child: Semantics(
+              label: label,
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    color: resolved,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900))),
-      ]),
+                  color: resolved,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Color _accessible(BuildContext context, Color c) {
     if (Theme.of(context).brightness != Brightness.dark) return c;
-    if (c == AppColors.warning) return AppColors.warningDark;
-    if (c == AppColors.danger) return AppColors.dangerDark;
-    if (c == AppColors.success) return AppColors.successDark;
-    if (c == AppColors.muted) return AppColors.darkMuted;
-    if (c == AppColors.primary) return AppColors.primaryDark;
+    if (c == HopeV2Colors.warning) return HopeV2Colors.warningDark;
+    if (c == HopeV2Colors.danger) return HopeV2Colors.dangerDark;
+    if (c == HopeV2Colors.success) return HopeV2Colors.successDark;
+    if (c == HopeV2Colors.muted) return HopeV2Colors.darkMuted;
+    if (c == HopeV2Colors.primary) return HopeV2Colors.primaryDark;
     return c;
   }
 }
@@ -204,11 +312,11 @@ class StatusPill extends StatelessWidget {
 class HopeIconTile extends StatelessWidget {
   const HopeIconTile(this.icon,
       {super.key,
-      this.color = AppColors.primary,
+      this.color = HopeV2Colors.primary,
       this.size = 46,
       this.filled = false,
       this.semanticLabel});
-  final IconData icon;
+  final Object icon;
   final Color color;
   final double size;
   final bool filled;
@@ -216,14 +324,50 @@ class HopeIconTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fill = filled ? color : color.withValues(alpha: .10);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final radius = BorderRadius.circular(size * .30);
+    final fill = filled ? color : color.withValues(alpha: dark ? .13 : .09);
     final iconColor = filled ? Colors.white : color;
+    final decoration = BoxDecoration(
+      color: fill,
+      borderRadius: radius,
+      border: Border.all(
+        color: filled
+            ? Colors.white.withValues(alpha: dark ? .12 : .20)
+            : color.withValues(alpha: dark ? .22 : .16),
+      ),
+      gradient: filled
+          ? LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [
+                color.withValues(alpha: .98),
+                color.withValues(alpha: .72),
+              ],
+            )
+          : null,
+      boxShadow: filled
+          ? [
+              BoxShadow(
+                color: color.withValues(alpha: dark ? .16 : .12),
+                blurRadius: size * .28,
+                offset: Offset(0, size * .10),
+              ),
+            ]
+          : const [],
+    );
     final child = Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-          color: fill, borderRadius: BorderRadius.circular(size * .30)),
-      child: Icon(icon, color: iconColor, size: size * .48),
+      decoration: decoration,
+      child: icon is IconData
+          ? Icon(icon as IconData, color: iconColor, size: size * .50)
+          : HugeIcon(
+              icon: icon as List<List>,
+              color: iconColor,
+              size: size * .50,
+              strokeWidth: 2.1,
+            ),
     );
     // Decorative icons (no semanticLabel) are excluded from the accessibility
     // tree so screen readers don't announce an unlabeled generic icon node.
@@ -233,16 +377,44 @@ class HopeIconTile extends StatelessWidget {
   }
 }
 
+class HopeIcon extends StatelessWidget {
+  const HopeIcon(
+    this.icon, {
+    super.key,
+    this.size = 20,
+    this.color,
+    this.strokeWidth = 2.0,
+  });
+
+  final Object icon;
+  final double size;
+  final Color? color;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = color ?? Theme.of(context).colorScheme.onSurface;
+    return icon is IconData
+        ? Icon(icon as IconData, size: size, color: resolved)
+        : HugeIcon(
+            icon: icon as List<List>,
+            size: size,
+            color: resolved,
+            strokeWidth: strokeWidth,
+          );
+  }
+}
+
 class MetricTile extends StatelessWidget {
   const MetricTile(
       {super.key,
       required this.label,
       required this.value,
       this.icon,
-      this.color = AppColors.primary});
+      this.color = HopeV2Colors.primary});
   final String label;
   final String value;
-  final IconData? icon;
+  final Object? icon;
   final Color color;
 
   @override
@@ -275,7 +447,7 @@ class EmptyState extends StatelessWidget {
       required this.title,
       required this.message,
       this.action});
-  final IconData icon;
+  final Object icon;
   final String title;
   final String message;
   final Widget? action;
@@ -313,6 +485,7 @@ class EmptyState extends StatelessWidget {
       );
 }
 
+/// Compatibility facade for the canonical hero primitive.
 class GradientHero extends StatelessWidget {
   const GradientHero(
       {super.key,
@@ -324,23 +497,15 @@ class GradientHero extends StatelessWidget {
   final String eyebrow;
   final String title;
   final String message;
-  final IconData icon;
+  final Object icon;
   final Widget? action;
 
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF5D43E8), Color(0xFF8B73FF), Color(0xFFB09FFF)],
-            stops: [0, .55, 1],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-          ),
-          borderRadius: BorderRadius.circular(31),
-          boxShadow: const [
-            BoxShadow(
-                color: Color(0x2B6C4DFF), blurRadius: 32, offset: Offset(0, 16))
-          ],
+          gradient: HopeV2Gradients.hero,
+          borderRadius: BorderRadius.circular(HopeV2Radii.hero),
+          boxShadow: HopeV2Shadows.gradientHero,
         ),
         child: Stack(children: [
           Positioned(
@@ -362,7 +527,7 @@ class GradientHero extends StatelessWidget {
                       color: Colors.white.withValues(alpha: .06),
                       shape: BoxShape.circle))),
           Padding(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(HopeV2Spacing.xl),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(
                   child: Column(
@@ -396,48 +561,86 @@ class GradientHero extends StatelessWidget {
                   height: 58,
                   decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .14),
-                      borderRadius: BorderRadius.circular(19),
+                      borderRadius: BorderRadius.circular(HopeV2Radii.fab),
                       border: Border.all(color: Colors.white24)),
-                  child: Icon(icon, color: Colors.white, size: 29)),
+                  child: HopeIcon(icon, color: Colors.white, size: 29, strokeWidth: 2.1)),
             ]),
           ),
         ]),
       );
 }
 
-class SearchField extends StatelessWidget {
-  const SearchField(
-      {super.key, required this.onChanged, this.onFilter, this.hint});
+class SearchField extends StatefulWidget {
+  const SearchField({
+    super.key,
+    required this.onChanged,
+    this.onFilter,
+    this.hint,
+  });
+
   final ValueChanged<String> onChanged;
   final VoidCallback? onFilter;
   final String? hint;
 
   @override
+  State<SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<SearchField> {
+  late final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    _controller.clear();
+    widget.onChanged('');
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final resolvedHint = hint ?? HopeCopy.of(context).copy_search_dd58413;
-    return Semantics(
-      label: resolvedHint,
-      textField: true,
-      excludeSemantics: true,
-      child: TextField(
-        onChanged: onChanged,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search_rounded),
-          hintText: resolvedHint,
-          suffixIcon: onFilter == null
-              ? null
-              : IconButton(
-                  tooltip: HopeCopy.of(context).copy_filters_df4d10e,
-                  onPressed: onFilter,
-                  icon: const Icon(Icons.tune_rounded),
-                ),
-        ),
+    final resolvedHint =
+        widget.hint ?? HopeCopy.of(context).copy_search_dd58413;
+    final hasQuery = _controller.text.isNotEmpty;
+
+    return TextField(
+      controller: _controller,
+      onChanged: (value) {
+        widget.onChanged(value);
+        setState(() {});
+      },
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        prefixIcon: HopeIcon(HopeV2Icons.search, size: 21, color: HopeV2Colors.muted, strokeWidth: 1.9),
+        hintText: resolvedHint,
+        suffixIcon: hasQuery || widget.onFilter != null
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasQuery)
+                    IconButton(
+                      tooltip:
+                          MaterialLocalizations.of(context).clearButtonTooltip,
+                      onPressed: _clear,
+                      icon: HopeIcon(HopeV2Icons.close, size: 19, color: HopeV2Colors.muted, strokeWidth: 1.9),
+                    ),
+                  if (widget.onFilter != null)
+                    IconButton(
+                      tooltip: HopeCopy.of(context).copy_filters_df4d10e,
+                      onPressed: widget.onFilter,
+                      icon: HopeIcon(HopeV2Icons.filter, size: 19, color: HopeV2Colors.muted, strokeWidth: 1.9),
+                    ),
+                ],
+              )
+            : null,
       ),
     );
   }
 }
-
 class HopeResponsive extends StatelessWidget {
   const HopeResponsive(
       {super.key,
@@ -470,19 +673,26 @@ class SkeletonBox extends StatefulWidget {
 
 class _SkeletonBoxState extends State<SkeletonBox>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1200))
-    ..repeat();
+  AnimationController? _controller;
+
+  void _ensureController() {
+    if (_controller != null || MediaQuery.disableAnimationsOf(context)) return;
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    _ensureController();
     final base =
         dark ? Colors.white.withValues(alpha: .06) : const Color(0xFFECEAF2);
     final highlight = dark ? Colors.white.withValues(alpha: .12) : Colors.white;
@@ -498,7 +708,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
       );
     }
     return AnimatedBuilder(
-      animation: _controller,
+      animation: _controller!,
       builder: (context, _) => Container(
         width: widget.width,
         height: widget.height,
@@ -507,8 +717,8 @@ class _SkeletonBoxState extends State<SkeletonBox>
           gradient: LinearGradient(
             colors: [base, highlight, base],
             stops: const [.2, .5, .8],
-            begin: Alignment(-1.0 + 2 * _controller.value, 0),
-            end: Alignment(1.0 + 2 * _controller.value, 0),
+            begin: Alignment(-1.0 + 2 * _controller!.value, 0),
+            end: Alignment(1.0 + 2 * _controller!.value, 0),
           ),
         ),
       ),
@@ -522,9 +732,9 @@ class OpportunitySkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const HopeSurface(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SkeletonBox(height: 110, radius: 26),
+          SkeletonBox(height: 110, radius: HopeV2Radii.xl),
           Padding(
-            padding: EdgeInsets.all(17),
+            padding: const EdgeInsets.all(HopeV2Spacing.lg),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SkeletonBox(height: 20, width: 240),
@@ -545,3 +755,4 @@ class OpportunitySkeletonCard extends StatelessWidget {
         ]),
       );
 }
+

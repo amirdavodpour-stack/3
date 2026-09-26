@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class _FakeTx implements TransactionRepository {
   _FakeTx({this.failLoad = false});
 
   Future<HopePayment>? payment;
+  final List<Future<HopePayment>> paymentResponses = [];
   bool failLoad = false;
   final List<String> calls = [];
 
@@ -29,6 +31,9 @@ class _FakeTx implements TransactionRepository {
   Future<HopePayment> getPayment(String jobId) async {
     calls.add('get:$jobId');
     if (failLoad) throw Exception('load boom');
+    if (paymentResponses.isNotEmpty) {
+      return paymentResponses.removeAt(0);
+    }
     return (await payment)!;
   }
 
@@ -117,6 +122,9 @@ HopeJob _job(String id, String status, {String? providerId}) =>
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -154,8 +162,10 @@ Future<void> _pump(
   WidgetTester tester,
   _FakeTx repo, {
   String ownerId = 'u1',
+  double width = 900,
+  bool disableAnimations = false,
 }) async {
-  tester.view.physicalSize = const Size(900, 2200);
+  tester.view.physicalSize = Size(width, 2200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -173,23 +183,66 @@ Future<void> _pump(
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: auth),
-        Provider<TransactionRepository>.value(value: repo),
-        Provider<UploadQueue>.value(value: _NoopUploadQueue()),
-      ],
-      child: TransactionPage(
-        repository: repo,
-        uploadQueue: _NoopUploadQueue(),
-        jobId: 'j1',
+    home: MediaQuery(
+      data: MediaQueryData(disableAnimations: disableAnimations),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: auth),
+          Provider<TransactionRepository>.value(value: repo),
+          Provider<UploadQueue>.value(value: _NoopUploadQueue()),
+        ],
+        child: TransactionPage(
+          repository: repo,
+          uploadQueue: _NoopUploadQueue(),
+          jobId: 'j1',
+        ),
       ),
     ),
   ));
-  await tester.pumpAndSettle();
+  // These fakes resolve immediately; bounded pumps avoid treating any
+  // unrelated ongoing animation as a test failure.
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {
+  testWidgets(
+      'transaction lifecycle honors reduced motion',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'HELD',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo, ownerId: 'u1', disableAnimations: true);
+
+    final animated = find.byType(AnimatedContainer);
+    expect(animated, findsWidgets);
+    for (final widget in tester.widgetList<AnimatedContainer>(animated)) {
+      expect(widget.duration, Duration.zero);
+    }
+  });
+
+  testWidgets('financial summary leads into the payment lifecycle', (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'HELD',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo, ownerId: 'u1');
+
+    expect(find.text('Financial summary'), findsOneWidget);
+    expect(find.text('Payment status'), findsOneWidget);
+    expect(find.text('Payment & job flow'), findsOneWidget);
+    expect(find.text('Start work'), findsOneWidget);
+  });
+
   testWidgets('loading then funded payload shows status, amount and start work',
       (tester) async {
     final repo = _FakeTx()
@@ -202,7 +255,7 @@ void main() {
       }));
     await _pump(tester, repo, ownerId: 'u1');
 
-    expect(find.text('FUNDED'), findsWidgets);
+    expect(find.text('Funded'), findsWidgets);
     expect(
       find.byWidgetPredicate((widget) {
         if (widget is! Text || widget.data == null) return false;
@@ -210,7 +263,7 @@ void main() {
       }),
       findsOneWidget,
     );
-    expect(find.text('Design landing page'), findsOneWidget);
+    expect(find.text('Design landing page'), findsAtLeastNWidgets(1));
     expect(find.text('Start work'), findsOneWidget);
     await tester.ensureVisible(find.text('Start work'));
     await tester.tap(find.text('Start work'));
@@ -222,7 +275,7 @@ void main() {
     final repo = _FakeTx(failLoad: true);
     await _pump(tester, repo);
 
-    expect(find.text('Operation failed.'), findsOneWidget);
+    expect(find.text('Payment refresh failed'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
 
     repo.failLoad = false;
@@ -234,6 +287,73 @@ void main() {
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
     expect(find.text('Fund payment'), findsOneWidget);
+  });
+
+  testWidgets('refresh failure with existing payment shows retry error without hiding stale data',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'HELD',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo, ownerId: 'u1');
+
+    expect(find.text('Design landing page'), findsOneWidget);
+    repo.failLoad = true;
+
+    await tester.tap(find.byTooltip('Refresh status'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Design landing page'), findsOneWidget);
+    expect(find.text('Payment refresh failed'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('transaction refresh disables duplicate requests while pending',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'HELD',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+    final pending = Completer<HopePayment>();
+    await _pump(tester, repo, ownerId: 'u1');
+    repo.paymentResponses.add(pending.future);
+
+    final refreshTooltip = find.byTooltip('Refresh status');
+    expect(refreshTooltip, findsOneWidget);
+    final refreshButton = find.ancestor(
+      of: refreshTooltip,
+      matching: find.byType(IconButton),
+    );
+    expect(refreshButton, findsOneWidget);
+    await tester.tap(refreshTooltip);
+    await tester.pump();
+
+    expect(repo.calls.where((call) => call == 'get:j1').length, 2);
+    expect(tester.widget<IconButton>(refreshButton).onPressed, isNull);
+
+    pending.complete(HopePayment.fromMap({
+      'id': 'p2',
+      'status': 'HELD',
+      'amount': 2000000,
+      'providerRef': 'ref-2',
+      'job': {
+        ..._job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        'title': 'Fresh landing page',
+      },
+    }));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fresh landing page'), findsOneWidget);
+    expect(find.textContaining('2,000,000'), findsOneWidget);
   });
 
   testWidgets('no-transaction view offers fund payment', (tester) async {
@@ -278,6 +398,33 @@ void main() {
     expect(repo2.calls, contains('refund:j1'));
   });
 
+  testWidgets('transaction summary contains long values on narrow screens',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'RELEASE_PENDING',
+        'amount': '9000000000000000',
+        'providerRef':
+            'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
+        'job': _job('j1', 'COMPLETED').toMap(),
+      }));
+
+    await _pump(tester, repo, ownerId: 'u1', width: 360);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment status'), findsOneWidget);
+    expect(find.text('Amount'), findsOneWidget);
+    expect(find.text('Reference'), findsOneWidget);
+    expect(
+      find.text(
+        'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('completed and released payment shows settled copy',
       (tester) async {
     final repo = _FakeTx()
@@ -294,6 +441,24 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -900));
     await tester.pumpAndSettle();
     expect(find.text('This financial cycle is fully settled.'), findsOneWidget);
+  });
+
+  testWidgets('transaction status surfaces never leak unknown backend states',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p1',
+        'status': 'PROVIDER_RECONCILIATION_PENDING',
+        'amount': 1000000,
+        'providerRef': 'ref-1',
+        'job': _job('j1', 'EXTERNAL_REVIEW_REQUIRED', providerId: 'u1').toMap(),
+      }));
+    await _pump(tester, repo);
+
+    expect(find.text('PROVIDER_RECONCILIATION_PENDING'), findsNothing);
+    expect(find.text('EXTERNAL_REVIEW_REQUIRED'), findsNothing);
+
+    expect(find.text('Needs review'), findsWidgets);
   });
 
   testWidgets('financial details section renders fee breakdown rows',

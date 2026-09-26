@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_const_constructors
 import 'dart:convert';
 import '../../core/ui/components.dart';
 
@@ -9,6 +10,7 @@ import '../../core/account/account_privacy_repository.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class PrivacyCenterPage extends StatefulWidget {
   const PrivacyCenterPage({super.key});
@@ -51,8 +53,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
   Future<void> _copyExport() async {
     final data = _export;
     if (data == null) return;
-    // Runtime JSON payload prevents this constructor from being const.
-    // ignore: prefer_const_constructors
+    // Runtime JSON payload cannot be a const expression.
     await Clipboard.setData(ClipboardData(
       text: JsonEncoder.withIndent('  ').convert(data),
     ));
@@ -141,101 +142,131 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(_t('حریم خصوصی و داده‌ها', 'Privacy & data'))),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        children: [
-          PremiumHeader(
-            eyebrow: _t('کنترل حساب', 'ACCOUNT CONTROL'),
-            title: _t('داده‌ها دست خودت است', 'Your data, under your control'),
-            subtitle: _t(
-              'خروجی اطلاعات و حذف حساب را از یک مسیر شفاف مدیریت کن.',
-              'Export your account data or permanently delete the account from one clear place.',
+      body: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            PremiumHeader(
+              eyebrow: _t('کنترل حساب', 'ACCOUNT CONTROL'),
+              title: _t('داده‌ها تحت کنترل شماست', 'Your data, under your control'),
+              subtitle: _t(
+                'خروجی اطلاعات و حذف حساب را از یک مسیر شفاف مدیریت کنید.',
+                'Export your account data or permanently delete the account from one clear place.',
+              ),
+              trailing: const HopeIconTile(
+                HopeV2Icons.secure,
+                size: 50,
+                filled: true,
+              ),
             ),
-            trailing: const HopeIconTile(Icons.privacy_tip_outlined, size: 50, filled: true),
-          ),
-          const SizedBox(height: 18),
-          PremiumPanel(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_t('دریافت داده‌ها', 'Export your data'),
-                    style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text(_t(
-                  'یک خروجی ساختاریافته از داده‌هایی که HOPE برای حساب تو نگه می‌دارد دریافت کن.',
-                  'Get a structured export of the data HOPE stores for your account.',
-                )),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _loading ? null : _exportData,
-                  icon: _loading
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.download_rounded),
-                  label: Text(_loading ? _t('در حال آماده‌سازی…', 'Preparing…') : _t('دریافت خروجی', 'Export data')),
-                ),
-              ],
-            ),
-          ),
-          if (_export != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
             PremiumPanel(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(_t('پیش‌نمایش خروجی', 'Export preview'),
-                            style: Theme.of(context).textTheme.titleMedium),
-                      ),
-                      IconButton(
-                        tooltip: _t('کپی JSON', 'Copy JSON'),
-                        onPressed: _copyExport,
-                        icon: const Icon(Icons.copy_all_rounded),
-                      ),
-                    ],
+                  Text(
+                    _t('دریافت داده‌ها', 'Export your data'),
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
-                  // Runtime export JSON prevents this constructor from being const.
-                  // ignore: prefer_const_constructors
-                  SelectableText(
-                    JsonEncoder.withIndent('  ').convert(_export),
-                    maxLines: 18,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                  Text(_t(
+                    'یک خروجی ساختاریافته از داده‌هایی که HOPE برای حساب شما نگه می‌دارد دریافت کنید.',
+                    'Get a structured export of the data HOPE stores for your account.',
+                  )),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: _loading ? null : _exportData,
+                    icon: _loading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : HopeIcon(HopeV2Icons.insights, size: 19),
+                    label: Text(
+                      _loading
+                          ? _t('در حال آماده‌سازی…', 'Preparing…')
+                          : _t('دریافت خروجی', 'Export data'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_export != null) ...[
+              const SizedBox(height: 12),
+              PremiumPanel(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _t('پیش‌نمایش خروجی', 'Export preview'),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: _t('کپی JSON', 'Copy JSON'),
+                          onPressed: _copyExport,
+                          icon: HopeIcon(HopeV2Icons.copy, size: 19),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SelectableText(
+                      JsonEncoder.withIndent('  ').convert(_export),
+                      maxLines: 18,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            PremiumPanel(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _t('حذف حساب', 'Delete account'),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(_t(
+                    'حذف حساب برگشت‌پذیر نیست. قبل از انجام آن، خروجی داده‌ها را دریافت کنید.',
+                    'Account deletion cannot be undone. Export your data first if you need a copy.',
+                  )),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _deleting ? null : _deleteAccount,
+                    icon: _deleting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : HopeIcon(HopeV2Icons.close, size: 19),
+                    label: Text(
+                      _deleting
+                          ? _t('در حال حذف…', 'Deleting…')
+                          : _t('حذف دائمی حساب', 'Delete account permanently'),
+                    ),
                   ),
                 ],
               ),
             ),
           ],
-          const SizedBox(height: 12),
-          PremiumPanel(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_t('حذف حساب', 'Delete account'),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    )),
-                const SizedBox(height: 8),
-                Text(_t(
-                  'حذف حساب برگشت‌پذیر نیست. قبل از انجام آن، خروجی داده‌ها را دریافت کن.',
-                  'Account deletion cannot be undone. Export your data first if you need a copy.',
-                )),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _deleting ? null : _deleteAccount,
-                  icon: _deleting
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.delete_forever_rounded),
-                  label: Text(_deleting ? _t('در حال حذف…', 'Deleting…') : _t('حذف دائمی حساب', 'Delete account permanently')),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

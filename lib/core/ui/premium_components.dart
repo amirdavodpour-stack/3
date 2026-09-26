@@ -1,9 +1,141 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
 
 /// Shared page shell. Every V2 flagship surface should use this instead of
 /// inventing its own max-width, page padding, or bottom safe-area behavior.
+/// Canonical mobile navigation surface for the HOPE shell.
+class PremiumNavigationBar extends StatelessWidget {
+  const PremiumNavigationBar({
+    super.key,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.destinations,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final List<NavigationDestination> destinations;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final surface = HopeV2Surfaces.navigation(context);
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(
+        HopeV2Spacing.md,
+        0,
+        HopeV2Spacing.md,
+        HopeV2Spacing.md,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(HopeV2Radii.xl),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: surface,
+            border: Border.all(
+              color: dark
+                  ? Colors.white.withValues(alpha: .10)
+                  : HopeV2Surfaces.border(context),
+            ),
+            boxShadow: [
+              if (!dark) ...HopeV2Shadows.card,
+              if (dark) ...[
+                BoxShadow(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: .10),
+                  blurRadius: 26,
+                  offset: const Offset(0, 10),
+                ),
+                BoxShadow(
+                  color: HopeV2Colors.secondary.withValues(alpha: .035),
+                  blurRadius: 40,
+                  offset: const Offset(-8, 18),
+                ),
+              ],
+            ],
+          ),
+          child: NavigationBar(
+            selectedIndex: selectedIndex,
+            onDestinationSelected: onDestinationSelected,
+            destinations: destinations,
+            height: HopeV2Navigation.barHeight,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            indicatorColor: HopeV2Surfaces.navigationIndicator(context),
+            elevation: 0,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumNavigationRail extends StatelessWidget {
+  const PremiumNavigationRail({
+    super.key,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.destinations,
+    this.extended = false,
+    this.leading,
+    this.trailing,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final List<NavigationDestination> destinations;
+  final bool extended;
+  final Widget? leading;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: HopeV2Surfaces.navigation(context),
+        border: BorderDirectional(
+          end: BorderSide(color: HopeV2Surfaces.border(context)),
+        ),
+      ),
+      child: SafeArea(
+        left: false,
+        top: false,
+        bottom: false,
+        child: NavigationRail(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          destinations: [
+            for (final destination in destinations)
+              NavigationRailDestination(
+                icon: destination.icon,
+                selectedIcon: destination.selectedIcon,
+                label: Text(destination.label),
+              ),
+          ],
+          extended: extended,
+          minWidth: HopeV2Navigation.railMinWidth,
+          minExtendedWidth: HopeV2Navigation.railExtendedWidth,
+          labelType: extended
+              ? NavigationRailLabelType.none
+              : NavigationRailLabelType.all,
+          leading: leading,
+          trailing: trailing,
+          backgroundColor: Colors.transparent,
+          indicatorColor: HopeV2Surfaces.navigationIndicator(context),
+          useIndicator: true,
+          groupAlignment: -.6,
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumPageFrame extends StatelessWidget {
   const PremiumPageFrame({
     super.key,
@@ -22,13 +154,99 @@ class PremiumPageFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
     return DecoratedBox(
-      decoration: BoxDecoration(color: HopeV2Surfaces.page(context)),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
-          child: Padding(
-            padding: padding.copyWith(bottom: padding.bottom + bottomInset),
-            child: Material(type: MaterialType.transparency, child: child),
+      decoration: BoxDecoration(
+        color: HopeV2Surfaces.page(context),
+        gradient: HopeV2Surfaces.pageHalo(context),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Padding(
+                  padding: padding.copyWith(
+                    bottom: padding.bottom + bottomInset,
+                  ),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: child,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PremiumIconButton extends StatelessWidget {
+  const PremiumIconButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.color,
+    this.selected = false,
+    this.semanticsIdentifier,
+  });
+
+  final Object icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final Color? color;
+  final bool selected;
+
+  /// Stable native-accessibility/test identifier for this action.
+  final String? semanticsIdentifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final base = color ?? Theme.of(context).colorScheme.primary;
+    final enabled = onPressed != null;
+    final foreground = enabled
+        ? (selected ? base : Theme.of(context).colorScheme.onSurface)
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    final background = selected
+        ? base.withValues(
+            alpha: dark ? .18 : .10,
+          )
+        : HopeV2Surfaces.panel(context);
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: tooltip,
+      selected: selected,
+      identifier: semanticsIdentifier,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(HopeV2Radii.button),
+          child: Ink(
+            width: HopeV2Touch.minimum,
+            height: HopeV2Touch.minimum,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(HopeV2Radii.button),
+              border: Border.all(
+                color: selected
+                    ? base.withValues(alpha: dark ? .34 : .18)
+                    : HopeV2Surfaces.border(context),
+              ),
+            ),
+            child: Center(
+              child: HopeIcon(
+                icon,
+                size: 21,
+                color: foreground,
+                strokeWidth: 1.9,
+              ),
+            ),
           ),
         ),
       ),
@@ -57,28 +275,55 @@ class PremiumHeader extends StatelessWidget {
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                eyebrow.toUpperCase(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: .09),
+                  borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                ),
+                child: Text(
+                  eyebrow.toUpperCase(),
                 style: HopeV2Type.eyebrow(context).copyWith(
                   color: Theme.of(context).colorScheme.primary,
                 ),
+                ),
               ),
               const SizedBox(height: HopeV2Spacing.sm),
-              Text(title, style: HopeV2Type.display(context)),
+              Text(
+                title,
+                maxLines: compact ? 2 : 3,
+                overflow: TextOverflow.ellipsis,
+                style: HopeV2Type.display(context).copyWith(
+                  // Mobile page titles stay editorial rather than consuming
+                  // the entire first viewport.
+                  // Keep compact page headers subordinate to the focal content,
+                  // matching the reference's dense editorial hierarchy.
+                  fontSize: compact ? 24 : 30,
+                  height: compact ? 1.10 : 1.06,
+                  letterSpacing: compact ? -.45 : -.75,
+                ),
+              ),
               if (subtitle != null) ...[
                 const SizedBox(height: HopeV2Spacing.sm),
-                Text(subtitle!, style: Theme.of(context).textTheme.bodyLarge),
+                Text(
+                  subtitle!,
+                  maxLines: compact ? 3 : 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    height: 1.42,
+                  ),
+                ),
               ],
             ],
           );
 
           if (trailing == null) return content;
-          if (compact) {
+          if (compact && constraints.maxWidth < 380) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 content,
-                const SizedBox(height: HopeV2Spacing.lg),
+                const SizedBox(height: HopeV2Spacing.sm),
                 trailing!,
               ],
             );
@@ -99,8 +344,8 @@ class PremiumPanel extends StatelessWidget {
   const PremiumPanel({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(HopeV2Spacing.xl),
-    this.radius = HopeV2Radii.lg,
+    this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
+    this.radius = HopeV2Radii.md,
     this.highlight = false,
     this.semanticLabel,
   });
@@ -113,18 +358,54 @@ class PremiumPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final panel = Container(
       decoration: BoxDecoration(
-        color: HopeV2Surfaces.panel(context),
+        color: highlight ? null : HopeV2Surfaces.panel(context),
+        gradient: highlight
+            ? LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: dark
+                    ? [
+                        scheme.primary.withValues(alpha: .14),
+                        HopeV2Colors.panelSoftDark.withValues(alpha: .92),
+                        HopeV2Surfaces.panel(context),
+                      ]
+                    : [
+                        scheme.primary.withValues(alpha: .075),
+                        HopeV2Surfaces.panel(context),
+                        HopeV2Surfaces.panel(context),
+                      ],
+                stops: const [0, .36, 1],
+              )
+            : null,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: .18)
+              ? scheme.primary.withValues(alpha: dark ? .32 : .20)
               : HopeV2Surfaces.border(context),
+          width: highlight ? 1.1 : 1,
         ),
-        boxShadow: Theme.of(context).brightness == Brightness.dark
-            ? const []
-            : HopeV2Shadows.card,
+        boxShadow: dark
+            ? [
+                if (highlight)
+                  BoxShadow(
+                    color: scheme.primary.withValues(alpha: .10),
+                    blurRadius: 24,
+                    offset: const Offset(0, 9),
+                  ),
+              ]
+            : [
+                BoxShadow(
+                  color: highlight
+                      ? scheme.primary.withValues(alpha: .06)
+                      : const Color(0x081B1638),
+                  blurRadius: highlight ? 26 : 22,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       padding: padding,
       child: Material(type: MaterialType.transparency, child: child),
@@ -138,77 +419,33 @@ class PremiumPanel extends StatelessWidget {
 class PremiumHero extends StatelessWidget {
   const PremiumHero({
     super.key,
-    required this.image,
     required this.eyebrow,
     required this.title,
     required this.message,
     this.action,
+    this.icon,
+    this.mediaUrl,
     this.height = 280,
     this.semanticLabel,
   });
-
-  final String image;
   final String eyebrow;
   final String title;
   final String message;
   final Widget? action;
+  final Object? icon;
+  /// Optional real product media used as the hero composition.
+  /// When absent, the canonical HOPE gradient remains the fallback.
+  final String? mediaUrl;
   final double height;
   final String? semanticLabel;
-
-  Widget _imageFallback(BuildContext context, Object error, StackTrace? stack) {
-    final scheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            scheme.primary,
-            scheme.secondary,
-            scheme.surfaceContainerHighest,
-          ],
-        ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            right: -56,
-            top: -64,
-            child: ExcludeSemantics(
-              child: Container(
-                width: 230,
-                height: 230,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: .16)),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 24,
-            top: 24,
-            child: ExcludeSemantics(
-              child: Icon(
-                Icons.auto_awesome_rounded,
-                size: 48,
-                color: Colors.white.withValues(alpha: .86),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final heroHeight = compact
-        ? height.clamp(300.0, 420.0).toDouble()
-        : (height < 320 ? 320.0 : height);
+        ? height.clamp(220.0, 360.0).toDouble()
+        : (height < 344 ? 344.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
     return Semantics(
@@ -218,32 +455,123 @@ class PremiumHero extends StatelessWidget {
         height: heroHeight,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
-          boxShadow: HopeV2Shadows.hero,
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? HopeV2Shadows.heroDark
+              : HopeV2Shadows.hero,
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            ExcludeSemantics(
-              child: Image.asset(
-                image,
-                fit: BoxFit.cover,
-                errorBuilder: _imageFallback,
-              ),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: [
-                    Colors.black.withValues(alpha: .08),
-                    Colors.black.withValues(alpha: .30),
-                    Colors.black.withValues(alpha: .82),
-                  ],
+            if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
+              Positioned.fill(
+                child: Image.network(
+                  mediaUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: Theme.of(context).brightness == Brightness.dark
+                          ? HopeV2Gradients.heroDark
+                          : HopeV2Gradients.hero,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: Theme.of(context).brightness == Brightness.dark
+                        ? HopeV2Gradients.heroDark
+                        : HopeV2Gradients.hero,
+                  ),
                 ),
               ),
-            ),
+            if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: AlignmentDirectional.topCenter,
+                      end: AlignmentDirectional.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: .10),
+                        Colors.black.withValues(alpha: .18),
+                        Colors.black.withValues(alpha: .72),
+                      ],
+                      stops: const [0, .42, 1],
+                    ),
+                  ),
+                ),
+              ),
+            PositionedDirectional(
+                end: compact ? -84 : -48,
+                top: compact ? -76 : -54,
+                width: compact ? 190 : 220,
+                height: compact ? 190 : 220,
+                child: ExcludeSemantics(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: .14),
+                          Colors.white.withValues(alpha: .0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                start: compact ? -92 : -56,
+                bottom: compact ? -108 : -84,
+                width: compact ? 210 : 250,
+                height: compact ? 210 : 250,
+                child: ExcludeSemantics(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          HopeV2Colors.secondary.withValues(
+                            alpha: Theme.of(context).brightness == Brightness.dark
+                                ? .13
+                                : .10,
+                          ),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (icon != null)
+              PositionedDirectional(
+                end: horizontal,
+                top: horizontal,
+                child: ExcludeSemantics(
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(HopeV2Radii.iconTile),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: .16),
+                      ),
+                    ),
+                    child: icon is IconData
+                        ? Icon(icon as IconData, color: Colors.white, size: 28)
+                        : HugeIcon(
+                            icon: icon as List<List>,
+                            color: Colors.white,
+                            size: 28,
+                            strokeWidth: 2.1,
+                          ),
+                  ),
+                ),
+              ),
             Positioned(
               right: -52,
               top: -62,
@@ -262,49 +590,69 @@ class PremiumHero extends StatelessWidget {
             Padding(
               padding: EdgeInsets.all(horizontal),
               child: Align(
-                alignment: Alignment.bottomLeft,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        eyebrow.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 11,
-                          letterSpacing: .9,
-                        ),
+                alignment: AlignmentDirectional.bottomStart,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final dense = constraints.maxHeight < 340;
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            eyebrow.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              letterSpacing: .9,
+                            ),
+                          ),
+                          SizedBox(
+                            height: dense ? 5 : HopeV2Spacing.sm,
+                          ),
+                          Text(
+                            title,
+                            maxLines: dense ? 2 : 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: dense ? 24 : 28,
+                              height: 1.03,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -.9,
+                            ),
+                          ),
+                          SizedBox(
+                            height: dense ? 5 : HopeV2Spacing.sm,
+                          ),
+                          Text(
+                            message,
+                            maxLines: dense ? 2 : 4,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              height: dense ? 1.34 : 1.48,
+                            ),
+                          ),
+                          if (action != null) ...[
+                            SizedBox(
+                              height: dense ? 9 : HopeV2Spacing.lg,
+                            ),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: HopeV2Touch.minimum,
+                              ),
+                              child: action!,
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: HopeV2Spacing.sm),
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 31,
-                          height: 1.03,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -.9,
-                        ),
-                      ),
-                      const SizedBox(height: HopeV2Spacing.sm),
-                      Text(
-                        message,
-                        style: const TextStyle(
-                            color: Colors.white70, height: 1.48),
-                      ),
-                      if (action != null) ...[
-                        const SizedBox(height: HopeV2Spacing.lg),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(
-                              minHeight: HopeV2Touch.minimum),
-                          child: action!,
-                        ),
-                      ],
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -323,24 +671,29 @@ class PremiumStatCard extends StatelessWidget {
     required this.icon,
     this.accent,
     this.caption,
+    this.highlight = false,
   });
 
   final String label;
   final String value;
-  final IconData icon;
+  final Object icon;
   final Color? accent;
   final String? caption;
+  /// Focal stat surfaces may opt into the stronger gradient treatment.
+  /// Ordinary support metrics stay quiet by default.
+  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
     final color = accent ?? Theme.of(context).colorScheme.primary;
     return PremiumPanel(
       semanticLabel: '$label: $value',
-      padding: const EdgeInsets.all(HopeV2Spacing.lg),
+      padding: const EdgeInsets.all(14),
+      highlight: highlight,
       child: Row(
         children: [
           ExcludeSemantics(
-            child: HopeIconTile(icon, color: color, filled: true, size: 46),
+            child: HopeIconTile(icon, color: color, filled: true, size: 42),
           ),
           const SizedBox(width: HopeV2Spacing.md),
           Expanded(
@@ -349,7 +702,7 @@ class PremiumStatCard extends StatelessWidget {
               children: [
                 Text(label, style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 3),
-                Text(value, style: Theme.of(context).textTheme.titleLarge),
+                Text(value, style: HopeV2Type.metric(context)),
                 if (caption != null)
                   Text(caption!, style: Theme.of(context).textTheme.bodySmall),
               ],
@@ -420,7 +773,7 @@ class PremiumTag extends StatelessWidget {
   });
 
   final String label;
-  final IconData? icon;
+  final Object? icon;
   final Color? color;
   final bool inverse;
 
@@ -430,25 +783,40 @@ class PremiumTag extends StatelessWidget {
     final foreground = inverse ? Colors.white : base;
     final background = inverse
         ? Colors.white.withValues(alpha: .12)
-        : base.withValues(alpha: .10);
+        : base.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark ? .14 : .10,
+          );
     return Semantics(
       label: label,
       container: true,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 32),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        constraints: const BoxConstraints(minHeight: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
           border: Border.all(
-            color: inverse ? Colors.white24 : base.withValues(alpha: .08),
+            color: inverse
+                ? Colors.white24
+                : base.withValues(
+                    alpha: Theme.of(context).brightness == Brightness.dark ? .16 : .08,
+                  ),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              ExcludeSemantics(child: Icon(icon, size: 14, color: foreground)),
+              ExcludeSemantics(
+                child: icon is IconData
+                    ? Icon(icon as IconData, size: 14, color: foreground)
+                    : HugeIcon(
+                        icon: icon as List<List>,
+                        size: 14,
+                        color: foreground,
+                        strokeWidth: 1.9,
+                      ),
+              ),
               const SizedBox(width: 5),
             ],
             Flexible(
@@ -464,6 +832,110 @@ class PremiumTag extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumFilterChip extends StatelessWidget {
+  const PremiumFilterChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+    this.color,
+    this.enabled = true,
+    this.loading = false,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Object? icon;
+  final Color? color;
+  final bool enabled;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final interactive = enabled && !loading;
+    final base = color ?? Theme.of(context).colorScheme.primary;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final foreground = interactive
+        ? (selected ? base : Theme.of(context).colorScheme.onSurface)
+        : muted;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      enabled: interactive,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: interactive ? onTap : null,
+          borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+          child: AnimatedContainer(
+            duration: reduceMotion ? Duration.zero : HopeV2Motion.fast,
+            constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: selected
+                  ? base.withValues(alpha: interactive ? .11 : .05)
+                  : HopeV2Surfaces.panel(context),
+              borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+              border: Border.all(
+                color: selected
+                    ? base.withValues(alpha: interactive ? .28 : .12)
+                    : HopeV2Surfaces.border(context),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (loading)
+                  ExcludeSemantics(
+                    child: reduceMotion
+                        ? HopeIcon(
+                            HopeV2Icons.pending,
+                            size: 16,
+                            color: foreground,
+                            strokeWidth: 1.9,
+                          )
+                        : SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: foreground,
+                            ),
+                          ),
+                  )
+                else if (icon != null)
+                  HopeIcon(icon!, size: 16, color: foreground, strokeWidth: 1.9),
+                if (loading || icon != null) const SizedBox(width: 5),
+                if (!loading && selected) ...[
+                  HopeIcon(
+                    HopeV2Icons.completed,
+                    size: 16,
+                    color: foreground,
+                    strokeWidth: 1.9,
+                  ),
+                  const SizedBox(width: 5),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: foreground,
+                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

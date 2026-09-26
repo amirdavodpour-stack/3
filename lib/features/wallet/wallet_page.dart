@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -10,8 +11,10 @@ import '../../core/transactions/wallet.dart';
 import '../../core/transactions/wallet_repository.dart';
 import '../../core/network/api_client.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/copy.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_async_state.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key, required this.repository});
@@ -37,6 +40,7 @@ class _WalletPageState extends State<WalletPage> {
   Object? _error;
   bool _loading = true;
   bool _loadingMore = false;
+  int _loadRequestId = 0;
   bool _actionBusy = false;
   String _historyFilter = 'ALL';
 
@@ -52,15 +56,18 @@ class _WalletPageState extends State<WalletPage> {
 
   Future<void> _load() async {
     if (!mounted) return;
+    final requestId = ++_loadRequestId;
+    final hasExistingWallet = _wallet != null;
     setState(() {
-      _loading = true;
       _error = null;
+      _loadingMore = false;
+      if (!hasExistingWallet) _loading = true;
     });
     try {
       final wallet = await widget.repository.getWallet();
       final page = await widget.repository.listTransactions(limit: 30);
       final payouts = await widget.repository.listPayouts();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _wallet = wallet;
         _transactions = page.items;
@@ -69,7 +76,7 @@ class _WalletPageState extends State<WalletPage> {
         _loading = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _error = error;
         _loading = false;
@@ -80,20 +87,21 @@ class _WalletPageState extends State<WalletPage> {
   Future<void> _loadMore() async {
     final cursor = _nextCursor;
     if (_loadingMore || cursor == null || cursor.isEmpty) return;
+    final requestId = _loadRequestId;
     setState(() => _loadingMore = true);
     try {
       final page = await widget.repository.listTransactions(
         limit: 30,
         cursor: cursor,
       );
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _transactions = [..._transactions, ...page.items];
         _nextCursor = page.nextCursor;
         _loadingMore = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() => _loadingMore = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('بارگذاری بیشتر انجام نشد.', 'Could not load more transactions.'))),
@@ -101,13 +109,8 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  String _money(int amount, String currency) {
-    final grouped = amount.toString().replaceAllMapped(
-      RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'),
-      (_) => ',',
-    );
-    return '$grouped ${currency == 'TOMAN' ? _t('تومان', 'TOMAN') : currency}';
-  }
+  String _money(int amount) => moneyLabel(context, amount);
+
 
   String _date(String? raw) {
     if (raw == null || raw.isEmpty) return '';
@@ -116,23 +119,81 @@ class _WalletPageState extends State<WalletPage> {
     return '${parsed.year}/${parsed.month.toString().padLeft(2, '0')}/${parsed.day.toString().padLeft(2, '0')} · ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
   }
 
-  String _entryTitle(HopeWalletTransaction item) {
-    final type = item.referenceType.toUpperCase();
+  String _walletStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return _t('فعال', 'Active');
+      case 'INACTIVE':
+        return _t('غیرفعال', 'Inactive');
+      case 'SUSPENDED':
+        return _t('تعلیق‌شده', 'Suspended');
+      case 'LOCKED':
+        return _t('قفل‌شده', 'Locked');
+      default:
+        return _t('نیازمند بررسی', 'Needs review');
+    }
+  }
+
+  String _providerLabel(String provider) {
+    switch (provider.toUpperCase()) {
+      case 'INTERNAL':
+        return _t('کیف پول داخلی', 'Internal wallet');
+      default:
+        return _t('ارائه‌دهنده پرداخت', 'Payment provider');
+    }
+  }
+
+  String _referenceTypeLabel(String value) {
+    final type = value.toUpperCase();
     if (type.contains('TRANSFER')) return _t('انتقال داخلی', 'Internal transfer');
     if (type.contains('TOP_UP')) return _t('شارژ کیف پول', 'Wallet top-up');
     if (type.contains('PAYOUT') || type.contains('WITHDRAW')) return _t('برداشت', 'Withdrawal');
     if (type.contains('HOLD')) return _t('رزرو مبلغ', 'Funds held');
     if (type.contains('RELEASE')) return _t('آزادسازی مبلغ', 'Funds released');
     if (type.contains('REFUND')) return _t('بازگشت وجه', 'Refund');
-    return item.entryType.isEmpty ? _t('تراکنش کیف پول', 'Wallet transaction') : item.entryType;
+    return _t('سایر فعالیت‌ها', 'Other activity');
   }
+
+  String _entryTypeLabel(String value) {
+    switch (value.toUpperCase()) {
+      case 'TRANSFER':
+        return _t('انتقال داخلی', 'Internal transfer');
+      case 'TOP_UP':
+        return _t('شارژ کیف پول', 'Wallet top-up');
+      case 'PAYOUT':
+      case 'WITHDRAW':
+        return _t('برداشت', 'Withdrawal');
+      case 'HOLD':
+        return _t('رزرو مبلغ', 'Funds held');
+      case 'RELEASE':
+        return _t('آزادسازی مبلغ', 'Funds released');
+      case 'REFUND':
+        return _t('بازگشت وجه', 'Refund');
+      default:
+        return _t('سایر فعالیت‌ها', 'Other activity');
+    }
+  }
+
+  String _directionLabel(String value) {
+    switch (value.toUpperCase()) {
+      case 'CREDIT':
+        return _t('ورودی', 'Credit');
+      case 'DEBIT':
+        return _t('خروجی', 'Debit');
+      default:
+        return _t('نامشخص', 'Unknown');
+    }
+  }
+
+  String _entryTitle(HopeWalletTransaction item) =>
+      _referenceTypeLabel(item.referenceType);
 
   Color _directionColor(BuildContext context, bool credit) {
     final colors = Theme.of(context).colorScheme;
     return credit ? colors.tertiary : colors.error;
   }
 
-  IconData _directionIcon(bool credit) => credit ? Icons.south_west_rounded : Icons.north_east_rounded;
+  Object _directionIcon(bool credit) => credit ? HopeV2Icons.transferIn : HopeV2Icons.transferOut;
 
   Future<void> _openTopUp() async {
     final amount = await _amountDialog(
@@ -155,7 +216,12 @@ class _WalletPageState extends State<WalletPage> {
   Future<void> _openTransfer() async {
     final result = await showDialog<(String, int)>(
       context: context,
-      builder: (context) => _TransferDialog(isEnglish: _isEnglish, maxAmount: _wallet?.availableBalance),
+      builder: (context) => _TransferDialog(
+        isEnglish: _isEnglish,
+        maxAmount: _wallet?.availableBalance,
+        maxAmountLabel:
+            _wallet == null ? null : _money(_wallet!.availableBalance),
+      ),
     );
     if (result == null) return;
     final (destination, amount) = result;
@@ -264,7 +330,7 @@ class _WalletPageState extends State<WalletPage> {
                   suffixText: _t('تومان', 'TOMAN'),
                   helperText: maxAmount == null
                       ? _t('عدد صحیح وارد کنید.', 'Enter a whole-number amount.')
-                      : _t('حداکثر قابل استفاده: ${_money(maxAmount, _wallet?.currency ?? 'TOMAN')}', 'Maximum available: ${_money(maxAmount, _wallet?.currency ?? 'TOMAN')}'),
+                      : _t('حداکثر قابل استفاده: ${_money(maxAmount)}', 'Maximum available: ${_money(maxAmount)}'),
                   errorText: errorText,
                 ),
               ),
@@ -330,7 +396,11 @@ class _WalletPageState extends State<WalletPage> {
       if (_isTerminalClientError(error)) await clearPendingOnError?.call();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('عملیات انجام نشد: $error', 'Action failed: $error'))),
+        SnackBar(
+          content: Text(
+            _t('عملیات انجام نشد.', 'Action could not be completed.'),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _actionBusy = false);
@@ -350,15 +420,15 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Text(_entryTitle(item), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 16),
-              _DetailRow(label: _t('مبلغ', 'Amount'), value: '${item.isCredit ? '+' : '-'}${_money(item.amount, item.currency)}'),
-              _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: item.entryType),
-              _DetailRow(label: _t('جهت', 'Direction'), value: item.direction),
-              _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: item.referenceType),
+              _DetailRow(label: _t('مبلغ', 'Amount'), value: '${item.isCredit ? '+' : '-'}${_money(item.amount)}'),
+              _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: _entryTypeLabel(item.entryType)),
+              _DetailRow(label: _t('جهت', 'Direction'), value: _directionLabel(item.direction)),
+              _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: _referenceTypeLabel(item.referenceType)),
               if (item.referenceId != null && item.referenceId!.isNotEmpty)
                 _DetailRow(label: _t('شناسه مرجع', 'Reference ID'), value: item.referenceId!),
               _DetailRow(label: _t('عملیات مالی', 'Financial operation'), value: item.financialOperationId),
               if (item.balanceAfter != null)
-                _DetailRow(label: _t('موجودی پس از تراکنش', 'Balance after'), value: _money(item.balanceAfter!, item.currency)),
+                _DetailRow(label: _t('موجودی پس از تراکنش', 'Balance after'), value: _money(item.balanceAfter!)),
               _DetailRow(label: _t('زمان', 'Timestamp'), value: _date(item.createdAt)),
             ],
           ),
@@ -389,7 +459,7 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Row(
                 children: [
-                  const HopeIconTile(Icons.south_west_rounded),
+                  const HopeIconTile(HopeV2Icons.transferIn),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -401,17 +471,17 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
               const SizedBox(height: 18),
-              _DetailRow(label: _t('مبلغ', 'Amount'), value: _money(payout.amount, payout.currency)),
+              _DetailRow(label: _t('مبلغ', 'Amount'), value: _money(payout.amount)),
               _DetailRow(label: _t('وضعیت', 'Status'), value: _payoutLabel(status)),
-              _DetailRow(label: _t('ارائه‌دهنده', 'Provider'), value: payout.provider),
+              _DetailRow(label: _t('ارائه‌دهنده', 'Provider'), value: _providerLabel(payout.provider)),
               _DetailRow(label: _t('زمان ثبت', 'Created'), value: _date(payout.createdAt)),
               if (status == 'UNKNOWN')
-                HopeSurface(
+                PremiumPanel(
                   padding: const EdgeInsets.all(14),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.warning_amber_rounded),
+                      HugeIcon(icon: HopeV2Icons.pending, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(_t(
@@ -437,7 +507,7 @@ class _WalletPageState extends State<WalletPage> {
       case 'UNKNOWN': return _t('نیازمند بررسی', 'Needs review');
       case 'SUCCEEDED': return _t('موفق', 'Succeeded');
       case 'FAILED': return _t('ناموفق', 'Failed');
-      default: return status;
+      default: return _t('نیازمند بررسی', 'Needs review');
     }
   }
 
@@ -468,12 +538,12 @@ class _WalletPageState extends State<WalletPage> {
         'REQUESTED', 'RESERVED', 'PROCESSING', 'UNKNOWN'
       }.contains(p.status.toUpperCase())).length;
 
-  IconData _payoutIcon(String status) {
+  Object _payoutIcon(String status) {
     switch (status.toUpperCase()) {
-      case 'SUCCEEDED': return Icons.check_circle_outline;
-      case 'FAILED': return Icons.error_outline;
-      case 'UNKNOWN': return Icons.help_outline;
-      default: return Icons.schedule_outlined;
+      case 'SUCCEEDED': return HopeV2Icons.completed;
+      case 'FAILED': return HopeV2Icons.error;
+      case 'UNKNOWN': return HopeV2Icons.pending;
+      default: return HopeV2Icons.pending;
     }
   }
 
@@ -483,14 +553,17 @@ class _WalletPageState extends State<WalletPage> {
     if (auth.isGuest) {
       return Center(
         child: EmptyState(
-          icon: Icons.lock_outline_rounded,
+          icon: HopeV2Icons.secure,
           title: _t('کیف پول خصوصی است', 'Your wallet is private'),
-          message: _t('برای مشاهده و مدیریت کیف پول وارد حساب شوید.', 'Sign in to view and manage your wallet.'),
+          message: _t(
+            'برای مشاهده و مدیریت کیف پول وارد حساب شوید.',
+            'Sign in to view and manage your wallet.',
+          ),
         ),
       );
     }
 
-    if (_loading) {
+    if (_loading && _wallet == null) {
       return HopeAsyncState(
         kind: HopeStateKind.loading,
         title: _t('در حال بارگذاری', 'Loading wallet'),
@@ -500,7 +573,8 @@ class _WalletPageState extends State<WalletPage> {
         ),
       );
     }
-    if (_error != null || _wallet == null) {
+
+    if (_wallet == null) {
       return RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -508,7 +582,7 @@ class _WalletPageState extends State<WalletPage> {
           children: [
             const SizedBox(height: 160),
             HopeAsyncState(
-              kind: HopeStateKind.error,
+              kind: hopeStateKindForError(_error ?? StateError('wallet-load')),
               title: _t('کیف پول بارگذاری نشد', 'Wallet could not be loaded'),
               message: _t(
                 'اتصال یا سرویس مالی در دسترس نبود. برای تلاش دوباره، دوباره بارگذاری کنید.',
@@ -516,7 +590,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
               action: OutlinedButton.icon(
                 onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: HopeIcon(HopeV2Icons.refresh, size: 19),
                 label: Text(_t('تلاش دوباره', 'Try again')),
               ),
             ),
@@ -526,242 +600,501 @@ class _WalletPageState extends State<WalletPage> {
     }
 
     final wallet = _wallet!;
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
-        children: [
-          PremiumHeader(
-            eyebrow: _t('مالی', 'FINANCE'),
-            title: _t('کیف پول', 'Wallet'),
-            subtitle: _t('موجودی، انتقال داخلی و تاریخچه مالی شما.', 'Balance, internal transfers, and financial history.'),
-            trailing: const HopeIconTile(Icons.account_balance_wallet_rounded, size: 50, filled: true),
+    final canAct = !_actionBusy && wallet.isActive;
+
+    Widget _walletHeroMetric(
+      BuildContext context,
+      String label,
+      String value,
+    ) =>
+        Container(
+          constraints: const BoxConstraints(minHeight: 54),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: .14),
+            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+            border: Border.all(color: Colors.white.withValues(alpha: .10)),
           ),
-          const SizedBox(height: 18),
-          HopeSurface(
-            highlight: true,
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_t('موجودی قابل استفاده', 'Available balance'), style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 8),
-                FittedBox(
-                  alignment: AlignmentDirectional.centerStart,
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    _money(wallet.availableBalance, wallet.currency),
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w900),
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    Text(_t('قفل‌شده: ', 'Locked: ') + _money(wallet.lockedBalance, wallet.currency)),
-                    StatusPill(
-                      wallet.status,
-                      color: wallet.isActive ? AppColors.success : AppColors.warning,
-                      icon: wallet.isActive ? Icons.check_circle_outline : Icons.pause_circle_outline,
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        );
+
+    Widget balanceHero() {
+      final scheme = Theme.of(context).colorScheme;
+      return Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(HopeV2Radii.hero),
+          gradient: HopeV2Gradients.heroDark,
+          boxShadow: HopeV2Shadows.heroDark,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const HopeIconTile(
+                  HopeV2Icons.wallet,
+                  size: 48,
+                  filled: true,
+                ),
+                const Spacer(),
+                PremiumTag(
+                  icon: wallet.isActive
+                      ? HopeV2Icons.verified
+                      : HopeV2Icons.pending,
+                  label: _walletStatusLabel(wallet.status),
+                  color: Colors.white,
+                  inverse: true,
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 14),
-          HopeSurface(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+            const SizedBox(height: 24),
+            Text(
+              _t('موجودی قابل استفاده', 'Available balance'),
+              style: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 5),
+            FittedBox(
+              alignment: AlignmentDirectional.centerStart,
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _money(wallet.availableBalance),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  height: 1.0,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1.0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                const Icon(Icons.badge_outlined),
-                const SizedBox(width: 10),
-                Expanded(
+                PremiumTag(
+                  icon: HopeV2Icons.secure,
+                  label: _providerLabel('INTERNAL'),
+                  color: scheme.tertiary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _walletHeroMetric(
+              context,
+              _t('مجموع موجودی', 'Total balance'),
+              _money(wallet.totalBalance),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget actionsPanel() {
+      Widget action({
+        required Object icon,
+        required String fa,
+        required String en,
+        required VoidCallback? onPressed,
+        bool primary = false,
+      }) {
+        final color = primary
+            ? Theme.of(context).colorScheme.primary
+            : HopeV2Colors.secondary;
+        return Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 76),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onPressed,
+                borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                child: Ink(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(
+                      alpha: onPressed == null ? .05 : .09,
+                    ),
+                    borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                    border: Border.all(
+                      color: color.withValues(
+                        alpha: onPressed == null ? .10 : .20,
+                      ),
+                    ),
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_t('شناسه کیف پول', 'Wallet ID'), style: Theme.of(context).textTheme.labelMedium),
-                      const SizedBox(height: 3),
-                      SelectableText(wallet.id, style: const TextStyle(fontWeight: FontWeight.w800)),
+                      HopeIcon(icon, color: color, size: 22, strokeWidth: 1.9),
+                      const SizedBox(height: 6),
+                      Text(
+                        _t(fa, en),
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                IconButton(
-                  tooltip: _t('کپی شناسه', 'Copy wallet ID'),
-                  onPressed: wallet.id.isEmpty ? null : () => _copyText(wallet.id),
-                  icon: const Icon(Icons.copy_rounded),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              if (_internalTopUpEnabled)
-                _ActionButton(icon: Icons.add_rounded, label: _t('شارژ', 'Top up'), onTap: (!_actionBusy && wallet.isActive) ? _openTopUp : null),
-              _ActionButton(icon: Icons.swap_horiz_rounded, label: _t('انتقال', 'Transfer'), onTap: (!_actionBusy && wallet.isActive) ? _openTransfer : null),
-              _ActionButton(icon: Icons.south_west_rounded, label: _t('برداشت', 'Withdraw'), onTap: (!_actionBusy && wallet.isActive) ? _openWithdraw : null),
+        );
+      }
+
+      return PremiumPanel(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            if (_internalTopUpEnabled)
+              action(
+                icon: HopeV2Icons.add,
+                fa: 'شارژ',
+                en: 'Top up',
+                onPressed: canAct ? _openTopUp : null,
+                primary: false,
+              ),
+            if (_internalTopUpEnabled) const SizedBox(width: 8),
+            action(
+              icon: HopeV2Icons.transferOut,
+              fa: 'انتقال',
+              en: 'Transfer',
+              onPressed: canAct ? _openTransfer : null,
+              primary: true,
+            ),
+            const SizedBox(width: 8),
+            action(
+              icon: HopeV2Icons.transferOut,
+              fa: 'برداشت',
+              en: 'Withdraw',
+              onPressed: canAct ? _openWithdraw : null,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: PremiumPageFrame(
+        maxWidth: 1020,
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            if (_error != null) ...[
+              HopeAsyncState(
+                kind: hopeStateKindForError(_error!),
+                title: _t('به‌روزرسانی کیف پول ناموفق بود', 'Wallet refresh failed'),
+                message: _t(
+                  'اطلاعات قبلی حفظ شده است. وضعیت را دوباره بررسی کنید.',
+                  'The last loaded wallet data is preserved. Refresh to try again.',
+                ),
+                action: OutlinedButton.icon(
+                  onPressed: _load,
+                  icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                  label: Text(_t('تلاش دوباره', 'Try again')),
+                ),
+              ),
+              const SizedBox(height: 14),
             ],
-          ),
-          if (!wallet.isActive) ...[
-            const SizedBox(height: 10),
-            HopeSurface(
-              padding: const EdgeInsets.all(14),
+            const SizedBox(height: HopeV2Spacing.sm),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 760;
+                final hero = balanceHero();
+                final actions = actionsPanel();
+                if (!wide) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      hero,
+                      const SizedBox(height: 12),
+                      actions,
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 7, child: hero),
+                    const SizedBox(width: 12),
+                    Expanded(flex: 5, child: actions),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            PremiumPanel(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline_rounded),
+                  const HopeIconTile(HopeV2Icons.wallet, size: 42),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      _t(
-                        'کیف پول فعال نیست؛ عملیات مالی جدید تا فعال‌شدن آن در دسترس نیست.',
-                        'This wallet is not active. New financial actions are unavailable until it is reactivated.',
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _t('شناسه کیف پول', 'Wallet ID'),
+                          style: Theme.of(context).textTheme.labelMedium,
+                        ),
+                        const SizedBox(height: 2),
+                        SelectableText(
+                          wallet.id,
+                          maxLines: 1,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ],
                     ),
+                  ),
+                  IconButton(
+                    tooltip: _t('کپی شناسه', 'Copy wallet ID'),
+                    onPressed: wallet.id.isEmpty ? null : () => _copyText(wallet.id),
+                    icon: HugeIcon(icon: HopeV2Icons.copy, size: 19),
                   ),
                 ],
               ),
             ),
-          ],
-          const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final wide = constraints.maxWidth >= 560;
-              final tiles = [
-                MetricTile(
-                  label: _t('موجودی قابل‌استفاده', 'Available'),
-                  value: _money(wallet.availableBalance, wallet.currency),
-                  icon: Icons.account_balance_wallet_outlined,
-                ),
-                MetricTile(
-                  label: _t('قفل‌شده', 'Locked'),
-                  value: _money(wallet.lockedBalance, wallet.currency),
-                  icon: Icons.lock_clock_outlined,
-                  color: secondaryAccent(context),
-                ),
-                MetricTile(
-                  label: _t('برداشت در جریان', 'Pending payouts'),
-                  value: '$_pendingPayoutCount',
-                  icon: Icons.schedule_send_outlined,
-                  color: AppColors.warning,
-                ),
-              ];
-              return GridView.count(
-                crossAxisCount: wide ? 3 : 1,
-                childAspectRatio: wide ? 2.55 : 4.2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: tiles,
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          SectionTitle(
-            title: _t('تاریخچه کیف پول', 'Wallet history'),
-            subtitle: _t('Ledger entries به ترتیب زمانی، با صفحه‌بندی cursor.', 'Immutable ledger entries with cursor pagination.'),
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Wrap(
-              spacing: 8,
-              children: [
-                for (final filter in const ['ALL', 'CREDIT', 'DEBIT', 'HOLD'])
-                  ChoiceChip(
-                    selected: _historyFilter == filter,
-                    onSelected: (_) => setState(() => _historyFilter = filter),
-                    label: Text(switch (filter) {
-                      'CREDIT' => _t('ورودی', 'Credits'),
-                      'DEBIT' => _t('خروجی', 'Debits'),
-                      'HOLD' => _t('قفل‌ها', 'Holds'),
-                      _ => _t('همه', 'All'),
-                    }),
+            const SizedBox(height: 14),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 650 ? 2 : 1;
+                final tiles = [
+                  PremiumStatCard(
+                    label: _t('قفل‌شده', 'Locked balance'),
+                    value: _money(wallet.lockedBalance),
+                    icon: HopeV2Icons.secure,
+                    accent: secondaryAccent(context),
+                    caption: _t(
+                      'تا آزادسازی قابل استفاده نیست',
+                      'Unavailable until released',
+                    ),
                   ),
-              ],
+                  PremiumStatCard(
+                    label: _t('برداشت‌های در جریان', 'Pending payouts'),
+                    value: '${_pendingPayoutCount}',
+                    icon: HopeV2Icons.pending,
+                    accent: AppColors.warning,
+                    caption: _t(
+                      'درخواست‌های نیازمند پیگیری',
+                      'Requests awaiting completion',
+                    ),
+                  ),
+                ];
+                return GridView.count(
+                  crossAxisCount: columns,
+                  childAspectRatio: columns == 1 ? 3.2 : 1.9,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: tiles,
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 12),
-          if (_visibleTransactions().isEmpty)
-            HopeAsyncState(
-              kind: HopeStateKind.empty,
-              title: _t('تراکنشی پیدا نشد', 'No transactions found'),
-              message: _t(
-                'برای این فیلتر هنوز فعالیت مالی ثبت نشده است.',
-                'There is no financial activity for this filter yet.',
+            const SizedBox(height: 24),
+            PremiumSectionHeader(
+              title: _t('تاریخچه کیف پول', 'Wallet history'),
+              subtitle: _t(
+                'ثبت‌های مالی به ترتیب زمانی، با بارگذاری مرحله‌ای.',
+                'Financial entries in chronological order, loaded in pages.',
               ),
-            )
-          else
-            ..._visibleTransactions().map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: HopeSurface(
-                radius: 18,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  onTap: () => _showTransaction(item),
-                  leading: CircleAvatar(
-                    child: Icon(_directionIcon(item.isCredit)),
-                  ),
-                  title: Text(_entryTitle(item), style: const TextStyle(fontWeight: FontWeight.w800)),
-                  subtitle: Text('${_date(item.createdAt)}\n${item.referenceType}'),
-                  isThreeLine: true,
-                  trailing: Text(
-                    '${item.isCredit ? '+' : '-'}${_money(item.amount, item.currency)}',
-                    textAlign: TextAlign.end,
-                    style: TextStyle(fontWeight: FontWeight.w900, color: _directionColor(context, item.isCredit)),
-                  ),
-                ),
-              ),
-            )),
-          const SizedBox(height: 24),
-          SectionTitle(
-            title: _t('برداشت‌ها', 'Withdrawals'),
-            subtitle: _t('وضعیت درخواست‌های برداشت داخلی.', 'Status of your withdrawal requests.'),
-          ),
-          const SizedBox(height: 12),
-          if (_payouts.isEmpty)
-            HopeSurface(
-              padding: const EdgeInsets.all(20),
-              child: Text(_t('درخواستی برای برداشت ثبت نشده است.', 'No withdrawal requests yet.')),
-            )
-          else
-            ..._payouts.take(10).map((payout) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: HopeSurface(
-                radius: 18,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  onTap: () => _showPayout(payout),
-                  leading: const CircleAvatar(child: Icon(Icons.south_west_rounded)),
-                  title: Text(_money(payout.amount, payout.currency), style: const TextStyle(fontWeight: FontWeight.w900)),
-                  subtitle: Text('${_date(payout.createdAt)}\n${payout.provider}'),
-                  isThreeLine: true,
-                  trailing: StatusPill(
-                    _payoutLabel(payout.status),
-                    color: _payoutColor(context, payout.status),
-                    icon: _payoutIcon(payout.status),
-                  ),
-                ),
-              ),
-            )),
-          if (_nextCursor != null && _nextCursor!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            OutlinedButton.icon(
-              onPressed: _loadingMore ? null : _loadMore,
-              icon: _loadingMore
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.expand_more_rounded),
-              label: Text(_t('تراکنش‌های بیشتر', 'Load more')), 
             ),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final filter in const ['ALL', 'CREDIT', 'DEBIT', 'HOLD']) ...[
+                    PremiumFilterChip(
+                      label: switch (filter) {
+                        'CREDIT' => _t('ورودی', 'Credits'),
+                        'DEBIT' => _t('خروجی', 'Debits'),
+                        'HOLD' => _t('قفل‌ها', 'Holds'),
+                        _ => _t('همه', 'All'),
+                      },
+                      selected: _historyFilter == filter,
+                      onTap: () => setState(() => _historyFilter = filter),
+                    ),
+                    if (filter != 'HOLD') const SizedBox(width: 8),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_visibleTransactions().isEmpty)
+              HopeAsyncState(
+                kind: HopeStateKind.empty,
+                title: _t('تراکنشی پیدا نشد', 'No transactions found'),
+                message: _t(
+                  'برای این فیلتر هنوز فعالیت مالی ثبت نشده است.',
+                  'There is no financial activity for this filter yet.',
+                ),
+              )
+            else
+              ..._visibleTransactions().map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Semantics(
+                    container: true,
+                    button: true,
+                    explicitChildNodes: false,
+                    excludeSemantics: true,
+                    label:
+                        '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${item.isCredit ? '+' : '-'}${_money(item.amount)}',
+                    onTap: () => _showTransaction(item),
+                    child: ExcludeSemantics(
+                      child: PremiumPanel(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          onTap: () => _showTransaction(item),
+                          leading: HopeIconTile(
+                            _directionIcon(item.isCredit),
+                            color: _directionColor(context, item.isCredit),
+                            filled: true,
+                            size: 44,
+                          ),
+                          title: Semantics(
+                            container: true,
+                            label: _entryTitle(item),
+                            child: Text(
+                              _entryTitle(item),
+                              style: const TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${_date(item.createdAt)}\n${_referenceTypeLabel(item.referenceType)}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          isThreeLine: true,
+                          trailing: Text(
+                            '${item.isCredit ? '+' : '-'}${_money(item.amount)}',
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: _directionColor(context, item.isCredit),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 18),
+            PremiumSectionHeader(
+              title: _t('برداشت‌ها', 'Withdrawals'),
+              subtitle: _t(
+                'وضعیت درخواست‌های برداشت داخلی.',
+                'Status of your withdrawal requests.',
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_payouts.isEmpty)
+              PremiumPanel(
+                padding: const EdgeInsets.all(18),
+                child: Text(
+                  _t(
+                    'درخواستی برای برداشت ثبت نشده است.',
+                    'No withdrawal requests yet.',
+                  ),
+                ),
+              )
+            else
+              ..._payouts.take(10).map(
+                (payout) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: PremiumPanel(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Semantics(
+                      container: true,
+                      button: true,
+                      excludeSemantics: true,
+                      label:
+                          '${_money(payout.amount)}، ${_providerLabel(payout.provider)}، ${_payoutLabel(payout.status)}',
+                      onTap: () => _showPayout(payout),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        onTap: () => _showPayout(payout),
+                        leading: HopeIconTile(
+                          _payoutIcon(payout.status),
+                          color: _payoutColor(context, payout.status),
+                          filled: true,
+                          size: 44,
+                        ),
+                        title: Text(
+                          _money(payout.amount),
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                        subtitle: Text(
+                          '${_date(payout.createdAt)}\n${_providerLabel(payout.provider)}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        isThreeLine: true,
+                        trailing: StatusPill(
+                          _payoutLabel(payout.status),
+                          color: _payoutColor(context, payout.status),
+                          icon: _payoutIcon(payout.status),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (_nextCursor != null && _nextCursor!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              OutlinedButton.icon(
+                onPressed: _loadingMore ? null : _loadMore,
+                icon: _loadingMore
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : HopeIcon(HopeV2Icons.arrowRight, size: 19),
+                label: Text(_t('تراکنش‌های بیشتر', 'Load more')),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -792,24 +1125,15 @@ class _DetailRow extends StatelessWidget {
       );
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.icon, required this.label, required this.onTap});
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => FilledButton.tonalIcon(
-        onPressed: onTap,
-        icon: Icon(icon),
-        label: Text(label),
-      );
-}
-
 class _TransferDialog extends StatefulWidget {
-  const _TransferDialog({required this.isEnglish, this.maxAmount});
+  const _TransferDialog({
+    required this.isEnglish,
+    this.maxAmount,
+    this.maxAmountLabel,
+  });
   final bool isEnglish;
   final int? maxAmount;
+  final String? maxAmountLabel;
 
   @override
   State<_TransferDialog> createState() => _TransferDialogState();
@@ -851,7 +1175,12 @@ class _TransferDialogState extends State<_TransferDialog> {
               decoration: InputDecoration(
                 labelText: t('مبلغ به تومان', 'Amount in Toman'),
                 suffixText: t('تومان', 'TOMAN'),
-                helperText: widget.maxAmount == null ? null : t('حداکثر: ${widget.maxAmount}', 'Maximum: ${widget.maxAmount}'),
+                helperText: widget.maxAmountLabel == null
+                    ? null
+                    : t(
+                        'حداکثر: ${widget.maxAmountLabel!}',
+                        'Maximum: ${widget.maxAmountLabel!}',
+                      ),
                 errorText: errorText,
               ),
             ),

@@ -23,7 +23,7 @@ class HopeSettingsController extends ChangeNotifier {
 
   SharedPreferences? _prefs;
   String _language = 'fa';
-  String _theme = 'system';
+  String _theme = 'dark';
   String _city = 'تهران';
   bool _locationEnabled = false;
   bool _notifications = true;
@@ -33,6 +33,8 @@ class HopeSettingsController extends ChangeNotifier {
   double? _latitude;
   double? _longitude;
   bool _loading = true;
+  bool _locationBusy = false;
+  int _locationRequestId = 0;
   LocationFailureReason? _lastLocationFailure;
 
   Future<void> Function(LocationFailureReason reason, Object? error,
@@ -47,6 +49,7 @@ class HopeSettingsController extends ChangeNotifier {
   bool get personalizedRecommendations => _personalizedRecommendations;
   bool get quietHours => _quietHours;
   bool get compactCards => _compactCards;
+  bool get locationBusy => _locationBusy;
   double? get latitude => _latitude;
   double? get longitude => _longitude;
   LocationFailureReason? get lastLocationFailure => _lastLocationFailure;
@@ -54,7 +57,7 @@ class HopeSettingsController extends ChangeNotifier {
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     _language = _prefs!.getString(_languageKey) ?? 'fa';
-    _theme = _prefs!.getString(_themeKey) ?? 'system';
+    _theme = _prefs!.getString(_themeKey) ?? 'dark';
     _city = _prefs!.getString(_cityKey) ?? 'تهران';
     _locationEnabled = _prefs!.getBool(_locationKey) ?? false;
     _notifications = _prefs!.getBool(_notificationsKey) ?? true;
@@ -88,60 +91,85 @@ class HopeSettingsController extends ChangeNotifier {
   }
 
   Future<bool> enableLocation() async {
-    _lastLocationFailure = null;
-    if (kIsWeb) {
-      _lastLocationFailure = LocationFailureReason.unsupportedPlatform;
-      await onLocationFailure?.call(_lastLocationFailure!, null, null);
-      return false;
-    }
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _lastLocationFailure = LocationFailureReason.serviceDisabled;
-      await _clearLocationState();
-      await onLocationFailure?.call(_lastLocationFailure!, null, null);
-      return false;
-    }
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      _lastLocationFailure = LocationFailureReason.permissionDenied;
-      _locationEnabled = false;
-      _latitude = null;
-      _longitude = null;
-      await _prefs?.setBool(_locationKey, false);
-      await _prefs?.remove(_latitudeKey);
-      await _prefs?.remove(_longitudeKey);
-      notifyListeners();
-      await onLocationFailure?.call(_lastLocationFailure!, null, null);
-      return false;
-    }
-    Position position;
-    try {
-      position = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.medium),
-      );
-    } catch (error, stack) {
-      _lastLocationFailure = LocationFailureReason.positionUnavailable;
-      await _clearLocationState();
-      await onLocationFailure?.call(
-          _lastLocationFailure!, error, stack);
-      return false;
-    }
-    _lastLocationFailure = null;
-    _locationEnabled = true;
-    _city = nearestCity(position.latitude, position.longitude, fallback: _city);
-    _latitude = position.latitude;
-    _longitude = position.longitude;
-    await _prefs?.setBool(_locationKey, true);
-    await _prefs?.setString(_cityKey, _city);
-    await _prefs?.setDouble(_latitudeKey, position.latitude);
-    await _prefs?.setDouble(_longitudeKey, position.longitude);
+    if (_locationBusy) return false;
+    final requestId = ++_locationRequestId;
+    _locationBusy = true;
     notifyListeners();
-    return true;
+    try {
+      _lastLocationFailure = null;
+      if (kIsWeb) {
+        _lastLocationFailure = LocationFailureReason.unsupportedPlatform;
+        await onLocationFailure?.call(_lastLocationFailure!, null, null);
+        return false;
+      }
+
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (requestId != _locationRequestId) return false;
+      if (!serviceEnabled) {
+        _lastLocationFailure = LocationFailureReason.serviceDisabled;
+        await _clearLocationState();
+        await onLocationFailure?.call(_lastLocationFailure!, null, null);
+        return false;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (requestId != _locationRequestId) return false;
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (requestId != _locationRequestId) return false;
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _lastLocationFailure = LocationFailureReason.permissionDenied;
+        _locationEnabled = false;
+        _latitude = null;
+        _longitude = null;
+        await _prefs?.setBool(_locationKey, false);
+        await _prefs?.remove(_latitudeKey);
+        await _prefs?.remove(_longitudeKey);
+        notifyListeners();
+        await onLocationFailure?.call(_lastLocationFailure!, null, null);
+        return false;
+      }
+
+      Position position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.medium),
+        );
+      } catch (error, stack) {
+        if (requestId != _locationRequestId) return false;
+        _lastLocationFailure = LocationFailureReason.positionUnavailable;
+        await _clearLocationState();
+        await onLocationFailure?.call(
+          _lastLocationFailure!,
+          error,
+          stack,
+        );
+        return false;
+      }
+      if (requestId != _locationRequestId) return false;
+
+      _lastLocationFailure = null;
+      _locationEnabled = true;
+      _city =
+          nearestCity(position.latitude, position.longitude, fallback: _city);
+      _latitude = position.latitude;
+      _longitude = position.longitude;
+      await _prefs?.setBool(_locationKey, true);
+      await _prefs?.setString(_cityKey, _city);
+      await _prefs?.setDouble(_latitudeKey, position.latitude);
+      await _prefs?.setDouble(_longitudeKey, position.longitude);
+      if (requestId != _locationRequestId) return false;
+      notifyListeners();
+      return true;
+    } finally {
+      if (requestId == _locationRequestId) {
+        _locationBusy = false;
+        notifyListeners();
+      }
+    }
   }
 
   Future<void> _clearLocationState() async {
@@ -155,7 +183,13 @@ class HopeSettingsController extends ChangeNotifier {
   }
 
   Future<void> disableLocation() async {
+    ++_locationRequestId;
+    final wasBusy = _locationBusy;
     await _clearLocationState();
+    if (wasBusy) {
+      _locationBusy = false;
+      notifyListeners();
+    }
   }
 
   Future<void> setNotifications(bool value) async {

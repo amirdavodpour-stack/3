@@ -16,6 +16,9 @@ import '../../support/fake_api_server.dart';
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -87,7 +90,7 @@ void main() {
 
   testWidgets('drawer opens for the guest shell', (tester) async {
     await _pump(tester);
-    final menu = find.byIcon(Icons.menu_rounded);
+    final menu = find.bySemanticsLabel('منو');
     if (menu.evaluate().isNotEmpty) {
       await tester.tap(menu);
     } else {
@@ -102,7 +105,7 @@ void main() {
       'language can be changed from the drawer without replacing MaterialApp',
       (tester) async {
     await _pump(tester);
-    final menu = find.byIcon(Icons.menu_rounded);
+    final menu = find.bySemanticsLabel('منو');
     await tester.tap(menu);
     await tester.pumpAndSettle();
     expect(find.byType(Drawer), findsOneWidget);

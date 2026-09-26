@@ -97,8 +97,8 @@ void main() {
         },
       });
       expect(payment.fees, isNotNull);
-      expect(payment.fees!.baseAmount, 100);
-      expect(payment.fees!.employerCharge, 110);
+      expect(payment.fees!.baseAmount, '100');
+      expect(payment.fees!.employerCharge, '110');
       expect(payment.fees!.policyVersion, '2026-08-v1');
     });
   });
@@ -120,14 +120,25 @@ void main() {
         'employerCharge': '110.5',
         'providerPayout': '100',
       });
-      expect(fees.baseAmount, 100);
-      expect(fees.employerFee, 10.5);
-      expect(fees.employerCharge, 110.5);
+      expect(fees.baseAmount, '100');
+      expect(fees.employerFee, '10.5');
+      expect(fees.employerCharge, '110.5');
     });
 
     test('unparsable fee fields degrade to null instead of throwing', () {
       final fees = HopePaymentFees.fromMap({'baseAmount': 'garbage'});
       expect(fees.baseAmount, isNull);
+    });
+
+    test('large TOMAN fee strings remain exact string values', () {
+      final fees = HopePaymentFees.fromMap({
+        'baseAmount': '9007199254740993',
+        'employerCharge': '6000000000000000',
+        'providerPayout': '5400000000000000',
+      });
+      expect(fees.baseAmount, '9007199254740993');
+      expect(fees.employerCharge, '6000000000000000');
+      expect(fees.providerPayout, '5400000000000000');
     });
   });
 }
