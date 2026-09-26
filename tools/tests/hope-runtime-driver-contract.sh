@@ -35,6 +35,8 @@ $T grep -Fq -- "integrationTestChannel.invokeMethod<void>(" "$test_file"
 $T grep -Fq -- "'convertFlutterSurfaceToImage'" "$test_file"
 $T grep -Fq -- "integrationTestChannel.invokeMethod<List<dynamic>>(" "$test_file"
 $T grep -Fq -- "'captureScreenshot'" "$test_file"
+$T grep -Fq -- "PlatformDispatcher.instance.scheduleFrame();" "$test_file"
+$T grep -Fq -- "setMethodCallHandler((call) async" "$test_file"
 if $T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"; then
   echo "FAIL: native capture path must not pre-convert the surface through binding bookkeeping" >&2
   exit 1
