@@ -1,3 +1,4 @@
+import 'dart:ui';
 // ignore_for_file: avoid_print
 
 import 'dart:io';
@@ -646,12 +647,21 @@ Future<void> _captureRuntimeScreenshot(
     final directory = Directory(_screenshotSyncRoot);
     await directory.create(recursive: true);
 
+    // Match integration_test's Android capture plumbing: the native side may
+    // send a scheduleFrame callback while producing the screenshot.
+    integrationTestChannel.setMethodCallHandler((call) async {
+      if (call.method == 'scheduleFrame') {
+        PlatformDispatcher.instance.scheduleFrame();
+      }
+      return null;
+    });
+
     // Use integration_test's native Android capture directly, rather than
     // relying on VM-service screenshot RPC or an external adb screencap.
     // This returns the actual rendered Flutter PNG bytes while the Flutter
     // surface is converted to the Android screenshot surface.
     final rawBytes =
-        await integrationTestChannel.invokeMethod<List<dynamic>>(
+        await integrationTestChannel.invokeMethod<List<int>>(
       'captureScreenshot',
       <String, dynamic>{'name': marker},
     );
