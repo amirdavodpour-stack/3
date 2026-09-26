@@ -89,8 +89,8 @@ class _JobsFilterHeader extends StatelessWidget {
         ),
         const SizedBox(height: HopeV2Spacing.lg),
         PremiumPanel(
-          padding: const EdgeInsets.all(HopeV2Spacing.md),
-          highlight: true,
+          padding: const EdgeInsets.all(HopeV2Spacing.sm),
+          highlight: false,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 560;
@@ -152,14 +152,8 @@ class _JobsFilterHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: HopeV2Spacing.md),
-        PremiumPanel(
-          padding: const EdgeInsets.fromLTRB(
-            HopeV2Spacing.md,
-            HopeV2Spacing.sm,
-            HopeV2Spacing.md,
-            HopeV2Spacing.md,
-          ),
-          highlight: false,
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -273,6 +267,7 @@ class _JobsFilterHeader extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ],
     );
