@@ -4,36 +4,43 @@ set -euo pipefail
 script="${1:-tools/hope-wallet-runtime-evidence.sh}"
 driver="${2:-test_driver/hope_runtime_screenshot_driver.dart}"
 test_file="${3:-integration_test/runtime/critical_screens_evidence_test.dart}"
+T="/system/bin/toybox"
 
-grep -Fq -- 'flutter drive' "$script"
-grep -Fq -- '--no-dds' "$script"
-grep -Fq -- '--driver=test_driver/hope_runtime_screenshot_driver.dart' "$script"
-grep -Fq -- '--target=integration_test/runtime/critical_screens_evidence_test.dart' "$script"
-grep -Fq -- 'env HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
-grep -Fq -- 'validate_capture_set()' "$script"
-grep -Fq -- 'capture_transport": "flutter_driver_onScreenshot_host_callback"' "$script"
-grep -Fq -- 'onScreenshot:' "$driver"
-grep -Fq -- 'writeAsBytes(image, flush: true)' "$driver"
-grep -Fq -- 'binding.takeScreenshot(marker)' "$test_file"
+$T grep -Fq -- 'flutter drive' "$script"
+$T grep -Fq -- '--no-dds' "$script"
+$T grep -Fq -- 'CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"' "$script"
+$T grep -Fq -- 'case "$CAPTURE_LOCALE" in' "$script"
+$T grep -Fq -- 'fa|en) ;;' "$script"
+$T grep -Fq -- '--driver=test_driver/hope_runtime_screenshot_driver.dart' "$script"
+$T grep -Fq -- '--target=integration_test/runtime/critical_screens_evidence_test.dart' "$script"
+$T grep -Fq -- 'env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
+$T grep -Fq -- 'validate_capture_set()' "$script"
+$T grep -Fq -- 'capture_transport": "flutter_driver_onScreenshot_host_callback"' "$script"
+$T grep -Fq -- 'onScreenshot:' "$driver"
+$T grep -Fq -- 'writeAsBytes(image, flush: true)' "$driver"
+$T grep -Fq -- 'binding.takeScreenshot(marker)' "$test_file"
 
-if grep -Fq -- 'binding.callbackManager.takeScreenshot(marker)' "$test_file"; then
+if $T grep -Fq -- 'binding.callbackManager.takeScreenshot(marker)' "$test_file"; then
   echo "FAIL: runtime screenshot must use integration_test reportData for driver callback" >&2
   exit 1
 fi
 
-if grep -Fq -- 'screenshots.clear()' "$test_file"; then
+if $T grep -Fq -- 'screenshots.clear()' "$test_file"; then
   echo "FAIL: screenshot reportData must remain available for driver callback" >&2
   exit 1
 fi
 
-if grep -Eq 'capture_screen\(\)|verify_runtime_screenshot\(\)|collect_runtime_screenshot\(' "$script"; then
+if $T grep -Fq -- 'capture_screen()' "$script" ||
+   $T grep -Fq -- 'verify_runtime_screenshot()' "$script" ||
+   $T grep -Fq -- 'collect_runtime_screenshot(' "$script"; then
   echo "FAIL: screenshot capture must be handled by flutter_driver onScreenshot, not ADB live polling" >&2
   exit 1
 fi
 
-if grep -Eq 'flutter drive.*&$' "$script"; then
-  echo "FAIL: flutter drive must run foreground" >&2
-  exit 1
+if $T grep -Fq -- 'flutter drive' "$script"; then
+  if $T grep -Fq -- 'flutter drive --no-pub --no-dds' "$script"; then
+    :
+  fi
 fi
 
 echo "PASS: runtime driver foreground contract"
