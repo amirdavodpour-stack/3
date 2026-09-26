@@ -614,6 +614,58 @@ typedef _Runtime = ({
   ApplicationRegistry registry,
 });
 
+var _runtimeScreenshotSurfacePrepared = false;
+
+Future<void> _captureRuntimeScreenshot(
+  WidgetTester tester,
+  String marker,
+) async {
+  const outputRoot = String.fromEnvironment('HOPE_SCREENSHOT_OUTPUT_ROOT');
+  if (outputRoot.isEmpty) {
+    throw StateError(
+      'HOPE_SCREENSHOT_OUTPUT_ROOT is required for runtime evidence.',
+    );
+  }
+
+  final binding = IntegrationTestWidgetsFlutterBinding.instance;
+  final outputDirectory = Directory(outputRoot);
+  await outputDirectory.create(recursive: true);
+
+  final outputFile = File('$outputRoot/$marker.png');
+  final tempFile = File('$outputRoot/.$marker.png.tmp');
+  if (await outputFile.exists()) {
+    await outputFile.delete();
+  }
+  if (await tempFile.exists()) {
+    await tempFile.delete();
+  }
+
+  if (!_runtimeScreenshotSurfacePrepared) {
+    print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
+    await binding.convertFlutterSurfaceToImage();
+    await tester.pump();
+    _runtimeScreenshotSurfacePrepared = true;
+    print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
+  }
+
+  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+  final bytes = await binding.takeScreenshot(marker);
+  if (bytes.isEmpty) {
+    throw StateError('Runtime screenshot capture returned no bytes: $marker');
+  }
+
+  await tempFile.writeAsBytes(bytes, flush: true);
+  await tempFile.rename(outputFile.path);
+
+  final screenshots = binding.reportData?['screenshots'];
+  if (screenshots is List<dynamic>) {
+    screenshots.clear();
+  }
+
+  print('HOPE_SCREENSHOT_CAPTURED:' + marker + ':' + bytes.length.toString());
+  print('HOPE_SCREENSHOT_READY:$marker');
+}
+
 Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
   for (var attempt = 0; attempt < 30; attempt++) {
     if (find.byType(CircularProgressIndicator).evaluate().isEmpty) {
@@ -640,15 +692,13 @@ Future<void> _captureRuntimeScreen(
   await tester.pump();
 
   // Keep the host/provider tree stable across captures; only the active screen
-  // changes. Avoid Flutter Driver screenshot payload/reportData entirely:
-  // the host runner captures the real Android surface with adb screencap after
-  // this marker is emitted.
+  // changes. This avoids repeated provider/plugin lifecycle teardown.
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.pump();
   await _waitForRuntimeRenderToSettle(tester);
   await tester.pump();
 
-  print('HOPE_SCREENSHOT_READY:$marker');
+  await _captureRuntimeScreenshot(tester, marker);
 }
 Future<void> _captureBaselineLocale(
   WidgetTester tester, {
