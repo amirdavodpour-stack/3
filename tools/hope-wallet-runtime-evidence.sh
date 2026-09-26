@@ -37,6 +37,29 @@ capture_android_diagnostics() {
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell logcat -d -t 1000 > "$evidence_dir/logcat-$prefix.txt" 2>&1 || true
 }
 
+recover_external_android_error_dialog() {
+  local prefix="$1"
+  local window_dump="$evidence_dir/window-$prefix.txt"
+  local error_package
+  error_package="$(grep -E 'Application Not Responding:|Application Error:' "$window_dump" |
+    sed -nE 's/.*Application (Not Responding|Error):[[:space:]]*([^[:space:]}]+).*/\2/p' |
+    tail -n 1 || true)"
+
+  if [ -z "$error_package" ]; then
+    return 0
+  fi
+
+  if [ "$error_package" = "com.hope.marketplace" ]; then
+    echo "Rendered evidence rejected: HOPE reports an Android ANR/application-error dialog." >&2
+    return 1
+  fi
+
+  echo "HOPE_HOST_CAPTURE_EXTERNAL_ERROR_DIALOG:$prefix:$error_package"
+  timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s     "$ADB_TIMEOUT_SECONDS"s adb shell input keyevent KEYCODE_BACK >/dev/null 2>&1 || true
+  sleep 0.5
+  return 0
+}
+
 assert_hope_focused() {
   local prefix="$1"
   local window_dump="$evidence_dir/window-$prefix.txt"
@@ -52,8 +75,7 @@ assert_hope_focused() {
     current_focus="$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
     top_resumed="$(grep -E "topResumedActivity=" "$activity_dump" | tail -n 1 || true)"
 
-    if grep -qiE "Application Not Responding:|AppErrorDialog|Application Error" "$window_dump"; then
-      echo "Rendered evidence rejected: Android reports an ANR/application-error dialog." >&2
+    if ! recover_external_android_error_dialog "$prefix"; then
       capture_android_diagnostics "$prefix"
       return 1
     fi
@@ -99,8 +121,7 @@ assert_hope_rendered() {
       return 0
     fi
 
-    if grep -qiE "Application Not Responding:|AppErrorDialog|Application Error" "$window_dump"; then
-      echo "Rendered evidence rejected: Android reports an ANR/application-error dialog." >&2
+    if ! recover_external_android_error_dialog "$prefix"; then
       capture_android_diagnostics "$prefix"
       return 1
     fi
