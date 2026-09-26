@@ -521,21 +521,16 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   return (auth: auth, settings: settings, registry: _registry());
 }
 
-class _RuntimeScreen {
-  const _RuntimeScreen({required this.locale, required this.child});
-
-  final Locale locale;
-  final Widget child;
-}
-
 class _EvidenceHost extends StatelessWidget {
   const _EvidenceHost({
     required this.runtime,
-    required this.screen,
+    required this.locale,
+    required this.child,
   });
 
   final _Runtime runtime;
-  final ValueListenable<_RuntimeScreen> screen;
+  final Locale locale;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -559,32 +554,30 @@ class _EvidenceHost extends StatelessWidget {
         Provider<NotificationRepository>.value(value: runtime.registry.notifications!),
         Provider<OfferRepository>.value(value: _EvidenceOfferRepository()),
       ],
-      child: ValueListenableBuilder<_RuntimeScreen>(
-        valueListenable: screen,
-        builder: (context, view, _) => MaterialApp(
-          debugShowCheckedModeBanner: false,
-          locale: view.locale,
-          supportedLocales: const [Locale('fa'), Locale('en')],
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          theme: AppTheme.dark(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.dark,
-          home: Directionality(
-            textDirection: view.locale.languageCode == 'en'
-                ? TextDirection.ltr
-                : TextDirection.rtl,
-            child: view.child,
-          ),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        locale: locale,
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: AppTheme.dark(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.dark,
+        home: Directionality(
+          textDirection: locale.languageCode == 'en'
+              ? TextDirection.ltr
+              : TextDirection.rtl,
+          child: child,
         ),
       ),
     );
   }
 }
+
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
@@ -635,65 +628,25 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
-Future<void> _captureRuntimeScreenshot(
-  WidgetTester tester,
-  String marker,
-) async {
-  final binding = IntegrationTestWidgetsFlutterBinding.instance;
-
-  if (_adbScreenshotCapture) {
-    if (_screenshotSyncRoot.isEmpty) {
-      throw StateError(
-        'HOPE_SCREENSHOT_SYNC_ROOT is required for ADB screenshot capture.',
-      );
-    }
-    final directory = Directory(_screenshotSyncRoot);
-    await directory.create(recursive: true);
-    final request = File('$_screenshotSyncRoot/$marker.ready');
-    if (await request.exists()) {
-      await request.delete();
-    }
-    print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-    await request.writeAsString('ready', flush: true);
-    print('HOPE_SCREENSHOT_READY:$marker');
-    while (await request.exists()) {
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    }
-    return;
-  }
-
-  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  await binding.takeScreenshot(marker);
-  print('HOPE_SCREENSHOT_READY:$marker');
-}
-
-Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
-  for (var attempt = 0; attempt < 30; attempt++) {
-    if (find.byType(CircularProgressIndicator).evaluate().isEmpty) {
-      return;
-    }
-    await tester.pump(const Duration(milliseconds: 100));
-  }
-
-  if (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
-    throw StateError(
-      'Runtime render remained in loading state after bounded settle',
-    );
-  }
-}
-
 Future<void> _captureRuntimeScreen(
   WidgetTester tester, {
-  required ValueNotifier<_RuntimeScreen> screen,
+  required _Runtime runtime,
   required Locale locale,
   required String marker,
   required Widget child,
 }) async {
-  screen.value = _RuntimeScreen(locale: locale, child: child);
+  // Rebuild the complete host for every screen. Flutter's Android screenshot
+  // surface is a stateful image view; a full widget-tree rebuild prevents
+  // stale layers from one complex screen leaking into the next capture.
+  await tester.pumpWidget(
+    _EvidenceHost(
+      runtime: runtime,
+      locale: locale,
+      child: child,
+    ),
+  );
   await tester.pump();
 
-  // Keep the host/provider tree stable across captures; only the active screen
-  // changes. This avoids repeated provider/plugin lifecycle teardown.
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.pump();
   await _waitForRuntimeRenderToSettle(tester);
@@ -703,7 +656,6 @@ Future<void> _captureRuntimeScreen(
 }
 Future<void> _captureBaselineLocale(
   WidgetTester tester, {
-  required ValueNotifier<_RuntimeScreen> screen,
   required Locale locale,
   required String suffix,
   required _Runtime runtime,
@@ -734,7 +686,7 @@ Future<void> _captureBaselineLocale(
     print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,
-      screen: screen,
+      runtime: runtime,
       locale: locale,
       marker: '${entry.key}-$suffix',
       child: entry.value(),
@@ -745,7 +697,6 @@ Future<void> _captureBaselineLocale(
 
 Future<void> _captureResponsiveLocale(
   WidgetTester tester, {
-  required ValueNotifier<_RuntimeScreen> screen,
   required Locale locale,
   required String suffix,
   required _Runtime runtime,
@@ -763,7 +714,7 @@ Future<void> _captureResponsiveLocale(
     print('HOPE_RUNTIME_PAGE_START:responsive-${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,
-      screen: screen,
+      runtime: runtime,
       locale: locale,
       marker: 'responsive-720x1280-${entry.key}-$suffix',
       child: entry.value(),
@@ -776,17 +727,11 @@ void main() {
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
     final runtime = await _prepare();
-    final screen = ValueNotifier(
-      _RuntimeScreen(
-        locale: _captureLocale == 'en' ? const Locale('en') : const Locale('fa'),
-        child: const HomePage(),
-      ),
-    );
-
     await tester.pumpWidget(
       _EvidenceHost(
         runtime: runtime,
-        screen: screen,
+        locale: _captureLocale == 'en' ? const Locale('en') : const Locale('fa'),
+        child: const HomePage(),
       ),
     );
     if (!_adbScreenshotCapture) {
@@ -798,7 +743,6 @@ void main() {
         await _captureResponsiveLocale(
           tester,
           runtime: runtime,
-          screen: screen,
           locale: const Locale('fa'),
           suffix: 'fa-rtl',
         );
@@ -807,13 +751,11 @@ void main() {
         await _captureResponsiveLocale(
           tester,
           runtime: runtime,
-          screen: screen,
           locale: const Locale('en'),
           suffix: 'en-ltr',
         );
       }
       await Future<void>.delayed(const Duration(seconds: 1));
-      screen.dispose();
       return;
     }
 
@@ -821,7 +763,6 @@ void main() {
       await _captureBaselineLocale(
         tester,
         runtime: runtime,
-        screen: screen,
         locale: const Locale('fa'),
         suffix: 'fa-rtl',
       );
@@ -830,12 +771,10 @@ void main() {
       await _captureBaselineLocale(
         tester,
         runtime: runtime,
-        screen: screen,
         locale: const Locale('en'),
         suffix: 'en-ltr',
       );
     }
     await Future<void>.delayed(const Duration(seconds: 1));
-    screen.dispose();
   });
 }

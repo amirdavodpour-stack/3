@@ -33,6 +33,14 @@ $T grep -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
 $T grep -Fq -- 'if (_responsiveOnly) {' "$test_file"
 $T grep -Fq -- 'await _captureBaselineLocale(' "$test_file"
 $T grep -Fq -- 'await _captureResponsiveLocale(' "$test_file"
+$T grep -Fq -- 'await tester.pumpWidget(' "$test_file"
+$T grep -Fq -- '_EvidenceHost(' "$test_file"
+if $T grep -Fq -- 'ValueNotifier<_RuntimeScreen>' "$test_file" ||
+   $T grep -Fq -- 'ValueListenableBuilder<_RuntimeScreen>' "$test_file"; then
+  echo "FAIL: runtime capture must rebuild the host between screens" >&2
+  exit 1
+fi
+
 
 if $T grep -Fq -- 'binding.callbackManager.takeScreenshot(marker)' "$test_file"; then
   echo "FAIL: runtime screenshot must use integration_test reportData for driver callback" >&2
