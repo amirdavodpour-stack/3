@@ -704,6 +704,15 @@ Future<void> _captureRuntimeScreen(
   await tester.pump();
   await tester.binding.endOfFrame;
 
+  // Android's screenshot surface conversion creates the ImageView used by
+  // integration_test. After each capture, revert it so the next pump can
+  // render a fresh Flutter surface; otherwise ADB framebuffer screenshots
+  // can remain frozen on the first converted frame.
+  final binding = IntegrationTestWidgetsFlutterBinding.instance;
+  await binding.convertFlutterSurfaceToImage();
+  await tester.pump();
+  await tester.binding.endOfFrame;
+
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.binding.endOfFrame;
   await _waitForRuntimeRenderToSettle(tester);
@@ -714,6 +723,11 @@ Future<void> _captureRuntimeScreen(
   await tester.binding.endOfFrame;
 
   await _captureRuntimeScreenshot(tester, marker);
+  if (_adbScreenshotCapture) {
+    await binding.revertFlutterImage();
+    await tester.pump();
+    await tester.binding.endOfFrame;
+  }
 }
 Future<void> _signalRuntimeTestBodyComplete() async {
   if (!_adbScreenshotCapture || _screenshotSyncRoot.isEmpty) {
