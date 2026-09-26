@@ -309,19 +309,21 @@ class PremiumHeader extends StatelessWidget {
                   subtitle!,
                   maxLines: compact ? 3 : 4,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    height: 1.42,
+                  ),
                 ),
               ],
             ],
           );
 
           if (trailing == null) return content;
-          if (compact) {
+          if (compact && constraints.maxWidth < 380) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 content,
-                const SizedBox(height: HopeV2Spacing.lg),
+                const SizedBox(height: HopeV2Spacing.sm),
                 trailing!,
               ],
             );
