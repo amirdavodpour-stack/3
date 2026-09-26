@@ -268,7 +268,6 @@ class _JobsFilterHeader extends StatelessWidget {
             ],
           ),
         ),
-        ),
       ],
     );
   }
