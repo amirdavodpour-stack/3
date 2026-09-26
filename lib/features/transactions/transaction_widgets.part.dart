@@ -322,45 +322,40 @@ extension on _TransactionPageState {
                 ),
                 const SizedBox(height: 14),
               ],
-              PremiumHeader(
-                eyebrow: HopeCopy.of(context).copy_transaction_7e0ea3b,
-                title: job?.title ??
-                    HopeCopy.of(context).copy_transaction_7e0ea3b,
-                subtitle: _t(
-                  'وضعیت، مبلغ و مسیر انجام کار را در یک نگاه پیگیری کنید.',
-                  'Track status, amount, and the full work flow in one place.',
-                ),
-                trailing: PremiumTag(
-                  icon: _statusIcon(status),
-                  label: _statusLabel(status),
-                  color: _statusColor(status),
-                ),
-              ),
-              const SizedBox(height: HopeV2Spacing.lg),
-              if (job != null) ...[
-                 Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: StatusPill(
-                    _jobStatusLabel(job.status),
-                    color: AppColors.muted,
-                    icon: Icons.work_history_outlined,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 6),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: Text(
-                      payment?.id == null
-                          ? _t('پرداخت هنوز ساخته نشده',
-                              'Payment has not been created yet')
-                          : _t('شناسه پرداخت: ${payment!.id}',
-                              'Payment ID: ${payment!.id}'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job?.title ??
+                              HopeCopy.of(context).copy_transaction_7e0ea3b,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          payment?.id == null
+                              ? _t(
+                                  'پرداخت هنوز ساخته نشده',
+                                  'Payment has not been created yet',
+                                )
+                              : _t('شناسه پرداخت: ' + payment!.id, 'Payment ID: ' + payment!.id),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  PremiumTag(
+                    icon: _statusIcon(status),
+                    label: _statusLabel(status),
+                    color: _statusColor(status),
                   ),
                   IconButton(
                     onPressed: loading ? null : refresh,
@@ -369,7 +364,15 @@ extension on _TransactionPageState {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              if (job != null) ...[
+                const SizedBox(height: 7),
+                StatusPill(
+                  _jobStatusLabel(job.status),
+                  color: AppColors.muted,
+                  icon: HopeV2Icons.job,
+                ),
+              ],
+              const SizedBox(height: 12),
               PremiumPanel(
                 padding: const EdgeInsets.all(18),
                 highlight: status == 'HELD' ||
