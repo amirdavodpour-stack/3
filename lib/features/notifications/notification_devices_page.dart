@@ -80,13 +80,13 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
   IconData _icon(String platform) {
     switch (platform.toUpperCase()) {
       case 'ANDROID':
-        return Icons.android_rounded;
+        return HopeV2Icons.android;
       case 'IOS':
-        return Icons.phone_iphone_rounded;
+        return HopeV2Icons.apple;
       case 'WEB':
-        return Icons.language_rounded;
+        return HopeV2Icons.web;
       default:
-        return Icons.devices_other_rounded;
+        return HopeV2Icons.device;
     }
   }
 
@@ -154,7 +154,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                 padding: const EdgeInsets.all(18),
                 child: Column(
                   children: [
-                    const Icon(Icons.cloud_off_rounded, size: 34),
+                    HopeIcon(HopeV2Icons.error, size: 34),
                     const SizedBox(height: 10),
                     Text(_error!, textAlign: TextAlign.center),
                     const SizedBox(height: 12),
@@ -171,7 +171,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    const Icon(Icons.notifications_off_outlined, size: 38),
+                    HopeIcon(HopeV2Icons.notifications, size: 38),
                     const SizedBox(height: 12),
                     Text(
                       _t('دستگاه فعالی برای اعلان ثبت نشده است.', 'No active notification devices are registered.'),
