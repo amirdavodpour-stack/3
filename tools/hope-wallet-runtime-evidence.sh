@@ -10,6 +10,7 @@ rm -f "$log_file"
 : > "$log_file"
 
 capture_root="/data/user/0/com.hope.marketplace/files/hope-screen-captures-${GITHUB_RUN_ID}"
+export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 CAPTURE_CHECK_TIMEOUT_SECONDS="${HOPE_CAPTURE_CHECK_TIMEOUT_SECONDS:-2}"
@@ -20,17 +21,19 @@ adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibili
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
 
 set +e
-# Track the Flutter PID directly. A background pipeline stores the tee PID in $!,
-# which can outlive Flutter and makes timeout/exit detection flaky.
-flutter test --no-pub \
+# Use the historical host-driven Flutter Driver path. The external driver keeps
+# the VM-service session alive through integrationDriver's final requestData().
+set +e
+flutter drive --no-pub --no-dds \
+  --driver=test_driver/hope_runtime_screenshot_driver.dart \
+  --target=integration_test/runtime/critical_screens_evidence_test.dart \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root" \
-  integration_test/runtime/critical_screens_evidence_test.dart \
-  -r expanded > "$log_file" 2>&1 &
+  > "$log_file" 2>&1 &
 test_pid=$!
 set -e
 
-capture_android_diagnostics() {
+() {
   local prefix="$1"
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb devices -l > "$evidence_dir/adb-devices-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-$prefix.txt" 2>&1 || true
@@ -187,12 +190,13 @@ if [ "$baseline_status" -eq 0 ]; then
   active_runtime_log="$runner_temp/hope-responsive-runtime.log"
 
 set +e
-HOPE_RESPONSIVE_ONLY=1 flutter test --no-pub \
+HOPE_RESPONSIVE_ONLY=1 flutter drive --no-pub --no-dds \
+  --driver=test_driver/hope_runtime_screenshot_driver.dart \
+  --target=integration_test/runtime/critical_screens_evidence_test.dart \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_RESPONSIVE_ONLY=true \
   --dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$capture_root" \
-  integration_test/runtime/critical_screens_evidence_test.dart \
-  -r expanded > "$runner_temp/hope-responsive-runtime.log" 2>&1 &
+  > "$runner_temp/hope-responsive-runtime.log" 2>&1 &
 responsive_test_pid=$!
 test_pid="$responsive_test_pid"
 set -e
@@ -252,7 +256,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["fa-RTL", "en-LTR"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "flutter_test_takeScreenshot_app_private_file",
+  "capture_transport": "flutter_driver_takeScreenshot_app_private_file",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
