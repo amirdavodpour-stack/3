@@ -48,13 +48,13 @@ capture_screen() {
   local prefix="$3"
   local timeout_seconds="$4"
   local deadline=$((SECONDS + timeout_seconds))
+  local screenshot_path="$evidence_dir/$output"
+  rm -f -- "$screenshot_path"
 
   while (( SECONDS < deadline )); do
     if test -f "$active_runtime_log" && grep -Fq -- "$marker" "$active_runtime_log"; then
       echo "HOPE_HOST_CAPTURE_DETECTED:$marker"
 
-      local screenshot_path="$evidence_dir/$output"
-      rm -f -- "$screenshot_path"
       local capture_deadline=$((SECONDS + HOST_SCREENSHOT_TIMEOUT_SECONDS))
       local captured=0
       while (( SECONDS < capture_deadline )); do
