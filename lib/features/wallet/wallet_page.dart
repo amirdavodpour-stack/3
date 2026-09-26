@@ -794,20 +794,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
               const SizedBox(height: 14),
             ],
-            PremiumHeader(
-              eyebrow: _t('مالی', 'FINANCE'),
-              title: _t('کیف پول', 'Wallet'),
-              subtitle: _t(
-                'موجودی، حرکت وجه و سابقه مالی در یک نمای واحد.',
-                'Balance, money movement, and financial history in one view.',
-              ),
-              trailing: PremiumTag(
-                icon: HopeV2Icons.secure,
-                label: _providerLabel('INTERNAL'),
-                color: Theme.of(context).colorScheme.tertiary,
-              ),
-            ),
-            const SizedBox(height: HopeV2Spacing.xl),
+            const SizedBox(height: HopeV2Spacing.sm),
             LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 760;
