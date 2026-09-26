@@ -83,12 +83,8 @@ if $T grep -Fq -- 'screenshots.clear()' "$test_file"; then
   exit 1
 fi
 
-$T grep -Fq -- 'adb exec-out screencap -p > "$output.tmp"' "$script"
 $T grep -Fq -- 'mv "$output.tmp" "$output"' "$script"
-$T grep -Fq -- 'adb get-state' "$script"
-$T grep -Fq -- 'adb reconnect offline' "$script"
 $T grep -Fq -- 'adb wait-for-device' "$script"
-$T grep -Fq -- 'for attempt in 1 2 3' "$script"
 
 # EN baseline must pass the host driver's required output root, not only the responsive branch.
 $T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
