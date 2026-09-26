@@ -588,7 +588,7 @@ class _EvidenceHost extends StatelessWidget {
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
-    String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: 'all');
+    String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
 
 class _EvidenceUploadQueue implements UploadQueue {
   @override
@@ -618,19 +618,24 @@ typedef _Runtime = ({
 
 var _runtimeScreenshotSurfacePrepared = false;
 
+Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
+  if (_runtimeScreenshotSurfacePrepared) {
+    return;
+  }
+
+  final binding = IntegrationTestWidgetsFlutterBinding.instance;
+  print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
+  await binding.convertFlutterSurfaceToImage();
+  await tester.pump();
+  _runtimeScreenshotSurfacePrepared = true;
+  print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
+}
+
 Future<void> _captureRuntimeScreenshot(
   WidgetTester tester,
   String marker,
 ) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
-
-  if (!_runtimeScreenshotSurfacePrepared) {
-    print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
-    await binding.convertFlutterSurfaceToImage();
-    await tester.pump();
-    _runtimeScreenshotSurfacePrepared = true;
-    print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
-  }
 
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
   await binding.takeScreenshot(marker);
@@ -759,6 +764,7 @@ void main() {
         screen: screen,
       ),
     );
+    await _prepareRuntimeScreenshotSurface(tester);
 
     if (_responsiveOnly) {
       if (_captureLocale != 'en') {
