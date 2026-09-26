@@ -790,9 +790,7 @@ void main() {
         child: const HomePage(),
       ),
     );
-    if (!_adbScreenshotCapture) {
-      await _prepareRuntimeScreenshotSurface(tester);
-    }
+    await _prepareRuntimeScreenshotSurface(tester);
 
     if (_responsiveOnly) {
       if (_captureLocale != 'en') {

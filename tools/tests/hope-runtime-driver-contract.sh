@@ -39,6 +39,13 @@ $T grep -Fq -- 'await _captureBaselineLocale(' "$test_file"
 $T grep -Fq -- 'await _captureResponsiveLocale(' "$test_file"
 $T grep -Fq -- 'await tester.pumpWidget(' "$test_file"
 $T grep -Fq -- '_EvidenceHost(' "$test_file"
+$T grep -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
+if $T grep -Fq -- 'if (!_adbScreenshotCapture)' "$test_file"; then
+  echo "FAIL: screenshot surface conversion cannot be skipped for ADB capture" >&2
+  exit 1
+fi
+$T grep -Fq -- 'FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"' "$script"
+$T grep -Fq -- 'if ! assert_hope_focused "$mode-start"; then' "$script"
 $T grep -Fq -- 'test-complete.ready' "$test_file"
 $T grep -Fq -- 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$test_file"
 $T grep -Fq -- 'completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"' "$script"
