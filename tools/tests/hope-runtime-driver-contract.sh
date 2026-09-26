@@ -18,6 +18,8 @@ $T grep -Fq -- 'validate_capture_set()' "$script"
 $T grep -Fq -- 'capture_transport":' "$script"
 $T grep -Fq -- 'HOPE_ADB_SCREENSHOT_CAPTURE=true' "$script"
 $T grep -Fq -- 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
+root_count="$($T grep -F -c 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script")"
+[ "$root_count" -ge 4 ] || { echo "FAIL: baseline/responsive env must provide HOPE_SCREENSHOT_OUTPUT_ROOT for both EN and FA driver sessions" >&2; exit 1; }
 $T grep -Fq -- '--dart-define=HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script"
 $T grep -Fq -- 'adb exec-out screencap -p' "$script"
 $T grep -Fq -- 'run-as com.hope.marketplace cat "$request"' "$script"
