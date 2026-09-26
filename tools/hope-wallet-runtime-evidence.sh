@@ -11,6 +11,7 @@ rm -f "$log_file"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"
+DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-180}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 capture_sync_root="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}"
@@ -71,6 +72,27 @@ assert_hope_focused() {
     echo "Rendered evidence rejected: HOPE MainActivity is not the top resumed Android activity after ${FOCUS_CHECK_TIMEOUT_SECONDS}s." >&2
   fi
   capture_android_diagnostics "$prefix"
+  return 1
+}
+
+wait_for_driver_connection() {
+  local process_pid="$1"
+  local log_path="$2"
+  local deadline=$((SECONDS + DRIVER_CONNECT_TIMEOUT_SECONDS))
+
+  while (( SECONDS < deadline )); do
+    if grep -Fq -- 'VMServiceFlutterDriver: Connected to Flutter application.' "$log_path"; then
+      return 0
+    fi
+    if ! kill -0 "$process_pid" 2>/dev/null; then
+      echo "HOPE_HOST_DRIVER_FAILED:process-exited-before-driver-connection" >&2
+      return 1
+    fi
+    sleep 0.2
+  done
+
+  echo "HOPE_HOST_DRIVER_FAILED:driver-connection-timeout" >&2
+  capture_android_diagnostics "driver-connect"
   return 1
 }
 
@@ -200,9 +222,14 @@ run_en_host_session() {
   fi
   process_pid=$!
   set -e
-  for marker in "$@"; do
-    capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }
-  done
+  if ! wait_for_driver_connection "$process_pid" "$log_path"; then
+    capture_status=1
+    kill "$process_pid" >/dev/null 2>&1 || true
+  else
+    for marker in "$@"; do
+      capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }
+    done
+  fi
   local completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"
   local completion_status=1
   local completion_deadline=$((SECONDS + 30))

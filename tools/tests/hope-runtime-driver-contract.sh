@@ -45,6 +45,9 @@ if $T grep -Fq -- 'if (!_adbScreenshotCapture)' "$test_file"; then
   exit 1
 fi
 $T grep -Fq -- 'FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"' "$script"
+$T grep -Fq -- 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-180}"' "$script"
+$T grep -Fq -- 'if ! wait_for_driver_connection "$process_pid" "$log_path"; then' "$script"
+$T grep -Fq -- 'VMServiceFlutterDriver: Connected to Flutter application.' "$script"
 if $T grep -Fq -- 'assert_hope_focused "$mode-start"' "$script"; then
   echo "FAIL: focus gate must not run before flutter drive launches the app" >&2
   exit 1
