@@ -602,6 +602,47 @@ class _WalletPageState extends State<WalletPage> {
     final wallet = _wallet!;
     final canAct = !_actionBusy && wallet.isActive;
 
+    Widget _walletHeroMetric(
+      BuildContext context,
+      String label,
+      String value,
+    ) =>
+        Container(
+          constraints: const BoxConstraints(minHeight: 54),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: .14),
+            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+            border: Border.all(color: Colors.white.withValues(alpha: .10)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        );
+
     Widget balanceHero() {
       final scheme = Theme.of(context).colorScheme;
       return Container(
@@ -700,47 +741,6 @@ class _WalletPageState extends State<WalletPage> {
         ),
       );
     }
-
-    Widget _walletHeroMetric(
-      BuildContext context,
-      String label,
-      String value,
-    ) =>
-        Container(
-          constraints: const BoxConstraints(minHeight: 54),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: .14),
-            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
-            border: Border.all(color: Colors.white.withValues(alpha: .10)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        );
 
     Widget actionsPanel() {
       Widget action({
