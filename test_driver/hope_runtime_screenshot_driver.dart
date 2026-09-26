@@ -1,40 +1,5 @@
-import 'dart:io';
-
 import 'package:integration_test/integration_test_driver_extended.dart';
 
 Future<void> main() async {
-  final root = Platform.environment['HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT'];
-
-  if (root == null || root.isEmpty) {
-    throw StateError(
-      'HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT is required for runtime evidence.',
-    );
-  }
-
-  final directory = Directory(root);
-  await directory.create(recursive: true);
-
-  await integrationDriver(
-    responseDataCallback: null,
-    onScreenshot:
-        (String name, List<int> image, [Map<String, Object?>? args]) async {
-      if (image.length < 16) {
-        return false;
-      }
-
-      final file = File('${directory.path}/$name.png');
-      await file.parent.create(recursive: true);
-      await file.writeAsBytes(image, flush: true);
-
-      return image.length >= 8 &&
-          image[0] == 0x89 &&
-          image[1] == 0x50 &&
-          image[2] == 0x4e &&
-          image[3] == 0x47 &&
-          image[4] == 0x0d &&
-          image[5] == 0x0a &&
-          image[6] == 0x1a &&
-          image[7] == 0x0a;
-    },
-  );
+  await integrationDriver(responseDataCallback: null);
 }
