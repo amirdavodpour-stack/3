@@ -507,7 +507,9 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
     'displayName': 'HOPE Runtime',
     'email': 'runtime@example.invalid',
   });
+  print('HOPE_RUNTIME_PREPARE:google-start');
   await _runtimeGoogleSignIn.initialize();
+  print('HOPE_RUNTIME_PREPARE:google-done');
   final requireGoogle =
       Platform.environment['HOPE_REQUIRE_GOOGLE_AUTH'] == '1';
   if (requireGoogle && !_runtimeGoogleSignIn.isConfigured) {
@@ -732,6 +734,7 @@ Future<void> _captureBaselineLocale(
     'password-reset': () => const PasswordResetPage(),
   };
   for (final entry in pages.entries) {
+    print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,
       screen: screen,
@@ -739,6 +742,7 @@ Future<void> _captureBaselineLocale(
       marker: '${entry.key}-$suffix',
       child: entry.value(),
     );
+    print('HOPE_RUNTIME_PAGE_DONE:${entry.key}-$suffix');
   }
 }
 
@@ -759,6 +763,7 @@ Future<void> _captureResponsiveLocale(
     'profile': () => const ProfilePage(),
   };
   for (final entry in pages.entries) {
+    print('HOPE_RUNTIME_PAGE_START:responsive-${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,
       screen: screen,
