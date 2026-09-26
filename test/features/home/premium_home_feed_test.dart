@@ -142,9 +142,9 @@ testWidgets('settings changes reload home opportunities',
     expect(repository.calls, 2);
   });
 
-  testWidgets('home pulse uses four compact columns at normal phone width',
+  testWidgets('home pulse uses four compact columns above the inner width threshold',
       (tester) async {
-    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.physicalSize = const Size(1179, 2556);
     tester.view.devicePixelRatio = 3;
 
     try {
