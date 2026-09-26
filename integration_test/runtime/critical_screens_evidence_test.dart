@@ -591,8 +591,6 @@ const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
 const _adbScreenshotCapture =
     bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
-const _screenshotSyncRoot =
-    String.fromEnvironment('HOPE_SCREENSHOT_SYNC_ROOT', defaultValue: '');
 
 class _EvidenceUploadQueue implements UploadQueue {
   @override
@@ -642,23 +640,9 @@ Future<void> _captureRuntimeScreenshot(
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
 
   if (_adbScreenshotCapture) {
-    if (_screenshotSyncRoot.isEmpty) {
-      throw StateError(
-        'HOPE_SCREENSHOT_SYNC_ROOT is required for ADB screenshot capture.',
-      );
-    }
-    final directory = Directory(_screenshotSyncRoot);
-    await directory.create(recursive: true);
-    final request = File('$_screenshotSyncRoot/$marker.ready');
-    if (await request.exists()) {
-      await request.delete();
-    }
     print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-    await request.writeAsString('ready', flush: true);
     print('HOPE_SCREENSHOT_READY:$marker');
-    while (await request.exists()) {
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    }
+    await Future<void>.delayed(const Duration(seconds: 5));
     return;
   }
 
