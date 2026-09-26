@@ -142,6 +142,38 @@ testWidgets('settings changes reload home opportunities',
     expect(repository.calls, 2);
   });
 
+  testWidgets('home pulse uses four compact columns at normal phone width',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+
+    try {
+      final repository = _SequencedMarketplaceRepository();
+      final harness = await _host(repository);
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final stats = List.generate(
+        4,
+        (index) => find.byKey(ValueKey('home-pulse-stat-$index')),
+      );
+      for (final stat in stats) {
+        expect(stat, findsOneWidget);
+      }
+
+      final tops = stats
+          .map((finder) => tester.getTopLeft(finder).dy)
+          .toList(growable: false);
+      expect(
+        tops.every((top) => (top - tops.first).abs() < 1.0),
+        isTrue,
+      );
+    } finally {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    }
+  });
+
   testWidgets('latest home refresh wins over an older failed refresh',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();

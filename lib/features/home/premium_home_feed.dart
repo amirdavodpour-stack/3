@@ -332,7 +332,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                       const SizedBox(height: HopeV2Spacing.lg),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final columns = constraints.maxWidth < 340 ? 2 : 4;
+                          final columns = constraints.maxWidth < 300 ? 2 : 4;
                           final gap = HopeV2Spacing.sm;
                           final width =
                               (constraints.maxWidth - gap * (columns - 1)) /
@@ -341,15 +341,16 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                             spacing: gap,
                             runSpacing: gap,
                             children: [
-                              for (final stat in stats)
+                              for (var index = 0; index < stats.length; index++)
                                 SizedBox(
+                                  key: ValueKey('home-pulse-stat-$index'),
                                   width: width,
                                   child: _homePulseStat(
                                     context,
-                                    value: stat.value,
-                                    label: stat.label,
-                                    icon: stat.icon,
-                                    accent: stat.accent,
+                                    value: stats[index].value,
+                                    label: stats[index].label,
+                                    icon: stats[index].icon,
+                                    accent: stats[index].accent,
                                   ),
                                 ),
                             ],
