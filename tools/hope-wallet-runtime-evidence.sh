@@ -156,6 +156,10 @@ capture_host_screenshot() {
 
   while (( SECONDS < deadline )); do
     if adb exec-out run-as com.hope.marketplace cat "$request" >/dev/null 2>&1; then
+      if ! assert_hope_focused "$marker"; then
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
+        return 1
+      fi
       if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out screencap -p > "$temp" 2>"$evidence_dir/$marker.capture.log"; then
         local magic
         magic="$(od -An -tx1 -N8 "$temp" | tr -d "[:space:]")"
@@ -196,14 +200,9 @@ run_en_host_session() {
   fi
   process_pid=$!
   set -e
-  if ! assert_hope_focused "$mode-start"; then
-    capture_status=1
-    kill "$process_pid" >/dev/null 2>&1 || true
-  else
-    for marker in "$@"; do
-      capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }
-    done
-  fi
+  for marker in "$@"; do
+    capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }
+  done
   local completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"
   local completion_status=1
   local completion_deadline=$((SECONDS + 30))

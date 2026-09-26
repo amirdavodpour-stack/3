@@ -45,7 +45,11 @@ if $T grep -Fq -- 'if (!_adbScreenshotCapture)' "$test_file"; then
   exit 1
 fi
 $T grep -Fq -- 'FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"' "$script"
-$T grep -Fq -- 'if ! assert_hope_focused "$mode-start"; then' "$script"
+if $T grep -Fq -- 'assert_hope_focused "$mode-start"' "$script"; then
+  echo "FAIL: focus gate must not run before flutter drive launches the app" >&2
+  exit 1
+fi
+$T grep -Fq -- 'if ! assert_hope_focused "$marker"; then' "$script"
 $T grep -Fq -- 'test-complete.ready' "$test_file"
 $T grep -Fq -- 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$test_file"
 $T grep -Fq -- 'completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"' "$script"
