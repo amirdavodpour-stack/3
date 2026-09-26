@@ -24,6 +24,8 @@ $T grep -Fq -- 'run-as com.hope.marketplace cat "$request"' "$script"
 $T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT' "$script"
 $T grep -Fq -- 'onScreenshot:' "$driver"
 $T grep -Fq -- 'writeAsBytes(image, flush: true)' "$driver"
+$T grep -Fq -- "Platform.environment['GITHUB_WORKSPACE']" "$driver"
+$T grep -Fq -- 'docs/audit/evidence/android-runtime' "$driver"
 $T grep -Fq -- 'binding.takeScreenshot(marker)' "$test_file"
 $T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"
 
