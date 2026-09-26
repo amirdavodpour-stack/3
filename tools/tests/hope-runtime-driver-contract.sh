@@ -31,7 +31,7 @@ $T grep -Fq -- "Platform.environment['GITHUB_WORKSPACE']" "$driver"
 $T grep -Fq -- 'docs/audit/evidence/android-runtime' "$driver"
 $T grep -Fq -- 'if (_adbScreenshotCapture) {' "$test_file"
 $T grep -Fq -- "await request.writeAsString('ready', flush: true);" "$test_file"
-$T grep -Fq -- 'if (!_adbScreenshotCapture) {' "$test_file"
+$T grep -Fq -- 'await binding.convertFlutterSurfaceToImage();' "$test_file"
 $T grep -Fq -- 'binding.takeScreenshot(marker)' "$test_file"
 $T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"
 
