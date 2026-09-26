@@ -31,10 +31,14 @@ $T grep -Fq -- "Platform.environment['GITHUB_WORKSPACE']" "$driver"
 $T grep -Fq -- 'docs/audit/evidence/android-runtime' "$driver"
 $T grep -Fq -- 'if (_adbScreenshotCapture) {' "$test_file"
 $T grep -Fq -- "await request.writeAsString('ready', flush: true);" "$test_file"
-$T grep -Fq -- 'await binding.convertFlutterSurfaceToImage();' "$test_file"
+$T grep -Fq -- "integrationTestChannel.invokeMethod<void>(" "$test_file"
+$T grep -Fq -- "'convertFlutterSurfaceToImage'" "$test_file"
 $T grep -Fq -- "integrationTestChannel.invokeMethod<List<dynamic>>(" "$test_file"
 $T grep -Fq -- "'captureScreenshot'" "$test_file"
-$T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"
+if $T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"; then
+  echo "FAIL: native capture path must not pre-convert the surface through binding bookkeeping" >&2
+  exit 1
+fi
 
 $T grep -Fq -- 'HOPE_HOST_SCREENSHOT_VALIDATED:$marker' "$script"
 $T grep -Fq -- 'completion_status=0' "$script"
