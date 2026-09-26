@@ -21,10 +21,9 @@ on:
       - feat/google-sign-in-2026-09-20
 
 concurrency:
-  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
-  # Evidence is exact-SHA bound. A newer feature-branch SHA supersedes an
-  # older runtime run, so cancel stale in-progress captures instead of wasting
-  # GitHub Free runner time and blocking the current evidence run.
+  # Capture commits are intentionally serialized. Non-capture feature pushes
+  # use an isolated group so they cannot cancel an active runtime evidence run.
+  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture]') && 'capture' || github.run_id }}
   cancel-in-progress: true
 
 permissions:
