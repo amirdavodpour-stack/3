@@ -162,6 +162,7 @@ class OpportunityCard extends StatelessWidget {
     required Color primary,
     required String? mediaUrl,
     required double? score,
+    required bool featured,
   }) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final percent = score == null ? null : (score <= 1 ? score * 100 : score);
@@ -349,6 +350,7 @@ class OpportunityCard extends StatelessWidget {
             primary: primary,
             mediaUrl: mediaUrl,
             score: job.recommendationScore,
+            featured: featured,
           ),
           const SizedBox(height: HopeV2Spacing.md),
         ],
