@@ -1,8 +1,11 @@
 name: HOPE UI Runtime Evidence
 
 on:
-  # Android rendered-evidence certification is explicit/manual only.
-  # Routine feature-branch pushes must not consume a full emulator run.
+  # Android rendered-evidence certification is explicit/manual by default.
+  # One-shot feature-branch push bridge is enabled only for commits explicitly
+  # marked [runtime-capture]; this exists because the connected GitHub
+  # capability exposes no workflow_dispatch mutation and the phone-side
+  # Termux shell cannot execute gh directly.
   workflow_dispatch:
     inputs:
       capture_locale:
@@ -12,6 +15,10 @@ on:
         options:
           - fa
           - en
+
+  push:
+    branches:
+      - feat/google-sign-in-2026-09-20
 
 concurrency:
   group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
@@ -25,6 +32,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture]')) }}
     name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -105,7 +113,7 @@ jobs:
         env:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
-          HOPE_CAPTURE_LOCALE: ${{ inputs.capture_locale }}
+          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || 'en' }}
         with:
           api-level: 35
           arch: x86_64
