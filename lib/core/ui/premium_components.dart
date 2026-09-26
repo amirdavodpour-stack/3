@@ -550,8 +550,8 @@ class PremiumHero extends StatelessWidget {
                 top: horizontal,
                 child: ExcludeSemantics(
                   child: Container(
-                    width: 58,
-                    height: 58,
+                    width: 54,
+                    height: 54,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .12),
                       borderRadius: BorderRadius.circular(HopeV2Radii.iconTile),
@@ -618,7 +618,7 @@ class PremiumHero extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: dense ? 27 : 31,
+                              fontSize: dense ? 24 : 28,
                               height: 1.03,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -.9,
