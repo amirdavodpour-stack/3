@@ -24,7 +24,7 @@ $T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT' "$script"
 $T grep -Fq -- 'run_en_host_session baseline "${baseline_screens[@]}" || baseline_status=$?' "$script"
 $T grep -Fq -- 'run_en_host_session responsive' "$script"
 $T grep -Fq -- 'responsive-720x1280-home-fa-rtl' "$script"
-$T grep -Fq -- '"capture_transport": "adb_exec_out_screencap_host_handshake"' "$script"
+$T grep -Fq -- '"capture_transport": "integration_test_native_png_app_file_host_pull"' "$script"
 $T grep -Fq -- 'onScreenshot:' "$driver"
 $T grep -Fq -- 'writeAsBytes(image, flush: true)' "$driver"
 $T grep -Fq -- "Platform.environment['GITHUB_WORKSPACE']" "$driver"
@@ -32,7 +32,8 @@ $T grep -Fq -- 'docs/audit/evidence/android-runtime' "$driver"
 $T grep -Fq -- 'if (_adbScreenshotCapture) {' "$test_file"
 $T grep -Fq -- "await request.writeAsString('ready', flush: true);" "$test_file"
 $T grep -Fq -- 'await binding.convertFlutterSurfaceToImage();' "$test_file"
-$T grep -Fq -- 'binding.takeScreenshot(marker)' "$test_file"
+$T grep -Fq -- "integrationTestChannel.invokeMethod<List<dynamic>>(" "$test_file"
+$T grep -Fq -- "'captureScreenshot'" "$test_file"
 $T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"
 
 $T grep -Fq -- 'HOPE_HOST_SCREENSHOT_VALIDATED:$marker' "$script"
@@ -84,6 +85,7 @@ if $T grep -Fq -- 'screenshots.clear()' "$test_file"; then
 fi
 
 $T grep -Fq -- 'mv "$output.tmp" "$output"' "$script"
+$T grep -Fq -- 'adb exec-out run-as com.hope.marketplace cat "$remote_png"' "$script"
 $T grep -Fq -- 'adb wait-for-device' "$script"
 
 # EN baseline must pass the host driver's required output root, not only the responsive branch.
