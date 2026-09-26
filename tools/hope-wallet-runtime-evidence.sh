@@ -221,26 +221,32 @@ capture_host_screenshot() {
       fi
 
       local temp_output="${output}.tmp"
-      rm -f "$temp_output"
+      local failure_output="${output}.raw-on-failure"
+      rm -f "$temp_output" "$failure_output"
       if ! timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
         adb exec-out run-as com.hope.marketplace cat "$remote_png" > "$temp_output" 2>"${output}.adb-error"; then
-        rm -f "$temp_output"
+        cp -f "$temp_output" "$failure_output" 2>/dev/null || true
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:png-read" >&2
         return 1
       fi
 
+      local byte_count=0
       if test -s "$temp_output"; then
+        byte_count="$(wc -c < "$temp_output" | tr -d '[:space:]')"
         local magic
         magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
+        echo "HOPE_HOST_CAPTURE_DIAGNOSTIC:$marker:bytes=$byte_count:magic=$magic"
         if [ "$magic" = "89504e470d0a1a0a" ]; then
           mv "$temp_output" "$output"
-          rm -f "${output}.adb-error"
+          rm -f "${output}.adb-error" "$failure_output"
           adb exec-out run-as com.hope.marketplace rm -f "$request" "$remote_png" >/dev/null 2>&1 || true
           echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
           return 0
         fi
+      else
+        echo "HOPE_HOST_CAPTURE_DIAGNOSTIC:$marker:bytes=0"
       fi
-      rm -f "$temp_output"
+      cp -f "$temp_output" "$failure_output" 2>/dev/null || true
       echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
       return 1
     fi
