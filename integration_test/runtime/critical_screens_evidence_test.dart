@@ -611,6 +611,76 @@ typedef _Runtime = ({
   ApplicationRegistry registry,
 });
 
+var _runtimeScreenshotSurfacePrepared = false;
+
+Future<void> _captureRuntimeScreenshot(
+  WidgetTester tester,
+  String marker,
+) async {
+  const outputRoot =
+      String.fromEnvironment('HOPE_SCREENSHOT_OUTPUT_ROOT');
+  if (outputRoot.isEmpty) {
+    throw StateError(
+      'HOPE_SCREENSHOT_OUTPUT_ROOT is required for runtime evidence.',
+    );
+  }
+
+  final binding = IntegrationTestWidgetsFlutterBinding.instance;
+  final outputDirectory = Directory(outputRoot);
+  await outputDirectory.create(recursive: true);
+
+  final outputFile = File('$outputRoot/$marker.png');
+  final tempFile = File('$outputRoot/.$marker.png.tmp');
+  if (await outputFile.exists()) {
+    await outputFile.delete();
+  }
+  if (await tempFile.exists()) {
+    await tempFile.delete();
+  }
+
+  if (!_runtimeScreenshotSurfacePrepared) {
+    print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
+    await binding.convertFlutterSurfaceToImage();
+    await tester.pump();
+    _runtimeScreenshotSurfacePrepared = true;
+    print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
+  }
+
+  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+  final bytes = await binding.takeScreenshot(marker);
+  if (bytes.isEmpty) {
+    throw StateError('Runtime screenshot capture returned no bytes: $marker');
+  }
+
+  await tempFile.writeAsBytes(bytes, flush: true);
+  await tempFile.rename(outputFile.path);
+
+  // Keep the driver protocol alive without accumulating the full PNG matrix
+  // in IntegrationTestWidgetsFlutterBinding.reportData.
+  final screenshots = binding.reportData?['screenshots'];
+  if (screenshots is List<dynamic>) {
+    screenshots.clear();
+  }
+
+  print('HOPE_SCREENSHOT_CAPTURED:$marker:${bytes.length}');
+  print('HOPE_SCREENSHOT_READY:$marker');
+}
+
+Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
+  for (var attempt = 0; attempt < 30; attempt++) {
+    if (find.byType(CircularProgressIndicator).evaluate().isEmpty) {
+      return;
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  if (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
+    throw StateError(
+      'Runtime render remained in loading state after bounded settle',
+    );
+  }
+}
+
 Future<void> _captureRuntimeScreen(
   WidgetTester tester, {
   required ValueNotifier<_RuntimeScreen> screen,
@@ -620,18 +690,15 @@ Future<void> _captureRuntimeScreen(
 }) async {
   screen.value = _RuntimeScreen(locale: locale, child: child);
   await tester.pump();
+
   // Keep the host/provider tree stable across captures; only the active screen
-  // changes. This avoids repeated provider/plugin lifecycle teardown between
-  // the fa-RTL and en-LTR phases.
-  for (var i = 0; i < 12; i++) {
-    await tester.pump(const Duration(milliseconds: 250));
-  }
+  // changes. This avoids repeated provider/plugin lifecycle teardown.
+  await tester.pump(const Duration(milliseconds: 1200));
+  await tester.pump();
+  await _waitForRuntimeRenderToSettle(tester);
   await tester.pump();
 
-  // The host captures immediately after this marker. Avoid a fixed per-screen
-  // delay so the long-lived Flutter Driver request cannot cross its timeout
-  // while the capture matrix is still running.
-  print('HOPE_SCREENSHOT_READY:$marker');
+  await _captureRuntimeScreenshot(tester, marker);
 }
 
 Future<void> _captureBaselineLocale(
