@@ -2,7 +2,7 @@
 
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:integration_test/src/channel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -724,7 +724,7 @@ Future<void> _captureRuntimeScreen(
 
   await _captureRuntimeScreenshot(tester, marker);
   if (_adbScreenshotCapture) {
-    await binding.revertFlutterImage();
+    await integrationTestChannel.invokeMethod<void>('revertFlutterImage');
     await tester.pump();
     await tester.binding.endOfFrame;
   }
