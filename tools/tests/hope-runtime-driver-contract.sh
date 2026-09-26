@@ -63,6 +63,13 @@ if $T grep -Fq -- 'assert_hope_focused "$mode-start"' "$script"; then
   echo "FAIL: focus gate must not run before flutter drive launches the app" >&2
   exit 1
 fi
+$T grep -Fq -- 'recover_external_android_error_dialog() {' "$script"
+$T grep -Fq -- "Application Not Responding:" "$script"
+$T grep -Fq -- "Application Error:" "$script"
+$T grep -Fq -- 'if [ "$error_package" = "com.hope.marketplace" ]; then' "$script"
+$T grep -Fq -- 'HOPE_HOST_CAPTURE_EXTERNAL_ERROR_DIALOG:$prefix:$error_package' "$script"
+$T grep -Fq -- 'adb shell input keyevent KEYCODE_BACK' "$script"
+
 $T grep -Fq -- 'if ! assert_hope_focused "$marker"; then' "$script"
 $T grep -Fq -- 'DRAW_CHECK_TIMEOUT_SECONDS=' "$script"
 $T grep -Fq -- 'assert_hope_rendered "$marker"' "$script"
