@@ -649,8 +649,9 @@ Future<void> _captureRuntimeScreenshot(
   }
 
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  final bytes = await binding.takeScreenshot(marker);
-  if (bytes.isEmpty) {
+  final data = await binding.callbackManager.takeScreenshot(marker);
+  final bytes = data['bytes'];
+  if (bytes is! List<int> || bytes.isEmpty) {
     throw StateError('Runtime screenshot capture returned no bytes: $marker');
   }
 
