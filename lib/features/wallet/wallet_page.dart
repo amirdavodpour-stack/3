@@ -718,24 +718,10 @@ class _WalletPageState extends State<WalletPage> {
               ],
             ),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _walletHeroMetric(
-                    context,
-                    _t('مجموع موجودی', 'Total balance'),
-                    _money(wallet.totalBalance),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _walletHeroMetric(
-                    context,
-                    _t('قفل‌شده', 'Locked'),
-                    _money(wallet.lockedBalance),
-                  ),
-                ),
-              ],
+            _walletHeroMetric(
+              context,
+              _t('مجموع موجودی', 'Total balance'),
+              _money(wallet.totalBalance),
             ),
           ],
         ),
@@ -997,6 +983,7 @@ class _WalletPageState extends State<WalletPage> {
                     container: true,
                     button: true,
                     explicitChildNodes: false,
+                    excludeSemantics: true,
                     label:
                         '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${item.isCredit ? '+' : '-'}${_money(item.amount)}',
                     onTap: () => _showTransaction(item),
