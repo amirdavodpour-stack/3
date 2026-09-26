@@ -492,11 +492,13 @@ ApplicationRegistry _registry() => ApplicationRegistry(
       savedSearches: _EvidenceSavedSearchRepository(),
     );
 
-late GoogleSignInService _runtimeGoogleSignIn;
+final GoogleSignInService _runtimeGoogleSignIn = GoogleSignInService();
+Future<void>? _runtimeFontLoad;
 
 Future<({AuthController auth, HopeSettingsController settings, ApplicationRegistry registry})>
     _prepare() async {
-  await loadVazirmatnFont();
+  _runtimeFontLoad ??= loadVazirmatnFont();
+  await _runtimeFontLoad;
   final settings = HopeSettingsController();
   await settings.load();
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
@@ -505,7 +507,6 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
     'displayName': 'HOPE Runtime',
     'email': 'runtime@example.invalid',
   });
-  _runtimeGoogleSignIn = GoogleSignInService();
   await _runtimeGoogleSignIn.initialize();
   final requireGoogle =
       Platform.environment['HOPE_REQUIRE_GOOGLE_AUTH'] == '1';
