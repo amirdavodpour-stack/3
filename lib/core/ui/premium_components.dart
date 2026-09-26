@@ -342,8 +342,8 @@ class PremiumPanel extends StatelessWidget {
   const PremiumPanel({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(HopeV2Spacing.xl),
-    this.radius = HopeV2Radii.lg,
+    this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
+    this.radius = HopeV2Radii.md,
     this.highlight = false,
     this.semanticLabel,
   });
@@ -367,7 +367,7 @@ class PremiumPanel extends StatelessWidget {
                 end: AlignmentDirectional.bottomEnd,
                 colors: dark
                     ? [
-                        scheme.primary.withValues(alpha: .18),
+                        scheme.primary.withValues(alpha: .14),
                         HopeV2Colors.panelSoftDark.withValues(alpha: .92),
                         HopeV2Surfaces.panel(context),
                       ]
@@ -391,8 +391,8 @@ class PremiumPanel extends StatelessWidget {
                 if (highlight)
                   BoxShadow(
                     color: scheme.primary.withValues(alpha: .10),
-                    blurRadius: 28,
-                    offset: const Offset(0, 10),
+                    blurRadius: 24,
+                    offset: const Offset(0, 9),
                   ),
               ]
             : [
@@ -442,7 +442,7 @@ class PremiumHero extends StatelessWidget {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final heroHeight = compact
-        ? height.clamp(300.0, 420.0).toDouble()
+        ? height.clamp(260.0, 380.0).toDouble()
         : (height < 344 ? 344.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
@@ -686,12 +686,12 @@ class PremiumStatCard extends StatelessWidget {
     final color = accent ?? Theme.of(context).colorScheme.primary;
     return PremiumPanel(
       semanticLabel: '$label: $value',
-      padding: const EdgeInsets.all(HopeV2Spacing.lg),
+      padding: const EdgeInsets.all(14),
       highlight: highlight,
       child: Row(
         children: [
           ExcludeSemantics(
-            child: HopeIconTile(icon, color: color, filled: true, size: 46),
+            child: HopeIconTile(icon, color: color, filled: true, size: 42),
           ),
           const SizedBox(width: HopeV2Spacing.md),
           Expanded(
@@ -788,8 +788,8 @@ class PremiumTag extends StatelessWidget {
       label: label,
       container: true,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 32),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        constraints: const BoxConstraints(minHeight: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
