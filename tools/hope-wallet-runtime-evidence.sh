@@ -105,11 +105,6 @@ validate_capture_set() {
   local source
   local screenshot_magic
   for marker in "$@"; do
-    if ! grep -Fq -- "HOPE_SCREENSHOT_READY:$marker" "$log_path"; then
-      echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:missing-marker" >&2
-      return 1
-    fi
-
     source="$evidence_dir/$marker.png"
     if ! test -s "$source"; then
       echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:file-missing" >&2

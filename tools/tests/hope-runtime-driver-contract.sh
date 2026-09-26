@@ -33,6 +33,13 @@ $T grep -Fq -- 'docs/audit/evidence/android-runtime' "$driver"
 $T grep -Fq -- 'binding.takeScreenshot(marker)' "$test_file"
 $T grep -Fq -- '_prepareRuntimeScreenshotSurface(tester);' "$test_file"
 
+validate_block="$(/system/bin/toybox sed -n '/^validate_capture_set() {/,/^}/p' "$script")"
+if /system/bin/toybox grep -Fq -- 'HOPE_SCREENSHOT_READY:$marker' <<< "$validate_block"; then
+  echo "FAIL: capture validation must not depend on buffered Flutter stdout markers" >&2
+  exit 1
+fi
+$T grep -Fq -- 'HOPE_HOST_SCREENSHOT_VALIDATED:$marker' "$script"
+$T grep -Fq -- 'completion_status=0' "$script"
 $T grep -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
 $T grep -Fq -- 'if (_responsiveOnly) {' "$test_file"
 $T grep -Fq -- 'await _captureBaselineLocale(' "$test_file"
