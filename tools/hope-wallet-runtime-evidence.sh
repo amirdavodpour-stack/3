@@ -11,6 +11,7 @@ rm -f "$log_file"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"
+DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-120}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
@@ -71,6 +72,43 @@ assert_hope_focused() {
   else
     echo "Rendered evidence rejected: HOPE MainActivity is not the top resumed Android activity after ${FOCUS_CHECK_TIMEOUT_SECONDS}s." >&2
   fi
+  capture_android_diagnostics "$prefix"
+  return 1
+}
+
+assert_hope_rendered() {
+  local prefix="$1"
+  local window_dump="$evidence_dir/window-$prefix.txt"
+  local activity_dump="$evidence_dir/activity-$prefix.txt"
+  local draw_deadline=$((SECONDS + DRAW_CHECK_TIMEOUT_SECONDS))
+
+  while (( SECONDS < draw_deadline )); do
+    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb shell dumpsys window windows > "$window_dump" 2>&1 || true
+    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb shell dumpsys activity activities > "$activity_dump" 2>&1 || true
+
+    local main_window
+    local splash_window
+    main_window="$(awk '/Window #[0-9]+ Window\{.*com\.hope\.marketplace\/com\.hope\.marketplace\.MainActivity\}/{flag=1; next} /^  Window #[0-9]+ /{if(flag){exit}} flag{print}' "$window_dump")"
+    splash_window="$(awk '/Window #[0-9]+ Window\{.*Splash Screen com\.hope\.marketplace/{flag=1; next} /^  Window #[0-9]+ /{if(flag){exit}} flag{print}' "$window_dump")"
+
+    if grep -q "packageName=com.hope.marketplace processName=com.hope.marketplace" "$activity_dump" \
+       && grep -q "reportedDrawn=true reportedVisible=true" "$activity_dump" \
+       && grep -q "Surface: shown=true" <<< "$main_window" \
+       && ! grep -q "Surface: shown=true" <<< "$splash_window" \
+       && ! grep -q "isVisible=true" <<< "$splash_window"; then
+      return 0
+    fi
+
+    if grep -qiE "Application Not Responding:|AppErrorDialog|Application Error" "$window_dump"; then
+      echo "Rendered evidence rejected: Android reports an ANR/application-error dialog." >&2
+      capture_android_diagnostics "$prefix"
+      return 1
+    fi
+
+    sleep 0.2
+  done
+
+  echo "Rendered evidence rejected: MainActivity remained behind the Android splash/was not fully drawn." >&2
   capture_android_diagnostics "$prefix"
   return 1
 }
@@ -174,6 +212,10 @@ capture_host_screenshot() {
     if adb exec-out run-as com.hope.marketplace cat "$request" >/dev/null 2>&1; then
       if ! assert_hope_focused "$marker"; then
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
+        return 1
+      fi
+      if ! assert_hope_rendered "$marker"; then
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
         return 1
       fi
       if test -s "$output"; then
