@@ -13,9 +13,16 @@ grep -Fq -- 'export HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script
 grep -Fq -- 'HOPE_DRIVER_SCREENSHOT_OUTPUT_ROOT' "$driver"
 grep -Fq -- 'onScreenshot:' "$driver"
 grep -Fq -- 'flutter_driver_onScreenshot_host_callback' "$script"
+screenshot_path_line="$(grep -nF 'local screenshot_path="$evidence_dir/$output"' "$script" | cut -d: -f1 | sed -n '1p')"
+capture_marker_line="$(grep -nF 'echo "HOPE_HOST_CAPTURE_DETECTED:$marker"' "$script" | cut -d: -f1 | sed -n '1p')"
+if [ -z "$screenshot_path_line" ] || [ -z "$capture_marker_line" ] || [ "$screenshot_path_line" -ge "$capture_marker_line" ]; then
+  echo "FAIL: host screenshot path cleanup occurs after marker detection" >&2
+  exit 1
+fi
+
 grep -Fq -- 'local screenshot_path="$evidence_dir/$output"
-      rm -f -- "$screenshot_path"
-      local capture_deadline=' "$script"
+  rm -f -- "$screenshot_path"
+  local capture_deadline=' "$script"
 
 if grep -Eq 'adb exec-out run-as com\.hope\.marketplace cat .*hope-screen-captures-' "$script"; then
   echo "FAIL: host screenshot evidence must not depend on app-private ADB file reads" >&2
