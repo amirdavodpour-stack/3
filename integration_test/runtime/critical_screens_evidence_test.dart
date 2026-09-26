@@ -645,6 +645,29 @@ Future<void> _captureRuntimeScreenshot(
     }
     final directory = Directory(_screenshotSyncRoot);
     await directory.create(recursive: true);
+
+    // Use integration_test's native Android capture directly, rather than
+    // relying on VM-service screenshot RPC or an external adb screencap.
+    // This returns the actual rendered Flutter PNG bytes while the Flutter
+    // surface is converted to the Android screenshot surface.
+    final rawBytes =
+        await integrationTestChannel.invokeMethod<List<dynamic>>(
+      'captureScreenshot',
+      <String, dynamic>{'name': marker},
+    );
+    if (rawBytes == null || rawBytes.isEmpty) {
+      throw StateError('Android captureScreenshot returned no PNG bytes.');
+    }
+    final bytes = rawBytes.cast<int>();
+    final screenshot = File('$_screenshotSyncRoot/$marker.png');
+    await screenshot.writeAsBytes(bytes, flush: true);
+
+    // The capture bytes are now materialized. Restore the Flutter surface
+    // immediately so subsequent screens are not frozen on this ImageView.
+    await integrationTestChannel.invokeMethod<void>('revertFlutterImage');
+    await tester.pump();
+    await tester.binding.endOfFrame;
+
     final request = File('$_screenshotSyncRoot/$marker.ready');
     if (await request.exists()) {
       await request.delete();
@@ -654,6 +677,7 @@ Future<void> _captureRuntimeScreenshot(
     while (await request.exists()) {
       await Future<void>.delayed(const Duration(milliseconds: 100));
     }
+    await screenshot.delete().catchError((_) {});
     return;
   }
 
