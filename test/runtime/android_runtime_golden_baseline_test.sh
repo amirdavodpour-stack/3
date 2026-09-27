@@ -22,13 +22,20 @@ require_line "$workflow" "ram-size: 4096M"
 require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
 
 # Screenshot production must use Flutter's official integration_test screenshot API.
+driver_file="test_driver/hope_runtime_screenshot_driver.dart"
+
+# Screenshot production must use Flutter's official integration_test path.
+require_line "$test_file" "await binding.convertFlutterSurfaceToImage();"
 require_line "$test_file" "await binding.takeScreenshot(marker);"
 require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
-require_line "$runtime" 'HOPE_SCREENSHOT_OUTPUT_ROOT='
+require_line "$driver_file" "integrationDriver("
+require_line "$driver_file" "onScreenshot:"
+require_line "$runtime" 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"'
 
 # Runtime evidence must reject byte-identical PNGs under different screen names.
 require_line "$runtime" 'duplicate-png-hash'
+
 
 
 echo "PASS: Android runtime screenshot baseline contract is locked."
