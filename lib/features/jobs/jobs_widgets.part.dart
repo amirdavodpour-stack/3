@@ -21,7 +21,7 @@ class _JobsResultsSliver extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isLoading) {
       return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 122),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 122),
         sliver: SliverList(
           delegate: SliverChildListDelegate([
             const OpportunitySkeletonCard(),
@@ -57,7 +57,7 @@ class _JobsResultsSliver extends StatelessWidget {
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 122),
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 122),
       sliver: SliverToBoxAdapter(
         child: LayoutBuilder(
           builder: (context, constraints) {
