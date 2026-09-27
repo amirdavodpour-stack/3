@@ -17,6 +17,16 @@ void main() {
     expect(HopeV2Motion.standard, const Duration(milliseconds: 240));
   });
 
+  test('HOPE reference palette stays locked to the current visual North Star', () {
+    expect(HopeV2Colors.primary, const Color(0xFF6366F1));
+    expect(HopeV2Colors.primaryDark, const Color(0xFF818CF8));
+    expect(HopeV2Colors.success, const Color(0xFF10B981));
+    expect(HopeV2Colors.warning, const Color(0xFFF59E0B));
+    expect(HopeV2Colors.danger, const Color(0xFFEF4444));
+    expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
+    expect(HopeV2Colors.darkText, const Color(0xFFF8FAFC));
+  });
+
   test('HOPE light surfaces stay lavender-led', () {
     expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0FB));
     expect(HopeV2Colors.pageLight, const Color(0xFFF1EDF8));
