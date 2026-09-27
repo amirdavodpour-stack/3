@@ -170,6 +170,7 @@ validate_capture_set() {
   local marker
   local source
   local screenshot_magic
+  declare -A seen_screenshot_hashes=()
   for marker in "$@"; do
     source="$evidence_dir/$marker.png"
     if ! test -s "$source"; then
@@ -183,7 +184,14 @@ validate_capture_set() {
       return 1
     fi
 
-    echo "HOPE_HOST_SCREENSHOT_VALIDATED:$marker"
+    local screenshot_hash
+    screenshot_hash="$(sha256sum "$source" | awk '{print $1}')"
+    if [ -n "${seen_screenshot_hashes[$screenshot_hash]+x}" ]; then
+      echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:duplicate-png-hash:$screenshot_hash:matches:${seen_screenshot_hashes[$screenshot_hash]}" >&2
+      return 1
+    fi
+    seen_screenshot_hashes[$screenshot_hash]="$marker"
+    echo "HOPE_HOST_SCREENSHOT_VALIDATED:$marker:$screenshot_hash"
   done
 
   return 0
