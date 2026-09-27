@@ -217,8 +217,7 @@ class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   Future<List<HopeCategory>> listCategories() async => const [
         HopeCategory(
           id: 'cat-1',
-          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',
-          description: 'Software work',
+          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',
           parentId: null,
           sortOrder: 1,
           isActive: true,
@@ -437,8 +436,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'description':
           'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',      'categoryId': 'cat-1',
       'category': 'Software',      'jobType': 'FIXED',
-      'budgetType': 'FIXED',
-      'budgetMin': '1500000',
+      'budgetType': 'FIXED',      'budgetMin': '1500000',
       'budgetMax': '2500000',
       'duration': '8 روز',
       'acceptanceCriteria': 'تحویل نسخه نهایی و تست‌شده',
@@ -657,8 +655,7 @@ Future<void> _signalRuntimeTestBodyComplete() async {
   await marker.writeAsString('complete', flush: true);
   print('HOPE_RUNTIME_TEST_BODY_COMPLETE');
 }
-Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
-  for (var attempt = 0; attempt < 100; attempt++) {    final hasSpinner =
+Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {  for (var attempt = 0; attempt < 100; attempt++) {    final hasSpinner =
         find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
     final hasSkeleton =
         find.byType(SkeletonBox).evaluate().isNotEmpty;
@@ -708,7 +705,7 @@ Future<void> _captureRuntimeScreen(
     if (navigator == null) {
       throw StateError('Runtime evidence navigator is not mounted.');
     }
-    await navigator.pushAndRemoveUntil(
+    navigator.pushAndRemoveUntil(
       PageRouteBuilder<void>(
         pageBuilder: (_, __, ___) => Directionality(
           textDirection: locale.languageCode == 'en'
