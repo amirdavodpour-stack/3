@@ -217,8 +217,7 @@ class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   Future<List<HopeCategory>> listCategories() async => const [
         HopeCategory(
           id: 'cat-1',
-          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',          parentId: null,          sortOrder: 1,          isActive: true,
-        ),
+          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',          parentId: null,          sortOrder: 1,          isActive: true,        ),
       ];
 
   @override
@@ -437,8 +436,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'budgetMax': '2500000',      'duration': '8 روز',
       'acceptanceCriteria': 'تحویل نسخه نهایی و تست‌شده',      'status': 'PUBLISHED',
       'ownerId': 'runtime-owner',      'providerId': null,
-      'city': 'تهران',
-      'kind': 'MISSION',
+      'city': 'تهران',      'kind': 'MISSION',
       'visibility': 'PUBLIC',
       'schedule': 'FULL_TIME',
       'offerCount': 4,
@@ -572,6 +570,8 @@ const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
+const _captureMarker =
+    String.fromEnvironment('HOPE_CAPTURE_MARKER', defaultValue: '');
 const _adbScreenshotCapture =
     bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
 const _screenshotSyncRoot =
@@ -657,8 +657,7 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {  for (va
   final hasSkeleton =
       find.byType(SkeletonBox).evaluate().isNotEmpty;
   if (hasSpinner || hasSkeleton) {
-    throw StateError(
-      'Runtime render remained in loading/skeleton state after bounded settle',
+    throw StateError(      'Runtime render remained in loading/skeleton state after bounded settle',
     );
   }
 }
@@ -729,15 +728,17 @@ Future<void> _captureBaselineLocale(
     'password-reset': () => const PasswordResetPage(),
   };
   for (final entry in pages.entries) {
-    print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
+    final marker = '${entry.key}-$suffix';
+    if (_captureMarker.isNotEmpty && marker != _captureMarker) continue;
+    print('HOPE_RUNTIME_PAGE_START:$marker');
     await _captureRuntimeScreen(
       tester,
       runtime: runtime,
       locale: locale,
-      marker: '${entry.key}-$suffix',
+      marker: marker,
       child: entry.value(),
     );
-    print('HOPE_RUNTIME_PAGE_DONE:${entry.key}-$suffix');
+    print('HOPE_RUNTIME_PAGE_DONE:$marker');
   }
 }
 Future<void> _captureResponsiveLocale(
@@ -756,12 +757,14 @@ Future<void> _captureResponsiveLocale(
     'profile': () => const ProfilePage(),
   };
   for (final entry in pages.entries) {
+    final marker = 'responsive-720x1280-${entry.key}-$suffix';
+    if (_captureMarker.isNotEmpty && marker != _captureMarker) continue;
     print('HOPE_RUNTIME_PAGE_START:responsive-${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,
       runtime: runtime,
       locale: locale,
-      marker: 'responsive-720x1280-${entry.key}-$suffix',
+      marker: marker,
       child: entry.value(),
     );
     print('HOPE_RUNTIME_PAGE_DONE:responsive-${entry.key}-$suffix');
