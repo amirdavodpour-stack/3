@@ -38,17 +38,8 @@ flutter build apk --debug --no-pub \
   --target=integration_test/runtime/critical_screens_evidence_test.dart \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true \
-  --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}"
+  --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync"
 test -s "$RUNTIME_APK"
-
-# Keep the APK installed once so each fresh Flutter Drive session can read a
-# per-session marker from app-private storage before the Dart test starts.
-timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-  adb install -r "$RUNTIME_APK" >"${runner_temp}/hope-runtime-preinstall.log" 2>&1
-adb shell am force-stop com.hope.marketplace || true
-RUNTIME_CAPTURE_MARKER_FILE="files/hope-screen-sync/capture.marker"
-adb shell run-as com.hope.marketplace mkdir -p "files/hope-screen-sync-${GITHUB_RUN_ID}" >/dev/null
-adb shell run-as com.hope.marketplace rm -f "$RUNTIME_CAPTURE_MARKER_FILE" >/dev/null 2>&1 || true
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -339,14 +330,6 @@ run_en_host_session() {
   local tail_pid
   local driver_status=0
   local capture_status=0
-
-  # Seed the exact marker before Flutter launches the app. The Android route
-  # path was not delivered to defaultRouteName on this driver path.
-  # run-as starts in the app-private sandbox; use a sandbox-relative path
-  # for the write because absolute /data/user/0 access is denied in this context.
-  local runtime_marker_relative="files/hope-screen-sync/capture.marker"
-  timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-    adb shell run-as com.hope.marketplace sh -c "mkdir -p 'files/hope-screen-sync' && printf '%s\\n' '$marker' > '$runtime_marker_relative' && test -s '$runtime_marker_relative'" >/dev/null
 
   rm -f "$log_path"
   : > "$log_path"
