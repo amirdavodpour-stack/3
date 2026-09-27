@@ -121,7 +121,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             IconButton(
               tooltip: _t('بازخوانی', 'Refresh'),
               onPressed: _reload,
-              icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+              icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
             ),
           ],
           bottom: TabBar(

@@ -205,7 +205,7 @@ class OpportunityCard extends StatelessWidget {
                 icon: HopeV2Icons.featured,
                 label: percent == null
                     ? _t(context, 'پیشنهاد ویژه', 'Featured')
-                    : percent.round().toString() + '% ' + _t(context, 'تطابق', 'match'),
+                    : '${percent.round()}% ${_t(context, 'تطابق', 'match')}',
                 color: HopeV2Colors.secondaryDark,
                 inverse: true,
               ),
@@ -280,7 +280,7 @@ class OpportunityCard extends StatelessWidget {
               ),
             ),
           ),
-          Center(
+          const Center(
             child: Opacity(
               opacity: .25,
               child: HopeIcon(

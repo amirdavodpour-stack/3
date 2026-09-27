@@ -141,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: loading ? null : submitGoogle,
-                            icon: HugeIcon(icon: HopeV2Icons.userAdd, size: 19),
+                            icon: const HugeIcon(icon: HopeV2Icons.userAdd, size: 19),
                             label: Text(l10n.signInWithGoogle),
                           ),
                         ),
@@ -164,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.emailLabel,
-                          prefixIcon: HopeIcon(HopeV2Icons.mail, size: 20),
+                          prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 20),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -174,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
-                          prefixIcon: HopeIcon(HopeV2Icons.password, size: 20),
+                          prefixIcon: const HopeIcon(HopeV2Icons.password, size: 20),
                           suffixIcon: IconButton(
                             icon: HugeIcon(
                               icon: obscure
@@ -220,7 +220,7 @@ class _LoginPageState extends State<LoginPage> {
                         context.read<AuthController>().continueAsGuest();
                         Navigator.maybePop(context);
                       },
-                icon: HugeIcon(icon: HopeV2Icons.workshop, size: 19),
+                icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
               ),
               const SizedBox(height: 14),

@@ -109,7 +109,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_full_name_c7448f1,
-                            prefixIcon: HopeIcon(HopeV2Icons.userAdd, size: 20),
+                            prefixIcon: const HopeIcon(HopeV2Icons.userAdd, size: 20),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -120,7 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: HopeIcon(HopeV2Icons.mail, size: 20),
+                            prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 20),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -130,7 +130,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_password_656eabe,
-                            prefixIcon: HopeIcon(HopeV2Icons.password, size: 20),
+                            prefixIcon: const HopeIcon(HopeV2Icons.password, size: 20),
                             suffixIcon: IconButton(
                               icon: HugeIcon(
                                 icon: obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,

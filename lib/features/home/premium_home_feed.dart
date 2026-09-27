@@ -334,7 +334,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                               ),
                             ),
                             child: const Center(
-                              child: const HopeIcon(
+                              child: HopeIcon(
                                 HopeV2Icons.featured,
                                 size: 15,
                                 color: HopeV2Colors.primaryDark,
@@ -361,7 +361,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                           // Mobile keeps the pulse readable as a 2x2 metric grid;
                           // desktop can expand to four compact metrics.
                           final columns = constraints.maxWidth < 300 ? 2 : 4;
-                          final gap = HopeV2Spacing.sm;
+                          const final gap = HopeV2Spacing.sm;
                           final width =
                               (constraints.maxWidth - gap * (columns - 1)) /
                                   columns;

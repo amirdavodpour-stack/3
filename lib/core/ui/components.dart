@@ -419,7 +419,7 @@ class MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => HopeSurface(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Row(children: [
           if (icon != null) ...[
             HopeIconTile(icon!, color: color),
@@ -615,7 +615,7 @@ class _SearchFieldState extends State<SearchField> {
       },
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
-        prefixIcon: HopeIcon(HopeV2Icons.search, size: 21, color: HopeV2Colors.muted, strokeWidth: 1.9),
+        prefixIcon: const HopeIcon(HopeV2Icons.search, size: 21, color: HopeV2Colors.muted, strokeWidth: 1.9),
         hintText: resolvedHint,
         suffixIcon: hasQuery || widget.onFilter != null
             ? Row(
@@ -626,13 +626,13 @@ class _SearchFieldState extends State<SearchField> {
                       tooltip:
                           MaterialLocalizations.of(context).clearButtonTooltip,
                       onPressed: _clear,
-                      icon: HopeIcon(HopeV2Icons.close, size: 19, color: HopeV2Colors.muted, strokeWidth: 1.9),
+                      icon: const HopeIcon(HopeV2Icons.close, size: 19, color: HopeV2Colors.muted, strokeWidth: 1.9),
                     ),
                   if (widget.onFilter != null)
                     IconButton(
                       tooltip: HopeCopy.of(context).copy_filters_df4d10e,
                       onPressed: widget.onFilter,
-                      icon: HopeIcon(HopeV2Icons.filter, size: 19, color: HopeV2Colors.muted, strokeWidth: 1.9),
+                      icon: const HopeIcon(HopeV2Icons.filter, size: 19, color: HopeV2Colors.muted, strokeWidth: 1.9),
                     ),
                 ],
               )

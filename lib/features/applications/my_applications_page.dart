@@ -200,7 +200,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 padding: const EdgeInsets.all(26),
                 child: Column(
                   children: [
-                    HopeIcon(HopeV2Icons.mission, size: 40),
+                    const HopeIcon(HopeV2Icons.mission, size: 40),
                     const SizedBox(height: 12),
                     Text(
                       _filter == 'ALL'
@@ -292,7 +292,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                               HopeFeedback.show(context, apiErrorMessage(error, fallback: _t('فرصت در دسترس نیست.', 'Opportunity is unavailable.')), tone: HopeFeedbackTone.error);
                             }
                           },
-                    icon: HopeIcon(HopeV2Icons.arrowRight, size: 19),
+                    icon: const HopeIcon(HopeV2Icons.arrowRight, size: 19),
                     label: Text(_t('مشاهده فرصت', 'View opportunity')),
                   ),
                 ),
@@ -303,7 +303,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     onPressed: _busyId == item.id ? null : () => _withdraw(item),
                     icon: _busyId == item.id
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : HopeIcon(HopeV2Icons.transferOut, size: 19),
+                        : Hoconst peIcon(HopeV2Icons.transferOut, size: 19),
                   ),
                 ],
               ],
