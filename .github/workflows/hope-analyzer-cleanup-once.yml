@@ -1,4 +1,5 @@
 name: HOPE analyzer cleanup (one-shot)
+# One-shot analyzer cleanup is intentionally armed by this feature-branch commit.
 
 on:
   push:
