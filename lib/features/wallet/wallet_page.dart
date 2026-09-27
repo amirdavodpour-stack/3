@@ -602,7 +602,7 @@ class _WalletPageState extends State<WalletPage> {
     final wallet = _wallet!;
     final canAct = !_actionBusy && wallet.isActive;
 
-    Widget _walletHeroMetric(
+    Widget walletHeroMetric(
       BuildContext context,
       String label,
       String value,
@@ -709,7 +709,7 @@ class _WalletPageState extends State<WalletPage> {
               ],
             ),
             const SizedBox(height: 14),
-            _walletHeroMetric(
+            walletHeroMetric(
               context,
               _t('مجموع موجودی', 'Total balance'),
               _money(wallet.totalBalance),
@@ -907,7 +907,7 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                   PremiumStatCard(
                     label: _t('برداشت‌های در جریان', 'Pending payouts'),
-                    value: '${_pendingPayoutCount}',
+                    value: '$_pendingPayoutCount',
                     icon: HopeV2Icons.pending,
                     accent: AppColors.warning,
                     caption: _t(

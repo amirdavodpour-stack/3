@@ -406,7 +406,7 @@ class _JobsPageState extends State<JobsPage> {
                 ),
                 trailing: (_city == city ||
                         (_city == 'AUTO' && city == settings.city))
-                    ? HopeIcon(HopeV2Icons.completed, size: 18)
+                    ? const HopeIcon(HopeV2Icons.completed, size: 18)
                     : null,
                 onTap: () => Navigator.pop(context, city),
               )),

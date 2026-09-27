@@ -148,7 +148,7 @@ void main() {
           body: PressableScale(
             semanticLabel: "عمل آزمایشی",
             onTap: () => tapped = true,
-            child: const Text("انجام"),
+            child: Text("انجام"),
           ),
         ),
       ),
@@ -191,23 +191,23 @@ void main() {
     await tester.pumpWidget(
       _app(
         const MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: const Column(
+          data: MediaQueryData(disableAnimations: true),
+          child: Column(
             children: [
-              const AnimatedEntrance(
-                key: const ValueKey("reduced-motion-entrance"),
-                child: const Text("motion content"),
+              AnimatedEntrance(
+                key: ValueKey("reduced-motion-entrance"),
+                child: Text("motion content"),
               ),
-              const SkeletonBox(
+              SkeletonBox(
                 key: ValueKey("reduced-motion-skeleton"),
                 width: 120,
                 height: 20,
               ),
-              const PressableScale(
-                key: const ValueKey("reduced-motion-pressable"),
+              PressableScale(
+                key: ValueKey("reduced-motion-pressable"),
                 semanticLabel: "آزمایشی",
                 onTap: _noopAction,
-                child: const SizedBox(width: 48, height: 48),
+                child: SizedBox(width: 48, height: 48),
               ),
             ],
           ),

@@ -346,7 +346,7 @@ extension on _TransactionPageState {
                                   'پرداخت هنوز ساخته نشده',
                                   'Payment has not been created yet',
                                 )
-                              : _t('شناسه پرداخت: ' + (payment?.id ?? ''), 'Payment ID: ' + (payment?.id ?? '')),
+                              : _t('شناسه پرداخت: ${payment?.id ?? ""}', 'Payment ID: ${payment?.id ?? ""}'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall,

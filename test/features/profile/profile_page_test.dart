@@ -155,7 +155,7 @@ testWidgets('withdrawing an application disables the action until completion',
 
   testWidgets('withdraw refresh failure stays visible instead of becoming empty',
       (tester) async {
-    final application = const HopeApplication(
+    const application = HopeApplication(
       id: 'a2',
       jobId: 'j2',
       jobTitle: 'Backend engineer',

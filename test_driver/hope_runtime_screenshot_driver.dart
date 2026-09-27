@@ -7,7 +7,7 @@ Future<void> main() async {
   final root = Platform.environment['HOPE_SCREENSHOT_OUTPUT_ROOT'] ??
       (workspace == null
           ? '${Directory.current.path}/docs/audit/evidence/android-runtime'
-          : '${workspace}/docs/audit/evidence/android-runtime');
+          : '$workspace/docs/audit/evidence/android-runtime');
 
   final directory = Directory(root);
   await directory.create(recursive: true);

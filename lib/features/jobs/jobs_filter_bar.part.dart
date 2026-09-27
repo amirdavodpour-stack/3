@@ -83,7 +83,7 @@ class _JobsFilterHeader extends StatelessWidget {
             const SizedBox(width: HopeV2Spacing.md),
             PremiumTag(
               icon: HopeV2Icons.workshop,
-              label: resultCount.toString() + ' ' + copy.copy_results_2d120a3,
+              label: '$resultCount ${copy.copy_results_2d120a3}',
             ),
           ],
         ),
@@ -110,7 +110,7 @@ class _JobsFilterHeader extends StatelessWidget {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : HugeIcon(
+                        : const HugeIcon(
                             icon: HopeV2Icons.add,
                             size: 19,
                           ),
@@ -119,7 +119,7 @@ class _JobsFilterHeader extends StatelessWidget {
                     IconButton.filledTonal(
                       onPressed: onOpenSavedSearches,
                       tooltip: copy.copy_saved_searches,
-                      icon: HugeIcon(
+                      icon: const HugeIcon(
                         icon: HopeV2Icons.savedSearches,
                         size: 19,
                       ),

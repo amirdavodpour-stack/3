@@ -43,7 +43,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        home: Scaffold(
+        home: const Scaffold(
           body: PremiumHero(
             eyebrow: 'FEATURED',
             title: 'فرصت پیشنهادی',
@@ -74,7 +74,7 @@ void main() {
     );
 
     expect(halo.colors.length, 3);
-    expect(halo.colors.first.alpha, lessThanOrEqualTo(13));
+    expect((halo.colors.first.a * 255.0).round().clamp(0, 255), lessThanOrEqualTo(13));
     expect(halo.colors.last, Colors.transparent);
   });
 
