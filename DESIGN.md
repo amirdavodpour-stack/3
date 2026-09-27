@@ -110,6 +110,7 @@ Navigation and recurring product icons use a restrained, product-specific vocabu
 
 ## Runtime calibration checkpoint — 2026-09-27
 The current feature implementation has been recalibrated to the supplied HOPE Futuristic Work Platform UI Showcase: indigo primary, cool dark surfaces, tighter shared geometry, and stronger identity/featured-opportunity hierarchy. The next gate is rendered Android evidence at this exact feature HEAD; visual acceptance remains closed until actual PNG pixels are inspected.
+- Recommendation cards surface the real match score when the domain payload provides it; absent fields are not synthesized.
 
 ## Reference synthesis — 2026-09-24
 The premium reconstruction borrows principles, not assets or copied screens:
