@@ -346,7 +346,7 @@ run_en_host_session() {
   # for the write because absolute /data/user/0 access is denied in this context.
   local runtime_marker_relative="files/hope-screen-sync-${GITHUB_RUN_ID}/capture.marker"
   timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-    adb shell run-as com.hope.marketplace sh -c "printf '%s\\n' '$marker' > '$runtime_marker_relative'" >/dev/null
+    adb shell run-as com.hope.marketplace sh -c "mkdir -p \"\$(dirname '$runtime_marker_relative')\" && printf '%s\\n' '$marker' > '$runtime_marker_relative'" >/dev/null
 
   rm -f "$log_path"
   : > "$log_path"
