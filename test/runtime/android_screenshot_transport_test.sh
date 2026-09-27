@@ -5,6 +5,13 @@ repo_root="${GITHUB_WORKSPACE:-$PWD}"
 test_file="$repo_root/integration_test/runtime/critical_screens_evidence_test.dart"
 script_file="$repo_root/tools/hope-wallet-runtime-evidence.sh"
 
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="${GITHUB_WORKSPACE:-$PWD}"
+test_file="$repo_root/integration_test/runtime/critical_screens_evidence_test.dart"
+script_file="$repo_root/tools/hope-wallet-runtime-evidence.sh"
+
 grep -Fq "const _adbScreenshotCapture" "$test_file"
 grep -Fq "HOPE_SCREENSHOT_SYNC_ROOT" "$test_file"
 grep -Fq "while (await request.exists())" "$test_file"
