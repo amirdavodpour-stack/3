@@ -8,6 +8,9 @@ script_file="$repo_root/tools/hope-wallet-runtime-evidence.sh"
 
 grep -Fq "await binding.convertFlutterSurfaceToImage();" "$test_file"
 grep -Fq "await binding.takeScreenshot(marker);" "$test_file"
+grep -Fq "final String screenKey;" "$test_file"
+grep -Fq "key: ValueKey(screenKey)" "$test_file"
+grep -Fq "screenKey: marker" "$test_file"
 grep -Fq "Future<void> _captureRuntimeScreenshot(String marker)" "$test_file"
 
 grep -Fq "integrationDriver(" "$driver_file"
