@@ -234,7 +234,7 @@ capture_host_screenshot() {
     # The ready marker is the synchronization boundary. Read the PNG itself
     # with bounded retries so a transient app-filesystem/ADB race cannot turn
     # a valid marker into a false capture failure.
-    if adb exec-out run-as com.hope.marketplace test -f "$request" >/dev/null 2>&1; then
+    if adb exec-out run-as com.hope.marketplace /system/bin/sh -c 'test -f "$1"' sh "$request" >/dev/null 2>&1; then
       echo "HOPE_HOST_CAPTURE_READY_PROBE:$marker"
       if ! assert_hope_focused "$marker"; then
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
@@ -252,7 +252,7 @@ capture_host_screenshot() {
       for attempt in 1 2 3 4 5; do
         rm -f "$temp_output" "${output}.adb-error"
         if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-          adb exec-out run-as com.hope.marketplace /system/bin/cat "$remote_png" > "$temp_output" 2>"${output}.adb-error" &&
+          adb exec-out run-as com.hope.marketplace /system/bin/sh -c 'test -f "$1" && exec /system/bin/cat "$1"' sh "$remote_png" > "$temp_output" 2>"${output}.adb-error" &&
           test -s "$temp_output"; then
           local byte_count
           byte_count="$(wc -c < "$temp_output" | tr -d '[:space:]')"
