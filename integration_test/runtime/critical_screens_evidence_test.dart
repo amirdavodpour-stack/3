@@ -582,22 +582,6 @@ String _runtimeRouteMarker(String route) {
   return parts.length >= 2 ? parts[1] : '';
 }
 
-Future<String> _readRuntimeCaptureMarkerFromPrivateFile() async {
-  if (!_adbScreenshotCapture || _screenshotSyncRoot.isEmpty) {
-    return '';
-  }
-  final file = File('$_screenshotSyncRoot/capture.marker');
-  if (!await file.exists()) {
-    return '';
-  }
-  return (await file.readAsString()).trim();
-}
-
-String _captureMarker = '';
-const _adbScreenshotCapture =
-    bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
-const _screenshotSyncRoot =
-    String.fromEnvironment('HOPE_SCREENSHOT_SYNC_ROOT', defaultValue: '');
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -803,30 +787,13 @@ void main() {
       (tester) async {
     final runtime = await _prepare();
 
-    // The Android driver path does not reliably propagate --route into
-    // defaultRouteName. The host therefore seeds a marker in app-private
-    // storage before launching this isolated session.
-    final privateMarker = await _readRuntimeCaptureMarkerFromPrivateFile();
-    if (privateMarker.isNotEmpty) {
-      _captureMarker = privateMarker;
-    }
-    if (_captureMarker.isNotEmpty) {
-      _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
-      if (_captureMarker.contains('-fa-rtl')) {
-        _captureLocale = 'fa';
-      } else if (_captureMarker.contains('-en-ltr')) {
-        _captureLocale = 'en';
-      }
-    }
+    print('HOPE_RUNTIME_ROUTE:${route}');
+    print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
+    print('HOPE_RUNTIME_CAPTURE_MARKER:$_captureMarker');
+
     if (_captureLocale.isEmpty) {
       _captureLocale = Platform.environment['HOPE_CAPTURE_LOCALE'] ?? '';
     }
-    if (_adbScreenshotCapture && _captureMarker.isEmpty) {
-      throw StateError(
-        'HOPE_CAPTURE_MARKER is required for isolated Android runtime capture.',
-      );
-    }
-
     if (_captureResponsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
