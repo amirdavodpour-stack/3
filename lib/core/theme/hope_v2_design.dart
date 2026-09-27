@@ -11,8 +11,8 @@ import 'package:hugeicons/hugeicons.dart';
 class HopeV2Colors {
   const HopeV2Colors._();
 
-  static const primary = Color(0xFF8B5CF6);
-  static const primaryDark = Color(0xFFA78BFA);
+  static const primary = Color(0xFF6366F1);
+  static const primaryDark = Color(0xFF818CF8);
   static const secondary = Color(0xFF22D3EE);
   static const secondaryStrong = Color(0xFF06B6D4);
   static const secondaryDark = Color(0xFF67E8F9);
@@ -306,10 +306,10 @@ class HopeV2Gradients {
 
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF2B225F),
-      Color(0xFF4236A8),
-      Color(0xFF0A5160),
-      Color(0xFF0B1020),
+      Color(0xFF211A4A),
+      Color(0xFF3B3BAA),
+      Color(0xFF0D4A58),
+      Color(0xFF070A12),
     ],
     stops: [0, .36, .72, 1],
     begin: Alignment.topRight,
