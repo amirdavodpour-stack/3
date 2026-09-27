@@ -25,7 +25,7 @@ require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftsh
 driver_file="test_driver/hope_runtime_screenshot_driver.dart"
 
 require_line "$test_file" "const _adbScreenshotCapture"
-require_line "$test_file" "if (!_adbScreenshotCapture)"
+require_line "$test_file" "await tester.pumpWidget(const SizedBox.shrink());"
 require_line "$test_file" "await binding.takeScreenshot(marker);"
 require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
