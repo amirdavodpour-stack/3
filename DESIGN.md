@@ -32,21 +32,21 @@ Avoid generic AI-dashboard patterns: excessive gradients, decorative statistics,
 ## Canonical tokens
 
 ### Color
-- Primary: `#6C4DFF`
-- Primary dark-mode: `#B3A2FF`
-- Secondary: `#22B8A7`
-- Secondary strong/light-mode accessible teal: `#0C7D70`
+- Primary: `#6366F1`
+- Primary dark-mode: `#818CF8`
+- Secondary: `#22D3EE`
+- Secondary strong: `#06B6D4`
 - Accent/warning: `#FFB45C`
 - Featured signal orange: `#F97316` (dark: `#FF9A4D`); reserved for recommendation/attention emphasis, not primary actions
 - Ink: `#151326`
 - Muted text: `#6B6780`
 - Light page: `#F1EDF8` with a restrained warm atmospheric halo; brown is never used as a surface color.
 - Light panel: `#FFFFFF`
-- Dark page: `#090811` with cool navy/violet layers; no warm-brown page surfaces.
-- Dark panel: `#15131D`
-- Dark card: `#1C1925`
-- Success: `#0B7A58`
-- Danger: `#BA454D`
+- Dark page: `#070A12` with cool navy/violet layers; no warm-brown page surfaces.
+- Dark panel: `#0F111A`
+- Dark card: `#111827`
+- Success: `#10B981`
+- Danger: `#EF4444`
 
 Runtime ownership: `lib/core/theme/hope_v2_design.dart` is the canonical token source; `app_theme.dart` is the Material compatibility/theme adapter. Shared surface mappings (input, chip, navigation, divider, control border) must resolve through this source rather than new screen-local literals.
 
