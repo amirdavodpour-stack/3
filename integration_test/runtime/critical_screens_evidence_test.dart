@@ -217,8 +217,7 @@ class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   Future<List<HopeCategory>> listCategories() async => const [
         HopeCategory(
           id: 'cat-1',
-          slug: 'software',
-          name: 'نرم‌افزار',
+          slug: 'software',          name: 'نرم‌افزار',
           nameEn: 'Software',
           description: 'Software work',
           parentId: null,
@@ -437,8 +436,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'id': 'job-runtime-1',
       'title': 'طراحی رابط موبایل حرفه‌ای',
       'description':
-          'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',
-      'categoryId': 'cat-1',
+          'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',      'categoryId': 'cat-1',
       'category': 'Software',
       'jobType': 'FIXED',
       'budgetType': 'FIXED',
@@ -658,7 +656,6 @@ Future<void> _signalRuntimeTestBodyComplete() async {
   await marker.writeAsString('complete', flush: true);
   print('HOPE_RUNTIME_TEST_BODY_COMPLETE');
 }
-
 Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
   for (var attempt = 0; attempt < 100; attempt++) {
     final hasSpinner =
@@ -795,7 +792,9 @@ void main() {
         child: const HomePage(),
       ),
     );
-    await _prepareRuntimeScreenshotSurface(tester);
+    if (!_adbScreenshotCapture) {
+      await _prepareRuntimeScreenshotSurface(tester);
+    }
     if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
