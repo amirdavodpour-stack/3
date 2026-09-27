@@ -148,7 +148,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 context,
                 HopeRoutes.myApplications(),
               ),
-              icon: HopeIcon(HopeV2Icons.mission, size: 19),
+              icon: const HopeIcon(HopeV2Icons.mission, size: 19),
               label: Text(copy.copy_applications_6655869),
             ),
             OutlinedButton.icon(
@@ -156,7 +156,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 context,
                 HopeRoutes.offers(),
               ),
-              icon: HopeIcon(HopeV2Icons.featured, size: 19),
+              icon: const HopeIcon(HopeV2Icons.featured, size: 19),
               label: Text(copy.copy_offers),
             ),
             OutlinedButton.icon(
@@ -164,7 +164,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 context,
                 HopeRoutes.notifications(),
               ),
-              icon: HopeIcon(HopeV2Icons.notifications, size: 19),
+              icon: const HopeIcon(HopeV2Icons.notifications, size: 19),
               label: Text(copy.copy_notifications_370b4a1),
             ),
           ],
@@ -198,7 +198,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               child: FilledButton.icon(
                 onPressed: () =>
                     Navigator.push(context, HopeRoutes.login()),
-                icon: HopeIcon(HopeV2Icons.login, size: 19),
+                icon: const HopeIcon(HopeV2Icons.login, size: 19),
                 label: Text(HopeCopy.of(context).copy_log_in_b4c960b),
               ),
             ),
@@ -240,7 +240,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       padding: const EdgeInsets.all(20),
                       child: FilledButton.icon(
                         onPressed: reload,
-                        icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                        icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                         label: Text(HopeCopy.of(context).copy_retry_49f3eba),
                       ),
                     ),
@@ -277,7 +277,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           context,
                           HopeRoutes.jobs(),
                         ),
-                        icon: HopeIcon(HopeV2Icons.workshop, size: 19),
+                        icon: const HopeIcon(HopeV2Icons.workshop, size: 19),
                         label: Text(
                           Localizations.localeOf(context).languageCode == 'en'
                               ? 'Explore opportunities'
@@ -316,7 +316,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         message: HopeCopy.of(context).copy_pull_down_to_try_again_c41d215,
                         action: FilledButton.icon(
                           onPressed: reload,
-                          icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                          icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                           label: Text(HopeCopy.of(context).copy_retry_49f3eba),
                         ),
                       ),
@@ -446,7 +446,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                               jobId: job.id,
                                             ),
                                           ),
-                                          icon: HopeIcon(HopeV2Icons.arrowRight, size: 19),
+                                          icon: const HopeIcon(HopeV2Icons.arrowRight, size: 19),
                                           label: Text(HopeCopy.of(context).copy_view_transaction_a91f1e6),
                                         ),
                                       ],

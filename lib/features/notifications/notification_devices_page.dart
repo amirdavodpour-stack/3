@@ -112,7 +112,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
           IconButton(
             onPressed: _load,
             tooltip: _t('بازخوانی', 'Refresh'),
-            icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+            icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
           ),
         ],
       ),
@@ -154,13 +154,13 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                 padding: const EdgeInsets.all(18),
                 child: Column(
                   children: [
-                    HopeIcon(HopeV2Icons.error, size: 34),
+                    const HopeIcon(HopeV2Icons.error, size: 34),
                     const SizedBox(height: 10),
                     Text(_error!, textAlign: TextAlign.center),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: _load,
-                      icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                      icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                       label: Text(_t('تلاش دوباره', 'Retry')),
                     ),
                   ],
@@ -171,7 +171,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    HopeIcon(HopeV2Icons.notifications, size: 38),
+                    const HopeIcon(HopeV2Icons.notifications, size: 38),
                     const SizedBox(height: 12),
                     Text(
                       _t('دستگاه فعالی برای اعلان ثبت نشده است.', 'No active notification devices are registered.'),
@@ -236,7 +236,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  HopeIcon(HopeV2Icons.insights, size: 20),
+                  const HopeIcon(HopeV2Icons.insights, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(_t(

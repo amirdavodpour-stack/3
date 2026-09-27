@@ -190,11 +190,11 @@ void main() {
   testWidgets("shared motion primitives honor reduced-motion", (tester) async {
     await tester.pumpWidget(
       _app(
-        MediaQuery(
+        const MediaQuery(
           data: const MediaQueryData(disableAnimations: true),
-          child: Column(
+          child: const Column(
             children: [
-              AnimatedEntrance(
+              const AnimatedEntrance(
                 key: const ValueKey("reduced-motion-entrance"),
                 child: const Text("motion content"),
               ),
@@ -203,7 +203,7 @@ void main() {
                 width: 120,
                 height: 20,
               ),
-              PressableScale(
+              const PressableScale(
                 key: const ValueKey("reduced-motion-pressable"),
                 semanticLabel: "آزمایشی",
                 onTap: _noopAction,

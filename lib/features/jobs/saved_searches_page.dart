@@ -229,13 +229,13 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
           IconButton(
             onPressed: _load,
             tooltip: _t('بازخوانی', 'Refresh'),
-            icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+            icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _edit(),
-        icon: HopeIcon(HopeV2Icons.add, size: 20),
+        icon: const HopeIcon(HopeV2Icons.add, size: 20),
         label: Text(_t('جست‌وجوی جدید', 'New search')),
       ),
       body: PremiumPageFrame(
@@ -280,13 +280,13 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    HopeIcon(HopeV2Icons.pending, size: 36),
+                    const HopeIcon(HopeV2Icons.pending, size: 36),
                     const SizedBox(height: 10),
                     Text(_error!, textAlign: TextAlign.center),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: _load,
-                      icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                      icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                       label: Text(_t('تلاش دوباره', 'Retry')),
                     ),
                   ],
@@ -297,7 +297,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    HopeIcon(HopeV2Icons.savedSearches, size: 40),
+                    const HopeIcon(HopeV2Icons.savedSearches, size: 40),
                     const SizedBox(height: 12),
                     Text(
                       _t('هنوز جست‌وجوی ذخیره‌شده‌ای ندارید.',
@@ -335,7 +335,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                           IconButton(
                             tooltip: _t('ویرایش', 'Edit'),
                             onPressed: busy ? null : () => _edit(item),
-                            icon: HopeIcon(HopeV2Icons.insights, size: 19),
+                            icon: const HopeIcon(HopeV2Icons.insights, size: 19),
                           ),
                           IconButton(
                             tooltip: _t('حذف', 'Delete'),

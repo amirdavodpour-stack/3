@@ -333,8 +333,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                 color: HopeV2Colors.primary.withValues(alpha: .26),
                               ),
                             ),
-                            child: Center(
-                              child: HopeIcon(
+                            child: const Center(
+                              child: const HopeIcon(
                                 HopeV2Icons.featured,
                                 size: 15,
                                 color: HopeV2Colors.primaryDark,
@@ -412,7 +412,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     ),
                     action: FilledButton.icon(
                       onPressed: _refresh,
-                      icon: HugeIcon(
+                      icon: const HugeIcon(
                         icon: HopeV2Icons.refresh,
                         size: 20,
                       ),
@@ -551,7 +551,7 @@ if (!auth.isGuest) ...[
             const SizedBox(height: HopeV2Spacing.lg),
             OutlinedButton.icon(
               onPressed: widget.onOpenExplore,
-              icon: HugeIcon(icon: HopeV2Icons.workshop, size: 18),
+              icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 18),
               label: Text(_t(context, 'رفتن به Explore', 'Open Explore')),
             ),
           ],
@@ -725,7 +725,7 @@ if (!auth.isGuest) ...[
                       );
                     },
                     tooltip: _t(context, 'باز کردن کیف پول', 'Open wallet'),
-                    icon: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                    icon: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   ),
                 ],
               );

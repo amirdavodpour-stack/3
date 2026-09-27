@@ -481,7 +481,7 @@ class _WalletPageState extends State<WalletPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      HugeIcon(icon: HopeV2Icons.pending, size: 20),
+                      const HugeIcon(icon: HopeV2Icons.pending, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(_t(
@@ -590,7 +590,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
               action: OutlinedButton.icon(
                 onPressed: _load,
-                icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                 label: Text(_t('تلاش دوباره', 'Try again')),
               ),
             ),
@@ -826,7 +826,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
                 action: OutlinedButton.icon(
                   onPressed: _load,
-                  icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                  icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                   label: Text(_t('تلاش دوباره', 'Try again')),
                 ),
               ),
@@ -885,7 +885,7 @@ class _WalletPageState extends State<WalletPage> {
                   IconButton(
                     tooltip: _t('کپی شناسه', 'Copy wallet ID'),
                     onPressed: wallet.id.isEmpty ? null : () => _copyText(wallet.id),
-                    icon: HugeIcon(icon: HopeV2Icons.copy, size: 19),
+                    icon: const HugeIcon(icon: HopeV2Icons.copy, size: 19),
                   ),
                 ],
               ),
@@ -1089,7 +1089,7 @@ class _WalletPageState extends State<WalletPage> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : HopeIcon(HopeV2Icons.arrowRight, size: 19),
+                    : const HopeIcon(HopeV2Icons.arrowRight, size: 19),
                 label: Text(_t('تراکنش‌های بیشتر', 'Load more')),
               ),
             ],

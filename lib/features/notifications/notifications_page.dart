@@ -281,7 +281,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         const SizedBox(height: 10),
                         FilledButton.tonalIcon(
                           onPressed: () => _openNotification(n),
-                          icon: HopeIcon(HopeV2Icons.arrowRight, size: 18),
+                          icon: const HopeIcon(HopeV2Icons.arrowRight, size: 18),
                           label: Text(n.actionLabel),
                         ),
                       ],
@@ -312,22 +312,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
             IconButton(
               onPressed: () =>
                   Navigator.push(context, HopeRoutes.notificationDevices()),
-              icon: HopeIcon(HopeV2Icons.secure, size: 19),
+              icon: const HopeIcon(HopeV2Icons.secure, size: 19),
               tooltip: _t('دستگاه‌های اعلان', 'Notification devices'),
             ),
             IconButton(
               onPressed: _load,
-              icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+              icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
               tooltip: _t('بازخوانی', 'Refresh'),
             ),
             IconButton(
               onPressed: _openPreferences,
-              icon: HopeIcon(HopeV2Icons.insights, size: 19),
+              icon: const HopeIcon(HopeV2Icons.insights, size: 19),
               tooltip: _t('تنظیمات اعلان‌ها', 'Notification settings'),
             ),
             IconButton(
               onPressed: unreadCount == 0 ? null : _readAll,
-              icon: HopeIcon(HopeV2Icons.completed, size: 19),
+              icon: const HopeIcon(HopeV2Icons.completed, size: 19),
               tooltip: HopeCopy.of(context).copy_mark_all_read_500a31c,
             ),
           ],
