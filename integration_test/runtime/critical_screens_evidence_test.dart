@@ -525,11 +525,13 @@ class _EvidenceHost extends StatelessWidget {
   const _EvidenceHost({
     required this.runtime,
     required this.locale,
+    required this.screenKey,
     required this.child,
   });
 
   final _Runtime runtime;
   final Locale locale;
+  final String screenKey;
   final Widget child;
 
   @override
@@ -555,6 +557,7 @@ class _EvidenceHost extends StatelessWidget {
         Provider<OfferRepository>.value(value: _EvidenceOfferRepository()),
       ],
       child: MaterialApp(
+        key: ValueKey(screenKey),
         debugShowCheckedModeBanner: false,
         locale: locale,
         supportedLocales: const [Locale('fa'), Locale('en')],
@@ -660,6 +663,7 @@ Future<void> _captureRuntimeScreen(
     _EvidenceHost(
       runtime: runtime,
       locale: locale,
+      screenKey: marker,
       child: child,
     ),
   );
@@ -755,6 +759,7 @@ void main() {
       _EvidenceHost(
         runtime: runtime,
         locale: _captureLocale == 'en' ? const Locale('en') : const Locale('fa'),
+        screenKey: 'initial-home',
         child: const HomePage(),
       ),
     );
