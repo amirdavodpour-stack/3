@@ -566,8 +566,7 @@ class _EvidenceHost extends StatelessWidget {
     );
   }
 }
-const _responsiveOnly =
-    bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
+bool _captureResponsiveOnly = false;
 String _captureLocale = '';
 
 String _runtimeRouteArgument(String route, String prefix) {
@@ -786,13 +785,14 @@ void main() {
   final route = binding.platformDispatcher.defaultRouteName;
   _captureLocale = _runtimeRouteArgument(route, '/__hope_runtime_capture__/');
   _captureMarker = _runtimeRouteMarker(route);
+  _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
     final runtime = await _prepare();
     if (_captureLocale.isEmpty) {
       _captureLocale = Platform.environment['HOPE_CAPTURE_LOCALE'] ?? '';
-    }    if (_responsiveOnly) {
+    }    if (_captureResponsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
           tester,
