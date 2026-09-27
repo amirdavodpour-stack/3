@@ -392,19 +392,30 @@ class OpportunityCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: HopeV2Spacing.xs,
+                      runSpacing: HopeV2Spacing.xs,
                       children: [
-                        Flexible(
-                          child: PremiumTag(
-                            label: job.isMission
-                                ? copy.copy_mission_fb4c5e1
-                                : copy.copy_job_ce2feba,
-                            icon: job.isMission
-                                ? HopeV2Icons.mission
-                                : HopeV2Icons.job,
-                            color: primary,
-                          ),
+                        PremiumTag(
+                          label: job.isMission
+                              ? copy.copy_mission_fb4c5e1
+                              : copy.copy_job_ce2feba,
+                          icon: job.isMission
+                              ? HopeV2Icons.mission
+                              : HopeV2Icons.job,
+                          color: primary,
                         ),
+                        if (job.recommendationScore != null)
+                          PremiumTag(
+                            icon: HopeV2Icons.match,
+                            label: ((job.recommendationScore! <= 1
+                                        ? job.recommendationScore! * 100
+                                        : job.recommendationScore!))
+                                    .round()
+                                    .toString() +
+                                '% ' + _t(context, 'تطابق', 'match'),
+                            color: HopeV2Colors.success,
+                          ),
                       ],
                     ),
                     const SizedBox(height: HopeV2Spacing.sm),
