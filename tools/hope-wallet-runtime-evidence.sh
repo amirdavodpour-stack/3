@@ -339,6 +339,13 @@ run_en_host_session() {
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
     adb shell run-as com.hope.marketplace sh -c "mkdir -p files/hope-screen-sync && printf '%s\\n' '$marker' > files/hope-screen-sync/capture.marker"
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
+  # Verify the marker reached the app-private sandbox before starting the driver.
+  if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
+      adb exec-out run-as com.hope.marketplace cat files/hope-screen-sync/capture.marker 2>/dev/null \
+      | tr -d '\r' | grep -Fxq "$marker"; then
+    echo "HOPE_HOST_MARKER_HANDOFF_FAILED:$marker" >&2
+    return 1
+  fi
     adb shell run-as com.hope.marketplace rm -f files/hope-screen-sync/test-complete.ready
 
   set +e
@@ -347,6 +354,7 @@ run_en_host_session() {
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
     --route="/__hope_runtime_capture__/$CAPTURE_LOCALE/$marker" \
+    --dart-define="HOPE_CAPTURE_MARKER=$marker" \
     >"$log_path" 2>&1 &
   process_pid=$!
   tail -n +1 -f "$log_path" &
