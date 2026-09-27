@@ -31,7 +31,7 @@ class PremiumNavigationBar extends StatelessWidget {
         HopeV2Spacing.md,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(HopeV2Radii.xl),
+        borderRadius: BorderRadius.circular(HopeV2Radii.lg),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: surface,
@@ -345,7 +345,7 @@ class PremiumPanel extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
-    this.radius = HopeV2Radii.md,
+    this.radius = HopeV2Radii.lg,
     this.highlight = false,
     this.semanticLabel,
   });
