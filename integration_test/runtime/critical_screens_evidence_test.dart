@@ -655,14 +655,8 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
 
 Future<void> _captureRuntimeScreen(
   WidgetTester tester, {
-  required _Runtime runtime,
-  required Locale locale,
-  required String marker,
-  required Widget child,
-}) async {
-  // Rebuild the complete host for every screen. Flutter's Android screenshot
-  // surface is a stateful image view; a full widget-tree rebuild prevents
-  // stale layers from one complex screen leaking into the next capture.
+  // Rebuild the complete host for every screen and explicitly settle the
+  // rendered frame before asking integration_test for the device screenshot.
   await tester.pumpWidget(
     _EvidenceHost(
       runtime: runtime,
@@ -673,8 +667,18 @@ Future<void> _captureRuntimeScreen(
   await tester.pump();
   await tester.binding.endOfFrame;
 
-  await _captureRuntimeScreenshot(marker);;
+  await tester.pump(const Duration(milliseconds: 1200));
+  await tester.binding.endOfFrame;
+  await _waitForRuntimeRenderToSettle(tester);
+  await tester.pump();
+  await tester.binding.endOfFrame;
+  await Future<void>.delayed(const Duration(milliseconds: 250));
+  await tester.pump();
+  await tester.binding.endOfFrame;
+
+  await _captureRuntimeScreenshot(marker);
 }
+
 Future<void> _captureBaselineLocale(
   WidgetTester tester, {
   required Locale locale,
@@ -792,7 +796,5 @@ void main() {
         suffix: 'en-ltr',
       );
     }
-    await _signalRuntimeTestBodyComplete();
-    await Future<void>.delayed(const Duration(seconds: 1));
   });
 }
