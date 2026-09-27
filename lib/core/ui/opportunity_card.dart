@@ -84,8 +84,8 @@ class OpportunityCard extends StatelessWidget {
                     end: AlignmentDirectional.bottomEnd,
                     colors: Theme.of(context).brightness == Brightness.dark
                         ? [
-                            const Color(0xFF171A2B),
-                            const Color(0xFF10131F),
+                            primary.withValues(alpha: .18),
+                            const Color(0xFF101522),
                             Theme.of(context).colorScheme.surface,
                           ]
                         : [
@@ -98,7 +98,7 @@ class OpportunityCard extends StatelessWidget {
                 : null,
             color: featured ? null : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(
-              featured ? HopeV2Radii.xl : HopeV2Radii.lg,
+              HopeV2Radii.lg,
             ),
             border: Border.all(
               color: featured
@@ -245,7 +245,7 @@ class OpportunityCard extends StatelessWidget {
           begin: AlignmentDirectional.topStart,
           end: AlignmentDirectional.bottomEnd,
           colors: [
-            primary.withValues(alpha: .62),
+            primary.withValues(alpha: .52),
             const Color(0xFF17203A),
             const Color(0xFF080D18),
           ],
