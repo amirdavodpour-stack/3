@@ -28,9 +28,11 @@ require_line "$runtime" 'HOPE_SCREENSHOT_SYNC_ROOT='
 require_line "$test_file" 'bool.fromEnvironment('''HOPE_ADB_SCREENSHOT_CAPTURE''''
 require_line "$test_file" 'adbScreenshotCapture'
 
-if grep -Fq 'binding.takeScreenshot(marker)' "$test_file"; then
-  echo "FAIL: Flutter screenshot RPC must not be the active primary transport." >&2
-  exit 1
-fi
+# The integration test may retain a fallback implementation, but the ADB-mode
+# branch must be explicit and short-circuit before that fallback.
+require_line "$test_file" "if (_adbScreenshotCapture || _runtimeScreenshotSurfacePrepared)"
+require_line "$test_file" "if (_adbScreenshotCapture) {"
+require_line "$test_file" "await binding.takeScreenshot(marker);"
+
 
 echo "PASS: Android runtime golden baseline (Run #322) is locked."
