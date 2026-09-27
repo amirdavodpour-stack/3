@@ -217,8 +217,7 @@ class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   Future<List<HopeCategory>> listCategories() async => const [
         HopeCategory(
           id: 'cat-1',
-          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',          parentId: null,
-          sortOrder: 1,
+          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',          parentId: null,          sortOrder: 1,
           isActive: true,
         ),
       ];
@@ -437,8 +436,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'category': 'Software',      'jobType': 'FIXED',
       'budgetType': 'FIXED',      'budgetMin': '1500000',
       'budgetMax': '2500000',      'duration': '8 روز',
-      'acceptanceCriteria': 'تحویل نسخه نهایی و تست‌شده',
-      'status': 'PUBLISHED',
+      'acceptanceCriteria': 'تحویل نسخه نهایی و تست‌شده',      'status': 'PUBLISHED',
       'ownerId': 'runtime-owner',
       'providerId': null,
       'city': 'تهران',
@@ -517,10 +515,12 @@ class _RuntimeScreenSwitcher extends StatefulWidget {
   const _RuntimeScreenSwitcher({
     super.key,
     required this.locale,
+    required this.screenKey,
     required this.child,
   });
 
   final Locale locale;
+  final String screenKey;
   final Widget child;
 
   @override
@@ -529,19 +529,19 @@ class _RuntimeScreenSwitcher extends StatefulWidget {
 
 class _RuntimeScreenSwitcherState extends State<_RuntimeScreenSwitcher> {
   late Widget _child = widget.child;
-  var _version = 0;
+  late String _screenKey = widget.screenKey;
 
-  void show(Widget child) {
+  void show(String screenKey, Widget child) {
     setState(() {
       _child = child;
-      _version++;
+      _screenKey = screenKey;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return KeyedSubtree(
-      key: ValueKey(_version),
+      key: ValueKey('runtime-screen-$_screenKey'),
       child: Directionality(
         textDirection: widget.locale.languageCode == 'en'
             ? TextDirection.ltr
@@ -606,6 +606,7 @@ class _EvidenceHost extends StatelessWidget {
         home: _RuntimeScreenSwitcher(
           key: switcherKey,
           locale: locale,
+          screenKey: screenKey,
           child: child,
         ),
       ),
@@ -658,7 +659,6 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
 Future<void> _captureRuntimeScreenshot(String marker) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-
   if (_adbScreenshotCapture) {
     if (_screenshotSyncRoot.isEmpty) {
       throw StateError('HOPE_SCREENSHOT_SYNC_ROOT is required for ADB capture.');
@@ -738,7 +738,7 @@ Future<void> _captureRuntimeScreen(
     if (switcher == null) {
       throw StateError('Runtime evidence screen switcher is not mounted.');
     }
-    switcher.show(child);
+    switcher.show(marker, child);
     await tester.pump();
     await tester.binding.endOfFrame;
   }
@@ -752,6 +752,7 @@ Future<void> _captureRuntimeScreen(
   await tester.pump();
   await tester.binding.endOfFrame;
 
+  expect(find.byKey(ValueKey('runtime-screen-$marker')), findsOneWidget);
   await _captureRuntimeScreenshot(marker);
 }
 Future<void> _captureBaselineLocale(

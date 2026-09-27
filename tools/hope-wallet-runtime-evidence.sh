@@ -15,6 +15,7 @@ hope_android_device_ready "$RUNTIME_SERIAL"
 
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
+SCREENSHOT_PRESENT_DELAY_SECONDS="${HOPE_SCREENSHOT_PRESENT_DELAY_SECONDS:-1}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"
 DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-120}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"
@@ -217,8 +218,7 @@ screens=(
   "home-en-ltr"
   "jobs-en-ltr"
   "job-detail-en-ltr"
-  "applications-en-ltr"
-  "saved-searches-en-ltr"
+  "applications-en-ltr"  "saved-searches-en-ltr"
   "transactions-en-ltr"
   "transaction-detail-en-ltr"
   "wallet-en-ltr"
@@ -249,6 +249,8 @@ capture_host_screenshot() {
     local ready_tmp="$(mktemp)"
     if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"       adb exec-out run-as com.hope.marketplace cat "$request" >"$ready_tmp" 2>/dev/null; then
       rm -f "$ready_tmp"
+
+      sleep "$SCREENSHOT_PRESENT_DELAY_SECONDS"
 
       if ! assert_hope_focused "$marker"; then
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
@@ -437,8 +439,7 @@ printf '%s\n' '720x1280' > "$evidence_dir/responsive-viewport.txt"
 if [ "$CAPTURE_LOCALE" = "fa" ]; then
   CAPTURED_BASELINE_SCREENS=15
   CAPTURED_RESPONSIVE_SCREENS=6
-  CAPTURED_LOCALE_LABEL="fa-RTL"
-elif [ "$CAPTURE_LOCALE" = "en" ]; then
+  CAPTURED_LOCALE_LABEL="fa-RTL"elif [ "$CAPTURE_LOCALE" = "en" ]; then
   CAPTURED_BASELINE_SCREENS=15
   CAPTURED_RESPONSIVE_SCREENS=6
   CAPTURED_LOCALE_LABEL="en-LTR"
