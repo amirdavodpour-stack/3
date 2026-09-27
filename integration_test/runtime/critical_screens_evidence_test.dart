@@ -217,8 +217,7 @@ class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   Future<List<HopeCategory>> listCategories() async => const [
         HopeCategory(
           id: 'cat-1',
-          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',
-          parentId: null,
+          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',          parentId: null,
           sortOrder: 1,
           isActive: true,
         ),
@@ -437,8 +436,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
           'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',      'categoryId': 'cat-1',
       'category': 'Software',      'jobType': 'FIXED',
       'budgetType': 'FIXED',      'budgetMin': '1500000',
-      'budgetMax': '2500000',
-      'duration': '8 روز',
+      'budgetMax': '2500000',      'duration': '8 روز',
       'acceptanceCriteria': 'تحویل نسخه نهایی و تست‌شده',
       'status': 'PUBLISHED',
       'ownerId': 'runtime-owner',
@@ -515,19 +513,58 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   return (auth: auth, settings: settings, registry: _registry());
 }
 
+class _RuntimeScreenSwitcher extends StatefulWidget {
+  const _RuntimeScreenSwitcher({
+    super.key,
+    required this.locale,
+    required this.child,
+  });
+
+  final Locale locale;
+  final Widget child;
+
+  @override
+  State<_RuntimeScreenSwitcher> createState() => _RuntimeScreenSwitcherState();
+}
+
+class _RuntimeScreenSwitcherState extends State<_RuntimeScreenSwitcher> {
+  late Widget _child = widget.child;
+  var _version = 0;
+
+  void show(Widget child) {
+    setState(() {
+      _child = child;
+      _version++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyedSubtree(
+      key: ValueKey(_version),
+      child: Directionality(
+        textDirection: widget.locale.languageCode == 'en'
+            ? TextDirection.ltr
+            : TextDirection.rtl,
+        child: _child,
+      ),
+    );
+  }
+}
+
 class _EvidenceHost extends StatelessWidget {
   const _EvidenceHost({
     required this.runtime,
     required this.locale,
     required this.screenKey,
-    required this.navigatorKey,
+    required this.switcherKey,
     required this.child,
   });
 
   final _Runtime runtime;
   final Locale locale;
   final String screenKey;
-  final GlobalKey<NavigatorState> navigatorKey;
+  final GlobalKey<_RuntimeScreenSwitcherState> switcherKey;
   final Widget child;
 
   @override
@@ -554,7 +591,6 @@ class _EvidenceHost extends StatelessWidget {
       ],
       child: MaterialApp(
         key: ValueKey(screenKey),
-        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         locale: locale,
         supportedLocales: const [Locale('fa'), Locale('en')],
@@ -567,17 +603,15 @@ class _EvidenceHost extends StatelessWidget {
         theme: AppTheme.dark(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.dark,
-        home: Directionality(
-          textDirection: locale.languageCode == 'en'
-              ? TextDirection.ltr
-              : TextDirection.rtl,
+        home: _RuntimeScreenSwitcher(
+          key: switcherKey,
+          locale: locale,
           child: child,
         ),
       ),
     );
   }
 }
-
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
@@ -657,8 +691,7 @@ Future<void> _signalRuntimeTestBodyComplete() async {
 }
 Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {  for (var attempt = 0; attempt < 100; attempt++) {    final hasSpinner =
         find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
-    final hasSkeleton =
-        find.byType(SkeletonBox).evaluate().isNotEmpty;
+    final hasSkeleton =        find.byType(SkeletonBox).evaluate().isNotEmpty;
     if (!hasSpinner && !hasSkeleton) {
       return;
     }
@@ -682,7 +715,7 @@ Future<void> _captureRuntimeScreen(
   required Locale locale,
   required String marker,
   required Widget child,
-  required GlobalKey<NavigatorState> navigatorKey,
+  required GlobalKey<_RuntimeScreenSwitcherState> switcherKey,
   required bool mountRoot,
 }) async {
   if (mountRoot) {
@@ -691,7 +724,7 @@ Future<void> _captureRuntimeScreen(
         runtime: runtime,
         locale: locale,
         screenKey: marker,
-        navigatorKey: navigatorKey,
+        switcherKey: switcherKey,
         child: child,
       ),
     );
@@ -701,23 +734,11 @@ Future<void> _captureRuntimeScreen(
       await _prepareRuntimeScreenshotSurface(tester);
     }
   } else {
-    final navigator = navigatorKey.currentState;
-    if (navigator == null) {
-      throw StateError('Runtime evidence navigator is not mounted.');
+    final switcher = switcherKey.currentState;
+    if (switcher == null) {
+      throw StateError('Runtime evidence screen switcher is not mounted.');
     }
-    navigator.pushAndRemoveUntil(
-      PageRouteBuilder<void>(
-        pageBuilder: (_, __, ___) => Directionality(
-          textDirection: locale.languageCode == 'en'
-              ? TextDirection.ltr
-              : TextDirection.rtl,
-          child: child,
-        ),
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-      (_) => false,
-    );
+    switcher.show(child);
     await tester.pump();
     await tester.binding.endOfFrame;
   }
@@ -739,7 +760,7 @@ Future<void> _captureBaselineLocale(
   required String suffix,
   required _Runtime runtime,
 }) async {
-  final navigatorKey = GlobalKey<NavigatorState>();
+  final switcherKey = GlobalKey<_RuntimeScreenSwitcherState>();
   var mountRoot = true;
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
@@ -771,7 +792,7 @@ Future<void> _captureBaselineLocale(
       locale: locale,
       marker: '${entry.key}-$suffix',
       child: entry.value(),
-      navigatorKey: navigatorKey,
+      switcherKey: switcherKey,
       mountRoot: mountRoot,
     );
     mountRoot = false;
@@ -784,7 +805,7 @@ Future<void> _captureResponsiveLocale(
   required String suffix,
   required _Runtime runtime,
 }) async {
-  final navigatorKey = GlobalKey<NavigatorState>();
+  final switcherKey = GlobalKey<_RuntimeScreenSwitcherState>();
   var mountRoot = true;
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
@@ -803,7 +824,7 @@ Future<void> _captureResponsiveLocale(
       locale: locale,
       marker: 'responsive-720x1280-${entry.key}-$suffix',
       child: entry.value(),
-      navigatorKey: navigatorKey,
+      switcherKey: switcherKey,
       mountRoot: mountRoot,
     );
     mountRoot = false;
