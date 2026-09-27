@@ -337,7 +337,7 @@ run_en_host_session() {
   # Explicitly transfer the per-session marker into app-private storage.
   # Flutter --route is not reliably reflected in defaultRouteName under flutter drive.
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-    adb shell run-as com.hope.marketplace sh -c "printf '%s\\n' '$marker' > files/hope-screen-sync/capture.marker"
+    adb shell run-as com.hope.marketplace sh -c "mkdir -p files/hope-screen-sync && printf '%s\\n' '$marker' > files/hope-screen-sync/capture.marker"
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
     adb shell run-as com.hope.marketplace rm -f files/hope-screen-sync/test-complete.ready
 
