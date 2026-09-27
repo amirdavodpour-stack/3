@@ -15,7 +15,7 @@ DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-120}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
-capture_sync_root="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}"
+capture_sync_root="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
 
 case "$CAPTURE_LOCALE" in
   fa|en) ;;
@@ -225,8 +225,8 @@ fi
 capture_host_screenshot() {
   local marker="$1"
   local process_pid="$2"
-  local request="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.ready"
-  local remote_png="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.png"
+  local request="files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}/$marker.ready"
+  local remote_png="files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}/$marker.png"
   local output="$evidence_dir/$marker.png"
   local deadline=$((SECONDS + 180))
 
@@ -298,9 +298,9 @@ run_en_host_session() {
   local capture_status=0
   set +e
   if [ "$mode" = "responsive" ]; then
-    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_ADB_SCREENSHOT_CAPTURE=true HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" --dart-define=HOPE_RESPONSIVE_ONLY=true > "$log_path" 2>&1 &
+    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_ADB_SCREENSHOT_CAPTURE=true HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" --dart-define=HOPE_RESPONSIVE_ONLY=true > "$log_path" 2>&1 &
   else
-    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_ADB_SCREENSHOT_CAPTURE=true HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" > "$log_path" 2>&1 &
+    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_ADB_SCREENSHOT_CAPTURE=true HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" > "$log_path" 2>&1 &
   fi
   process_pid=$!
   set -e
@@ -312,7 +312,7 @@ run_en_host_session() {
       capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }
     done
   fi
-  local completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"
+  local completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}/test-complete.ready"
   local completion_status=1
   local completion_deadline=$((SECONDS + 30))
   while (( SECONDS < completion_deadline )); do
