@@ -298,67 +298,21 @@ run_en_host_session() {
   shift
   local log_path="$log_file"
   [ "$mode" = "responsive" ] && log_path="$runner_temp/hope-responsive-runtime.log"
-  local process_pid
   local driver_status=0
-  local capture_status=0
-  set +e
-
-  env     HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE"     HOPE_ADB_SCREENSHOT_CAPTURE=true     HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}"     HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"     flutter drive --no-pub --no-dds       --driver=test_driver/hope_runtime_screenshot_driver.dart       --target=integration_test/runtime/critical_screens_evidence_test.dart       --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"       --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE"       --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true       --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}"       $( [ "$mode" = "responsive" ] && printf '%s' '--dart-define=HOPE_RESPONSIVE_ONLY=true' )       >"$log_path" 2>&1 &
-  process_pid=$!
-
-  set -e
-  if ! wait_for_driver_connection "$process_pid" "$log_path"; then
-    capture_status=1
-    kill "$process_pid" >/dev/null 2>&1 || true
-  else
-    for marker in "$@"; do
-      capture_host_screenshot "$marker" "$process_pid" || {
-        capture_status=$?
-        kill "$process_pid" >/dev/null 2>&1 || true
-        break
-      }
-    done
-  fi
-
-  local completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"
-  local completion_status=1
-  local completion_deadline=$((SECONDS + 30))
-  while (( SECONDS < completion_deadline )); do
-    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"       adb exec-out run-as com.hope.marketplace cat "$completion_request" >/dev/null 2>&1; then
-      completion_status=0
-      break
-    fi
-    if ! kill -0 "$process_pid" 2>/dev/null; then
-      break
-    fi
-    sleep 0.2
-  done
-
-  if [ "$completion_status" -ne 0 ]; then
-    echo "HOPE_HOST_RUNTIME_COMPLETE_FAILED:test-body-complete-timeout" >&2
-    capture_status=1
-  fi
 
   set +e
-  if [ "$completion_status" -eq 0 ]; then
-    local grace_deadline=$((SECONDS + 5))
-    while kill -0 "$process_pid" 2>/dev/null && (( SECONDS < grace_deadline )); do
-      sleep 0.2
-    done
-    if kill -0 "$process_pid" 2>/dev/null; then
-      kill "$process_pid" >/dev/null 2>&1 || true
-      sleep 1
-      kill -9 "$process_pid" >/dev/null 2>&1 || true
-      wait "$process_pid" >/dev/null 2>&1 || true
-      driver_status=0
-    else
-      wait "$process_pid"
-      driver_status=$?
-    fi
-  else
-    wait "$process_pid"
-    driver_status=$?
-  fi
+  timeout --foreground --signal=TERM --kill-after="$RUNTIME_SHUTDOWN_GRACE_SECONDS"s "$RUNTIME_TEST_TIMEOUT_SECONDS"s \
+    env \
+      HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" \
+      HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
+      flutter drive --no-pub --no-dds \
+        --driver=test_driver/hope_runtime_screenshot_driver.dart \
+        --target=integration_test/runtime/critical_screens_evidence_test.dart \
+        --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+        --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" \
+        $( [ "$mode" = "responsive" ] && printf "%s" "--dart-define=HOPE_RESPONSIVE_ONLY=true" ) \
+        >"$log_path" 2>&1
+  driver_status=$?
   set -e
 
   if [ "$driver_status" -ne 0 ]; then
@@ -366,9 +320,8 @@ run_en_host_session() {
     capture_android_diagnostics "${mode}-driver"
     return "$driver_status"
   fi
-  return "$capture_status"
+  return 0
 }
-
 baseline_status=0
 run_en_host_session baseline "${baseline_screens[@]}" || baseline_status=$?
 if [ "$baseline_status" -eq 0 ] &&
