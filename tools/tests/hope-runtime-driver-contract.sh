@@ -102,7 +102,7 @@ $T grep -Fq -- 'adb exec-out run-as com.hope.marketplace cat "$remote_png"' "$sc
 $T grep -Fq -- 'adb wait-for-device' "$script"
 
 # EN baseline must pass the host driver's required output root, not only the responsive branch.
-$T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
+$T grep -Fq -- 'HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive' "$script"
 
 driver_timeout_default="$(/system/bin/toybox sed -n 's/^DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$script")"
 runtime_timeout_default="$(/system/bin/toybox sed -n 's/^RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-\([0-9][0-9]*\)}".*/\1/p' "$script")"
