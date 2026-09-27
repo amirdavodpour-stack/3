@@ -21,18 +21,14 @@ require_line "$workflow" "cores: 4"
 require_line "$workflow" "ram-size: 4096M"
 require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
 
-# Keep host-side framebuffer capture; do not regress to Flutter screenshot RPC.
-require_line "$runtime" 'adb exec-out screencap -p'
-require_line "$runtime" 'HOPE_ADB_SCREENSHOT_CAPTURE=true'
-require_line "$runtime" 'HOPE_SCREENSHOT_SYNC_ROOT='
-require_line "$test_file" "bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false)"
-require_line "$test_file" 'adbScreenshotCapture'
-
-# The integration test may retain a fallback implementation, but the ADB-mode
-# branch must be explicit and short-circuit before that fallback.
-require_line "$test_file" "if (_adbScreenshotCapture || _runtimeScreenshotSurfacePrepared)"
-require_line "$test_file" "if (_adbScreenshotCapture) {"
+# Screenshot production must use Flutter's official integration_test screenshot API.
 require_line "$test_file" "await binding.takeScreenshot(marker);"
+require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
+require_line "$test_file" "HOPE_SCREENSHOT_READY:"
+require_line "$runtime" 'HOPE_SCREENSHOT_OUTPUT_ROOT='
+
+# Runtime evidence must reject byte-identical PNGs under different screen names.
+require_line "$runtime" 'duplicate-png-hash'
 
 
-echo "PASS: Android runtime golden baseline (Run #322) is locked."
+echo "PASS: Android runtime screenshot baseline contract is locked."
