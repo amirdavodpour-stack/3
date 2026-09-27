@@ -344,7 +344,7 @@ run_en_host_session() {
   # path was not delivered to defaultRouteName on this driver path.
   # run-as starts in the app-private sandbox; use a sandbox-relative path
   # for the write because absolute /data/user/0 access is denied in this context.
-  local runtime_marker_relative="files/hope-screen-sync-\${GITHUB_RUN_ID}/capture.marker"
+  local runtime_marker_relative="files/hope-screen-sync-${GITHUB_RUN_ID}/capture.marker"
   timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
     adb shell run-as com.hope.marketplace sh -c "printf '%s\\n' '$marker' > '$runtime_marker_relative'" >/dev/null
 
