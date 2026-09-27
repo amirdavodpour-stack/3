@@ -99,6 +99,9 @@ jobs:
       - name: Validate runtime evidence script syntax
         run: bash -n tools/hope-wallet-runtime-evidence.sh
 
+      - name: Enforce successful Android runtime golden baseline
+        run: bash test/runtime/android_runtime_golden_baseline_test.sh
+
       - name: Enable KVM for Android emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
