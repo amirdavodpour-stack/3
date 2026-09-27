@@ -6,6 +6,39 @@ import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
+  testWidgets('recommended opportunity exposes its real match score signal',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-match-score',
+      'title': 'Product designer',
+      'description': 'A real recommendation signal test.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'HOURLY',
+      'budgetMin': '1000000',
+      'kind': 'JOB',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'recommendationScore': 0.94,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(body: OpportunityCard(job: job)),
+      ),
+    );
+
+    expect(find.text('94% match'), findsOneWidget);
+  });
+
   testWidgets('opportunity card groups large Toman amounts for readability',
       (tester) async {
     final job = HopeJob.fromMap({
