@@ -137,7 +137,7 @@ class _ProfilePageState extends State<ProfilePage> {
             highlight: true,
             child: Row(
               children: [
-                HopeIconTile(HopeV2Icons.secure, filled: true),
+                const HopeIconTile(HopeV2Icons.secure, filled: true),
                 const SizedBox(width: HopeV2Spacing.md),
                 Expanded(
                   child: Text(
@@ -174,7 +174,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () => setState(() {
                       profile = _controller.loadProfile();
                     }),
-                    icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                    icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),
                 );
@@ -264,7 +264,7 @@ class _ProfilePageState extends State<ProfilePage> {
               message: _applicationsReloadError!,
               action: OutlinedButton.icon(
                 onPressed: _applicationBusyId != null ? null : _reloadApplications,
-                icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                 label: Text(_t(context, 'تلاش دوباره', 'Retry')),
               ),
             ),
@@ -280,7 +280,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   message: _t(context, 'امکان دریافت وضعیت درخواست‌ها وجود ندارد.', 'Application status could not be loaded.'),
                   action: OutlinedButton.icon(
                     onPressed: _reloadApplications,
-                    icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                    icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),
                 );
@@ -357,7 +357,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                         height: 20,
                                         child: CircularProgressIndicator(strokeWidth: 2),
                                       )
-                                    : HopeIcon(HopeV2Icons.transferOut, size: 19),
+                                    : const HopeIcon(HopeV2Icons.transferOut, size: 19),
                               )
                             : null,
                       );
@@ -385,7 +385,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   leading: const HopeIconTile(HopeV2Icons.mission, filled: true),
                   title: Text(_t(context, 'درخواست‌های من', 'My applications')),
                   subtitle: Text(_t(context, 'پیگیری مرحله‌به‌مرحله همه درخواست‌های شغلی', 'Track every job application through its workflow')),
-                  trailing: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.myApplications()),
                 ),
                 const Divider(height: 1, indent: 72),
@@ -393,7 +393,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'دستگاه‌های اعلان', 'Notification devices')),
                   subtitle: Text(_t(context, 'مدیریت دستگاه‌های فعال برای Push', 'Manage devices enabled for Push notifications')),
-                  trailing: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.notificationDevices()),
                 ),
                 const Divider(height: 1, indent: 72),
@@ -401,14 +401,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'حریم خصوصی و داده‌ها', 'Privacy & data')),
                   subtitle: Text(_t(context, 'دریافت خروجی اطلاعات یا حذف حساب', 'Export your data or delete your account')),
-                  trailing: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.privacyCenter()),
                 ),
                 ListTile(
                   leading: const HopeIconTile(HopeV2Icons.savedSearches, filled: true),
                   title: Text(_t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches')),
                   subtitle: Text(_t(context, 'ویرایش و مدیریت فیلترهای ذخیره‌شده', 'Edit and manage saved-search filters')),
-                  trailing: HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.savedSearches()),
                 ),
               ],
@@ -418,7 +418,7 @@ class _ProfilePageState extends State<ProfilePage> {
           if (auth.user?['role'] == 'ADMIN')
             FilledButton.tonalIcon(
               onPressed: () => Navigator.push(context, HopeRoutes.admin()),
-              icon: HopeIcon(HopeV2Icons.secure, size: 19),
+              icon: const HopeIcon(HopeV2Icons.secure, size: 19),
               label: Text(
                 HopeCopy.of(context).copy_open_admin_panel_39f3cb8,
               ),
@@ -426,7 +426,7 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => Navigator.push(context, HopeRoutes.about()),
-            icon: HopeIcon(HopeV2Icons.insights, size: 19),
+            icon: const HopeIcon(HopeV2Icons.insights, size: 19),
             label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
           ),
           const SizedBox(height: 10),
@@ -864,7 +864,7 @@ class _ProfilePageState extends State<ProfilePage> {
             (value) => ListTile(
               title: Text(value),
               trailing: value == settings.city
-                  ? HopeIcon(HopeV2Icons.completed, size: 18)
+                  ? const HopeIcon(HopeV2Icons.completed, size: 18)
                   : null,
               onTap: () => Navigator.pop(context, value),
             ),

@@ -178,28 +178,28 @@ extension on _TransactionPageState {
     if (paymentStatus == 'NO_TRANSACTION' && owner) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => action('fund'),
-        icon: HopeIcon(HopeV2Icons.wallet, size: 19),
+        icon: const HopeIcon(HopeV2Icons.wallet, size: 19),
         label: Text(_t('تأمین وجه', 'Fund payment')),
       ));
     }
     if (paymentStatus == 'HOLD_PENDING' || paymentStatus == 'HOLD_FAILED') {
       actions.add(OutlinedButton.icon(
         onPressed: loading ? null : refresh,
-        icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+        icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
         label: Text(_t('بررسی وضعیت تأمین', 'Refresh funding status')),
       ));
     }
     if (paymentStatus == 'HELD' && job?.status == 'FUNDED' && provider) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => _jobAction('start'),
-        icon: HopeIcon(HopeV2Icons.mission, size: 19),
+        icon: const HopeIcon(HopeV2Icons.mission, size: 19),
         label: Text(_t('شروع کار', 'Start work')),
       ));
     }
     if (job?.status == 'IN_PROGRESS' && provider) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => _jobAction('deliver'),
-        icon: HopeIcon(HopeV2Icons.activity, size: 19),
+        icon: const HopeIcon(HopeV2Icons.activity, size: 19),
         label: Text(_t('تحویل برای بررسی', 'Submit delivery')),
       ));
     }
@@ -208,14 +208,14 @@ extension on _TransactionPageState {
         owner) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => _jobAction('accept'),
-        icon: HopeIcon(HopeV2Icons.completed, size: 19),
+        icon: const HopeIcon(HopeV2Icons.completed, size: 19),
         label: Text(_t('تأیید و تکمیل', 'Approve & complete')),
       ));
     }
     if (paymentStatus == 'HELD' && owner) {
       actions.add(OutlinedButton.icon(
         onPressed: loading ? null : () => _confirmAction('refund'),
-        icon: HopeIcon(HopeV2Icons.transferOut, size: 19),
+        icon: const HopeIcon(HopeV2Icons.transferOut, size: 19),
         label: Text(_t('درخواست بازپرداخت', 'Request a refund')),
       ));
     }
@@ -225,7 +225,7 @@ extension on _TransactionPageState {
         owner) {
       actions.add(FilledButton.icon(
         onPressed: loading ? null : () => action('release'),
-        icon: HopeIcon(HopeV2Icons.payments, size: 19),
+        icon: const HopeIcon(HopeV2Icons.payments, size: 19),
         label: Text(_t('تسویه با مجری', 'Release payout')),
       ));
     }
@@ -234,7 +234,7 @@ extension on _TransactionPageState {
         highlight: true,
         padding: const EdgeInsets.all(14),
         child: Row(children: [
-          HopeIcon(HopeV2Icons.completed, color: AppColors.success, size: 20),
+          const HopeIcon(HopeV2Icons.completed, color: AppColors.success, size: 20),
           const SizedBox(width: 9),
           Expanded(
               child: Text(_t(
@@ -276,7 +276,7 @@ extension on _TransactionPageState {
                 message: error!,
                 action: FilledButton.icon(
                   onPressed: loading ? null : refresh,
-                  icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                  icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                   label: Text(HopeCopy.of(context).copy_retry_49f3eba),
                 ),
               ),
@@ -319,7 +319,7 @@ extension on _TransactionPageState {
                   message: error!,
                   action: FilledButton.icon(
                     onPressed: loading ? null : refresh,
-                    icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                    icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                     label: Text(HopeCopy.of(context).copy_retry_49f3eba),
                   ),
                 ),
@@ -363,7 +363,7 @@ extension on _TransactionPageState {
                   IconButton(
                     onPressed: loading ? null : refresh,
                     tooltip: _t('به‌روزرسانی وضعیت', 'Refresh status'),
-                    icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                    icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                   ),
                 ],
               ),

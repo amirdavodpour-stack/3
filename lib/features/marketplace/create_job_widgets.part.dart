@@ -301,7 +301,7 @@ class _CreateJobForm extends StatelessWidget {
                   controller: title,
                   decoration: InputDecoration(
                     labelText: HopeCopy.of(context).copy_title_d4694a2,
-                    prefixIcon: HopeIcon(HopeV2Icons.job, size: 20),
+                    prefixIcon: const HopeIcon(HopeV2Icons.job, size: 20),
                   ),
                 ),
                 const SizedBox(height: 11),
@@ -312,7 +312,7 @@ class _CreateJobForm extends StatelessWidget {
                     labelText:
                         HopeCopy.of(context).copy_full_description_c4dea43,
                     alignLabelWithHint: true,
-                    prefixIcon: HopeIcon(HopeV2Icons.activity, size: 20),
+                    prefixIcon: const HopeIcon(HopeV2Icons.activity, size: 20),
                   ),
                 ),
                 const SizedBox(height: 11),
@@ -324,7 +324,7 @@ class _CreateJobForm extends StatelessWidget {
                         padding: const EdgeInsets.all(14),
                         child: Row(
                           children: [
-                            HopeIcon(HopeV2Icons.pending, size: 20),
+                            const HopeIcon(HopeV2Icons.pending, size: 20),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(translate(
@@ -335,7 +335,7 @@ class _CreateJobForm extends StatelessWidget {
                             IconButton(
                               tooltip: HopeCopy.of(context).copy_retry_49f3eba,
                               onPressed: () => onRetryCategories(),
-                              icon: HugeIcon(icon: HopeV2Icons.refresh, size: 19),
+                              icon: const HugeIcon(icon: HopeV2Icons.refresh, size: 19),
                             ),
                           ],
                         ),
@@ -356,7 +356,7 @@ class _CreateJobForm extends StatelessWidget {
                             .copy_professional_category_a8c7c42,
                         hintText:
                             HopeCopy.of(context).copy_choose_a_category_b77d860,
-                        prefixIcon: HopeIcon(HopeV2Icons.category, size: 20),
+                        prefixIcon: const HopeIcon(HopeV2Icons.category, size: 20),
                       ),
                       items: categories.map((category) {
                         final depth = category.parentId == null ? 0 : 1;
@@ -377,7 +377,7 @@ class _CreateJobForm extends StatelessWidget {
                   initialValue: city,
                   decoration: InputDecoration(
                     labelText: HopeCopy.of(context).copy_city_3d7dc3e,
-                    prefixIcon: HopeIcon(HopeV2Icons.location, size: 20),
+                    prefixIcon: const HopeIcon(HopeV2Icons.location, size: 20),
                   ),
                   items: [
                     ...HopeSettingsController.cities.map(
@@ -417,7 +417,7 @@ class _CreateJobForm extends StatelessWidget {
                     ],
                     decoration: InputDecoration(
                       labelText: HopeCopy.of(context).copy_minimum_pay_38cc5ec,
-                      prefixIcon: HopeIcon(HopeV2Icons.payments, size: 20),
+                      prefixIcon: const HopeIcon(HopeV2Icons.payments, size: 20),
                       suffixText: translate('تومان', 'Toman'),
                     ),
                   ),
@@ -430,7 +430,7 @@ class _CreateJobForm extends StatelessWidget {
                     ],
                     decoration: InputDecoration(
                       labelText: HopeCopy.of(context).copy_maximum_pay_b51ad57,
-                      prefixIcon: HopeIcon(HopeV2Icons.wallet, size: 20),
+                      prefixIcon: const HopeIcon(HopeV2Icons.wallet, size: 20),
                       suffixText: translate('تومان', 'Toman'),
                     ),
                   ),
@@ -462,7 +462,7 @@ class _CreateJobForm extends StatelessWidget {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_monthly_salary_1d770dc,
-                prefixIcon: HopeIcon(HopeV2Icons.payments, size: 20),
+                prefixIcon: const HopeIcon(HopeV2Icons.payments, size: 20),
                 suffixText: translate('تومان', 'Toman'),
               ),
             ),
@@ -473,7 +473,7 @@ class _CreateJobForm extends StatelessWidget {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_duration_hours_f4ca1cf,
-                prefixIcon: HopeIcon(HopeV2Icons.pending, size: 20),
+                prefixIcon: const HopeIcon(HopeV2Icons.pending, size: 20),
               ),
             )
           else
@@ -484,7 +484,7 @@ class _CreateJobForm extends StatelessWidget {
                   initialValue: schedule,
                   decoration: InputDecoration(
                     labelText: HopeCopy.of(context).copy_schedule_3af1939,
-                    prefixIcon: HopeIcon(HopeV2Icons.pending, size: 20),
+                    prefixIcon: const HopeIcon(HopeV2Icons.pending, size: 20),
                   ),
                   items: [
                     DropdownMenuItem(
@@ -512,8 +512,8 @@ class _CreateJobForm extends StatelessWidget {
                     labelText:
                         HopeCopy.of(context).copy_application_deadline_782fb61,
                     hintText: 'YYYY-MM-DD',
-                    prefixIcon: HopeIcon(HopeV2Icons.activity, size: 20),
-                    suffixIcon: HopeIcon(HopeV2Icons.activity, size: 20),
+                    prefixIcon: const HopeIcon(HopeV2Icons.activity, size: 20),
+                    suffixIcon: const HopeIcon(HopeV2Icons.activity, size: 20),
                   ),
                 ),
               ],
@@ -548,13 +548,13 @@ class _CreateJobForm extends StatelessWidget {
               labelText: HopeCopy.of(context)
                   .copy_acceptance_selection_criteria_a061aef,
               alignLabelWithHint: true,
-              prefixIcon: HopeIcon(HopeV2Icons.completed, size: 20),
+              prefixIcon: const HopeIcon(HopeV2Icons.completed, size: 20),
             ),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: busy ? null : onSubmit,
-            icon: HugeIcon(icon: HopeV2Icons.featured, size: 20),
+            icon: const HugeIcon(icon: HopeV2Icons.featured, size: 20),
             label: busy
                 ? const SizedBox(
                     width: 22,

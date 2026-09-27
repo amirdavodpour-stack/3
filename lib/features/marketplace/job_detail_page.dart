@@ -127,7 +127,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 maxLines: 5,
                 decoration: InputDecoration(
                   labelText: HopeCopy.of(context).copy_resume_summary_a1cc787,
-                  prefixIcon: HopeIcon(HopeV2Icons.description, size: 20),
+                  prefixIcon: const HopeIcon(HopeV2Icons.description, size: 20),
                   alignLabelWithHint: true,
                 ),
               ),
@@ -136,7 +136,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 controller: skills,
                 decoration: InputDecoration(
                   labelText: HopeCopy.of(context).copy_skills_79566c4,
-                  prefixIcon: HopeIcon(HopeV2Icons.skills, size: 20),
+                  prefixIcon: const HopeIcon(HopeV2Icons.skills, size: 20),
                 ),
               ),
               const SizedBox(height: 16),
@@ -257,7 +257,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               ],
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_offer_price_d8fc5f4,
-                prefixIcon: HopeIcon(HopeV2Icons.payments, size: 20),
+                prefixIcon: const HopeIcon(HopeV2Icons.payments, size: 20),
                 suffixText: _t('تومان', 'Toman'),
                 helperText: _t(
                   'قیمت پیشنهادی را به تومان و به‌صورت عدد صحیح وارد کنید.',
@@ -272,7 +272,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_message_c821412,
                 alignLabelWithHint: true,
-                prefixIcon: HopeIcon(HopeV2Icons.message, size: 20),
+                prefixIcon: const HopeIcon(HopeV2Icons.message, size: 20),
               ),
             ),
             const SizedBox(height: 16),
@@ -768,7 +768,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          HugeIcon(icon: HopeV2Icons.secure, size: 20),
+                          const HugeIcon(icon: HopeV2Icons.secure, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -810,7 +810,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                HopeIcon(HopeV2Icons.pending, size: 20),
+                                const HopeIcon(HopeV2Icons.pending, size: 20),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
@@ -827,7 +827,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                     _candidatesFuture =
                                         _controller.candidatesFuture;
                                   }),
-                                  icon: HopeIcon(HopeV2Icons.refresh, size: 19),
+                                  icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                                 ),
                               ],
                             ),
@@ -869,7 +869,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                       onPressed: _candidateBusyId == null
                                           ? () => _compareCandidates(list)
                                           : null,
-                                      icon: HugeIcon(icon: HopeV2Icons.insights, size: 18),
+                                      icon: const HugeIcon(icon: HopeV2Icons.insights, size: 18),
                                       label: Text(_t('مقایسه', 'Compare')),
                                     ),
                                 ],
@@ -939,7 +939,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : HugeIcon(
+                                                    : const HugeIcon(
                                                         icon: HopeV2Icons.userAdd,
                                                         size: 18,
                                                       ),
@@ -966,7 +966,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : HugeIcon(
+                                                    : const HugeIcon(
                                                         icon: HopeV2Icons.payments,
                                                         size: 18,
                                                       ),
@@ -993,7 +993,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : HugeIcon(
+                                                    : const HugeIcon(
                                                         icon: HopeV2Icons.completed,
                                                         size: 18,
                                                       ),
@@ -1020,7 +1020,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       alignment: AlignmentDirectional.centerStart,
                       child: TextButton.icon(
                         onPressed: _reportJob,
-                        icon: HugeIcon(icon: HopeV2Icons.notifications, size: 18),
+                        icon: const HugeIcon(icon: HopeV2Icons.notifications, size: 18),
                         label: Text(_t('گزارش فرصت', 'Report opportunity')),
                       ),
                     ),
@@ -1033,7 +1033,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         children: [
                           Row(
                             children: [
-                              HugeIcon(icon: HopeV2Icons.wallet, size: 20),
+                              const HugeIcon(icon: HopeV2Icons.wallet, size: 20),
                               const SizedBox(width: 9),
                               Expanded(
                                 child: Text(
@@ -1065,7 +1065,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 jobId: j.id,
                               ),
                             ),
-                            icon: HopeIcon(HopeV2Icons.arrowRight, size: 19),
+                            icon: const HopeIcon(HopeV2Icons.arrowRight, size: 19),
                             label: Text(
                               HopeCopy.of(context)
                                   .copy_view_transaction_a91f1e6,
