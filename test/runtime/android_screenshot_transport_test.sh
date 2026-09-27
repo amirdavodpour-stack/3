@@ -13,6 +13,8 @@ grep -Fq "adb exec-out screencap -p" "$script_file"
 grep -Fq "capture_host_screenshot" "$script_file"
 grep -Fq "assert_hope_focused()" "$script_file"
 grep -Fq "assert_hope_rendered()" "$script_file"
+grep -Fq "FOCUS_CHECK_TIMEOUT_SECONDS=" "$script_file"
+grep -Fq "DRAW_CHECK_TIMEOUT_SECONDS=" "$script_file"
 grep -Fq "HOPE_ADB_SCREENSHOT_CAPTURE=true" "$script_file"
 grep -Fq "HOPE_RUNTIME_TEST_BODY_COMPLETE" "$test_file"
 
