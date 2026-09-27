@@ -74,7 +74,43 @@ if [ "$baseline_status" -eq 0 ]; then
   else
     run_en_host_session responsive       "responsive-720x1280-home-fa-rtl"       "responsive-720x1280-jobs-fa-rtl"       "responsive-720x1280-job-detail-fa-rtl"       "responsive-720x1280-transactions-fa-rtl"       "responsive-720x1280-wallet-fa-rtl"       "responsive-720x1280-profile-fa-rtl" || responsive_status=$?
   fi
-  responsive_screens=(
+  responsive_validate_capture_set() {
+  local set_name="$1"
+  local log_path="$2"
+  shift 2
+
+  local marker
+  local source
+  local screenshot_magic
+  local screenshot_hash
+  declare -A seen_screenshot_hashes=()
+
+  for marker in "$@"; do
+    source="$evidence_dir/$marker.png"
+    if ! test -s "$source"; then
+      echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:file-missing" >&2
+      return 1
+    fi
+
+    screenshot_magic="$(od -An -tx1 -N8 "$source" | tr -d '[:space:]')"
+    if [ "$screenshot_magic" != "89504e470d0a1a0a" ]; then
+      echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:invalid-png" >&2
+      return 1
+    fi
+
+    screenshot_hash="$(sha256sum "$source" | awk '{print $1}')"
+    if [ -n "${seen_screenshot_hashes[$screenshot_hash]+x}" ]; then
+      echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:duplicate-png-hash:$screenshot_hash:matches:${seen_screenshot_hashes[$screenshot_hash]}" >&2
+      return 1
+    fi
+    seen_screenshot_hashes[$screenshot_hash]="$marker"
+    echo "HOPE_HOST_SCREENSHOT_VALIDATED:$marker:$screenshot_hash"
+  done
+
+  return 0
+}
+
+screens=(
     "responsive-720x1280-home-fa-rtl"
     "responsive-720x1280-jobs-fa-rtl"
     "responsive-720x1280-job-detail-fa-rtl"
