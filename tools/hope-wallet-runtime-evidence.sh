@@ -46,7 +46,7 @@ test -s "$RUNTIME_APK"
 timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
   adb install -r "$RUNTIME_APK" >"${runner_temp}/hope-runtime-preinstall.log" 2>&1
 adb shell am force-stop com.hope.marketplace || true
-RUNTIME_CAPTURE_MARKER_FILE="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}/capture.marker"
+RUNTIME_CAPTURE_MARKER_FILE="files/hope-screen-sync/capture.marker"
 adb shell run-as com.hope.marketplace mkdir -p "files/hope-screen-sync-${GITHUB_RUN_ID}" >/dev/null
 adb shell run-as com.hope.marketplace rm -f "$RUNTIME_CAPTURE_MARKER_FILE" >/dev/null 2>&1 || true
 
@@ -259,7 +259,7 @@ fi
 capture_host_screenshot() {
   local marker="$1"
   local process_pid="$2"
-  local request="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.ready"
+  local request="files/hope-screen-sync/$marker.ready"
   local output="$evidence_dir/$marker.png"
   local deadline=$((SECONDS + 180))
 
@@ -344,9 +344,9 @@ run_en_host_session() {
   # path was not delivered to defaultRouteName on this driver path.
   # run-as starts in the app-private sandbox; use a sandbox-relative path
   # for the write because absolute /data/user/0 access is denied in this context.
-  local runtime_marker_relative="files/hope-screen-sync-${GITHUB_RUN_ID}/capture.marker"
+  local runtime_marker_relative="files/hope-screen-sync/capture.marker"
   timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-    adb shell run-as com.hope.marketplace sh -c "mkdir -p \"\$(dirname '$runtime_marker_relative')\" && printf '%s\\n' '$marker' > '$runtime_marker_relative'" >/dev/null
+    adb shell run-as com.hope.marketplace sh -c "mkdir -p 'files/hope-screen-sync' && printf '%s\\n' '$marker' > '$runtime_marker_relative' && test -s '$runtime_marker_relative'" >/dev/null
 
   rm -f "$log_path"
   : > "$log_path"
@@ -374,7 +374,7 @@ run_en_host_session() {
     }
   fi
 
-  local completion_request="files/hope-screen-sync-$GITHUB_RUN_ID/test-complete.ready"
+  local completion_request="files/hope-screen-sync/test-complete.ready"
   local completion_status=1
   local completion_deadline=$((SECONDS + 30))
   while (( SECONDS < completion_deadline )); do
