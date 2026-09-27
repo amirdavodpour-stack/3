@@ -222,50 +222,6 @@ elif [ "$CAPTURE_LOCALE" = "en" ]; then
   baseline_screens=("${screens[@]:15:15}")
 fi
 
-    if adb exec-out run-as com.hope.marketplace test -f "$request" >/dev/null 2>&1; then
-      echo "HOPE_HOST_CAPTURE_READY_PROBE:$marker"
-      if ! assert_hope_focused "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
-        return 1
-      fi
-      if ! assert_hope_rendered "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
-        return 1
-      fi
-
-      local temp_output="${output}.tmp"
-      local failure_output="${output}.raw-on-failure"
-      rm -f "$temp_output" "$failure_output"
-      local attempt
-      for attempt in 1 2 3 4 5; do
-        rm -f "$temp_output" "${output}.adb-error"
-        if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-          adb exec-out run-as com.hope.marketplace /system/bin/cat "$remote_png" > "$temp_output" 2>"${output}.adb-error" &&
-          test -s "$temp_output"; then
-          local byte_count
-          byte_count="$(wc -c < "$temp_output" | tr -d '[:space:]')"
-          local magic
-          magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
-          echo "HOPE_HOST_CAPTURE_DIAGNOSTIC:$marker:attempt=$attempt:bytes=$byte_count:magic=$magic"
-          if [ "$magic" = "89504e470d0a1a0a" ]; then
-            mv "$temp_output" "$output"
-            rm -f "${output}.adb-error" "$failure_output"
-            adb exec-out run-as com.hope.marketplace rm -f "$request" "$remote_png" >/dev/null 2>&1 || true
-            echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-            return 0
-          fi
-          cp -f "$temp_output" "$failure_output" 2>/dev/null || true
-          echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
-          return 1
-        fi
-        if [ "$attempt" -lt 5 ]; then
-          sleep 0.5
-        fi
-      done
-      cp -f "$temp_output" "$failure_output" 2>/dev/null || true
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:png-read" >&2
-      return 1
-    fi
 capture_host_screenshot() {
   local marker="$1"
   local process_pid="$2"
