@@ -217,8 +217,7 @@ class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   Future<List<HopeCategory>> listCategories() async => const [
         HopeCategory(
           id: 'cat-1',
-          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',          parentId: null,          sortOrder: 1,
-          isActive: true,
+          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',          parentId: null,          sortOrder: 1,          isActive: true,
         ),
       ];
 
@@ -437,8 +436,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'budgetType': 'FIXED',      'budgetMin': '1500000',
       'budgetMax': '2500000',      'duration': '8 روز',
       'acceptanceCriteria': 'تحویل نسخه نهایی و تست‌شده',      'status': 'PUBLISHED',
-      'ownerId': 'runtime-owner',
-      'providerId': null,
+      'ownerId': 'runtime-owner',      'providerId': null,
       'city': 'تهران',
       'kind': 'MISSION',
       'visibility': 'PUBLIC',
@@ -511,60 +509,17 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   return (auth: auth, settings: settings, registry: _registry());
 }
 
-class _RuntimeScreenSwitcher extends StatefulWidget {
-  const _RuntimeScreenSwitcher({
-    super.key,
-    required this.locale,
-    required this.screenKey,
-    required this.child,
-  });
-
-  final Locale locale;
-  final String screenKey;
-  final Widget child;
-
-  @override
-  State<_RuntimeScreenSwitcher> createState() => _RuntimeScreenSwitcherState();
-}
-
-class _RuntimeScreenSwitcherState extends State<_RuntimeScreenSwitcher> {
-  late Widget _child = widget.child;
-  late String _screenKey = widget.screenKey;
-
-  void show(String screenKey, Widget child) {
-    setState(() {
-      _child = child;
-      _screenKey = screenKey;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return KeyedSubtree(
-      key: ValueKey('runtime-screen-$_screenKey'),
-      child: Directionality(
-        textDirection: widget.locale.languageCode == 'en'
-            ? TextDirection.ltr
-            : TextDirection.rtl,
-        child: _child,
-      ),
-    );
-  }
-}
-
 class _EvidenceHost extends StatelessWidget {
   const _EvidenceHost({
     required this.runtime,
     required this.locale,
     required this.screenKey,
-    required this.switcherKey,
     required this.child,
   });
 
   final _Runtime runtime;
   final Locale locale;
   final String screenKey;
-  final GlobalKey<_RuntimeScreenSwitcherState> switcherKey;
   final Widget child;
 
   @override
@@ -603,10 +558,10 @@ class _EvidenceHost extends StatelessWidget {
         theme: AppTheme.dark(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.dark,
-        home: _RuntimeScreenSwitcher(
-          key: switcherKey,
-          locale: locale,
-          screenKey: screenKey,
+        home: Directionality(
+          textDirection: locale.languageCode == 'en'
+              ? TextDirection.ltr
+              : TextDirection.rtl,
           child: child,
         ),
       ),
@@ -657,8 +612,7 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
 }
 
 Future<void> _captureRuntimeScreenshot(String marker) async {
-  final binding = IntegrationTestWidgetsFlutterBinding.instance;
-  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+  final binding = IntegrationTestWidgetsFlutterBinding.instance;  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
   if (_adbScreenshotCapture) {
     if (_screenshotSyncRoot.isEmpty) {
       throw StateError('HOPE_SCREENSHOT_SYNC_ROOT is required for ADB capture.');
@@ -715,33 +669,24 @@ Future<void> _captureRuntimeScreen(
   required Locale locale,
   required String marker,
   required Widget child,
-  required GlobalKey<_RuntimeScreenSwitcherState> switcherKey,
-  required bool mountRoot,
 }) async {
-  if (mountRoot) {
-    await tester.pumpWidget(
-      _EvidenceHost(
-        runtime: runtime,
-        locale: locale,
-        screenKey: marker,
-        switcherKey: switcherKey,
-        child: child,
-      ),
-    );
-    await tester.pump();
-    await tester.binding.endOfFrame;
-    if (!_adbScreenshotCapture) {
-      await _prepareRuntimeScreenshotSurface(tester);
-    }
-  } else {
-    final switcher = switcherKey.currentState;
-    if (switcher == null) {
-      throw StateError('Runtime evidence screen switcher is not mounted.');
-    }
-    switcher.show(marker, child);
-    await tester.pump();
-    await tester.binding.endOfFrame;
-  }
+  // Fully tear down the previous MaterialApp before mounting the next screen.
+  // This avoids retained Navigator routes and forces the native surface to
+  // receive a new root scene for every evidence marker.
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pump();
+  await tester.binding.endOfFrame;
+
+  await tester.pumpWidget(
+    _EvidenceHost(
+      runtime: runtime,
+      locale: locale,
+      screenKey: marker,
+      child: child,
+    ),
+  );
+  await tester.pump();
+  await tester.binding.endOfFrame;
 
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.binding.endOfFrame;
@@ -752,7 +697,7 @@ Future<void> _captureRuntimeScreen(
   await tester.pump();
   await tester.binding.endOfFrame;
 
-  expect(find.byKey(ValueKey('runtime-screen-$marker')), findsOneWidget);
+  expect(find.byType(Directionality), findsWidgets);
   await _captureRuntimeScreenshot(marker);
 }
 Future<void> _captureBaselineLocale(
@@ -761,8 +706,6 @@ Future<void> _captureBaselineLocale(
   required String suffix,
   required _Runtime runtime,
 }) async {
-  final switcherKey = GlobalKey<_RuntimeScreenSwitcherState>();
-  var mountRoot = true;
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
@@ -793,10 +736,7 @@ Future<void> _captureBaselineLocale(
       locale: locale,
       marker: '${entry.key}-$suffix',
       child: entry.value(),
-      switcherKey: switcherKey,
-      mountRoot: mountRoot,
     );
-    mountRoot = false;
     print('HOPE_RUNTIME_PAGE_DONE:${entry.key}-$suffix');
   }
 }
@@ -806,8 +746,6 @@ Future<void> _captureResponsiveLocale(
   required String suffix,
   required _Runtime runtime,
 }) async {
-  final switcherKey = GlobalKey<_RuntimeScreenSwitcherState>();
-  var mountRoot = true;
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
@@ -825,10 +763,7 @@ Future<void> _captureResponsiveLocale(
       locale: locale,
       marker: 'responsive-720x1280-${entry.key}-$suffix',
       child: entry.value(),
-      switcherKey: switcherKey,
-      mountRoot: mountRoot,
     );
-    mountRoot = false;
     print('HOPE_RUNTIME_PAGE_DONE:responsive-${entry.key}-$suffix');
   }
 }
