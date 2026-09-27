@@ -655,6 +655,11 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
 
 Future<void> _captureRuntimeScreen(
   WidgetTester tester, {
+  required _Runtime runtime,
+  required Locale locale,
+  required String marker,
+  required Widget child,
+}) async {
   // Rebuild the complete host for every screen and explicitly settle the
   // rendered frame before asking integration_test for the device screenshot.
   await tester.pumpWidget(
