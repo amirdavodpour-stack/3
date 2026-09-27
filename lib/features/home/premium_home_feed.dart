@@ -163,22 +163,24 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _t(context, 'فضای کاری', 'Workspace'),
+                          _t(
+                            context,
+                            auth.isGuest ? 'فضای کاری' : 'عصر بخیر،',
+                            auth.isGuest ? 'Workspace' : 'Good evening,',
+                          ),
                           style: HopeV2Type.eyebrow(context).copyWith(
                             color: HopeV2Colors.secondaryDark,
                           ),
                         ),
                         const SizedBox(height: 5),
                         Text(
-                          _t(
-                            context,
-                            auth.isGuest
-                                ? 'فرصت‌های مناسب خود را پیدا کنید'
-                                : 'فرصت‌ها و کارهای شما',
-                            auth.isGuest
-                                ? 'Find opportunities that fit you'
-                                : 'Your opportunities and active work',
-                          ),
+                          auth.isGuest
+                              ? _t(
+                                  context,
+                                  'فرصت‌های مناسب خود را پیدا کنید',
+                                  'Find opportunities that fit you',
+                                )
+                              : '$displayName 👋',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
