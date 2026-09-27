@@ -143,7 +143,7 @@ run_en_host_session() {
     timeout --foreground --signal=TERM --kill-after=30s "${timeout_seconds}s" \
       env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" \
         HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
-        flutter drive --no-pub --no-dds \
+        flutter drive --no-pub --no-dds --no-enable-impeller \
         --driver=test_driver/hope_runtime_screenshot_driver.dart \
         --target=integration_test/runtime/critical_screens_evidence_test.dart \
         --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
