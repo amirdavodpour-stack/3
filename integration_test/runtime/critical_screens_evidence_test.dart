@@ -1,4 +1,5 @@
 // ignore_for_file: avoid_print
+// Runtime evidence capture is explicitly triggered with [runtime-capture].
 
 import 'dart:io';
 
