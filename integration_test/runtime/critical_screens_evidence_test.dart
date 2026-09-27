@@ -1,9 +1,7 @@
-import 'dart:ui';
 // ignore_for_file: avoid_print
 
 import 'dart:io';
 
-import 'package:integration_test/src/channel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -584,11 +582,6 @@ const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
-const _adbScreenshotCapture =
-    bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
-const _screenshotSyncRoot =
-    String.fromEnvironment('HOPE_SCREENSHOT_SYNC_ROOT', defaultValue: '');
-
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -630,69 +623,9 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
-Future<void> _captureRuntimeScreenshot(
-  WidgetTester tester,
-  String marker,
-) async {
+Future<void> _captureRuntimeScreenshot(String marker) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
-
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-
-  if (_adbScreenshotCapture) {
-    if (_screenshotSyncRoot.isEmpty) {
-      throw StateError(
-        'HOPE_SCREENSHOT_SYNC_ROOT is required for host synchronization.',
-      );
-    }
-    final directory = Directory(_screenshotSyncRoot);
-    await directory.create(recursive: true);
-
-    // Match integration_test's Android capture plumbing: the native side may
-    // send a scheduleFrame callback while producing the screenshot.
-    integrationTestChannel.setMethodCallHandler((call) async {
-      if (call.method == 'scheduleFrame') {
-        PlatformDispatcher.instance.scheduleFrame();
-      }
-      return null;
-    });
-
-    // Use integration_test's native Android capture directly, rather than
-    // relying on VM-service screenshot RPC or an external adb screencap.
-    // This returns the actual rendered Flutter PNG bytes while the Flutter
-    // surface is converted to the Android screenshot surface.
-    final rawBytes =
-        await integrationTestChannel.invokeMethod<List<int>>(
-      'captureScreenshot',
-      <String, dynamic>{'name': marker},
-    );
-    if (rawBytes == null || rawBytes.isEmpty) {
-      throw StateError('Android captureScreenshot returned no PNG bytes.');
-    }
-    final bytes = rawBytes.cast<int>();
-    final screenshot = File('$_screenshotSyncRoot/$marker.png');
-    await screenshot.writeAsBytes(bytes, flush: true);
-
-    // The capture bytes are now materialized. Restore the Flutter surface
-    // immediately so subsequent screens are not frozen on this ImageView.
-    await integrationTestChannel.invokeMethod<void>('revertFlutterImage');
-    await tester.pump();
-    await tester.binding.endOfFrame;
-
-    final request = File('$_screenshotSyncRoot/$marker.ready');
-    if (await request.exists()) {
-      await request.delete();
-    }
-    await request.writeAsString('ready', flush: true);
-    print('HOPE_SCREENSHOT_READY:$marker');
-    while (await request.exists()) {
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    }
-    try {
-      await screenshot.delete();
-    } catch (_) {}
-    return;
-  }
-
   await binding.takeScreenshot(marker);
   print('HOPE_SCREENSHOT_READY:$marker');
 }
@@ -740,54 +673,8 @@ Future<void> _captureRuntimeScreen(
   await tester.pump();
   await tester.binding.endOfFrame;
 
-  // Android's screenshot surface conversion creates the ImageView used by
-  // integration_test. After each capture, revert it so the next pump can
-  // render a fresh Flutter surface; otherwise ADB framebuffer screenshots
-  // can remain frozen on the first converted frame.
-  // In the native Android capture path, bypass the binding's private
-  // surface-state bookkeeping and invoke the same supported platform-channel
-  // methods directly. The binding API keeps an internal converted-state flag;
-  // our app-side immediate revert must not leave that flag stale for the
-  // next screen.
-  print('HOPE_CAPTURE_STAGE:$marker:before-surface-convert');
-  if (_adbScreenshotCapture) {
-    await integrationTestChannel.invokeMethod<void>(
-      'convertFlutterSurfaceToImage',
-    );
-  } else {
-    final binding = IntegrationTestWidgetsFlutterBinding.instance;
-    await binding.convertFlutterSurfaceToImage();
-  }
-  print('HOPE_CAPTURE_STAGE:$marker:surface-convert-done');
-  await tester.pump();
-  print('HOPE_CAPTURE_STAGE:$marker:first-pump-done');
-  await tester.binding.endOfFrame;
-  print('HOPE_CAPTURE_STAGE:$marker:first-frame-done');
-
-  await tester.pump(const Duration(milliseconds: 1200));
-  print('HOPE_CAPTURE_STAGE:$marker:settle-pump-done');
-  await tester.binding.endOfFrame;
-  print('HOPE_CAPTURE_STAGE:$marker:settle-frame-done');
-  await _waitForRuntimeRenderToSettle(tester);
-  print('HOPE_CAPTURE_STAGE:$marker:loading-settle-done');
-  await tester.pump();
-  await tester.binding.endOfFrame;
-  await Future<void>.delayed(const Duration(milliseconds: 250));
-  await tester.pump();
-  await tester.binding.endOfFrame;
-  print('HOPE_CAPTURE_STAGE:$marker:pre-capture-done');
-
-  await _captureRuntimeScreenshot(tester, marker);
+  await _captureRuntimeScreenshot(marker);;
 }
-Future<void> _signalRuntimeTestBodyComplete() async {
-  if (!_adbScreenshotCapture || _screenshotSyncRoot.isEmpty) {
-    return;
-  }
-  final marker = File('$_screenshotSyncRoot/test-complete.ready');
-  await marker.writeAsString('complete', flush: true);
-  print('HOPE_RUNTIME_TEST_BODY_COMPLETE');
-}
-
 Future<void> _captureBaselineLocale(
   WidgetTester tester, {
   required Locale locale,
@@ -868,7 +755,8 @@ void main() {
         child: const HomePage(),
       ),
     );
-      if (_responsiveOnly) {
+    await _prepareRuntimeScreenshotSurface(tester);
+    if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
           tester,
@@ -885,8 +773,6 @@ void main() {
           suffix: 'en-ltr',
         );
       }
-      await _signalRuntimeTestBodyComplete();
-      await Future<void>.delayed(const Duration(seconds: 1));
       return;
     }
 

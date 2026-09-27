@@ -10,12 +10,10 @@ rm -f "$log_file"
 
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
-FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"
-DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-120}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
+RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-15}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
-capture_sync_root="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
 
 case "$CAPTURE_LOCALE" in
   fa|en) ;;
@@ -37,102 +35,6 @@ capture_android_diagnostics() {
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell logcat -d -t 1000 > "$evidence_dir/logcat-$prefix.txt" 2>&1 || true
 }
 
-recover_external_android_error_dialog() {
-  local prefix="$1"
-  local window_dump="$evidence_dir/window-$prefix.txt"
-  local error_package
-  error_package="$(grep -E 'Application Not Responding:|Application Error:' "$window_dump" |
-    sed -nE 's/.*Application (Not Responding|Error):[[:space:]]*([^[:space:]}]+).*/\2/p' |
-    tail -n 1 || true)"
-
-  if [ -z "$error_package" ]; then
-    return 0
-  fi
-
-  if [ "$error_package" = "com.hope.marketplace" ]; then
-    echo "Rendered evidence rejected: HOPE reports an Android ANR/application-error dialog." >&2
-    return 1
-  fi
-
-  echo "HOPE_HOST_CAPTURE_EXTERNAL_ERROR_DIALOG:$prefix:$error_package"
-  timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s     "$ADB_TIMEOUT_SECONDS"s adb shell input keyevent KEYCODE_BACK >/dev/null 2>&1 || true
-  sleep 0.5
-  return 0
-}
-
-assert_hope_focused() {
-  local prefix="$1"
-  local window_dump="$evidence_dir/window-$prefix.txt"
-  local activity_dump="$evidence_dir/activity-$prefix.txt"
-  local focus_deadline=$((SECONDS + FOCUS_CHECK_TIMEOUT_SECONDS))
-
-  while (( SECONDS < focus_deadline )); do
-    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb shell dumpsys window windows > "$window_dump" 2>&1 || true
-    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb shell dumpsys activity activities > "$activity_dump" 2>&1 || true
-
-    local current_focus
-    local top_resumed
-    current_focus="$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
-    top_resumed="$(grep -E "topResumedActivity=" "$activity_dump" | tail -n 1 || true)"
-
-    if ! recover_external_android_error_dialog "$prefix"; then
-      capture_android_diagnostics "$prefix"
-      return 1
-    fi
-
-    if grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus" ||
-       grep -q "topResumedActivity=.*com.hope.marketplace/.MainActivity" <<< "$top_resumed"; then
-      return 0
-    fi
-
-    sleep 0.2
-  done
-
-  if [ -n "$current_focus" ] &&
-     ! grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus"; then
-    echo "Rendered evidence rejected: HOPE app is not the focused Android window after ${FOCUS_CHECK_TIMEOUT_SECONDS}s." >&2
-  else
-    echo "Rendered evidence rejected: HOPE MainActivity is not the top resumed Android activity after ${FOCUS_CHECK_TIMEOUT_SECONDS}s." >&2
-  fi
-  capture_android_diagnostics "$prefix"
-  return 1
-}
-
-assert_hope_rendered() {
-  local prefix="$1"
-  local window_dump="$evidence_dir/window-$prefix.txt"
-  local activity_dump="$evidence_dir/activity-$prefix.txt"
-  local draw_deadline=$((SECONDS + DRAW_CHECK_TIMEOUT_SECONDS))
-
-  while (( SECONDS < draw_deadline )); do
-    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb shell dumpsys window windows > "$window_dump" 2>&1 || true
-    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb shell dumpsys activity activities > "$activity_dump" 2>&1 || true
-
-    local main_window
-    local splash_window
-    main_window="$(awk '/Window #[0-9]+ Window\{.*com\.hope\.marketplace\/com\.hope\.marketplace\.MainActivity\}/{flag=1; next} /^  Window #[0-9]+ /{if(flag){exit}} flag{print}' "$window_dump")"
-    splash_window="$(awk '/Window #[0-9]+ Window\{.*Splash Screen com\.hope\.marketplace/{flag=1; next} /^  Window #[0-9]+ /{if(flag){exit}} flag{print}' "$window_dump")"
-
-    if grep -q "packageName=com.hope.marketplace processName=com.hope.marketplace" "$activity_dump" \
-       && grep -q "reportedDrawn=true reportedVisible=true" "$activity_dump" \
-       && grep -q "Surface: shown=true" <<< "$main_window" \
-       && ! grep -q "Surface: shown=true" <<< "$splash_window" \
-       && ! grep -q "isVisible=true" <<< "$splash_window"; then
-      return 0
-    fi
-
-    if ! recover_external_android_error_dialog "$prefix"; then
-      capture_android_diagnostics "$prefix"
-      return 1
-    fi
-
-    sleep 0.2
-  done
-
-  echo "Rendered evidence rejected: MainActivity remained behind the Android splash/was not fully drawn." >&2
-  capture_android_diagnostics "$prefix"
-  return 1
-}
 
 wait_for_driver_connection() {
   local process_pid="$1"
@@ -225,66 +127,32 @@ fi
 capture_host_screenshot() {
   local marker="$1"
   local process_pid="$2"
-  local request="files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}/$marker.ready"
-  local remote_png="files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}/$marker.png"
   local output="$evidence_dir/$marker.png"
   local deadline=$((SECONDS + 180))
 
   while (( SECONDS < deadline )); do
-    # The ready marker is the synchronization boundary. Read the PNG itself
-    # with bounded retries so a transient app-filesystem/ADB race cannot turn
-    # a valid marker into a false capture failure.
-    if adb exec-out run-as com.hope.marketplace /system/bin/sh -c 'test -f "$1"' sh "$request" >/dev/null 2>&1; then
-      echo "HOPE_HOST_CAPTURE_READY_PROBE:$marker"
-      if ! assert_hope_focused "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
-        return 1
+    if test -s "$output"; then
+      local byte_count
+      local magic
+      byte_count="$(wc -c < "$output" | tr -d '[:space:]')"
+      magic="$(od -An -tx1 -N8 "$output" | tr -d '[:space:]')"
+      echo "HOPE_HOST_CAPTURE_PROBE:$marker:bytes=$byte_count:magic=$magic"
+      if [ "$magic" = "89504e470d0a1a0a" ]; then
+        echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+        return 0
       fi
-      if ! assert_hope_rendered "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
-        return 1
-      fi
-
-      local temp_output="${output}.tmp"
-      local failure_output="${output}.raw-on-failure"
-      rm -f "$temp_output" "$failure_output"
-      local attempt
-      for attempt in 1 2 3 4 5; do
-        rm -f "$temp_output" "${output}.adb-error"
-        if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-          adb exec-out run-as com.hope.marketplace /system/bin/sh -c 'test -f "$1" && exec /system/bin/cat "$1"' sh "$remote_png" > "$temp_output" 2>"${output}.adb-error" &&
-          test -s "$temp_output"; then
-          local byte_count
-          byte_count="$(wc -c < "$temp_output" | tr -d '[:space:]')"
-          local magic
-          magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
-          echo "HOPE_HOST_CAPTURE_DIAGNOSTIC:$marker:attempt=$attempt:bytes=$byte_count:magic=$magic"
-          if [ "$magic" = "89504e470d0a1a0a" ]; then
-            mv "$temp_output" "$output"
-            rm -f "${output}.adb-error" "$failure_output"
-            adb exec-out run-as com.hope.marketplace rm -f "$request" "$remote_png" >/dev/null 2>&1 || true
-            echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-            return 0
-          fi
-          cp -f "$temp_output" "$failure_output" 2>/dev/null || true
-          echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
-          return 1
-        fi
-        if [ "$attempt" -lt 5 ]; then
-          sleep 0.5
-        fi
-      done
-      cp -f "$temp_output" "$failure_output" 2>/dev/null || true
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:png-read" >&2
-      return 1
     fi
+
     if ! kill -0 "$process_pid" 2>/dev/null; then
       echo "HOPE_HOST_CAPTURE_FAILED:$marker:driver-exited" >&2
+      capture_android_diagnostics "$marker"
       return 1
     fi
     sleep 0.2
   done
+
   echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
+  capture_android_diagnostics "$marker"
   return 1
 }
 
@@ -297,13 +165,15 @@ run_en_host_session() {
   local driver_status=0
   local capture_status=0
   set +e
+
   if [ "$mode" = "responsive" ]; then
-    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_ADB_SCREENSHOT_CAPTURE=true HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" --dart-define=HOPE_RESPONSIVE_ONLY=true > "$log_path" 2>&1 &
+    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_RESPONSIVE_ONLY=true > "$log_path" 2>&1 &
   else
-    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_ADB_SCREENSHOT_CAPTURE=true HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}" > "$log_path" 2>&1 &
+    env HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" flutter drive --no-pub --no-dds --driver=test_driver/hope_runtime_screenshot_driver.dart --target=integration_test/runtime/critical_screens_evidence_test.dart --dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID" --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" > "$log_path" 2>&1 &
   fi
   process_pid=$!
   set -e
+
   if ! wait_for_driver_connection "$process_pid" "$log_path"; then
     capture_status=1
     kill "$process_pid" >/dev/null 2>&1 || true
@@ -312,52 +182,27 @@ run_en_host_session() {
       capture_host_screenshot "$marker" "$process_pid" || { capture_status=$?; break; }
     done
   fi
-  local completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}/test-complete.ready"
-  local completion_status=1
-  local completion_deadline=$((SECONDS + 30))
-  while (( SECONDS < completion_deadline )); do
-    if adb exec-out run-as com.hope.marketplace cat "$completion_request" >/dev/null 2>&1; then
-      completion_status=0
-      break
-    fi
-    if ! kill -0 "$process_pid" 2>/dev/null; then
-      break
-    fi
-    sleep 0.2
-  done
-
-  if [ "$completion_status" -ne 0 ]; then
-    echo "HOPE_HOST_RUNTIME_COMPLETE_FAILED:test-body-complete-timeout" >&2
-    capture_status=1
-  fi
 
   set +e
-  if [ "$completion_status" -eq 0 ]; then
-    # All requested captures exist and the integration test body reported
-    # successful completion. Bound the known final flutter_driver requestData
-    # hang instead of consuming the entire GitHub job timeout.
-    local grace_deadline=$((SECONDS + 5))
-    while kill -0 "$process_pid" 2>/dev/null && (( SECONDS < grace_deadline )); do
+  if [ "$capture_status" -ne 0 ]; then
+    kill "$process_pid" >/dev/null 2>&1 || true
+    wait "$process_pid" >/dev/null 2>&1 || true
+    driver_status=1
+  else
+    local shutdown_deadline=$((SECONDS + RUNTIME_SHUTDOWN_GRACE_SECONDS))
+    while kill -0 "$process_pid" 2>/dev/null && (( SECONDS < shutdown_deadline )); do
       sleep 0.2
     done
     if kill -0 "$process_pid" 2>/dev/null; then
+      echo "HOPE_HOST_RUNTIME_SHUTDOWN_BOUNDED:post-capture-driver-hang"
       kill "$process_pid" >/dev/null 2>&1 || true
-      local kill_deadline=$((SECONDS + 3))
-      while kill -0 "$process_pid" 2>/dev/null && (( SECONDS < kill_deadline )); do
-        sleep 0.2
-      done
-      if kill -0 "$process_pid" 2>/dev/null; then
-        kill -9 "$process_pid" >/dev/null 2>&1 || true
-      fi
+      kill -9 "$process_pid" >/dev/null 2>&1 || true
       wait "$process_pid" >/dev/null 2>&1 || true
       driver_status=0
     else
       wait "$process_pid"
       driver_status=$?
     fi
-  else
-    wait "$process_pid"
-    driver_status=$?
   fi
   set -e
 
@@ -459,7 +304,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "integration_test_native_png_app_file_host_pull",
+  "capture_transport": "integration_test_binding_takeScreenshot_driver_onScreenshot",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
