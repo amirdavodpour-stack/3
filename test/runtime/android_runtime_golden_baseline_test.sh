@@ -25,7 +25,7 @@ require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftsh
 require_line "$runtime" 'adb exec-out screencap -p'
 require_line "$runtime" 'HOPE_ADB_SCREENSHOT_CAPTURE=true'
 require_line "$runtime" 'HOPE_SCREENSHOT_SYNC_ROOT='
-require_line "$test_file" 'bool.fromEnvironment('''HOPE_ADB_SCREENSHOT_CAPTURE''''
+require_line "$test_file" "bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false)"
 require_line "$test_file" 'adbScreenshotCapture'
 
 # The integration test may retain a fallback implementation, but the ADB-mode
