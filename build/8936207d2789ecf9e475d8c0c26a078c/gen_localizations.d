@@ -1,0 +1,1 @@
+ /home/runner/work/3/3/lib/l10n/generated/app_localizations_en.dart /home/runner/work/3/3/lib/l10n/generated/app_localizations_fa.dart /home/runner/work/3/3/lib/l10n/generated/app_localizations.dart:  /home/runner/work/3/3/l10n.yaml /home/runner/work/3/3/lib/l10n/app_en.arb /home/runner/work/3/3/lib/l10n/app_fa.arb

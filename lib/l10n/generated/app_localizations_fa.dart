@@ -15,7 +15,8 @@ class AppLocalizationsFa extends AppLocalizations {
   String get loginWelcomeBack => 'خوش برگشتی.';
 
   @override
-  String get loginWelcomeBackSubtitle => 'برای ورود، اطلاعات حساب را وارد کنید.';
+  String get loginWelcomeBackSubtitle =>
+      'برای ورود، اطلاعات حساب را وارد کنید.';
 
   @override
   String get emailLabel => 'ایمیل';
@@ -212,10 +213,10 @@ class AppLocalizationsFa extends AppLocalizations {
   String get copy_choose_79a9d79 => 'انتخاب';
 
   @override
-  String get copy_choose_a_category_b77d860 => 'دسته‌بندی را انتخاب کنیدید';
+  String get copy_choose_a_category_b77d860 => 'دسته‌بندی را انتخاب کنید';
 
   @override
-  String get copy_choose_a_city_a93b334 => 'شهر را انتخاب کنیدید';
+  String get copy_choose_a_city_a93b334 => 'شهر را انتخاب کنید';
 
   @override
   String get copy_choose_a_professional_category_b4cf5b8 =>
@@ -226,7 +227,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_choose_your_preferred_city_c19f66a =>
-      'شهر مورد نظر را انتخاب کنیدید';
+      'شهر مورد نظر را انتخاب کنید';
 
   @override
   String get copy_city_3d7dc3e => 'شهر';
@@ -245,7 +246,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_controls_that_make_hope_fit_you_better_ace4c0c =>
-      'چیزهایی که تجربه HOPE را برای تو دقیق‌تر می‌کنند.';
+      'تنظیمات حساب و برنامه';
 
   @override
   String get copy_could_not_load_activity_335b923 => 'دریافت فعالیت ناموفق بود';
@@ -350,7 +351,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_find_the_right_opportunity_or_create_one_c8a9e6f =>
-      'فرصت مناسب را پیدا کن یا فرصتت را بساز.';
+      'فرصت را جست‌وجو کنید یا فرصت جدید ثبت کنید.';
 
   @override
   String get copy_first_choose_what_kind_of_opportunity_you__f035ca9 =>
@@ -454,7 +455,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_keep_your_profile_opportunities_transactio_39f443d =>
-      'پروفایل، معاملات، فرصت‌های ثبت‌شده و ترجیحاتت یکجا قرار می‌گیرند.';
+      'پروفایل، فرصت‌ها، تراکنش‌ها و تنظیمات';
 
   @override
   String get copy_latest_activity_a05277b => 'آخرین فعالیت‌ها';
@@ -659,7 +660,8 @@ class AppLocalizationsFa extends AppLocalizations {
       'پیشنهادهای شخصی‌سازی‌شده';
 
   @override
-  String get copy_please_complete_all_fields_55c07bb => 'همه فیلدها را کامل کنید.';
+  String get copy_please_complete_all_fields_55c07bb =>
+      'همه فیلدها را کامل کنید.';
 
   @override
   String get copy_post_a_mission_or_job_364fb6f => 'ثبت ماموریت یا شغل';
@@ -941,8 +943,7 @@ class AppLocalizationsFa extends AppLocalizations {
       'وضعیت ارسال و قبول پیشنهادها را اینجا مشاهده کنید.';
 
   @override
-  String get copy_hope_work_grow_together_6a1d9f0 =>
-      'HOPE • فرصت‌ها • کار';
+  String get copy_hope_work_grow_together_6a1d9f0 => 'HOPE • فرصت‌ها • کار';
 
   @override
   String get copy_language_english_d9f5a4a => 'زبان: English';
@@ -972,4 +973,74 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_pick_file => 'انتخاب فایل';
+
+  @override
+  String get copy_find_the_right_opportunity => 'فرصت مناسب خود را پیدا کنید';
+
+  @override
+  String get copy_all_opportunities => 'همه فرصت‌ها';
+
+  @override
+  String get copy_save_search => 'ذخیره جست‌وجو';
+
+  @override
+  String get copy_saving => 'در حال ذخیره…';
+
+  @override
+  String get copy_saved_searches => 'ذخیره‌شده';
+
+  @override
+  String get copy_search_name => 'نام جست‌وجو';
+
+  @override
+  String get copy_could_not_save_search => 'ذخیره جست‌وجو ناموفق بود.';
+
+  @override
+  String get copy_could_not_delete_saved_search =>
+      'حذف جست‌وجوی ذخیره‌شده ناموفق بود.';
+
+  @override
+  String get copy_categories_load_failed => 'دریافت دسته‌بندی‌ها ناموفق بود.';
+
+  @override
+  String get copy_all_cities => 'همه شهرها';
+
+  @override
+  String get copy_toman => 'تومان';
+
+  @override
+  String get copy_match_signals => 'دلایل تطابق';
+
+  @override
+  String get copy_match_skill => 'مهارت مرتبط';
+
+  @override
+  String get copy_match_category => 'دسته‌بندی مرتبط';
+
+  @override
+  String get copy_match_very_near => 'خیلی نزدیک';
+
+  @override
+  String get copy_match_work_mode => 'نوع همکاری مناسب';
+
+  @override
+  String get copy_match_salary_fit => 'تناسب درآمد';
+
+  @override
+  String get copy_match_preference_fit => 'متناسب با ترجیحات';
+
+  @override
+  String get copy_match_general_fit => 'تناسب کلی';
+
+  @override
+  String get copy_view_and_act_on_mission => 'مشاهده و اقدام برای ماموریت';
+
+  @override
+  String get copy_view_details_and_act => 'مشاهده جزئیات و اقدام';
+
+  @override
+  String get copy_view_details => 'مشاهده جزئیات';
+
+  @override
+  String get copy_offers => 'پیشنهادها';
 }
