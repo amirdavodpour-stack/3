@@ -792,6 +792,7 @@ void main() {
           suffix: 'en-ltr',
         );
       }
+        await _signalRuntimeTestBodyComplete();
         await Future<void>.delayed(const Duration(seconds: 1));
       return;
     }
@@ -812,6 +813,7 @@ void main() {
         suffix: 'en-ltr',
       );
     }
+    await _signalRuntimeTestBodyComplete();
     await Future<void>.delayed(const Duration(seconds: 1));
   });
 }
