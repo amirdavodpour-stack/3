@@ -793,15 +793,30 @@ void main() {
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
+    if (_adbScreenshotCapture && _screenshotSyncRoot.isNotEmpty) {
+      final markerFile = File('$_screenshotSyncRoot/capture.marker');
+      if (!await markerFile.exists()) {
+        throw StateError('HOPE_CAPTURE_MARKER file is missing.');
+      }
+      _captureMarker = (await markerFile.readAsString()).trim();
+      if (_captureMarker.isEmpty) {
+        throw StateError('HOPE_CAPTURE_MARKER file is empty.');
+      }
+      _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
+      if (_captureMarker.endsWith('-en-ltr')) {
+        _captureLocale = 'en';
+      } else if (_captureMarker.endsWith('-fa-rtl')) {
+        _captureLocale = 'fa';
+      } else {
+        throw StateError('HOPE_CAPTURE_MARKER has no recognized locale suffix: $_captureMarker');
+      }
+    }
+
     final runtime = await _prepare();
 
     print('HOPE_RUNTIME_ROUTE:${route}');
     print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
     print('HOPE_RUNTIME_CAPTURE_MARKER:$_captureMarker');
-
-    if (_captureLocale.isEmpty) {
-      _captureLocale = Platform.environment['HOPE_CAPTURE_LOCALE'] ?? '';
-    }
     if (_captureResponsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
