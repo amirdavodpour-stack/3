@@ -231,10 +231,9 @@ capture_host_screenshot() {
   local deadline=$((SECONDS + 180))
 
   while (( SECONDS < deadline )); do
-    # Probe file existence with `test`, not `cat`. On the runner this
-    # distinguishes a missing marker from an actual successful command; a
-    # previous probe could incorrectly treat a `cat: ... No such file`
-    # message as readiness and then read the same error as the PNG payload.
+    # The ready marker is the synchronization boundary. Read the PNG itself
+    # with bounded retries so a transient app-filesystem/ADB race cannot turn
+    # a valid marker into a false capture failure.
     if adb exec-out run-as com.hope.marketplace test -f "$request" >/dev/null 2>&1; then
       echo "HOPE_HOST_CAPTURE_READY_PROBE:$marker"
       if ! assert_hope_focused "$marker"; then
@@ -246,14 +245,14 @@ capture_host_screenshot() {
         return 1
       fi
 
-      local temp_output="\${output}.tmp"
-      local failure_output="\${output}.raw-on-failure"
+      local temp_output="${output}.tmp"
+      local failure_output="${output}.raw-on-failure"
       rm -f "$temp_output" "$failure_output"
       local attempt
       for attempt in 1 2 3 4 5; do
-        rm -f "$temp_output" "\${output}.adb-error"
+        rm -f "$temp_output" "${output}.adb-error"
         if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-          adb exec-out run-as com.hope.marketplace /system/bin/cat "$remote_png" > "$temp_output" 2>"\${output}.adb-error" &&
+          adb exec-out run-as com.hope.marketplace /system/bin/cat "$remote_png" > "$temp_output" 2>"${output}.adb-error" &&
           test -s "$temp_output"; then
           local byte_count
           byte_count="$(wc -c < "$temp_output" | tr -d '[:space:]')"
@@ -262,7 +261,7 @@ capture_host_screenshot() {
           echo "HOPE_HOST_CAPTURE_DIAGNOSTIC:$marker:attempt=$attempt:bytes=$byte_count:magic=$magic"
           if [ "$magic" = "89504e470d0a1a0a" ]; then
             mv "$temp_output" "$output"
-            rm -f "\${output}.adb-error" "$failure_output"
+            rm -f "${output}.adb-error" "$failure_output"
             adb exec-out run-as com.hope.marketplace rm -f "$request" "$remote_png" >/dev/null 2>&1 || true
             echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
             return 0
