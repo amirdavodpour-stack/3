@@ -787,20 +787,21 @@ Future<void> _captureResponsiveLocale(
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final route = binding.platformDispatcher.defaultRouteName;
+  const captureMarkerDefine =
+      String.fromEnvironment('HOPE_CAPTURE_MARKER', defaultValue: '');
   _captureLocale = _runtimeRouteArgument(route, '/__hope_runtime_capture__/');
   _captureMarker = _runtimeRouteMarker(route);
   _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
-    if (_adbScreenshotCapture && _screenshotSyncRoot.isNotEmpty) {
-      final markerFile = File('$_screenshotSyncRoot/capture.marker');
-      if (!await markerFile.exists()) {
-        throw StateError('HOPE_CAPTURE_MARKER file is missing.');
-      }
-      _captureMarker = (await markerFile.readAsString()).trim();
+    // flutter drive does not reliably preserve the requested route as
+    // defaultRouteName on the target app. Use a compile-time dart-define as
+    // the deterministic per-session marker channel.
+    if (captureMarkerDefine.isNotEmpty) {
+      _captureMarker = captureMarkerDefine.trim();
       if (_captureMarker.isEmpty) {
-        throw StateError('HOPE_CAPTURE_MARKER file is empty.');
+        throw StateError('HOPE_CAPTURE_MARKER define is empty.');
       }
       _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
       if (_captureMarker.endsWith('-en-ltr')) {
@@ -808,7 +809,9 @@ void main() {
       } else if (_captureMarker.endsWith('-fa-rtl')) {
         _captureLocale = 'fa';
       } else {
-        throw StateError('HOPE_CAPTURE_MARKER has no recognized locale suffix: $_captureMarker');
+        throw StateError(
+          'HOPE_CAPTURE_MARKER define has no recognized locale suffix: $_captureMarker',
+        );
       }
     }
 
