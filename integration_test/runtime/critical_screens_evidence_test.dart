@@ -217,8 +217,7 @@ class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   Future<List<HopeCategory>> listCategories() async => const [
         HopeCategory(
           id: 'cat-1',
-          slug: 'software',          name: 'نرم‌افزار',
-          nameEn: 'Software',
+          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',
           description: 'Software work',
           parentId: null,
           sortOrder: 1,
@@ -437,8 +436,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'title': 'طراحی رابط موبایل حرفه‌ای',
       'description':
           'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',      'categoryId': 'cat-1',
-      'category': 'Software',
-      'jobType': 'FIXED',
+      'category': 'Software',      'jobType': 'FIXED',
       'budgetType': 'FIXED',
       'budgetMin': '1500000',
       'budgetMax': '2500000',
@@ -524,12 +522,14 @@ class _EvidenceHost extends StatelessWidget {
     required this.runtime,
     required this.locale,
     required this.screenKey,
+    required this.navigatorKey,
     required this.child,
   });
 
   final _Runtime runtime;
   final Locale locale;
   final String screenKey;
+  final GlobalKey<NavigatorState> navigatorKey;
   final Widget child;
 
   @override
@@ -556,6 +556,7 @@ class _EvidenceHost extends StatelessWidget {
       ],
       child: MaterialApp(
         key: ValueKey(screenKey),
+        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         locale: locale,
         supportedLocales: const [Locale('fa'), Locale('en')],
@@ -657,8 +658,7 @@ Future<void> _signalRuntimeTestBodyComplete() async {
   print('HOPE_RUNTIME_TEST_BODY_COMPLETE');
 }
 Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
-  for (var attempt = 0; attempt < 100; attempt++) {
-    final hasSpinner =
+  for (var attempt = 0; attempt < 100; attempt++) {    final hasSpinner =
         find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
     final hasSkeleton =
         find.byType(SkeletonBox).evaluate().isNotEmpty;
@@ -685,19 +685,45 @@ Future<void> _captureRuntimeScreen(
   required Locale locale,
   required String marker,
   required Widget child,
+  required GlobalKey<NavigatorState> navigatorKey,
+  required bool mountRoot,
 }) async {
-  // Rebuild the complete host for every screen and explicitly settle the
-  // rendered frame before asking integration_test for the device screenshot.
-  await tester.pumpWidget(
-    _EvidenceHost(
-      runtime: runtime,
-      locale: locale,
-      screenKey: marker,
-      child: child,
-    ),
-  );
-  await tester.pump();
-  await tester.binding.endOfFrame;
+  if (mountRoot) {
+    await tester.pumpWidget(
+      _EvidenceHost(
+        runtime: runtime,
+        locale: locale,
+        screenKey: marker,
+        navigatorKey: navigatorKey,
+        child: child,
+      ),
+    );
+    await tester.pump();
+    await tester.binding.endOfFrame;
+    if (!_adbScreenshotCapture) {
+      await _prepareRuntimeScreenshotSurface(tester);
+    }
+  } else {
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) {
+      throw StateError('Runtime evidence navigator is not mounted.');
+    }
+    await navigator.pushAndRemoveUntil(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, __, ___) => Directionality(
+          textDirection: locale.languageCode == 'en'
+              ? TextDirection.ltr
+              : TextDirection.rtl,
+          child: child,
+        ),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+      (_) => false,
+    );
+    await tester.pump();
+    await tester.binding.endOfFrame;
+  }
 
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.binding.endOfFrame;
@@ -710,13 +736,14 @@ Future<void> _captureRuntimeScreen(
 
   await _captureRuntimeScreenshot(marker);
 }
-
 Future<void> _captureBaselineLocale(
   WidgetTester tester, {
   required Locale locale,
   required String suffix,
   required _Runtime runtime,
 }) async {
+  final navigatorKey = GlobalKey<NavigatorState>();
+  var mountRoot = true;
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
@@ -747,17 +774,21 @@ Future<void> _captureBaselineLocale(
       locale: locale,
       marker: '${entry.key}-$suffix',
       child: entry.value(),
+      navigatorKey: navigatorKey,
+      mountRoot: mountRoot,
     );
+    mountRoot = false;
     print('HOPE_RUNTIME_PAGE_DONE:${entry.key}-$suffix');
   }
 }
-
 Future<void> _captureResponsiveLocale(
   WidgetTester tester, {
   required Locale locale,
   required String suffix,
   required _Runtime runtime,
 }) async {
+  final navigatorKey = GlobalKey<NavigatorState>();
+  var mountRoot = true;
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
@@ -775,7 +806,11 @@ Future<void> _captureResponsiveLocale(
       locale: locale,
       marker: 'responsive-720x1280-${entry.key}-$suffix',
       child: entry.value(),
+      navigatorKey: navigatorKey,
+      mountRoot: mountRoot,
     );
+    mountRoot = false;
+    print('HOPE_RUNTIME_PAGE_DONE:responsive-${entry.key}-$suffix');
   }
 }
 void main() {
@@ -783,19 +818,7 @@ void main() {
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
-    final runtime = await _prepare();
-    await tester.pumpWidget(
-      _EvidenceHost(
-        runtime: runtime,
-        locale: _captureLocale == 'en' ? const Locale('en') : const Locale('fa'),
-        screenKey: 'initial-home',
-        child: const HomePage(),
-      ),
-    );
-    if (!_adbScreenshotCapture) {
-      await _prepareRuntimeScreenshotSurface(tester);
-    }
-    if (_responsiveOnly) {
+    final runtime = await _prepare();    if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
           tester,
