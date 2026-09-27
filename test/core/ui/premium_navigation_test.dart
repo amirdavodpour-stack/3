@@ -78,7 +78,7 @@ void main() {
           )
           .first,
     );
-    expect(clip.borderRadius, BorderRadius.circular(HopeV2Radii.xl));
+    expect(clip.borderRadius, BorderRadius.circular(HopeV2Radii.lg));
   });
 
   testWidgets('highlighted premium panels expose a restrained gradient layer',
