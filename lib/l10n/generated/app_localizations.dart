@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// Subtitle shown under the login page headline.
   ///
   /// In fa, this message translates to:
-  /// **'برای ورود، اطلاعات حساب را وارد کنید.'**
+  /// **'به فضای کارت برگرد و ادامه بده.'**
   String get loginWelcomeBackSubtitle;
 
   /// Label for the email text field, reused across auth pages.
@@ -152,16 +152,12 @@ abstract class AppLocalizations {
   /// **'ورود به HOPE'**
   String get loginButton;
 
-  /// Button label for Google authentication on the login page.
-  ///
-  /// In fa, this message translates to:
-  /// **'ورود با Google'**
   String get signInWithGoogle;
 
   /// Button to skip login and browse as a guest.
   ///
   /// In fa, this message translates to:
-  /// **'ادامه به‌عنوان مهمان'**
+  /// **'فعلاً به‌عنوان مهمان ادامه بده'**
   String get continueAsGuest;
 
   /// Divider text between the login form and the sign-up link.
@@ -185,13 +181,13 @@ abstract class AppLocalizations {
   /// Validation message shown when the user submits the login form with an empty email or password.
   ///
   /// In fa, this message translates to:
-  /// **'ایمیل و رمز عبور را وارد کنید.'**
+  /// **'ایمیل و رمز عبور را وارد کن.'**
   String get emailPasswordRequired;
 
   /// Fallback error message shown when login fails without a more specific server-provided message.
   ///
   /// In fa, this message translates to:
-  /// **'ورود ناموفق بود. دوباره تلاش کنید.'**
+  /// **'ورود ناموفق بود. دوباره تلاش کن.'**
   String get loginFailedGeneric;
 
   /// UI copy migrated from manual bilingual text.
@@ -209,13 +205,13 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'پیدا کردن فرصت‌های کاری'**
+  /// **'مسیر بهتر برای پیدا کردن کار'**
   String get copy_a_better_path_to_finding_work_5802652;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'فرصت‌های کاری، ماموریت‌ها و شغل‌ها'**
+  /// **'اینجا قرار است پیدا کردن کار، واضح‌تر و انسانی‌تر باشد.'**
   String get copy_a_clearer_more_human_way_to_find_work_3553ab8;
 
   /// UI copy migrated from manual bilingual text.
@@ -233,7 +229,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'حساب و اطلاعات حرفه‌ای'**
+  /// **'یک خانه برای مسیر حرفه‌ای تو.'**
   String get copy_a_home_for_your_professional_path_52dbb09;
 
   /// UI copy migrated from manual bilingual text.
@@ -293,7 +289,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'رزومه متنی و مهارت‌های مرتبط را وارد کنید.'**
+  /// **'رزومه متنی و مهارت‌های مرتبط را وارد کن.'**
   String get copy_add_a_concise_resume_and_relevant_skills_298a4f1;
 
   /// UI copy migrated from manual bilingual text.
@@ -383,7 +379,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'رزومه و پیشنهاد خود را ارسال کنید.'**
+  /// **'با رزومه و پیشنهاد حرفه‌ای وارد شو.'**
   String get copy_apply_with_a_strong_professional_profile_13980b1;
 
   /// UI copy migrated from manual bilingual text.
@@ -443,7 +439,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'فیلترها را تغییر دهید یا شهر دیگری انتخاب کنید.'**
+  /// **'فیلترها را کمی بازتر کن یا شهر دیگری را امتحان کن.'**
   String get copy_broaden_your_filters_or_try_another_city_e8e32cb;
 
   /// UI copy migrated from manual bilingual text.
@@ -467,25 +463,25 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'انتخاب'**
+  /// **'انتخاب کن'**
   String get copy_choose_79a9d79;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'دسته‌بندی را انتخاب کنید'**
+  /// **'دسته‌بندی را انتخاب کن'**
   String get copy_choose_a_category_b77d860;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'شهر را انتخاب کنید'**
+  /// **'شهر را انتخاب کن'**
   String get copy_choose_a_city_a93b334;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'حوزه تخصصی را انتخاب کنید.'**
+  /// **'حوزه تخصصی را انتخاب کن.'**
   String get copy_choose_a_professional_category_b4cf5b8;
 
   /// UI copy migrated from manual bilingual text.
@@ -497,7 +493,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'شهر مورد نظر را انتخاب کنید'**
+  /// **'شهر مورد نظر را انتخاب کن'**
   String get copy_choose_your_preferred_city_c19f66a;
 
   /// UI copy migrated from manual bilingual text.
@@ -533,7 +529,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'تنظیمات حساب و برنامه'**
+  /// **'چیزهایی که تجربه HOPE را برای تو دقیق‌تر می‌کنند.'**
   String get copy_controls_that_make_hope_fit_you_better_ace4c0c;
 
   /// UI copy migrated from manual bilingual text.
@@ -557,7 +553,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'نام، ایمیل و رمز عبور خود را وارد کنید.'**
+  /// **'یک حساب HOPE بساز و قدم اول را بردار.'**
   String get copy_create_a_hope_account_and_take_the_first_s_9ccd119;
 
   /// UI copy migrated from manual bilingual text.
@@ -575,7 +571,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'برای ثبت فرصت یا ارسال درخواست، وارد حساب شوید.'**
+  /// **'حساب بساز تا پیشنهاد بدهی، فرصت ثبت کنی و تنظیمات شخصی داشته باشی.'**
   String get copy_create_an_account_to_apply_post_and_person_6fd6b91;
 
   /// UI copy migrated from manual bilingual text.
@@ -665,13 +661,13 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'ایمیل حساب را وارد کنید؛ راهنمای بازیابی برای شما ارسال می‌شود.'**
+  /// **'ایمیل حساب را وارد کن؛ راهنمای بازیابی برایت ارسال می‌شود.'**
   String get copy_enter_your_account_email_and_we_will_start_16caa6e;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'ایمیل را وارد کنید.'**
+  /// **'ایمیل را وارد کن.'**
   String get copy_enter_your_email_2562106;
 
   /// UI copy migrated from manual bilingual text.
@@ -683,7 +679,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'یافتن'**
+  /// **'پیدا کن'**
   String get copy_explore_837e4eb;
 
   /// UI copy migrated from manual bilingual text.
@@ -707,7 +703,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'بر اساس شهر، حوزه و نوع فرصت فیلتر کنید.'**
+  /// **'شهر، حوزه و نوع فرصت را فیلتر کن.'**
   String get copy_filter_by_city_field_and_opportunity_type_1d75340;
 
   /// UI copy migrated from manual bilingual text.
@@ -725,13 +721,13 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'فرصت را جست‌وجو کنید یا فرصت جدید ثبت کنید.'**
+  /// **'فرصت مناسب را پیدا کن یا فرصتت را بساز.'**
   String get copy_find_the_right_opportunity_or_create_one_c8a9e6f;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'نوع فرصت را انتخاب کنید.'**
+  /// **'اول مشخص کن دنبال چه نوع همکاری هستی.'**
   String get copy_first_choose_what_kind_of_opportunity_you__f035ca9;
 
   /// UI copy migrated from manual bilingual text.
@@ -761,7 +757,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'برای حفظ امنیت، حتی در صورت نبودن حساب هم پاسخ مشابهی دریافت می‌کنید.'**
+  /// **'برای حفظ امنیت، حتی در صورت نبودن حساب هم پاسخ مشابهی دریافت می‌کنی.'**
   String get copy_for_security_the_response_is_intentionally_6574fa6;
 
   /// UI copy migrated from manual bilingual text.
@@ -917,7 +913,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'پروفایل، فرصت‌ها، تراکنش‌ها و تنظیمات'**
+  /// **'پروفایل، معاملات، فرصت‌های ثبت‌شده و ترجیحاتت یکجا قرار می‌گیرند.'**
   String get copy_keep_your_profile_opportunities_transactio_39f443d;
 
   /// UI copy migrated from manual bilingual text.
@@ -935,7 +931,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'اعلان‌ها را در زمان استراحت محدود کنید.'**
+  /// **'اعلان‌ها را در زمان استراحت محدود کن'**
   String get copy_limit_notifications_during_rest_b5e0db3;
 
   /// UI copy migrated from manual bilingual text.
@@ -953,13 +949,13 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'دسترسی مکان فعال نشد؛ می‌توانید شهر را دستی انتخاب کنید.'**
+  /// **'دسترسی مکان فعال نشد؛ می‌توانی شهر را دستی انتخاب کنی.'**
   String get copy_location_permission_was_not_enabled_you_ca_ba53b81;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'موقعیت مکانی روشن است؛ می‌توانید شهر را از تنظیمات تغییر دهید.'**
+  /// **'موقعیت مکانی روشن است؛ می‌توانی شهر را از تنظیمات عوض کنی.'**
   String get copy_location_personalization_is_on_you_can_cha_8dd12f4;
 
   /// UI copy migrated from manual bilingual text.
@@ -1049,7 +1045,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'کارها را از یک داشبورد مدیریت کنید.'**
+  /// **'همه‌چیز را یکجا ببین و مدیریت کن.'**
   String get copy_monitor_and_manage_hope_in_one_place_bea3b7d;
 
   /// UI copy migrated from manual bilingual text.
@@ -1301,7 +1297,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'همه فیلدها را کامل کنید.'**
+  /// **'همه فیلدها را پر کن.'**
   String get copy_please_complete_all_fields_55c07bb;
 
   /// UI copy migrated from manual bilingual text.
@@ -1403,7 +1399,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'پیشنهادها'**
+  /// **'پیشنهاد متناسب با تو'**
   String get copy_recommended_for_you_e56d06b;
 
   /// UI copy migrated from manual bilingual text.
@@ -1457,7 +1453,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'کاربران، فرصت‌ها، درخواست‌ها و رویدادهای حساس را بررسی کنید.'**
+  /// **'کاربران، فرصت‌ها، درخواست‌ها و رویدادهای حساس را از یک داشبورد بررسی کن.'**
   String get copy_review_users_opportunities_applications_an_e30b9d2;
 
   /// UI copy migrated from manual bilingual text.
@@ -1475,13 +1471,13 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'جست‌وجو...'**
+  /// **'جست‌وجو کن...'**
   String get copy_search_dd58413;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'ماموریت و شغل را کنار هم ببینید؛ سپس دقیق‌تر فیلتر کنید.'**
+  /// **'ماموریت و شغل را کنار هم ببین؛ بعد دقیق‌تر فیلتر کن.'**
   String get copy_see_missions_and_jobs_together_then_narrow_7e573a3;
 
   /// UI copy migrated from manual bilingual text.
@@ -1511,13 +1507,13 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'قیمت و مدت انجام کار را مشخص کنید.'**
+  /// **'یک قیمت مشخص و مدت انجام کار تعیین کن.'**
   String get copy_set_a_defined_price_and_delivery_time_1e53f1a;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'مهلت دریافت درخواست را مشخص کنید.'**
+  /// **'برای شغل، مهلت دریافت درخواست را مشخص کن.'**
   String get copy_set_an_application_deadline_for_jobs_5fd80f8;
 
   /// UI copy migrated from manual bilingual text.
@@ -1559,7 +1555,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'ساخت حساب کاربری'**
+  /// **'شروع یک همکاری خوب.'**
   String get copy_start_a_good_collaboration_9df52cf;
 
   /// UI copy migrated from manual bilingual text.
@@ -1571,7 +1567,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'شهر را انتخاب کنید یا شهر دیگری را بررسی کنید.'**
+  /// **'کاوش را با شهر خودت شروع کن یا هر شهر دیگری را انتخاب کن.'**
   String get copy_start_with_your_city_or_explore_any_other__05a1e84;
 
   /// UI copy migrated from manual bilingual text.
@@ -1619,7 +1615,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'برای خواندن باز کنید'**
+  /// **'برای خواندن باز کن'**
   String get copy_tap_to_mark_as_read_5c9917a;
 
   /// UI copy migrated from manual bilingual text.
@@ -1643,7 +1639,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'داده‌ای از سرور دریافت نشد. دوباره تلاش کنید.'**
+  /// **'فعلاً داده‌ها از سرور دریافت نشد. دوباره امتحان کن.'**
   String get copy_the_server_did_not_return_data_try_again_bccfbb3;
 
   /// UI copy migrated from manual bilingual text.
@@ -1715,7 +1711,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'{value} تومان'**
+  /// **'\${value} تومان'**
   String copy_value_irr_ed45261(Object value);
 
   /// UI copy migrated from manual bilingual text.
@@ -1787,7 +1783,7 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'اطلاعات حساب شما به‌صورت امن نگهداری می‌شود.'**
+  /// **'با ساخت حساب، اطلاعات تو در فضای امن HOPE نگهداری می‌شود.'**
   String get copy_your_account_data_is_kept_securely_by_hope_b91dd1f;
 
   /// UI copy migrated from manual bilingual text.
@@ -1811,19 +1807,19 @@ abstract class AppLocalizations {
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'اطلاعات حرفه‌ای'**
+  /// **'مسیر حرفه‌ای تو'**
   String get copy_your_professional_path_2da0026;
 
   /// UI copy migrated from manual bilingual text.
   ///
   /// In fa, this message translates to:
-  /// **'وضعیت ارسال و قبول پیشنهادها را اینجا مشاهده کنید.'**
+  /// **'با ارسال یا قبول پیشنهاد، جریان کار تو اینجا دیده می‌شود.'**
   String get copy_your_projects_applications_and_payments_wi_bec5340;
 
   /// Migrated language selector/brand copy.
   ///
   /// In fa, this message translates to:
-  /// **'HOPE • فرصت‌ها • کار'**
+  /// **'HOPE • کار • رشد • همراهی'**
   String get copy_hope_work_grow_together_6a1d9f0;
 
   /// Migrated language selector/brand copy.
@@ -1841,7 +1837,7 @@ abstract class AppLocalizations {
   /// Final direct UI string migration.
   ///
   /// In fa, this message translates to:
-  /// **'ثبت‌نام انجام نشد. دوباره تلاش کنید.'**
+  /// **'ثبت‌نام انجام نشد. دوباره تلاش کن.'**
   String get copy_registration_failed_please_try_again_bbb72e2;
 
   /// Final direct UI string migration.
@@ -1879,144 +1875,6 @@ abstract class AppLocalizations {
   /// In fa, this message translates to:
   /// **'انتخاب فایل'**
   String get copy_pick_file;
-
-  /// عنوان بخش جست‌وجوی فرصت‌ها در بازار کار.
-  ///
-  /// In fa, this message translates to:
-  /// **'فرصت مناسب خود را پیدا کنید'**
-  String get copy_find_the_right_opportunity;
-
-  /// نام پیش‌فرض جست‌وجوی ذخیره‌شده وقتی فیلتری فعال نیست.
-  ///
-  /// In fa, this message translates to:
-  /// **'همه فرصت‌ها'**
-  String get copy_all_opportunities;
-
-  /// عملیات ذخیره جست‌وجوی فعلی بازار کار.
-  ///
-  /// In fa, this message translates to:
-  /// **'ذخیره جست‌وجو'**
-  String get copy_save_search;
-
-  /// برچسب هنگام ذخیره جست‌وجوی بازار کار.
-  ///
-  /// In fa, this message translates to:
-  /// **'در حال ذخیره…'**
-  String get copy_saving;
-
-  /// برچسب فهرست جست‌وجوهای ذخیره‌شده.
-  ///
-  /// In fa, this message translates to:
-  /// **'ذخیره‌شده'**
-  String get copy_saved_searches;
-
-  /// راهنمای نام‌گذاری جست‌وجوی ذخیره‌شده.
-  ///
-  /// In fa, this message translates to:
-  /// **'نام جست‌وجو'**
-  String get copy_search_name;
-
-  /// خطای قابل‌بازیابی هنگام ذخیره جست‌وجوی بازار کار.
-  ///
-  /// In fa, this message translates to:
-  /// **'ذخیره جست‌وجو ناموفق بود.'**
-  String get copy_could_not_save_search;
-
-  /// خطای قابل‌بازیابی هنگام حذف جست‌وجوی ذخیره‌شده.
-  ///
-  /// In fa, this message translates to:
-  /// **'حذف جست‌وجوی ذخیره‌شده ناموفق بود.'**
-  String get copy_could_not_delete_saved_search;
-
-  /// خطای قابل‌بازیابی هنگام دریافت دسته‌بندی‌های فیلتر بازار کار.
-  ///
-  /// In fa, this message translates to:
-  /// **'دریافت دسته‌بندی‌ها ناموفق بود.'**
-  String get copy_categories_load_failed;
-
-  /// برچسب گزینه بدون محدودیت شهر در فیلتر بازار کار.
-  ///
-  /// In fa, this message translates to:
-  /// **'همه شهرها'**
-  String get copy_all_cities;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'تومان'**
-  String get copy_toman;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'دلایل تطابق'**
-  String get copy_match_signals;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'مهارت مرتبط'**
-  String get copy_match_skill;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'دسته‌بندی مرتبط'**
-  String get copy_match_category;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'خیلی نزدیک'**
-  String get copy_match_very_near;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'نوع همکاری مناسب'**
-  String get copy_match_work_mode;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'تناسب درآمد'**
-  String get copy_match_salary_fit;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'متناسب با ترجیحات'**
-  String get copy_match_preference_fit;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'تناسب کلی'**
-  String get copy_match_general_fit;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'مشاهده و اقدام برای ماموریت'**
-  String get copy_view_and_act_on_mission;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'مشاهده جزئیات و اقدام'**
-  String get copy_view_details_and_act;
-
-  /// Canonical OpportunityCard localization.
-  ///
-  /// In fa, this message translates to:
-  /// **'مشاهده جزئیات'**
-  String get copy_view_details;
-
-  /// Activity navigation destination for offers.
-  ///
-  /// In fa, this message translates to:
-  /// **'پیشنهادها'**
-  String get copy_offers;
 }
 
 class _AppLocalizationsDelegate
