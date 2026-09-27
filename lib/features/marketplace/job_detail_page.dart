@@ -540,8 +540,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
         currentUserId != null && currentUserId == j.providerId?.toString();
     final canViewFinance = isOwner || isProvider;
 
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: dark ? Colors.white : Theme.of(context).colorScheme.onSurface,
         title: Text(
           isJob
               ? HopeCopy.of(context).copy_job_details_e815855
