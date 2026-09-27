@@ -108,6 +108,9 @@ Do not redesign a screen merely to make it different from a sibling. Improve the
 Navigation and recurring product icons use a restrained, product-specific vocabulary: dashboard-customize for Home, hub for Workshop, timeline for Activity, wallet for finance, and manage-account for identity; opportunity, matching, protected-funds, payment, and lifecycle states use a dedicated HOPE icon vocabulary rather than ad-hoc Material defaults;
 
 
+## Runtime calibration checkpoint — 2026-09-27
+The current feature implementation has been recalibrated to the supplied HOPE Futuristic Work Platform UI Showcase: indigo primary, cool dark surfaces, tighter shared geometry, and stronger identity/featured-opportunity hierarchy. The next gate is rendered Android evidence at this exact feature HEAD; visual acceptance remains closed until actual PNG pixels are inspected.
+
 ## Reference synthesis — 2026-09-24
 The premium reconstruction borrows principles, not assets or copied screens:
 - Nuri / Vivid-style visual language: lavender-led atmospheric canvas, compact hierarchy, restrained gradients.
