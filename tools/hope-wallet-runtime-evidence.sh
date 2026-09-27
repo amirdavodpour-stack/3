@@ -20,9 +20,9 @@ SCREENSHOT_PRESENT_DELAY_SECONDS="${HOPE_SCREENSHOT_PRESENT_DELAY_SECONDS:-1}"
 SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS="${HOPE_SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS:-15}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"
 DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-120}"
-DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"
-RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
-RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-15}"
+DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-120}"
+RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"
+RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 
 case "$CAPTURE_LOCALE" in
@@ -40,6 +40,15 @@ flutter build apk --debug --no-pub \
   --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true \
   --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync"
 test -s "$RUNTIME_APK"
+
+# Keep the APK installed once so each fresh Flutter Drive session can read a
+# per-session marker from app-private storage before the Dart test starts.
+timeout --foreground --signal=TERM --kill-after="\${ADB_KILL_AFTER_SECONDS}s" "\${ADB_TIMEOUT_SECONDS}s" \
+  adb install -r "$RUNTIME_APK" >"\${runner_temp}/hope-runtime-preinstall.log" 2>&1
+adb shell am force-stop com.hope.marketplace || true
+RUNTIME_CAPTURE_MARKER_FILE="files/hope-screen-sync-\${GITHUB_RUN_ID}/capture.marker"
+adb shell run-as com.hope.marketplace mkdir -p "files/hope-screen-sync-\${GITHUB_RUN_ID}" >/dev/null
+adb shell run-as com.hope.marketplace rm -f "$RUNTIME_CAPTURE_MARKER_FILE" >/dev/null 2>&1 || true
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -325,13 +334,21 @@ capture_host_screenshot() {
 run_en_host_session() {
   local mode="$1"
   local marker="$2"
-  local log_path="$log_file"
-  [ "$mode" = "responsive" ] && log_path="$runner_temp/hope-responsive-runtime.log"
+  local log_path="$runner_temp/hope-$marker-runtime.log"
   local process_pid
+  local tail_pid
   local driver_status=0
   local capture_status=0
-  set +e
 
+  # Seed the exact marker before Flutter launches the app. The Android route
+  # path was not delivered to defaultRouteName on this driver path.
+  timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+    adb shell run-as com.hope.marketplace sh -c "printf '%s\\n' '$marker' > '$RUNTIME_CAPTURE_MARKER_FILE'" >/dev/null
+
+  rm -f "$log_path"
+  : > "$log_path"
+
+  set +e
   flutter drive --no-pub --no-dds \
     --use-application-binary="$RUNTIME_APK" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
@@ -339,10 +356,13 @@ run_en_host_session() {
     --route="/__hope_runtime_capture__/$CAPTURE_LOCALE/$marker" \
     >"$log_path" 2>&1 &
   process_pid=$!
-
+  tail -n +1 -f "$log_path" &
+  tail_pid=$!
   set -e
+
   if ! wait_for_driver_connection "$process_pid" "$log_path"; then
     capture_status=1
+    echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-connect:$marker" >&2
     kill "$process_pid" >/dev/null 2>&1 || true
   else
     capture_host_screenshot "$marker" "$process_pid" || {
@@ -351,11 +371,11 @@ run_en_host_session() {
     }
   fi
 
-  local completion_request="files/hope-screen-sync-${GITHUB_RUN_ID}/test-complete.ready"
+  local completion_request="files/hope-screen-sync-$GITHUB_RUN_ID/test-complete.ready"
   local completion_status=1
   local completion_deadline=$((SECONDS + 30))
   while (( SECONDS < completion_deadline )); do
-    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb exec-out run-as com.hope.marketplace cat "$completion_request" >/dev/null 2>&1; then
+    if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb exec-out run-as com.hope.marketplace cat "$completion_request" >/dev/null 2>&1; then
       completion_status=0
       break
     fi
@@ -364,22 +384,40 @@ run_en_host_session() {
   done
 
   if [ "$completion_status" -ne 0 ]; then
-    echo "HOPE_HOST_RUNTIME_COMPLETE_FAILED:test-body-complete-timeout" >&2
+    echo "HOPE_HOST_RUNTIME_COMPLETE_FAILED:test-body-complete-timeout:$marker" >&2
     capture_status=1
   fi
 
-  set +e
-  wait "$process_pid"
-  driver_status=$?
-  set -e
+  local shutdown_deadline=$((SECONDS + RUNTIME_TEST_TIMEOUT_SECONDS))
+  while kill -0 "$process_pid" 2>/dev/null; do
+    if (( SECONDS >= shutdown_deadline )); then
+      echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-shutdown:$marker" >&2
+      kill "$process_pid" >/dev/null 2>&1 || true
+      sleep 1
+      kill -KILL "$process_pid" >/dev/null 2>&1 || true
+      driver_status=124
+      break
+    fi
+    sleep 0.2
+  done
+
+  if [ "$driver_status" -eq 0 ]; then
+    set +e
+    wait "$process_pid"
+    driver_status=$?
+    set -e
+  fi
+
+  kill "$tail_pid" >/dev/null 2>&1 || true
+  wait "$tail_pid" >/dev/null 2>&1 || true
+
   if [ "$driver_status" -ne 0 ]; then
-    echo "HOPE_HOST_RUNTIME_DRIVER_FAILED:exit=$driver_status" >&2
-    capture_android_diagnostics "${mode}-${marker}"
+    echo "HOPE_HOST_RUNTIME_DRIVER_FAILED:exit=$driver_status:marker=$marker" >&2
+    capture_android_diagnostics "$mode-$marker"
     return "$driver_status"
   fi
   return "$capture_status"
 }
-
 baseline_status=0
 for marker in "${baseline_screens[@]}"; do
   run_en_host_session baseline "$marker" || baseline_status=$?
