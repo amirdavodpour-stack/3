@@ -581,6 +581,18 @@ String _runtimeRouteMarker(String route) {
   final parts = route.substring(prefix.length).split('/');
   return parts.length >= 2 ? parts[1] : '';
 }
+
+Future<String> _readRuntimeCaptureMarkerFromPrivateFile() async {
+  if (!_adbScreenshotCapture || _screenshotSyncRoot.isEmpty) {
+    return '';
+  }
+  final file = File('$_screenshotSyncRoot/capture.marker');
+  if (!await file.exists()) {
+    return '';
+  }
+  return (await file.readAsString()).trim();
+}
+
 String _captureMarker = '';
 const _adbScreenshotCapture =
     bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
@@ -790,9 +802,32 @@ void main() {
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
     final runtime = await _prepare();
+
+    // The Android driver path does not reliably propagate --route into
+    // defaultRouteName. The host therefore seeds a marker in app-private
+    // storage before launching this isolated session.
+    final privateMarker = await _readRuntimeCaptureMarkerFromPrivateFile();
+    if (privateMarker.isNotEmpty) {
+      _captureMarker = privateMarker;
+    }
+    if (_captureMarker.isNotEmpty) {
+      _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
+      if (_captureMarker.contains('-fa-rtl')) {
+        _captureLocale = 'fa';
+      } else if (_captureMarker.contains('-en-ltr')) {
+        _captureLocale = 'en';
+      }
+    }
     if (_captureLocale.isEmpty) {
       _captureLocale = Platform.environment['HOPE_CAPTURE_LOCALE'] ?? '';
-    }    if (_captureResponsiveOnly) {
+    }
+    if (_adbScreenshotCapture && _captureMarker.isEmpty) {
+      throw StateError(
+        'HOPE_CAPTURE_MARKER is required for isolated Android runtime capture.',
+      );
+    }
+
+    if (_captureResponsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
           tester,
