@@ -8,6 +8,11 @@ mkdir -p "$evidence_dir"
 rm -f "$log_file"
 : > "$log_file"
 
+RUNTIME_SERIAL="${ANDROID_SERIAL:-emulator-5554}"
+export ANDROID_SERIAL="$RUNTIME_SERIAL"
+source "${GITHUB_WORKSPACE:-$PWD}/tools/android-runtime-device-recovery.sh"
+hope_android_device_ready "$RUNTIME_SERIAL"
+
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-900}"
@@ -29,6 +34,7 @@ adb shell settings get secure enabled_accessibility_services > "$evidence_dir/ac
 capture_android_diagnostics() {
   local prefix="$1"
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb devices -l > "$evidence_dir/adb-devices-$prefix.txt" 2>&1 || true
+  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb server-status > "$evidence_dir/adb-server-status-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell pidof com.hope.marketplace > "$evidence_dir/app-pid-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell dumpsys activity activities > "$evidence_dir/activity-$prefix.txt" 2>&1 || true
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" adb shell dumpsys window windows > "$evidence_dir/window-$prefix.txt" 2>&1 || true
