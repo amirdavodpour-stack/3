@@ -42,6 +42,103 @@ capture_android_diagnostics() {
 }
 
 
+recover_external_android_error_dialog() {
+  local prefix="$1"
+  local window_dump="$evidence_dir/window-$prefix.txt"
+  local error_package
+  error_package="$(grep -E 'Application Not Responding:|Application Error:' "$window_dump" |
+    sed -nE 's/.*Application (Not Responding|Error):[[:space:]]*([^[:space:]}]+).*/\2/p' |
+    tail -n 1 || true)"
+
+  if [ -z "$error_package" ]; then
+    return 0
+  fi
+
+  if [ "$error_package" = "com.hope.marketplace" ]; then
+    echo "Rendered evidence rejected: HOPE reports an Android ANR/application-error dialog." >&2
+    return 1
+  fi
+
+  echo "HOPE_HOST_CAPTURE_EXTERNAL_ERROR_DIALOG:$prefix:$error_package"
+  timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s \
+    "$ADB_TIMEOUT_SECONDS"s adb shell input keyevent KEYCODE_BACK >/dev/null 2>&1 || true
+  sleep 0.5
+  return 0
+}
+
+assert_hope_focused() {
+  local prefix="$1"
+  local window_dump="$evidence_dir/window-$prefix.txt"
+  local activity_dump="$evidence_dir/activity-$prefix.txt"
+  local focus_deadline=$((SECONDS + FOCUS_CHECK_TIMEOUT_SECONDS))
+
+  while (( SECONDS < focus_deadline )); do
+    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+      adb shell dumpsys window windows > "$window_dump" 2>&1 || true
+    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+      adb shell dumpsys activity activities > "$activity_dump" 2>&1 || true
+
+    local current_focus
+    local top_resumed
+    current_focus="$(grep -E "mCurrentFocus=" "$window_dump" | tail -n 1 || true)"
+    top_resumed="$(grep -E "topResumedActivity=" "$activity_dump" | tail -n 1 || true)"
+
+    if ! recover_external_android_error_dialog "$prefix"; then
+      capture_android_diagnostics "$prefix"
+      return 1
+    fi
+
+    if grep -q "mCurrentFocus=.*com.hope.marketplace" <<< "$current_focus" ||
+       grep -q "topResumedActivity=.*com.hope.marketplace/.MainActivity" <<< "$top_resumed"; then
+      return 0
+    fi
+
+    sleep 0.2
+  done
+
+  echo "Rendered evidence rejected: HOPE app/MainActivity did not become focused/top-resumed within $FOCUS_CHECK_TIMEOUT_SECONDS seconds." >&2
+  capture_android_diagnostics "$prefix"
+  return 1
+}
+
+assert_hope_rendered() {
+  local prefix="$1"
+  local window_dump="$evidence_dir/window-$prefix.txt"
+  local activity_dump="$evidence_dir/activity-$prefix.txt"
+  local draw_deadline=$((SECONDS + DRAW_CHECK_TIMEOUT_SECONDS))
+
+  while (( SECONDS < draw_deadline )); do
+    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+      adb shell dumpsys window windows > "$window_dump" 2>&1 || true
+    timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+      adb shell dumpsys activity activities > "$activity_dump" 2>&1 || true
+
+    local main_window
+    local splash_window
+    main_window="$(awk '/Window #[0-9]+ Window\{.*com\.hope\.marketplace\/com\.hope\.marketplace\.MainActivity\}/{flag=1; next} /^  Window #[0-9]+ /{if(flag){exit}} flag{print}' "$window_dump")"
+    splash_window="$(awk '/Window #[0-9]+ Window\{.*Splash Screen com\.hope\.marketplace/{flag=1; next} /^  Window #[0-9]+ /{if(flag){exit}} flag{print}' "$window_dump")"
+
+    if grep -q "packageName=com.hope.marketplace processName=com.hope.marketplace" "$activity_dump" \
+       && grep -q "reportedDrawn=true reportedVisible=true" "$activity_dump" \
+       && grep -q "Surface: shown=true" <<< "$main_window" \
+       && ! grep -q "Surface: shown=true" <<< "$splash_window" \
+       && ! grep -q "isVisible=true" <<< "$splash_window"; then
+      return 0
+    fi
+
+    if ! recover_external_android_error_dialog "$prefix"; then
+      capture_android_diagnostics "$prefix"
+      return 1
+    fi
+
+    sleep 0.2
+  done
+
+  echo "Rendered evidence rejected: MainActivity remained behind the Android splash/was not fully drawn." >&2
+  capture_android_diagnostics "$prefix"
+  return 1
+}
+
 wait_for_driver_connection() {
   local process_pid="$1"
   local log_path="$2"
