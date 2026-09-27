@@ -580,6 +580,10 @@ class _EvidenceHost extends StatelessWidget {
 
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
+const _adbScreenshotCapture =
+    bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
+const _screenshotSyncRoot =
+    String.fromEnvironment('HOPE_SCREENSHOT_SYNC_ROOT', defaultValue: '');
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
 class _EvidenceUploadQueue implements UploadQueue {
@@ -611,7 +615,7 @@ typedef _Runtime = ({
 var _runtimeScreenshotSurfacePrepared = false;
 
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
-  if (_runtimeScreenshotSurfacePrepared) {
+  if (_adbScreenshotCapture || _runtimeScreenshotSurfacePrepared) {
     return;
   }
 
@@ -626,8 +630,36 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
 Future<void> _captureRuntimeScreenshot(String marker) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+
+  if (_adbScreenshotCapture) {
+    if (_screenshotSyncRoot.isEmpty) {
+      throw StateError('HOPE_SCREENSHOT_SYNC_ROOT is required for ADB capture.');
+    }
+    final request = File('$_screenshotSyncRoot/$marker.ready');
+    await request.parent.create(recursive: true);
+    if (await request.exists()) {
+      await request.delete();
+    }
+    await request.writeAsString('ready', flush: true);
+    print('HOPE_SCREENSHOT_READY:$marker');
+    while (await request.exists()) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    return;
+  }
+
   await binding.takeScreenshot(marker);
   print('HOPE_SCREENSHOT_READY:$marker');
+}
+
+Future<void> _signalRuntimeTestBodyComplete() async {
+  if (!_adbScreenshotCapture || _screenshotSyncRoot.isEmpty) {
+    return;
+  }
+  final marker = File('$_screenshotSyncRoot/test-complete.ready');
+  await marker.parent.create(recursive: true);
+  await marker.writeAsString('complete', flush: true);
+  print('HOPE_RUNTIME_TEST_BODY_COMPLETE');
 }
 
 Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
@@ -782,6 +814,8 @@ void main() {
           suffix: 'en-ltr',
         );
       }
+      await _signalRuntimeTestBodyComplete();
+      await Future<void>.delayed(const Duration(seconds: 1));
       return;
     }
 
@@ -801,5 +835,7 @@ void main() {
         suffix: 'en-ltr',
       );
     }
+    await _signalRuntimeTestBodyComplete();
+    await Future<void>.delayed(const Duration(seconds: 1));
   });
 }
