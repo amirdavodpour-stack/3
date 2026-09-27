@@ -43,11 +43,11 @@ test -s "$RUNTIME_APK"
 
 # Keep the APK installed once so each fresh Flutter Drive session can read a
 # per-session marker from app-private storage before the Dart test starts.
-timeout --foreground --signal=TERM --kill-after="\${ADB_KILL_AFTER_SECONDS}s" "\${ADB_TIMEOUT_SECONDS}s" \
-  adb install -r "$RUNTIME_APK" >"\${runner_temp}/hope-runtime-preinstall.log" 2>&1
+timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
+  adb install -r "$RUNTIME_APK" >"${runner_temp}/hope-runtime-preinstall.log" 2>&1
 adb shell am force-stop com.hope.marketplace || true
-RUNTIME_CAPTURE_MARKER_FILE="files/hope-screen-sync-\${GITHUB_RUN_ID}/capture.marker"
-adb shell run-as com.hope.marketplace mkdir -p "files/hope-screen-sync-\${GITHUB_RUN_ID}" >/dev/null
+RUNTIME_CAPTURE_MARKER_FILE="files/hope-screen-sync-${GITHUB_RUN_ID}/capture.marker"
+adb shell run-as com.hope.marketplace mkdir -p "files/hope-screen-sync-${GITHUB_RUN_ID}" >/dev/null
 adb shell run-as com.hope.marketplace rm -f "$RUNTIME_CAPTURE_MARKER_FILE" >/dev/null 2>&1 || true
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
