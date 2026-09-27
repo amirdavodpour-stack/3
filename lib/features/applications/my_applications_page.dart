@@ -303,7 +303,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     onPressed: _busyId == item.id ? null : () => _withdraw(item),
                     icon: _busyId == item.id
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Hoconst peIcon(HopeV2Icons.transferOut, size: 19),
+                        : const HopeIcon(HopeV2Icons.transferOut, size: 19),
                   ),
                 ],
               ],

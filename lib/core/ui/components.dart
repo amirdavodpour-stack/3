@@ -419,7 +419,7 @@ class MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => HopeSurface(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Row(children: [
           if (icon != null) ...[
             HopeIconTile(icon!, color: color),
@@ -734,7 +734,7 @@ class OpportunitySkeletonCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SkeletonBox(height: 110, radius: HopeV2Radii.xl),
           Padding(
-            padding: const EdgeInsets.all(HopeV2Spacing.lg),
+            padding: EdgeInsets.all(HopeV2Spacing.lg),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SkeletonBox(height: 20, width: 240),

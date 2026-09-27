@@ -148,7 +148,7 @@ void main() {
           body: PressableScale(
             semanticLabel: "عمل آزمایشی",
             onTap: () => tapped = true,
-            child: Text("انجام"),
+            child: const Text("انجام"),
           ),
         ),
       ),

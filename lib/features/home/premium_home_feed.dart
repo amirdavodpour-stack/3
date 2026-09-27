@@ -361,7 +361,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                           // Mobile keeps the pulse readable as a 2x2 metric grid;
                           // desktop can expand to four compact metrics.
                           final columns = constraints.maxWidth < 300 ? 2 : 4;
-                          const final gap = HopeV2Spacing.sm;
+                          const gap = HopeV2Spacing.sm;
                           final width =
                               (constraints.maxWidth - gap * (columns - 1)) /
                                   columns;
