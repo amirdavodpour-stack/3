@@ -566,6 +566,13 @@ class _EvidenceHost extends StatelessWidget {
     );
   }
 }
+const bool _adbScreenshotCapture =
+    bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
+const String _screenshotSyncRoot = String.fromEnvironment(
+  'HOPE_SCREENSHOT_SYNC_ROOT',
+  defaultValue: '',
+);
+String _captureMarker = '';
 bool _captureResponsiveOnly = false;
 String _captureLocale = '';
 
