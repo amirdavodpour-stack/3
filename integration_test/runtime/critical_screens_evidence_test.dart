@@ -568,10 +568,21 @@ class _EvidenceHost extends StatelessWidget {
 }
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
-const _captureLocale =
-    String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
-const _captureMarker =
-    String.fromEnvironment('HOPE_CAPTURE_MARKER', defaultValue: '');
+String _captureLocale = '';
+
+String _runtimeRouteArgument(String route, String prefix) {
+  if (!route.startsWith(prefix)) return '';
+  return route.substring(prefix.length).split('/').first;
+}
+
+String _runtimeRouteMarker(String route) {
+  const prefix = '/__hope_runtime_capture__/'
+  ;
+  if (!route.startsWith(prefix)) return '';
+  final parts = route.substring(prefix.length).split('/');
+  return parts.length >= 2 ? parts[1] : '';
+}
+String _captureMarker = '';
 const _adbScreenshotCapture =
     bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
 const _screenshotSyncRoot =
@@ -771,11 +782,17 @@ Future<void> _captureResponsiveLocale(
   }
 }
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final route = binding.platformDispatcher.defaultRouteName;
+  _captureLocale = _runtimeRouteArgument(route, '/__hope_runtime_capture__/');
+  _captureMarker = _runtimeRouteMarker(route);
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
-    final runtime = await _prepare();    if (_responsiveOnly) {
+    final runtime = await _prepare();
+    if (_captureLocale.isEmpty) {
+      _captureLocale = Platform.environment['HOPE_CAPTURE_LOCALE'] ?? '';
+    }    if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
           tester,

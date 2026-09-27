@@ -14,6 +14,7 @@ source "${GITHUB_WORKSPACE:-$PWD}/tools/android-runtime-device-recovery.sh"
 hope_android_device_ready "$RUNTIME_SERIAL"
 
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
+RUNTIME_APK="${GITHUB_WORKSPACE:-$PWD}/build/app/outputs/flutter-apk/app-debug.apk"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 SCREENSHOT_PRESENT_DELAY_SECONDS="${HOPE_SCREENSHOT_PRESENT_DELAY_SECONDS:-1}"
 SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS="${HOPE_SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS:-15}"
@@ -31,6 +32,14 @@ case "$CAPTURE_LOCALE" in
     exit 2
     ;;
 esac
+
+echo "HOPE_RUNTIME_PREBUILD:$RUNTIME_APK"
+flutter build apk --debug --no-pub \
+  --target=integration_test/runtime/critical_screens_evidence_test.dart \
+  --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+  --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true \
+  --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync"
+test -s "$RUNTIME_APK"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -323,22 +332,12 @@ run_en_host_session() {
   local capture_status=0
   set +e
 
-  env \
-    HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" \
-    HOPE_CAPTURE_MARKER="$marker" \
-    HOPE_ADB_SCREENSHOT_CAPTURE=true \
-    HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" \
-    HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
-    flutter drive --no-pub --no-dds \
-      --driver=test_driver/hope_runtime_screenshot_driver.dart \
-      --target=integration_test/runtime/critical_screens_evidence_test.dart \
-      --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-      --dart-define=HOPE_CAPTURE_LOCALE="$CAPTURE_LOCALE" \
-      --dart-define=HOPE_CAPTURE_MARKER="$marker" \
-      --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true \
-      --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID}" \
-      $( [ "$mode" = "responsive" ] && printf "%s" "--dart-define=HOPE_RESPONSIVE_ONLY=true" ) \
-      >"$log_path" 2>&1 &
+  flutter drive --no-pub --no-dds \
+    --use-application-binary="$RUNTIME_APK" \
+    --driver=test_driver/hope_runtime_screenshot_driver.dart \
+    --target=integration_test/runtime/critical_screens_evidence_test.dart \
+    --route="/__hope_runtime_capture__/$CAPTURE_LOCALE/$marker" \
+    >"$log_path" 2>&1 &
   process_pid=$!
 
   set -e
