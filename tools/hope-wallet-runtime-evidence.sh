@@ -222,21 +222,7 @@ elif [ "$CAPTURE_LOCALE" = "en" ]; then
   baseline_screens=("${screens[@]:15:15}")
 fi
 
-capture_host_screenshot() {
-  local marker="$1"
-  local process_pid="$2"
-  local request="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.ready"
-  local remote_png="files/hope-screen-sync-${GITHUB_RUN_ID}/$marker.png"
-  local output="$evidence_dir/$marker.png"
-  local deadline=$((SECONDS + 180))
-
-  while (( SECONDS < deadline )); do
-    # Probe file existence with `test`, not `cat`. On the runner this
-    # distinguishes a missing marker from an actual successful command; a
-    # previous probe could incorrectly treat a `cat: ... No such file`
-    # message as readiness and then read the same error as the PNG payload.
-    if adb exec-out run-as com.hope.marketplace test -f "$request" >/dev/null 2>&1 &&
-       adb exec-out run-as com.hope.marketplace test -f "$remote_png" >/dev/null 2>&1; then
+    if adb exec-out run-as com.hope.marketplace test -f "$request" >/dev/null 2>&1; then
       echo "HOPE_HOST_CAPTURE_READY_PROBE:$marker"
       if ! assert_hope_focused "$marker"; then
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
@@ -250,43 +236,36 @@ capture_host_screenshot() {
       local temp_output="${output}.tmp"
       local failure_output="${output}.raw-on-failure"
       rm -f "$temp_output" "$failure_output"
-      if ! timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-        adb exec-out run-as com.hope.marketplace cat "$remote_png" > "$temp_output" 2>"${output}.adb-error"; then
-        cp -f "$temp_output" "$failure_output" 2>/dev/null || true
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:png-read" >&2
-        return 1
-      fi
-
-      local byte_count=0
-      if test -s "$temp_output"; then
-        byte_count="$(wc -c < "$temp_output" | tr -d '[:space:]')"
-        local magic
-        magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
-        echo "HOPE_HOST_CAPTURE_DIAGNOSTIC:$marker:bytes=$byte_count:magic=$magic"
-        if [ "$magic" = "89504e470d0a1a0a" ]; then
-          mv "$temp_output" "$output"
-          rm -f "${output}.adb-error" "$failure_output"
-          adb exec-out run-as com.hope.marketplace rm -f "$request" "$remote_png" >/dev/null 2>&1 || true
-          echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-          return 0
+      local attempt
+      for attempt in 1 2 3 4 5; do
+        rm -f "$temp_output" "${output}.adb-error"
+        if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+          adb exec-out run-as com.hope.marketplace /system/bin/cat "$remote_png" > "$temp_output" 2>"${output}.adb-error" &&
+          test -s "$temp_output"; then
+          local byte_count
+          byte_count="$(wc -c < "$temp_output" | tr -d '[:space:]')"
+          local magic
+          magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
+          echo "HOPE_HOST_CAPTURE_DIAGNOSTIC:$marker:attempt=$attempt:bytes=$byte_count:magic=$magic"
+          if [ "$magic" = "89504e470d0a1a0a" ]; then
+            mv "$temp_output" "$output"
+            rm -f "${output}.adb-error" "$failure_output"
+            adb exec-out run-as com.hope.marketplace rm -f "$request" "$remote_png" >/dev/null 2>&1 || true
+            echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+            return 0
+          fi
+          cp -f "$temp_output" "$failure_output" 2>/dev/null || true
+          echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
+          return 1
         fi
-      else
-        echo "HOPE_HOST_CAPTURE_DIAGNOSTIC:$marker:bytes=0"
-      fi
+        if [ "$attempt" -lt 5 ]; then
+          sleep 0.5
+        fi
+      done
       cp -f "$temp_output" "$failure_output" 2>/dev/null || true
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
+      echo "HOPE_HOST_CAPTURE_FAILED:$marker:png-read" >&2
       return 1
     fi
-    if ! kill -0 "$process_pid" 2>/dev/null; then
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:driver-exited" >&2
-      return 1
-    fi
-    sleep 0.2
-  done
-  echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
-  return 1
-}
-
 run_en_host_session() {
   local mode="$1"
   shift
