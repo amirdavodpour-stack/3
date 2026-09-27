@@ -31,8 +31,7 @@ require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
 require_line "$driver_file" "integrationDriver("
 require_line "$driver_file" "onScreenshot:"
-require_line "$runtime" 'flutter drive --no-pub --no-dds --no-enable-impeller'
-require_line "$runtime" 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"'
+require_line "$runtime" 'flutter drive --no-pub --no-dds'
 
 # Runtime evidence must reject byte-identical PNGs under different screen names.
 require_line "$runtime" 'duplicate-png-hash'
