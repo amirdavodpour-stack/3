@@ -1339,7 +1339,7 @@ class _MatchIntelligence extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              ${score.clamp(0, 100).toStringAsFixed(0)}%,
+                              '${score.clamp(0, 100).toStringAsFixed(0)}%',
                               style: TextStyle(
                                 fontSize: 20,
                                 height: 1,
