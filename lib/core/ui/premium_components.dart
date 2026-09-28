@@ -59,16 +59,48 @@ class PremiumNavigationBar extends StatelessWidget {
               ],
             ],
           ),
-          child: NavigationBar(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: onDestinationSelected,
-            destinations: destinations,
-            height: HopeV2Navigation.barHeight,
-            backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            indicatorColor: HopeV2Surfaces.navigationIndicator(context),
-            elevation: 0,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          child: NavigationBarTheme(
+            data: NavigationBarThemeData(
+              height: HopeV2Navigation.barHeight,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              indicatorColor: HopeV2Surfaces.navigationIndicator(context),
+              indicatorShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
+                side: BorderSide(
+                  color: dark
+                      ? Colors.white.withValues(alpha: .08)
+                      : HopeV2Surfaces.border(context),
+                ),
+              ),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>(
+                (states) => TextStyle(
+                  fontSize: 10,
+                  height: 1.05,
+                  fontWeight: states.contains(WidgetState.selected)
+                      ? FontWeight.w900
+                      : FontWeight.w700,
+                  color: states.contains(WidgetState.selected)
+                      ? Theme.of(context).colorScheme.primary
+                      : HopeV2Colors.darkMuted,
+                ),
+              ),
+              iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>(
+                (states) => IconThemeData(
+                  size: 21,
+                  color: states.contains(WidgetState.selected)
+                      ? Theme.of(context).colorScheme.primary
+                      : HopeV2Colors.darkMuted,
+                ),
+              ),
+            ),
+            child: NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: onDestinationSelected,
+              destinations: destinations,
+            ),
           ),
         ),
       ),
