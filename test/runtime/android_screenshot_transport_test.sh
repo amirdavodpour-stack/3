@@ -23,6 +23,20 @@ grep -Fq "assert_hope_rendered" "$script_file"
 grep -Fq "adb exec-out screencap -p" "$script_file"
 grep -Fq "89504e470d0a1a0a" "$script_file"
 grep -Fq "duplicate-png-hash" "$script_file"
+grep -Fq 'HOPE_RUNTIME_STRICT_VALIDATION=' "$script_file"
+grep -Fq 'if [ "$STRICT_RUNTIME_VALIDATION" = "1" ]; then' "$script_file"
+
+capture_line="$(grep -n 'adb exec-out screencap -p' "$script_file" | head -n 1 | cut -d: -f1)"
+focus_line="$(grep -n 'if ! assert_hope_focused "$marker"' "$script_file" | head -n 1 | cut -d: -f1)"
+render_line="$(grep -n 'if ! assert_hope_rendered "$marker"' "$script_file" | head -n 1 | cut -d: -f1)"
+if [ -z "$capture_line" ] || [ -z "$focus_line" ] || [ -z "$render_line" ]; then
+  echo "FAIL: missing capture/strict-validation anchors" >&2
+  exit 1
+fi
+if (( capture_line > focus_line || capture_line > render_line )); then
+  echo "FAIL: direct ADB capture must occur before optional strict focus/render gates" >&2
+  exit 1
+fi
 grep -Fq "packageName=com.hope.marketplace" "$script_file"
 grep -Fq "reportedDrawn=true reportedVisible=true" "$script_file"
 
