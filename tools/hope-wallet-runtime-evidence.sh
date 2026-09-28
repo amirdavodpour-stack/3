@@ -341,7 +341,7 @@ run_en_host_session() {
   rm -f "$log_path"
   : > "$log_path"
 
-  # The session marker is passed deterministically through --dart-define.
+  # The session marker is carried by flutter drive's Android route Intent.
   # Clear any stale completion signal from a previous installed debug session.
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
     adb shell run-as com.hope.marketplace rm -f files/hope-screen-sync/test-complete.ready
@@ -352,7 +352,6 @@ run_en_host_session() {
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
     --route="/__hope_runtime_capture__/$CAPTURE_LOCALE/$marker" \
-    --dart-define="HOPE_CAPTURE_MARKER=$marker" \
     >"$log_path" 2>&1 &
   process_pid=$!
   tail -n +1 -f "$log_path" &
