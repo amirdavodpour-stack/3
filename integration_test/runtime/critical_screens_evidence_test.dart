@@ -586,6 +586,7 @@ const _screenshotSyncRoot =
     String.fromEnvironment('HOPE_SCREENSHOT_SYNC_ROOT', defaultValue: '');
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
+const _captureHomeOnly = bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -752,7 +753,8 @@ Future<void> _captureBaselineLocale(
     'register': () => const RegisterPage(),
     'password-reset': () => const PasswordResetPage(),
   };
-  for (final entry in pages.entries) {
+  final capturePages = _captureHomeOnly ? <String, Widget Function()>{'home': () => const HomePage()} : pages;
+  for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,
@@ -780,7 +782,8 @@ Future<void> _captureResponsiveLocale(
     'wallet': () => WalletPage(repository: runtime.registry.wallets!),
     'profile': () => const ProfilePage(),
   };
-  for (final entry in pages.entries) {
+  final capturePages = _captureHomeOnly ? <String, Widget Function()>{'home': () => const HomePage()} : pages;
+  for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:responsive-${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,

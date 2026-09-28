@@ -18,13 +18,14 @@ RUNTIME_APK="${GITHUB_WORKSPACE:-$PWD}/build/app/outputs/flutter-apk/app-debug.a
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 SCREENSHOT_PRESENT_DELAY_SECONDS="${HOPE_SCREENSHOT_PRESENT_DELAY_SECONDS:-1}"
 SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS="${HOPE_SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS:-15}"
-FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-20}"
-DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-120}"
+FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-8}"
+DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-20}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-120}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"
 RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
+CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
 CAPTURE_REMOTE_ROOT="files/hope-screen-sync-${GITHUB_RUN_ID:-local}"
 
 case "$CAPTURE_LOCALE" in
@@ -254,7 +255,9 @@ screens=(
 )
 
 baseline_screens=("${screens[@]}")
-if [ "$CAPTURE_LOCALE" = "fa" ]; then
+if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
+  baseline_screens=("home-${CAPTURE_LOCALE}-rtl")
+elif [ "$CAPTURE_LOCALE" = "fa" ]; then
   baseline_screens=("${screens[@]:0:15}")
 elif [ "$CAPTURE_LOCALE" = "en" ]; then
   baseline_screens=("${screens[@]:15:15}")
@@ -462,7 +465,7 @@ else
   test_status=0
 fi
 
-if [ "$baseline_status" -eq 0 ]; then
+if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   adb shell wm size 720x1280
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
@@ -527,6 +530,11 @@ adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || tr
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
 printf '%s\n' '720x1280' > "$evidence_dir/responsive-viewport.txt"
 
+if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
+  CAPTURED_BASELINE_SCREENS=1
+  CAPTURED_RESPONSIVE_SCREENS=0
+  CAPTURED_LOCALE_LABEL="fa-RTL home-only"
+elif [ "$CAPTURE_LOCALE" = "fa" ]; then
 if [ "$CAPTURE_LOCALE" = "fa" ]; then
   CAPTURED_BASELINE_SCREENS=15
   CAPTURED_RESPONSIVE_SCREENS=6
