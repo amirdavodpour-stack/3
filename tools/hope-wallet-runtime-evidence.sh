@@ -341,18 +341,9 @@ run_en_host_session() {
   rm -f "$log_path"
   : > "$log_path"
 
-  # Explicitly transfer the per-session marker into app-private storage.
-  # Flutter --route is not reliably reflected in defaultRouteName under flutter drive.
+  # The session marker is passed deterministically through --dart-define.
+  # Clear any stale completion signal from a previous installed debug session.
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-    adb shell run-as com.hope.marketplace sh -c "mkdir -p files/hope-screen-sync && printf '%s\\n' '$marker' > files/hope-screen-sync/capture.marker"
-  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-  # Verify the marker reached the app-private sandbox before starting the driver.
-  if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-      adb exec-out run-as com.hope.marketplace cat files/hope-screen-sync/capture.marker 2>/dev/null \
-      | tr -d '\r' | grep -Fxq "$marker"; then
-    echo "HOPE_HOST_MARKER_HANDOFF_FAILED:$marker" >&2
-    return 1
-  fi
     adb shell run-as com.hope.marketplace rm -f files/hope-screen-sync/test-complete.ready
 
   set +e
