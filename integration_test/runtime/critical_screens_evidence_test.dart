@@ -787,38 +787,27 @@ Future<void> _captureResponsiveLocale(
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final route = binding.platformDispatcher.defaultRouteName;
-  const captureMarkerDefine =
-      String.fromEnvironment('HOPE_CAPTURE_MARKER', defaultValue: '');
   _captureLocale = _runtimeRouteArgument(route, '/__hope_runtime_capture__/');
   _captureMarker = _runtimeRouteMarker(route);
   _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
-    // flutter drive does not reliably preserve the requested route as
-    // defaultRouteName on the target app. Use a compile-time dart-define as
-    // the deterministic per-session marker channel.
-    if (_adbScreenshotCapture && captureMarkerDefine.isEmpty) {
+    if (_captureMarker.isEmpty) {
       throw StateError(
-        'HOPE_CAPTURE_MARKER dart-define is required for ADB runtime capture.',
+        'HOPE runtime capture marker is missing from defaultRouteName: $route',
       );
     }
-    if (captureMarkerDefine.isNotEmpty) {
-      _captureMarker = captureMarkerDefine.trim();
-      if (_captureMarker.isEmpty) {
-        throw StateError('HOPE_CAPTURE_MARKER define is empty.');
-      }
-      _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
-      if (_captureMarker.endsWith('-en-ltr')) {
-        _captureLocale = 'en';
-      } else if (_captureMarker.endsWith('-fa-rtl')) {
-        _captureLocale = 'fa';
-      } else {
-        throw StateError(
-          'HOPE_CAPTURE_MARKER define has no recognized locale suffix: $_captureMarker',
-        );
-      }
+    if (_captureMarker.endsWith('-en-ltr')) {
+      _captureLocale = 'en';
+    } else if (_captureMarker.endsWith('-fa-rtl')) {
+      _captureLocale = 'fa';
+    } else {
+      throw StateError(
+        'HOPE runtime capture marker has no recognized locale suffix: $_captureMarker',
+      );
     }
+    _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
 
     final runtime = await _prepare();
 
