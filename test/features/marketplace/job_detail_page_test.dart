@@ -188,6 +188,9 @@ HopeJob _job({
       'offerCount': 0,
       'isOwner': false,
       'distanceKm': null,
+      'isRecommended': true,
+      'recommendationScore': 94,
+      'recommendationReasons': ['SKILL_MATCH', 'WORK_MODE_MATCH', 'CATEGORY_MATCH'],
     });
 
 Future<void> _pump(
@@ -391,6 +394,25 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('OFFERED'), findsNothing);
+  });
+
+  testWidgets('match intelligence opens a detailed evidence sheet', (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      userId: 'u9',
+    );
+
+    expect(find.text('Match intelligence'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Match details for this opportunity'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Why this opportunity fits'), findsOneWidget);
+    expect(find.text('Match signals'), findsOneWidget);
+    expect(find.text('Skill match'), findsOneWidget);
+    expect(find.text('Work mode fit'), findsOneWidget);
+    expect(find.text('Category match'), findsOneWidget);
+    expect(find.text('94%'), findsWidgets);
   });
 
   testWidgets('unknown job lifecycle status is presented safely', (tester) async {
