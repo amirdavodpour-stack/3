@@ -299,7 +299,8 @@ capture_host_screenshot() {
 
         local screenshot_hash
         screenshot_hash="$(sha256sum "$temp_output" | awk "{print \$1}")"
-        if [ -z "${previous_host_screenshot_hash:-}" ] ||
+        if [ "$STRICT_RUNTIME_VALIDATION" != "1" ] ||
+           [ -z "${previous_host_screenshot_hash:-}" ] ||
            [ "$screenshot_hash" != "$previous_host_screenshot_hash" ]; then
           mv "$temp_output" "$output"
           rm -f "${output}.adb-error"
