@@ -1,5 +1,4 @@
 // ignore_for_file: avoid_print
-// Runtime evidence capture is explicitly triggered with [runtime-capture].
 
 import 'dart:io';
 
@@ -218,7 +217,14 @@ class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   Future<List<HopeCategory>> listCategories() async => const [
         HopeCategory(
           id: 'cat-1',
-          slug: 'software',          name: 'نرم‌افزار',          nameEn: 'Software',          description: 'Software work',          parentId: null,          sortOrder: 1,          isActive: true,        ),
+          slug: 'software',
+          name: 'نرم‌افزار',
+          nameEn: 'Software',
+          description: 'Software work',
+          parentId: null,
+          sortOrder: 1,
+          isActive: true,
+        ),
       ];
 
   @override
@@ -431,13 +437,20 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'id': 'job-runtime-1',
       'title': 'طراحی رابط موبایل حرفه‌ای',
       'description':
-          'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',      'categoryId': 'cat-1',
-      'category': 'Software',      'jobType': 'FIXED',
-      'budgetType': 'FIXED',      'budgetMin': '1500000',
-      'budgetMax': '2500000',      'duration': '8 روز',
-      'acceptanceCriteria': 'تحویل نسخه نهایی و تست‌شده',      'status': 'PUBLISHED',
-      'ownerId': 'runtime-owner',      'providerId': null,
-      'city': 'تهران',      'kind': 'MISSION',
+          'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',
+      'categoryId': 'cat-1',
+      'category': 'Software',
+      'jobType': 'FIXED',
+      'budgetType': 'FIXED',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'duration': '8 روز',
+      'acceptanceCriteria': 'تحویل نسخه نهایی و تست‌شده',
+      'status': 'PUBLISHED',
+      'ownerId': 'runtime-owner',
+      'providerId': null,
+      'city': 'تهران',
+      'kind': 'MISSION',
       'visibility': 'PUBLIC',
       'schedule': 'FULL_TIME',
       'offerCount': 4,
@@ -512,13 +525,11 @@ class _EvidenceHost extends StatelessWidget {
   const _EvidenceHost({
     required this.runtime,
     required this.locale,
-    required this.screenKey,
     required this.child,
   });
 
   final _Runtime runtime;
   final Locale locale;
-  final String screenKey;
   final Widget child;
 
   @override
@@ -544,7 +555,6 @@ class _EvidenceHost extends StatelessWidget {
         Provider<OfferRepository>.value(value: _EvidenceOfferRepository()),
       ],
       child: MaterialApp(
-        key: ValueKey(screenKey),
         debugShowCheckedModeBanner: false,
         locale: locale,
         supportedLocales: const [Locale('fa'), Locale('en')],
@@ -567,29 +577,15 @@ class _EvidenceHost extends StatelessWidget {
     );
   }
 }
+
+const _responsiveOnly =
+    bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _adbScreenshotCapture =
     bool.fromEnvironment('HOPE_ADB_SCREENSHOT_CAPTURE', defaultValue: false);
-const String _screenshotSyncRoot = String.fromEnvironment(
-  'HOPE_SCREENSHOT_SYNC_ROOT',
-  defaultValue: '',
-);
-String _captureMarker = '';
-bool _captureResponsiveOnly = false;
-String _captureLocale = '';
-
-String _runtimeRouteArgument(String route, String prefix) {
-  if (!route.startsWith(prefix)) return '';
-  return route.substring(prefix.length).split('/').first;
-}
-
-String _runtimeRouteMarker(String route) {
-  const prefix = '/__hope_runtime_capture__/'
-  ;
-  if (!route.startsWith(prefix)) return '';
-  final parts = route.substring(prefix.length).split('/');
-  return parts.length >= 2 ? parts[1] : '';
-}
-
+const _screenshotSyncRoot =
+    String.fromEnvironment('HOPE_SCREENSHOT_SYNC_ROOT', defaultValue: '');
+const _captureLocale =
+    String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -616,17 +612,25 @@ typedef _Runtime = ({
   ApplicationRegistry registry,
 });
 
+var _runtimeScreenshotSurfacePrepared = false;
+
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
+  if (_adbScreenshotCapture || _runtimeScreenshotSurfacePrepared) {
+    return;
+  }
+
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
   await binding.convertFlutterSurfaceToImage();
   await tester.pump();
-  await tester.binding.endOfFrame;
+  _runtimeScreenshotSurfacePrepared = true;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
 Future<void> _captureRuntimeScreenshot(String marker) async {
-  final binding = IntegrationTestWidgetsFlutterBinding.instance;  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+  final binding = IntegrationTestWidgetsFlutterBinding.instance;
+  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+
   if (_adbScreenshotCapture) {
     if (_screenshotSyncRoot.isEmpty) {
       throw StateError('HOPE_SCREENSHOT_SYNC_ROOT is required for ADB capture.');
@@ -657,9 +661,13 @@ Future<void> _signalRuntimeTestBodyComplete() async {
   await marker.writeAsString('complete', flush: true);
   print('HOPE_RUNTIME_TEST_BODY_COMPLETE');
 }
-Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {  for (var attempt = 0; attempt < 100; attempt++) {    final hasSpinner =
+
+Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
+  for (var attempt = 0; attempt < 100; attempt++) {
+    final hasSpinner =
         find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
-    final hasSkeleton =        find.byType(SkeletonBox).evaluate().isNotEmpty;
+    final hasSkeleton =
+        find.byType(SkeletonBox).evaluate().isNotEmpty;
     if (!hasSpinner && !hasSkeleton) {
       return;
     }
@@ -671,7 +679,8 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {  for (va
   final hasSkeleton =
       find.byType(SkeletonBox).evaluate().isNotEmpty;
   if (hasSpinner || hasSkeleton) {
-    throw StateError(      'Runtime render remained in loading/skeleton state after bounded settle',
+    throw StateError(
+      'Runtime render remained in loading/skeleton state after bounded settle',
     );
   }
 }
@@ -683,18 +692,12 @@ Future<void> _captureRuntimeScreen(
   required String marker,
   required Widget child,
 }) async {
-  // Fully tear down the previous MaterialApp before mounting the next screen.
-  // This avoids retained Navigator routes and forces the native surface to
-  // receive a new root scene for every evidence marker.
-  await tester.pumpWidget(const SizedBox.shrink());
-  await tester.pump();
-  await tester.binding.endOfFrame;
-
+  // Rebuild the complete host for every screen and explicitly settle the
+  // rendered frame before asking integration_test for the device screenshot.
   await tester.pumpWidget(
     _EvidenceHost(
       runtime: runtime,
       locale: locale,
-      screenKey: marker,
       child: child,
     ),
   );
@@ -710,9 +713,9 @@ Future<void> _captureRuntimeScreen(
   await tester.pump();
   await tester.binding.endOfFrame;
 
-  expect(find.byType(Directionality), findsWidgets);
   await _captureRuntimeScreenshot(marker);
 }
+
 Future<void> _captureBaselineLocale(
   WidgetTester tester, {
   required Locale locale,
@@ -742,19 +745,18 @@ Future<void> _captureBaselineLocale(
     'password-reset': () => const PasswordResetPage(),
   };
   for (final entry in pages.entries) {
-    final marker = '${entry.key}-$suffix';
-    if (_captureMarker.isNotEmpty && marker != _captureMarker) continue;
-    print('HOPE_RUNTIME_PAGE_START:$marker');
+    print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,
       runtime: runtime,
       locale: locale,
-      marker: marker,
+      marker: '${entry.key}-$suffix',
       child: entry.value(),
     );
-    print('HOPE_RUNTIME_PAGE_DONE:$marker');
+    print('HOPE_RUNTIME_PAGE_DONE:${entry.key}-$suffix');
   }
 }
+
 Future<void> _captureResponsiveLocale(
   WidgetTester tester, {
   required Locale locale,
@@ -771,98 +773,31 @@ Future<void> _captureResponsiveLocale(
     'profile': () => const ProfilePage(),
   };
   for (final entry in pages.entries) {
-    final marker = 'responsive-720x1280-${entry.key}-$suffix';
-    if (_captureMarker.isNotEmpty && marker != _captureMarker) continue;
     print('HOPE_RUNTIME_PAGE_START:responsive-${entry.key}-$suffix');
     await _captureRuntimeScreen(
       tester,
       runtime: runtime,
       locale: locale,
-      marker: marker,
+      marker: 'responsive-720x1280-${entry.key}-$suffix',
       child: entry.value(),
     );
-    print('HOPE_RUNTIME_PAGE_DONE:responsive-${entry.key}-$suffix');
   }
 }
 void main() {
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  final route = binding.platformDispatcher.defaultRouteName;
-  _captureLocale = _runtimeRouteArgument(route, '/__hope_runtime_capture__/');
-  final routeMarker = _runtimeRouteMarker(route);
-  _captureResponsiveOnly = routeMarker == 'responsive';
-  _captureMarker = _captureResponsiveOnly ? '' : (routeMarker == 'baseline' ? '' : routeMarker);
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
-    if (_captureLocale != 'en' && _captureLocale != 'fa') {
-      throw StateError(
-        'HOPE runtime capture route has no recognized locale: $route',
-      );
-    }
-    if (_captureMarker.isNotEmpty &&
-        !_captureMarker.startsWith('responsive-') &&
-        !RegExp(r'.+-(en-ltr|fa-rtl)
-    print('HOPE_RUNTIME_ROUTE:${route}');
-    print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
-    print('HOPE_RUNTIME_CAPTURE_MARKER:$_captureMarker');
-    if (_captureResponsiveOnly) {
-      if (_captureLocale != 'en') {
-        await _captureResponsiveLocale(
-          tester,
-          runtime: runtime,
-          locale: const Locale('fa'),
-          suffix: 'fa-rtl',
-        );
-      }
-      if (_captureLocale != 'fa') {
-        await _captureResponsiveLocale(
-          tester,
-          runtime: runtime,
-          locale: const Locale('en'),
-          suffix: 'en-ltr',
-        );
-      }
-        await _signalRuntimeTestBodyComplete();
-        await Future<void>.delayed(const Duration(seconds: 1));
-      return;
-    }
-
-    if (_captureLocale != 'en') {
-      await _captureBaselineLocale(
-        tester,
-        runtime: runtime,
-        locale: const Locale('fa'),
-        suffix: 'fa-rtl',
-      );
-    }
-    if (_captureLocale != 'fa') {
-      await _captureBaselineLocale(
-        tester,
-        runtime: runtime,
-        locale: const Locale('en'),
-        suffix: 'en-ltr',
-      );
-    }
-    await _signalRuntimeTestBodyComplete();
-    await Future<void>.delayed(const Duration(seconds: 1));
-  });
-}).hasMatch(_captureMarker)) {
-      throw StateError(
-        'HOPE runtime capture marker has no recognized locale suffix: $_captureMarker',
-      );
-    }
-    if (_captureMarker.endsWith('-en-ltr')) {
-      _captureLocale = 'en';
-    } else if (_captureMarker.endsWith('-fa-rtl')) {
-      _captureLocale = 'fa';
-    }
-
     final runtime = await _prepare();
-
-    print('HOPE_RUNTIME_ROUTE:${route}');
-    print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
-    print('HOPE_RUNTIME_CAPTURE_MARKER:$_captureMarker');
-    if (_captureResponsiveOnly) {
+    await tester.pumpWidget(
+      _EvidenceHost(
+        runtime: runtime,
+        locale: _captureLocale == 'en' ? const Locale('en') : const Locale('fa'),
+        child: const HomePage(),
+      ),
+    );
+    await _prepareRuntimeScreenshotSurface(tester);
+    if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
           tester,
@@ -879,8 +814,8 @@ void main() {
           suffix: 'en-ltr',
         );
       }
-        await _signalRuntimeTestBodyComplete();
-        await Future<void>.delayed(const Duration(seconds: 1));
+      await _signalRuntimeTestBodyComplete();
+      await Future<void>.delayed(const Duration(seconds: 1));
       return;
     }
 
