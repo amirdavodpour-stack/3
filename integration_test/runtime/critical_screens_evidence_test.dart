@@ -798,6 +798,11 @@ void main() {
     // flutter drive does not reliably preserve the requested route as
     // defaultRouteName on the target app. Use a compile-time dart-define as
     // the deterministic per-session marker channel.
+    if (_adbScreenshotCapture && captureMarkerDefine.isEmpty) {
+      throw StateError(
+        'HOPE_CAPTURE_MARKER dart-define is required for ADB runtime capture.',
+      );
+    }
     if (captureMarkerDefine.isNotEmpty) {
       _captureMarker = captureMarkerDefine.trim();
       if (_captureMarker.isEmpty) {
