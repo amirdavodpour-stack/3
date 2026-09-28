@@ -1,1 +1,0 @@
-Focused quality validation after canonical NavigationBar height fix. Apply Special Findings: targeted UI/state batch, strict zero-issue flutter analyze, generated-state normalization. Do not mutate Main.
