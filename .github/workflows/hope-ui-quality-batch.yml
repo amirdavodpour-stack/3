@@ -45,27 +45,44 @@ jobs:
       - name: Verify Flutter analyzer is clean
         run: flutter analyze
 
+      - name: Normalize generated Flutter state
+        run: |
+          set -euo pipefail
+          git restore -- \
+            lib/l10n/generated/app_localizations.dart \
+            lib/l10n/generated/app_localizations_en.dart \
+            lib/l10n/generated/app_localizations_fa.dart \
+            android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java || true
+          git clean -fdX
+
       - name: Review diff
         run: |
+          set -euo pipefail
           git status --short
           git diff --check
-          if git diff --quiet; then
-            echo "NO_CHANGES"
-          else
-            echo "CHANGES_READY"
-            git diff --stat
-          fi
+          echo "SOURCE_DART_DIFF:"
+          git diff --name-only --diff-filter=ACMRT |
+            grep -E '^(lib|test|integration_test)/.*\\.dart
+ |
+            grep -v '^lib/l10n/generated/' || true
+          git diff --stat
 
       - name: Commit analyzer fixes
         if: ${{ success() }}
         run: |
           set -euo pipefail
-          if git diff --quiet; then
-            echo "No analyzer changes to commit."
+          files="$(
+            git diff --name-only --diff-filter=ACMRT |
+              grep -E '^(lib|test|integration_test)/.*\\.dart
+ |
+              grep -v '^lib/l10n/generated/' || true
+          )"
+          if [ -z "$files" ]; then
+            echo "No analyzer source changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          printf '%s\n' "$files" | xargs -r git add --
           git commit -m "fix(ui): clean Flutter analyzer findings [analyzer-autofix]"
           git push origin HEAD:${GITHUB_REF_NAME}
