@@ -1,1 +1,1 @@
-UI quality batch trigger — rerun after scoped focused-test fixes; use dart fix --apply, focused UI/state tests, then zero-issue flutter analyze.
+UI quality batch trigger — restore the known-good screenshot test source first, then run dart fix --apply, focused UI/state tests, and zero-issue flutter analyze.
