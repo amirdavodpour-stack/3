@@ -275,9 +275,24 @@ capture_host_screenshot() {
 
       sleep "$SCREENSHOT_PRESENT_DELAY_SECONDS"
 
-      # Capture the real Android framebuffer first. Strict focus/draw assertions
-      # are applied only after a real PNG exists, so they cannot hide a usable
-      # EN/LTR frame from the UI-iteration feedback lane.
+      # Wait for the Android Activity/surface to be the real HOPE window before
+      # screencap. These are readiness barriers, not visual acceptance criteria.
+      # They are the same class of guard that preceded the known-good Run #322.
+      if ! assert_hope_focused "$marker"; then
+        if [ "$STRICT_RUNTIME_VALIDATION" = "1" ]; then
+          echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
+          return 1
+        fi
+        echo "HOPE_HOST_CAPTURE_READINESS_WARN:$marker:focus"
+      fi
+      if ! assert_hope_rendered "$marker"; then
+        if [ "$STRICT_RUNTIME_VALIDATION" = "1" ]; then
+          echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
+          return 1
+        fi
+        echo "HOPE_HOST_CAPTURE_READINESS_WARN:$marker:draw-state"
+      fi
+
       local freshness_deadline=$((SECONDS + SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS))
       while (( SECONDS < freshness_deadline )); do
         local temp_output="${output}.tmp"

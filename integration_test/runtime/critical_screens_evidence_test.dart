@@ -663,6 +663,14 @@ Future<void> _signalRuntimeTestBodyComplete() async {
 }
 
 Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
+  // WidgetTester frame completion does not always mean the Android raster thread
+  // has committed the new surface. Give the engine several real frame turns.
+  for (var frame = 0; frame < 6; frame++) {
+    await tester.pump();
+    await tester.binding.endOfFrame;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+
   for (var attempt = 0; attempt < 100; attempt++) {
     final hasSpinner =
         find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
@@ -707,11 +715,11 @@ Future<void> _captureRuntimeScreen(
   await tester.pump(const Duration(milliseconds: 1200));
   await tester.binding.endOfFrame;
   await _waitForRuntimeRenderToSettle(tester);
-  await tester.pump();
-  await tester.binding.endOfFrame;
-  await Future<void>.delayed(const Duration(milliseconds: 250));
-  await tester.pump();
-  await tester.binding.endOfFrame;
+  for (var frame = 0; frame < 4; frame++) {
+    await tester.pump();
+    await tester.binding.endOfFrame;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
 
   await _captureRuntimeScreenshot(marker);
 }
@@ -802,6 +810,11 @@ void main() {
         child: const HomePage(),
       ),
     );
+    // The first Flutter frame is the transition point away from the Android
+    // starting window. Wait for rasterization before starting ADB captures.
+    await tester.binding.waitUntilFirstFrameRasterized;
+    await tester.pump();
+    await tester.binding.endOfFrame;
     await _prepareRuntimeScreenshotSurface(tester);
     if (_responsiveOnly) {
       if (_captureLocale != 'en') {
