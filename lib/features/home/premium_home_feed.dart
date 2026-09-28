@@ -461,9 +461,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             ),
             const SizedBox(height: HopeV2Spacing.xl),
 if (!auth.isGuest) ...[
-              const SizedBox(height: HopeV2Spacing.section),
-              _activeWork(context),
-              const SizedBox(height: HopeV2Spacing.section),
+              const SizedBox(height: HopeV2Spacing.lg),
               _financialSnapshot(context),
             ],
           ],
@@ -480,10 +478,10 @@ if (!auth.isGuest) ...[
     required Color accent,
   }) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 78),
+      constraints: const BoxConstraints(minHeight: 70),
       padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 11,
+        horizontal: 9,
+        vertical: 9,
       ),
       decoration: BoxDecoration(
         color: HopeV2Colors.panelSoftDark,
