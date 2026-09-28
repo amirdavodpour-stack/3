@@ -341,10 +341,10 @@ run_en_host_session() {
   rm -f "$log_path"
   : > "$log_path"
 
-  # The session marker is carried by flutter drive's Android route Intent.
-  # Clear any stale completion signal from a previous installed debug session.
-  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-    adb shell run-as com.hope.marketplace rm -f files/hope-screen-sync/test-complete.ready
+  # flutter drive installs the APK only after it starts. On a clean AVD,
+  # run-as before flutter drive fails with 'unknown package'. The marker is
+  # supplied by the route/driver contract; stale completion state must be
+  # cleared from Dart after app startup, not from this pre-install host phase.
 
   set +e
   flutter drive --no-pub --no-dds \
