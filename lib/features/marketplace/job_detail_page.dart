@@ -1293,122 +1293,258 @@ class _MatchIntelligence extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
 
-    return PremiumPanel(
-      padding: const EdgeInsets.all(16),
-      highlight: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (score != null)
-                SizedBox(
-                  width: 88,
-                  height: 88,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
+    return Semantics(
+      button: true,
+      label: _t(
+        context,
+        'جزئیات تطبیق این فرصت',
+        'Match details for this opportunity',
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(HopeV2Radii.lg),
+          onTap: () => _showDetails(context),
+          child: PremiumPanel(
+            padding: const EdgeInsets.all(16),
+            highlight: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (score != null)
                       SizedBox(
-                        width: 88,
-                        height: 88,
-                        child: CircularProgressIndicator(
-                          value: 1,
-                          strokeWidth: 7,
-                          color: primary.withValues(alpha: .12),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 88,
-                        height: 88,
-                        child: CircularProgressIndicator(
-                          value: value,
-                          strokeWidth: 7,
-                          strokeCap: StrokeCap.round,
-                          color: primary,
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${score.clamp(0, 100).toStringAsFixed(0)}%',
-                            style: TextStyle(
-                              fontSize: 21,
-                              height: 1,
-                              fontWeight: FontWeight.w900,
-                              color: Theme.of(context).colorScheme.onSurface,
+                        width: 82,
+                        height: 82,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox.square(
+                              dimension: 82,
+                              child: CircularProgressIndicator(
+                                value: 1,
+                                strokeWidth: 7,
+                                color: primary.withValues(alpha: .12),
+                              ),
                             ),
+                            SizedBox.square(
+                              dimension: 82,
+                              child: CircularProgressIndicator(
+                                value: value,
+                                strokeWidth: 7,
+                                strokeCap: StrokeCap.round,
+                                color: primary,
+                              ),
+                            ),
+                            Text(
+                              ${score.clamp(0, 100).toStringAsFixed(0)}%,
+                              style: TextStyle(
+                                fontSize: 20,
+                                height: 1,
+                                fontWeight: FontWeight.w900,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (score != null) const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const HopeIcon(
+                                HopeV2Icons.featured,
+                                color: HopeV2Colors.primaryDark,
+                                size: 19,
+                              ),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  _t(context, 'هوش تطبیق', 'Match intelligence'),
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 5),
                           Text(
-                            _t(context, 'تطابق', 'match'),
-                            style: Theme.of(context).textTheme.labelSmall,
+                            _t(
+                              context,
+                              'سیگنال‌های توصیه برای این فرصت',
+                              'Recommendation signals for this opportunity',
+                            ),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            _t(context, 'جزئیات را ببینید', 'See details'),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: primary,
+                                  fontWeight: FontWeight.w900,
+                                ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              if (score != null) const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        ExcludeSemantics(
-                          child: HopeIcon(
-                            HopeV2Icons.featured,
-                            color: primary,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _t(
-                              context,
-                              'هوش تطبیق',
-                              'Match intelligence',
-                            ),
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                      ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _t(
-                        context,
-                        'سیگنال‌های تطبیق این فرصت',
-                        'Opportunity match signals',
+                  ],
+                ),
+                if (job.recommendationReasons.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: job.recommendationReasons
+                        .take(4)
+                        .map(
+                          (r) => StatusPill(
+                            _reason(context, r),
+                            color: primary,
+                            icon: HopeV2Icons.completed,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDetails(BuildContext context) {
+    final score = job.recommendationScore;
+    final primary = Theme.of(context).colorScheme.primary;
+    final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text(
+                _t(
+                  context,
+                  'چرا این فرصت مناسب است؟',
+                  'Why this opportunity fits',
+                ),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              PremiumPanel(
+                highlight: true,
+                padding: const EdgeInsets.all(18),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (score != null)
+                      SizedBox(
+                        width: 88,
+                        height: 88,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox.square(
+                              dimension: 88,
+                              child: CircularProgressIndicator(
+                                value: 1,
+                                strokeWidth: 7,
+                                color: primary.withValues(alpha: .12),
+                              ),
+                            ),
+                            SizedBox.square(
+                              dimension: 88,
+                              child: CircularProgressIndicator(
+                                value: value,
+                                strokeWidth: 7,
+                                strokeCap: StrokeCap.round,
+                                color: primary,
+                              ),
+                            ),
+                            Text(
+                              ${score.clamp(0, 100).toStringAsFixed(0)}%,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      style: Theme.of(context).textTheme.bodySmall,
+                    if (score != null) const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        _t(
+                          context,
+                          'این امتیاز فقط از سیگنال‌های توصیه موجود برای همین فرصت استفاده می‌کند.',
+                          'This score uses only the recommendation signals available for this opportunity.',
+                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              height: 1.45,
+                            ),
+                      ),
                     ),
                   ],
                 ),
               ),
+              if (job.recommendationReasons.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  _t(context, 'سیگنال‌های تطبیق', 'Match signals'),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 9),
+                ...job.recommendationReasons.take(6).map(
+                  (reason) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: PremiumPanel(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          const HopeIcon(
+                            HopeV2Icons.completed,
+                            color: HopeV2Colors.success,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 9),
+                          Expanded(
+                            child: Text(
+                              _reason(context, reason),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
-          if (job.recommendationReasons.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: job.recommendationReasons
-                  .take(4)
-                  .map(
-                    (r) => StatusPill(
-                      _reason(context, r),
-                      color: primary,
-                      icon: HopeV2Icons.completed,
-                    ),
-                  )
-                  .toList(),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
