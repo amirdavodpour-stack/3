@@ -405,7 +405,7 @@ run_host_batch_session() {
     done
   fi
 
-  local completion_request="files/hope-screen-sync/test-complete.ready"
+  local completion_request="$CAPTURE_REMOTE_ROOT/test-complete.ready"
   local completion_status=1
   local completion_deadline=$((SECONDS + 60))
   while (( SECONDS < completion_deadline )); do
