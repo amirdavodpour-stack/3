@@ -788,26 +788,74 @@ void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final route = binding.platformDispatcher.defaultRouteName;
   _captureLocale = _runtimeRouteArgument(route, '/__hope_runtime_capture__/');
-  _captureMarker = _runtimeRouteMarker(route);
-  _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
+  final routeMarker = _runtimeRouteMarker(route);
+  _captureResponsiveOnly = routeMarker == 'responsive';
+  _captureMarker = _captureResponsiveOnly ? '' : (routeMarker == 'baseline' ? '' : routeMarker);
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
-    if (_captureMarker.isEmpty) {
+    if (_captureLocale != 'en' && _captureLocale != 'fa') {
       throw StateError(
-        'HOPE runtime capture marker is missing from defaultRouteName: $route',
+        'HOPE runtime capture route has no recognized locale: $route',
+      );
+    }
+    if (_captureMarker.isNotEmpty &&
+        !_captureMarker.startsWith('responsive-') &&
+        !RegExp(r'.+-(en-ltr|fa-rtl)
+    print('HOPE_RUNTIME_ROUTE:${route}');
+    print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
+    print('HOPE_RUNTIME_CAPTURE_MARKER:$_captureMarker');
+    if (_captureResponsiveOnly) {
+      if (_captureLocale != 'en') {
+        await _captureResponsiveLocale(
+          tester,
+          runtime: runtime,
+          locale: const Locale('fa'),
+          suffix: 'fa-rtl',
+        );
+      }
+      if (_captureLocale != 'fa') {
+        await _captureResponsiveLocale(
+          tester,
+          runtime: runtime,
+          locale: const Locale('en'),
+          suffix: 'en-ltr',
+        );
+      }
+        await _signalRuntimeTestBodyComplete();
+        await Future<void>.delayed(const Duration(seconds: 1));
+      return;
+    }
+
+    if (_captureLocale != 'en') {
+      await _captureBaselineLocale(
+        tester,
+        runtime: runtime,
+        locale: const Locale('fa'),
+        suffix: 'fa-rtl',
+      );
+    }
+    if (_captureLocale != 'fa') {
+      await _captureBaselineLocale(
+        tester,
+        runtime: runtime,
+        locale: const Locale('en'),
+        suffix: 'en-ltr',
+      );
+    }
+    await _signalRuntimeTestBodyComplete();
+    await Future<void>.delayed(const Duration(seconds: 1));
+  });
+}).hasMatch(_captureMarker)) {
+      throw StateError(
+        'HOPE runtime capture marker has no recognized locale suffix: $_captureMarker',
       );
     }
     if (_captureMarker.endsWith('-en-ltr')) {
       _captureLocale = 'en';
     } else if (_captureMarker.endsWith('-fa-rtl')) {
       _captureLocale = 'fa';
-    } else {
-      throw StateError(
-        'HOPE runtime capture marker has no recognized locale suffix: $_captureMarker',
-      );
     }
-    _captureResponsiveOnly = _captureMarker.startsWith('responsive-');
 
     final runtime = await _prepare();
 
