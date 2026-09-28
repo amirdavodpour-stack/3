@@ -1,1 +1,1 @@
-UI quality batch trigger — validate active-work insertion plus the restored known-good runtime test source; use dart fix --apply, focused UI/state tests, then zero-issue flutter analyze.
+UI quality batch trigger — final clean validation using Special Findings: restored proven runtime test source, scoped UI assertions, generated-artifact guard, dart fix --apply, focused tests, then zero-issue flutter analyze.
