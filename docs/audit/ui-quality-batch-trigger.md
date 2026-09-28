@@ -1,1 +1,1 @@
-Final UI quality validation trigger. Special Findings applied: known-good runtime source, focused UI assertions, generated-artifact guard, strict zero-issue flutter analyze. No analyzer autofix commit should be produced unless actual source changes are present.
+Focused quality validation after canonical NavigationBar height fix. Apply Special Findings: targeted UI/state batch, strict zero-issue flutter analyze, generated-state normalization. Do not mutate Main.
