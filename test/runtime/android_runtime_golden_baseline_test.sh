@@ -13,7 +13,7 @@ require_line() {
   fi
 }
 
-# Locked to exact successful Run #322 / SHA 4ad34dbf8c71f7dde5f8f7a51cea53c0d9b4351b.
+# Locked to exact successful Run #322 / SHA 4ad34dbf8c71f7dde5f8f7a51cea53c0d9b4351b.\n# Keep this contract focused on observed runtime architecture; do not require retired\n# pumpWidget/surface-conversion scaffolding that is absent from the accepted ADB path.
 require_line "$workflow" "api-level: 35"
 require_line "$workflow" "target: default"
 require_line "$workflow" "profile: pixel_2"
@@ -25,7 +25,6 @@ require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftsh
 driver_file="test_driver/hope_runtime_screenshot_driver.dart"
 
 require_line "$test_file" "const _adbScreenshotCapture"
-require_line "$test_file" "await tester.pumpWidget(const SizedBox.shrink());"
 require_line "$test_file" "await binding.takeScreenshot(marker);"
 require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
