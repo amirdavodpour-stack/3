@@ -31,11 +31,11 @@ capture_line="$(grep -n 'adb exec-out screencap -p' "$script_file" | head -n 1 |
 focus_line="$(grep -n 'if ! assert_hope_focused "$marker"' "$script_file" | head -n 1 | cut -d: -f1)"
 render_line="$(grep -n 'if ! assert_hope_rendered "$marker"' "$script_file" | head -n 1 | cut -d: -f1)"
 if [ -z "$capture_line" ] || [ -z "$focus_line" ] || [ -z "$render_line" ]; then
-  echo "FAIL: missing capture/strict-validation anchors" >&2
+  echo "FAIL: missing capture/readiness anchors" >&2
   exit 1
 fi
-if (( capture_line > focus_line || capture_line > render_line )); then
-  echo "FAIL: direct ADB capture must occur before optional strict focus/render gates" >&2
+if (( focus_line > capture_line || render_line > capture_line )); then
+  echo "FAIL: focus/render readiness must run before direct ADB capture" >&2
   exit 1
 fi
 grep -Fq "packageName=com.hope.marketplace" "$script_file"
