@@ -87,6 +87,12 @@ class PremiumPaymentSummary extends StatelessWidget {
       ),
       child: PremiumPanel(
         padding: const EdgeInsets.all(HopeV2Spacing.lg),
+        highlight: const {
+          'HELD',
+          'RELEASED',
+          'HOLD_PENDING',
+          'RELEASE_PENDING',
+        }.contains(payment.status),
         semanticLabel: _label(context, 'جزئیات پرداخت، $status', 'Payment details, $status'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
