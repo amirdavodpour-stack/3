@@ -23,7 +23,7 @@ on:
 concurrency:
   # Capture commits are intentionally serialized. Non-capture feature pushes
   # use an isolated group so they cannot cancel an active runtime evidence run.
-  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture]') && 'capture' || github.run_id }}
+  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]')) && 'capture' || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -31,7 +31,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture]')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]'))) }}
     name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
