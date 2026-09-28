@@ -1,1 +1,10 @@
 .hope-bootstrap/
+# Flutter / Dart generated artifacts
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+android/local.properties
+ios/Runner/GeneratedPluginRegistrant.*
