@@ -521,12 +521,10 @@ class OpportunityCard extends StatelessWidget {
                         if (job.recommendationScore != null)
                           PremiumTag(
                             icon: HopeV2Icons.match,
-                            label: ((job.recommendationScore! <= 1
+                            label: '${((job.recommendationScore! <= 1
                                         ? job.recommendationScore! * 100
                                         : job.recommendationScore!))
-                                    .round()
-                                    .toString() +
-                                '% ' + _t(context, 'تطابق', 'match'),
+                                    .round()}% ${_t(context, 'تطابق', 'match')}',
                             color: HopeV2Colors.success,
                           ),
                       ],

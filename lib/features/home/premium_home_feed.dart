@@ -209,7 +209,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  ExcludeSemantics(
+                                  const ExcludeSemantics(
                                     child: HopeIcon(
                                       HopeV2Icons.location,
                                       size: 13,

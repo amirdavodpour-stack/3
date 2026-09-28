@@ -16,7 +16,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginWelcomeBackSubtitle =>
-      'Return to your workspace and keep going.';
+      'Enter your account details to sign in.';
 
   @override
   String get emailLabel => 'Email';
@@ -56,7 +56,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailPasswordRequired => 'Enter your email and password.';
 
   @override
-  String get loginFailedGeneric => 'Login failed. Please try again.';
+  String get loginFailedGeneric => 'Sign-in failed. Please try again.';
 
   @override
   String get copy_10_from_the_employer_and_10_from_the_candi_cf15dfa =>
@@ -117,7 +117,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_add_a_concise_resume_and_relevant_skills_298a4f1 =>
-      'Add a concise resume and relevant skills.';
+      'Enter a concise resume and relevant skills.';
 
   @override
   String get copy_admin_panel_348cd94 => 'Admin panel';
@@ -164,7 +164,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_apply_with_a_strong_professional_profile_13980b1 =>
-      'Apply with a strong professional profile.';
+      'Submit your resume and offer.';
 
   @override
   String get copy_as_described_in_the_opportunity_836cb3e =>
@@ -214,10 +214,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copy_choose_79a9d79 => 'Select';
 
   @override
-  String get copy_choose_a_category_b77d860 => 'Select a category';
+  String get copy_choose_a_category_b77d860 => 'Choose a category';
 
   @override
-  String get copy_choose_a_city_a93b334 => 'Select a city';
+  String get copy_choose_a_city_a93b334 => 'Choose a city';
 
   @override
   String get copy_choose_a_professional_category_b4cf5b8 =>
@@ -228,7 +228,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_choose_your_preferred_city_c19f66a =>
-      'Select your preferred city';
+      'Choose your preferred city';
 
   @override
   String get copy_city_3d7dc3e => 'City';
@@ -330,7 +330,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copy_explore_115e9fd => 'Explore';
 
   @override
-  String get copy_explore_837e4eb => 'Explore';
+  String get copy_explore_837e4eb => 'Find';
 
   @override
   String get copy_explore_a80d678 => 'Explore';
@@ -353,7 +353,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_find_the_right_opportunity_or_create_one_c8a9e6f =>
-      'Find the right opportunity or create one.';
+      'Search opportunities or post a new one.';
 
   @override
   String get copy_first_choose_what_kind_of_opportunity_you__f035ca9 =>
@@ -529,7 +529,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_monitor_and_manage_hope_in_one_place_bea3b7d =>
-      'Monitor and manage HOPE in one place.';
+      'Manage activity from one dashboard.';
 
   @override
   String get copy_monthly_pay_d62519b => 'Monthly pay';
@@ -663,8 +663,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Personalized recommendations';
 
   @override
-  String get copy_please_complete_all_fields_55c07bb =>
-      'Please complete all fields.';
+  String get copy_please_complete_all_fields_55c07bb => 'Complete all fields.';
 
   @override
   String get copy_post_a_mission_or_job_364fb6f => 'Post a mission or job';
@@ -801,15 +800,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copy_specialized_5d1ca04 => 'Specialized';
 
   @override
-  String get copy_start_a_good_collaboration_9df52cf =>
-      'Create your account';
+  String get copy_start_a_good_collaboration_9df52cf => 'Create your account';
 
   @override
   String get copy_start_here_555e56f => 'Start here';
 
   @override
   String get copy_start_with_your_city_or_explore_any_other__05a1e84 =>
-      'Start with your city—or explore any other city.';
+      'Select your city or explore another city.';
 
   @override
   String get copy_start_work_51d8317 => 'Start work';
@@ -946,7 +944,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_your_projects_applications_and_payments_wi_bec5340 =>
-      'Your projects, applications and payments will appear here.';
+      'View the status of sent and accepted offers here.';
 
   @override
   String get copy_hope_work_grow_together_6a1d9f0 =>
@@ -982,4 +980,74 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_pick_file => 'Choose file';
+
+  @override
+  String get copy_find_the_right_opportunity => 'Find the right opportunity';
+
+  @override
+  String get copy_all_opportunities => 'All opportunities';
+
+  @override
+  String get copy_save_search => 'Save search';
+
+  @override
+  String get copy_saving => 'Saving…';
+
+  @override
+  String get copy_saved_searches => 'Saved';
+
+  @override
+  String get copy_search_name => 'Search name';
+
+  @override
+  String get copy_could_not_save_search => 'Could not save the search.';
+
+  @override
+  String get copy_could_not_delete_saved_search =>
+      'Could not delete the saved search.';
+
+  @override
+  String get copy_categories_load_failed => 'Could not load categories.';
+
+  @override
+  String get copy_all_cities => 'All cities';
+
+  @override
+  String get copy_toman => 'Toman';
+
+  @override
+  String get copy_match_signals => 'Match signals';
+
+  @override
+  String get copy_match_skill => 'Skill match';
+
+  @override
+  String get copy_match_category => 'Category match';
+
+  @override
+  String get copy_match_very_near => 'Very near';
+
+  @override
+  String get copy_match_work_mode => 'Work mode fit';
+
+  @override
+  String get copy_match_salary_fit => 'Salary fit';
+
+  @override
+  String get copy_match_preference_fit => 'Preference fit';
+
+  @override
+  String get copy_match_general_fit => 'General fit';
+
+  @override
+  String get copy_view_and_act_on_mission => 'View and act on mission';
+
+  @override
+  String get copy_view_details_and_act => 'View details and act';
+
+  @override
+  String get copy_view_details => 'View details';
+
+  @override
+  String get copy_offers => 'Offers';
 }
