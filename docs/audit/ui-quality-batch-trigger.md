@@ -1,1 +1,1 @@
-UI quality batch trigger — final clean validation using Special Findings: restored proven runtime test source, scoped UI assertions, generated-artifact guard, dart fix --apply, focused tests, then zero-issue flutter analyze.
+Final UI quality validation trigger. Special Findings applied: known-good runtime source, focused UI assertions, generated-artifact guard, strict zero-issue flutter analyze. No analyzer autofix commit should be produced unless actual source changes are present.

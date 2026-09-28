@@ -4,5 +4,6 @@
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
-.packagesandroid/local.properties
+.packages
+android/local.properties
 ios/Runner/GeneratedPluginRegistrant.*
