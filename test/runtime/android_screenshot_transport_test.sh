@@ -23,7 +23,7 @@ grep -Fq "assert_hope_rendered" "$script_file"
 grep -Fq "adb exec-out screencap -p" "$script_file"
 grep -Fq "89504e470d0a1a0a" "$script_file"
 grep -Fq "duplicate-png-hash" "$script_file"
-grep -Fq 'HOPE_RUNTIME_STRICT_VALIDATION=' "$script_file"
+grep -Fq 'HOPE_RUNTIME_STRICT_VALIDATION:-0' "$script_file"
 grep -Fq 'if [ "$STRICT_RUNTIME_VALIDATION" = "1" ]; then' "$script_file"
 
 capture_line="$(grep -n 'adb exec-out screencap -p' "$script_file" | head -n 1 | cut -d: -f1)"
