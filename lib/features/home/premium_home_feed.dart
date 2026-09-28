@@ -155,118 +155,142 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _t(
-                            context,
-                            auth.isGuest ? 'فضای کاری' : 'عصر بخیر،',
-                            auth.isGuest ? 'Workspace' : 'Good evening,',
-                          ),
-                          style: HopeV2Type.eyebrow(context).copyWith(
-                            color: HopeV2Colors.secondaryDark,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          auth.isGuest
-                              ? _t(
-                                  context,
-                                  'فرصت‌های مناسب خود را پیدا کنید',
-                                  'Find opportunities that fit you',
-                                )
-                              : '$displayName 👋',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontSize: 25,
-                                letterSpacing: -.65,
-                              ),
-                        ),
-                        if (settings.city.trim().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              settings.city,
-                              style: Theme.of(context).textTheme.bodySmall,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _t(
+                              context,
+                              auth.isGuest ? 'فرصت‌های شما' : 'عصر بخیر،',
+                              auth.isGuest ? 'Your opportunities' : 'Good evening,',
+                            ),
+                            style: HopeV2Type.eyebrow(context).copyWith(
+                              color: HopeV2Colors.secondaryDark,
+                              fontSize: 10.5,
+                              letterSpacing: .55,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  Semantics(
-                    button: true,
-                    container: true,
-                    explicitChildNodes: true,
-                    label: _t(context, 'منو', 'App menu'),
-                    child: ExcludeSemantics(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: widget.onOpenMenu,
-                          child: Ink(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  HopeV2Colors.primary.withValues(alpha: .92),
-                                  HopeV2Colors.secondary.withValues(alpha: .72),
+                          const SizedBox(height: 4),
+                          Text(
+                            auth.isGuest
+                                ? _t(
+                                    context,
+                                    'فرصت مناسب خود را پیدا کنید',
+                                    'Find work that fits you',
+                                  )
+                                : '$displayName 👋',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontSize: 27,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -.8,
+                                  height: 1.02,
+                                ),
+                          ),
+                          if (settings.city.trim().isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ExcludeSemantics(
+                                    child: HopeIcon(
+                                      HopeV2Icons.location,
+                                      size: 13,
+                                      color: HopeV2Colors.darkMuted,
+                                      strokeWidth: 1.7,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    settings.city,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: HopeV2Colors.darkMuted,
+                                          fontSize: 10.5,
+                                        ),
+                                  ),
                                 ],
                               ),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: .12),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: HopeV2Colors.primary.withValues(alpha: .22),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 7),
-                                ),
-                              ],
                             ),
-                            child: avatarUrl != null
-                                ? ClipOval(
-                                    child: Image.network(
-                                      avatarUrl,
-                                      width: 48,
-                                      height: 48,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Center(
-                                        child: Text(
-                                          initial,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w900,
+                        ],
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      container: true,
+                      explicitChildNodes: true,
+                      label: _t(context, 'منو', 'App menu'),
+                      child: ExcludeSemantics(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: widget.onOpenMenu,
+                            child: Ink(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    HopeV2Colors.primary,
+                                    HopeV2Colors.secondaryStrong,
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: .14),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: HopeV2Colors.primary.withValues(alpha: .22),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 7),
+                                  ),
+                                ],
+                              ),
+                              child: avatarUrl != null
+                                  ? ClipOval(
+                                      child: Image.network(
+                                        avatarUrl,
+                                        width: 48,
+                                        height: 48,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Center(
+                                          child: Text(
+                                            initial,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w900,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  )
-                                : Center(
-                                    child: Text(
-                                      initial,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        initial,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                        ),
                                       ),
                                     ),
-                                  ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: HopeV2Spacing.xl),
@@ -566,12 +590,7 @@ if (!auth.isGuest) ...[
       children: [
         if (recommended.isNotEmpty) ...[
           PremiumSectionHeader(
-            title: _t(context, 'پیشنهاد ویژه', 'Best match'),
-            subtitle: _t(
-              context,
-              'فرصتی که بیشترین سیگنال تطابق را دارد.',
-              'The opportunity with the strongest match signals.',
-            ),
+            title: _t(context, 'بهترین تطابق برای شما', 'Best match for you'),
           ),
           const SizedBox(height: HopeV2Spacing.md),
           OpportunityCard(
