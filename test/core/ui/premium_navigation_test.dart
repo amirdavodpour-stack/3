@@ -15,7 +15,7 @@ void main() {
     NavigationDestination(
       icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
       selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
-      label: 'کارگاه',
+      label: 'کاوش',
     ),
     NavigationDestination(
       icon: HugeIcon(icon: HopeV2Icons.activity, size: 24),
