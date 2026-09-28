@@ -104,7 +104,7 @@ jobs:
       - name: Flutter analyze gate
         id: flutter_analyze_gate
         continue-on-error: true
-        run: timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze --no-fatal-warnings --no-fatal-infos
+        run: timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze
 
       - name: Flutter test gate
         id: flutter_test_gate
@@ -120,7 +120,7 @@ jobs:
         run: |
           CI=true node tools/write-evidence.mjs \
             --gate flutter_toolchain \
-            --command 'flutter analyze --no-fatal-warnings --no-fatal-infos && flutter test --no-pub' \
+            --command 'flutter analyze && flutter test --no-pub' \
             --result "$GATE_RESULT"
 
       - name: Upload main evidence

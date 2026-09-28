@@ -6,7 +6,7 @@ on:
       - feat/google-sign-in-2026-09-20
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   ui-quality-batch:
@@ -18,20 +18,16 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-
       - name: Setup Flutter 3.47.2
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: '3.47.2'
           channel: stable
           cache: true
-
       - name: Flutter dependencies
         run: flutter pub get --enforce-lockfile
-
       - name: Apply analyzer machine fixes
         run: dart fix --apply
-
       - name: Targeted UI/state tests
         run: >
           flutter test --no-pub
@@ -41,10 +37,8 @@ jobs:
           test/features/marketplace/job_detail_page_test.dart
           test/features/wallet/wallet_page_test.dart
           test/features/transactions/transaction_page_test.dart
-
       - name: Verify Flutter analyzer is clean
         run: flutter analyze
-
       - name: Normalize generated Flutter state
         run: |
           set -euo pipefail
@@ -54,35 +48,9 @@ jobs:
             lib/l10n/generated/app_localizations_fa.dart \
             android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java || true
           git clean -fdX
-
-      - name: Review diff
+      - name: Assert analyzer produced no repository changes
         run: |
           set -euo pipefail
-          git status --short
           git diff --check
-          echo "SOURCE_DART_DIFF:"
-          git diff --name-only --diff-filter=ACMRT |
-            grep -E '^(lib|test|integration_test)/.*\\.dart
- |
-            grep -v '^lib/l10n/generated/' || true
-          git diff --stat
-
-      - name: Commit analyzer fixes
-        if: ${{ success() }}
-        run: |
-          set -euo pipefail
-          files="$(
-            git diff --name-only --diff-filter=ACMRT |
-              grep -E '^(lib|test|integration_test)/.*\\.dart
- |
-              grep -v '^lib/l10n/generated/' || true
-          )"
-          if [ -z "$files" ]; then
-            echo "No analyzer source changes to commit."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          printf '%s\n' "$files" | xargs -r git add --
-          git commit -m "fix(ui): clean Flutter analyzer findings [analyzer-autofix]"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git status --short
+          test -z "$(git status --porcelain)"
