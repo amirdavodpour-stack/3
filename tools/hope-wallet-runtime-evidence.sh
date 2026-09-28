@@ -329,29 +329,27 @@ capture_host_screenshot() {
   echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
   return 1
 }
-run_en_host_session() {
+run_host_batch_session() {
   local mode="$1"
-  local marker="$2"
-  local log_path="$runner_temp/hope-$marker-runtime.log"
+  local route_mode="$2"
+  shift 2
+  local -a markers=("$@")
+  local locale="$CAPTURE_LOCALE"
+  local log_path="$runner_temp/hope-$mode-runtime.log"
   local process_pid
   local tail_pid
   local driver_status=0
   local capture_status=0
 
-  rm -f "$log_path"
-  : > "$log_path"
-
-  # flutter drive installs the APK only after it starts. On a clean AVD,
-  # run-as before flutter drive fails with 'unknown package'. The marker is
-  # supplied by the route/driver contract; stale completion state must be
-  # cleared from Dart after app startup, not from this pre-install host phase.
-
+  # One Flutter Driver session owns the whole screen batch. Each screen is
+  # synchronized through a ready file, which avoids repeatedly starting and
+  # shutting down the Flutter VM service for every screenshot.
   set +e
   flutter drive --no-pub --no-dds \
     --use-application-binary="$RUNTIME_APK" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
-    --route="/__hope_runtime_capture__/$CAPTURE_LOCALE/$marker" \
+    --route="/__hope_runtime_capture__/$locale/$route_mode" \
     >"$log_path" 2>&1 &
   process_pid=$!
   tail -n +1 -f "$log_path" &
@@ -360,18 +358,21 @@ run_en_host_session() {
 
   if ! wait_for_driver_connection "$process_pid" "$log_path"; then
     capture_status=1
-    echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-connect:$marker" >&2
+    echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-connect:$mode" >&2
     kill "$process_pid" >/dev/null 2>&1 || true
   else
-    capture_host_screenshot "$marker" "$process_pid" || {
-      capture_status=$?
-      kill "$process_pid" >/dev/null 2>&1 || true
-    }
+    for marker in "${markers[@]}"; do
+      if ! capture_host_screenshot "$marker" "$process_pid"; then
+        capture_status=1
+        kill "$process_pid" >/dev/null 2>&1 || true
+        break
+      fi
+    done
   fi
 
   local completion_request="files/hope-screen-sync/test-complete.ready"
   local completion_status=1
-  local completion_deadline=$((SECONDS + 30))
+  local completion_deadline=$((SECONDS + 60))
   while (( SECONDS < completion_deadline )); do
     if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb exec-out run-as com.hope.marketplace cat "$completion_request" >/dev/null 2>&1; then
       completion_status=0
@@ -382,14 +383,14 @@ run_en_host_session() {
   done
 
   if [ "$completion_status" -ne 0 ]; then
-    echo "HOPE_HOST_RUNTIME_COMPLETE_FAILED:test-body-complete-timeout:$marker" >&2
+    echo "HOPE_HOST_RUNTIME_COMPLETE_FAILED:test-body-complete-timeout:$mode" >&2
     capture_status=1
   fi
 
   local shutdown_deadline=$((SECONDS + RUNTIME_TEST_TIMEOUT_SECONDS))
   while kill -0 "$process_pid" 2>/dev/null; do
     if (( SECONDS >= shutdown_deadline )); then
-      echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-shutdown:$marker" >&2
+      echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-shutdown:$mode" >&2
       kill "$process_pid" >/dev/null 2>&1 || true
       sleep 1
       kill -KILL "$process_pid" >/dev/null 2>&1 || true
@@ -410,17 +411,14 @@ run_en_host_session() {
   wait "$tail_pid" >/dev/null 2>&1 || true
 
   if [ "$driver_status" -ne 0 ]; then
-    echo "HOPE_HOST_RUNTIME_DRIVER_FAILED:exit=$driver_status:marker=$marker" >&2
-    capture_android_diagnostics "$mode-$marker"
+    echo "HOPE_HOST_RUNTIME_DRIVER_FAILED:exit=$driver_status:mode=$mode" >&2
+    capture_android_diagnostics "$mode"
     return "$driver_status"
   fi
   return "$capture_status"
 }
 baseline_status=0
-for marker in "${baseline_screens[@]}"; do
-  run_en_host_session baseline "$marker" || baseline_status=$?
-  if [ "$baseline_status" -ne 0 ]; then break; fi
-done
+run_host_batch_session baseline baseline "${baseline_screens[@]}" || baseline_status=$?
 if [ "$baseline_status" -eq 0 ] &&
    ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$log_file" "${baseline_screens[@]}"; then
   baseline_status=1
@@ -457,10 +455,7 @@ if [ "$baseline_status" -eq 0 ]; then
       "responsive-720x1280-profile-fa-rtl"
     )
   fi
-  for marker in "${responsive_session_screens[@]}"; do
-    run_en_host_session responsive "$marker" || responsive_status=$?
-    if [ "$responsive_status" -ne 0 ]; then break; fi
-  done
+  run_host_batch_session responsive responsive "${responsive_session_screens[@]}" || responsive_status=$?
   responsive_screens=(
     "responsive-720x1280-home-fa-rtl"
     "responsive-720x1280-jobs-fa-rtl"
