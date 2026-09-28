@@ -1,0 +1,1 @@
+UI quality batch trigger. Analyzer autofix + targeted UI/state validation should run once against the current feature HEAD. Temporary control file; no product behavior.
