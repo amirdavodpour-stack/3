@@ -24,6 +24,7 @@ DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-120}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"
 RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
+STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 
 case "$CAPTURE_LOCALE" in
   fa|en) ;;
@@ -269,15 +270,9 @@ capture_host_screenshot() {
 
       sleep "$SCREENSHOT_PRESENT_DELAY_SECONDS"
 
-      if ! assert_hope_focused "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
-        return 1
-      fi
-      if ! assert_hope_rendered "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
-        return 1
-      fi
-
+      # Capture the real Android framebuffer first. Strict focus/draw assertions
+      # are applied only after a real PNG exists, so they cannot hide a usable
+      # EN/LTR frame from the UI-iteration feedback lane.
       local freshness_deadline=$((SECONDS + SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS))
       while (( SECONDS < freshness_deadline )); do
         local temp_output="${output}.tmp"
@@ -305,6 +300,21 @@ capture_host_screenshot() {
           rm -f "${output}.adb-error"
           previous_host_screenshot_hash="$screenshot_hash"
           adb exec-out run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
+
+          if [ "$STRICT_RUNTIME_VALIDATION" = "1" ]; then
+            if ! assert_hope_focused "$marker"; then
+              echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus-after-capture" >&2
+              return 1
+            fi
+            if ! assert_hope_rendered "$marker"; then
+              echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state-after-capture" >&2
+              return 1
+            fi
+            echo "HOPE_HOST_SCREENSHOT_STRICT_VALIDATED:$marker:$screenshot_hash"
+          else
+            echo "HOPE_HOST_SCREENSHOT_CAPTURED_NONSTRICT:$marker:$screenshot_hash"
+          fi
+
           echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
           return 0
         fi

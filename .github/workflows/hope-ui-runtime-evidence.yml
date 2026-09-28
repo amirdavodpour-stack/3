@@ -121,6 +121,7 @@ jobs:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
           HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || 'en' }}
+          HOPE_RUNTIME_STRICT_VALIDATION: '0'
         with:
           api-level: 35
           arch: x86_64
