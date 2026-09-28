@@ -404,7 +404,7 @@ void main() {
     );
 
     expect(find.text('Match intelligence'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('Match details for this opportunity'));
+    await tester.tap(find.text('See details'));
     await tester.pumpAndSettle();
 
     expect(find.text('Why this opportunity fits'), findsOneWidget);

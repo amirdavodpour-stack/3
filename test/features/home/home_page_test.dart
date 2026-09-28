@@ -94,7 +94,7 @@ void main() {
     expect(find.bySemanticsLabel('منو'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsOneWidget);
-    expect(find.text('Explore'), findsOneWidget);
+    expect(find.text('کاوش'), findsOneWidget);
   });
 
   testWidgets(

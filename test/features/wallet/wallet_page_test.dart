@@ -586,7 +586,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('2,500,000 TOMAN'), findsOneWidget);
+    expect(find.textContaining('2,500,000 TOMAN'), findsNWidgets(2));
     expect(find.textContaining('2,500,000 IRR'), findsNothing);
     expect(find.textContaining('1,000,000 TOMAN'), findsOneWidget);
     expect(find.textContaining('IRR'), findsNothing);
