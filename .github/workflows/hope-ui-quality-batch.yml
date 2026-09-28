@@ -1,0 +1,71 @@
+name: HOPE UI Quality Batch
+
+on:
+  push:
+    branches:
+      - feat/google-sign-in-2026-09-20
+
+permissions:
+  contents: write
+
+jobs:
+  ui-quality-batch:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[ui-quality-batch]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Apply analyzer machine fixes
+        run: dart fix --apply
+
+      - name: Targeted UI/state tests
+        run: >
+          flutter test --no-pub
+          test/features/home/home_page_test.dart
+          test/features/home/premium_home_feed_test.dart
+          test/core/ui/premium_navigation_test.dart
+          test/features/marketplace/job_detail_page_test.dart
+          test/features/wallet/wallet_page_test.dart
+          test/features/transactions/transaction_page_test.dart
+
+      - name: Verify Flutter analyzer is clean
+        run: flutter analyze
+
+      - name: Review diff
+        run: |
+          git status --short
+          git diff --check
+          if git diff --quiet; then
+            echo "NO_CHANGES"
+          else
+            echo "CHANGES_READY"
+            git diff --stat
+          fi
+
+      - name: Commit analyzer fixes
+        if: ${{ success() }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No analyzer changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(ui): clean Flutter analyzer findings [analyzer-autofix]"
+          git push origin HEAD:${GITHUB_REF_NAME}
