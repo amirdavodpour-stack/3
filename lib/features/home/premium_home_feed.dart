@@ -129,10 +129,19 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();
-    final displayName =
-        ((auth.user?['displayName'] as String?)?.trim().isNotEmpty ?? false)
-            ? (auth.user?['displayName'] as String).trim()
-            : _t(context, 'فضای کاری', 'Workspace');
+    final rawDisplayName = [
+      auth.user?['displayName'],
+      auth.user?['name'],
+      auth.user?['firstName'],
+    ]
+        .map((value) => value?.toString().trim() ?? '')
+        .firstWhere(
+          (value) => value.isNotEmpty,
+          orElse: () => '',
+        );
+    final displayName = rawDisplayName.isNotEmpty
+        ? rawDisplayName
+        : _t(context, 'فضای کاری', 'Workspace');
     final initial = displayName.trim().isNotEmpty
         ? displayName.trim().substring(0, 1).toUpperCase()
         : 'H';
