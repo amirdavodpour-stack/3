@@ -714,6 +714,26 @@ class _WalletPageState extends State<WalletPage> {
               _t('مجموع موجودی', 'Total balance'),
               _money(wallet.totalBalance),
             ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: walletHeroMetric(
+                    context,
+                    _t('قابل استفاده', 'Available'),
+                    _money(wallet.availableBalance),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: walletHeroMetric(
+                    context,
+                    _t('قفل‌شده', 'Locked'),
+                    _money(wallet.lockedBalance),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       );

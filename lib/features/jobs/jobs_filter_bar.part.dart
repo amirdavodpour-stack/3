@@ -57,7 +57,7 @@ class _JobsFilterHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    copy.copy_find_the_right_opportunity,
+                    _t(context, 'فرصت بعدی خود را پیدا کنید', 'Find your next opportunity'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -70,7 +70,7 @@ class _JobsFilterHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    copy.copy_see_missions_and_jobs_together_then_narrow_7e573a3,
+                    _t(context, 'فرصت‌ها را جست‌وجو کنید و با فیلترها دقیق‌تر شوید.', 'Search opportunities and refine with filters.'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
