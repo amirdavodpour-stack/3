@@ -459,8 +459,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 return _opportunitySections(context, jobs, settings);
               },
             ),
-            const SizedBox(height: HopeV2Spacing.xl),
-if (!auth.isGuest) ...[
+            const SizedBox(height: HopeV2Spacing.lg),
+            if (!auth.isGuest) ...[
+              _activeWork(context),
               const SizedBox(height: HopeV2Spacing.lg),
               _financialSnapshot(context),
             ],
