@@ -409,9 +409,19 @@ void main() {
 
     expect(find.text('Why this opportunity fits'), findsOneWidget);
     expect(find.text('Match signals'), findsOneWidget);
-    expect(find.text('Skill match'), findsOneWidget);
-    expect(find.text('Work mode fit'), findsOneWidget);
-    expect(find.text('Category match'), findsOneWidget);
+    final sheet = find.byType(BottomSheet);
+    expect(
+      find.descendant(of: sheet, matching: find.text('Skill match')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('Work mode fit')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('Category match')),
+      findsOneWidget,
+    );
     expect(find.text('94%'), findsWidgets);
   });
 
