@@ -29,6 +29,12 @@ android {
         versionName = appVersionName
     }
 
+    buildFeatures {
+        // MainActivity uses BuildConfig.DEBUG to scope runtime-capture
+        // intent handling to debug APKs only.
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
