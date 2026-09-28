@@ -25,6 +25,7 @@ RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"
 RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
+CAPTURE_REMOTE_ROOT="files/hope-screen-sync-${GITHUB_RUN_ID:-local}"
 
 case "$CAPTURE_LOCALE" in
   fa|en) ;;
@@ -39,7 +40,8 @@ flutter build apk --debug --no-pub \
   --target=integration_test/runtime/critical_screens_evidence_test.dart \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true \
-  --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync"
+  --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
+  --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID:-local}"
 test -s "$RUNTIME_APK"
 
 # The custom emulator runner provisions the emulator but does not install our APK.
@@ -49,6 +51,9 @@ timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${
 timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
   adb shell pm path com.hope.marketplace >/dev/null
 
+# Never reuse READY markers from an earlier emulator/test session.
+timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
+  adb exec-out run-as com.hope.marketplace rm -rf "$CAPTURE_REMOTE_ROOT" >/dev/null 2>&1 || true
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
 
@@ -258,7 +263,7 @@ fi
 capture_host_screenshot() {
   local marker="$1"
   local process_pid="$2"
-  local request="files/hope-screen-sync/$marker.ready"
+  local request="$CAPTURE_REMOTE_ROOT/$marker.ready"
   local output="$evidence_dir/$marker.png"
   local deadline=$((SECONDS + 180))
 
@@ -427,6 +432,7 @@ run_host_batch_session() {
   fi
   return "$capture_status"
 }
+echo "HOPE_RUNTIME_CAPTURE_LOCALE:$CAPTURE_LOCALE"
 baseline_status=0
 run_host_batch_session baseline baseline "${baseline_screens[@]}" || baseline_status=$?
 if [ "$baseline_status" -eq 0 ] &&

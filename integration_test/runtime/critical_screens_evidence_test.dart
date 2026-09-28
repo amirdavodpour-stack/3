@@ -785,6 +785,12 @@ Future<void> _captureResponsiveLocale(
 }
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  if (_captureLocale != 'fa' && _captureLocale != 'en') {
+    throw StateError(
+      'HOPE_CAPTURE_LOCALE must be supplied as fa or en for exact-locale runtime evidence.',
+    );
+  }
+  print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
