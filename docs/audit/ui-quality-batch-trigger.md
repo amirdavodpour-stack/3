@@ -1,1 +1,1 @@
-UI quality batch trigger. Analyzer autofix + targeted UI/state validation should run once against the current feature HEAD. Temporary control file; no product behavior.
+UI quality batch trigger — rerun after scoped focused-test fixes; use dart fix --apply, focused UI/state tests, then zero-issue flutter analyze.
