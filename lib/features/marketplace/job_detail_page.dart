@@ -1429,7 +1429,7 @@ class _MatchIntelligence extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
+      builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
           child: ListView(
@@ -1477,7 +1477,7 @@ class _MatchIntelligence extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              ${score.clamp(0, 100).toStringAsFixed(0)}%,
+                              '${score.clamp(0, 100).toStringAsFixed(0)}%',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
