@@ -100,6 +100,7 @@ class PremiumNavigationBar extends StatelessWidget {
               selectedIndex: selectedIndex,
               onDestinationSelected: onDestinationSelected,
               destinations: destinations,
+              height: HopeV2Navigation.barHeight,
             ),
           ),
         ),
