@@ -41,6 +41,13 @@ flutter build apk --debug --no-pub \
   --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync"
 test -s "$RUNTIME_APK"
 
+# The custom emulator runner provisions the emulator but does not install our APK.
+# Install the exact artifact before any app-private marker handoff or flutter drive.
+timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
+  adb install -r "$RUNTIME_APK"
+timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
+  adb shell pm path com.hope.marketplace >/dev/null
+
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
 
