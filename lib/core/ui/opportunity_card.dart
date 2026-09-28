@@ -328,6 +328,106 @@ class OpportunityCard extends StatelessWidget {
     );
   }
 
+  Widget _featuredStandard(
+    BuildContext context, {
+    required String title,
+    required String city,
+    required String amount,
+    required Color primary,
+    required double? score,
+    required String? mediaUrl,
+    required HopeCopy copy,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _mediaHeader(
+          context,
+          title: title,
+          primary: primary,
+          mediaUrl: mediaUrl,
+          score: score,
+          featured: true,
+        ),
+        const SizedBox(height: HopeV2Spacing.md),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: HopeV2Spacing.sm,
+                runSpacing: HopeV2Spacing.xs,
+                children: [
+                  PremiumTag(
+                    icon: job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
+                    label: job.isMission
+                        ? copy.copy_mission_fb4c5e1
+                        : copy.copy_job_ce2feba,
+                    color: primary,
+                  ),
+                  PremiumTag(
+                    icon: HopeV2Icons.location,
+                    label: city,
+                    color: secondaryAccent(context),
+                  ),
+                ],
+              ),
+            ),
+            if (amount.isNotEmpty) ...[
+              const SizedBox(width: HopeV2Spacing.sm),
+              Flexible(
+                child: Text(
+                  '${_formatAmount(amount)} ${copy.copy_toman}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: HopeV2Type.metric(context).copyWith(
+                    fontSize: 15,
+                    color: primary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: HopeV2Spacing.md),
+        Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 12, 10),
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: .14),
+            borderRadius: BorderRadius.circular(HopeV2Radii.button),
+            border: Border.all(color: primary.withValues(alpha: .28)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  job.isMission
+                      ? copy.copy_view_and_act_on_mission
+                      : copy.copy_view_details_and_act,
+                  style: TextStyle(
+                    color: primary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              HugeIcon(
+                icon: Directionality.of(context) == ui.TextDirection.rtl
+                    ? HopeV2Icons.arrowLeft
+                    : HopeV2Icons.arrowRight,
+                size: 20,
+                color: primary,
+                strokeWidth: 1.9,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _standard(
     BuildContext context,
     String title,
@@ -340,6 +440,19 @@ class OpportunityCard extends StatelessWidget {
     String? mediaUrl,
     HopeCopy copy,
   ) {
+    if (featured) {
+      return _featuredStandard(
+        context,
+        title: title,
+        city: city,
+        amount: amount,
+        primary: primary,
+        score: job.recommendationScore,
+        mediaUrl: mediaUrl,
+        copy: copy,
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
