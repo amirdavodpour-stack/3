@@ -42,6 +42,7 @@ flutter build apk --debug --no-pub \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true \
   --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
+  --dart-define=HOPE_CAPTURE_HOME_ONLY="${CAPTURE_HOME_ONLY}" \
   --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID:-local}"
 test -s "$RUNTIME_APK"
 
