@@ -44,24 +44,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Checkout pinned Android Emulator Runner
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          repository: soloturn/android-emulator-runner
-          ref: ab495a9b42f2af30f5222bd978136f9b0a85b68a
-          path: .ci/android-emulator-runner
-          fetch-depth: 1
-
-      - name: Install pinned Android Emulator Runner dependencies
-        working-directory: .ci/android-emulator-runner
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Verify pinned Android Emulator Runner
-        run: |
-          test -s .ci/android-emulator-runner/action.yml
-          test -s .ci/android-emulator-runner/lib/main.js
-          test -f .ci/android-emulator-runner/node_modules/@actions/core/package.json
-
       - name: Test Android ADB recovery contract
         run: bash test/runtime/android_runtime_adb_recovery_test.sh
       - name: Test Android screenshot transport contract
@@ -119,9 +101,9 @@ jobs:
           test -r /dev/kvm
           test -w /dev/kvm
 
-      # Runtime evidence uses the last known-good HOPE emulator configuration from Run #261: Android 35/default/Pixel 2.\n      # Current failures on Android 34/google_apis/Pixel 5 reached launcher ANR + screencap hang; isolate the image/profile first.\n      # Runtime evidence is tied to this exact feature-branch SHA; lib/assets changes trigger it.
+      # Use the maintained ReactiveCircus runner; current known-good device contract remains Android 35/default/Pixel 2.\n      # Current failures on Android 34/google_apis/Pixel 5 reached launcher ANR + screencap hang; isolate the image/profile first.\n      # Runtime evidence is tied to this exact feature-branch SHA; lib/assets changes trigger it.
       - name: Android runtime evidence
-        uses: ./.ci/android-emulator-runner
+        uses: ReactiveCircus/android-emulator-runner@v2.38.0
         env:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
