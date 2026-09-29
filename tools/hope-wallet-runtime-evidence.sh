@@ -45,6 +45,8 @@ flutter build apk --debug --no-pub \
   --dart-define=HOPE_CAPTURE_HOME_ONLY="${CAPTURE_HOME_ONLY}" \
   --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID:-local}"
 test -s "$RUNTIME_APK"
+# Preserve the exact APK built from this feature-branch SHA for local/runtime Maestro inspection.
+cp "$RUNTIME_APK" "$evidence_dir/HOPE-${GITHUB_SHA}-debug.apk"
 
 # The custom emulator runner provisions the emulator but does not install our APK.
 # Install the exact artifact before any app-private marker handoff or flutter drive.
