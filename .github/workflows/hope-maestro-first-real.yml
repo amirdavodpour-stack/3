@@ -44,6 +44,8 @@ jobs:
         run: flutter build apk --debug --no-pub
 
       - name: Install Maestro CLI 2.10.0
+        env:
+          MAESTRO_VERSION: "2.10.0"
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
