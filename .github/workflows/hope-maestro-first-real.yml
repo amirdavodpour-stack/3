@@ -1,0 +1,82 @@
+name: HOPE First Real Maestro Flow
+
+on:
+  push:
+    branches:
+      - feat/google-sign-in-2026-09-20
+    paths:
+      - ".maestro/**"
+      - ".github/workflows/hope-maestro-first-real.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hope-maestro-first-real-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  first-real-flow:
+    name: First real Maestro flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+
+      - name: Prepare Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build exact debug APK
+        run: flutter build apk --debug --no-pub
+
+      - name: Install Maestro CLI 2.10.0
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          "$HOME/.maestro/bin/maestro" --version
+          test "$("$HOME/.maestro/bin/maestro" --version)" = "2.10.0"
+
+      - name: Android emulator + Maestro
+        uses: ReactiveCircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 35
+          arch: x86_64
+          target: default
+          profile: pixel_2
+          force-avd-creation: false
+          cores: 4
+          ram-size: 4096M
+          disable-linux-hw-accel: false
+          emulator-boot-timeout: 1200
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          disable-animations: true
+          script: |
+            set -eux
+            adb devices
+            adb install -r build/app/outputs/flutter-apk/app-debug.apk
+            mkdir -p maestro-artifacts
+            maestro test --test-output-dir=maestro-artifacts .maestro/flows/hope-first-runtime.yml
+
+      - name: Upload Maestro evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: hope-first-maestro-evidence-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            maestro-artifacts/**
+            build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: warn
