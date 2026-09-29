@@ -273,83 +273,38 @@ capture_host_screenshot() {
 
   while (( SECONDS < deadline )); do
     local ready_tmp="$(mktemp)"
-    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-      adb exec-out run-as com.hope.marketplace cat "$request" >"$ready_tmp" 2>/dev/null; then
+    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"       adb exec-out run-as com.hope.marketplace cat "$request" >"$ready_tmp" 2>/dev/null; then
       rm -f "$ready_tmp"
 
-      sleep "$SCREENSHOT_PRESENT_DELAY_SECONDS"
-
-      # Wait for the Android Activity/surface to be the real HOPE window before
-      # screencap. These are readiness barriers, not visual acceptance criteria.
-      # They are the same class of guard that preceded the known-good Run #322.
       if ! assert_hope_focused "$marker"; then
-        if [ "$STRICT_RUNTIME_VALIDATION" = "1" ]; then
-          echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
-          return 1
-        fi
-        echo "HOPE_HOST_CAPTURE_READINESS_WARN:$marker:focus"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
+        return 1
       fi
       if ! assert_hope_rendered "$marker"; then
-        if [ "$STRICT_RUNTIME_VALIDATION" = "1" ]; then
-          echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
-          return 1
-        fi
-        echo "HOPE_HOST_CAPTURE_READINESS_WARN:$marker:draw-state"
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
+        return 1
       fi
 
-      local freshness_deadline=$((SECONDS + SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS))
-      while (( SECONDS < freshness_deadline )); do
-        local temp_output="${output}.tmp"
+      local temp_output="${output}.tmp"
+      rm -f "$temp_output"
+      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"         adb exec-out screencap -p >"$temp_output" 2>"${output}.adb-error"; then
         rm -f "$temp_output"
-        if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-          adb exec-out screencap -p >"$temp_output" 2>"${output}.adb-error"; then
-          rm -f "$temp_output"
-          echo "HOPE_HOST_CAPTURE_FAILED:$marker:screencap" >&2
-          return 1
-        fi
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:screencap" >&2
+        return 1
+      fi
 
-        local magic
-        magic="$(od -An -tx1 -N8 "$temp_output" | tr -d "[:space:]")"
-        if [ "$magic" != "89504e470d0a1a0a" ]; then
-          rm -f "$temp_output"
-          echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
-          return 1
-        fi
+      local magic
+      magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
+      if [ "$magic" = "89504e470d0a1a0a" ]; then
+        mv "$temp_output" "$output"
+        rm -f "${output}.adb-error"
+        adb exec-out run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
+        echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
+        return 0
+      fi
 
-        local screenshot_hash
-        screenshot_hash="$(sha256sum "$temp_output" | awk "{print \$1}")"
-        if [ "$STRICT_RUNTIME_VALIDATION" != "1" ] ||
-           [ -z "${previous_host_screenshot_hash:-}" ] ||
-           [ "$screenshot_hash" != "$previous_host_screenshot_hash" ]; then
-          mv "$temp_output" "$output"
-          rm -f "${output}.adb-error"
-          previous_host_screenshot_hash="$screenshot_hash"
-          adb exec-out run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
-
-          if [ "$STRICT_RUNTIME_VALIDATION" = "1" ]; then
-            if ! assert_hope_focused "$marker"; then
-              echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus-after-capture" >&2
-              return 1
-            fi
-            if ! assert_hope_rendered "$marker"; then
-              echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state-after-capture" >&2
-              return 1
-            fi
-            echo "HOPE_HOST_SCREENSHOT_STRICT_VALIDATED:$marker:$screenshot_hash"
-          else
-            echo "HOPE_HOST_SCREENSHOT_CAPTURED_NONSTRICT:$marker:$screenshot_hash"
-          fi
-
-          echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-          return 0
-        fi
-
-        rm -f "$temp_output"
-        sleep 0.25
-      done
-
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:stale-frame" >&2
-      adb exec-out run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
+      rm -f "$temp_output"
+      echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
       return 1
     fi
     rm -f "$ready_tmp"
@@ -364,6 +319,7 @@ capture_host_screenshot() {
   echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
   return 1
 }
+
 run_host_batch_session() {
   local mode="$1"
   local route_mode="$2"
