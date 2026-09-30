@@ -612,10 +612,12 @@ typedef _Runtime = ({
 var _runtimeScreenshotSurfacePrepared = false;
 
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
-  if (_adbScreenshotCapture || _runtimeScreenshotSurfacePrepared) {
+  if (_runtimeScreenshotSurfacePrepared) {
     return;
   }
 
+  // Android integration_test screenshots need the Flutter surface converted
+  // before the first capture so the image comes from the Flutter render surface.
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
   await binding.convertFlutterSurfaceToImage();
