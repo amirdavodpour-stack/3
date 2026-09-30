@@ -402,31 +402,31 @@ class PremiumPanel extends StatelessWidget {
                 end: AlignmentDirectional.bottomEnd,
                 colors: dark
                     ? [
-                        scheme.primary.withValues(alpha: .14),
-                        HopeV2Colors.panelSoftDark.withValues(alpha: .92),
+                        scheme.primary.withValues(alpha: .105),
+                        HopeV2Colors.secondary.withValues(alpha: .018),
                         HopeV2Surfaces.panel(context),
                       ]
                     : [
-                        scheme.primary.withValues(alpha: .075),
+                        scheme.primary.withValues(alpha: .07),
                         HopeV2Surfaces.panel(context),
                         HopeV2Surfaces.panel(context),
                       ],
-                stops: const [0, .36, 1],
+                stops: const [0, .52, 1],
               )
             : null,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? scheme.primary.withValues(alpha: dark ? .32 : .20)
+              ? scheme.primary.withValues(alpha: dark ? .26 : .18)
               : HopeV2Surfaces.border(context),
-          width: highlight ? 1.1 : 1,
+          width: highlight ? 1.0 : 1,
         ),
         boxShadow: dark
             ? [
                 if (highlight)
                   BoxShadow(
-                    color: scheme.primary.withValues(alpha: .10),
-                    blurRadius: 24,
+                    color: scheme.primary.withValues(alpha: .075),
+                    blurRadius: 22,
                     offset: const Offset(0, 9),
                   ),
               ]
@@ -823,8 +823,8 @@ class PremiumTag extends StatelessWidget {
       label: label,
       container: true,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 28),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        constraints: const BoxConstraints(minHeight: 26),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
@@ -859,7 +859,7 @@ class PremiumTag extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
-                  fontSize: 11,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w900,
                 ),
               ),

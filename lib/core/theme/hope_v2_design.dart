@@ -36,7 +36,7 @@ class HopeV2Colors {
   static const softPrimary = Color(0xFFE0E7FF);
   static const darkBackground = Color(0xFF070A12);
   static const darkSurface = Color(0xFF0F111A);
-  static const darkCard = Color(0xFF111827);
+  static const darkCard = Color(0xFF111522);
   static const darkText = Color(0xFFF8FAFC);
   static const darkMuted = Color(0xFFA5ADBD);
 
@@ -45,7 +45,7 @@ class HopeV2Colors {
   static const panelLight = Color(0xFFFFFFFF);
   static const panelDark = Color(0xFF0F111A);
   static const panelSoftLight = Color(0xFFFBF9FE);
-  static const panelSoftDark = Color(0xFF121726);
+  static const panelSoftDark = Color(0xFF111522);
   static const chipLight = Color(0xFFEFEBF8);
   static const chipDark = Color(0x1AFFFFFF);
   static const chipSelectedDark = Color(0x336366F1);
@@ -54,7 +54,7 @@ class HopeV2Colors {
   static const dividerLight = Color(0xFFE4E0EA);
   static const outlinedButtonBorderLight = Color(0xFFDAD4E5);
   static const navigationLight = Color(0xFFF7F4FC);
-  static const navigationDark = Color(0xF7090D17);
+  static const navigationDark = Color(0xF9080B14);
   static const navigationIndicatorLight = Color(0xFFE5DFFF);
   static const navigationIndicatorDark = Color(0x3A6366F1);
   static const inputDark = Color(0xFF0D1320);
@@ -140,7 +140,7 @@ class HopeV2Spacing {
   static const lg = 16.0;
   static const xl = 24.0;
   static const xxl = 32.0;
-  static const section = 32.0;
+  static const section = 28.0;
   static const display = 48.0;
 }
 
@@ -150,7 +150,7 @@ class HopeV2Radii {
   static const md = 16.0;
   static const lg = 18.0;
   static const xl = 24.0;
-  static const hero = 28.0;
+  static const hero = 24.0;
   static const input = 14.0;
   static const button = 14.0;
   static const navigation = 14.0;
@@ -405,7 +405,7 @@ class HopeV2Type {
       .textTheme
       .titleLarge!
       .copyWith(
-        fontSize: 22,
+        fontSize: 21,
         fontWeight: FontWeight.w900,
         letterSpacing: -.45,
         height: 1.0,
@@ -414,10 +414,10 @@ class HopeV2Type {
   static TextStyle section(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
-      .copyWith(fontSize: 20, letterSpacing: -.25);
+      .copyWith(fontSize: 18.5, letterSpacing: -.2);
 
   static TextStyle eyebrow(BuildContext context) => Theme.of(context)
       .textTheme
       .labelLarge!
-      .copyWith(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: .8);
+      .copyWith(fontSize: 10.5, fontWeight: FontWeight.w900, letterSpacing: .75);
 }

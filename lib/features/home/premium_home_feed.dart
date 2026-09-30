@@ -156,7 +156,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 
     return PremiumPageFrame(
       maxWidth: 1180,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
       child: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
@@ -197,7 +197,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontSize: 27,
+                                  fontSize: 25,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -.8,
                                   height: 1.02,
@@ -302,7 +302,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 ),
               ),
             ),
-            const SizedBox(height: HopeV2Spacing.xl),
+            const SizedBox(height: HopeV2Spacing.lg),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, pulseSnapshot) {
@@ -351,7 +351,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 ];
 
                 return PremiumPanel(
-                  padding: const EdgeInsets.all(HopeV2Spacing.lg),
+                  padding: const EdgeInsets.all(14),
                   highlight: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,7 +390,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: HopeV2Spacing.lg),
+                      const SizedBox(height: HopeV2Spacing.md),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           // Mobile keeps the pulse readable as a 2x2 metric grid;
@@ -425,7 +425,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 );
               },
             ),
-            const SizedBox(height: HopeV2Spacing.xl),
+            const SizedBox(height: HopeV2Spacing.lg),
                         FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -479,7 +479,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     required Color accent,
   }) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 70),
+      constraints: const BoxConstraints(minHeight: 66),
       padding: const EdgeInsets.symmetric(
         horizontal: 9,
         vertical: 9,
@@ -503,7 +503,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.metric(context).copyWith(
-                  fontSize: compact ? 17 : (value.length > 7 ? 15 : 20),
+                  fontSize: compact ? 16 : (value.length > 7 ? 14 : 18),
                   color: Colors.white,
                 ),
               ),
@@ -513,7 +513,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 10,
+                      fontSize: 9.5,
                       color: HopeV2Colors.darkMuted,
                     ),
               ),

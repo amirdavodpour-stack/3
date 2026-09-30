@@ -169,7 +169,7 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: featured ? 136 : 168,
+        height: featured ? 124 : 152,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -189,9 +189,9 @@ class OpportunityCard extends StatelessWidget {
                     begin: AlignmentDirectional.topCenter,
                     end: AlignmentDirectional.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: .08),
-                      Colors.black.withValues(alpha: .22),
-                      Colors.black.withValues(alpha: dark ? .64 : .50),
+                      Colors.black.withValues(alpha: .06),
+                      Colors.black.withValues(alpha: .18),
+                      Colors.black.withValues(alpha: dark ? .58 : .46),
                     ],
                     stops: const [0, .48, 1],
                   ),
@@ -220,8 +220,8 @@ class OpportunityCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
-                  height: 1.06,
+                  fontSize: 18.5,
+                  height: 1.08,
                   fontWeight: FontWeight.w900,
                   shadows: [
                     Shadow(
@@ -245,49 +245,80 @@ class OpportunityCard extends StatelessWidget {
           begin: AlignmentDirectional.topStart,
           end: AlignmentDirectional.bottomEnd,
           colors: [
-            primary.withValues(alpha: .52),
-            const Color(0xFF17203A),
+            primary.withValues(alpha: .44),
+            const Color(0xFF18213A),
             const Color(0xFF080D18),
           ],
-          stops: const [0, .48, 1],
+          stops: const [0, .46, 1],
         ),
       ),
       child: Stack(
+        fit: StackFit.expand,
         children: [
           PositionedDirectional(
-            end: -24,
-            top: -38,
+            end: -34,
+            top: -58,
             child: Container(
-              width: 148,
-              height: 148,
+              width: 176,
+              height: 176,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: .16),
+                    Colors.white.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            start: -54,
+            bottom: -78,
+            child: Container(
+              width: 214,
+              height: 214,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: HopeV2Colors.secondary.withValues(alpha: .12),
+                  width: 1.2,
+                ),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            start: 34,
+            top: 22,
+            child: Transform.rotate(
+              angle: -.28,
+              child: Container(
+                width: 120,
+                height: 1,
                 color: Colors.white.withValues(alpha: .10),
               ),
             ),
           ),
           PositionedDirectional(
-            start: -40,
-            bottom: -62,
-            child: Container(
-              width: 172,
-              height: 172,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: .10),
-                ),
+            start: 52,
+            top: 48,
+            child: Transform.rotate(
+              angle: -.28,
+              child: Container(
+                width: 92,
+                height: 1,
+                color: Colors.white.withValues(alpha: .07),
               ),
             ),
           ),
           const Center(
             child: Opacity(
-              opacity: .25,
+              opacity: .30,
               child: HopeIcon(
                 HopeV2Icons.featured,
                 color: Colors.white,
-                size: 58,
-                strokeWidth: 1.6,
+                size: 46,
+                strokeWidth: 1.5,
               ),
             ),
           ),
@@ -295,7 +326,6 @@ class OpportunityCard extends StatelessWidget {
       ),
     );
   }
-
   Widget _compact(BuildContext context, String title, String city, String amount, Color primary, HopeCopy copy) {
     return Row(
       children: [
@@ -349,7 +379,7 @@ class OpportunityCard extends StatelessWidget {
           score: score,
           featured: true,
         ),
-        const SizedBox(height: HopeV2Spacing.md),
+        const SizedBox(height: HopeV2Spacing.sm),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -390,7 +420,7 @@ class OpportunityCard extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: HopeV2Spacing.md),
+        const SizedBox(height: HopeV2Spacing.sm),
         Container(
           width: double.infinity,
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
