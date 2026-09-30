@@ -274,14 +274,6 @@ wait_for_screenshot_file() {
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
         return 1
       fi
-      if ! assert_hope_focused "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
-        return 1
-      fi
-      if ! assert_hope_rendered "$marker"; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
-        return 1
-      fi
       echo "HOPE_HOST_SCREENSHOT_READY:$marker"
       return 0
     fi

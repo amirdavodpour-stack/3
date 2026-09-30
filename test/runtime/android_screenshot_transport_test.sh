@@ -35,6 +35,21 @@ grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
 grep -Fq 'wait_for_screenshot_file' "$script_file"
 grep -Fq 'HOPE_HOST_SCREENSHOT_READY' "$script_file"
+wait_start="$(grep -n '^wait_for_screenshot_file()' "$script_file" | head -n1 | cut -d: -f1)"
+wait_end="$(awk 'NR > wait_start && /^}/ {print NR; exit}' wait_start="$wait_start" "$script_file")
+if [ -z "$wait_start" ] || [ -z "$wait_end" ] || [ "$wait_end" -le "$wait_start" ]; then
+  echo "FAIL: screenshot wait function bounds are missing" >&2
+  exit 1
+fi
+wait_body="$(sed -n "${wait_start},${wait_end}p" "$script_file")"
+if grep -Fq 'assert_hope_focused' <<<"$wait_body"; then
+  echo "FAIL: post-capture focus validation is stale and can inspect a later screen" >&2
+  exit 1
+fi
+if grep -Fq 'assert_hope_rendered' <<<"$wait_body"; then
+  echo "FAIL: post-capture draw validation is stale and can inspect a later screen" >&2
+  exit 1
+fi
 if grep -Fq 'adb exec-out screencap -p' "$script_file"; then
   echo "FAIL: host still captures a later framebuffer snapshot" >&2
   exit 1
