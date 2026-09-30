@@ -36,7 +36,7 @@ class HopeV2Colors {
   static const softPrimary = Color(0xFFE0E7FF);
   static const darkBackground = Color(0xFF070A12);
   static const darkSurface = Color(0xFF0F111A);
-  static const darkCard = Color(0xFF111522);
+  static const darkCard = Color(0xFF111827);
   static const darkText = Color(0xFFF8FAFC);
   static const darkMuted = Color(0xFFA5ADBD);
 
@@ -45,7 +45,7 @@ class HopeV2Colors {
   static const panelLight = Color(0xFFFFFFFF);
   static const panelDark = Color(0xFF0F111A);
   static const panelSoftLight = Color(0xFFFBF9FE);
-  static const panelSoftDark = Color(0xFF111522);
+  static const panelSoftDark = Color(0xFF121726);
   static const chipLight = Color(0xFFEFEBF8);
   static const chipDark = Color(0x1AFFFFFF);
   static const chipSelectedDark = Color(0x336366F1);
@@ -150,7 +150,7 @@ class HopeV2Radii {
   static const md = 16.0;
   static const lg = 18.0;
   static const xl = 24.0;
-  static const hero = 24.0;
+  static const hero = 28.0;
   static const input = 14.0;
   static const button = 14.0;
   static const navigation = 14.0;
