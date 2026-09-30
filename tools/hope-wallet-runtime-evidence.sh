@@ -16,8 +16,7 @@ hope_android_device_ready "$RUNTIME_SERIAL"
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
 RUNTIME_APK="${GITHUB_WORKSPACE:-$PWD}/build/app/outputs/flutter-apk/app-debug.apk"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
-SCREENSHOT_PRESENT_DELAY_SECONDS="${HOPE_SCREENSHOT_PRESENT_DELAY_SECONDS:-1}"
-SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS="${HOPE_SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS:-15}"
+SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS="${HOPE_SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS:-60}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-8}"
 DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-20}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-120}"
@@ -26,7 +25,6 @@ RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
-CAPTURE_REMOTE_ROOT="files/hope-screen-sync-${GITHUB_RUN_ID:-local}"
 
 case "$CAPTURE_LOCALE" in
   fa|en) ;;
@@ -40,10 +38,8 @@ echo "HOPE_RUNTIME_PREBUILD:$RUNTIME_APK"
 flutter build apk --debug --no-pub \
   --target=integration_test/runtime/critical_screens_evidence_test.dart \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-  --dart-define=HOPE_ADB_SCREENSHOT_CAPTURE=true \
   --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
-  --dart-define=HOPE_CAPTURE_HOME_ONLY="${CAPTURE_HOME_ONLY}" \
-  --dart-define=HOPE_SCREENSHOT_SYNC_ROOT="/data/user/0/com.hope.marketplace/files/hope-screen-sync-${GITHUB_RUN_ID:-local}"
+  --dart-define=HOPE_CAPTURE_HOME_ONLY="${CAPTURE_HOME_ONLY}"
 test -s "$RUNTIME_APK"
 # Preserve the exact APK built from this feature-branch SHA for local/runtime Maestro inspection.
 cp "$RUNTIME_APK" "$evidence_dir/HOPE-${GITHUB_SHA}-debug.apk"
@@ -266,18 +262,21 @@ elif [ "$CAPTURE_LOCALE" = "en" ]; then
   baseline_screens=("${screens[@]:15:15}")
 fi
 
-capture_host_screenshot() {
+wait_for_screenshot_file() {
   local marker="$1"
   local process_pid="$2"
-  local request="$CAPTURE_REMOTE_ROOT/$marker.ready"
+  local log_path="$3"
   local output="$evidence_dir/$marker.png"
-  local deadline=$((SECONDS + 180))
+  local deadline=$((SECONDS + SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS))
 
   while (( SECONDS < deadline )); do
-    local ready_tmp="$(mktemp)"
-    if timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"       adb exec-out run-as com.hope.marketplace cat "$request" >"$ready_tmp" 2>/dev/null; then
-      rm -f "$ready_tmp"
-
+    if test -s "$output" && grep -Fq -- "HOPE_SCREENSHOT_READY:$marker" "$log_path"; then
+      local magic
+      magic="$(od -An -tx1 -N8 "$output" | tr -d '[:space:]')"
+      if [ "$magic" != "89504e470d0a1a0a" ]; then
+        echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
+        return 1
+      fi
       if ! assert_hope_focused "$marker"; then
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:focus" >&2
         return 1
@@ -286,30 +285,9 @@ capture_host_screenshot() {
         echo "HOPE_HOST_CAPTURE_FAILED:$marker:draw-state" >&2
         return 1
       fi
-
-      local temp_output="${output}.tmp"
-      rm -f "$temp_output"
-      if ! timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s"         adb exec-out screencap -p >"$temp_output" 2>"${output}.adb-error"; then
-        rm -f "$temp_output"
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:screencap" >&2
-        return 1
-      fi
-
-      local magic
-      magic="$(od -An -tx1 -N8 "$temp_output" | tr -d '[:space:]')"
-      if [ "$magic" = "89504e470d0a1a0a" ]; then
-        mv "$temp_output" "$output"
-        rm -f "${output}.adb-error"
-        adb exec-out run-as com.hope.marketplace rm -f "$request" >/dev/null 2>&1 || true
-        echo "HOPE_HOST_SCREENSHOT_CAPTURED:$marker"
-        return 0
-      fi
-
-      rm -f "$temp_output"
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
-      return 1
+      echo "HOPE_HOST_SCREENSHOT_READY:$marker"
+      return 0
     fi
-    rm -f "$ready_tmp"
 
     if ! kill -0 "$process_pid" 2>/dev/null; then
       echo "HOPE_HOST_CAPTURE_FAILED:$marker:driver-exited" >&2
@@ -321,7 +299,6 @@ capture_host_screenshot() {
   echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
   return 1
 }
-
 run_host_batch_session() {
   local mode="$1"
   local route_mode="$2"
@@ -334,9 +311,9 @@ run_host_batch_session() {
   local driver_status=0
   local capture_status=0
 
-  # One Flutter Driver session owns the whole screen batch. Each screen is
-  # synchronized through a ready file, which avoids repeatedly starting and
-  # shutting down the Flutter VM service for every screenshot.
+  # One Flutter Driver session owns the whole screen batch. Each screenshot
+  # is produced by integration_test's onScreenshot callback, so the artifact
+  # is tied to the exact Flutter render request instead of a later framebuffer.
   set +e
   flutter drive --no-pub --no-dds \
     --use-application-binary="$RUNTIME_APK" \
@@ -355,7 +332,7 @@ run_host_batch_session() {
     kill "$process_pid" >/dev/null 2>&1 || true
   else
     for marker in "${markers[@]}"; do
-      if ! capture_host_screenshot "$marker" "$process_pid"; then
+      if ! wait_for_screenshot_file "$marker" "$process_pid" "$log_path"; then
         capture_status=1
         kill "$process_pid" >/dev/null 2>&1 || true
         break
@@ -363,11 +340,10 @@ run_host_batch_session() {
     done
   fi
 
-  local completion_request="$CAPTURE_REMOTE_ROOT/test-complete.ready"
   local completion_status=1
   local completion_deadline=$((SECONDS + 60))
   while (( SECONDS < completion_deadline )); do
-    if timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s adb exec-out run-as com.hope.marketplace cat "$completion_request" >/dev/null 2>&1; then
+    if grep -Fq -- 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$log_path"; then
       completion_status=0
       break
     fi
@@ -380,12 +356,15 @@ run_host_batch_session() {
     capture_status=1
   fi
 
-  local shutdown_deadline=$((SECONDS + RUNTIME_TEST_TIMEOUT_SECONDS))
+  if [ "$completion_status" -eq 0 ]; then
+    echo "HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE:$mode"
+    kill "$process_pid" >/dev/null 2>&1 || true
+  fi
+
+  local shutdown_deadline=$((SECONDS + RUNTIME_SHUTDOWN_GRACE_SECONDS))
   while kill -0 "$process_pid" 2>/dev/null; do
     if (( SECONDS >= shutdown_deadline )); then
       echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-shutdown:$mode" >&2
-      kill "$process_pid" >/dev/null 2>&1 || true
-      sleep 1
       kill -KILL "$process_pid" >/dev/null 2>&1 || true
       driver_status=124
       break
@@ -398,11 +377,10 @@ run_host_batch_session() {
     wait "$process_pid"
     driver_status=$?
     set -e
+    if [ "$completion_status" -eq 0 ] && { [ "$driver_status" -eq 0 ] || [ "$driver_status" -eq 143 ] || [ "$driver_status" -eq 130 ]; }; then
+      driver_status=0
+    fi
   fi
-
-  kill "$tail_pid" >/dev/null 2>&1 || true
-  wait "$tail_pid" >/dev/null 2>&1 || true
-
   if [ "$driver_status" -ne 0 ]; then
     echo "HOPE_HOST_RUNTIME_DRIVER_FAILED:exit=$driver_status:mode=$mode" >&2
     capture_android_diagnostics "$mode"
@@ -521,7 +499,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "adb_exec_out_screencap_host_handshake",
+  "capture_transport": "flutter_integration_test_onScreenshot",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
