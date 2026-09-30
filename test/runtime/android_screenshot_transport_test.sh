@@ -40,8 +40,8 @@ fi
 
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"
-completion_line="$(grep -n 'if [ "$completion_status" -eq 0 ]; then' "$script_file" | head -n1 | cut -d: -f1)"
-stop_line="$(grep -n 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file" | head -n1 | cut -d: -f1)"
+completion_line="$(grep -Fn 'if [ "$completion_status" -eq 0 ]; then' "$script_file" | head -n1 | cut -d: -f1)"
+stop_line="$(grep -Fn 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file" | head -n1 | cut -d: -f1)"
 if [ -z "$completion_line" ] || [ -z "$stop_line" ] || [ "$stop_line" -le "$completion_line" ]; then
   echo "FAIL: completed test must trigger bounded driver shutdown" >&2
   exit 1
