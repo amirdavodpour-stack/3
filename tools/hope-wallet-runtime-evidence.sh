@@ -51,9 +51,6 @@ timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${
 timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
   adb shell pm path com.hope.marketplace >/dev/null
 
-# Never reuse READY markers from an earlier emulator/test session.
-timeout --foreground --signal=TERM --kill-after="$ADB_KILL_AFTER_SECONDS"s "$ADB_TIMEOUT_SECONDS"s \
-  adb exec-out run-as com.hope.marketplace rm -rf "$CAPTURE_REMOTE_ROOT" >/dev/null 2>&1 || true
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
 
@@ -381,6 +378,10 @@ run_host_batch_session() {
       driver_status=0
     fi
   fi
+
+  kill "$tail_pid" >/dev/null 2>&1 || true
+  wait "$tail_pid" >/dev/null 2>&1 || true
+
   if [ "$driver_status" -ne 0 ]; then
     echo "HOPE_HOST_RUNTIME_DRIVER_FAILED:exit=$driver_status:mode=$mode" >&2
     capture_android_diagnostics "$mode"
