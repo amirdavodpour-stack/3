@@ -39,6 +39,49 @@ void main() {
     expect(find.text('94% match'), findsOneWidget);
   });
 
+  testWidgets('featured job opportunity uses the HOPE purple focal accent',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-featured-job-accent',
+      'title': 'Product designer',
+      'description': 'Featured accent contract.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'kind': 'JOB',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'recommendationScore': 0.94,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: OpportunityCard(
+            job: job,
+            variant: OpportunityCardVariant.featured,
+          ),
+        ),
+      ),
+    );
+
+    final primary = const Color(0xFF6366F1);
+    final focalGradientFound = tester.widgetList<Container>(
+      find.byType(Container),
+    ).any((container) {
+      final decoration = container.decoration;
+      if (decoration is! BoxDecoration) return false;
+      final gradient = decoration.gradient;
+      if (gradient is! LinearGradient || gradient.colors.isEmpty) {
+        return false;
+      }
+      return gradient.colors.first == primary.withValues(alpha: .18);
+    });
+
+    expect(focalGradientFound, isTrue);
+  });
   testWidgets('opportunity card groups large Toman amounts for readability',
       (tester) async {
     final job = HopeJob.fromMap({
