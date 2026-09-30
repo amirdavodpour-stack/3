@@ -787,9 +787,9 @@ void main() {
         child: const HomePage(),
       ),
     );
-    // The first Flutter frame is the transition point away from the Android
-    // starting window. Wait for rasterization before starting ADB captures.
-    await tester.binding.waitUntilFirstFrameRasterized;
+    // Keep the capture path on Flutter's test binding. Under the headless
+    // Android runner, waiting on the rasterized platform frame can leave the
+    // driver request_data call blocked before the first screenshot.
     await tester.pump();
     await tester.binding.endOfFrame;
     await _prepareRuntimeScreenshotSurface(tester);

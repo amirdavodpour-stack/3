@@ -15,6 +15,12 @@ fi
 capture_body="$(sed -n "${capture_start},$((capture_end - 1))p" "$test_file")"
 
 grep -Fq 'await binding.takeScreenshot(marker);' <<<"$capture_body"
+
+if grep -Fq 'waitUntilFirstFrameRasterized' "$test_file"; then
+  echo "FAIL: runtime screenshot harness must not block on platform rasterization before the Flutter capture surface is prepared" >&2
+  exit 1
+fi
+
 grep -Fq "HOPE_SCREENSHOT_SOURCE:flutter-driver" "$test_file"
 if grep -Fq '_adbScreenshotCapture' "$test_file"; then
   echo "FAIL: retired ADB screenshot flag remains" >&2
