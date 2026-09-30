@@ -642,7 +642,6 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
   // has committed the new surface. Give the engine several real frame turns.
   for (var frame = 0; frame < 6; frame++) {
     await tester.pump();
-    await tester.binding.endOfFrame;
     await Future<void>.delayed(const Duration(milliseconds: 50));
   }
 
@@ -684,15 +683,13 @@ Future<void> _captureRuntimeScreen(
       child: child,
     ),
   );
+  print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
   await tester.pump();
-  await tester.binding.endOfFrame;
 
   await tester.pump(const Duration(milliseconds: 1200));
-  await tester.binding.endOfFrame;
   await _waitForRuntimeRenderToSettle(tester);
   for (var frame = 0; frame < 4; frame++) {
     await tester.pump();
-    await tester.binding.endOfFrame;
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
 
@@ -787,11 +784,9 @@ void main() {
         child: const HomePage(),
       ),
     );
-    // Keep the capture path on Flutter's test binding. Under the headless
-    // Android runner, waiting on the rasterized platform frame can leave the
-    // driver request_data call blocked before the first screenshot.
-    await tester.pump();
-    await tester.binding.endOfFrame;
+    print('HOPE_RUNTIME_HOST_PUMP_DONE');
+    // Avoid endOfFrame in the headless driver path. A fixed pump is sufficient
+    // to progress the Flutter tree without blocking VMService request_data.
     await _prepareRuntimeScreenshotSurface(tester);
     if (_responsiveOnly) {
       if (_captureLocale != 'en') {

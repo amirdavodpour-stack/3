@@ -61,4 +61,9 @@ if grep -Fq "screenKey: marker" "$test_file"; then
   exit 1
 fi
 
+if grep -Fq 'tester.binding.endOfFrame' "$test_file"; then
+  echo "FAIL: runtime screenshot harness must not wait on endOfFrame in the headless driver path" >&2
+  exit 1
+fi
+
 echo "PASS: Flutter rendered-screenshot transport contract"
