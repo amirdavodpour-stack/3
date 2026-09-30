@@ -1,0 +1,40 @@
+name: Free LLM Agent Contract
+
+on:
+  pull_request:
+    paths:
+      - "tools/free-llm-agent.mjs"
+      - "tools/tests/free-llm-agent.test.mjs"
+      - "docs/agents/free-llm-coding-agent.md"
+      - ".github/workflows/free-llm-agent-contract.yml"
+  push:
+    branches:
+      - "feat/google-sign-in-2026-09-20"
+    paths:
+      - "tools/free-llm-agent.mjs"
+      - "tools/tests/free-llm-agent.test.mjs"
+      - "docs/agents/free-llm-coding-agent.md"
+      - ".github/workflows/free-llm-agent-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Node agent contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Syntax check
+        run: node --check tools/free-llm-agent.mjs
+
+      - name: Contract tests
+        run: node --test tools/tests/free-llm-agent.test.mjs
