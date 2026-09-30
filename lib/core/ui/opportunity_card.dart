@@ -67,7 +67,9 @@ class OpportunityCard extends StatelessWidget {
         ? [job.budgetMin, job.budgetMax].where((v) => v?.isNotEmpty == true).join(' – ')
         : (job.monthlySalary ?? job.budgetMin ?? '');
     final title = job.title.trim().isEmpty ? copy.copy_untitled_d89410e : job.title;
-    final primary = job.isMission ? HopeV2Colors.primary : secondaryAccent(context);
+    final primary = featured
+        ? HopeV2Colors.primary
+        : (job.isMission ? HopeV2Colors.primary : secondaryAccent(context));
     final reasons = job.recommendationReasons.take(3).toList(growable: false);
     final mediaUrl = _mediaUrl(job);
 
