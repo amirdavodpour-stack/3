@@ -75,7 +75,7 @@ void main() {
       ),
     );
 
-    final primary = const Color(0xFF6366F1);
+    const primary = Color(0xFF6366F1);
     final focalGradientFound = tester.widgetList<Container>(
       find.byType(Container),
     ).any((container) {
