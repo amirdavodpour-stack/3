@@ -130,7 +130,8 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: HopeV2Spacing.md),
           PremiumPanel(
-            padding: const EdgeInsets.symmetric(
+            glass: true,
+padding: const EdgeInsets.symmetric(
               horizontal: HopeV2Spacing.lg,
               vertical: HopeV2Spacing.md,
             ),
@@ -181,13 +182,15 @@ class _ProfilePageState extends State<ProfilePage> {
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const PremiumPanel(
-                  child: SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
+                  glass: true,
+child: SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
                 );
               }
               final data = snapshot.data;
 
               return PremiumPanel(
-                padding: const EdgeInsets.all(16),
+                glass: true,
+padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     ListTile(
@@ -287,7 +290,8 @@ class _ProfilePageState extends State<ProfilePage> {
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const PremiumPanel(
-                  child: SizedBox(height: 96, child: Center(child: CircularProgressIndicator())),
+                  glass: true,
+child: SizedBox(height: 96, child: Center(child: CircularProgressIndicator())),
                 );
               }
               final list = snapshot.data ?? const <HopeApplication>[];
@@ -297,7 +301,8 @@ class _ProfilePageState extends State<ProfilePage> {
               }
 
               return PremiumPanel(
-                padding: const EdgeInsets.all(16),
+                glass: true,
+padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -378,7 +383,8 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 10),
           PremiumPanel(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            glass: true,
+padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               children: [
                 ListTile(
@@ -590,7 +596,8 @@ class _ProfilePageState extends State<ProfilePage> {
     ThemeController theme,
   ) {
     return PremiumPanel(
-      child: Column(
+      glass: true,
+child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(15, 15, 15, 8),
