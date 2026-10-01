@@ -54,7 +54,9 @@ function safeCommand(cmd) {
   if (!s || s.length > 500 || /[;&`$<>|]/.test(s) || /\b(?:curl|wget|ssh|scp|nc|ncat)\b/i.test(s)) return false;
   return [/^git\s+(?:status|diff|log|show|grep|ls-files|branch)(?:\s.*)?$/s,/^node\s+--check\s+.+$/s,/^node\s+--test(?:\s.+)?$/s,/^npm\s+--prefix\s+backend\s+(?:test|run\s+(?:check|test:[A-Za-z0-9:_-]+))(?:\s.*)?$/s,/^flutter\s+(?:analyze|test)(?:\s.*)?$/s,/^dart\s+format\s+--output=none(?:\s.*)?$/s].some(r => r.test(s));
 }
-async function approve(q) { const rl = readline.createInterface({ input: process.stdin, output: process.stdout }); try { return /^(?:y|yes)$/i.test((await rl.question(`${q}\nApprove? [y/N] `)).trim()); } finally { rl.close(); } }\nfunction approvalDecision(mode) { if (mode === 'auto') return true; if (mode === 'deny') return false; return null; }\nasync function requestApproval(mode, question) { const decision = approvalDecision(mode); return decision === null ? approve(question) : decision; }
+async function approve(q) { const rl = readline.createInterface({ input: process.stdin, output: process.stdout }); try { return /^(?:y|yes)$/i.test((await rl.question(`${q}\nApprove? [y/N] `)).trim()); } finally { rl.close(); } }
+function approvalDecision(mode) { if (mode === 'auto') return true; if (mode === 'deny') return false; return null; }
+async function requestApproval(mode, question) { const decision = approvalDecision(mode); return decision === null ? approve(question) : decision; }
 function config(env = process.env) {
   const p = String(env.LLM_AGENT_PROVIDER || 'openrouter').trim().toLowerCase();
   const fallbacks = String(env.LLM_AGENT_PROVIDER_FALLBACKS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean).filter((p, i, a) => p !== String(env.LLM_AGENT_PROVIDER || 'openrouter').trim().toLowerCase() && a.indexOf(p) === i);
