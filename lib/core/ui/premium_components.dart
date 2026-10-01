@@ -135,14 +135,20 @@ class PremiumNavigationRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: HopeV2Surfaces.navigation(context),
-        border: BorderDirectional(
-          end: BorderSide(color: HopeV2Surfaces.border(context)),
-        ),
-      ),
-      child: SafeArea(
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: dark
+                ? Colors.white.withValues(alpha: .03)
+                : HopeV2Surfaces.navigation(context).withValues(alpha: .82),
+            border: BorderDirectional(
+              end: BorderSide(color: HopeV2Surfaces.border(context)),
+            ),
+          ),
+          child: SafeArea(
         left: false,
         top: false,
         bottom: false,
