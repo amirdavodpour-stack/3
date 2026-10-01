@@ -41,72 +41,75 @@ class PremiumNavigationBar extends StatelessWidget {
               color: dark
                   ? Colors.white.withValues(alpha: .035)
                   : surface.withValues(alpha: .82),
-            border: Border.all(
-              color: dark
-                  ? Colors.white.withValues(alpha: .10)
-                  : HopeV2Surfaces.border(context),
-            ),
-            boxShadow: [
-              if (!dark) ...HopeV2Shadows.card,
-              if (dark) ...[
-                BoxShadow(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: .10),
-                  blurRadius: 26,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: HopeV2Colors.secondary.withValues(alpha: .035),
-                  blurRadius: 40,
-                  offset: const Offset(-8, 18),
-                ),
+              border: Border.all(
+                color: dark
+                    ? Colors.white.withValues(alpha: .10)
+                    : HopeV2Surfaces.border(context),
+              ),
+              boxShadow: [
+                if (!dark) ...HopeV2Shadows.card,
+                if (dark) ...[
+                  BoxShadow(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: .10),
+                    blurRadius: 26,
+                    offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: HopeV2Colors.secondary.withValues(alpha: .035),
+                    blurRadius: 40,
+                    offset: const Offset(-8, 18),
+                  ),
+                ],
               ],
-            ],
-          ),
+            ),
             child: NavigationBarTheme(
               data: NavigationBarThemeData(
-              height: HopeV2Navigation.barHeight,
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              indicatorColor: HopeV2Surfaces.navigationIndicator(context),
-              indicatorShape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
-                side: BorderSide(
-                  color: dark
-                      ? Colors.white.withValues(alpha: .08)
-                      : HopeV2Surfaces.border(context),
+                height: HopeV2Navigation.barHeight,
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                indicatorColor: HopeV2Surfaces.navigationIndicator(context),
+                indicatorShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
+                  side: BorderSide(
+                    color: dark
+                        ? Colors.white.withValues(alpha: .08)
+                        : HopeV2Surfaces.border(context),
+                  ),
+                ),
+                labelBehavior:
+                    NavigationDestinationLabelBehavior.alwaysShow,
+                labelTextStyle:
+                    WidgetStateProperty.resolveWith<TextStyle?>(
+                  (states) => TextStyle(
+                    fontSize: 10,
+                    height: 1.05,
+                    fontWeight: states.contains(WidgetState.selected)
+                        ? FontWeight.w900
+                        : FontWeight.w700,
+                    color: states.contains(WidgetState.selected)
+                        ? Theme.of(context).colorScheme.primary
+                        : HopeV2Colors.darkMuted,
+                  ),
+                ),
+                iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>(
+                  (states) => IconThemeData(
+                    size: 21,
+                    color: states.contains(WidgetState.selected)
+                        ? Theme.of(context).colorScheme.primary
+                        : HopeV2Colors.darkMuted,
+                  ),
                 ),
               ),
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>(
-                (states) => TextStyle(
-                  fontSize: 10,
-                  height: 1.05,
-                  fontWeight: states.contains(WidgetState.selected)
-                      ? FontWeight.w900
-                      : FontWeight.w700,
-                  color: states.contains(WidgetState.selected)
-                      ? Theme.of(context).colorScheme.primary
-                      : HopeV2Colors.darkMuted,
-                ),
+              child: NavigationBar(
+                selectedIndex: selectedIndex,
+                onDestinationSelected: onDestinationSelected,
+                destinations: destinations,
+                height: HopeV2Navigation.barHeight,
               ),
-              iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>(
-                (states) => IconThemeData(
-                  size: 21,
-                  color: states.contains(WidgetState.selected)
-                      ? Theme.of(context).colorScheme.primary
-                      : HopeV2Colors.darkMuted,
-                ),
-              ),
-            ),
-            child: NavigationBar(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: onDestinationSelected,
-              destinations: destinations,
-              height: HopeV2Navigation.barHeight,
             ),
           ),
         ),
@@ -114,7 +117,6 @@ class PremiumNavigationBar extends StatelessWidget {
     );
   }
 }
-
 class PremiumNavigationRail extends StatelessWidget {
   const PremiumNavigationRail({
     super.key,
