@@ -67,8 +67,10 @@ grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"
 completion_line="$(grep -Fn 'if [ "$completion_status" -eq 0 ]; then' "$script_file" | head -n1 | cut -d: -f1)"
 stop_line="$(grep -Fn 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file" | head -n1 | cut -d: -f1)"
-if [ -z "$completion_line" ] || [ -z "$stop_line" ] || [ "$stop_line" -le "$completion_line" ]; then
-  echo "FAIL: completed test must trigger bounded driver shutdown" >&2
+flush_line="$(grep -Fn 'HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE' "$script_file" | head -n1 | cut -d: -f1)"
+if [ -z "$completion_line" ] || [ -z "$flush_line" ] || [ -z "$stop_line" ] ||
+   [ "$flush_line" -le "$completion_line" ] || [ "$stop_line" -le "$flush_line" ]; then
+  echo "FAIL: screenshot callbacks must flush after test completion and before driver shutdown" >&2
   exit 1
 fi
 
