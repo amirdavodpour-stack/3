@@ -477,7 +477,8 @@ class _WalletPageState extends State<WalletPage> {
               _DetailRow(label: _t('زمان ثبت', 'Created'), value: _date(payout.createdAt)),
               if (status == 'UNKNOWN')
                 PremiumPanel(
-                  padding: const EdgeInsets.all(14),
+                  glass: true,
+padding: const EdgeInsets.all(14),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -797,7 +798,8 @@ class _WalletPageState extends State<WalletPage> {
       }
 
       return PremiumPanel(
-        padding: const EdgeInsets.all(12),
+        glass: true,
+padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             if (_internalTopUpEnabled)
@@ -880,7 +882,8 @@ class _WalletPageState extends State<WalletPage> {
             ),
             const SizedBox(height: 12),
             PremiumPanel(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              glass: true,
+padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
                   const HopeIconTile(HopeV2Icons.wallet, size: 42),
@@ -1000,7 +1003,8 @@ class _WalletPageState extends State<WalletPage> {
                     onTap: () => _showTransaction(item),
                     child: ExcludeSemantics(
                       child: PremiumPanel(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        glass: true,
+padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           onTap: () => _showTransaction(item),
@@ -1049,7 +1053,8 @@ class _WalletPageState extends State<WalletPage> {
             const SizedBox(height: 12),
             if (_payouts.isEmpty)
               PremiumPanel(
-                padding: const EdgeInsets.all(18),
+                glass: true,
+padding: const EdgeInsets.all(18),
                 child: Text(
                   _t(
                     'درخواستی برای برداشت ثبت نشده است.',
@@ -1062,7 +1067,8 @@ class _WalletPageState extends State<WalletPage> {
                 (payout) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: PremiumPanel(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    glass: true,
+padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     child: Semantics(
                       container: true,
                       button: true,
