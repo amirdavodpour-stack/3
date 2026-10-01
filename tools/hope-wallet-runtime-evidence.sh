@@ -321,13 +321,11 @@ run_host_batch_session() {
     echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-connect:$mode" >&2
     kill "$process_pid" >/dev/null 2>&1 || true
   else
-    for marker in "${markers[@]}"; do
-      if ! wait_for_screenshot_file "$marker" "$process_pid" "$log_path"; then
-        capture_status=1
-        kill "$process_pid" >/dev/null 2>&1 || true
-        break
-      fi
-    done
+    # integration_test's onScreenshot callback owns the host-side PNG write.
+    # Waiting on each marker here creates a race with the Flutter Driver
+    # command/response cycle. The final capture-set validator below checks all
+    # expected files after the test body reports completion.
+    :
   fi
 
   local completion_status=1
