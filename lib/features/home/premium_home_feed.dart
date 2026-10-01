@@ -176,7 +176,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                           Text(
                             _t(
                               context,
-                              auth.isGuest ? 'فرصت‌های شما' : 'عصر بخیر،',
+                              auth.isGuest ? 'فرصت‌های شما' : 'فرصت‌های مناسب شما',
                               auth.isGuest ? 'Your opportunities' : 'Opportunities for you',
                             ),
                             style: HopeV2Type.eyebrow(context).copyWith(
@@ -351,7 +351,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 ];
 
                 return PremiumPanel(
-                  padding: const EdgeInsets.all(14),
+                  glass: true,
+padding: const EdgeInsets.all(14),
                   highlight: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,7 +567,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 
     if (jobs.isEmpty) {
       return PremiumPanel(
-        child: Column(
+        glass: true,
+child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -676,7 +678,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           _ => _t(context, 'مشاهده پروژه', 'Open project'),
         };
         return PremiumPanel(
-          highlight: true,
+          glass: true,
+highlight: true,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             PremiumSectionHeader(title: _t(context, 'اقدام بعدی شما', 'Your next action'), subtitle: _t(context, 'اولویت با کاری است که همین حالا فعال است.', 'Active work takes priority over discovery.')),
             const SizedBox(height: HopeV2Spacing.lg),
@@ -705,7 +708,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             '${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'TOMAN') : wallet.currency}';
 
         return PremiumPanel(
-          highlight: true,
+          glass: true,
+highlight: true,
           padding: const EdgeInsets.all(HopeV2Spacing.lg),
           child: LayoutBuilder(
             builder: (context, constraints) {
