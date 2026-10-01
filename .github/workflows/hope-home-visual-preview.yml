@@ -1,4 +1,5 @@
 name: HOPE Home Visual Preview
+# Temporary visual inspection lane; output is preview-only, not T10 certification.
 
 on:
   pull_request:
