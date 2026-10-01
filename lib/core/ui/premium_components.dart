@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../theme/hope_v2_design.dart';
@@ -32,9 +34,13 @@ class PremiumNavigationBar extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(HopeV2Radii.lg),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: surface,
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: dark
+                  ? Colors.white.withValues(alpha: .035)
+                  : surface.withValues(alpha: .82),
             border: Border.all(
               color: dark
                   ? Colors.white.withValues(alpha: .10)
@@ -59,8 +65,8 @@ class PremiumNavigationBar extends StatelessWidget {
               ],
             ],
           ),
-          child: NavigationBarTheme(
-            data: NavigationBarThemeData(
+            child: NavigationBarTheme(
+              data: NavigationBarThemeData(
               height: HopeV2Navigation.barHeight,
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
@@ -380,6 +386,7 @@ class PremiumPanel extends StatelessWidget {
     this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
     this.radius = HopeV2Radii.lg,
     this.highlight = false,
+    this.glass = false,
     this.semanticLabel,
   });
 
@@ -387,47 +394,60 @@ class PremiumPanel extends StatelessWidget {
   final EdgeInsets padding;
   final double radius;
   final bool highlight;
+  final bool glass;
   final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final panelFill = dark
+        ? Colors.white.withValues(alpha: glass ? .028 : 0)
+        : Colors.white.withValues(alpha: glass ? .64 : 0);
+    final gradient = highlight
+        ? LinearGradient(
+            begin: AlignmentDirectional.topStart,
+            end: AlignmentDirectional.bottomEnd,
+            colors: dark
+                ? [
+                    scheme.primary.withValues(alpha: glass ? .16 : .105),
+                    HopeV2Colors.secondary.withValues(alpha: glass ? .035 : .018),
+                    HopeV2Surfaces.panel(context).withValues(alpha: glass ? .72 : 1),
+                  ]
+                : [
+                    scheme.primary.withValues(alpha: glass ? .10 : .07),
+                    HopeV2Surfaces.panel(context).withValues(alpha: glass ? .76 : 1),
+                    HopeV2Surfaces.panel(context).withValues(alpha: glass ? .84 : 1),
+                  ],
+            stops: const [0, .52, 1],
+          )
+        : null;
+
     final panel = Container(
+      padding: padding,
       decoration: BoxDecoration(
-        color: highlight ? null : HopeV2Surfaces.panel(context),
-        gradient: highlight
-            ? LinearGradient(
-                begin: AlignmentDirectional.topStart,
-                end: AlignmentDirectional.bottomEnd,
-                colors: dark
-                    ? [
-                        scheme.primary.withValues(alpha: .105),
-                        HopeV2Colors.secondary.withValues(alpha: .018),
-                        HopeV2Surfaces.panel(context),
-                      ]
-                    : [
-                        scheme.primary.withValues(alpha: .07),
-                        HopeV2Surfaces.panel(context),
-                        HopeV2Surfaces.panel(context),
-                      ],
-                stops: const [0, .52, 1],
-              )
-            : null,
+        color: highlight ? null : (glass ? panelFill : HopeV2Surfaces.panel(context)),
+        gradient: gradient,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
               ? scheme.primary.withValues(alpha: dark ? .26 : .18)
               : HopeV2Surfaces.border(context),
-          width: highlight ? 1.0 : 1,
+          width: 1,
         ),
         boxShadow: dark
             ? [
                 if (highlight)
                   BoxShadow(
-                    color: scheme.primary.withValues(alpha: .075),
-                    blurRadius: 22,
+                    color: scheme.primary.withValues(alpha: glass ? .10 : .075),
+                    blurRadius: glass ? 28 : 22,
                     offset: const Offset(0, 9),
+                  ),
+                if (glass)
+                  BoxShadow(
+                    color: HopeV2Colors.secondary.withValues(alpha: .025),
+                    blurRadius: 32,
+                    offset: const Offset(-8, 14),
                   ),
               ]
             : [
@@ -440,12 +460,22 @@ class PremiumPanel extends StatelessWidget {
                 ),
               ],
       ),
-      padding: padding,
       child: Material(type: MaterialType.transparency, child: child),
     );
+
+    final content = ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: glass
+          ? BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: panel,
+            )
+          : panel,
+    );
+
     return semanticLabel == null
-        ? panel
-        : Semantics(container: true, label: semanticLabel, child: panel);
+        ? content
+        : Semantics(container: true, label: semanticLabel, child: content);
   }
 }
 
