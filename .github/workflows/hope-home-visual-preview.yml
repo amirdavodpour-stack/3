@@ -1,0 +1,130 @@
+name: HOPE Home Visual Preview
+
+on:
+  pull_request:
+    branches:
+      - feat/google-sign-in-2026-09-20
+
+permissions:
+  contents: read
+
+jobs:
+  home-visual-preview:
+    name: Render current HOPE Home and capture one preview frame
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Prepare Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build screenshot runtime APK
+        run: |
+          flutter build apk --debug --no-pub \
+            --target=integration_test/runtime/critical_screens_evidence_test.dart \
+            --dart-define=HOPE_CAPTURE_LOCALE=fa \
+            --dart-define=HOPE_CAPTURE_HOME_ONLY=true
+          test -s build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Enable KVM for Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm || true; fi
+          test -r /dev/kvm
+          test -w /dev/kvm
+
+      - name: Android home visual preview
+        uses: ReactiveCircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 35
+          arch: x86_64
+          target: default
+          profile: pixel_2
+          force-avd-creation: true
+          cores: 4
+          ram-size: 4096M
+          disable-linux-hw-accel: false
+          emulator-boot-timeout: 1200
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            mkdir -p preview
+            adb install -r build/app/outputs/flutter-apk/app-debug.apk
+            adb shell pm path com.hope.marketplace >/dev/null
+
+            cat > test_driver/hope_preview_driver.dart <<'EOF'
+            import 'package:integration_test/integration_test_driver_extended.dart';
+
+            Future<void> main() async {
+              await integrationDriver(
+                responseDataCallback: null,
+                onScreenshot: (String name, List<int> image, [Map<String, Object?>? args]) async {
+                  return image.length >= 8 &&
+                      image[0] == 0x89 &&
+                      image[1] == 0x50 &&
+                      image[2] == 0x4e &&
+                      image[3] == 0x47 &&
+                      image[4] == 0x0d &&
+                      image[5] == 0x0a &&
+                      image[6] == 0x1a &&
+                      image[7] == 0x0a;
+                },
+              );
+            }
+            EOF
+
+            export PREVIEW_LOG="$PWD/preview/home-runtime.log"
+            export PREVIEW_PNG="$PWD/preview/home-fa-rtl.png"
+
+            flutter drive --no-pub --no-dds \
+              --dart-define=HOPE_CAPTURE_LOCALE=fa \
+              --dart-define=HOPE_CAPTURE_HOME_ONLY=true \
+              --use-application-binary="$PWD/build/app/outputs/flutter-apk/app-debug.apk" \
+              --driver=test_driver/hope_preview_driver.dart \
+              --target=integration_test/runtime/critical_screens_evidence_test.dart \
+              --route="/__hope_runtime_capture__/fa/baseline" \
+              >"$PREVIEW_LOG" 2>&1 &
+            DRIVER_PID=$!
+
+            deadline=$((SECONDS + 120))
+            while (( SECONDS < deadline )); do
+              if grep -Fq 'HOPE_SCREENSHOT_READY:home-fa-rtl' "$PREVIEW_LOG"; then
+                sleep 0.4
+                adb exec-out screencap -p > "$PREVIEW_PNG"
+                break
+              fi
+              if ! kill -0 "$DRIVER_PID" 2>/dev/null; then
+                cat "$PREVIEW_LOG"
+                exit 1
+              fi
+              sleep 0.2
+            done
+
+            test -s "$PREVIEW_PNG"
+            magic="$(od -An -tx1 -N8 "$PREVIEW_PNG" | tr -d '[:space:]')"
+            test "$magic" = "89504e470d0a1a0a"
+
+            kill "$DRIVER_PID" >/dev/null 2>&1 || true
+            wait "$DRIVER_PID" >/dev/null 2>&1 || true
+
+            echo "HOME_PREVIEW_PATH=$PREVIEW_PNG"
+
+      - name: Upload home visual preview
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
+        with:
+          name: hope-home-visual-preview
+          path: preview/**
+          if-no-files-found: warn
