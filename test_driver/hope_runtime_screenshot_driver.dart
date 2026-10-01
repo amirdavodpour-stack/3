@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:integration_test/integration_test_driver_extended.dart';
+
 Future<void> main() async {
   const outputRoot = 'docs/audit/evidence/android-runtime';
 
