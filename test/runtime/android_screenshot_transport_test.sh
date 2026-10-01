@@ -33,7 +33,8 @@ fi
 
 grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
-grep -Fq 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \\\n  flutter drive' "$script_file"
+grep -Fq 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script_file"
+grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
 grep -Fq 'wait_for_screenshot_file' "$script_file"
 grep -Fq 'HOPE_HOST_SCREENSHOT_READY' "$script_file"
 wait_body="$(sed -n '/^wait_for_screenshot_file()/,/^}/p' "$script_file")"
