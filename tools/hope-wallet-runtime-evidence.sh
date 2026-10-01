@@ -355,6 +355,34 @@ run_host_batch_session() {
   fi
 
   if [ "$completion_status" -eq 0 ]; then
+    # The official integration_test driver processes screenshot payloads after
+    # the test result/no-op response is returned. Wait for the host files to be
+    # written before terminating the driver; otherwise screenshots can be lost
+    # even though the Flutter test body completed successfully.
+    local screenshot_flush_deadline=$((SECONDS + SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS))
+    local screenshot_flush_status=1
+    while (( SECONDS < screenshot_flush_deadline )); do
+      screenshot_flush_status=0
+      for marker in "${markers[@]}"; do
+        if ! test -s "$evidence_dir/$marker.png"; then
+          screenshot_flush_status=1
+          break
+        fi
+      done
+      if [ "$screenshot_flush_status" -eq 0 ]; then
+        echo "HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE:$mode"
+        break
+      fi
+      if ! kill -0 "$process_pid" 2>/dev/null; then
+        screenshot_flush_status=1
+        break
+      fi
+      sleep 0.2
+    done
+    if [ "$screenshot_flush_status" -ne 0 ]; then
+      echo "HOPE_HOST_SCREENSHOT_FLUSH_FAILED:$mode" >&2
+      capture_status=1
+    fi
     echo "HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE:$mode"
     kill "$process_pid" >/dev/null 2>&1 || true
   fi
