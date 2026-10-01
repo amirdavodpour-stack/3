@@ -68,6 +68,19 @@ export LLM_AGENT_MODEL='your-model'
 export LLM_AGENT_API_KEY='YOUR_KEY'
 ```
 
+## 3. Run the agent from GitHub Actions (no Termux or Codespaces)
+
+The repository also includes a manual GitHub Actions runner for this agent. It uses the same coding loop against the active branch and the OpenRouter Free Models Router by default.
+
+1. In the repository, open **Settings -> Secrets and variables -> Actions**.
+2. Create a repository secret named `OPENROUTER_API_KEY` and paste the OpenRouter key there.
+3. Open **Actions -> HOPE Free LLM Coding Agent -> Run workflow** on the feature branch.
+4. Enter the task in the `task` field. The default model is `openrouter/free`.
+5. Leave `allow_git_write` off for a dry/review pass. Turn it on only when you explicitly want the agent to be allowed to commit, push, or create a PR.
+6. Download `agent-output.txt` and `agent-diff.patch` from the run artifacts when reviewing a non-persisted pass.
+
+The workflow is manual-only so a pull request or push does not automatically send repository contents to the external inference provider. The OpenRouter key is supplied only to the agent step through the GitHub Actions secrets context.
+
 ## 3. Run the agent in safe interactive mode
 
 Default approval mode is `prompt`.

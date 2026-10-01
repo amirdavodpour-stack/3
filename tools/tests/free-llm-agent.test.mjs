@@ -1,6 +1,6 @@
 import test from 'node:test';
-import assert from 'node:assert/strict';
-import { buildSystemPrompt, isProtectedWritePath, isSafeCommand, normalizeRepoPath, parseCliArgs, resolveAgentConfig, resolveProvider } from '../free-llm-agent.mjs';
+import assert from 'node:assert/strict';\nimport { readFileSync } from 'node:fs';
+import { buildSystemPrompt, isProtectedWritePath, isSafeCommand, normalizeRepoPath, parseCliArgs, resolveAgentConfig, resolveProvider, resolveApprovalDecision } from '../free-llm-agent.mjs';
 
 test('config defaults and fallback de-duplication',()=>{const c=resolveAgentConfig({LLM_AGENT_PROVIDER:'openrouter',LLM_AGENT_PROVIDER_FALLBACKS:'groq,openrouter,groq'});assert.deepEqual(c.providerNames,['openrouter','groq']);assert.equal(c.maxSteps,12);assert.equal(c.approval,'prompt');assert.equal(c.allowGitWrite,false);});
 test('approval mode parsing',()=>{assert.equal(resolveAgentConfig({LLM_AGENT_APPROVAL:'deny'}).approval,'deny');assert.equal(resolveAgentConfig({LLM_AGENT_APPROVAL:'auto'}).approval,'auto');});
@@ -11,3 +11,21 @@ test('command gate',()=>{assert.equal(isSafeCommand('git status --short --branch
 test('protected policy paths',()=>{assert.equal(isProtectedWritePath('AGENTS.md'),true);assert.equal(isProtectedWritePath('.github/workflows/x.yml'),true);assert.equal(isProtectedWritePath('lib/core/ui/components.dart'),false);});
 test('CLI parsing',()=>{const r=parseCliArgs(['--context','AGENTS.md','--max-steps','7','Fix','wallet']);assert.deepEqual(r.context,['AGENTS.md']);assert.equal(r.maxSteps,7);assert.equal(r.task,'Fix wallet');});
 test('system prompt guardrails',()=>{const p=buildSystemPrompt('/repo','feat/x');assert.match(p,/Main\/main\/master is protected/i);assert.match(p,/Never read or write secrets/i);});
+
+test('approval decision bypasses interactive prompts in auto mode',()=>{
+  assert.equal(resolveApprovalDecision('auto'),true);
+  assert.equal(resolveApprovalDecision('deny'),false);
+  assert.equal(resolveApprovalDecision('prompt'),null);
+});
+
+test('GitHub Actions agent workflow is manual and wired to OpenRouter',()=>{
+  const workflow=readFileSync(new URL('../../.github/workflows/free-llm-agent.yml',import.meta.url),'utf8');
+  assert.match(workflow,/workflow_dispatch:/);
+  assert.match(workflow,/default:\s*openrouter\/free/);
+  assert.match(workflow,/OPENROUTER_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}/);
+  assert.match(workflow,/LLM_AGENT_MODEL:\s*\$\{\{\s*inputs\.model\s*\}\}/);
+  assert.match(workflow,/LLM_AGENT_APPROVAL:\s*auto/);
+  assert.match(workflow,/LLM_AGENT_ALLOW_GIT_WRITE:\s*\$\{\{\s*inputs\.allow_git_write/);
+  assert.match(workflow,/contents:\s*write/);
+  assert.doesNotMatch(workflow,/^\s*(?:push|pull_request):\s*$/m);
+});
