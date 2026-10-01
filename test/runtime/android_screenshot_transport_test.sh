@@ -35,6 +35,10 @@ grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
 grep -Fq 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script_file"
 grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
+if grep -Fq 'wait_for_screenshot_file "$marker"' "$script_file"; then
+  echo "FAIL: host must not race each Flutter screenshot callback before test completion" >&2
+  exit 1
+fi
 grep -Fq 'wait_for_screenshot_file' "$script_file"
 grep -Fq 'HOPE_HOST_SCREENSHOT_READY' "$script_file"
 wait_body="$(sed -n '/^wait_for_screenshot_file()/,/^}/p' "$script_file")"
