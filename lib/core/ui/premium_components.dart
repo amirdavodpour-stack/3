@@ -149,32 +149,34 @@ class PremiumNavigationRail extends StatelessWidget {
             ),
           ),
           child: SafeArea(
-        left: false,
-        top: false,
-        bottom: false,
-        child: NavigationRail(
-          selectedIndex: selectedIndex,
-          onDestinationSelected: onDestinationSelected,
-          destinations: [
-            for (final destination in destinations)
-              NavigationRailDestination(
-                icon: destination.icon,
-                selectedIcon: destination.selectedIcon,
-                label: Text(destination.label),
-              ),
-          ],
-          extended: extended,
-          minWidth: HopeV2Navigation.railMinWidth,
-          minExtendedWidth: HopeV2Navigation.railExtendedWidth,
-          labelType: extended
-              ? NavigationRailLabelType.none
-              : NavigationRailLabelType.all,
-          leading: leading,
-          trailing: trailing,
-          backgroundColor: Colors.transparent,
-          indicatorColor: HopeV2Surfaces.navigationIndicator(context),
-          useIndicator: true,
-          groupAlignment: -.6,
+            left: false,
+            top: false,
+            bottom: false,
+            child: NavigationRail(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: onDestinationSelected,
+              destinations: [
+                for (final destination in destinations)
+                  NavigationRailDestination(
+                    icon: destination.icon,
+                    selectedIcon: destination.selectedIcon,
+                    label: Text(destination.label),
+                  ),
+              ],
+              extended: extended,
+              minWidth: HopeV2Navigation.railMinWidth,
+              minExtendedWidth: HopeV2Navigation.railExtendedWidth,
+              labelType: extended
+                  ? NavigationRailLabelType.none
+                  : NavigationRailLabelType.all,
+              leading: leading,
+              trailing: trailing,
+              backgroundColor: Colors.transparent,
+              indicatorColor: HopeV2Surfaces.navigationIndicator(context),
+              useIndicator: true,
+              groupAlignment: -.6,
+            ),
+          ),
         ),
       ),
     );
