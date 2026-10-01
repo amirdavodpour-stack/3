@@ -304,6 +304,7 @@ run_host_batch_session() {
   # is produced by integration_test's onScreenshot callback, so the artifact
   # is tied to the exact Flutter render request instead of a later framebuffer.
   set +e
+  HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
   flutter drive --no-pub --no-dds \
     --use-application-binary="$RUNTIME_APK" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
