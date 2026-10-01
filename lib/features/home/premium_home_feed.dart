@@ -177,7 +177,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                             _t(
                               context,
                               auth.isGuest ? 'فرصت‌های شما' : 'عصر بخیر،',
-                              auth.isGuest ? 'Your opportunities' : 'Good evening,',
+                              auth.isGuest ? 'Your opportunities' : 'Opportunities for you',
                             ),
                             style: HopeV2Type.eyebrow(context).copyWith(
                               color: HopeV2Colors.secondaryDark,
