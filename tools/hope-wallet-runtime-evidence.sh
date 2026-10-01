@@ -25,6 +25,12 @@ RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
+# bool.fromEnvironment only treats the string "true" as true. The workflow
+# contract uses 1/0 for shell semantics, so normalize before passing it to Dart.
+DART_CAPTURE_HOME_ONLY="false"
+if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
+  DART_CAPTURE_HOME_ONLY="true"
+fi
 
 case "$CAPTURE_LOCALE" in
   fa|en) ;;
@@ -39,7 +45,7 @@ flutter build apk --debug --no-pub \
   --target=integration_test/runtime/critical_screens_evidence_test.dart \
   --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
   --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
-  --dart-define=HOPE_CAPTURE_HOME_ONLY="${CAPTURE_HOME_ONLY}"
+  --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"
 test -s "$RUNTIME_APK"
 # Preserve the exact APK built from this feature-branch SHA for local/runtime Maestro inspection.
 cp "$RUNTIME_APK" "$evidence_dir/HOPE-${GITHUB_SHA}-debug.apk"
@@ -304,8 +310,12 @@ run_host_batch_session() {
   # is produced by integration_test's onScreenshot callback, so the artifact
   # is tied to the exact Flutter render request instead of a later framebuffer.
   set +e
+  export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
   HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
   flutter drive --no-pub --no-dds \
+    --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+    --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
+    --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
     --use-application-binary="$RUNTIME_APK" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
