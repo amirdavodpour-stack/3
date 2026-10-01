@@ -1,5 +1,6 @@
 name: HOPE Home Visual Preview
 # Temporary visual inspection lane; output is preview-only, not T10 certification.
+# PR synchronization trigger.
 
 on:
   pull_request:
