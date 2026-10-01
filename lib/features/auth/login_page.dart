@@ -132,6 +132,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 14),
               AnimatedEntrance(
                 child: PremiumPanel(
+                  glass: true,
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
