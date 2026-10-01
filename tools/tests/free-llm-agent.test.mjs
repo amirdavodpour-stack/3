@@ -22,7 +22,7 @@ test('approval decision bypasses interactive prompts in auto mode',()=>{
 test('GitHub Actions agent workflow is manual and wired to OpenRouter',()=>{
   const workflow=readFileSync(new URL('../../.github/workflows/free-llm-agent.yml',import.meta.url),'utf8');
   assert.match(workflow,/workflow_dispatch:/);
-  assert.match(workflow,/default:\s*openrouter\/free/);
+  assert.match(workflow,/default:\s*"openrouter\/free"/);
   assert.match(workflow,/OPENROUTER_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}/);
   assert.match(workflow,/LLM_AGENT_MODEL:\s*\$\{\{\s*inputs\.model\s*\}\}/);
   assert.match(workflow,/LLM_AGENT_APPROVAL:\s*auto/);
