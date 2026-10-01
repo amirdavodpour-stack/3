@@ -1,5 +1,6 @@
 import test from 'node:test';
-import assert from 'node:assert/strict';\nimport { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { buildSystemPrompt, isProtectedWritePath, isSafeCommand, normalizeRepoPath, parseCliArgs, resolveAgentConfig, resolveProvider, resolveApprovalDecision } from '../free-llm-agent.mjs';
 
 test('config defaults and fallback de-duplication',()=>{const c=resolveAgentConfig({LLM_AGENT_PROVIDER:'openrouter',LLM_AGENT_PROVIDER_FALLBACKS:'groq,openrouter,groq'});assert.deepEqual(c.providerNames,['openrouter','groq']);assert.equal(c.maxSteps,12);assert.equal(c.approval,'prompt');assert.equal(c.allowGitWrite,false);});
