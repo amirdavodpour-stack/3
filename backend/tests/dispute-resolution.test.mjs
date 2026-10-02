@@ -36,4 +36,5 @@ test('decision prompt anchors the assessment in Iranian legal sources and eviden
   assert.match(prompt, /۴۵۸/);
   assert.match(prompt, /۴۸۹/);
   assert.match(prompt, /evidence|ادله/i);
+  assert.match(prompt, /رابطه کار|contractor| پیمانکاری/i);
 });
