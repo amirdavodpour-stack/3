@@ -26,6 +26,7 @@ export const tableColumns = {
   crash_reports: ['user_id','anonymous_id','app_version','platform','release_channel','fingerprint','message','stack','context','occurred_at','created_at'],
   trust_reports: ['reporter_id','entity_type','entity_id','reason','details','status','created_at','updated_at'],
   saved_searches: ['user_id','name','query','kind','visibility','city','category','updated_at','created_at'],
+  recommendation_profiles: ['user_id','resume_text','skills','interests','preferred_categories','preferred_cities','desired_kinds','work_mode','availability','salary_min','salary_max','experience_level','goals','onboarding_completed','source_version','created_at','updated_at'],
 };
 
 export function toDbRow(collection, row) {
@@ -54,6 +55,7 @@ export function toDbRow(collection, row) {
     case 'crashReports': return [row.id,row.userId||null,row.anonymousId||null,row.appVersion||null,row.platform||null,row.releaseChannel||null,row.fingerprint,row.message,row.stack||null,row.context||{},row.occurredAt,row.createdAt];
     case 'trustReports': return [row.id,row.reporterId,row.entityType,row.entityId,row.reason,row.details||'',row.status,row.createdAt,row.updatedAt];
     case 'savedSearches': return [row.id,row.userId,row.name,row.query||'',row.kind||'ALL',row.visibility||'ALL',row.city||'AUTO',row.category||'ALL',row.updatedAt,row.createdAt];
+    case 'recommendationProfiles': return [row.userId,row.resumeText||'',row.skills||[],row.interests||[],row.preferredCategories||[],row.preferredCities||[],row.desiredKinds||[],row.workMode||null,row.availability||null,row.salaryMin||null,row.salaryMax||null,row.experienceLevel||null,row.goals||'',row.onboardingCompleted===true,row.sourceVersion||'1.0',row.createdAt,row.updatedAt];
     default: throw new Error(`Unknown collection ${collection}`);
   }
 }
@@ -90,6 +92,7 @@ export function fromDbRow(collection, r) {
     case 'crashReports': return {id:r.id,userId:r.user_id||null,anonymousId:r.anonymous_id||null,appVersion:r.app_version||null,platform:r.platform||null,releaseChannel:r.release_channel||null,fingerprint:r.fingerprint,message:r.message,stack:r.stack||null,context:r.context||{},occurredAt:r.occurred_at?.toISOString?.() ?? r.occurred_at,createdAt:r.created_at?.toISOString?.() ?? r.created_at};
     case 'trustReports': return {id:r.id,reporterId:r.reporter_id,entityType:r.entity_type,entityId:r.entity_id,reason:r.reason,details:r.details||'',status:r.status,createdAt:r.created_at?.toISOString?.() ?? r.created_at,updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at};
     case 'savedSearches': return {id:r.id,userId:r.user_id,name:r.name,query:r.query||'',kind:r.kind||'ALL',visibility:r.visibility||'ALL',city:r.city||'AUTO',category:r.category||'ALL',updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at,createdAt:r.created_at?.toISOString?.() ?? r.created_at};
+    case 'recommendationProfiles': return {id:r.user_id,userId:r.user_id,resumeText:r.resume_text||'',skills:r.skills||[],interests:r.interests||[],preferredCategories:r.preferred_categories||[],preferredCities:r.preferred_cities||[],desiredKinds:r.desired_kinds||[],workMode:r.work_mode||null,availability:r.availability||null,salaryMin:r.salary_min==null?null:String(r.salary_min),salaryMax:r.salary_max==null?null:String(r.salary_max),experienceLevel:r.experience_level||null,goals:r.goals||'',onboardingCompleted:r.onboarding_completed===true,sourceVersion:r.source_version||'1.0',createdAt:r.created_at?.toISOString?.() ?? r.created_at,updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at};
     default: throw new Error(`Unknown collection ${collection}`);
   }
 }
