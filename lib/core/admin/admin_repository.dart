@@ -73,6 +73,7 @@ abstract interface class AdminRepository {
   Future<Map<String, dynamic>> getAnalyticsSummary({int days = 30});
   Future<Map<String, dynamic>> getFunnel({int days = 30});
   Future<Map<String, dynamic>> getCrashSummary({int days = 30});
+  Future<Map<String, dynamic>> getPanelAccess();
   Future<Map<String, dynamic>> verifyPanelAccess(String name, String username);
   Future<void> lockPanel();
   Future<List<Map<String, dynamic>>> listDisputes();
@@ -162,6 +163,10 @@ class ApiAdminRepository implements AdminRepository {
   @override
   Future<Map<String, dynamic>> getCrashSummary({int days = 30}) async =>
       Map<String, dynamic>.from(await _api.request('GET', '/analytics/admin/crashes?days=$days', auth: true) as Map);
+
+  @override
+  Future<Map<String, dynamic>> getPanelAccess() async =>
+      Map<String, dynamic>.from(await _api.request('GET', '/admin/access', auth: true) as Map);
 
   @override
   Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async =>
