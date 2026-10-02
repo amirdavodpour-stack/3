@@ -6,7 +6,7 @@ const userSelect = `id,email,password_hash,password_hash AS "passwordHash",displ
 
 export async function getUserPrivacyBundle(userId) {
   const pool = requirePool();
-  const [u,p,j,a,o,pay,n,prefs,ev,up,analytics,crashes,trust] = await Promise.all([
+  const [u,p,j,a,o,pay,n,prefs,ev,up,analytics,crashes,trust,recommendationProfile] = await Promise.all([
     pool.query(`SELECT ${userSelect} FROM users WHERE id=$1`, [userId]),
     pool.query(`SELECT id,user_id,provider_type,capacity,verification_status,created_at,updated_at FROM providers WHERE user_id=$1`, [userId]),
     pool.query(`SELECT * FROM jobs WHERE owner_id=$1 OR provider_id=$1 ORDER BY created_at DESC`, [userId]),
@@ -20,6 +20,7 @@ export async function getUserPrivacyBundle(userId) {
     pool.query(`SELECT * FROM analytics_events WHERE user_id=$1 ORDER BY occurred_at DESC`, [userId]),
     pool.query(`SELECT * FROM crash_reports WHERE user_id=$1 ORDER BY occurred_at DESC`, [userId]),
     pool.query(`SELECT * FROM trust_reports WHERE reporter_id=$1 ORDER BY created_at DESC`, [userId]),
+    pool.query(`SELECT * FROM recommendation_profiles WHERE user_id=$1`, [userId]),
   ]);
   if (!u.rows[0]) return null;
   return { user:userFromRow(u.rows[0]), provider:p.rows[0] ? {id:p.rows[0].id,userId:p.rows[0].user_id,providerType:p.rows[0].provider_type,capacity:p.rows[0].capacity,verificationStatus:p.rows[0].verification_status,createdAt:p.rows[0].created_at?.toISOString?.()??p.rows[0].created_at,updatedAt:p.rows[0].updated_at?.toISOString?.()??p.rows[0].updated_at} : null,
@@ -28,7 +29,9 @@ export async function getUserPrivacyBundle(userId) {
     preferences:prefs.rows[0]||null, evidence:ev.rows.map(r=>({id:r.id,jobId:r.job_id,submittedBy:r.submitted_by,uri:r.uri,notes:r.notes,type:r.type,createdAt:r.created_at?.toISOString?.()??r.created_at})), uploads:up.rows.map(r=>({id:r.id,storageKey:r.storage_key,uploadedBy:r.uploaded_by,contentType:r.content_type,size:r.size,createdAt:r.created_at?.toISOString?.()??r.created_at})),
     analyticsEvents:analytics.rows.map(r=>({id:r.id,eventName:r.event_name,userId:r.user_id,anonymousId:r.anonymous_id,sessionId:r.session_id,appVersion:r.app_version,platform:r.platform,properties:r.properties||{},dedupeKey:r.dedupe_key,occurredAt:r.occurred_at?.toISOString?.()??r.occurred_at,createdAt:r.created_at?.toISOString?.()??r.created_at})),
     crashReports:crashes.rows.map(r=>({id:r.id,userId:r.user_id,anonymousId:r.anonymous_id,appVersion:r.app_version,platform:r.platform,releaseChannel:r.release_channel,fingerprint:r.fingerprint,message:r.message,stack:r.stack,context:r.context||{},occurredAt:r.occurred_at?.toISOString?.()??r.occurred_at,createdAt:r.created_at?.toISOString?.()??r.created_at})),
-    trustReports:trust.rows.map(r=>({id:r.id,reporterId:r.reporter_id,entityType:r.entity_type,entityId:r.entity_id,reason:r.reason,details:r.details||'',status:r.status,createdAt:r.created_at?.toISOString?.()??r.created_at,updatedAt:r.updated_at?.toISOString?.()??r.updated_at})) };
+    trustReports:trust.rows.map(r=>({id:r.id,reporterId:r.reporter_id,entityType:r.entity_type,entityId:r.entity_id,reason:r.reason,details:r.details||'',status:r.status,createdAt:r.created_at?.toISOString?.()??r.created_at,updatedAt:r.updated_at?.toISOString?.()??r.updated_at})),
+    recommendationProfile: recommendationProfile.rows[0] || null,
+  };
 }
 
 export async function deleteUserPrivacyBundle(userId, replacement) {
