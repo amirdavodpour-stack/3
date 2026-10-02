@@ -20,7 +20,7 @@ export async function ensureJobChat(jobId) {
     if (!job || !job.provider_id) return null;
     if (!['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].includes(job.status)) return null;
     const { rows } = await client.query(
-      "INSERT INTO chat_conversations(id,kind,job_id,status,title) VALUES(gen_random_uuid(),'JOB',$1,'OPEN',$2) ON CONFLICT(job_id) DO UPDATE SET status=CASE WHEN chat_conversations.status='CLOSED' THEN 'OPEN' ELSE chat_conversations.status END,title=EXCLUDED.title RETURNING *",
+      "INSERT INTO chat_conversations(id,kind,job_id,status,title) VALUES(gen_random_uuid(),'JOB',$1,'OPEN',$2) ON CONFLICT(job_id) DO UPDATE SET status=chat_conversations.status,title=EXCLUDED.title RETURNING *",
       [job.id, job.title || ''],
     );
     return conversationFromRow({ ...rows[0], owner_id: job.owner_id, worker_id: job.provider_id });
@@ -37,14 +37,6 @@ export async function ensureAdminChat() {
   if (rows[0]) return conversationFromRow(rows[0]);
   const { rows: existing } = await requirePool().query("SELECT * FROM chat_conversations WHERE kind='ADMIN' LIMIT 1");
   return conversationFromRow(existing[0]);
-}
-
-async function loadConversation(id) {
-  const { rows } = await requirePool().query(
-    'SELECT c.*,j.owner_id,j.provider_id,CASE WHEN j.owner_id=$2 THEN wu.display_name ELSE ou.display_name END AS other_user_name FROM chat_conversations c LEFT JOIN jobs j ON j.id=c.job_id LEFT JOIN users ou ON ou.id=j.owner_id LEFT JOIN users wu ON wu.id=j.provider_id WHERE c.id=$1',
-    [id, '__VIEWER__'],
-  );
-  return rows[0] || null;
 }
 
 export async function getChatConversationForUser(id, userId, role) {
