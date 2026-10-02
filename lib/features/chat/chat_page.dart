@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/application/application_registry.dart';
 import '../../core/chat/chat_repository.dart';
-import '../../core/ui/api_error_presenter.dart';
+import '../../core/chat/chat_use_cases.dart';
+import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
 
 class ChatPage extends StatefulWidget {
@@ -46,7 +46,7 @@ class _ChatPageState extends State<ChatPage> {
     _scrollToEnd();
 
     try {
-      final answer = await _repository.sendMessage(message);
+      final answer = await SendChatMessageUseCase(_repository)(message);
       if (!mounted) return;
       setState(() {
         _messages.add(_ChatMessage.assistant(answer));
@@ -80,8 +80,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final useCase = context.read<ApplicationRegistry>().sendChatMessage;
-    final isEn = Localizations.localeOf(context).languageCode == 'en';
+        final isEn = Localizations.localeOf(context).languageCode == 'en';
 
     return Scaffold(
       appBar: AppBar(
