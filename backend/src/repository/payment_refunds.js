@@ -22,6 +22,31 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     const {rows:pr}=await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,[paymentId,jobId]);
     const payment=pr[0]; if(!payment){const e=new Error('PAYMENT_NOT_FOUND');e.code='PAYMENT_NOT_FOUND';throw e;}
     if(!refundablePaymentStateAllowed(payment.status, allowPendingRelease)){const e=new Error('INVALID_PAYMENT_STATE');e.code='INVALID_PAYMENT_STATE';throw e;}
+    if (allowPendingRelease && ['RELEASE_PENDING', 'RELEASE_FAILED'].includes(payment.status)) {
+      const releaseEvent = await client.query(
+        `SELECT id,status FROM outbox_events
+          WHERE aggregate_type='payment' AND aggregate_id=$1
+            AND event_type='PAYMENT_RELEASE'
+            AND status IN ('PENDING','FAILED','PROCESSING')
+          ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+        [paymentId],
+      );
+      const release = releaseEvent.rows[0];
+      if (release?.status === 'PROCESSING') {
+        const e = new Error('PAYMENT_RELEASE_IN_PROGRESS');
+        e.code = 'PAYMENT_RELEASE_IN_PROGRESS';
+        throw e;
+      }
+      if (release && ['PENDING', 'FAILED'].includes(release.status)) {
+        await client.query(
+          `UPDATE outbox_events
+             SET status='DONE', processed_at=COALESCE(processed_at,NOW()),
+                 locked_at=NULL, last_error='SUPERSEDED_BY_REFUND'
+           WHERE id=$1`,
+          [release.id],
+        );
+      }
+    }
     const refundCurrency=String(payment.currency || config.paymentCurrency).toUpperCase(); const refundAmount=normalizeFinancialAmount(refundCurrency, amount || payment.amount); if(String(refundAmount)!==String(normalizeFinancialAmount(refundCurrency, payment.amount))){const e=new Error('PARTIAL_REFUND_UNSUPPORTED');e.code='PARTIAL_REFUND_UNSUPPORTED';throw e;}
     let refundRow = null;
     if (idempotencyKey) {
