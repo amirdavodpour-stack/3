@@ -109,6 +109,100 @@ export function scoreRecommendation(job, profile, context = {}) {
   return { version: RECOMMENDATION_VERSION, score:Number(score.toFixed(2)), distanceKm:distanceKm == null ? null : Number(distanceKm.toFixed(1)), reasons, componentScores };
 }
 
+const AI_RERANK_MAX_CANDIDATES = 20;
+
+function aiSafeText(value, maxLength) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function parseAiRanking(raw, validIds) {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  let payload;
+  try {
+    payload = JSON.parse(raw.trim());
+  } catch {
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try {
+      payload = JSON.parse(raw.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  const rankings = Array.isArray(payload)
+    ? payload
+    : (Array.isArray(payload?.rankings) ? payload.rankings : null);
+  if (!rankings) return null;
+
+  const seen = new Set();
+  return rankings
+    .map((item) => {
+      if (!item || typeof item.id !== 'string' || !validIds.has(item.id) || seen.has(item.id)) return null;
+      seen.add(item.id);
+      const score = clamp01(Number(item.score) / 100) * 100;
+      const confidence = clamp01(item.confidence);
+      const reasons = Array.isArray(item.reasons)
+        ? item.reasons.filter((reason) => typeof reason === 'string' && reason.trim()).slice(0, 3)
+        : [];
+      return { id: item.id, score: Number(score.toFixed(2)), confidence: Number(confidence.toFixed(2)), reasons };
+    })
+    .filter(Boolean);
+}
+
+export function buildAiRerankPrompt(profile, jobs) {
+  const profilePayload = {
+    topCategories: profile?.topCategories ?? [],
+    topCities: profile?.topCities ?? [],
+    topKinds: profile?.topKinds ?? [],
+    topWorkModes: profile?.topWorkModes ?? [],
+    salaryMin: profile?.salaryMin ?? null,
+    salaryMax: profile?.salaryMax ?? null,
+    interactionCount: profile?.interactionCount ?? 0,
+  };
+  const opportunities = jobs.slice(0, AI_RERANK_MAX_CANDIDATES).map((job) => ({
+    id: aiSafeText(job.id, 80),
+    title: aiSafeText(job.title, 160),
+    description: aiSafeText(job.description, 700),
+    category: aiSafeText(job.category, 100),
+    city: aiSafeText(job.city, 100),
+    kind: aiSafeText(job.kind, 30),
+    workMode: aiSafeText(job.workMode ?? job.attributes?.workMode, 40),
+    budgetMin: aiSafeText(job.budgetMin, 40),
+    budgetMax: aiSafeText(job.budgetMax, 40),
+    monthlySalary: aiSafeText(job.monthlySalary, 40),
+    duration: aiSafeText(job.duration, 40),
+    acceptanceCriteria: aiSafeText(job.acceptanceCriteria, 500),
+  }));
+
+  return [
+    'You are HOPE’s opportunity matching engine.',
+    'Rank the supplied opportunities for this candidate only from the supplied job and profile facts.',
+    'Do not invent qualifications or missing preferences. Do not use protected or sensitive attributes.',
+    'Return ONLY valid JSON with this shape:',
+    '{"rankings":[{"id":"job-id","score":0,"confidence":0,"reasons":["reason"]}]}',
+    'score is 0-100; confidence is 0-1; include at most 3 concise reasons per job.',
+    'PROFILE: ' + JSON.stringify(profilePayload),
+    'OPPORTUNITIES: ' + JSON.stringify(opportunities),
+  ].join('\n');
+}
+
+export async function rerankWithAI({ askAI, profile, jobs, maxCandidates = AI_RERANK_MAX_CANDIDATES } = {}) {
+  if (typeof askAI !== 'function' || !Array.isArray(jobs) || jobs.length < 2) return null;
+  const candidates = jobs.slice(0, Math.min(AI_RERANK_MAX_CANDIDATES, Math.max(2, Number(maxCandidates) || AI_RERANK_MAX_CANDIDATES)));
+  if (candidates.length < 2) return null;
+
+  let raw;
+  try {
+    raw = await askAI(buildAiRerankPrompt(profile, candidates));
+  } catch {
+    return null;
+  }
+
+  return parseAiRanking(raw, new Set(candidates.map((job) => String(job.id))));
+}
+
 export function evaluateRecommendationRanking(items = [], relevantFn = () => false, k = 10) {
   const top = items.slice(0, Math.max(1, Number(k) || 10));
   const relevant = top.map(relevantFn);
@@ -125,3 +219,5 @@ export function evaluateRecommendationRanking(items = [], relevantFn = () => fal
   const reasonCoverage = Number((top.filter(x => Array.isArray(x.recommendationReasons) && x.recommendationReasons.length > 0).length / Math.max(1, top.length)).toFixed(4));
   return { k: Math.max(1, Number(k) || 10), hits, totalRelevant, precisionAtK, recallAtK, ndcgAtK, reasonCoverage };
 }
+
+[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]
