@@ -6,6 +6,7 @@ export function createOpportunityAgentRoutes({
   HttpError,
   repo,
   buildOpportunityAgentState,
+  parseOpportunityAgentState,
 }) {
   return async function routeHandler(req, res, parts) {
     if (parts.length !== 1 || parts[0] !== 'opportunity-agent') {
@@ -61,13 +62,13 @@ export function createOpportunityAgentRoutes({
         .slice(0, 20);
     }
 
-    return sendJson(res, 200, buildOpportunityAgentState({
+    return sendJson(res, 200, parseOpportunityAgentState(buildOpportunityAgentState({
       profile: profile || {},
       applications,
       events,
       savedSearches,
       completedJobs,
       recommendations,
-    }));
+    })));
   };
 }
