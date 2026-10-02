@@ -1,4 +1,5 @@
-import { requirePool, withSqlTransaction } from './context.js';
+import { requirePool } from './context.js';
+import { withSqlTransaction } from '../db.js';
 import { canAccessConversation, canSendToConversation } from '../services/human_chat.js';
 
 const conversationFromRow = (row) => row ? ({
