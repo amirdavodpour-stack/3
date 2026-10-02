@@ -887,7 +887,7 @@ padding: const EdgeInsets.all(12),
                 context,
                 HopeRoutes.financialInsights(),
               ),
-              icon: const HopeIcon(HopeV2Icons.analytics, size: 19),
+              icon: const HopeIcon(HopeV2Icons.wallet, size: 19),
               label: Text(
                 _t('تحلیل مالی و نمودارها', 'Financial insights & charts'),
               ),
