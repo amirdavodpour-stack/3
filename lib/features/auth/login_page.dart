@@ -7,6 +7,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/auth/google_sign_in_service.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/recommendation/recommendation_profile_repository.dart';
 import '../../core/router/auth_return_intent.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
@@ -50,6 +51,7 @@ class _LoginPageState extends State<LoginPage> {
       await context
           .read<AuthController>()
           .loginWithGoogle(google);
+      if (mounted) await _ensureRecommendationProfile();
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop(widget.returnIntent);
       }
@@ -87,6 +89,17 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         setState(() => loading = false);
       }
+    }
+  }
+
+  Future<void> _ensureRecommendationProfile() async {
+    try {
+      final profile = await context.read<RecommendationProfileRepository>().get();
+      if (!profile.onboardingCompleted && mounted) {
+        await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
+      }
+    } catch (_) {
+      // Existing login must not fail because personalization is unavailable.
     }
   }
 
