@@ -14,6 +14,7 @@ import 'core/settings/settings_controller.dart';
 import 'core/storage/secure_store.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/telemetry/telemetry_service.dart';
+import 'core/recommendation/recommendation_profile_repository.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/notifications/notification_repository.dart';
 import 'core/profile/profile_repository.dart';
@@ -84,6 +85,7 @@ Future<void> main() async {
       Provider<ChatRepository>.value(value: chatRepository),
       Provider<GoogleSignInService>.value(value: googleSignIn),
       Provider<ProfileRepository>.value(value: profileRepository),
+      Provider<RecommendationProfileRepository>(create: (_) => ApiRecommendationProfileRepository(api)),
       Provider<RecommendationProfileRepository>(create: (_) => ApiRecommendationProfileRepository(api)),
       Provider<NotificationRepository>.value(value: notificationRepository),
       Provider<MarketplaceRepository>(
