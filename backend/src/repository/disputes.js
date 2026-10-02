@@ -92,6 +92,17 @@ export async function getAdminDispute(id) {
   return { ...disputeView(rows[0]), jobTitle: rows[0].title, jobStatus: rows[0].job_status, paymentAmount: rows[0].payment_amount == null ? null : Number(rows[0].payment_amount), paymentStatus: rows[0].payment_status, owner: { id: rows[0].owner_id, name: rows[0].owner_name || '', email: rows[0].owner_email || '' }, worker: { id: rows[0].provider_id, name: rows[0].worker_name || '', email: rows[0].worker_email || '' }, context };
 }
 
+export async function getAdminPanelIdentity(userId) {
+  const { rows } = await requirePool().query(`SELECT id,role,display_name AS "displayName",admin_username FROM users WHERE id=$1`, [userId]);
+  if (!rows[0]) return null;
+  return {
+    id: rows[0].id,
+    role: rows[0].role,
+    displayName: rows[0].displayName || '',
+    username: rows[0].admin_username || '',
+  };
+}
+
 export async function setAdminPanelVerified(userId) {
   const { rows } = await requirePool().query(`UPDATE users SET admin_panel_verified_at=NOW() WHERE id=$1 AND role='ADMIN' RETURNING id,admin_panel_verified_at`, [userId]);
   return rows[0] ? { verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at } : null;
