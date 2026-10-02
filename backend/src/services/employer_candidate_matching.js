@@ -193,7 +193,7 @@ export function scoreEmployerCandidate(job, candidate = {}) {
 
   return {
     score: Number(Math.max(0, Math.min(100, score)).toFixed(2)),
-    reasons: reasons.slice(0, 5),
+    reasons,
     components: Object.fromEntries(
       Object.entries(scores).map(([key, value]) => [key, Number((value * 100).toFixed(1))]),
     ),
