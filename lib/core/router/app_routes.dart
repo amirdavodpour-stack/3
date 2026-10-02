@@ -7,6 +7,8 @@ import '../../features/recommendation/recommendation_onboarding_page.dart';
 import '../../features/financial/financial_insights_page.dart';
 import '../../features/jobs/job_satisfaction_page.dart';
 import '../../features/admin/admin_page.dart';
+import '../../features/admin/admin_access_page.dart';
+import '../../features/admin/admin_disputes_page.dart';
 import '../../features/admin/admin_operations_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/auth/password_reset_page.dart';
@@ -53,7 +55,9 @@ abstract final class HopeRoutes {
   static Route<void> savedSearches() => _page(const SavedSearchesPage());
   static Route<void> jobs() => _page(const JobsPage());
   static Route<void> offers({String? jobId}) => _page(OffersPage(jobId: jobId));
+  static Route<void> adminAccess() => _page(const AdminAccessPage());
   static Route<void> admin() => _page(const AdminPage());
+  static Route<void> adminDisputes() => _page(const AdminDisputesPage());
   static Route<void> adminOperations() => _page(const AdminOperationsPage());
   static Route<void> about() => _page(const AboutHopePage());
   static Route<bool?> recommendationOnboarding() => _page(const RecommendationOnboardingPage());
