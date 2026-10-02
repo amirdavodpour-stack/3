@@ -6,6 +6,7 @@ import '../marketplace/job_detail_repository.dart';
 import '../marketplace/marketplace_repository.dart';
 import '../marketplace/job.dart';
 import '../marketplace/saved_search_repository.dart';
+import '../opportunity/opportunity_agent_repository.dart';
 import '../transactions/transaction_repository.dart';
 import '../transactions/wallet_repository.dart';
 import 'use_cases.dart';
