@@ -37,5 +37,5 @@ test('completed onboarding cannot be reused as an indirect general AI interface'
 
 test('dispute adjudication is a system-only allowlisted task', () => {
   assert.equal(assertSystemAiTask({ task: 'DISPUTE_ADJUDICATION' }), true);
-  assert.throws(() => assertSystemAiTask({ task: 'FREEFORM_CHAT' }), /AI_TASK_NOT_ALLOWLISTED/);
+  assert.throws(() => assertSystemAiTask({ task: 'FREEFORM_CHAT' }), (error) => error.code === 'AI_TASK_NOT_ALLOWLISTED' && error.status === 403);
 });
