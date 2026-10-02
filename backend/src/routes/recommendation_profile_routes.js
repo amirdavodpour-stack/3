@@ -26,6 +26,24 @@ export function createRecommendationProfileRoutes({
       });
     }
 
+    if (req.method === 'POST') {
+      const body = await readBody(req);
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        throw new HttpError(400, 'INVALID_BODY', 'Request body is required');
+      }
+      const history = Array.isArray(body.history) ? body.history : [];
+      const message = typeof body.message === 'string' ? body.message.trim() : '';
+      if (message.length > 4000) throw new HttpError(400, 'MESSAGE_TOO_LONG', 'Interview message is too long');
+      if (!message && history.length > 0) throw new HttpError(400, 'MESSAGE_REQUIRED', 'Message is required');
+      let raw;
+      try {
+        raw = await askAI(buildRecommendationInterviewPrompt(history, message));
+      } catch {
+        throw new HttpError(503, 'AI_PROVIDER_UNAVAILABLE', 'Recommendation interview is temporarily unavailable');
+      }
+      return sendJson(res, 200, parseInterviewResponse(raw));
+    }
+
     if (req.method === 'PUT') {
       const body = await readBody(req);
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -40,15 +58,6 @@ export function createRecommendationProfileRoutes({
       return sendJson(res, 200, stored);
     }
 
-    if (req.method === 'POST' && parts.length === 1 && bodyIsInterview(req)) {
-      // handled by the explicit branch below
-    }
-
     throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
   };
-}
-
-function bodyIsInterview(req) {
-  const header = String(req.headers['x-hope-recommendation-interview'] || '').toLowerCase();
-  return header === '1' || header === 'true';
 }
