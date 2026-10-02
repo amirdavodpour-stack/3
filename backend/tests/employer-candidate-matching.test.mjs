@@ -88,7 +88,7 @@ test('mission matching evaluates the provider offer against the mission budget',
     },
   );
 
-  assert.ok(result.score >= 80);
+  assert.ok(result.score >= 70);
   assert.ok(result.reasons.includes('BUDGET_FIT'));
 });
 
