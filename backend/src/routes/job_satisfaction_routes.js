@@ -1,4 +1,5 @@
 import { assertAutomatedAiAccess } from '../application/ai_access_policy.js';
+import { analyzeDisputeWithAI } from '../services/dispute_resolution.js';
 import { buildSatisfactionAnalysisPrompt, evaluateSettlementGate, SATISFACTION_QUESTIONS, parseSatisfactionAnalysis } from '../services/job_satisfaction.js';
 
 export function createJobSatisfactionRoutes({
@@ -15,7 +16,24 @@ export function createJobSatisfactionRoutes({
     const payment = await paymentUseCases.findByJob(job.id);
     const feedback = await repo.listJobSatisfactionFeedback(job.id);
     const gate = evaluateSettlementGate({ jobStatus: job.status, paymentStatus: payment?.status, feedback });
-    if (!gate.ready || !payment) return { gate, payment: payment || null, autoReleased:false };
+    if (!gate.ready || !payment) {
+      if (payment && feedback.length === 2 && feedback.every((item) => item.status === 'ANALYZED')) {
+        const conflict = await repo.createJobDispute({ jobId: job.id, openedBy: me.id, triggerType: 'SATISFACTION_CONFLICT' });
+        if (conflict.status !== 'RESOLVED') {
+          try {
+            assertAutomatedAiAccess({ route: 'dispute-adjudication', source: 'SYSTEM' });
+            const context = await repo.getJobDisputeContext(job.id);
+            const analysis = await analyzeDisputeWithAI({ askAI, context });
+            const analyzed = await repo.updateJobDisputeAnalysis(conflict.id, analysis);
+            await createAudit('JOB_DISPUTE_AUTO_ANALYZE', me.id, 'job_dispute', conflict.id, { jobId: job.id, decision: analyzed.aiDecision, confidence: analyzed.aiConfidence, rulesetVersion: analyzed.legalRulesetVersion });
+            return { gate, payment, autoReleased:false, dispute:analyzed };
+          } catch (_) {
+            return { gate, payment, autoReleased:false, dispute:conflict };
+          }
+        }
+      }
+      return { gate, payment: payment || null, autoReleased:false };
+    }
 
     let event;
     try {
