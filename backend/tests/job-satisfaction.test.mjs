@@ -16,7 +16,7 @@ test('satisfaction flow is fixed-scope and does not expose a general AI chat sur
 test('AI satisfaction analysis is normalized to safe fields', () => {
   const result = parseSatisfactionAnalysis(JSON.stringify({
     summary: 'همکاری مطابق توافق انجام شد.',
-    satisfactionScore: 97,
+    satisfactionScore: 120,
     sentiment: 'SATISFIED',
     tags: ['QUALITY', 'COMMUNICATION', 'QUALITY'],
     riskFlags: ['none', 'hidden'],
