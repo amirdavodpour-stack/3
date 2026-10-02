@@ -62,3 +62,20 @@ export async function deleteJob(id) {
   });
 }
 
+
+export async function grantAdminByEmail(email, actorId) {
+  return withSqlTransaction(async (client) => {
+    const { rows: actors } = await client.query(`SELECT id,email,role FROM users WHERE id=$1 FOR UPDATE`, [actorId]);
+    if (!actors[0] || actors[0].role !== 'ADMIN' || String(actors[0].email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
+      const error = new Error('PRIMARY_ADMIN_ONLY');
+      error.code = 'PRIMARY_ADMIN_ONLY';
+      throw error;
+    }
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const { rows } = await client.query(`SELECT ${userSelect} FROM users WHERE LOWER(email)=LOWER($1) FOR UPDATE`, [normalizedEmail]);
+    if (!rows[0]) return null;
+    if (String(rows[0].role || '').toUpperCase() === 'ADMIN') return userFromRow(rows[0]);
+    const { rows: updated } = await client.query(`UPDATE users SET role='ADMIN', session_version=session_version+1 WHERE id=$1 RETURNING ${userSelect}`, [rows[0].id]);
+    return updated[0] ? userFromRow(updated[0]) : null;
+  });
+}
