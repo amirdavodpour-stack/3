@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/router/auth_return_intent.dart';
 import '../../core/router/app_routes.dart';
-import '../../core/router/app_routes.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/premium_components.dart';
@@ -55,7 +54,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted) {
         if (widget.returnIntent == null) {
           await Navigator.of(context).pushAndRemoveUntil(
-            HopeRoutes.recommendationInterview(),
+            HopeRoutes.recommendationOnboarding(),
             (route) => route.isFirst,
           );
         } else if (Navigator.of(context).canPop()) {
