@@ -4,7 +4,6 @@ export const AUTOMATED_AI_TASKS = Object.freeze([
   'OPPORTUNITY_AGENT',
   'JOB_SATISFACTION',
   'DISPUTE_ADJUDICATION',
-  'DISPUTE_ADJUDICATION',
 ]);
 
 export function assertAutomatedAiAccess({ route, source = 'USER' } = {}) {
@@ -14,16 +13,6 @@ export function assertAutomatedAiAccess({ route, source = 'USER' } = {}) {
   error.status = 403;
   error.route = String(route || '');
   throw error;
-}
-
-export function assertSystemAiTask({ task } = {}) {
-  if (!AUTOMATED_AI_TASKS.includes(String(task || ''))) {
-    const error = new Error('AI task is not allowlisted');
-    error.code = 'AI_TASK_NOT_ALLOWLISTED';
-    error.status = 403;
-    throw error;
-  }
-  return true;
 }
 
 export function assertAssignedAiTaskAccess({ task, onboardingCompleted = false } = {}) {
