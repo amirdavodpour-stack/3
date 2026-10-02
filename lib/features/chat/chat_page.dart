@@ -1,257 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../core/chat/chat_repository.dart';
-import '../../core/chat/chat_use_cases.dart';
 import '../../core/network/api_error_presenter.dart';
-import '../../core/ui/brand.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, this.repository});
-
+  const ChatPage({super.key, this.repository, this.jobId, this.adminRoom = false});
   final ChatRepository? repository;
-
-  @override
-  State<ChatPage> createState() => _ChatPageState();
+  final String? jobId;
+  final bool adminRoom;
+  @override State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final _controller = TextEditingController();
-  final _scrollController = ScrollController();
-  final _messages = <_ChatMessage>[];
-  bool _sending = false;
+  final _controller=TextEditingController();
+  final _scroll=ScrollController();
+  late final ChatRepository _repository;
+  HopeChatThread? _thread;
+  bool _busy=false;
   String? _error;
 
-  ChatRepository get _repository =>
-      widget.repository ?? context.read<ChatRepository>();
+  @override void initState(){super.initState(); _repository=widget.repository ?? context.read<ChatRepository>(); WidgetsBinding.instance.addPostFrameCallback((_)=>_load());}
+  @override void dispose(){_controller.dispose();_scroll.dispose();super.dispose();}
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  Future<void> _load() async {
+    try {
+      final items=await _repository.listConversations();
+      final c=widget.adminRoom
+          ? items.where((x)=>x.kind.toUpperCase()=='ADMIN').firstOrNull
+          : items.where((x)=>x.kind.toUpperCase()=='JOB' && x.jobId==widget.jobId).firstOrNull;
+      if(c==null) throw StateError('Conversation is not available');
+      final thread=await _repository.getMessages(c.id);
+      if(mounted)setState(()=>_thread=thread);
+    } catch(e){if(mounted)setState(()=>_error=apiErrorMessage(e,fallback:_t('گفتگو در دسترس نیست.','Conversation is not available.')));}
   }
 
   Future<void> _send() async {
-    final message = _controller.text.trim();
-    if (message.isEmpty || _sending) return;
-
-    FocusManager.instance.primaryFocus?.unfocus();
-    setState(() {
-      _messages.add(_ChatMessage.user(message));
-      _controller.clear();
-      _error = null;
-      _sending = true;
-    });
-    _scrollToEnd();
-
+    final text=_controller.text.trim();
+    final thread=_thread;
+    if(text.isEmpty||_busy||thread==null||thread.conversation.status.toUpperCase()!='OPEN')return;
+    setState(()=>_busy=true); _controller.clear();
     try {
-      final answer = await SendChatMessageUseCase(_repository)(message);
-      if (!mounted) return;
-      setState(() {
-        _messages.add(_ChatMessage.assistant(answer));
+      final m=await _repository.sendMessage(thread.conversation.id,text);
+      if(!mounted)return;
+      setState(()=>_thread=HopeChatThread(conversation:thread.conversation,messages:[...thread.messages,m]));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if(_scroll.hasClients)_scroll.animateTo(_scroll.position.maxScrollExtent,duration:const Duration(milliseconds:180),curve:Curves.easeOut);
       });
-      _scrollToEnd();
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = apiErrorMessage(
-          error,
-          fallback: _t(context, 'پاسخ دریافت نشد. دوباره تلاش کنید.',
-              'The response could not be loaded. Try again.'),
-        );
-      });
-      _scrollToEnd();
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    } catch(e){if(mounted)setState(()=>_error=apiErrorMessage(e,fallback:_t('پیام ارسال نشد.','Message could not be sent.')));}
+    finally{if(mounted)setState(()=>_busy=false);}
   }
 
-  void _scrollToEnd() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-      );
-    });
-  }
+  String _t(String fa,String en)=>Localizations.localeOf(context).languageCode=='en'?en:fa;
 
-  @override
-  Widget build(BuildContext context) {
-        final isEn = Localizations.localeOf(context).languageCode == 'en';
-
+  @override Widget build(BuildContext context){
+    final c=_thread?.conversation;
+    final title=widget.adminRoom?_t('گفتگوی مدیران','Admin room'):c?.otherUserName.isNotEmpty==true?c!.otherUserName:_t('گفتگوی این کار','Job chat');
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const HopeMark(size: 30),
-            const SizedBox(width: 10),
-            Text(isEn ? 'HOPE Assistant' : 'دستیار HOPE'),
-          ],
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: _messages.isEmpty
-                  ? _EmptyState(isEn: isEn)
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
-                      itemCount: _messages.length + (_error != null ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (_error != null && index == _messages.length) {
-                          return _ErrorBubble(message: _error!);
-                        }
-                        return _MessageBubble(message: _messages[index]);
-                      },
-                    ),
-            ),
-            if (_sending)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(18, 0, 18, 8),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: LinearProgressIndicator(minHeight: 2),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      minLines: 1,
-                      maxLines: 5,
-                      textInputAction: TextInputAction.newline,
-                      onSubmitted: (_) => _send(),
-                      enabled: !_sending,
-                      decoration: InputDecoration(
-                        hintText: isEn
-                            ? 'Ask HOPE anything about your work'
-                            : 'درباره فرصت یا کارتان از HOPE بپرسید',
-                        border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(18)),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _sending ? null : _send,
-                    tooltip: isEn ? 'Send' : 'ارسال',
-                    icon: const Icon(Icons.arrow_upward_rounded),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _t(BuildContext context, String fa, String en) =>
-      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
-}
-
-class _ChatMessage {
-  const _ChatMessage.user(this.text) : isUser = true;
-  const _ChatMessage.assistant(this.text) : isUser = false;
-
-  final String text;
-  final bool isUser;
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.isEn});
-
-  final bool isEn;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const HopeMark(size: 56),
-            const SizedBox(height: 18),
-            Text(
-              isEn ? 'Ask. Explore. Get to work.' : 'بپرسید، بررسی کنید، شروع کنید.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isEn
-                  ? 'Use the assistant to explore work and opportunity ideas.'
-                  : 'برای بررسی ایده‌ها و فرصت‌های کاری از دستیار استفاده کنید.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message});
-
-  final _ChatMessage message;
-
-  @override
-  Widget build(BuildContext context) {
-    final alignment = message.isUser
-        ? AlignmentDirectional.centerEnd
-        : AlignmentDirectional.centerStart;
-    return Align(
-      alignment: alignment,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: Card(
-          margin: const EdgeInsets.only(bottom: 10),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Text(
-              message.text,
-              textDirection: Directionality.of(context),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBubble extends StatelessWidget {
-  const _ErrorBubble({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-      ),
+      appBar:AppBar(title:Text(title)),
+      body:SafeArea(child:Column(children:[
+        if(_error!=null) Padding(padding:const EdgeInsets.all(12),child:Text(_error!,style:TextStyle(color:Theme.of(context).colorScheme.error))),
+        Expanded(child:_thread==null
+          ? const Center(child:CircularProgressIndicator())
+          : _thread!.messages.isEmpty
+            ? Center(child:Text(_t('هنوز پیامی ثبت نشده است.','No messages yet.')))
+            : ListView.builder(controller:_scroll,padding:const EdgeInsets.all(16),itemCount:_thread!.messages.length,itemBuilder:(context,i){
+                final m=_thread!.messages[i];
+                return Align(alignment:AlignmentDirectional.centerStart,child:Card(child:Padding(padding:const EdgeInsets.symmetric(horizontal:14,vertical:11),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m.senderName,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:4),Text(m.body)]))));
+              })),
+        if(c?.status.toUpperCase()=='OPEN') Padding(padding:const EdgeInsets.fromLTRB(12,8,12,14),child:Row(children:[
+          Expanded(child:TextField(controller:_controller,maxLines:4,minLines:1,enabled:!_busy,onSubmitted:(_)=>_send(),decoration:InputDecoration(hintText:_t('پیام خود را بنویسید','Write a message'),border:const OutlineInputBorder()))),
+          const SizedBox(width:8),
+          IconButton.filled(onPressed:_busy?null:_send,tooltip:_t('ارسال','Send'),icon:const Icon(Icons.send_rounded))
+        ]))
+        else if(c!=null) Padding(padding:const EdgeInsets.all(16),child:Text(_t('این گفتگو با پایان کار و تسویه بسته شده است.','This conversation is closed because the job has ended and settled.')))
+      ])),
     );
   }
 }
