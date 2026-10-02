@@ -33,11 +33,26 @@ const toRow = (row) => row ? ({
     currency: row.payment_currency,
   } : null,
   feedback: Array.isArray(row.feedback) ? row.feedback : [],
+  jobTitle: row.job_title || null,
+  ownerName: row.employer_name || null,
+  workerName: row.worker_name || null,
+  context: row.job_title ? {
+    job: {
+      id: row.job_id, title: row.job_title, description: row.job_description || '',
+      acceptanceCriteria: row.acceptance_criteria || '', status: row.job_status,
+      ownerId: row.owner_id, providerId: row.provider_id, kind: row.job_kind || null,
+    },
+    payment: row.payment_id ? { id: row.payment_id, status: row.payment_status, amount: row.payment_amount == null ? null : Number(row.payment_amount), currency: row.payment_currency } : null,
+    feedback: Array.isArray(row.feedback) ? row.feedback : [],
+  } : null,
 });
 
 const selectBase = `
   d.*,
   j.title AS job_title,
+  j.description AS job_description,
+  j.acceptance_criteria,
+  j.kind AS job_kind,
   j.status AS job_status,
   j.owner_id,
   j.provider_id,
@@ -128,4 +143,63 @@ export async function resolveJobDispute({ id, resolution, adminId, reason = '' }
     const full = await client.query(`SELECT ${selectBase} WHERE d.id=$1`, [id]);
     return toRow(full.rows[0]);
   });
+}
+
+
+export async function getJobDisputeContext(jobId) {
+  const { rows } = await requirePool().query(`
+    SELECT
+      j.id, j.title, j.description, j.acceptance_criteria, j.status, j.owner_id, j.provider_id, j.kind,
+      p.id AS payment_id, p.status AS payment_status, p.amount AS payment_amount, p.currency AS payment_currency,
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'id', f.id, 'userId', f.user_id, 'role', f.role,
+          'overallRating', f.overall_rating, 'completedAsAgreed', f.completed_as_agreed,
+          'communicationRating', f.communication_rating, 'reportText', f.report_text,
+          'aiSummary', f.ai_summary, 'aiSatisfactionScore', f.ai_satisfaction_score,
+          'aiSentiment', f.ai_sentiment, 'status', f.status
+        ) ORDER BY f.created_at)
+        FROM job_satisfaction_feedback f WHERE f.job_id=j.id
+      ), '[]'::jsonb) AS feedback
+    FROM jobs j
+    LEFT JOIN payments p ON p.job_id=j.id
+    WHERE j.id=$1
+  `, [jobId]);
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    job: {
+      id: row.id, title: row.title, description: row.description || '',
+      acceptanceCriteria: row.acceptance_criteria || '', status: row.status,
+      ownerId: row.owner_id, providerId: row.provider_id, kind: row.kind || null,
+    },
+    payment: row.payment_id ? {
+      id: row.payment_id, status: row.payment_status,
+      amount: row.payment_amount == null ? null : Number(row.payment_amount),
+      currency: row.payment_currency,
+    } : null,
+    feedback: Array.isArray(row.feedback) ? row.feedback : [],
+  };
+}
+
+export async function updateJobDisputeAnalysis(id, analysis, status = null) {
+  const report = analysis || {};
+  const nextStatus = status || (report.manualReview === true || report.decision === 'HOLD' || Number(report.confidence || 0) < 0.8 ? 'ADMIN_REVIEW' : 'AI_ANALYZED');
+  const { rows } = await requirePool().query(`
+    UPDATE job_disputes
+    SET ai_decision=$2, ai_confidence=$3, ai_report=$4::jsonb,
+        legal_ruleset_version=$5, status=$6, updated_at=NOW()
+    WHERE id=$1
+    RETURNING *
+  `, [
+    id,
+    ['RELEASE','REFUND','HOLD'].includes(String(report.decision || '').toUpperCase()) ? String(report.decision).toUpperCase() : 'HOLD',
+    Math.max(0, Math.min(1, Number(report.confidence) || 0)),
+    JSON.stringify(report),
+    String(report.rulesetVersion || 'IR-2026-10-02-v1'),
+    nextStatus,
+  ]);
+  if (!rows[0]) return null;
+  const full = await requirePool().query(`SELECT ${selectBase} WHERE d.id=$1`, [id]);
+  return toRow(full.rows[0]);
 }
