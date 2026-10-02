@@ -17,6 +17,7 @@ import 'core/telemetry/telemetry_service.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/notifications/notification_repository.dart';
 import 'core/profile/profile_repository.dart';
+import 'core/recommendation/recommendation_profile_repository.dart';
 import 'core/uploads/upload_queue.dart';
 import 'core/theme/vazirmatn_loader.dart';
 import 'dart:ui';
@@ -83,6 +84,7 @@ Future<void> main() async {
       Provider<ChatRepository>.value(value: chatRepository),
       Provider<GoogleSignInService>.value(value: googleSignIn),
       Provider<ProfileRepository>.value(value: profileRepository),
+      Provider<RecommendationProfileRepository>(create: (_) => ApiRecommendationProfileRepository(api)),
       Provider<NotificationRepository>.value(value: notificationRepository),
       Provider<MarketplaceRepository>(
           create: (_) => OfflineMarketplaceRepository(ApiMarketplaceRepository(api)),
