@@ -103,7 +103,7 @@ test('financial insights and satisfaction UI are wired to scoped backend capabil
   assert.match(financialPage, /Monthly cash flow|جریان نقدی ماهانه/);
   assert.match(financialPage, /Balance trend|روند موجودی/);
   assert.match(financialPage, /Financial activity sources|منابع فعالیت مالی/);
-  assert.match(satisfactionRepository, /jobs\\/\\${_id\\(jobId\\)\\}\\/satisfaction/);
+  assert.ok(satisfactionRepository.includes('/jobs/${_id(jobId)}/satisfaction'));
   assert.match(satisfactionPage, /Work satisfaction report|گزارش رضایت همکاری/);
   assert.match(satisfactionPage, /no general AI chat|هیچ چت عمومی/);
   assert.match(routes, /financialInsights\(\)/);
