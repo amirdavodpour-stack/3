@@ -13,3 +13,19 @@ export function assertAutomatedAiAccess({ route, source = 'USER' } = {}) {
   error.route = String(route || '');
   throw error;
 }
+
+export function assertAssignedAiTaskAccess({ task, onboardingCompleted = false } = {}) {
+  if (!AUTOMATED_AI_TASKS.includes(String(task || ''))) {
+    const error = new Error('AI task is not allowlisted');
+    error.code = 'AI_TASK_NOT_ALLOWLISTED';
+    error.status = 403;
+    throw error;
+  }
+  if (onboardingCompleted) {
+    const error = new Error('Completed assigned AI task is no longer user-accessible');
+    error.code = 'AI_USER_ACCESS_DISABLED';
+    error.status = 403;
+    throw error;
+  }
+  return true;
+}
