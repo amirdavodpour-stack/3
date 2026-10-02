@@ -15,6 +15,7 @@ import 'core/storage/secure_store.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/telemetry/telemetry_service.dart';
 import 'core/recommendation/recommendation_profile_repository.dart';
+import 'core/opportunity/opportunity_agent_repository.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/notifications/notification_repository.dart';
 import 'core/profile/profile_repository.dart';
