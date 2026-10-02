@@ -1,4 +1,4 @@
-import { assertAutomatedAiAccess } from '../application/ai_access_policy.js';
+import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_access_policy.js';
 import { analyzeDisputeWithAI } from '../services/dispute_resolution.js';
 import { buildSatisfactionAnalysisPrompt, evaluateSettlementGate, SATISFACTION_QUESTIONS, parseSatisfactionAnalysis } from '../services/job_satisfaction.js';
 import { analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
@@ -20,6 +20,7 @@ export function createJobSatisfactionRoutes({
     const existing = await repo.getJobDispute(job.id);
     if (existing) return existing;
     assertAutomatedAiAccess({ route: 'dispute-adjudication', source: 'SYSTEM' });
+    assertSystemAiTask({ task: 'DISPUTE_ADJUDICATION' });
     let analysis;
     try {
       analysis = await analyzeDisputeWithAI({ askAI, context: { job, payment, feedback } });
@@ -137,6 +138,7 @@ export function createJobSatisfactionRoutes({
       const existing = await repo.getJobSatisfactionFeedbackForUser(job.id, me.id);
       if (existing?.status === 'ANALYSIS_FAILED') {
         assertAutomatedAiAccess({ route: 'job-satisfaction-retry', source: 'SYSTEM' });
+        assertSystemAiTask({ task: 'JOB_SATISFACTION' });
         let analysis;
         try {
           const raw = await askAI(buildSatisfactionAnalysisPrompt({
@@ -168,6 +170,7 @@ export function createJobSatisfactionRoutes({
       if (reportText.length > 2000) throw new HttpError(400, 'REPORT_TOO_LONG', 'Report is too long');
 
       assertAutomatedAiAccess({ route: 'job-satisfaction', source: 'SYSTEM' });
+      assertSystemAiTask({ task: 'JOB_SATISFACTION' });
       let analysis;
       let status = 'ANALYZED';
       try {
