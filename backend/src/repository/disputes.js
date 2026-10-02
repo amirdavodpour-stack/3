@@ -13,10 +13,11 @@ const disputeView = (row) => row ? ({
 
 export async function getJobDisputeContext(jobId) {
   const p = requirePool();
-  const [jobResult, paymentResult, feedbackResult, auditResult] = await Promise.all([
+  const [jobResult, paymentResult, feedbackResult, evidenceResult, auditResult] = await Promise.all([
     p.query(`SELECT id,owner_id,provider_id,title,description,acceptance_criteria,status,kind,budget_type,budget_min,budget_max,duration,city,schedule,attributes FROM jobs WHERE id=$1`, [jobId]),
     p.query(`SELECT id,job_id,payer_id,payee_id,amount,status,currency,base_amount,employer_charge,provider_payout,created_at,updated_at FROM payments WHERE job_id=$1`, [jobId]),
     p.query(`SELECT id,job_id,user_id,role,overall_rating,completed_as_agreed,communication_rating,report_text,ai_summary,ai_satisfaction_score,ai_sentiment,ai_tags,ai_risk_flags,status,created_at,updated_at FROM job_satisfaction_feedback WHERE job_id=$1 ORDER BY created_at ASC`, [jobId]),
+    p.query(`SELECT id,submitted_by,uri,notes,type,created_at FROM evidence WHERE job_id=$1 ORDER BY created_at ASC LIMIT 100`, [jobId]),
     p.query(`SELECT action,actor_id,entity_type,entity_id,meta,created_at FROM audit_logs WHERE entity_type='job' AND entity_id=$1 ORDER BY created_at ASC LIMIT 100`, [jobId]),
   ]);
   const job = jobResult.rows[0]; if (!job) return null;
@@ -24,7 +25,8 @@ export async function getJobDisputeContext(jobId) {
     job: { id: job.id, ownerId: job.owner_id, providerId: job.provider_id, title: job.title, description: job.description, acceptanceCriteria: job.acceptance_criteria, status: job.status, kind: job.kind, budgetType: job.budget_type, budgetMin: job.budget_min, budgetMax: job.budget_max, duration: job.duration, city: job.city, schedule: job.schedule, attributes: job.attributes || {} },
     payment: paymentResult.rows[0] ? { id: paymentResult.rows[0].id, amount: Number(paymentResult.rows[0].amount), status: paymentResult.rows[0].status, currency: paymentResult.rows[0].currency, providerPayout: Number(paymentResult.rows[0].provider_payout || paymentResult.rows[0].amount) } : null,
     feedback: feedbackResult.rows.map(row => ({ id: row.id, role: row.role, overallRating: Number(row.overall_rating), completedAsAgreed: row.completed_as_agreed === true, communicationRating: Number(row.communication_rating), reportText: row.report_text || '', aiSummary: row.ai_summary || '', aiSatisfactionScore: Number(row.ai_satisfaction_score || 0), aiSentiment: row.ai_sentiment, aiTags: row.ai_tags || [], aiRiskFlags: row.ai_risk_flags || [], status: row.status })),
-    evidence: auditResult.rows.map(row => ({ action: row.action, actorId: row.actor_id, entityType: row.entity_type, entityId: row.entity_id, meta: row.meta || {}, createdAt: row.created_at?.toISOString?.() ?? row.created_at ?? null })),
+    evidence: evidenceResult.rows.map(row => ({ id: row.id, submittedBy: row.submitted_by, uri: row.uri, notes: row.notes || '', type: row.type, createdAt: row.created_at?.toISOString?.() ?? row.created_at ?? null })),
+    auditTrail: auditResult.rows.map(row => ({ action: row.action, actorId: row.actor_id, entityType: row.entity_type, entityId: row.entity_id, meta: row.meta || {}, createdAt: row.created_at?.toISOString?.() ?? row.created_at ?? null })),
   };
 }
 
