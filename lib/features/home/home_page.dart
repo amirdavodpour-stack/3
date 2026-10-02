@@ -134,7 +134,6 @@ class _HomePageState extends State<HomePage> {
               _drawerTile(context, HopeV2Icons.workshopSelected, _t(context, 'کارگاه فرصت‌ها', 'Workshop opportunities'), () { Navigator.pop(context); _selectTab(1); }),
               if (!auth.isGuest) _drawerTile(context, HopeV2Icons.featured, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
               if (!auth.isGuest) _drawerTile(context, HopeV2Icons.notifications, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
-              if (!auth.isGuest) _drawerTile(context, Icons.auto_awesome, _t(context, 'دستیار HOPE', 'HOPE Assistant'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.chat()); }),
               if (!auth.isGuest) _drawerTile(context, Icons.psychology, _t(context, 'پروفایل هوشمند کاری', 'AI work profile'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.recommendationOnboarding()); }),
               if (auth.user?['role'] == 'ADMIN') _drawerTile(context, HopeV2Icons.secure, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.admin()); }),
               ListTile(
