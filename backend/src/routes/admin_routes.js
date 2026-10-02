@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
+import { assertPrimaryAdmin, isPrimaryAdmin, verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
 import { DISPUTE_DECISIONS } from '../services/dispute_resolution.js';
 
 const legacyVerifiedAdmins = new Map();
@@ -33,6 +33,18 @@ export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, 
     } else if ((legacyVerifiedAdmins.get(me.id) || 0) <= Date.now()) {
       legacyVerifiedAdmins.delete(me.id);
       throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+    }
+    if(req.method==='POST' && parts[0]==='admin' && parts[1]==='admins' && parts.length===2){
+      assertPrimaryAdmin(me);
+      const body=await readBody(req);
+      const email=String(body?.email||'').trim().toLowerCase();
+      if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) throw new HttpError(400,'INVALID_EMAIL','A valid email is required');
+      const promoted=process.env.DATABASE_URL
+        ? await adminUseCases.grantAdminByEmail(email, me.id)
+        : null;
+      if(!promoted) throw new HttpError(404,'USER_NOT_FOUND','No existing user was found for this email');
+      await createAudit('ADMIN_ROLE_GRANT',me.id,'user',promoted.id,{role:'ADMIN',email:promoted.email});
+      return sendJson(res,200,{id:promoted.id,email:promoted.email,displayName:promoted.displayName,role:promoted.role});
     }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='disputes' && parts.length===2){
       return sendJson(res,200,await repo.listAdminDisputes());
