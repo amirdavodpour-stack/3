@@ -15,6 +15,7 @@ import '../../core/ui/copy.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/theme/hope_v2_design.dart';
+import '../../core/router/app_routes.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key, required this.repository});
@@ -879,6 +880,17 @@ padding: const EdgeInsets.all(12),
                   ],
                 );
               },
+            ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                HopeRoutes.financialInsights(),
+              ),
+              icon: const HopeIcon(HopeV2Icons.analytics, size: 19),
+              label: Text(
+                _t('تحلیل مالی و نمودارها', 'Financial insights & charts'),
+              ),
             ),
             const SizedBox(height: 12),
             PremiumPanel(
