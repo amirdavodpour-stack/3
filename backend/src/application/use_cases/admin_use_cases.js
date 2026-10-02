@@ -9,6 +9,7 @@ export function createAdminUseCases({ admin }) {
     applications: () => repository.listAdminApplications(),
     audit: () => repository.listAdminAudit(),
     setUserStatus: (id, status) => repository.setUserStatus(id, status),
+    grantAdminByEmail: (email, actorId) => repository.grantAdminByEmail(email, actorId),
     moderateJob: (id, status) => repository.moderateJob(id, status),
     deleteJob: (id) => repository.deleteJob(id),
     trustReports: (status) => repository.listTrustReports(status),
