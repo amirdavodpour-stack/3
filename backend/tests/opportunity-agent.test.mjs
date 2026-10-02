@@ -118,3 +118,61 @@ test('agent does not recommend applying to an already submitted or withdrawn opp
 
   assert.deepEqual(state.actions.map((item) => item.type), []);
 });
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { parseOpportunityAgentState } from '../src/services/opportunity_agent.js';
+
+test('opportunity agent state keeps approval policy explicit', () => {
+  const result = parseOpportunityAgentState({
+    version: '1.0',
+    profileCompleteness: {
+      score: 1,
+      missing: [],
+      onboardingCompleted: true,
+    },
+    activity: {
+      savedSearches: 2,
+      views: 3,
+      applications: 1,
+      completedJobs: 4,
+    },
+    automationPolicy: {
+      automatic: ['DISCOVER', 'RANK', 'EXPLAIN', 'LEARN'],
+      approvalRequired: ['PREPARE_APPLICATION', 'APPLY', 'ACCEPT', 'NEGOTIATE', 'FINANCIAL_ACTION'],
+    },
+    actions: [{
+      type: 'PREPARE_APPLICATION',
+      priority: 70,
+      title: 'Flutter developer',
+      jobId: 'job-1',
+      score: 91,
+      reasons: ['SKILL_MATCH'],
+      requiresApproval: true,
+    }],
+  });
+
+  assert.equal(result.actions.length, 1);
+  assert.equal(result.actions[0].requiresApproval, true);
+  assert.deepEqual(result.automationPolicy.approvalRequired, [
+    'PREPARE_APPLICATION',
+    'APPLY',
+    'ACCEPT',
+    'NEGOTIATE',
+    'FINANCIAL_ACTION',
+  ]);
+});
+
+test('opportunity agent parser ignores malformed actions', () => {
+  const result = parseOpportunityAgentState({
+    profileCompleteness: {},
+    actions: [
+      null,
+      { type: '', title: '' },
+      { type: 'REVIEW_OPPORTUNITY', title: 'Valid', requiresApproval: false },
+    ],
+  });
+
+  assert.deepEqual(result.actions.map((item) => item.type), ['REVIEW_OPPORTUNITY']);
+});
