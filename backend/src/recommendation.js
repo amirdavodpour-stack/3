@@ -298,4 +298,3 @@ export function evaluateRecommendationRanking(items = [], relevantFn = () => fal
   return { k: Math.max(1, Number(k) || 10), hits, totalRelevant, precisionAtK, recallAtK, ndcgAtK, reasonCoverage };
 }
 
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

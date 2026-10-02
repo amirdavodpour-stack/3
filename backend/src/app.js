@@ -147,8 +147,8 @@ const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, re
 const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
 const financialInsightsRoutes = createFinancialInsightsRoutes({ authUser, sendJson, HttpError, repo });
 const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo });
-const jobSatisfactionRoutes = createJobSatisfactionRoutes({ authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases, askAI, processPaymentReleaseNow, createAudit, notifyUser, NOTIFICATION_TYPES, now });
-const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit, notifyUser, NOTIFICATION_TYPES, now });
+const jobSatisfactionRoutes = createJobSatisfactionRoutes({ authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases, askAI, processPaymentReleaseNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
+const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
 const recommendationProfileRoutes = createRecommendationProfileRoutes({
   authUser,
   readBody,
@@ -460,4 +460,3 @@ async function recommendedJobs(req, res) {
 
 export function createServer() { return http.createServer(handle); }
 
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

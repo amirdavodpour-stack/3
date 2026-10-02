@@ -18,6 +18,7 @@ export const ADMIN_PERMISSIONS = Object.freeze({
   VIEW_AUDIT: 'admin.view_audit',
   MANAGE_ADMINS: 'admin.manage_admins',
   REVOKE_SESSIONS: 'admin.revoke_sessions',
+  SANDBOX_WALLET_CREDIT: 'admin.sandbox_wallet_credit',
 });
 
 const OPERATIONAL_ADMIN_PERMISSIONS = Object.freeze([
