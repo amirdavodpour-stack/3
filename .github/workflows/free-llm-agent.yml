@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       model:
-        description: "OpenRouter model/router"
+        description: "Model for the primary provider; fallback providers use their own presets unless explicitly overridden"
         required: true
         default: "openrouter/free"
         type: string
@@ -71,7 +71,10 @@ jobs:
       - name: Run repository coding agent
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           LLM_AGENT_PROVIDER: openrouter
+          LLM_AGENT_PROVIDER_FALLBACKS: groq,gemini
           LLM_AGENT_MODEL: ${{ inputs.model }}
           LLM_AGENT_MAX_STEPS: ${{ inputs.max_steps }}
           LLM_AGENT_APPROVAL: auto
@@ -79,7 +82,6 @@ jobs:
           LLM_AGENT_TASK: ${{ inputs.task }}
         run: |
           set -euo pipefail
-          test -n "$OPENROUTER_API_KEY"
           test "${GITHUB_REF_NAME,,}" != "main"
           test "${GITHUB_REF_NAME,,}" != "master"
           set -o pipefail
