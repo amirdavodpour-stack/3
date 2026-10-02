@@ -50,7 +50,7 @@ test('wallet UI is wired to repository mutations and wallet history controls', (
   assert.match(page, /_pendingKey\('TOP_UP'/);
   assert.match(page, /_pendingKey\('TRANSFER'/);
   assert.match(page, /_pendingKey\('PAYOUT'/);
-  assert.match(page, /ChoiceChip/);
+  assert.match(page, /PremiumFilterChip/);
   assert.match(page, /'CREDIT'/);
   assert.match(page, /'DEBIT'/);
   assert.match(page, /'HOLD'/);
@@ -79,7 +79,7 @@ test('job detail uses role-aware primary financial CTA and prevents duplicate ca
   assert.match(page, /String\? _candidateBusyId/);
   assert.match(page, /_candidateBusyId == candidate\.id/);
   assert.match(page, /FilteringTextInputFormatter\.digitsOnly/);
-  assert.match(page, /suffixText: 'TOMAN'/);
+  assert.match(page, /suffixText: _t\('تومان', 'Toman'\)/);
 });
 
 test('activity screen exposes a direct route from backend payment summary to transaction controls', () => {
@@ -131,7 +131,7 @@ test('create opportunity UI preserves exact Toman input and recovers category/de
 
   assert.match(page, /FilteringTextInputFormatter\.digitsOnly/);
   assert.match(page, /LengthLimitingTextInputFormatter\(16\)/);
-  assert.match(page, /suffixText: (?:_t|translate)\('تومان', 'TOMAN'\)/);
+  assert.match(page, /suffixText: translate\('تومان', 'Toman'\)/);
   assert.match(page, /Future<void> _pickDeadline\(\)/);
   assert.match(page, /DateFormat\('yyyy-MM-dd'\)/);
   assert.match(page, /snapshot\.hasError/);
