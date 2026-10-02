@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { ADMIN_PERMISSIONS, assertAdminPermission } from '../application/admin_panel_access.js';
 import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_access_policy.js';
 import { DISPUTE_DECISIONS, analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
 
@@ -58,6 +59,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
         const dispute = await repo.getAdminDispute(parts[2]); if (!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found'); return sendJson(res,200,dispute);
       }
       if (parts.length === 3 && parts[1] === 'disputes' && req.method === 'POST' && parts[2]) {
+        assertAdminPermission(me, ADMIN_PERMISSIONS.RESOLVE_DISPUTES);
         const body=await readBody(req); const resolution=String(body?.resolution||'').toUpperCase(); if(!DISPUTE_DECISIONS.includes(resolution)) throw new HttpError(400,'INVALID_DISPUTE_RESOLUTION','resolution must be RELEASE, REFUND, or HOLD');
         const dispute=await repo.getAdminDispute(parts[2]); if(!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found');
         await resolvePayment(dispute,resolution,me.id,String(body?.reason||'').trim().slice(0,2000));

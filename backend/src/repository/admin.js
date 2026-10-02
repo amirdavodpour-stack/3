@@ -28,9 +28,40 @@ export async function listAdminUsers(limit=100, offset=0) {
   const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`, [Math.min(Math.max(Number(limit)||100,1),200), Math.max(Number(offset)||0,0)]);
   return rows.map(userFromRow);
 }
+export async function getAdminUser(id) {
+  const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE id=$1`, [id]);
+  return rows[0] ? userFromRow(rows[0]) : null;
+}
 export async function setUserStatus(id,status) {
   const { rows } = await requirePool().query(`UPDATE users SET status=$2, session_version=session_version+1 WHERE id=$1 RETURNING ${userSelect}`, [id,status]);
   return rows[0] ? userFromRow(rows[0]) : null;
+}
+export async function revokeAdminById(id, actorId) {
+  return withSqlTransaction(async (client) => {
+    const { rows: actors } = await client.query(`SELECT id,email,role FROM users WHERE id=$1 FOR UPDATE`, [actorId]);
+    if (!actors[0] || actors[0].role !== 'ADMIN' || String(actors[0].email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
+      const error = new Error('PRIMARY_ADMIN_ONLY'); error.code='PRIMARY_ADMIN_ONLY'; error.status=403; throw error;
+    }
+    const { rows } = await client.query(`SELECT ${userSelect} FROM users WHERE id=$1 FOR UPDATE`, [id]);
+    if (!rows[0]) return null;
+    if (String(rows[0].email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com') {
+      const error = new Error('PRIMARY_ADMIN_PROTECTED'); error.code='PRIMARY_ADMIN_PROTECTED'; error.status=403; throw error;
+    }
+    if (String(rows[0].role || '').toUpperCase() !== 'ADMIN') {
+      const error = new Error('NOT_AN_ADMIN'); error.code='NOT_AN_ADMIN'; error.status=409; throw error;
+    }
+    const { rows: updated } = await client.query(`UPDATE users SET role='USER', session_version=session_version+1 WHERE id=$1 RETURNING ${userSelect}`, [id]);
+    await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`, [id]);
+    return updated[0] ? userFromRow(updated[0]) : null;
+  });
+}
+export async function revokeUserSessions(id) {
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(`UPDATE users SET session_version=session_version+1 WHERE id=$1 RETURNING id,session_version`, [id]);
+    if (!rows[0]) return null;
+    await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`, [id]);
+    return { id: rows[0].id, sessionVersion: Number(rows[0].session_version) };
+  });
 }
 export async function listAdminAudit(limit=100, offset=0) {
   const { rows } = await requirePool().query(`SELECT a.id,a.action,a.actor_id,a.entity_type,a.entity_id,a.meta,a.created_at,u.display_name AS actor_name FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_id ORDER BY a.created_at DESC LIMIT $1 OFFSET $2`, [Math.min(Math.max(Number(limit)||100,1),200), Math.max(Number(offset)||0,0)]);

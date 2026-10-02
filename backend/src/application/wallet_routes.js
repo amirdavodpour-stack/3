@@ -1,4 +1,5 @@
 import { creditWallet, transferAvailable, INTERNAL_CURRENCY } from '../wallet_ledger.js';
+import { ADMIN_PERMISSIONS, assertAdminPermission } from './admin_panel_access.js';
 import { requestPayoutAtomic, listPayoutsForUser } from '../repository/payouts.js';
 
 export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, HttpError, config, walletRepo }) {
@@ -109,6 +110,7 @@ export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, H
     if (req.method === 'POST' && parts[1] === 'sandbox-credit') {
       const me = await authUser(req);
       await adminGuard(me);
+      assertAdminPermission(me, ADMIN_PERMISSIONS.SANDBOX_WALLET_CREDIT);
       if (process.env.NODE_ENV === 'production' && !config.internalWalletAdminCreditEnabled) {
         throw new HttpError(404,'NOT_FOUND','Wallet sandbox credit is disabled');
       }

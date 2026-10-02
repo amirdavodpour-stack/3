@@ -65,6 +65,8 @@ abstract interface class AdminRepository {
   Future<void> moderateJob(String id, String status);
   Future<void> setUserStatus(String id, String status);
   Future<Map<String, dynamic>> grantAdminByEmail(String email);
+  Future<void> revokeAdministrator(String id);
+  Future<void> revokeUserSessions(String id);
   Future<void> deleteJob(String id);
   Future<Map<String, dynamic>> getFinanceSummary();
   Future<List<Map<String, dynamic>>> listTrustReports({String? status});
@@ -122,6 +124,12 @@ class ApiAdminRepository implements AdminRepository {
   @override
   Future<Map<String, dynamic>> grantAdminByEmail(String email) async =>
       Map<String, dynamic>.from(await _api.request('POST', '/admin/admins', auth: true, body: {'email': email.trim().toLowerCase()}) as Map);
+
+  @override
+  Future<void> revokeAdministrator(String id) => _api.request('DELETE', '/admin/admins/$id', auth: true).then((_) {});
+
+  @override
+  Future<void> revokeUserSessions(String id) => _api.request('POST', '/admin/users/$id/revoke-sessions', auth: true).then((_) {});
   @override
   Future<void> deleteJob(String id) =>
       _api.request('DELETE', '/admin/jobs/$id', auth: true).then((_) {});

@@ -28,6 +28,8 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   late Future<Map<String, dynamic>> _funnel;
   late Future<Map<String, dynamic>> _crashes;
   bool _operationBusy = false;
+  Set<String> _permissions = <String>{};
+  bool _hasPermission(String permission) => _permissions.contains(permission);
 
   @override
   void initState() {
@@ -42,8 +44,14 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     super.dispose();
   }
 
-  void _reload() {
+  void _reload() async {
     final r = context.read<AdminRepository>();
+    try {
+      final access = await r.getPanelAccess();
+      if (!mounted) return;
+      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
+    } catch (_) {}
+
     _finance = r.getFinanceSummary();
     _reports = r.listTrustReports();
     _unknownPayouts = r.listUnknownPayouts();
@@ -324,12 +332,12 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           const SizedBox(height: 10),
           Row(children: [
             Expanded(child: OutlinedButton(
-              onPressed: id.isEmpty || _operationBusy ? null : () => _resolvePayout(id, 'FAILED'),
+              onPressed: id.isEmpty || _operationBusy || !_hasPermission('admin.resolve_payouts') ? null : () => _resolvePayout(id, 'FAILED'),
               child: Text(_t('ثبت ناموفق', 'Mark failed')),
             )),
             const SizedBox(width: 8),
             Expanded(child: FilledButton(
-              onPressed: id.isEmpty || _operationBusy ? null : () => _resolvePayout(id, 'SUCCEEDED'),
+              onPressed: id.isEmpty || _operationBusy || !_hasPermission('admin.resolve_payouts') ? null : () => _resolvePayout(id, 'SUCCEEDED'),
               child: Text(_t('ثبت موفق', 'Mark succeeded')),
             )),
           ]),

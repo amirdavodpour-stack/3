@@ -14,10 +14,23 @@ class AdminDisputesPage extends StatefulWidget {
 class _AdminDisputesPageState extends State<AdminDisputesPage> {
   late Future<List<Map<String,dynamic>>> _future;
   bool _busy = false;
+  Set<String> _permissions = <String>{};
+  bool _hasPermission(String permission) => _permissions.contains(permission);
 
   @override void initState() { super.initState(); _load(); }
   String _t(String fa, String en) => Localizations.localeOf(context).languageCode == 'en' ? en : fa;
-  void _load() { _future = context.read<AdminRepository>().listDisputes(); if (mounted) setState(() {}); }
+  void _load() async {
+    try {
+      final access = await context.read<AdminRepository>().getPanelAccess();
+      if (!mounted) return;
+      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
+      _future = context.read<AdminRepository>().listDisputes();
+      setState(() {});
+    } catch (_) {
+      _future = Future<List<Map<String,dynamic>>>.error(Object());
+      if (mounted) setState(() {});
+    }
+  }
 
   Future<void> _open(Map<String,dynamic> row) async {
     final id='${row['id']??''}'; if(id.isEmpty) return;
@@ -60,7 +73,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
 
   Widget _kv(String a,String b)=>Padding(padding:const EdgeInsets.only(bottom:7),child:Text('$a: $b',style:const TextStyle(fontWeight:FontWeight.w700)));
   Widget _section(String title,String body)=>Padding(padding:const EdgeInsets.only(top:10),child:PremiumPanel(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:6),Text(body.isEmpty?'—':body)])));
-  Widget _action(Map<String,dynamic> d,String resolution,String label,IconData icon)=>OutlinedButton.icon(onPressed:_busy||'${d['status']??''}'=='RESOLVED'?null:()=>_resolve(d,resolution,label),icon:Icon(icon),label:Text(label));
+  Widget _action(Map<String,dynamic> d,String resolution,String label,IconData icon)=>OutlinedButton.icon(onPressed:_busy||!_hasPermission('admin.resolve_disputes')||'${d['status']??''}'=='RESOLVED'?null:()=>_resolve(d,resolution,label),icon:Icon(icon),label:Text(label));
 
   Future<void> _resolve(Map<String,dynamic> d,String resolution,String label) async {
     final id='${d['id']??''}';

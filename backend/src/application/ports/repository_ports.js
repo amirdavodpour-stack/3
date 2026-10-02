@@ -18,8 +18,8 @@ export function createRepositoryPorts(repo) {
     applications: slice(repo, ['findJobApplication', 'insertJobApplication', 'transitionCandidateApplication'], 'ApplicationRepository'),
     payments: slice(repo, ['findPaymentByJob', 'fundJobAtomic', 'createRefundAtomic', 'enqueuePaymentRelease', 'applyPaymentWebhookAtomic', 'getAdminFinancialSummary'], 'PaymentRepository'),
     admin: slice(repo, [
-      'getAdminSummary', 'listAdminUsers', 'listAdminJobs', 'listAdminApplications', 'listAdminAudit',
-      'grantAdminByEmail',
+      'getAdminSummary', 'listAdminUsers', 'getAdminUser', 'listAdminJobs', 'listAdminApplications', 'listAdminAudit',
+      'grantAdminByEmail', 'revokeAdminById', 'revokeUserSessions',
       'setUserStatus', 'moderateJob', 'deleteJob', 'listTrustReports', 'updateTrustReportStatus',
       'transitionJobApplication', 'selectJobApplication',
     ], 'AdminRepository'),

@@ -34,6 +34,8 @@ class _AdminPageState extends State<AdminPage>
   bool _panelVerified = false;
   bool _checkingPanel = true;
   bool _isPrimaryAdmin = false;
+  String _currentAdminId = '';
+  Set<String> _permissions = <String>{};
 
   @override
   void initState() {
@@ -60,6 +62,8 @@ class _AdminPageState extends State<AdminPage>
       setState(() {
         _panelVerified = true;
         _isPrimaryAdmin = access['primaryAdmin'] == true;
+        _currentAdminId = '${access['userId'] ?? ''}';
+        _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
         _checkingPanel = false;
       });
       _reload();
@@ -103,6 +107,8 @@ class _AdminPageState extends State<AdminPage>
     final text = value.trim();
     return text.isEmpty ? '?' : text.characters.first.toUpperCase();
   }
+
+  bool _hasPermission(String permission) => _permissions.contains(permission);
 
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -234,7 +240,9 @@ class _AdminPageState extends State<AdminPage>
                 FutureBuilder<HopeAdminSummary>(
                     future: _summary,
                     builder: (context, s) => _summaryGrid(context, s.data)),
-                if (_isPrimaryAdmin) ...[
+                if (_hasPermission('admin.manage_admins')) ...[
+                  _adminManagementSection(),
+                  const SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: _actionBusy ? null : _showGrantAdminDialog,
                     icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
@@ -326,6 +334,71 @@ class _AdminPageState extends State<AdminPage>
     } finally {
       emailController.dispose();
     }
+  }
+  Widget _adminManagementSection() => FutureBuilder<List<HopeAdminUser>>(
+        future: _users,
+        builder: (context, snapshot) {
+          final admins = (snapshot.data ?? const <HopeAdminUser>[])
+              .where((u) => u.role.toUpperCase() == 'ADMIN')
+              .toList(growable: false);
+          return PremiumPanel(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_t('مدیریت مدیران', 'Administrator management'), style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(_t('افزودن، لغو نقش و خروج اجباری نشست‌های مدیران فقط در اختیار مالک است.', 'Promoting admins, revoking their role, and forcing session revocation are owner-only controls.')),
+              const SizedBox(height: 10),
+              if (admins.isEmpty) Text(_t('مدیر دیگری ثبت نشده است.', 'No administrators found.'))
+              else ...admins.map((u) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const HopeIconTile(HopeV2Icons.secure),
+                  title: Text(u.displayName.isEmpty ? u.email : u.displayName),
+                  subtitle: Text(u.email),
+                  trailing: u.id == _currentAdminId
+                      ? Chip(label: Text(_t('مالک فعلی', 'Current owner')))
+                      : Wrap(spacing: 6, children: [
+                          IconButton(tooltip: _t('خروج همه نشست‌ها', 'Revoke sessions'), onPressed: _actionBusy ? null : () => _revokeAdminSessions(u), icon: const Icon(Icons.logout)),
+                          IconButton(tooltip: _t('لغو نقش مدیر', 'Revoke admin'), onPressed: _actionBusy ? null : () => _revokeAdmin(u), icon: const Icon(Icons.remove_moderator_outlined)),
+                        ]),
+                ),
+              )),
+            ]),
+          );
+        },
+      );
+
+  Future<void> _revokeAdmin(HopeAdminUser user) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(_t('لغو نقش مدیر؟', 'Revoke administrator role?')),
+        content: Text(_t('دسترسی مدیریتی '+"${user.displayName.isEmpty ? user.email : user.displayName}"+' قطع می‌شود.', 'Administrator access for '+"${user.displayName.isEmpty ? user.email : user.displayName}"+' will be removed.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_t('انصراف', 'Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(_t('لغو نقش', 'Revoke role'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await _runAction(() => context.read<AdminRepository>().revokeAdministrator(user.id));
+  }
+
+  Future<void> _revokeAdminSessions(HopeAdminUser user) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(_t('خروج همه نشست‌ها؟', 'Revoke all sessions?')),
+        content: Text(_t('همه نشست‌های فعلی این مدیر باطل می‌شوند.', 'All current sessions for this administrator will be invalidated.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_t('انصراف', 'Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(_t('خروج همه', 'Revoke all'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await _runAction(() => context.read<AdminRepository>().revokeUserSessions(user.id));
   }
   Widget _summaryGrid(BuildContext context, HopeAdminSummary? raw) {
     final m = raw;
@@ -453,7 +526,8 @@ class _AdminPageState extends State<AdminPage>
                               tooltip:
                                   HopeCopy.of(context).copy_disable_73bea34,
                               icon: const HopeIcon(HopeV2Icons.secure, size: 19)),
-                        IconButton(
+                        if (_hasPermission('admin.delete_jobs'))
+                          IconButton(
                             onPressed: () => _removeJob(job.id),
                             tooltip: HopeCopy.of(context).copy_delete_b17eb9d,
                             icon: const HopeIcon(HopeV2Icons.close, size: 19, color: AppColors.danger)),

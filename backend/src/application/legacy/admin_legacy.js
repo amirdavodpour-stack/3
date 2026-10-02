@@ -41,6 +41,7 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
       };
     },
     users: () => db.collection.users.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
+    getAdminUser(id) { return db.collection.users.find((x) => x.id === id) || null; },
     grantAdminByEmail(email, actorId) {
       const actor = db.collection.users.find((x) => x.id === actorId);
       if (!actor || actor.role !== 'ADMIN' || String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
@@ -63,6 +64,31 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
       user.sessionVersion = Number(user.sessionVersion || 0) + 1;
       db.touch('users');
       return user;
+    },
+    revokeAdminById(id, actorId) {
+      const actor = db.collection.users.find((x) => x.id === actorId);
+      if (!actor || actor.role !== 'ADMIN' || String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
+        const error = new Error('PRIMARY_ADMIN_ONLY'); error.code='PRIMARY_ADMIN_ONLY'; error.status=403; throw error;
+      }
+      const target = db.collection.users.find((x) => x.id === id);
+      if (!target) return null;
+      if (String(target.email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com') {
+        const error = new Error('PRIMARY_ADMIN_PROTECTED'); error.code='PRIMARY_ADMIN_PROTECTED'; error.status=403; throw error;
+      }
+      if (target.role !== 'ADMIN') {
+        const error = new Error('NOT_AN_ADMIN'); error.code='NOT_AN_ADMIN'; error.status=409; throw error;
+      }
+      target.role='USER';
+      target.sessionVersion=Number(target.sessionVersion||0)+1;
+      db.touch('users');
+      return target;
+    },
+    revokeUserSessions(id) {
+      const user=db.collection.users.find((x)=>x.id===id);
+      if(!user) return null;
+      user.sessionVersion=Number(user.sessionVersion||0)+1;
+      db.touch('users');
+      return {id:user.id,sessionVersion:Number(user.sessionVersion)};
     },
     trustReports(status) {
       return db.collection.trustReports
