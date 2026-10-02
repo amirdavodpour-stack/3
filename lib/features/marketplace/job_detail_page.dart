@@ -541,6 +541,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final isProvider =
         currentUserId != null && currentUserId == j.providerId?.toString();
     final canViewFinance = isOwner || isProvider;
+    final collaborationChatOpen = isOwner || isProvider && ['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].contains(j.status?.toUpperCase());
 
     final dark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1117,6 +1118,26 @@ class _JobDetailPageState extends State<JobDetailPage> {
                               ),
                             ),
                           ],
+                        ],
+                      ),
+                    ),
+                  if (collaborationChatOpen)
+                    PremiumPanel(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const HugeIcon(icon: HopeV2Icons.chat, size: 21),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _t('گفتگوی مستقیم دو طرف کار', 'Direct work chat'),
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.push(context, HopeRoutes.jobChat(j.id)),
+                            child: Text(_t('گفتگو', 'Chat')),
+                          ),
                         ],
                       ),
                     ),
