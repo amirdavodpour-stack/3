@@ -27,8 +27,8 @@ export async function ensureJobChat(jobId) {
   });
 }
 
-export async function closeJobChatForJob(jobId) {
-  const { rowCount } = await requirePool().query("UPDATE chat_conversations SET status='CLOSED',closed_at=COALESCE(closed_at,NOW()) WHERE kind='JOB' AND job_id=$1 AND status='OPEN'", [jobId]);
+export async function closeJobChatForJob(jobId, client = requirePool()) {
+  const { rowCount } = await client.query("UPDATE chat_conversations SET status='CLOSED',closed_at=COALESCE(closed_at,NOW()) WHERE kind='JOB' AND job_id=$1 AND status='OPEN'", [jobId]);
   return rowCount > 0;
 }
 
