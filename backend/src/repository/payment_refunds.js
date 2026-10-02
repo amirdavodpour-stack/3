@@ -1,3 +1,4 @@
+import { closeJobChatForJob } from './human_chat.js';
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
@@ -89,6 +90,7 @@ export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refun
     await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[refundId,providerRef]);
     await client.query(`UPDATE payments SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[paymentId,payment.provider_ref]);
     await client.query(`UPDATE jobs SET status=CASE WHEN provider_id IS NULL THEN 'PUBLISHED' ELSE 'ASSIGNED' END,updated_at=NOW() WHERE id=$1`,[jobId]);
+    await closeJobChatForJob(jobId, client);
     if (config.paymentProvider === 'internal') {
       if (breakdown.currency !== 'TOMAN') {
         const e = new Error('INTERNAL_CURRENCY_MISMATCH'); e.code = 'INTERNAL_CURRENCY_MISMATCH'; throw e;
