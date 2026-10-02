@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/application/application_registry_context.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/marketplace/job.dart';
+import '../../core/opportunity/opportunity_agent_repository.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/theme/hope_v2_design.dart';
@@ -14,6 +15,7 @@ import '../../core/ui/components.dart';
 import '../../core/ui/opportunity_card.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/premium_components.dart';
+import 'opportunity_agent_panel.dart';
 
 class PremiumHomeFeed extends StatefulWidget {
   const PremiumHomeFeed({
@@ -35,6 +37,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Future<List<HopeJob>>? _activeJobs;
   Future<HopeWallet>? _wallet;
   HopeWallet? _walletData;
+  Future<HopeOpportunityAgentState>? _agentState;
   String? _error;
   int _refreshRequestId = 0;
   String? _loadSignature;
@@ -63,6 +66,12 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     final settings = context.read<HopeSettingsController>();
     final registry = applicationRegistryOf(context);
     _error = null;
+    final agentRepository = registry.opportunityAgent;
+    if (!auth.isGuest && agentRepository != null) {
+      _agentState = agentRepository.getState();
+    } else {
+      _agentState = null;
+    }
     try {
       _opportunities = registry.listOpportunities(
         city: settings.personalizedRecommendations ? settings.city : null,
@@ -110,6 +119,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       _activeJobCount = null;
       _wallet = null;
       _walletData = null;
+      _agentState = null;
     });
     _load();
     final opportunities = _opportunities;
@@ -120,6 +130,17 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         setState(() => _error = 'load');
       }
     }
+  }
+
+  void _handleAgentAction(
+    BuildContext context,
+    HopeOpportunityAgentAction action,
+  ) {
+    if (action.type == 'COMPLETE_PROFILE') {
+      Navigator.push(context, HopeRoutes.recommendationOnboarding());
+      return;
+    }
+    widget.onOpenExplore();
   }
 
   String _t(BuildContext context, String fa, String en) =>
@@ -427,6 +448,22 @@ padding: const EdgeInsets.all(14),
               },
             ),
             const SizedBox(height: HopeV2Spacing.lg),
+            if (!auth.isGuest && _agentState != null)
+              FutureBuilder<HopeOpportunityAgentState>(
+                future: _agentState,
+                builder: (context, agentSnapshot) {
+                  final state = agentSnapshot.data;
+                  if (state == null || agentSnapshot.hasError || state.actions.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return OpportunityAgentPanel(
+                    state: state,
+                    onAction: (action) => _handleAgentAction(context, action),
+                  );
+                },
+              ),
+            if (!auth.isGuest && _agentState != null)
+              const SizedBox(height: HopeV2Spacing.lg),
                         FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
