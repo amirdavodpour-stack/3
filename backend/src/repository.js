@@ -18,6 +18,7 @@ export * from './repository/employer_candidate_matching.js';
 export * from './repository/wallet.js';
 export * from './repository/financial_insights.js';
 export * from './repository/job_satisfaction.js';
+export * from './repository/disputes.js';
 
 export * from './repository/payouts.js';
 export * from './repository/reconciliation.js';
