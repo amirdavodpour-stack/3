@@ -39,27 +39,82 @@ function overlap(a, b) {
 }
 function clamp01(n) { return Math.max(0, Math.min(1, Number(n) || 0)); }
 
-export function buildCandidateProfile(applications = []) {
+export function buildCandidateProfile(applications = [], context = {}) {
   const skills = new Set();
+  const experienceTokens = new Set();
+  const interestTokens = new Set();
   const categories = new Map();
   const cities = new Map();
   const kinds = new Map();
   const workModes = new Map();
-  let salaryMin = null;
-  let salaryMax = null;
-  let total = 0;
+  const behaviorCategories = new Map();
+  const behaviorCities = new Map();
+  const behaviorKinds = new Map();
+  const preference = context.profile || {};
+  let salaryMin = preference.salaryMin == null ? null : Number(preference.salaryMin);
+  let salaryMax = preference.salaryMax == null ? null : Number(preference.salaryMax);
+  let total = Number(preference.interactionCount || 0);
+
+  for (const t of tokens(preference.skills)) skills.add(t);
+  for (const value of preference.interests || []) for (const t of tokens(value)) interestTokens.add(t);
+  if (preference.goals) for (const t of tokens(preference.goals)) interestTokens.add(t);
+  for (const value of preference.desiredKinds || []) {
+    const key = String(value).toUpperCase();
+    if (key) kinds.set(key, (kinds.get(key) || 0) + 3);
+  }
+  for (const value of preference.preferredCategories || []) categories.set(String(value), (categories.get(String(value)) || 0) + 3);
+  for (const value of preference.preferredCities || []) cities.set(String(value), (cities.get(String(value)) || 0) + 3);
+  if (preference.workMode) workModes.set(String(preference.workMode).toUpperCase(), 3);
+
   for (const a of applications) {
     total++;
     for (const t of tokens(a.skills)) skills.add(t);
-    if (a.categoryId) categories.set(String(a.categoryId), (categories.get(String(a.categoryId)) || 0) + 1);
-    if (a.jobCity) cities.set(String(a.jobCity), (cities.get(String(a.jobCity)) || 0) + 1);
-    if (a.jobKind) kinds.set(String(a.jobKind), (kinds.get(String(a.jobKind)) || 0) + 1);
-    if (a.workMode) workModes.set(String(a.workMode), (workModes.get(String(a.workMode)) || 0) + 1);
+    const weight = ['SHORTLISTED','FORWARDED','INTERVIEW','ACCEPTED','HIRED','COMPLETED'].includes(String(a.status || '').toUpperCase()) ? 3 : 1;
+    if (a.categoryId) categories.set(String(a.categoryId), (categories.get(String(a.categoryId)) || 0) + weight);
+    if (a.jobCity) cities.set(String(a.jobCity), (cities.get(String(a.jobCity)) || 0) + weight);
+    if (a.jobKind) kinds.set(String(a.jobKind).toUpperCase(), (kinds.get(String(a.jobKind).toUpperCase()) || 0) + weight);
+    if (a.workMode) workModes.set(String(a.workMode).toUpperCase(), (workModes.get(String(a.workMode).toUpperCase()) || 0) + weight);
     const s = Number(a.monthlySalary);
     if (Number.isFinite(s) && s > 0) { salaryMin = salaryMin == null ? s : Math.min(salaryMin, s); salaryMax = salaryMax == null ? s : Math.max(salaryMax, s); }
   }
+
+  for (const job of context.completedJobs || []) {
+    total += 2;
+    for (const t of tokens(job.title || '')) { experienceTokens.add(t); skills.add(t); }
+    for (const t of tokens(job.description || job.attributes?.skills || '')) experienceTokens.add(t);
+    if (job.categoryId) categories.set(String(job.categoryId), (categories.get(String(job.categoryId)) || 0) + 5);
+    if (job.city) cities.set(String(job.city), (cities.get(String(job.city)) || 0) + 2);
+    if (job.kind) kinds.set(String(job.kind).toUpperCase(), (kinds.get(String(job.kind).toUpperCase()) || 0) + 5);
+  }
+
+  for (const search of context.savedSearches || []) {
+    total++;
+    for (const t of tokens(search.query)) interestTokens.add(t);
+    if (search.category && search.category !== 'ALL') categories.set(String(search.category), (categories.get(String(search.category)) || 0) + 2);
+    if (search.city && search.city !== 'AUTO') cities.set(String(search.city), (cities.get(String(search.city)) || 0) + 2);
+    if (search.kind && search.kind !== 'ALL') kinds.set(String(search.kind).toUpperCase(), (kinds.get(String(search.kind).toUpperCase()) || 0) + 2);
+  }
+
+  for (const event of context.events || []) {
+    total++;
+    const props = event?.properties || {};
+    for (const t of tokens(props.query)) interestTokens.add(t);
+    if (props.categoryId) behaviorCategories.set(String(props.categoryId), (behaviorCategories.get(String(props.categoryId)) || 0) + 1);
+    if (props.city) behaviorCities.set(String(props.city), (behaviorCities.get(String(props.city)) || 0) + 1);
+    if (props.kind) behaviorKinds.set(String(props.kind).toUpperCase(), (behaviorKinds.get(String(props.kind).toUpperCase()) || 0) + 1);
+  }
+
   const top = map => [...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0]);
-  return { skills, categories, cities, kinds, workModes, topCategories:top(categories), topCities:top(cities), topKinds:top(kinds), topWorkModes:top(workModes), salaryMin, salaryMax, interactionCount:total };
+  return {
+    skills, experienceTokens, interestTokens, categories, cities, kinds, workModes,
+    behaviorCategories, behaviorCities, behaviorKinds,
+    topCategories:top(categories), topCities:top(cities), topKinds:top(kinds), topWorkModes:top(workModes),
+    topBehaviorCategories:top(behaviorCategories), topBehaviorCities:top(behaviorCities), topBehaviorKinds:top(behaviorKinds),
+    salaryMin, salaryMax, interactionCount:total,
+    resumeText:String(preference.resumeText || '').slice(0, 12000),
+    interests:Array.isArray(preference.interests) ? preference.interests.slice(0, 20) : [],
+    goals:String(preference.goals || '').slice(0, 2000),
+  };
 }
 
 export function scoreRecommendation(job, profile, context = {}) {
@@ -69,9 +124,12 @@ export function scoreRecommendation(job, profile, context = {}) {
   const skillScore = overlap(profile?.skills || new Set(), jobText);
   let categoryScore = 0;
   if (job.categoryId && profile?.categories?.has(String(job.categoryId))) categoryScore = 1;
-  let experienceScore = 0;
+  const explicitInterestScore = overlap(profile?.interestTokens || new Set(), jobText);
+  let experienceScore = overlap(profile?.experienceTokens || new Set(), jobText);
   const experienceTokens = tokens(job.experience || job.providerExperience || '');
-  experienceScore = experienceTokens.size && profile?.skills ? overlap(profile.skills, experienceTokens) : 0;
+  if (experienceTokens.size && profile?.skills) {
+    experienceScore = Math.max(experienceScore, overlap(profile.skills, experienceTokens));
+  }
   let locationScore = 0;
   let distanceKm = null;
   if (context.lat != null && context.lng != null && context.cityCoords?.[job.city]) {
@@ -87,9 +145,16 @@ export function scoreRecommendation(job, profile, context = {}) {
     const center = (profile.salaryMin + profile.salaryMax) / 2;
     salaryScore = 1 - Math.min(1, Math.abs(budget - center) / Math.max(center, 1));
   }
-  const kindScore = profile?.kinds?.has(String(job.kind || 'JOB')) ? 1 : .5;
-  const preferenceScore = context.categoryId && String(job.categoryId) === String(context.categoryId) ? 1 : categoryScore;
-  const behaviorScore = Math.min(1, Number(profile?.interactionCount || 0) / 10) * .5 + kindScore * .5;
+  const kindScore = profile?.kinds?.has(String(job.kind || 'JOB').toUpperCase()) ? 1 : .5;
+  const behaviorCategoryScore = job.categoryId && profile?.behaviorCategories?.has(String(job.categoryId)) ? 1 : 0;
+  const behaviorCityScore = job.city && profile?.behaviorCities?.has(String(job.city)) ? .8 : 0;
+  const behaviorKindScore = profile?.behaviorKinds?.has(String(job.kind || 'JOB').toUpperCase()) ? .8 : 0;
+  const preferenceScore = Math.max(
+    context.categoryId && String(job.categoryId) === String(context.categoryId) ? 1 : categoryScore,
+    explicitInterestScore,
+  );
+  const behaviorMatch = Math.max(behaviorCategoryScore, behaviorCityScore, behaviorKindScore);
+  const behaviorScore = Math.min(1, Number(profile?.interactionCount || 0) / 20) * .35 + Math.max(kindScore, behaviorMatch) * .65;
   const freshnessScore = recencyScore(job.updatedAt || job.publishedAt || job.createdAt);
   const diversityMultiplier = diversityPenalty(job, context.seenCategories);
   const scores = { skills:skillScore, category:categoryScore, experience:experienceScore, location:locationScore, workMode:workModeScore, salary:salaryScore, preference:preferenceScore, behavior:behaviorScore, freshness:freshnessScore };
@@ -153,13 +218,21 @@ function parseAiRanking(raw, validIds) {
 
 export function buildAiRerankPrompt(profile, jobs) {
   const profilePayload = {
+    resumeText: String(profile?.resumeText || '').slice(0, 6000),
+    interests: Array.isArray(profile?.interests) ? profile.interests.slice(0, 20) : [],
+    goals: String(profile?.goals || '').slice(0, 2000),
     topCategories: profile?.topCategories ?? [],
     topCities: profile?.topCities ?? [],
     topKinds: profile?.topKinds ?? [],
     topWorkModes: profile?.topWorkModes ?? [],
+    topBehaviorCategories: profile?.topBehaviorCategories ?? [],
+    topBehaviorCities: profile?.topBehaviorCities ?? [],
+    topBehaviorKinds: profile?.topBehaviorKinds ?? [],
     salaryMin: profile?.salaryMin ?? null,
     salaryMax: profile?.salaryMax ?? null,
     interactionCount: profile?.interactionCount ?? 0,
+    experienceKeywords: profile?.experienceTokens ? [...profile.experienceTokens].slice(0, 30) : [],
+    interestKeywords: profile?.interestTokens ? [...profile.interestTokens].slice(0, 30) : [],
   };
   const opportunities = jobs.slice(0, AI_RERANK_MAX_CANDIDATES).map((job) => ({
     id: aiSafeText(job.id, 80),
