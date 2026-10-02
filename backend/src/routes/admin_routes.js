@@ -47,19 +47,25 @@ export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, 
       const job=dispute.context?.job;
       if(!payment || !job) throw new HttpError(404,'PAYMENT_OR_JOB_NOT_FOUND','Payment or job not found');
       if(resolution==='RELEASE'){
-        if(payment.status==='RELEASED') return sendJson(res,200,{...dispute,resolution:'RELEASED'});
+        if(payment.status==='RELEASED') {
+          // Already applied; continue so the dispute itself is resolved and audited.
+        } else {
         if(!['RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be released from its current state');
         const event=await paymentUseCases.release({jobId:job.id,ownerId:job.ownerId,paymentId:payment.id,dedupeKey:`PAYMENT_RELEASE:ADMIN_DISPUTE:${payment.id}`});
         const result=await processPaymentReleaseNow(event?.id);
         if(!result?.completed && !result?.alreadyDone) throw new HttpError(409,'PAYMENT_RELEASE_NOT_COMPLETED','Payment release was not completed');
+        }
       } else if(resolution==='REFUND'){
-        if(payment.status==='REFUNDED') return sendJson(res,200,{...dispute,resolution:'REFUNDED'});
+        if(payment.status==='REFUNDED') {
+          // Already applied; continue so the dispute itself is resolved and audited.
+        } else {
         if(!['HELD','RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be refunded from its current state');
         const created=await paymentUseCases.refund({jobId:job.id,paymentId:payment.id,ownerId:job.ownerId,amount:payment.amount,id:crypto.randomUUID(),idempotencyKey:`DISPUTE_REFUND:${dispute.id}`,createdAt:now(),allowPendingRelease:true});
         try { await processPaymentRefundNow(); } catch (_) {}
         const refreshed=await paymentUseCases.findByJob(job.id);
         if(refreshed?.status!=='REFUNDED') throw new HttpError(202,'PAYMENT_REFUND_PENDING','Refund is queued for processing');
         void created;
+        }
       }
       const resolved=await repo.resolveJobDispute(dispute.id,{resolution,reason,adminId:me.id});
       await createAudit('ADMIN_DISPUTE_RESOLVE',me.id,'job_dispute',dispute.id,{jobId:dispute.jobId,resolution,aiDecision:dispute.aiDecision,aiConfidence:dispute.aiConfidence,reason});
