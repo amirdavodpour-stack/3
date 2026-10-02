@@ -41,6 +41,21 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
       };
     },
     users: () => db.collection.users.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
+    grantAdminByEmail(email, actorId) {
+      const actor = db.collection.users.find((x) => x.id === actorId);
+      if (!actor || actor.role !== 'ADMIN' || String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
+        const error = new Error('PRIMARY_ADMIN_ONLY');
+        error.code = 'PRIMARY_ADMIN_ONLY';
+        throw error;
+      }
+      const targetEmail = String(email || '').trim().toLowerCase();
+      const target = db.collection.users.find((x) => String(x.email || '').trim().toLowerCase() === targetEmail);
+      if (!target) return null;
+      target.role = 'ADMIN';
+      target.sessionVersion = Number(target.sessionVersion || 0) + 1;
+      db.touch('users');
+      return target;
+    },
     setUserStatus(id, status) {
       const user = db.collection.users.find((x) => x.id === id);
       if (!user) return null;
