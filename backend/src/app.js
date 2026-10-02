@@ -50,6 +50,8 @@ import { createOfferLegacyAdapter } from './application/legacy/offer_legacy.js';
 import { createStorageLegacyAdapter } from './application/legacy/storage_legacy.js';
 import { createAppLegacyAdapter } from './application/legacy/app_legacy.js';
 import { verifyGoogleIdToken } from './google_auth.js';
+import { createAiRoutes } from './routes/ai_routes.js';
+import { askAI } from './services/ai.js';
 
 await initDatabase();
 await seedBaseData();
@@ -130,6 +132,7 @@ const accountRoutes = createAccountRoutes({
 });
 
 const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, readBody, sendJson, HttpError, config, walletRepo: repo });
+const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
 
 
 const {
@@ -228,7 +231,7 @@ export async function handle(req, res) {
   if (!isLive && !isHealth && !url.pathname.startsWith('/metrics') && !(await rateLimitGeneral(req, config.generalRateLimitMax, config.generalRateLimitWindowMs))) {
     return sendRateLimited(res, 'RATE_LIMITED', 'Too many requests', Math.ceil(config.generalRateLimitWindowMs / 1000));
   }
-  const parts = url.pathname.replace(/^\/api\/v1\/?/, '').split('/').filter(Boolean);
+  const parts = url.pathname.replace(/^\/api(?:\/v1)?\/?/, '').split('/').filter(Boolean);
   try {
     if (url.pathname === '/live' || url.pathname === '/api/v1/live') {
       return sendJson(res, 200, { alive: true, service: 'hope-api', version: process.env.HOPE_VERSION || HOPE_VERSION, time: now() });
@@ -243,6 +246,7 @@ export async function handle(req, res) {
       const ready = database.status === 'ok';
       return sendJson(res, ready ? 200 : 503, { ready, service: 'hope-api', database, time: now() });
     }
+    if (parts[0] === 'chat') return await aiRoutes(req, res, parts);
     if (parts[0] === 'auth') return await authRoutes(req, res, parts);
     if (parts[0] === 'account') return await accountRoutes(req, res, parts.slice(1));
     if (parts[0] === 'wallet') return await walletRoutes(req, res, parts);
