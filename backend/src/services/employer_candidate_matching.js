@@ -154,7 +154,7 @@ export function scoreEmployerCandidate(job, candidate = {}) {
   const preferredWorkMode = String(candidate.profile?.workMode || '').toUpperCase();
   const jobWorkMode = String(job.workMode || job.attributes?.workMode || '').toUpperCase();
   const workModeScore =
-    !jobWorkMode ? 0.5 : preferredWorkMode === jobWorkMode ? 1 : 0;
+    !jobWorkMode || !preferredWorkMode ? 0.5 : preferredWorkMode === jobWorkMode ? 1 : 0;
 
   const availabilityText = tokens(candidate.profile?.availability || '');
   const scheduleText = tokens(job.schedule || '');
@@ -180,14 +180,14 @@ export function scoreEmployerCandidate(job, candidate = {}) {
   if (skillsScore >= 0.5) reasons.push('SKILL_MATCH');
   if (experienceScore >= 0.5) reasons.push('EXPERIENCE_MATCH');
   if (categoryScore >= 1) reasons.push('CATEGORY_MATCH');
-  if (locationScore >= 1) reasons.push('LOCATION_MATCH');
-  if (workModeScore >= 1) reasons.push('WORK_MODE_MATCH');
-  if (kindScore >= 1) reasons.push('KIND_MATCH');
   if (compensation >= 0.85) {
     reasons.push(String(job.kind || 'JOB').toUpperCase() === 'MISSION'
       ? 'BUDGET_FIT'
       : 'SALARY_FIT');
   }
+  if (locationScore >= 1) reasons.push('LOCATION_MATCH');
+  if (workModeScore >= 1) reasons.push('WORK_MODE_MATCH');
+  if (kindScore >= 1) reasons.push('KIND_MATCH');
   if (availabilityScore >= 0.85) reasons.push('AVAILABILITY_MATCH');
   if (!reasons.length) reasons.push('GENERAL_MATCH');
 
