@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { assertAutomatedAiAccess, assertAssignedAiTaskAccess, AUTOMATED_AI_TASKS } from '../src/application/ai_access_policy.js';
+import { assertAutomatedAiAccess, assertAssignedAiTaskAccess, assertSystemAiTask, AUTOMATED_AI_TASKS } from '../src/application/ai_access_policy.js';
 
 test('AI user access is disabled while system-managed automation remains allowlisted', () => {
   assert.deepEqual(
     AUTOMATED_AI_TASKS,
-    ['REGISTRATION_PROFILE', 'RECOMMENDATIONS', 'OPPORTUNITY_AGENT', 'JOB_SATISFACTION'],
+    ['REGISTRATION_PROFILE', 'RECOMMENDATIONS', 'OPPORTUNITY_AGENT', 'JOB_SATISFACTION', 'DISPUTE_ADJUDICATION'],
   );
   assert.throws(
     () => assertAutomatedAiAccess({ route:'chat', source:'USER' }),
