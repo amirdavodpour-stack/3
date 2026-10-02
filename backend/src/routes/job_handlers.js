@@ -181,7 +181,7 @@ export async function handleJobActions(ctx, req, res, parts, job) {
       await createAudit('JOB_ACCEPT', me.id, 'job', job.id);
       await notifyUser({
         userId: job.ownerId,
-        type: NOTIFICATION_TYPES.JOB_UPDATE,
+        type: NOTIFICATION_TYPES.MISSION_UPDATE,
         title: 'گزارش رضایت همکاری',
         body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
         data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
@@ -191,7 +191,7 @@ export async function handleJobActions(ctx, req, res, parts, job) {
       if (job.providerId) {
         await notifyUser({
           userId: job.providerId,
-          type: NOTIFICATION_TYPES.JOB_UPDATE,
+          type: NOTIFICATION_TYPES.MISSION_UPDATE,
           title: 'گزارش رضایت همکاری',
           body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
           data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
@@ -211,7 +211,7 @@ export async function handleJobActions(ctx, req, res, parts, job) {
     await createAudit('JOB_ACCEPT', me.id, 'job', job.id);
     await notifyUser({
       userId: job.ownerId,
-      type: NOTIFICATION_TYPES.JOB_UPDATE,
+      type: NOTIFICATION_TYPES.MISSION_UPDATE,
       title: 'گزارش رضایت همکاری',
       body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
       data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
@@ -221,7 +221,7 @@ export async function handleJobActions(ctx, req, res, parts, job) {
     if (job.providerId) {
       await notifyUser({
         userId: job.providerId,
-        type: NOTIFICATION_TYPES.JOB_UPDATE,
+        type: NOTIFICATION_TYPES.MISSION_UPDATE,
         title: 'گزارش رضایت همکاری',
         body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
         data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
