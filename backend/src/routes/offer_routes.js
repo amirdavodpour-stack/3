@@ -1,6 +1,6 @@
 // Offer lifecycle routes.
 
-export function createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy, id, getJob, enforceJobState, createAudit, now, jobView }) {
+export function createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy, id, getJob, enforceJobState, createAudit, now, jobView, ensureJobChat }) {
   return async function routeHandler(req, res, parts) {
     // Read-only offer views are deliberately scoped to the authenticated viewer:
     // job owners can see all offers on their jobs; providers can only see their own.
@@ -62,6 +62,7 @@ export function createOfferRoutes({ authUser, readBody, sendJson, HttpError, req
         const result = await repo.acceptOffer(offer.id, me.id);
         if (!result) throw new HttpError(404, 'OFFER_NOT_FOUND', 'Offer not found');
         await createAudit('OFFER_ACCEPT', me.id, 'offer', offer.id, { jobId: job.id });
+        if (typeof ensureJobChat === 'function') await ensureJobChat(job.id);
         return sendJson(res, 200, { offer: result.offer, job: await jobView(result.job, me.id) });
       }
       const accepted = await legacy.accept(offer, job, () => createAudit('OFFER_ACCEPT', me.id, 'offer', offer.id, { jobId: job.id }));
