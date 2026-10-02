@@ -128,6 +128,7 @@ export function createJobSatisfactionRoutes({
         questions: SATISFACTION_QUESTIONS,
         submitted: Boolean(feedback),
         feedback,
+        dispute: process.env.DATABASE_URL ? await repo.getJobDispute(job.id) : null,
         progress: { submittedCount: all.length, requiredCount: 2 },
       });
     }
@@ -155,7 +156,7 @@ export function createJobSatisfactionRoutes({
         }
         const feedback = await repo.updateJobSatisfactionAnalysis(existing.id, analysis);
         const settlement = await settleIfReady(me, job);
-        return sendJson(res, 200, { feedback, settlement: { ready: settlement.gate.ready, reason: settlement.gate.reason, autoReleased: settlement.autoReleased } });
+        return sendJson(res, 200, { feedback, settlement: { ready: settlement.gate.ready, reason: settlement.gate.reason, autoReleased: settlement.autoReleased, dispute: settlement.dispute || null } });
       }
       if (existing) throw new HttpError(409, 'FEEDBACK_ALREADY_SUBMITTED', 'Feedback already submitted');
 
