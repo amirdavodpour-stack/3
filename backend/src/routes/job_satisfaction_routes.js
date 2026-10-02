@@ -1,6 +1,7 @@
 import { assertAutomatedAiAccess } from '../application/ai_access_policy.js';
 import { analyzeDisputeWithAI } from '../services/dispute_resolution.js';
 import { buildSatisfactionAnalysisPrompt, evaluateSettlementGate, SATISFACTION_QUESTIONS, parseSatisfactionAnalysis } from '../services/job_satisfaction.js';
+import { analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
 
 export function createJobSatisfactionRoutes({
   authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases,
@@ -11,6 +12,36 @@ export function createJobSatisfactionRoutes({
     if (job.providerId === me.id) return 'WORKER';
     return null;
   };
+
+  async function openConflictDispute(job, payment, feedback, openedBy) {
+    if (feedback.length !== 2) return null;
+    const gate = evaluateSettlementGate({ jobStatus: job.status, paymentStatus: payment?.status, feedback });
+    if (gate.ready) return null;
+    const existing = await repo.getJobDispute(job.id);
+    if (existing) return existing;
+    assertAutomatedAiAccess({ route: 'dispute-adjudication', source: 'SYSTEM' });
+    let analysis;
+    try {
+      analysis = await analyzeDisputeWithAI({ askAI, context: { job, payment, feedback } });
+    } catch (_) {
+      analysis = parseDisputeDecision(null);
+    }
+    const dispute = await repo.createJobDispute({
+      jobId: job.id,
+      openedBy,
+      triggerType: 'SATISFACTION_CONFLICT',
+      aiReport: analysis,
+      legalRulesetVersion: analysis.rulesetVersion,
+    });
+    const updated = await repo.updateJobDisputeAnalysis(dispute.id, analysis);
+    await createAudit('JOB_DISPUTE_AUTO_OPENED', openedBy, 'job_dispute', dispute.id, {
+      jobId: job.id,
+      triggerType: 'SATISFACTION_CONFLICT',
+      aiDecision: analysis.decision,
+      aiConfidence: analysis.confidence,
+    });
+    return updated || dispute;
+  }
 
   async function settleIfReady(me, job) {
     const payment = await paymentUseCases.findByJob(job.id);
@@ -72,7 +103,7 @@ export function createJobSatisfactionRoutes({
         channels: ['IN_APP','PUSH','EMAIL'],
       });
     }
-    return { gate, payment, autoReleased };
+    return { gate, payment, autoReleased, dispute: null };
   }
 
   return async function route(req, res, parts) {
