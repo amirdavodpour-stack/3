@@ -1,57 +1,41 @@
-import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAiService } from '../src/services/ai.js';
+import assert from 'node:assert/strict';
+import { createAiService, resolveAiEndpoint } from '../src/services/ai.js';
 
-test('AI service sends OpenAI-compatible chat completion payload without hard-coded credentials', async () => {
-  let request;
-  const service = createAiService({
-    env: {
-      AI_ROUTER_URL: 'http://127.0.0.1:20128/v1/chat/completions',
-      AI_ROUTER_API_KEY: 'test-secret',
-      AI_MODEL: 'apmix/deepseek-v4-flash-free',
-      AI_TIMEOUT_MS: '1000',
-    },
+test('AI router base URL resolves to chat completions endpoint', () => {
+  assert.equal(resolveAiEndpoint('http://localhost:20128/v1'), 'http://localhost:20128/v1/chat/completions');
+  assert.equal(resolveAiEndpoint('http://localhost:20128/v1/'), 'http://localhost:20128/v1/chat/completions');
+  assert.equal(resolveAiEndpoint('http://localhost:20128/v1/chat/completions'), 'http://localhost:20128/v1/chat/completions');
+});
+
+test('AI service sends configured model and server-side credential', async () => {
+  const env = {
+    AI_ROUTER_URL: 'http://localhost:20128/v1',
+    AI_ROUTER_API_KEY: 'test-secret',
+    AI_MODEL: 'apmix/deepseek-v4-flash-free',
+    AI_TIMEOUT_MS: '30000',
+  };
+  let captured;
+  const ask = createAiService({
+    env,
     fetchImpl: async (url, options) => {
-      request = { url, options };
-      return new Response(JSON.stringify({
-        choices: [{ message: { content: 'hello from test' } }],
-      }), { status: 200, headers: { 'content-type': 'application/json' } });
+      captured = { url, options, body: JSON.parse(options.body) };
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'سلام' } }] }), { status: 200 });
     },
   });
-
-  const answer = await service.askAI('hello');
-
-  assert.equal(answer, 'hello from test');
-  assert.equal(request.url, 'http://127.0.0.1:20128/v1/chat/completions');
-  assert.equal(request.options.headers.Authorization, 'Bearer test-secret');
-  assert.deepEqual(JSON.parse(request.options.body), {
-    model: 'apmix/deepseek-v4-flash-free',
-    messages: [{ role: 'user', content: 'hello' }],
-  });
+  assert.equal(await ask('hello'), 'سلام');
+  assert.equal(captured.url, 'http://localhost:20128/v1/chat/completions');
+  assert.equal(captured.options.headers.Authorization, 'Bearer test-secret');
+  assert.equal(captured.body.model, 'apmix/deepseek-v4-flash-free');
+  assert.deepEqual(captured.body.messages, [{ role: 'user', content: 'hello' }]);
 });
 
-test('AI service fails closed when the provider credential is missing', async () => {
-  const service = createAiService({
-    env: { AI_ROUTER_URL: 'http://127.0.0.1:20128/v1/chat/completions' },
-    fetchImpl: async () => {
-      throw new Error('network must not be reached');
-    },
-  });
-
-  await assert.rejects(
-    service.askAI('hello'),
-    (error) => error.code === 'AI_NOT_CONFIGURED' && error.status === 503,
-  );
+test('AI service fails closed when credential is missing', async () => {
+  const ask = createAiService({ env: { AI_ROUTER_API_KEY: '' }, fetchImpl: async () => { throw new Error('network must not be called'); } });
+  await assert.rejects(() => ask('hello'), (error) => error.code === 'AI_NOT_CONFIGURED' && error.status === 503);
 });
 
-test('AI service maps provider failures to a sanitized gateway error', async () => {
-  const service = createAiService({
-    env: { AI_ROUTER_API_KEY: 'test-secret' },
-    fetchImpl: async () => new Response('upstream failed', { status: 500 }),
-  });
-
-  await assert.rejects(
-    service.askAI('hello'),
-    (error) => error.code === 'AI_PROVIDER_ERROR' && error.status === 502 && error.message === 'AI provider returned an error',
-  );
+test('AI service maps provider network failures to a sanitized gateway error', async () => {
+  const ask = createAiService({ env: { AI_ROUTER_API_KEY: 'test-secret' }, fetchImpl: async () => { throw new Error('secret upstream detail'); } });
+  await assert.rejects(() => ask('hello'), (error) => error.code === 'AI_PROVIDER_UNAVAILABLE' && error.status === 502 && error.message === 'AI provider is unavailable');
 });

@@ -1,21 +1,30 @@
-import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createAiRoutes } from '../src/routes/ai_routes.js';
 
-test('AI chat route is authenticated, validates input, and supports the configured model service', async () => {
-  const [app, route, service] = await Promise.all([
-    readFile(new URL('../src/app.js', import.meta.url), 'utf8'),
-    readFile(new URL('../src/routes/ai_routes.js', import.meta.url), 'utf8'),
-    readFile(new URL('../src/services/ai.js', import.meta.url), 'utf8'),
-  ]);
+test('POST /chat requires authentication and returns the AI answer', async () => {
+  let authenticated = false;
+  let sent;
+  const routes = createAiRoutes({
+    authUser: async () => { authenticated = true; return { id: 'user-1' }; },
+    readBody: async () => ({ message: 'hello' }),
+    sendJson: async (_res, status, data) => { sent = { status, data }; },
+    HttpError: class HttpError extends Error { constructor(status, code, message) { super(message); this.status = status; this.code = code; } },
+    askAI: async (message) => 'answer:' + message,
+  });
+  await routes({ method: 'POST' }, {}, ['chat']);
+  assert.equal(authenticated, true);
+  assert.deepEqual(sent, { status: 200, data: { answer: 'answer:hello' } });
+});
 
-  assert.match(app, /replace\(\/\^\\\/api\(\?:\\\/v1\)\?\\\/?\//);
-  assert.match(app, /parts\[0\] === 'chat'/);
-  assert.match(route, /await authUser\(req\)/);
-  assert.match(route, /MESSAGE_REQUIRED/);
-  assert.match(route, /MESSAGE_TOO_LARGE/);
-  assert.match(service, /AI_ROUTER_API_KEY/);
-  assert.match(service, /AI_MODEL/);
-  assert.match(service, /apmix\/deepseek-v4-flash-free/);
-  assert.doesNotMatch(service, /sk-[A-Za-z0-9-]{20,}/);
+test('POST /chat rejects an empty message', async () => {
+  const HttpError = class HttpError extends Error { constructor(status, code, message) { super(message); this.status = status; this.code = code; } };
+  const routes = createAiRoutes({ authUser: async () => ({}), readBody: async () => ({ message: '   ' }), sendJson: async () => {}, HttpError, askAI: async () => 'must not run' });
+  await assert.rejects(() => routes({ method: 'POST' }, {}, ['chat']), (error) => error.code === 'INVALID_MESSAGE' && error.status === 400);
+});
+
+test('POST /chat rejects an oversized message', async () => {
+  const HttpError = class HttpError extends Error { constructor(status, code, message) { super(message); this.status = status; this.code = code; } };
+  const routes = createAiRoutes({ authUser: async () => ({}), readBody: async () => ({ message: 'x'.repeat(12001) }), sendJson: async () => {}, HttpError, askAI: async () => 'must not run' });
+  await assert.rejects(() => routes({ method: 'POST' }, {}, ['chat']), (error) => error.code === 'MESSAGE_TOO_LONG' && error.status === 400);
 });
