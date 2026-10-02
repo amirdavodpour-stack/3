@@ -44,7 +44,7 @@ export async function createJobDispute({ jobId, openedBy = null, triggerType = '
 }
 
 export async function updateJobDisputeAnalysis(id, analysis) {
-  const { rows } = await requirePool().query(`UPDATE job_disputes SET status='AI_ANALYZED',ai_decision=$2,ai_confidence=$3,ai_report=$4::jsonb,legal_ruleset_version=$5,updated_at=NOW() WHERE id=$1 RETURNING *`, [id, analysis.decision, analysis.confidence, JSON.stringify(analysis), analysis.rulesetVersion]);
+  const { rows } = await requirePool().query(`UPDATE job_disputes SET status=CASE WHEN ($6::jsonb->>'manualReview')::boolean THEN 'ADMIN_REVIEW' ELSE 'AI_ANALYZED' END,ai_decision=$2,ai_confidence=$3,ai_report=$4::jsonb,legal_ruleset_version=$5,updated_at=NOW() WHERE id=$1 RETURNING *`, [id, analysis.decision, analysis.confidence, JSON.stringify(analysis), analysis.rulesetVersion, JSON.stringify(analysis)]);
   return disputeView(rows[0]);
 }
 
