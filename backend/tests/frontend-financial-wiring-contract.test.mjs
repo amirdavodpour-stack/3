@@ -142,3 +142,21 @@ test('create opportunity UI preserves exact Toman input and recovers category/de
   assert.match(validator, /min > max/);
   assert.match(validator, /9000000000000000/);
 });
+
+
+test('satisfaction UI surfaces the automatic dispute state without exposing free-form AI', () => {
+  const repository = read('lib/core/jobs/job_satisfaction_repository.dart');
+  const page = read('lib/features/jobs/job_satisfaction_page.dart');
+  assert.ok(repository.includes('dispute'));
+  assert.ok(page.includes('dispute') || page.includes('پرونده اختلاف'));
+  assert.ok(page.includes('تا تعیین تکلیف') || page.includes('until it is resolved'));
+});
+
+test('admin entry always goes through identity verification', () => {
+  const home = read('lib/features/home/home_page.dart');
+  const access = read('lib/features/admin/admin_access_page.dart');
+  const repository = read('lib/core/admin/admin_repository.dart');
+  assert.ok(home.includes('HopeRoutes.adminAccess()'));
+  assert.ok(access.includes('verifyPanelAccess'));
+  assert.ok(repository.includes("'/admin/access'"));
+});
