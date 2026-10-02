@@ -541,7 +541,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final isProvider =
         currentUserId != null && currentUserId == j.providerId?.toString();
     final canViewFinance = isOwner || isProvider;
-    final collaborationChatOpen = isOwner || isProvider && ['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].contains(j.status?.toUpperCase());
+    final collaborationChatOpen = (isOwner || isProvider) && ['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].contains(j.status?.toUpperCase());
 
     final dark = Theme.of(context).brightness == Brightness.dark;
 
