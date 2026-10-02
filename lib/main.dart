@@ -86,7 +86,6 @@ Future<void> main() async {
       Provider<GoogleSignInService>.value(value: googleSignIn),
       Provider<ProfileRepository>.value(value: profileRepository),
       Provider<RecommendationProfileRepository>(create: (_) => ApiRecommendationProfileRepository(api)),
-      Provider<RecommendationProfileRepository>(create: (_) => ApiRecommendationProfileRepository(api)),
       Provider<NotificationRepository>.value(value: notificationRepository),
       Provider<MarketplaceRepository>(
           create: (_) => OfflineMarketplaceRepository(ApiMarketplaceRepository(api)),
