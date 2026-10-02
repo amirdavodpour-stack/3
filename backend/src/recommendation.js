@@ -1,3 +1,5 @@
+import { assertSystemAiTask } from './application/ai_access_policy.js';
+
 const TOKEN_RE = /[\p{L}\p{N}]+/gu;
 
 export const RECOMMENDATION_VERSION = '2.3';
@@ -268,6 +270,7 @@ export async function rerankWithAI({ askAI, profile, jobs, maxCandidates = AI_RE
   const candidates = jobs.slice(0, Math.min(AI_RERANK_MAX_CANDIDATES, Math.max(2, Number(maxCandidates) || AI_RERANK_MAX_CANDIDATES)));
   if (candidates.length < 2) return null;
 
+  assertSystemAiTask({ task: 'RECOMMENDATIONS' });
   let raw;
   try {
     raw = await askAI(buildAiRerankPrompt(profile, candidates));
