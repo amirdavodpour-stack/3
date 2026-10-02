@@ -22,6 +22,7 @@ class ApplicationRegistry {
     this.notifications,
     this.profile,
     SavedSearchRepository? savedSearches,
+    this.opportunityAgent,
   }) : _savedSearches = savedSearches;
 
   final MarketplaceRepository? marketplace;
