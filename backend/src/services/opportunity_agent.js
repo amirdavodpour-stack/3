@@ -20,6 +20,12 @@ function hasValue(value) {
   return value != null && String(value).trim() !== '';
 }
 
+function clamp01(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(1, number));
+}
+
 export function profileCompleteness(profile = {}) {
   const checks = [
     ['resumeText', hasValue(profile.resumeText)],
