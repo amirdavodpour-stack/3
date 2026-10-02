@@ -70,7 +70,10 @@ class OpportunityCard extends StatelessWidget {
     final primary = featured
         ? HopeV2Colors.primary
         : (job.isMission ? HopeV2Colors.primary : secondaryAccent(context));
-    final reasons = job.recommendationReasons.take(3).toList(growable: false);
+    final reasons = [
+      ...job.aiRecommendationReasons,
+      ...job.recommendationReasons,
+    ].take(3).toList(growable: false);
     final mediaUrl = _mediaUrl(job);
 
     return Semantics(
