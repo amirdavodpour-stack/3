@@ -285,7 +285,7 @@ export async function handleCandidateRoutes(ctx, req, res, parts, job) {
   const {
     authUser, db, repo, legacyJobs, readBody, sendJson, HttpError, textField, id,
     createAudit, now, findUser, publicUser, notifyApplicationCandidate,
-    NOTIFICATION_TYPES,
+    NOTIFICATION_TYPES, ensureJobChat,
   } = ctx;
   if (req.method === 'POST' && parts[2] === 'candidates' && parts[4] === 'compare') {
     const me = await authUser(req);
@@ -488,6 +488,7 @@ export async function handleCandidateRoutes(ctx, req, res, parts, job) {
     if (!process.env.DATABASE_URL) await legacyJobs.save();
     await notifyApplicationCandidate(changed.id, NOTIFICATION_TYPES.APPLICATION_ACCEPTED, 'استخدام شدید', `برای شغل «${job.title}» انتخاب شده‌اید.`);
     await createAudit('JOB_APPLICATION_HIRE', me.id, 'job_application', parts[3], { jobId: job.id });
+    if (process.env.DATABASE_URL && typeof ensureJobChat === 'function') await ensureJobChat(job.id);
     await sendJson(res, 200, { id: changed.id, status: changed.status });
     return true;
   }
