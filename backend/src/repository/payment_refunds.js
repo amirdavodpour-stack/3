@@ -6,7 +6,7 @@ import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 
-export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idempotencyKey,createdAt}) {
+export function refundablePaymentStateAllowed(status, allowPendingRelease = false) {\n  const allowed = allowPendingRelease ? ['HELD','RELEASE_PENDING','RELEASE_FAILED'] : ['HELD'];\n  return allowed.includes(String(status || '').toUpperCase());\n}\n\nexport async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idempotencyKey,createdAt,allowPendingRelease=false}) {
   return withSqlTransaction(async(client)=>{
     if (idempotencyKey) {
       await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 918273645))`, [`refund:${paymentId}:${idempotencyKey}`]);
@@ -16,7 +16,7 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     if(jr[0].owner_id!==ownerId){const e=new Error('FORBIDDEN');e.code='FORBIDDEN';throw e;}
     const {rows:pr}=await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,[paymentId,jobId]);
     const payment=pr[0]; if(!payment){const e=new Error('PAYMENT_NOT_FOUND');e.code='PAYMENT_NOT_FOUND';throw e;}
-    if(payment.status!=='HELD'){const e=new Error('INVALID_PAYMENT_STATE');e.code='INVALID_PAYMENT_STATE';throw e;}
+    if(!refundablePaymentStateAllowed(payment.status, allowPendingRelease)){const e=new Error('INVALID_PAYMENT_STATE');e.code='INVALID_PAYMENT_STATE';throw e;}
     const refundCurrency=String(payment.currency || config.paymentCurrency).toUpperCase(); const refundAmount=normalizeFinancialAmount(refundCurrency, amount || payment.amount); if(String(refundAmount)!==String(normalizeFinancialAmount(refundCurrency, payment.amount))){const e=new Error('PARTIAL_REFUND_UNSUPPORTED');e.code='PARTIAL_REFUND_UNSUPPORTED';throw e;}
     let refundRow = null;
     if (idempotencyKey) {
