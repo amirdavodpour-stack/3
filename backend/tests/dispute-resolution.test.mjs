@@ -1,4 +1,3 @@
-[Reading 40 lines from start (total: 40 lines, 0 remaining)]
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -40,5 +39,3 @@ test('decision prompt anchors the assessment in Iranian legal sources and eviden
   assert.match(prompt, /evidence|ادله/i);
   assert.match(prompt, /رابطه کار|contractor| پیمانکاری/i);
 });
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]
