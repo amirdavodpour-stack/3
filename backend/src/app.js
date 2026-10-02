@@ -55,6 +55,7 @@ import { createRecommendationProfileRoutes } from './routes/recommendation_profi
 import { createOpportunityAgentRoutes } from './routes/opportunity_agent_routes.js';
 import { createJobSatisfactionRoutes } from './routes/job_satisfaction_routes.js';
 import { createFinancialInsightsRoutes } from './routes/financial_insights_routes.js';
+import { createJobDisputeRoutes } from './routes/job_dispute_routes.js';
 import { buildOpportunityAgentState, parseOpportunityAgentState } from './services/opportunity_agent.js';
 import { askAI } from './services/ai.js';
 import { enrichRecommendationProfile, buildRecommendationInterviewPrompt, parseInterviewResponse } from './services/recommendation_profile.js';
@@ -131,6 +132,10 @@ const adminRoutes = createAdminRoutes({
   notifyApplicationCandidate: (...args) => notifyApplicationCandidate(...args), URL,
   listUnknownPayouts: repo.listUnknownPayouts,
   resolvePayoutUnknown: repo.resolvePayoutUnknown,
+  processPaymentReleaseNow,
+  processPaymentRefundNow,
+  notifyUser,
+  NOTIFICATION_TYPES,
 });
 
 const accountRoutes = createAccountRoutes({
@@ -141,6 +146,7 @@ const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, re
 const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
 const financialInsightsRoutes = createFinancialInsightsRoutes({ authUser, sendJson, HttpError, repo });
 const jobSatisfactionRoutes = createJobSatisfactionRoutes({ authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases, askAI, processPaymentReleaseNow, createAudit, notifyUser, NOTIFICATION_TYPES, now });
+const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit, notifyUser, NOTIFICATION_TYPES, now });
 const recommendationProfileRoutes = createRecommendationProfileRoutes({
   authUser,
   readBody,
@@ -280,6 +286,7 @@ export async function handle(req, res) {
     if (parts[0] === 'wallet' && parts[1] === 'financial-insights') return await financialInsightsRoutes(req, res, parts);
     if (parts[0] === 'jobs' && parts[2] === 'satisfaction') return await jobSatisfactionRoutes(req, res, parts);
     if (parts[0] === 'jobs' && parts[2] === 'satisfaction-history') return await jobSatisfactionRoutes(req, res, parts);
+    if (parts[0] === 'jobs' && parts[2] === 'dispute') return await jobDisputeRoutes(req, res, parts);
     if (parts[0] === 'auth') return await authRoutes(req, res, parts);
     if (parts[0] === 'account') return await accountRoutes(req, res, parts.slice(1));
     if (parts[0] === 'wallet') return await walletRoutes(req, res, parts);
