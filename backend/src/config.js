@@ -67,6 +67,7 @@ export const config = {
   googleAuthEnabled: process.env.GOOGLE_AUTH_ENABLED === 'true',
   googleOAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
   adminPanelUsername: process.env.ADMIN_PANEL_USERNAME || '',
+  adminPanelAllowedEmail: process.env.ADMIN_PANEL_ALLOWED_EMAIL || '',
   adminPanelVerificationMinutes: positiveIntegerEnv('ADMIN_PANEL_VERIFICATION_MINUTES', 15, { min: 5, max: 120 }),
   paymentProvider: process.env.PAYMENT_PROVIDER || 'simulator',
   paymentCurrency: process.env.PAYMENT_CURRENCY || 'USD',
@@ -145,6 +146,7 @@ if (process.env.NODE_ENV === 'production') {
   if (!['webhook','internal'].includes(config.paymentProvider)) throw new Error('PAYMENT_PROVIDER must be webhook or internal in production');
   if (config.googleAuthEnabled && !config.googleOAuthClientId) throw new Error('GOOGLE_OAUTH_CLIENT_ID must be set when GOOGLE_AUTH_ENABLED=true');
   if (!config.adminPanelUsername || config.adminPanelUsername.length < 4 || config.adminPanelUsername.length > 120) throw new Error('ADMIN_PANEL_USERNAME must be configured for production admin access');
+  if (!config.adminPanelAllowedEmail || !config.adminPanelAllowedEmail.includes('@')) throw new Error('ADMIN_PANEL_ALLOWED_EMAIL must be configured for production admin access');
   if (config.paymentProvider === 'internal' && config.paymentCurrency !== 'TOMAN') throw new Error('PAYMENT_CURRENCY=TOMAN is required when PAYMENT_PROVIDER=internal');
   if (config.paymentProvider === 'webhook') {
     if (!config.paymentProviderToken || config.paymentProviderToken.length < 24) throw new Error('PAYMENT_PROVIDER_TOKEN must be set and sufficiently long in production');
