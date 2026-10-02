@@ -710,13 +710,39 @@ child: Column(
                 if (value) {
                   final ok = await settings.enableLocation();
                   if (!ok && mounted && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          HopeCopy.of(context)
-                              .copy_location_permission_was_not_enabled_you_ca_ba53b81,
+                    final reason = settings.lastLocationFailure;
+                    final message = switch (reason) {
+                      LocationFailureReason.serviceDisabled => _t(
+                          context,
+                          'مکان‌یابی دستگاه خاموش است.',
+                          'Device location services are turned off.',
                         ),
-                      ),
+                      LocationFailureReason.permissionDenied => _t(
+                          context,
+                          'اجازه مکان‌یابی برای HOPE فعال نیست.',
+                          'HOPE does not have location permission.',
+                        ),
+                      LocationFailureReason.positionUnavailable => _t(
+                          context,
+                          'دریافت موقعیت انجام نشد. دوباره تلاش کنید.',
+                          'Could not get your current location. Try again.',
+                        ),
+                      _ => HopeCopy.of(context)
+                          .copy_location_permission_was_not_enabled_you_ca_ba53b81,
+                    };
+                    final action = switch (reason) {
+                      LocationFailureReason.serviceDisabled => SnackBarAction(
+                          label: _t(context, 'تنظیمات مکان', 'Location settings'),
+                          onPressed: () => settings.openLocationSettings(),
+                        ),
+                      LocationFailureReason.permissionDenied => SnackBarAction(
+                          label: _t(context, 'تنظیمات برنامه', 'App settings'),
+                          onPressed: () => settings.openAppSettings(),
+                        ),
+                      _ => null,
+                    };
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(message), action: action),
                     );
                   }
                 } else {

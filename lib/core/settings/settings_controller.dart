@@ -103,15 +103,10 @@ class HopeSettingsController extends ChangeNotifier {
         return false;
       }
 
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (requestId != _locationRequestId) return false;
-      if (!serviceEnabled) {
-        _lastLocationFailure = LocationFailureReason.serviceDisabled;
-        await _clearLocationState();
-        await onLocationFailure?.call(_lastLocationFailure!, null, null);
-        return false;
-      }
-
+      // Do not use isLocationServiceEnabled() as a hard gate here. Some
+      // Redmi/Xiaomi Android builds have been reported to return false even
+      // while location is actually enabled. Let the real location request
+      // determine whether the service is usable instead.
       var permission = await Geolocator.checkPermission();
       if (requestId != _locationRequestId) return false;
       if (permission == LocationPermission.denied) {
@@ -135,9 +130,31 @@ class HopeSettingsController extends ChangeNotifier {
       Position position;
       try {
         position = await Geolocator.getCurrentPosition(
-          locationSettings:
-              const LocationSettings(accuracy: LocationAccuracy.medium),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 15),
+          ),
         );
+      } on LocationServiceDisabledException catch (error, stack) {
+        if (requestId != _locationRequestId) return false;
+        _lastLocationFailure = LocationFailureReason.serviceDisabled;
+        await _clearLocationState();
+        await onLocationFailure?.call(
+          _lastLocationFailure!,
+          error,
+          stack,
+        );
+        return false;
+      } on PermissionDeniedException catch (error, stack) {
+        if (requestId != _locationRequestId) return false;
+        _lastLocationFailure = LocationFailureReason.permissionDenied;
+        await _clearLocationState();
+        await onLocationFailure?.call(
+          _lastLocationFailure!,
+          error,
+          stack,
+        );
+        return false;
       } catch (error, stack) {
         if (requestId != _locationRequestId) return false;
         _lastLocationFailure = LocationFailureReason.positionUnavailable;
@@ -181,6 +198,10 @@ class HopeSettingsController extends ChangeNotifier {
     await _prefs?.remove(_longitudeKey);
     notifyListeners();
   }
+
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
+
+  Future<bool> openAppSettings() => Geolocator.openAppSettings();
 
   Future<void> disableLocation() async {
     ++_locationRequestId;

@@ -4,14 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 
 void main() {
-  test(
-      'location settings verify service availability before reading a position',
-      () {
+  test('location requests are not hard-gated by unreliable service probes', () {
     final source =
         File('lib/core/settings/settings_controller.dart').readAsStringSync();
-    expect(source, contains('Geolocator.isLocationServiceEnabled()'));
-    expect(source, contains('if (!serviceEnabled)'));
+    expect(source, isNot(contains('if (!serviceEnabled)')));
+    expect(source, contains('LocationServiceDisabledException'));
+    expect(source, contains('timeLimit: Duration(seconds: 15)'));
   });
+
 
   test('location controller exposes distinct failure reasons', () {
     expect(LocationFailureReason.values, containsAll([
@@ -39,6 +39,18 @@ void main() {
     final source =
         File('lib/features/profile/profile_page.dart').readAsStringSync();
     expect(source, contains('onChanged: settings.locationBusy'));
+  });
+
+  test('location failures expose platform settings recovery actions', () {
+    final source =
+        File('lib/core/settings/settings_controller.dart').readAsStringSync();
+    final profile =
+        File('lib/features/profile/profile_page.dart').readAsStringSync();
+    expect(source, contains('openLocationSettings()'));
+    expect(source, contains('openAppSettings()'));
+    expect(profile, contains('LocationFailureReason.serviceDisabled'));
+    expect(profile, contains('LocationFailureReason.permissionDenied'));
+    expect(profile, contains('SnackBarAction'));
   });
 
   test('location permission denial clears persisted location state', () {
