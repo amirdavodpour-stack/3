@@ -175,11 +175,11 @@ const paymentRoutes = createPaymentRoutes({
   processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, logEvent, now,
 });
 
-const jobRoutes = createJobRoutes({ getJob, authUser, id: db.id, repo, legacyJobs: jobLegacy, jobUseCases, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, enumField, JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, dateOnlyField, categoryBy, jobView, paymentView, buildOfferCountMap, relatedJob, enforceJobState, createAudit, now, findUser, publicUser, notifyApplicationCandidate, NOTIFICATION_TYPES });
+const jobRoutes = createJobRoutes({ getJob, authUser, id: db.id, repo, legacyJobs: jobLegacy, jobUseCases, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, enumField, JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, dateOnlyField, categoryBy, jobView, paymentView, buildOfferCountMap, relatedJob, enforceJobState, createAudit, now, findUser, publicUser, notifyApplicationCandidate, NOTIFICATION_TYPES, recordAnalyticsEvent });
 const offerRoutes = createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy: offerLegacy, id: db.id, getJob, enforceJobState, createAudit, now, jobView });
 const savedSearchLegacy = createSavedSearchLegacy({ db, textField, now });
 const savedSearchRoutes = createSavedSearchRoutes({ authUser, repo, legacy: savedSearchLegacy, readBody, sendJson, HttpError, textField });
-const applicationRoutes = createApplicationRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, repo, applicationUseCases, legacy: applicationLegacy, id: db.id, getJob, createAudit, now, notifyUser, NOTIFICATION_TYPES });
+const applicationRoutes = createApplicationRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, repo, applicationUseCases, legacy: applicationLegacy, id: db.id, getJob, createAudit, now, notifyUser, NOTIFICATION_TYPES, recordAnalyticsEvent });
 
 export async function handle(req, res) {
   const startedAt = process.hrtime.bigint();
