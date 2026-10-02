@@ -146,3 +146,24 @@ test('withdrawn and rejected applicants are excluded from the ranked acceptor li
 
   assert.deepEqual(candidates.map((candidate) => candidate.userId), ['pending']);
 });
+test('rejected or withdrawn history does not count as positive category or location experience', () => {
+  const result = scoreEmployerCandidate(
+    {
+      ...job,
+      categoryId: 'new-category',
+      city: 'اصفهان',
+    },
+    {
+      userId: 'worker-3',
+      profile: { skills: [] },
+      applicationHistory: [
+        { categoryId: 'new-category', city: 'اصفهان', kind: 'JOB', status: 'REJECTED' },
+        { categoryId: 'new-category', city: 'اصفهان', kind: 'JOB', status: 'WITHDRAWN' },
+      ],
+      completedJobs: [],
+    },
+  );
+
+  assert.equal(result.components.category, 0);
+  assert.equal(result.components.location, 0);
+});
