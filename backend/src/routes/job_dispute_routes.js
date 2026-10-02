@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { assertAutomatedAiAccess } from '../application/ai_access_policy.js';
-import { DISPUTE_DECISIONS, analyzeDisputeWithAI } from '../services/dispute_resolution.js';
+import { DISPUTE_DECISIONS, analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
 
 export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit, notifyUser, NOTIFICATION_TYPES, now }) {
   const participantRole = (me, job) => job?.ownerId === me.id ? 'EMPLOYER' : job?.providerId === me.id ? 'WORKER' : null;
@@ -8,7 +8,12 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
   async function analyzeCase(dispute) {
     const context = await repo.getJobDisputeContext(dispute.jobId);
     assertAutomatedAiAccess({ route: 'dispute-adjudication', source: 'SYSTEM' });
-    const analysis = await analyzeDisputeWithAI({ askAI, context });
+    let analysis;
+    try {
+      analysis = await analyzeDisputeWithAI({ askAI, context });
+    } catch (_) {
+      analysis = parseDisputeDecision(null);
+    }
     return repo.updateJobDisputeAnalysis(dispute.id, analysis);
   }
 
@@ -68,7 +73,14 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
     if(!job) throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
     if(!participantRole(me,job)) throw new HttpError(403,'FORBIDDEN','Only the employer or worker can use disputes');
     if(job.status!=='COMPLETED') throw new HttpError(409,'JOB_NOT_COMPLETED','Disputes start after job completion');
-    if(req.method==='GET'){ const dispute=await repo.getJobDispute(job.id); return sendJson(res,200,{dispute:dispute||null,context:await repo.getJobDisputeContext(job.id)}); }
+    if(req.method==='GET'){
+      const dispute=await repo.getJobDispute(job.id);
+      return sendJson(res,200,{dispute:dispute ? {
+        id: dispute.id, status: dispute.status, aiDecision: dispute.aiDecision,
+        aiConfidence: dispute.aiConfidence, legalRulesetVersion: dispute.legalRulesetVersion,
+        aiReport: dispute.aiReport, resolution: dispute.resolution, resolutionReason: dispute.resolutionReason,
+      } : null});
+    }
     if(req.method==='POST'){
       const body=await readBody(req); const existing=await repo.getJobDispute(job.id);
       if(existing?.status==='RESOLVED') throw new HttpError(409,'DISPUTE_RESOLVED','This dispute is already resolved');
