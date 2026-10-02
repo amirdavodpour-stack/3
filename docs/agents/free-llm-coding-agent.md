@@ -2,7 +2,7 @@
 
 This repository now includes a dependency-free Node.js coding agent that can use OpenAI-compatible LLM APIs, inspect the live checkout, modify source files, run focused verification, and — only when explicitly authorized — commit, push, and open a pull request.
 
-The implementation is intentionally provider-agnostic. The current `awesome-free-llm-apis` catalog lists OpenRouter, Groq, and GitHub Models among the free-tier inference options, and its setup guide shows the OpenAI SDK compatibility pattern. Provider availability and free-tier limits can change, so keep the model/provider in environment variables instead of baking credentials into the repository.
+The implementation is intentionally provider-agnostic and can fail over across free or free-tier OpenAI-compatible inference providers. Provider availability and limits can change, so keep credentials outside the repository and treat provider/model selection as runtime configuration.
 
 ## 1. Install nothing
 
@@ -48,16 +48,21 @@ Endpoint:
 https://api.groq.com/openai/v1
 ```
 
-### GitHub Models
+### Gemini
 
-The catalog also documents GitHub Models as an OpenAI-compatible inference provider. Use the token and endpoint from the current GitHub Models documentation/account configuration:
+Google documents an OpenAI-compatible Gemini endpoint and function calling. A current free-tier model suitable for a coding fallback is:
 
 ```bash
-export LLM_AGENT_PROVIDER=github-models
-export GITHUB_TOKEN='YOUR_TOKEN'
+export LLM_AGENT_PROVIDER=gemini
+export LLM_AGENT_MODEL=gemini-2.5-pro
+export GEMINI_API_KEY='YOUR_KEY'
 ```
 
-The default model in the repository agent is `gpt-4o`; override it with `LLM_AGENT_MODEL` when the available model set differs.
+Endpoint:
+
+```text
+https://generativelanguage.googleapis.com/v1beta/openai/
+```
 
 ### Custom OpenAI-compatible provider
 
@@ -107,7 +112,7 @@ You can keep a secondary free provider ready for transient 429/5xx failures:
 
 ```bash
 export LLM_AGENT_PROVIDER=openrouter
-export LLM_AGENT_PROVIDER_FALLBACKS=groq
+export LLM_AGENT_PROVIDER_FALLBACKS=groq,gemini
 ```
 
 The agent resolves the correct provider-specific API key from:
@@ -115,7 +120,7 @@ The agent resolves the correct provider-specific API key from:
 ```text
 OPENROUTER_API_KEY
 GROQ_API_KEY
-GITHUB_TOKEN
+GEMINI_API_KEY
 ```
 
 or from the generic `LLM_AGENT_API_KEY`.
