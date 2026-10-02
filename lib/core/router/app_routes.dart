@@ -17,6 +17,7 @@ import '../../features/notifications/notifications_page.dart';
 import '../../features/notifications/notification_devices_page.dart';
 import '../../features/privacy/privacy_center_page.dart';
 import '../../features/profile/profile_page.dart';
+import '../../features/recommendation/recommendation_interview_page.dart';
 import '../../features/applications/my_applications_page.dart';
 import '../../features/jobs/saved_searches_page.dart';
 import '../../features/jobs/jobs_page.dart';
@@ -55,6 +56,7 @@ abstract final class HopeRoutes {
   static Route<void> adminOperations() => _page(const AdminOperationsPage());
   static Route<void> about() => _page(const AboutHopePage());
   static Route<void> chat() => _page(const ChatPage());
+  static Route<void> recommendationInterview() => _page(const RecommendationInterviewPage());
   static Route<WalletPage> wallet({required WalletRepository repository}) =>
       _page(WalletPage(repository: repository));
   static Route<void> createJob() => _page(const CreateJobPage());
