@@ -106,7 +106,7 @@ async function toolExec(name,args,cfg,root,state) {
   throw new Error(`Unknown tool: ${name}`);
 }
 async function callProvider(p,messages,tools) {
-  const res=await fetch(`${p.baseUrl}/chat/completions`,{method:'POST',headers:{Authorization:`Bearer ${p.apiKey}`,'Content-Type':'application/json',...p.headers},body:JSON.stringify({model:p.model,messages,temperature:0.1,tools,tool_choice:'auto'})});
+  const res=await fetch(`${p.baseUrl}/chat/completions`,{method:'POST',headers:{Authorization:`Bearer ${p.apiKey}`,'Content-Type':'application/json',...p.headers},body:JSON.stringify({model:p.model,messages,temperature:0.1,tools,tool_choice:tools.length?'auto':'none'})});
   const raw=await res.text(); let body=null; try{body=JSON.parse(raw);}catch{}
   if(!res.ok){const e=new Error(`${res.status}: ${body?.error?.message||raw||res.statusText}`); e.retryable=res.status===429||res.status>=500; throw e;}
   const msg=body?.choices?.[0]?.message; if(!msg)throw new Error('Provider response missing choices[0].message.'); return msg;
