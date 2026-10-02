@@ -1,4 +1,5 @@
 import { URL } from 'node:url';
+import { rankEmployerCandidates } from '../services/employer_candidate_matching.js';
 
 export async function handleList(ctx, req, res, parts, user) {
   // Only the fields this handler actually uses are pulled from ctx (was a
@@ -281,6 +282,72 @@ export async function handleCandidateRoutes(ctx, req, res, parts, job) {
     await sendJson(res, 201, { id: created.id, status: created.status });
     return true;
   }
+  if (req.method === 'GET' && parts[2] === 'candidate-matches') {
+    const me = await authUser(req);
+    if (job.ownerId !== me.id) throw new HttpError(403, 'FORBIDDEN', 'Only the job owner can view candidate matches');
+
+    let candidates;
+    if (process.env.DATABASE_URL) {
+      candidates = await repo.listCandidatesForEmployerMatching(job.id);
+    } else {
+      const kind = String(job.kind || (job.jobType === 'FIXED' ? 'MISSION' : 'JOB')).toUpperCase();
+      if (kind === 'MISSION') {
+        candidates = legacyJobs.listOffers(job.id).map((offer) => ({
+          userId: offer.providerId,
+          displayName: offer.provider?.displayName || '',
+          profile: null,
+          offer,
+          completedJobs: [],
+          applicationHistory: [],
+        }));
+      } else {
+        candidates = legacyJobs.selectedCandidates(job.id).map((application) => ({
+          userId: application.candidateId,
+          displayName: application.displayName || '',
+          profile: null,
+          application,
+          completedJobs: [],
+          applicationHistory: [],
+        }));
+      }
+    }
+
+    const ranked = rankEmployerCandidates(job, candidates);
+    return sendJson(res, 200, {
+      jobId: job.id,
+      kind: String(job.kind || (job.jobType === 'FIXED' ? 'MISSION' : 'JOB')).toUpperCase(),
+      candidateCount: ranked.length,
+      candidates: ranked.map((candidate) => ({
+        rank: candidate.rank,
+        userId: candidate.userId,
+        displayName: candidate.displayName || '',
+        score: candidate.score,
+        matchReasons: candidate.matchReasons,
+        matchComponents: candidate.matchComponents,
+        application: candidate.application
+          ? {
+              id: candidate.application.id,
+              status: candidate.application.status,
+              resumeHighlights: String(candidate.application.resumeText || '').slice(0, 600),
+              skills: String(candidate.application.skills || '').slice(0, 800),
+              createdAt: candidate.application.createdAt,
+              updatedAt: candidate.application.updatedAt,
+            }
+          : null,
+        offer: candidate.offer
+          ? {
+              id: candidate.offer.id,
+              status: candidate.offer.status,
+              price: String(candidate.offer.price ?? '0'),
+              message: String(candidate.offer.message || '').slice(0, 800),
+              createdAt: candidate.offer.createdAt,
+              updatedAt: candidate.offer.updatedAt,
+            }
+          : null,
+      })),
+    });
+  }
+
   if (req.method === 'GET' && parts[2] === 'candidates') {
     const me = await authUser(req);
     if (job.ownerId !== me.id) throw new HttpError(403, 'FORBIDDEN', 'Only the job owner can view forwarded candidates');
