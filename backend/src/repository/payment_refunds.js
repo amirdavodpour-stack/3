@@ -6,7 +6,12 @@ import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 
-export function refundablePaymentStateAllowed(status, allowPendingRelease = false) {\n  const allowed = allowPendingRelease ? ['HELD','RELEASE_PENDING','RELEASE_FAILED'] : ['HELD'];\n  return allowed.includes(String(status || '').toUpperCase());\n}\n\nexport async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idempotencyKey,createdAt,allowPendingRelease=false}) {
+export function refundablePaymentStateAllowed(status, allowPendingRelease = false) {
+  const allowed = allowPendingRelease ? ['HELD','RELEASE_PENDING','RELEASE_FAILED'] : ['HELD'];
+  return allowed.includes(String(status || '').toUpperCase());
+}
+
+export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idempotencyKey,createdAt,allowPendingRelease=false}) {
   return withSqlTransaction(async(client)=>{
     if (idempotencyKey) {
       await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 918273645))`, [`refund:${paymentId}:${idempotencyKey}`]);
