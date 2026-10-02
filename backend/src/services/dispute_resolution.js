@@ -1,4 +1,3 @@
-[Reading 84 lines from start (total: 84 lines, 0 remaining)]
 
 export const DISPUTE_DECISIONS = Object.freeze(['RELEASE','REFUND','HOLD']);
 export const LEGAL_RULESET_VERSION = 'IR-2026-10-02-v1';
@@ -84,5 +83,3 @@ export async function analyzeDisputeWithAI({ askAI, context }) {
   const raw = await askAI(buildDisputeDecisionPrompt(context));
   return parseDisputeDecision(raw);
 }
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]
