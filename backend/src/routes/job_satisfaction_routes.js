@@ -17,12 +17,21 @@ export function createJobSatisfactionRoutes({
     const gate = evaluateSettlementGate({ jobStatus: job.status, paymentStatus: payment?.status, feedback });
     if (!gate.ready || !payment) return { gate, payment: payment || null, autoReleased:false };
 
-    const event = await paymentUseCases.release({
-      jobId: job.id,
-      ownerId: job.ownerId,
-      paymentId: payment.id,
-      dedupeKey: `PAYMENT_RELEASE:AUTO_SATISFACTION:${payment.id}`,
-    });
+    let event;
+    try {
+      event = await paymentUseCases.release({
+        jobId: job.id,
+        ownerId: job.ownerId,
+        paymentId: payment.id,
+        dedupeKey: `PAYMENT_RELEASE:AUTO_SATISFACTION:${payment.id}`,
+      });
+    } catch (error) {
+      if (error?.code === 'INVALID_PAYMENT_STATE') {
+        const current = await paymentUseCases.findByJob(job.id);
+        if (current?.status === 'RELEASED') return { gate, payment: current, autoReleased: true };
+      }
+      throw error;
+    }
     let autoReleased = false;
     try {
       const result = await processPaymentReleaseNow(event?.id);
@@ -49,6 +58,7 @@ export function createJobSatisfactionRoutes({
     if (parts.length < 2 || parts[0] !== 'jobs') throw new HttpError(404, 'NOT_FOUND', 'Satisfaction route not found');
     const me = await authUser(req);
     if (parts.length === 2 && parts[0] === 'jobs' && parts[1] === 'satisfaction-history') {
+      if (req.method !== 'GET') throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
       const history = await repo.listUserSatisfactionHistory(me.id);
       return sendJson(res, 200, { history });
     }
@@ -73,7 +83,28 @@ export function createJobSatisfactionRoutes({
     if (req.method === 'POST' && parts.length === 3 && parts[2] === 'satisfaction') {
       if (job.status !== 'COMPLETED') throw new HttpError(409, 'JOB_NOT_COMPLETED', 'Satisfaction starts after job completion');
       const existing = await repo.getJobSatisfactionFeedbackForUser(job.id, me.id);
-      if (existing && existing.status !== 'ANALYSIS_FAILED') throw new HttpError(409, 'FEEDBACK_ALREADY_SUBMITTED', 'Feedback already submitted');
+      if (existing?.status === 'ANALYSIS_FAILED') {
+        assertAutomatedAiAccess({ route: 'job-satisfaction-retry', source: 'SYSTEM' });
+        let analysis;
+        try {
+          const raw = await askAI(buildSatisfactionAnalysisPrompt({
+            role,
+            answers: {
+              overallRating: existing.overallRating,
+              completedAsAgreed: existing.completedAsAgreed,
+              communicationRating: existing.communicationRating,
+              report: existing.reportText,
+            },
+          }));
+          analysis = parseSatisfactionAnalysis(raw);
+        } catch (_) {
+          return sendJson(res, 202, { retrying: true, settlement: { ready: false, reason: 'AI_ANALYSIS_UNAVAILABLE', autoReleased: false } });
+        }
+        const feedback = await repo.updateJobSatisfactionAnalysis(existing.id, analysis);
+        const settlement = await settleIfReady(me, job);
+        return sendJson(res, 200, { feedback, settlement: { ready: settlement.gate.ready, reason: settlement.gate.reason, autoReleased: settlement.autoReleased } });
+      }
+      if (existing) throw new HttpError(409, 'FEEDBACK_ALREADY_SUBMITTED', 'Feedback already submitted');
 
       const body = await readBody(req);
       const overallRating = Number(body?.overallRating);
@@ -111,30 +142,6 @@ export function createJobSatisfactionRoutes({
           autoReleased: settlement.autoReleased,
         },
       });
-    }
-
-    if (req.method === 'POST' && parts.length === 3 && parts[2] === 'satisfaction' && (await repo.getJobSatisfactionFeedbackForUser(job.id, me.id))?.status === 'ANALYSIS_FAILED') {
-      if (job.status !== 'COMPLETED') throw new HttpError(409, 'JOB_NOT_COMPLETED', 'Satisfaction starts after job completion');
-      const previous = await repo.getJobSatisfactionFeedbackForUser(job.id, me.id);
-      assertAutomatedAiAccess({ route: 'job-satisfaction-retry', source: 'SYSTEM' });
-      let analysis;
-      try {
-        const raw = await askAI(buildSatisfactionAnalysisPrompt({
-          role,
-          answers: {
-            overallRating: previous.overallRating,
-            completedAsAgreed: previous.completedAsAgreed,
-            communicationRating: previous.communicationRating,
-            report: previous.reportText,
-          },
-        }));
-        analysis = parseSatisfactionAnalysis(raw);
-      } catch (_) {
-        return sendJson(res, 202, { retrying: true, settlement: { ready: false, reason: 'AI_ANALYSIS_UNAVAILABLE', autoReleased: false } });
-      }
-      const feedback = await repo.updateJobSatisfactionAnalysis(previous.id, analysis);
-      const settlement = await settleIfReady(me, job);
-      return sendJson(res, 200, { feedback, settlement: { ready: settlement.gate.ready, reason: settlement.gate.reason, autoReleased: settlement.autoReleased } });
     }
 
     throw new HttpError(404, 'NOT_FOUND', 'Satisfaction route not found');
