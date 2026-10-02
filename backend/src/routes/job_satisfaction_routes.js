@@ -1,5 +1,4 @@
 import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_access_policy.js';
-import { analyzeDisputeWithAI } from '../services/dispute_resolution.js';
 import { buildSatisfactionAnalysisPrompt, evaluateSettlementGate, SATISFACTION_QUESTIONS, parseSatisfactionAnalysis } from '../services/job_satisfaction.js';
 import { analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
 
@@ -13,36 +12,6 @@ export function createJobSatisfactionRoutes({
     return null;
   };
 
-  async function openConflictDispute(job, payment, feedback, openedBy) {
-    if (feedback.length !== 2) return null;
-    const gate = evaluateSettlementGate({ jobStatus: job.status, paymentStatus: payment?.status, feedback });
-    if (gate.ready) return null;
-    const existing = await repo.getJobDispute(job.id);
-    if (existing) return existing;
-    assertAutomatedAiAccess({ route: 'dispute-adjudication', source: 'SYSTEM' });
-    assertSystemAiTask({ task: 'DISPUTE_ADJUDICATION' });
-    let analysis;
-    try {
-      analysis = await analyzeDisputeWithAI({ askAI, context: { job, payment, feedback } });
-    } catch (_) {
-      analysis = parseDisputeDecision(null);
-    }
-    const dispute = await repo.createJobDispute({
-      jobId: job.id,
-      openedBy,
-      triggerType: 'SATISFACTION_CONFLICT',
-      aiReport: analysis,
-      legalRulesetVersion: analysis.rulesetVersion,
-    });
-    const updated = await repo.updateJobDisputeAnalysis(dispute.id, analysis);
-    await createAudit('JOB_DISPUTE_AUTO_OPENED', openedBy, 'job_dispute', dispute.id, {
-      jobId: job.id,
-      triggerType: 'SATISFACTION_CONFLICT',
-      aiDecision: analysis.decision,
-      aiConfidence: analysis.confidence,
-    });
-    return updated || dispute;
-  }
 
   async function settleIfReady(me, job) {
     const payment = await paymentUseCases.findByJob(job.id);
@@ -57,6 +26,7 @@ export function createJobSatisfactionRoutes({
         if (conflict.status !== 'RESOLVED') {
           try {
             assertAutomatedAiAccess({ route: 'dispute-adjudication', source: 'SYSTEM' });
+            assertSystemAiTask({ task: 'DISPUTE_ADJUDICATION' });
             const context = await repo.getJobDisputeContext(job.id);
             const analysis = await analyzeDisputeWithAI({ askAI, context });
             const analyzed = await repo.updateJobDisputeAnalysis(conflict.id, analysis);
