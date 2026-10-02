@@ -1578,8 +1578,6 @@ class _EmployerCandidateMatchesLoader extends StatelessWidget {
   });
 
   final Future<HopeEmployerCandidateMatchList> future;
-  final String jobTitle;
-
   @override
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
