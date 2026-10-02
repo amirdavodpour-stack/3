@@ -25,9 +25,13 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _load() async {
     try {
       final items=await _repository.listConversations();
-      final c=widget.adminRoom
-          ? items.where((x)=>x.kind.toUpperCase()=='ADMIN').firstOrNull
-          : items.where((x)=>x.kind.toUpperCase()=='JOB' && x.jobId==widget.jobId).firstOrNull;
+      HopeChatConversation? c;
+      for (final item in items) {
+        final matches = widget.adminRoom
+            ? item.kind.toUpperCase() == 'ADMIN'
+            : item.kind.toUpperCase() == 'JOB' && item.jobId == widget.jobId;
+        if (matches) { c = item; break; }
+      }
       if(c==null) throw StateError('Conversation is not available');
       final thread=await _repository.getMessages(c.id);
       if(mounted)setState(()=>_thread=thread);
