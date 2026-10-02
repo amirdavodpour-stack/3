@@ -16,7 +16,6 @@ import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import 'employer_candidate_matches_page.dart';
 import '../../core/ui/copy.dart';
-import '../../core/jobs/job_satisfaction_repository.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
