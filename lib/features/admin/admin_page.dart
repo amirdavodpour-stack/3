@@ -187,6 +187,16 @@ class _AdminPageState extends State<AdminPage>
                         : 'باز کردن مرکز عملیات',
                   ),
                 ),
+                const SizedBox(height: 8),
+                FilledButton.tonalIcon(
+                  onPressed: () => Navigator.push(context, HopeRoutes.adminDisputes()),
+                  icon: const Icon(Icons.gavel_outlined, size: 20),
+                  label: Text(
+                    Localizations.localeOf(context).languageCode == 'en'
+                        ? 'Open Dispute Adjudication'
+                        : 'باز کردن مرکز اختلاف و ارزیابی',
+                  ),
+                ),
                 const SizedBox(height: 18),
                 TabBar(controller: _tabs, isScrollable: true, tabs: [
                   Tab(text: HopeCopy.of(context).copy_opportunities_015066e),
