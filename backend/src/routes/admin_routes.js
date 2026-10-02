@@ -1,6 +1,27 @@
-export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown }) {
+import { verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
+
+export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo }) {
   return async function adminRoutes(req,res,parts){
     const me=requireAdmin(await authUser(req));
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
+      const body=await readBody(req);
+      verifyAdminPanelCredentials({ user: me, name: body?.name, username: body?.username, expectedUsername: config.adminPanelUsername });
+      if (process.env.DATABASE_URL) await repo.setAdminPanelVerified(me.id);
+      await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes});
+      return sendJson(res,200,{verified:true,expiresInMinutes:config.adminPanelVerificationMinutes});
+    }
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {
+      if (process.env.DATABASE_URL) await repo.clearAdminPanelVerification(me.id);
+      await createAudit('ADMIN_PANEL_LOCK',me.id,'admin',me.id);
+      return sendJson(res,200,{verified:false});
+    }
+    if (process.env.DATABASE_URL) {
+      const verified=await repo.isAdminPanelVerified(me.id,config.adminPanelVerificationMinutes);
+      if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+    } else {
+      const error=new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+      throw error;
+    }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='finance' && parts.length===3 && parts[2]==='summary'){
       if(process.env.DATABASE_URL){ return sendJson(res,200,await paymentUseCases.adminFinancialSummary()); }
             return sendJson(res,200,{...legacyAdmin.financialSummary(),currency:config.paymentCurrency});
