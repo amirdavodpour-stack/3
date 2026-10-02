@@ -51,7 +51,9 @@ import { createStorageLegacyAdapter } from './application/legacy/storage_legacy.
 import { createAppLegacyAdapter } from './application/legacy/app_legacy.js';
 import { verifyGoogleIdToken } from './google_auth.js';
 import { createAiRoutes } from './routes/ai_routes.js';
+import { createRecommendationProfileRoutes } from './routes/recommendation_profile_routes.js';
 import { askAI } from './services/ai.js';
+import { enrichRecommendationProfile, buildRecommendationInterviewPrompt, parseInterviewResponse } from './services/recommendation_profile.js';
 
 await initDatabase();
 await seedBaseData();
@@ -133,6 +135,17 @@ const accountRoutes = createAccountRoutes({
 
 const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, readBody, sendJson, HttpError, config, walletRepo: repo });
 const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
+const recommendationProfileRoutes = createRecommendationProfileRoutes({
+  authUser,
+  readBody,
+  sendJson,
+  HttpError,
+  repo,
+  enrichRecommendationProfile,
+  buildRecommendationInterviewPrompt,
+  parseInterviewResponse,
+  askAI,
+});
 
 
 const {
@@ -247,6 +260,7 @@ export async function handle(req, res) {
       return sendJson(res, ready ? 200 : 503, { ready, service: 'hope-api', database, time: now() });
     }
     if (parts[0] === 'chat') return await aiRoutes(req, res, parts);
+    if (parts[0] === 'recommendation-profile') return await recommendationProfileRoutes(req, res, parts);
     if (parts[0] === 'auth') return await authRoutes(req, res, parts);
     if (parts[0] === 'account') return await accountRoutes(req, res, parts.slice(1));
     if (parts[0] === 'wallet') return await walletRoutes(req, res, parts);
@@ -329,8 +343,32 @@ async function recommendedJobs(req, res) {
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new HttpError(400, 'INVALID_COORDINATE', 'coordinates are out of range');
   }
   let applications = [];
-  if (user) applications = process.env.DATABASE_URL ? await repo.listCandidateApplications(user.id) : appLegacy.findApplicationsByCandidate(user.id).map(a => { const j=appLegacy.findJobById(a.jobId); return {...a,jobCity:j?.city||null,jobKind:j?.kind||'JOB',categoryId:j?.categoryId||null,monthlySalary:j?.monthlySalary||null}; });
-  const profile = buildCandidateProfile(applications);
+  let preferenceProfile = null;
+  let savedSearches = [];
+  let recommendationEvents = [];
+  let completedJobs = [];
+  if (user) {
+    if (process.env.DATABASE_URL) {
+      [applications, preferenceProfile, savedSearches, recommendationEvents, completedJobs] = await Promise.all([
+        repo.listCandidateApplications(user.id),
+        repo.getRecommendationProfile(user.id),
+        repo.listSavedSearches(user.id),
+        repo.listRecommendationEvents(user.id),
+        repo.listProviderWorkHistory(user.id),
+      ]);
+    } else {
+      applications = appLegacy.findApplicationsByCandidate(user.id).map(a => {
+        const j=appLegacy.findJobById(a.jobId);
+        return {...a,jobCity:j?.city||null,jobKind:j?.kind||'JOB',categoryId:j?.categoryId||null,monthlySalary:j?.monthlySalary||null};
+      });
+    }
+  }
+  const profile = buildCandidateProfile(applications, {
+    profile: preferenceProfile || {},
+    savedSearches,
+    events: recommendationEvents,
+    completedJobs,
+  });
   const rows = process.env.DATABASE_URL
     ? await repo.listJobViews({status:'PUBLISHED', kind, categoryId, city:null, visibility, search})
     : appLegacy.jobs().filter(j =>
