@@ -53,6 +53,25 @@ export async function listUserSatisfactionHistory(userId, limit = 50) {
   return rows.map((row) => ({ ...feedbackFromRow(row), jobTitle: row.job_title || '' }));
 }
 
+export async function updateJobSatisfactionAnalysis(feedbackId, analysis, status = 'ANALYZED') {
+  const { rows } = await requirePool().query(
+    `UPDATE job_satisfaction_feedback
+        SET ai_summary=$2,ai_satisfaction_score=$3,ai_sentiment=$4,ai_tags=$5::jsonb,ai_risk_flags=$6::jsonb,status=$7,updated_at=NOW()
+      WHERE id=$1
+      RETURNING *`,
+    [
+      feedbackId,
+      analysis.summary,
+      analysis.satisfactionScore,
+      analysis.sentiment,
+      JSON.stringify(analysis.tags),
+      JSON.stringify(analysis.riskFlags),
+      status,
+    ],
+  );
+  return feedbackFromRow(rows[0]);
+}
+
 export async function insertJobSatisfactionFeedback({
   jobId, userId, role, overallRating, completedAsAgreed, communicationRating,
   reportText, analysis, status = 'ANALYZED',
