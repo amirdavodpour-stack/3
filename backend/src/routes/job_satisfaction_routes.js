@@ -1,5 +1,6 @@
 import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_access_policy.js';
 import { buildSatisfactionAnalysisPrompt, evaluateSettlementGate, SATISFACTION_QUESTIONS, parseSatisfactionAnalysis } from '../services/job_satisfaction.js';
+import { analyzeDisputeWithAI } from '../services/dispute_resolution.js';
 import { analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
 
 export function createJobSatisfactionRoutes({
@@ -12,6 +13,38 @@ export function createJobSatisfactionRoutes({
     return null;
   };
 
+
+  async function ensureDisputeIfNeeded(job, feedback) {
+    if (!Array.isArray(feedback) || feedback.length < 2) return null;
+    const conflict = feedback.some((item) => item.completedAsAgreed !== true || item.aiSentiment !== 'SATISFIED') ||
+      Number(feedback[0]?.overallRating) !== Number(feedback[1]?.overallRating) ||
+      Boolean(feedback[0]?.completedAsAgreed) !== Boolean(feedback[1]?.completedAsAgreed);
+    if (!conflict) return null;
+    const existing = await repo.getJobDispute(job.id);
+    const dispute = existing || await repo.createJobDispute({ jobId: job.id, triggerType: 'SATISFACTION_CONFLICT' });
+    if (dispute?.status === 'RESOLVED') return dispute;
+    const context = await repo.getJobDisputeContext(job.id);
+    assertAutomatedAiAccess({ route: 'dispute-resolution', source: 'SYSTEM' });
+    try {
+      const analysis = await analyzeDisputeWithAI({ askAI, context });
+      const stored = await repo.updateJobDisputeAnalysis(dispute.id, analysis);
+      await createAudit('AI_DISPUTE_ANALYSIS', null, 'job_dispute', dispute.id, {
+        jobId: job.id,
+        decision: analysis.decision,
+        confidence: analysis.confidence,
+        manualReview: analysis.manualReview,
+        rulesetVersion: analysis.rulesetVersion,
+      });
+      return stored;
+    } catch (error) {
+      await repo.markJobDisputeAdminReview(dispute.id);
+      await createAudit('AI_DISPUTE_ANALYSIS_FAILED', null, 'job_dispute', dispute.id, {
+        jobId: job.id,
+        code: error?.code || 'AI_ANALYSIS_FAILED',
+      });
+      return repo.getJobDispute(job.id);
+    }
+  }
 
   async function settleIfReady(me, job) {
     const payment = await paymentUseCases.findByJob(job.id);
@@ -173,6 +206,7 @@ export function createJobSatisfactionRoutes({
           ready: settlement.gate.ready,
           reason: settlement.gate.reason,
           autoReleased: settlement.autoReleased,
+          dispute: settlement.dispute || null,
         },
       });
     }
