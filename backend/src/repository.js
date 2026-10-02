@@ -13,6 +13,7 @@ export * from './repository/trust.js';
 export * from './repository/privacy.js';
 
 export * from './repository/saved_searches.js';
+export * from './repository/recommendation_profiles.js';
 export * from './repository/wallet.js';
 
 export * from './repository/payouts.js';
