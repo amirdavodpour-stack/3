@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { assertAutomatedAiAccess } from '../application/ai_access_policy.js';
 import { DISPUTE_DECISIONS, analyzeDisputeWithAI } from '../services/dispute_resolution.js';
 
@@ -33,7 +34,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
         if (payment.status === 'REFUNDED') return { paymentStatus:'REFUNDED', outbox:null, alreadyDone:true };
         throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be refunded from its current state');
       }
-      const created = await paymentUseCases.refund({ jobId:job.id, paymentId:payment.id, ownerId:job.ownerId, amount:payment.amount, id:`${dispute.id}-refund`, idempotencyKey:`DISPUTE_REFUND:${dispute.id}`, createdAt:now(), allowPendingRelease:true });
+      const created = await paymentUseCases.refund({ jobId:job.id, paymentId:payment.id, ownerId:job.ownerId, amount:payment.amount, id:crypto.randomUUID(), idempotencyKey:`DISPUTE_REFUND:${dispute.id}`, createdAt:now(), allowPendingRelease:true });
       try { await processPaymentRefundNow(); } catch (_) {}
       const refreshed = await paymentUseCases.findByJob(job.id);
       if (refreshed?.status !== 'REFUNDED') throw new HttpError(202,'PAYMENT_REFUND_PENDING','Refund is queued for processing');
@@ -45,6 +46,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
   return async function route(req,res,parts) {
     if (parts[0] === 'admin') {
       const me = requireAdmin(await authUser(req));
+      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, 15))) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       if (parts.length === 2 && parts[1] === 'disputes' && req.method === 'GET') return sendJson(res,200,await repo.listAdminDisputes());
       if (parts.length === 3 && parts[1] === 'disputes' && req.method === 'GET') {
         const dispute = await repo.getAdminDispute(parts[2]); if (!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found'); return sendJson(res,200,dispute);
