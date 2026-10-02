@@ -10,9 +10,11 @@ import 'job_detail_controller.dart';
 import '../../core/transactions/transaction_repository.dart';
 import '../../core/uploads/upload_queue.dart';
 import '../../core/network/api_error_presenter.dart';
+import '../../core/marketplace/employer_candidate_matching_repository.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import 'employer_candidate_matches_page.dart';
 import '../../core/ui/copy.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -790,6 +792,24 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   const SizedBox(height: 13),
                   _JobLifecycleCard(job: j),
                   const SizedBox(height: 13),
+                  if (context.read<AuthController?>()?.user?['id'] == (j.ownerId ?? '') &&
+                      context.read<EmployerCandidateMatchingRepository?>() != null)
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openEmployerCandidateMatches(context, j),
+                        icon: const HugeIcon(icon: HopeV2Icons.match, size: 18),
+                        label: Text(
+                          _t(
+                            'پذیرندگان بر اساس انطباق',
+                            'Applicants by compatibility',
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (context.read<AuthController?>()?.user?['id'] == (j.ownerId ?? '') &&
+                      context.read<EmployerCandidateMatchingRepository?>() != null)
+                    const SizedBox(height: 6),
                   if (isJob &&
                       context.read<AuthController?>()?.user?['id'] ==
                           (j.ownerId ?? ''))
@@ -1545,6 +1565,52 @@ class _MatchIntelligence extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+class _EmployerCandidateMatchesLoader extends StatelessWidget {
+  const _EmployerCandidateMatchesLoader({
+    required this.future,
+    required this.jobTitle,
+  });
+
+  final Future<HopeEmployerCandidateMatchList> future;
+  final String jobTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final english = Localizations.localeOf(context).languageCode == 'en';
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          english
+              ? 'Applicants by compatibility'
+              : 'پذیرندگان بر اساس انطباق',
+        ),
+      ),
+      body: FutureBuilder<HopeEmployerCandidateMatchList>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError || snapshot.data == null) {
+            return Center(
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const HugeIcon(icon: HopeV2Icons.arrowLeft, size: 18),
+                label: Text(english ? 'Back' : 'بازگشت'),
+              ),
+            );
+          }
+          return EmployerCandidateMatchesPage(
+            data: snapshot.data!,
+            onRetry: () {},
+          );
+        },
       ),
     );
   }
