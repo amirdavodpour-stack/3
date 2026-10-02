@@ -19,17 +19,15 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
 
   @override void initState() { super.initState(); _load(); }
   String _t(String fa, String en) => Localizations.localeOf(context).languageCode == 'en' ? en : fa;
-  void _load() async {
-    try {
-      final access = await context.read<AdminRepository>().getPanelAccess();
+  void _load() {
+    final repository = context.read<AdminRepository>();
+    _future = repository.listDisputes();
+    repository.getPanelAccess().then((access) {
       if (!mounted) return;
       _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
-      _future = context.read<AdminRepository>().listDisputes();
       setState(() {});
-    } catch (_) {
-      _future = Future<List<Map<String,dynamic>>>.error(Object());
-      if (mounted) setState(() {});
-    }
+    }).catchError((_) {});
+    if (mounted) setState(() {});
   }
 
   Future<void> _open(Map<String,dynamic> row) async {

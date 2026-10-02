@@ -58,6 +58,11 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     _analytics = r.getAnalyticsSummary(days: _days);
     _funnel = r.getFunnel(days: _days);
     _crashes = r.getCrashSummary(days: _days);
+    r.getPanelAccess().then((access) {
+      if (!mounted) return;
+      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
+      setState(() {});
+    }).catchError((_) {});
     if (mounted) setState(() {});
   }
 
