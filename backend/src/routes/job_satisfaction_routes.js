@@ -133,6 +133,14 @@ export function createJobSatisfactionRoutes({
         jobId: job.id, userId: me.id, role, overallRating, completedAsAgreed, communicationRating,
         reportText, analysis, status,
       });
+      await createAudit('JOB_SATISFACTION_SUBMIT', me.id, 'job', job.id, {
+        role,
+        overallRating,
+        completedAsAgreed,
+        communicationRating,
+        aiSatisfactionScore: analysis.satisfactionScore,
+        aiSentiment: analysis.sentiment,
+      });
       const settlement = await settleIfReady(me, job);
       return sendJson(res, 200, {
         feedback,
