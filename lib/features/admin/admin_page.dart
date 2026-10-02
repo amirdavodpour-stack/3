@@ -187,6 +187,15 @@ class _AdminPageState extends State<AdminPage>
             actions: [
               IconButton(
                 tooltip: Localizations.localeOf(context).languageCode == 'en'
+                    ? 'Admin chat'
+                    : 'گفتگوی مدیران',
+                onPressed: _actionBusy
+                    ? null
+                    : () => Navigator.push(context, HopeRoutes.adminChat()),
+                icon: const Icon(Icons.forum_outlined),
+              ),
+              IconButton(
+                tooltip: Localizations.localeOf(context).languageCode == 'en'
                     ? 'Lock admin panel'
                     : 'قفل پنل مدیریت',
                 onPressed: _actionBusy
