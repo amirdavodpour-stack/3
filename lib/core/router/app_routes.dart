@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'auth_return_intent.dart';
 
 import '../../features/about/about_page.dart';
+import '../../features/chat/chat_page.dart';
 import '../../features/admin/admin_page.dart';
 import '../../features/admin/admin_operations_page.dart';
 import '../../features/auth/login_page.dart';
@@ -53,6 +54,7 @@ abstract final class HopeRoutes {
   static Route<void> admin() => _page(const AdminPage());
   static Route<void> adminOperations() => _page(const AdminOperationsPage());
   static Route<void> about() => _page(const AboutHopePage());
+  static Route<void> chat() => _page(const ChatPage());
   static Route<WalletPage> wallet({required WalletRepository repository}) =>
       _page(WalletPage(repository: repository));
   static Route<void> createJob() => _page(const CreateJobPage());
