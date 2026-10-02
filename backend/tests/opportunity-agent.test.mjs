@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildOpportunityAgentState } from '../src/services/opportunity_agent.js';
+import { buildOpportunityAgentState, parseOpportunityAgentState } from '../src/services/opportunity_agent.js';
 
 test('agent prioritizes profile completion before opportunity actions', () => {
   const state = buildOpportunityAgentState({
@@ -119,10 +119,6 @@ test('agent does not recommend applying to an already submitted or withdrawn opp
   assert.deepEqual(state.actions.map((item) => item.type), []);
 });
 
-import test from 'node:test';
-import assert from 'node:assert/strict';
-
-import { parseOpportunityAgentState } from '../src/services/opportunity_agent.js';
 
 test('opportunity agent state keeps approval policy explicit', () => {
   const result = parseOpportunityAgentState({
