@@ -74,7 +74,7 @@ function provider(name, env = process.env) {
   const baseUrl = String(env.LLM_AGENT_BASE_URL || preset?.baseUrl || '').replace(/\/+$/, '');
   const apiKey = String(env.LLM_AGENT_API_KEY || (preset ? env[preset.keyEnv] : '') || '').trim();
   const modelEnv = `LLM_AGENT_MODEL_${key.replace(/[^a-z0-9]+/g, '_').toUpperCase()}`;
-  const model = String(env[modelEnv] || (key === String(env.LLM_AGENT_PROVIDER || '').trim().toLowerCase() ? env.LLM_AGENT_MODEL : '') || preset?.model || '').trim();
+  const model = String(env[modelEnv] || (key === String(env.LLM_AGENT_PROVIDER || '').trim().toLowerCase() || key === 'custom' ? env.LLM_AGENT_MODEL : '') || preset?.model || '').trim();
   if (!baseUrl || !apiKey || !model) {
     const e = new Error(`Provider ${name} is missing endpoint, API key, or model.`);
     e.configuration = true;
