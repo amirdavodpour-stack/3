@@ -57,6 +57,7 @@ class JobSatisfactionState {
     required this.feedback,
     required this.submittedCount,
     required this.requiredCount,
+    required this.dispute,
   });
 
   final String jobId;
@@ -66,6 +67,7 @@ class JobSatisfactionState {
   final HopeJobSatisfaction? feedback;
   final int submittedCount;
   final int requiredCount;
+  final Map<String, dynamic>? dispute;
 
   factory JobSatisfactionState.fromMap(Map<String, dynamic> map) {
     final rawQuestions = map['questions'];
@@ -88,6 +90,9 @@ class JobSatisfactionState {
       requiredCount: progress is Map
           ? int.tryParse('${progress['requiredCount'] ?? 2}') ?? 2
           : 2,
+      dispute: map['dispute'] is Map
+          ? Map<String, dynamic>.from(map['dispute'] as Map)
+          : null,
     );
   }
 }
