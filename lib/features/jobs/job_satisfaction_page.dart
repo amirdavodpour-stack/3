@@ -126,6 +126,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
             final state = snapshot.data!;
             if (state.submitted && state.feedback != null) {
               final feedback = state.feedback!;
+              final dispute = state.dispute;
               return ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
@@ -167,6 +168,30 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                       ],
                     ),
                   ),
+                  if (dispute != null) ...[
+                    const SizedBox(height: 12),
+                    PremiumPanel(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _t('پرونده اختلاف ایجاد شد', 'Dispute case opened'),
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(_t(
+                            'به دلیل اختلاف در گزارش‌های دو طرف، پرداخت تا تعیین تکلیف متوقف می‌ماند. ارزیابی AI داخلی به همراه مبنای حقوقی برای ادمین ارسال شده است.',
+                            'Because the two reports conflict, payment remains on hold until it is resolved. The internal AI assessment and legal basis have been sent to the administrator.',
+                          )),
+                          if ('${dispute['aiDecision'] ?? ''}'.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(_t('تصمیم پیشنهادی AI: ', 'AI suggested action: ') + '${dispute['aiDecision'] ?? 'HOLD'}'),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               );
             }
