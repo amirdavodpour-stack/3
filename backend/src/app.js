@@ -14,7 +14,7 @@ import { calculatePaymentBreakdown, fundingJournal, releaseJournal, payoutJourna
 import { notifyUser, NOTIFICATION_TYPES } from './notifications.js';
 import { recordAnalyticsEvent, recordCrash, localProductFunnelSummary } from './analytics.js';
 import { getProductFunnelSummary } from './repository.js';
-import { buildCandidateProfile, scoreRecommendation } from './recommendation.js';
+import { buildCandidateProfile, scoreRecommendation, rerankWithAI } from './recommendation.js';
 import { JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, requireFields, stringField, textField, moneyField, tomanField, dateOnlyField, enumField, requireAdmin, readIdempotencyKey } from './policies/validation.js';
 import { createSessionService } from './services/session.js';
 import { sanitizeTelemetryProperties, anonymizedEmail, deletionCredential, buildDataExport } from './privacy.js';
@@ -350,8 +350,47 @@ async function recommendedJobs(req, res) {
     scored.push({...view, recommendationScore:match.score, distanceKm:match.distanceKm, recommendationReasons:match.reasons, recommendationComponents:match.componentScores});
   }
   scored.sort((a,b) => (b.recommendationScore-a.recommendationScore) || String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
-  if (user) await recordAnalyticsEvent({eventName:'recommendation_served',platform:'UNKNOWN',properties:{count:Math.min(50,scored.length), personalized:applications.length>0}}, user.id, `recommendation_served:${user.id}:${new Date().toISOString().slice(0,13)}`).catch(()=>{});
+
+  let aiReranked = false;
+  if (user && scored.length > 1) {
+    const aiRankings = await rerankWithAI({
+      askAI,
+      profile,
+      jobs: scored.slice(0, 20),
+    });
+    if (aiRankings && aiRankings.length > 0) {
+      const byId = new Map(aiRankings.map((item) => [item.id, item]));
+      for (const job of scored.slice(0, 20)) {
+        const ai = byId.get(job.id);
+        if (!ai) continue;
+        const baseScore = Number(job.recommendationScore) || 0;
+        job.recommendationScore = Number((baseScore * 0.55 + ai.score * 0.45).toFixed(2));
+        job.aiRecommendationScore = ai.score;
+        job.aiRecommendationConfidence = ai.confidence;
+        job.aiRecommendationReasons = ai.reasons;
+        job.recommendationSource = 'HYBRID_AI';
+      }
+      aiReranked = true;
+      scored.sort((a,b) =>
+        (b.recommendationScore-a.recommendationScore) ||
+        String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))
+      );
+    }
+  }
+
+  if (user) await recordAnalyticsEvent({
+    eventName:'recommendation_served',
+    platform:'UNKNOWN',
+    properties:{
+      count:Math.min(50,scored.length),
+      personalized:applications.length>0,
+      aiReranked,
+      aiCandidateCount:aiReranked ? Math.min(20,scored.length) : 0,
+    },
+  }, user.id, `recommendation_served:${user.id}:${new Date().toISOString().slice(0,13)}`).catch(()=>{});
   return sendJson(res, 200, scored.slice(0, 50));
 }
 
 export function createServer() { return http.createServer(handle); }
+
+[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]
