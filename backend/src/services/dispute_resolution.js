@@ -35,9 +35,12 @@ export function parseDisputeDecision(raw) {
       try { payload = start >= 0 && end > start ? JSON.parse(raw.slice(start, end + 1)) : null; } catch { payload = null; }
     }
   }
-  const decision = DISPUTE_DECISIONS.includes(String(payload?.decision || '').toUpperCase()) ? String(payload.decision).toUpperCase() : 'HOLD';
+  const rawDecision = String(payload?.decision || '').toUpperCase();
+  const decision = DISPUTE_DECISIONS.includes(rawDecision) ? rawDecision : 'HOLD';
   const confidenceRaw = Number(payload?.confidence);
-  const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(1, confidenceRaw)) : 0;
+  const confidence = decision === 'HOLD' && rawDecision !== 'HOLD'
+    ? 0
+    : (Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(1, confidenceRaw)) : 0);
   const manualReview = decision === 'HOLD' || confidence < 0.8 || !payload || !Array.isArray(payload?.legalBasis) || payload.legalBasis.length === 0;
   return {
     rulesetVersion: LEGAL_RULESET_VERSION, decision, confidence: Number(confidence.toFixed(3)), manualReview,
