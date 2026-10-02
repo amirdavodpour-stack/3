@@ -65,7 +65,7 @@ export function buildOpportunityAgentState({
 
   const actions = [];
 
-  if (!profile.onboardingCompleted || completeness.score < 0.75) {
+  if (!profile.onboardingCompleted) {
     actions.push({
       type: 'COMPLETE_PROFILE',
       priority: 100,
