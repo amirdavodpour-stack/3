@@ -16,6 +16,7 @@ test('backend wires wallet insights, satisfaction flow and automatic release', (
   assert.match(financialRoutes, /wallet.*financial-insights|financial-insights.*wallet/);
   assert.match(satisfactionRoutes, /evaluateSettlementGate/);
   assert.match(satisfactionRoutes, /processPaymentReleaseNow/);
+  assert.match(satisfactionRoutes, /JOB_SATISFACTION_SUBMIT/);
   const jobHandlers = read('backend/src/routes/job_handlers.js');
   assert.match(jobHandlers, /SATISFACTION_REPORT/);
 });
