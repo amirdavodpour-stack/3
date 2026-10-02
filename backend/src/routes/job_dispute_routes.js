@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { assertAutomatedAiAccess } from '../application/ai_access_policy.js';
+import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_access_policy.js';
 import { DISPUTE_DECISIONS, analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
 
 export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit, notifyUser, NOTIFICATION_TYPES, now }) {
@@ -8,6 +8,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
   async function analyzeCase(dispute) {
     const context = await repo.getJobDisputeContext(dispute.jobId);
     assertAutomatedAiAccess({ route: 'dispute-adjudication', source: 'SYSTEM' });
+    assertSystemAiTask({ task: 'DISPUTE_ADJUDICATION' });
     let analysis;
     try {
       analysis = await analyzeDisputeWithAI({ askAI, context });
