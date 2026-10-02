@@ -18,7 +18,6 @@ import 'core/recommendation/recommendation_profile_repository.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/notifications/notification_repository.dart';
 import 'core/profile/profile_repository.dart';
-import 'core/recommendation/recommendation_profile_repository.dart';
 import 'core/uploads/upload_queue.dart';
 import 'core/theme/vazirmatn_loader.dart';
 import 'dart:ui';
