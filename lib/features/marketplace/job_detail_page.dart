@@ -16,6 +16,7 @@ import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import 'employer_candidate_matches_page.dart';
 import '../../core/ui/copy.dart';
+import '../../core/jobs/job_satisfaction_repository.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
@@ -1098,6 +1099,25 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   .copy_view_transaction_a91f1e6,
                             ),
                           ),
+                          if (j.status?.toUpperCase() == 'COMPLETED') ...[
+                            const SizedBox(height: 10),
+                            OutlinedButton.icon(
+                              onPressed: () => Navigator.push(
+                                context,
+                                HopeRoutes.jobSatisfaction(j.id),
+                              ),
+                              icon: const HopeIcon(
+                                HopeV2Icons.completed,
+                                size: 19,
+                              ),
+                              label: Text(
+                                _t(
+                                  'گزارش رضایت و تسویه خودکار',
+                                  'Satisfaction report & auto settlement',
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
