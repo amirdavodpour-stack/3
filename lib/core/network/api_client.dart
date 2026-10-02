@@ -194,7 +194,7 @@ class ApiClient {
     };
     if (auth) {
       final token = await store.accessToken;
-      if (token != null) headers['Authorization'] = 'Bearer $token';
+      if (token != null) requestHeaders['Authorization'] = 'Bearer $token';
     }
     final uri = Uri.parse('$baseUrl$path');
     final encoded = body == null ? null : jsonEncode(body);
@@ -208,7 +208,7 @@ class ApiClient {
         return http.put(uri, headers: requestHeaders, body: encoded).timeout(timeout);
       case 'PATCH':
         return http
-            .patch(uri, headers: headers, body: encoded)
+            .patch(uri, headers: requestHeaders, body: encoded)
             .timeout(timeout);
       case 'DELETE':
         return http.delete(uri, headers: requestHeaders).timeout(timeout);
