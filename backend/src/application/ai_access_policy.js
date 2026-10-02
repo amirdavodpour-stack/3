@@ -41,3 +41,13 @@ export function assertAssignedAiTaskAccess({ task, onboardingCompleted = false }
   }
   return true;
 }
+
+export function assertSystemAiTask({ task } = {}) {
+  if (!AUTOMATED_AI_TASKS.includes(String(task || ''))) {
+    const error = new Error('AI task is not allowlisted');
+    error.code = 'AI_TASK_NOT_ALLOWLISTED';
+    error.status = 403;
+    throw error;
+  }
+  return true;
+}
