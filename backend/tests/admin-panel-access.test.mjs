@@ -4,12 +4,13 @@ import { verifyAdminPanelCredentials } from '../src/application/admin_panel_acce
 
 test('admin panel credentials require ADMIN role and exact configured username/name', () => {
   const user = { id: 'admin-1', role: 'ADMIN', displayName: 'مدیر اصلی' };
-  assert.equal(verifyAdminPanelCredentials({ user, name: 'مدیر اصلی', username: 'hope-admin', expectedUsername: 'hope-admin' }), true);
-  assert.throws(() => verifyAdminPanelCredentials({ user, name: 'مدیر دیگر', username: 'hope-admin', expectedUsername: 'hope-admin' }), /ADMIN_PANEL_CREDENTIALS_INVALID/);
-  assert.throws(() => verifyAdminPanelCredentials({ user: { ...user, role: 'USER' }, name: 'مدیر اصلی', username: 'hope-admin', expectedUsername: 'hope-admin' }), /ADMIN_PANEL_CREDENTIALS_INVALID/);
+  assert.equal(verifyAdminPanelCredentials({ user: { ...user, email: 'admin@hope.local' }, name: 'مدیر اصلی', username: 'hope-admin', expectedUsername: 'hope-admin', expectedEmail: 'admin@hope.local' }), true);
+  assert.throws(() => verifyAdminPanelCredentials({ user: { ...user, email: 'admin@hope.local' }, name: 'مدیر دیگر', username: 'hope-admin', expectedUsername: 'hope-admin', expectedEmail: 'admin@hope.local' }), /ADMIN_PANEL_CREDENTIALS_INVALID/);
+  assert.throws(() => verifyAdminPanelCredentials({ user: { ...user, role: 'USER', email: 'admin@hope.local' }, name: 'مدیر اصلی', username: 'hope-admin', expectedUsername: 'hope-admin', expectedEmail: 'admin@hope.local' }), /ADMIN_PANEL_CREDENTIALS_INVALID/);
+  assert.throws(() => verifyAdminPanelCredentials({ user: { ...user, email: 'other@hope.local' }, name: 'مدیر اصلی', username: 'hope-admin', expectedUsername: 'hope-admin', expectedEmail: 'admin@hope.local' }), /ADMIN_PANEL_CREDENTIALS_INVALID/);
 });
 
 test('blank or missing configured admin username never unlocks the panel', () => {
   const user = { id: 'admin-1', role: 'ADMIN', displayName: 'مدیر اصلی' };
-  assert.throws(() => verifyAdminPanelCredentials({ user, name: 'مدیر اصلی', username: 'hope-admin', expectedUsername: '' }), /ADMIN_PANEL_CREDENTIALS_INVALID/);
+  assert.throws(() => verifyAdminPanelCredentials({ user: { ...user, email: 'admin@hope.local' }, name: 'مدیر اصلی', username: 'hope-admin', expectedUsername: '', expectedEmail: 'admin@hope.local' }), /ADMIN_PANEL_CREDENTIALS_INVALID/);
 });
