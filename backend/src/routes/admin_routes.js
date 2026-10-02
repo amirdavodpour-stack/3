@@ -7,6 +7,12 @@ const legacyVerifiedAdmins = new Map();
 export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES }) {
   return async function adminRoutes(req,res,parts){
     const me=requireAdmin(await authUser(req));
+    if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
+      const verified = process.env.DATABASE_URL
+        ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes)
+        : (legacyVerifiedAdmins.get(me.id) || 0) > Date.now();
+      return sendJson(res,200,{verified:Boolean(verified),expiresInMinutes:config.adminPanelVerificationMinutes});
+    }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
       verifyAdminPanelCredentials({ user: me, name: body?.name, username: body?.username, expectedUsername: config.adminPanelUsername, expectedEmail: config.adminPanelAllowedEmail });
