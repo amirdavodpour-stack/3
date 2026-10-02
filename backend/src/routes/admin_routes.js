@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { assertPrimaryAdmin, isPrimaryAdmin, PRIMARY_ADMIN_EMAIL, verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
+import { assertPrimaryAdmin, isPrimaryAdmin, verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
 import { DISPUTE_DECISIONS } from '../services/dispute_resolution.js';
 
 const legacyVerifiedAdmins = new Map();
@@ -15,7 +15,7 @@ export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, 
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
-      verifyAdminPanelCredentials({ user: me, name: body?.name, username: body?.username, expectedUsername: config.adminPanelUsername, expectedEmail: PRIMARY_ADMIN_EMAIL });
+      verifyAdminPanelCredentials({ user: me, name: body?.name, username: body?.username, expectedUsername: config.adminPanelUsername });
       if (process.env.DATABASE_URL) await repo.setAdminPanelVerified(me.id);
       else legacyVerifiedAdmins.set(me.id, Date.now() + config.adminPanelVerificationMinutes * 60000);
       await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes});
