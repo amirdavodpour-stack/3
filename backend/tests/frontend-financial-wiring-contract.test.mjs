@@ -92,6 +92,26 @@ test('activity screen exposes a direct route from backend payment summary to tra
 });
 
 
+test('financial insights and satisfaction UI are wired to scoped backend capabilities', () => {
+  const financialRepository = read('lib/core/financial/financial_insights_repository.dart');
+  const financialPage = read('lib/features/financial/financial_insights_page.dart');
+  const satisfactionRepository = read('lib/core/jobs/job_satisfaction_repository.dart');
+  const satisfactionPage = read('lib/features/jobs/job_satisfaction_page.dart');
+  const routes = read('lib/core/router/app_routes.dart');
+  const main = read('lib/main.dart');
+  assert.match(financialRepository, /financial-insights/);
+  assert.match(financialPage, /Monthly cash flow|جریان نقدی ماهانه/);
+  assert.match(financialPage, /Balance trend|روند موجودی/);
+  assert.match(financialPage, /Financial activity sources|منابع فعالیت مالی/);
+  assert.match(satisfactionRepository, /jobs\\/\\${_id\\(jobId\\)\\}\\/satisfaction/);
+  assert.match(satisfactionPage, /Work satisfaction report|گزارش رضایت همکاری/);
+  assert.match(satisfactionPage, /no general AI chat|هیچ چت عمومی/);
+  assert.match(routes, /financialInsights\(\)/);
+  assert.match(routes, /jobSatisfaction\(String jobId\)/);
+  assert.match(main, /FinancialInsightsRepository/);
+  assert.match(main, /JobSatisfactionRepository/);
+});
+
 test('shared financial summary keeps status and financial language localized', () => {
   const summary = read('lib/core/ui/premium_payment_summary.dart');
   const activity = read('lib/features/transactions/transactions_page.dart');
