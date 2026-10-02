@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { assertAutomatedAiAccess, AUTOMATED_AI_TASKS } from '../src/application/ai_access_policy.js';
+import { assertAutomatedAiAccess, assertAssignedAiTaskAccess, AUTOMATED_AI_TASKS } from '../src/application/ai_access_policy.js';
 
 test('AI user access is disabled while system-managed automation remains allowlisted', () => {
   assert.deepEqual(
