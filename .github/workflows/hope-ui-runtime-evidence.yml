@@ -49,6 +49,9 @@ jobs:
       - name: Test Android screenshot transport contract
         run: bash test/runtime/android_screenshot_transport_test.sh
 
+      - name: Test Home source integrity
+        run: sh test/runtime/home_source_integrity_test.sh
+
       - name: Setup Flutter 3.47.2
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
