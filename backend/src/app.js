@@ -52,6 +52,7 @@ import { createAppLegacyAdapter } from './application/legacy/app_legacy.js';
 import { verifyGoogleIdToken } from './google_auth.js';
 import { createAiRoutes } from './routes/ai_routes.js';
 import { createRecommendationProfileRoutes } from './routes/recommendation_profile_routes.js';
+import { createOpportunityAgentRoutes } from './routes/opportunity_agent_routes.js';
 import { askAI } from './services/ai.js';
 import { enrichRecommendationProfile, buildRecommendationInterviewPrompt, parseInterviewResponse } from './services/recommendation_profile.js';
 
@@ -145,6 +146,14 @@ const recommendationProfileRoutes = createRecommendationProfileRoutes({
   buildRecommendationInterviewPrompt,
   parseInterviewResponse,
   askAI,
+});
+
+const opportunityAgentRoutes = createOpportunityAgentRoutes({
+  authUser,
+  sendJson,
+  HttpError,
+  repo,
+  buildOpportunityAgentState: (input) => buildOpportunityAgentState(input),
 });
 
 
@@ -261,6 +270,7 @@ export async function handle(req, res) {
     }
     if (parts[0] === 'chat') return await aiRoutes(req, res, parts);
     if (parts[0] === 'recommendation-profile') return await recommendationProfileRoutes(req, res, parts);
+    if (parts[0] === 'opportunity-agent') return await opportunityAgentRoutes(req, res, parts);
     if (parts[0] === 'auth') return await authRoutes(req, res, parts);
     if (parts[0] === 'account') return await accountRoutes(req, res, parts.slice(1));
     if (parts[0] === 'wallet') return await walletRoutes(req, res, parts);
