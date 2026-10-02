@@ -48,6 +48,7 @@ class ApplicationRegistry {
   NotificationRepository get notificationsOrThrow => _require(notifications, 'notifications');
   ProfileRepository get profileOrThrow => _require(profile, 'profile');
   SavedSearchRepository get savedSearches => _require(_savedSearches, 'savedSearches');
+  OpportunityAgentRepository get opportunityAgentOrThrow => _require(opportunityAgent, 'opportunityAgent');
 
   CreateOpportunityUseCase get createOpportunity => CreateOpportunityUseCase(marketplaceOrThrow);
   ListCategoriesUseCase get listCategories => ListCategoriesUseCase(marketplaceOrThrow);
