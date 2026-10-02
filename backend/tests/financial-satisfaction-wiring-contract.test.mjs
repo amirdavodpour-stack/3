@@ -25,7 +25,8 @@ test('generic AI chat is explicitly disabled for users', () => {
   const route = read('backend/src/routes/ai_routes.js');
   const policy = read('backend/src/application/ai_access_policy.js');
   assert.match(route, /assertAutomatedAiAccess/);
-  assert.match(route, /AI_USER_ACCESS_DISABLED/);
+  assert.match(route, /source: 'USER'/);
+  assert.match(policy, /AI_USER_ACCESS_DISABLED/);
   assert.match(policy, /JOB_SATISFACTION/);
   const home = read('lib/features/home/home_page.dart');
   assert.doesNotMatch(home, /HopeRoutes\.chat\(\)/);
