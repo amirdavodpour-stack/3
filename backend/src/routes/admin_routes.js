@@ -11,7 +11,7 @@ export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, 
       const verified = process.env.DATABASE_URL
         ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes)
         : (legacyVerifiedAdmins.get(me.id) || 0) > Date.now();
-      return sendJson(res,200,{verified:Boolean(verified),expiresInMinutes:config.adminPanelVerificationMinutes});
+      return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),expiresInMinutes:config.adminPanelVerificationMinutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
@@ -19,7 +19,7 @@ export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, 
       if (process.env.DATABASE_URL) await repo.setAdminPanelVerified(me.id);
       else legacyVerifiedAdmins.set(me.id, Date.now() + config.adminPanelVerificationMinutes * 60000);
       await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes});
-      return sendJson(res,200,{verified:true,expiresInMinutes:config.adminPanelVerificationMinutes});
+      return sendJson(res,200,{verified:true,primaryAdmin:isPrimaryAdmin(me),expiresInMinutes:config.adminPanelVerificationMinutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {
       if (process.env.DATABASE_URL) await repo.clearAdminPanelVerification(me.id);
