@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/auth/auth_controller.dart';
 import 'core/auth/auth_repository.dart';
 import 'core/auth/google_sign_in_service.dart';
+import 'core/chat/chat_repository.dart';
 import 'core/account/account_privacy_repository.dart';
 import 'core/network/api_client.dart';
 import 'core/settings/settings_controller.dart';
@@ -88,6 +89,7 @@ Future<void> main() async {
       Provider<RecommendationProfileRepository>(create: (_) => ApiRecommendationProfileRepository(api)),
       Provider<OpportunityAgentRepository>(create: (_) => ApiOpportunityAgentRepository(api)),
       Provider<EmployerCandidateMatchingRepository>(create: (_) => ApiEmployerCandidateMatchingRepository(api)),
+      Provider<ChatRepository>(create: (_) => ApiChatRepository(api)),
       Provider<FinancialInsightsRepository>(create: (_) => ApiFinancialInsightsRepository(api)),
       Provider<JobSatisfactionRepository>(create: (_) => ApiJobSatisfactionRepository(api)),
       Provider<NotificationRepository>.value(value: notificationRepository),
