@@ -1,4 +1,4 @@
-import { assertAssignedAiTaskAccess } from '../application/ai_access_policy.js';
+import { assertAssignedAiTaskAccess, assertSystemAiTask } from '../application/ai_access_policy.js';
 
 export function createRecommendationProfileRoutes({
   authUser,
@@ -31,6 +31,7 @@ export function createRecommendationProfileRoutes({
     if (req.method === 'POST') {
       const profile = await repo.getRecommendationProfile(me.id);
       assertAssignedAiTaskAccess({ task: 'REGISTRATION_PROFILE', onboardingCompleted: profile?.onboardingCompleted === true });
+      assertSystemAiTask({ task: 'REGISTRATION_PROFILE' });
       const body = await readBody(req);
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         throw new HttpError(400, 'INVALID_BODY', 'Request body is required');
@@ -55,6 +56,7 @@ export function createRecommendationProfileRoutes({
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         throw new HttpError(400, 'INVALID_BODY', 'Request body is required');
       }
+      assertSystemAiTask({ task: 'REGISTRATION_PROFILE' });
       const enriched = await enrichRecommendationProfile({
         profile: body,
         transcript: typeof body.transcript === 'string' ? body.transcript : '',
