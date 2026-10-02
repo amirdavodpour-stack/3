@@ -33,6 +33,7 @@ class ApplicationRegistry {
   final AuthRepository? auth;
   final NotificationRepository? notifications;
   final ProfileRepository? profile;
+  final OpportunityAgentRepository? opportunityAgent;
   final SavedSearchRepository? _savedSearches;
 
   T _require<T>(T? value, String name) =>
