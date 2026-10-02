@@ -13,11 +13,11 @@ test('human messaging wiring separates human chat from AI chat',()=>{
 
 test('job chat is provisioned on agreement and closed with financial settlement',()=>{
   const offer=read('backend/src/routes/offer_routes.js');
-  const application=read('backend/src/routes/application_routes.js');
+  const handlers=read('backend/src/routes/job_handlers.js');
   const release=read('backend/src/repository/outbox.js');
   const refund=read('backend/src/repository/payment_refunds.js');
   assert.match(offer,/ensureJobChat/);
-  assert.match(application,/ensureJobChat/);
+  assert.match(handlers,/ensureJobChat/);
   assert.match(release,/closeJobChatForJob/);
   assert.match(refund,/closeJobChatForJob/);
 });
