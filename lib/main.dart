@@ -16,6 +16,7 @@ import 'core/theme/theme_controller.dart';
 import 'core/telemetry/telemetry_service.dart';
 import 'core/recommendation/recommendation_profile_repository.dart';
 import 'core/opportunity/opportunity_agent_repository.dart';
+import 'core/marketplace/employer_candidate_matching_repository.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/notifications/notification_repository.dart';
 import 'core/profile/profile_repository.dart';
@@ -86,6 +87,8 @@ Future<void> main() async {
       Provider<GoogleSignInService>.value(value: googleSignIn),
       Provider<ProfileRepository>.value(value: profileRepository),
       Provider<RecommendationProfileRepository>(create: (_) => ApiRecommendationProfileRepository(api)),
+      Provider<OpportunityAgentRepository>(create: (_) => ApiOpportunityAgentRepository(api)),
+      Provider<EmployerCandidateMatchingRepository>(create: (_) => ApiEmployerCandidateMatchingRepository(api)),
       Provider<NotificationRepository>.value(value: notificationRepository),
       Provider<MarketplaceRepository>(
           create: (_) => OfflineMarketplaceRepository(ApiMarketplaceRepository(api)),
@@ -112,6 +115,7 @@ Future<void> main() async {
           auth: context.read<AuthRepository>(),
           notifications: context.read<NotificationRepository>(),
           profile: context.read<ProfileRepository>(),
+          opportunityAgent: context.read<OpportunityAgentRepository>(),
           savedSearches: context.read<SavedSearchRepository>(),
         ),
       ),
