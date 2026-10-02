@@ -32,6 +32,8 @@ export const migration = {
     `);
   },
   async down(client) {
+    const { rows } = await client.query(`SELECT 1 FROM job_disputes LIMIT 1`);
+    if (rows.length) throw new Error('Cannot rollback job_disputes while it contains data');
     await client.query(`DROP TABLE IF EXISTS job_disputes`);
   },
 };
