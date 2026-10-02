@@ -7,7 +7,7 @@ const root = path.resolve(import.meta.dirname, '../..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 test('dispute persistence exposes create, list, read and resolve operations', () => {
-  const repo = read('backend/src/repository/job_disputes.js');
+  const repo = read('backend/src/repository/disputes.js');
   assert.match(repo, /createJobDispute/);
   assert.match(repo, /listAdminDisputes/);
   assert.match(repo, /getAdminDispute/);
