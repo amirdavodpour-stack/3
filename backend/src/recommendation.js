@@ -95,7 +95,9 @@ export function buildCandidateProfile(applications = [], context = {}) {
     if (search.kind && search.kind !== 'ALL') kinds.set(String(search.kind).toUpperCase(), (kinds.get(String(search.kind).toUpperCase()) || 0) + 2);
   }
 
+  const behaviorEventNames = new Set(['search_viewed', 'opportunity_viewed', 'application_submitted', 'application_withdrawn']);
   for (const event of context.events || []) {
+    if (!behaviorEventNames.has(String(event?.eventName || ''))) continue;
     total++;
     const props = event?.properties || {};
     for (const t of tokens(props.query)) interestTokens.add(t);
