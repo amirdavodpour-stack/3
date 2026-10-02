@@ -137,7 +137,7 @@ export function buildRecommendationInterviewPrompt(history = [], message = '') {
     'Ask one focused question at a time. Use earlier answers to avoid repeating questions.',
     'Do not ask for or infer protected/sensitive information.',
     'When enough information is collected, set complete=true.',
-    'Return ONLY JSON: {"reply":"...","complete":false,"profilePatch":{"skills":[],"interests":[],"preferredCategories":[],"preferredCities":[],"desiredKinds":[],"workMode":null,"availability":null,"salaryMin":null,"salaryMax":null,"experienceLevel":null,"goals":""}}',
+    'Return ONLY JSON: {"reply":"...","complete":false,"profilePatch":{"resumeText":"","skills":[],"interests":[],"preferredCategories":[],"preferredCities":[],"desiredKinds":[],"workMode":null,"availability":null,"salaryMin":null,"salaryMax":null,"experienceLevel":null,"goals":""}}',
     'HISTORY: ' + JSON.stringify(safeHistory),
     'LATEST_USER_MESSAGE: ' + message.slice(0, 3000),
   ].join('\n');
