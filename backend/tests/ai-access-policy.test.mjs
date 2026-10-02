@@ -16,3 +16,20 @@ test('AI user access is disabled while system-managed automation remains allowli
     () => assertAutomatedAiAccess({ route:'job-satisfaction', source:'SYSTEM' }),
   );
 });
+
+
+test('completed onboarding cannot be reused as an indirect general AI interface', () => {
+  assert.throws(
+    () => assertAssignedAiTaskAccess({
+      task: 'REGISTRATION_PROFILE',
+      onboardingCompleted: true,
+    }),
+    (error) => error.code === 'AI_USER_ACCESS_DISABLED' && error.status === 403,
+  );
+  assert.doesNotThrow(
+    () => assertAssignedAiTaskAccess({
+      task: 'REGISTRATION_PROFILE',
+      onboardingCompleted: false,
+    }),
+  );
+});
