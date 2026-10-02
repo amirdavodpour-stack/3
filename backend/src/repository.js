@@ -22,5 +22,3 @@ export * from './repository/disputes.js';
 
 export * from './repository/payouts.js';
 export * from './repository/reconciliation.js';
-
-export * from './repository/job_disputes.js';
