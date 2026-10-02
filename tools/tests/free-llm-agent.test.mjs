@@ -19,14 +19,18 @@ test('approval decision bypasses interactive prompts in auto mode',()=>{
   assert.equal(resolveApprovalDecision('prompt'),null);
 });
 
-test('GitHub Actions agent workflow is manual and wired to OpenRouter',()=>{
+test('GitHub Actions agent workflow is manual and has provider fallback wiring',()=>{
   const workflow=readFileSync(new URL('../../.github/workflows/free-llm-agent.yml',import.meta.url),'utf8');
   assert.match(workflow,/workflow_dispatch:/);
   assert.match(workflow,/default:\s*"openrouter\/free"/);
   assert.match(workflow,/OPENROUTER_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}/);
+  assert.match(workflow,/GROQ_API_KEY:\s*\$\{\{\s*secrets\.GROQ_API_KEY\s*\}\}/);
+  assert.match(workflow,/GEMINI_API_KEY:\s*\$\{\{\s*secrets\.GEMINI_API_KEY\s*\}\}/);
+  assert.match(workflow,/LLM_AGENT_PROVIDER_FALLBACKS:\s*groq,gemini/);
   assert.match(workflow,/LLM_AGENT_MODEL:\s*\$\{\{\s*inputs\.model\s*\}\}/);
   assert.match(workflow,/LLM_AGENT_APPROVAL:\s*auto/);
   assert.match(workflow,/LLM_AGENT_ALLOW_GIT_WRITE:\s*\$\{\{\s*inputs\.allow_git_write/);
   assert.match(workflow,/contents:\s*write/);
   assert.doesNotMatch(workflow,/^\s*(?:push|pull_request):\s*$/m);
+  assert.doesNotMatch(workflow,/github-models|models\.inference\.ai\.azure\.com/i);
 });
