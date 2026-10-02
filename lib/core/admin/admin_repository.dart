@@ -73,6 +73,11 @@ abstract interface class AdminRepository {
   Future<Map<String, dynamic>> getAnalyticsSummary({int days = 30});
   Future<Map<String, dynamic>> getFunnel({int days = 30});
   Future<Map<String, dynamic>> getCrashSummary({int days = 30});
+  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username);
+  Future<void> lockPanel();
+  Future<List<Map<String, dynamic>>> listDisputes();
+  Future<Map<String, dynamic>> getDispute(String id);
+  Future<Map<String, dynamic>> resolveDispute(String id, {required String resolution, String? reason});
 }
 
 class ApiAdminRepository implements AdminRepository {
@@ -157,6 +162,31 @@ class ApiAdminRepository implements AdminRepository {
   @override
   Future<Map<String, dynamic>> getCrashSummary({int days = 30}) async =>
       Map<String, dynamic>.from(await _api.request('GET', '/analytics/admin/crashes?days=$days', auth: true) as Map);
+
+  @override
+  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async =>
+      Map<String, dynamic>.from(await _api.request('POST', '/admin/access', auth: true, body: {'name': name, 'username': username}) as Map);
+
+  @override
+  Future<void> lockPanel() => _api.request('POST', '/admin/access/lock', auth: true).then((_) {});
+
+  @override
+  Future<List<Map<String, dynamic>>> listDisputes() async {
+    final raw = await _api.request('GET', '/admin/disputes', auth: true);
+    if (raw is! List) return const [];
+    return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(growable: false);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getDispute(String id) async =>
+      Map<String, dynamic>.from(await _api.request('GET', '/admin/disputes/$id', auth: true) as Map);
+
+  @override
+  Future<Map<String, dynamic>> resolveDispute(String id, {required String resolution, String? reason}) async =>
+      Map<String, dynamic>.from(await _api.request('POST', '/admin/disputes/$id', auth: true, body: {
+        'resolution': resolution,
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      }) as Map);
 
   Future<void> _post(String path, {Map<String, dynamic>? body}) =>
       _api.request('POST', path, auth: true, body: body).then((_) {});
