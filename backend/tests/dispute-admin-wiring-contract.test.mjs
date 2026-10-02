@@ -26,3 +26,11 @@ test('admin dispute operations must remain behind the verified admin panel', () 
   assert.match(admin, /disputes/);
   assert.match(admin, /ADMIN_DISPUTE_RESOLVE/);
 });
+test('admin panel exposes a verification state endpoint and UI checks it before loading admin data', () => {
+  const route = read('backend/src/routes/admin_routes.js');
+  const repo = read('lib/core/admin/admin_repository.dart');
+  const page = read('lib/features/admin/admin_page.dart');
+  assert.match(route, /parts\[1\]==='access'.*req\.method==='GET'|req\.method==='GET'.*parts\[1\]==='access'/s);
+  assert.match(repo, /getPanelAccess/);
+  assert.match(page, /_checkPanelAccess|checkingPanel|verified/);
+});
