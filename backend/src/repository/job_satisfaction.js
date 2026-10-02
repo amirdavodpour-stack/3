@@ -17,7 +17,7 @@ function feedbackFromRow(row) {
     aiSentiment: row.ai_sentiment || 'NEEDS_REVIEW',
     aiTags: Array.isArray(row.ai_tags) ? row.ai_tags : [],
     aiRiskFlags: Array.isArray(row.ai_risk_flags) ? row.ai_risk_flags : [],
-    status: row.status,
+    satisfied: Number(row.overall_rating) >= 4 && Boolean(row.completed_as_agreed) && String(row.ai_sentiment || '') === 'SATISFIED',
     createdAt: row.created_at?.toISOString?.() ?? row.created_at,
     updatedAt: row.updated_at?.toISOString?.() ?? row.updated_at,
   };
