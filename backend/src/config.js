@@ -67,7 +67,7 @@ export const config = {
   googleAuthEnabled: process.env.GOOGLE_AUTH_ENABLED === 'true',
   googleOAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
   adminPanelUsername: process.env.ADMIN_PANEL_USERNAME || '',
-  adminPanelAllowedEmail: process.env.ADMIN_PANEL_ALLOWED_EMAIL || '',
+  adminPanelAllowedEmail: process.env.ADMIN_PANEL_ALLOWED_EMAIL || 'amir.davodpour@gmail.com',
   adminPanelVerificationMinutes: positiveIntegerEnv('ADMIN_PANEL_VERIFICATION_MINUTES', 15, { min: 5, max: 120 }),
   paymentProvider: process.env.PAYMENT_PROVIDER || 'simulator',
   paymentCurrency: process.env.PAYMENT_CURRENCY || 'USD',
