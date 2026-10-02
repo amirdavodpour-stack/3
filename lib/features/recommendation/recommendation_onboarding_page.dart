@@ -86,7 +86,9 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
     _jumpToEnd();
     try {
       final response = await context.read<RecommendationProfileRepository>().interview(
-        history: List<Map<String, String>>.from(_messages),
+        history: _messages.length <= 1
+            ? const []
+            : _messages.sublist(0, _messages.length - 1).cast<Map<String, String>>(),
         message: message,
       );
       if (!mounted) return;
