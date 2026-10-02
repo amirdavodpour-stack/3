@@ -165,3 +165,52 @@ export function buildOpportunityAgentState({
     actions: sortedActions,
   };
 }
+
+
+export function parseOpportunityAgentState(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const rawProfile = source.profileCompleteness && typeof source.profileCompleteness === 'object'
+    ? source.profileCompleteness : {};
+  const rawActivity = source.activity && typeof source.activity === 'object'
+    ? source.activity : {};
+  const rawPolicy = source.automationPolicy && typeof source.automationPolicy === 'object'
+    ? source.automationPolicy : {};
+  const rawActions = Array.isArray(source.actions) ? source.actions : [];
+  const stringList = (value, limit = 12) => Array.isArray(value)
+    ? value.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim()).slice(0, limit)
+    : [];
+  const actions = rawActions
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      ...item,
+      type: clean(item.type, 60),
+      title: clean(item.title, 240),
+      reason: item.reason == null ? null : clean(item.reason, 500),
+      jobId: item.jobId == null ? null : clean(item.jobId, 100),
+      applicationId: item.applicationId == null ? null : clean(item.applicationId, 100),
+      reasons: stringList(item.reasons, 3),
+      missingFields: stringList(item.missingFields, 6),
+      requiresApproval: item.requiresApproval === true,
+    }))
+    .filter((item) => item.type && item.title)
+    .slice(0, 12);
+  return {
+    version: clean(source.version || '1.0', 20) || '1.0',
+    profileCompleteness: {
+      score: clamp01(rawProfile.score),
+      missing: stringList(rawProfile.missing, 12),
+      onboardingCompleted: rawProfile.onboardingCompleted === true,
+    },
+    activity: {
+      savedSearches: Number(rawActivity.savedSearches) || 0,
+      views: Number(rawActivity.views) || 0,
+      applications: Number(rawActivity.applications) || 0,
+      completedJobs: Number(rawActivity.completedJobs) || 0,
+    },
+    automationPolicy: {
+      automatic: stringList(rawPolicy.automatic, 12),
+      approvalRequired: stringList(rawPolicy.approvalRequired, 12),
+    },
+    actions,
+  };
+}
