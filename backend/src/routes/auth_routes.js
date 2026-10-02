@@ -1,3 +1,5 @@
+import { isPrimaryAdminEmail } from '../application/admin_panel_access.js';
+
 export function createAuthRoutes({
   authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser,
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
@@ -17,7 +19,7 @@ export function createAuthRoutes({
       if (password.length < 12 || password.length > PASSWORD_MAX_LENGTH) throw new HttpError(400, 'WEAK_PASSWORD', 'Password must be between 12 and 128 characters');
       const displayName = stringField(body.displayName, 'displayName', { min: 1, max: 120, required: true });
       if (await getUserByEmail(email)) throw new HttpError(409, 'EMAIL_IN_USE', 'An account with this email already exists');
-      const userDraft = { id: id(), email, passwordHash: await hashPassword(password), displayName, role: 'USER', status: 'ACTIVE', sessionVersion: 0, createdAt: now() };
+      const userDraft = { id: id(), email, passwordHash: await hashPassword(password), displayName, role: isPrimaryAdminEmail(email) ? 'ADMIN' : 'USER', status: 'ACTIVE', sessionVersion: 0, createdAt: now() };
       const providerDraft = { id: id(), userId: userDraft.id, providerType: 'INDIVIDUAL', capacity: 'OPEN', verificationStatus: 'UNVERIFIED', createdAt: now(), updatedAt: now() };
       let user;
       try {
@@ -66,7 +68,7 @@ export function createAuthRoutes({
         email: identity.email,
         passwordHash: await hashPassword(randomToken(48)),
         displayName: identity.displayName,
-        role: 'USER',
+        role: isPrimaryAdminEmail(identity.email) ? 'ADMIN' : 'USER',
         status: 'ACTIVE',
         sessionVersion: 0,
         createdAt: now(),
