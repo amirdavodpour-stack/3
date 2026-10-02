@@ -24,7 +24,7 @@ export const migration = {
       CREATE TABLE IF NOT EXISTS chat_messages (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         conversation_id UUID NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
-        sender_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+        sender_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
         body TEXT NOT NULL CHECK (char_length(body) BETWEEN 1 AND 4000),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
