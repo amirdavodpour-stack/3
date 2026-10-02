@@ -4,6 +4,7 @@ import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/router/auth_return_intent.dart';
+import '../../core/router/app_routes.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/premium_components.dart';
@@ -50,8 +51,15 @@ class _RegisterPageState extends State<RegisterPage> {
       await context
           .read<AuthController>()
           .register(email.text.trim(), password.text, name.text.trim());
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop(widget.returnIntent);
+      if (mounted) {
+        if (widget.returnIntent == null) {
+          await Navigator.of(context).pushAndRemoveUntil(
+            HopeRoutes.recommendationInterview(),
+            (route) => route.isFirst,
+          );
+        } else if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(widget.returnIntent);
+        }
       }
     } catch (error) {
       if (mounted) {
