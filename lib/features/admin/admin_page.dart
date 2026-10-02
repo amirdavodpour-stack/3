@@ -153,7 +153,25 @@ class _AdminPageState extends State<AdminPage>
             : TextDirection.rtl,
         child: Scaffold(
           appBar: AppBar(
-              title: Text(HopeCopy.of(context).copy_hope_admin_center_912aa06)),
+            title: Text(HopeCopy.of(context).copy_hope_admin_center_912aa06),
+            actions: [
+              IconButton(
+                tooltip: Localizations.localeOf(context).languageCode == 'en'
+                    ? 'Lock admin panel'
+                    : 'قفل پنل مدیریت',
+                onPressed: _actionBusy
+                    ? null
+                    : () async {
+                        await context.read<AdminRepository>().lockPanel();
+                        if (mounted) Navigator.pushReplacement(
+                          context,
+                          HopeRoutes.adminAccess(),
+                        );
+                      },
+                icon: const Icon(Icons.lock_outline),
+              ),
+            ],
+          ),
           body: RefreshIndicator(
             onRefresh: () async => _reload(),
             child: PremiumPageFrame(
