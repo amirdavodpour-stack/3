@@ -13,6 +13,13 @@ export function createJobRoutes(ctx) {
       if (job.status !== 'PUBLISHED' && (!user || (job.ownerId !== user.id && job.providerId !== user.id))) {
         throw new ctx.HttpError(404, 'JOB_NOT_FOUND', 'Job not found');
       }
+      if (user && job.status === 'PUBLISHED') {
+        await ctx.recordAnalyticsEvent({
+          eventName: 'opportunity_viewed',
+          platform: 'UNKNOWN',
+          properties: { jobId: job.id, categoryId: job.categoryId, city: job.city || null, kind: job.kind || null },
+        }, user.id, `opportunity_viewed:${user.id}:${job.id}:${Date.now()}`).catch(() => {});
+      }
       return ctx.sendJson(res, 200, await ctx.jobView(job, user?.id));
     }
     const action = await handleJobActions(ctx, req, res, parts, job);
