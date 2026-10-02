@@ -14,7 +14,7 @@ const BLOCKED_SEGMENTS = new Set(['.git', '.env', '.env.local', '.env.production
 const PROVIDERS = {
   groq: { baseUrl: 'https://api.groq.com/openai/v1', keyEnv: 'GROQ_API_KEY', model: 'openai/gpt-oss-120b' },
   openrouter: { baseUrl: 'https://openrouter.ai/api/v1', keyEnv: 'OPENROUTER_API_KEY', model: 'cohere/north-mini-code:free' },
-  'github-models': { baseUrl: 'https://models.inference.ai.azure.com', keyEnv: 'GITHUB_TOKEN', model: 'gpt-4o' },
+  gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', keyEnv: 'GEMINI_API_KEY', model: 'gemini-2.5-pro' },
 };
 const SYSTEM_PROMPT = `You are the HOPE repository coding agent.
 
@@ -66,11 +66,20 @@ function config(env = process.env) {
 function provider(name, env = process.env) {
   const key = String(name || '').toLowerCase();
   const preset = PROVIDERS[key];
-  if (!preset && key !== 'custom') throw new Error(`Unknown provider: ${name}`);
+  if (!preset && key !== 'custom') {
+    const e = new Error(`Unknown provider: ${name}`);
+    e.configuration = true;
+    throw e;
+  }
   const baseUrl = String(env.LLM_AGENT_BASE_URL || preset?.baseUrl || '').replace(/\/+$/, '');
   const apiKey = String(env.LLM_AGENT_API_KEY || (preset ? env[preset.keyEnv] : '') || '').trim();
-  const model = String(env.LLM_AGENT_MODEL || preset?.model || '').trim();
-  if (!baseUrl || !apiKey || !model) throw new Error(`Provider ${name} is missing endpoint, API key, or model.`);
+  const modelEnv = `LLM_AGENT_MODEL_${key.replace(/[^a-z0-9]+/g, '_').toUpperCase()}`;
+  const model = String(env[modelEnv] || (key === String(env.LLM_AGENT_PROVIDER || '').trim().toLowerCase() ? env.LLM_AGENT_MODEL : '') || preset?.model || '').trim();
+  if (!baseUrl || !apiKey || !model) {
+    const e = new Error(`Provider ${name} is missing endpoint, API key, or model.`);
+    e.configuration = true;
+    throw e;
+  }
   return { name: key, baseUrl, apiKey, model, headers: key === 'openrouter' ? { 'HTTP-Referer': 'https://github.com/amirdavodpour-stack/3', 'X-Title': 'HOPE Free LLM Coding Agent' } : {} };
 }
 function parseCli(argv) { const r = { task: '', context: [], maxSteps: null }; const pos = []; for (let i=0;i<argv.length;i++) { const a=argv[i]; if(a==='--context') r.context.push(argv[++i] || ''); else if(a==='--max-steps') r.maxSteps = Number.parseInt(argv[++i] || '',10); else if(a==='--help'||a==='-h') r.help=true; else pos.push(a); } r.task=pos.join(' ').trim(); return r; }
@@ -108,12 +117,12 @@ async function toolExec(name,args,cfg,root,state) {
 async function callProvider(p,messages,tools) {
   const res=await fetch(`${p.baseUrl}/chat/completions`,{method:'POST',headers:{Authorization:`Bearer ${p.apiKey}`,'Content-Type':'application/json',...p.headers},body:JSON.stringify({model:p.model,messages,temperature:0.1,tools,tool_choice:tools.length?'auto':'none'})});
   const raw=await res.text(); let body=null; try{body=JSON.parse(raw);}catch{}
-  if(!res.ok){const e=new Error(`${res.status}: ${body?.error?.message||raw||res.statusText}`); e.retryable=res.status===429||res.status>=500; throw e;}
+  if(!res.ok){const e=new Error(`${res.status}: ${body?.error?.message||raw||res.statusText}`); e.retryable=res.status===401||res.status===403||res.status===404||res.status===429||res.status>=500; throw e;}
   const msg=body?.choices?.[0]?.message; if(!msg)throw new Error('Provider response missing choices[0].message.'); return msg;
 }
-async function callFallback(names,messages,tools,env) { const failures=[]; for(const n of names){try{return {provider:provider(n,env),message:await callProvider(provider(n,env),messages,tools)};}catch(e){failures.push(`${n}: ${e.message}`); if(!e.retryable)break;}} throw new Error(`All configured LLM providers failed.\n${failures.join('\n')}`); }
+async function callFallback(names,messages,tools,env) { const failures=[]; for(const n of names){try{const p=provider(n,env);return {provider:p,message:await callProvider(p,messages,tools)};}catch(e){failures.push(n + ': ' + e.message); if(!e.retryable && !e.configuration)break;}} throw new Error('All configured LLM providers failed.\n' + failures.join('\n')); }
 function buildSystemPrompt(root, branch) { return `${SYSTEM_PROMPT}\n\nRepo root: ${root}\nCurrent branch: ${branch}\nMain is not an allowed write target.`; }
-function help(){return `HOPE Free LLM Coding Agent\n\nnode tools/free-llm-agent.mjs [--context PATH] [--max-steps N] "task"\n\nLLM_AGENT_PROVIDER=openrouter|groq|github-models|custom\nLLM_AGENT_MODEL=...\nLLM_AGENT_PROVIDER_FALLBACKS=groq,openrouter\nLLM_AGENT_BASE_URL=... (custom endpoint override)\nLLM_AGENT_API_KEY=... (generic key override)\nLLM_AGENT_APPROVAL=prompt|auto|deny\nLLM_AGENT_ALLOW_GIT_WRITE=1 (needed for commit/push/PR)\n`}
+function help(){return `HOPE Free LLM Coding Agent\n\nnode tools/free-llm-agent.mjs [--context PATH] [--max-steps N] "task"\n\nLLM_AGENT_PROVIDER=openrouter|groq|gemini|custom\nLLM_AGENT_MODEL=...\nLLM_AGENT_PROVIDER_FALLBACKS=groq,gemini,openrouter\nLLM_AGENT_BASE_URL=... (custom endpoint override)\nLLM_AGENT_API_KEY=... (generic key override)\nLLM_AGENT_APPROVAL=prompt|auto|deny\nLLM_AGENT_ALLOW_GIT_WRITE=1 (needed for commit/push/PR)\n`}
 async function main(){const cli=parseCli(process.argv.slice(2)); if(cli.help||!cli.task){process.stdout.write(help()); process.exitCode=cli.task?0:1; return;} const root=repoRoot(); const branch=writableBranch(); const cfg=config(); if(cli.maxSteps)cfg.maxSteps=Math.max(1,Math.min(30,cli.maxSteps)); const env={...process.env}; const context=cli.context.length?`\nUser-requested context files:\n${cli.context.map(normalizeRepoPath).map(p=>`- ${p}`).join('\n')}\n`:''; const state={touched:new Set()}; let messages=[{role:'system',content:`${SYSTEM_PROMPT}\n\nRepo root: ${root}\nCurrent branch: ${branch}\nMain is not an allowed write target.${context}`},{role:'user',content:cli.task}]; const defs=toolsDef(); for(let step=1;step<=cfg.maxSteps;step++){const activeTools=step===cfg.maxSteps?[]:defs; if(step===cfg.maxSteps)messages.push({role:'user',content:'Stop using tools now. Return the final answer to the user based on the conversation so far.'}); const r=await callFallback(cfg.providerNames,messages,activeTools,env); process.stderr.write(`[agent ${step}/${cfg.maxSteps}] provider=${r.provider.name} model=${r.provider.model}\n`); messages.push(r.message); if(!Array.isArray(r.message.tool_calls)||!r.message.tool_calls.length){process.stdout.write(`${r.message.content||'(no textual final response)'}\n`); return;} for(const call of r.message.tool_calls){let args={}; try{args=JSON.parse(call.function?.arguments||'{}');}catch{messages.push({role:'tool',tool_call_id:call.id,name:call.function?.name||'unknown',content:'TOOL ERROR: malformed JSON arguments'});continue;} let out; try{out=await toolExec(call.function.name,args,cfg,root,state);}catch(e){out=`TOOL ERROR: ${e.message}`;} messages.push({role:'tool',tool_call_id:call.id,name:call.function.name,content:clip(out)}); }} process.stdout.write(`Agent stopped after ${cfg.maxSteps} model/tool rounds without a final response.\n`);}
 if (path.resolve(process.argv[1]||'')===path.resolve(new URL(import.meta.url).pathname)) main().catch(e=>{process.stderr.write(`ERROR: ${e.message}\n`);process.exitCode=1;});
 export { config as resolveAgentConfig, provider as resolveProvider, normalizeRepoPath, protectedWrite as isProtectedWritePath, safeCommand as isSafeCommand, parseCli as parseCliArgs, toolsDef, buildSystemPrompt, approvalDecision as resolveApprovalDecision };
