@@ -170,7 +170,11 @@ export function scoreEmployerCandidate(job, candidate = {}) {
   if (locationScore >= 1) reasons.push('LOCATION_MATCH');
   if (workModeScore >= 1) reasons.push('WORK_MODE_MATCH');
   if (kindScore >= 1) reasons.push('KIND_MATCH');
-  if (compensation >= 0.85) reasons.push('BUDGET_FIT');
+  if (compensation >= 0.85) {
+    reasons.push(String(job.kind || 'JOB').toUpperCase() === 'MISSION'
+      ? 'BUDGET_FIT'
+      : 'SALARY_FIT');
+  }
   if (availabilityScore >= 0.85) reasons.push('AVAILABILITY_MATCH');
   if (!reasons.length) reasons.push('GENERAL_MATCH');
 
