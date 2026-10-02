@@ -5,7 +5,7 @@ export async function handleList(ctx, req, res, parts, user) {
   // 29-field destructure shared verbatim across every handler in this file).
   const {
     legacyJobs, repo, jobUseCases, sendJson, HttpError, textField, enumField,
-    JOB_KINDS, JOB_VISIBILITY, categoryBy, jobView, buildOfferCountMap,
+    JOB_KINDS, JOB_VISIBILITY, categoryBy, jobView, buildOfferCountMap, recordAnalyticsEvent,
   } = ctx;
   const searchParams = new URL(req.url, `http://${req.headers.host || 'localhost'}`).searchParams;
   const status = searchParams.get('status') || 'PUBLISHED';
@@ -14,6 +14,13 @@ export async function handleList(ctx, req, res, parts, user) {
   const cityFilter = searchParams.get('city') ? textField(searchParams.get('city'), 'city', { min: 1, max: 120 }) : null;
   const categoryFilter = searchParams.get('categoryId') ? String(searchParams.get('categoryId')).trim() : null;
   const searchQuery = searchParams.get('q') ? textField(searchParams.get('q'), 'q', { min: 1, max: 120 }) : null;
+  if (user && status === 'PUBLISHED') {
+    await recordAnalyticsEvent({
+      eventName: 'search_viewed',
+      platform: 'UNKNOWN',
+      properties: { query: searchQuery || '', city: cityFilter || null, categoryId: categoryFilter || null, kind: kindFilter || null },
+    }, user.id, `search_viewed:${user.id}:${Date.now()}`).catch(() => {});
+  }
   if (status !== 'PUBLISHED' && !user) {
     throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required to view private job states');
   }
