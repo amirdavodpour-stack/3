@@ -15,6 +15,8 @@ test('backend wires wallet insights, satisfaction flow and automatic release', (
   assert.match(app, /createFinancialInsightsRoutes/);
   assert.match(financialRoutes, /wallet.*financial-insights|financial-insights.*wallet/);
   assert.match(satisfactionRoutes, /evaluateSettlementGate/);
+  assert.match(satisfactionRoutes, /analyzeDisputeWithAI/);
+  assert.match(satisfactionRoutes, /SATISFACTION_CONFLICT/);
   assert.match(satisfactionRoutes, /processPaymentReleaseNow/);
   assert.match(satisfactionRoutes, /JOB_SATISFACTION_SUBMIT/);
   const jobHandlers = read('backend/src/routes/job_handlers.js');
@@ -28,6 +30,7 @@ test('generic AI chat is explicitly disabled for users', () => {
   assert.match(route, /source: 'USER'/);
   assert.match(policy, /AI_USER_ACCESS_DISABLED/);
   assert.match(policy, /JOB_SATISFACTION/);
+  assert.match(policy, /DISPUTE_ADJUDICATION/);
   const home = read('lib/features/home/home_page.dart');
   assert.doesNotMatch(home, /HopeRoutes\.chat\(\)/);
 });
