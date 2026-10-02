@@ -38,16 +38,18 @@ function ctxFor({ me = { id: 'owner-1' }, candidates = [] } = {}) {
 }
 
 test('employer candidate matching rejects non-owners', async () => {
+  process.env.DATABASE_URL = 'postgres://contract-test';
   const ctx = ctxFor({ me: { id: 'other' } });
   const job = { id: 'job-1', ownerId: 'owner-1', kind: 'JOB' };
 
   await assert.rejects(
-    () => handleCandidateRoutes(ctx, {}, {}, ['jobs', 'job-1', 'candidate-matches'], job),
+    () => handleCandidateRoutes(ctx, { method: 'GET' }, {}, ['jobs', 'job-1', 'candidate-matches'], job),
     (error) => error.status === 403 && error.code === 'FORBIDDEN',
   );
 });
 
 test('employer candidate matching returns ranked job applicants', async () => {
+  process.env.DATABASE_URL = 'postgres://contract-test';
   const ctx = ctxFor({
     candidates: [{
       userId: 'worker-1',
@@ -76,6 +78,7 @@ test('employer candidate matching returns ranked job applicants', async () => {
 });
 
 test('employer candidate matching supports mission offerers', async () => {
+  process.env.DATABASE_URL = 'postgres://contract-test';
   const ctx = ctxFor({
     candidates: [{
       userId: 'worker-2',
