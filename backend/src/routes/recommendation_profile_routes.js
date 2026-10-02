@@ -1,3 +1,5 @@
+import { assertAssignedAiTaskAccess } from '../application/ai_access_policy.js';
+
 export function createRecommendationProfileRoutes({
   authUser,
   readBody,
@@ -27,6 +29,8 @@ export function createRecommendationProfileRoutes({
     }
 
     if (req.method === 'POST') {
+      const profile = await repo.getRecommendationProfile(me.id);
+      assertAssignedAiTaskAccess({ task: 'REGISTRATION_PROFILE', onboardingCompleted: profile?.onboardingCompleted === true });
       const body = await readBody(req);
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         throw new HttpError(400, 'INVALID_BODY', 'Request body is required');
@@ -45,6 +49,8 @@ export function createRecommendationProfileRoutes({
     }
 
     if (req.method === 'PUT') {
+      const existingProfile = await repo.getRecommendationProfile(me.id);
+      assertAssignedAiTaskAccess({ task: 'REGISTRATION_PROFILE', onboardingCompleted: existingProfile?.onboardingCompleted === true });
       const body = await readBody(req);
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         throw new HttpError(400, 'INVALID_BODY', 'Request body is required');
