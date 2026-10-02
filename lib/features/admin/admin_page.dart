@@ -33,6 +33,7 @@ class _AdminPageState extends State<AdminPage>
   bool _actionBusy = false;
   bool _panelVerified = false;
   bool _checkingPanel = true;
+  bool _isPrimaryAdmin = false;
 
   @override
   void initState() {
@@ -58,6 +59,7 @@ class _AdminPageState extends State<AdminPage>
       }
       setState(() {
         _panelVerified = true;
+        _isPrimaryAdmin = access['primaryAdmin'] == true;
         _checkingPanel = false;
       });
       _reload();
@@ -223,6 +225,14 @@ class _AdminPageState extends State<AdminPage>
                 FutureBuilder<HopeAdminSummary>(
                     future: _summary,
                     builder: (context, s) => _summaryGrid(context, s.data)),
+                if (_isPrimaryAdmin) ...[
+                  OutlinedButton.icon(
+                    onPressed: _actionBusy ? null : _showGrantAdminDialog,
+                    icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
+                    label: Text(_t('افزودن مدیر جدید', 'Add new administrator')),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 const SizedBox(height: 14),
                 FilledButton.tonalIcon(
                   onPressed: () => Navigator.push(context, HopeRoutes.adminOperations()),
@@ -266,6 +276,48 @@ class _AdminPageState extends State<AdminPage>
       );
   }
 
+  Future<void> _showGrantAdminDialog() async {
+    final emailController = TextEditingController();
+    try {
+      final email = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(_t('افزودن مدیر جدید', 'Add new administrator')),
+          content: TextField(
+            controller: emailController,
+            autofocus: true,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
+            decoration: InputDecoration(
+              labelText: _t('ایمیل کاربر موجود', 'Existing user email'),
+              hintText: 'name@example.com',
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_t('انصراف', 'Cancel'))),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, emailController.text.trim()),
+              child: Text(_t('اعطای نقش مدیر', 'Grant admin role')),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || email == null || email.trim().isEmpty) return;
+      await _runAction(() async {
+        final result = await context.read<AdminRepository>().grantAdminByEmail(email);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_t(
+            'نقش مدیر برای ${result['displayName'] ?? result['email']} فعال شد.',
+            'Administrator role granted to ${result['displayName'] ?? result['email']}.',
+          ))),
+        );
+      });
+    } finally {
+      emailController.dispose();
+    }
+  }
   Widget _summaryGrid(BuildContext context, HopeAdminSummary? raw) {
     final m = raw;
     final items = <Map<String, Object>>[
