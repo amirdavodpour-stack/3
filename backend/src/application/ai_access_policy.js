@@ -3,6 +3,7 @@ export const AUTOMATED_AI_TASKS = Object.freeze([
   'RECOMMENDATIONS',
   'OPPORTUNITY_AGENT',
   'JOB_SATISFACTION',
+  'DISPUTE_ADJUDICATION',
 ]);
 
 export function assertAutomatedAiAccess({ route, source = 'USER' } = {}) {
