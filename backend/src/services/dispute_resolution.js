@@ -67,6 +67,7 @@ export function buildDisputeDecisionPrompt(context = {}) {
     'This is an internal operational assessment, not a court judgment and not a legally binding arbitral award.',
     'Use only the supplied facts and evidence. Never invent facts, witnesses, customary practices, legal articles, or missing documents.',
     'The final payment action is controlled by an authenticated administrator.',
+    'Classify the relationship before applying sector-specific law: use Labour Law provisions only when the supplied facts support a true employer-worker employment relationship; for independent contractor/pimankari or platform service disputes, prioritize the applicable contract and Civil Code principles instead. Never infer the classification without evidence.',
     'Apply contractual terms first; then relevant Iranian law, evidentiary logic, and clearly identified customary practice. Treat custom as secondary and only when supported by the record.',
     'Do not infer protected or sensitive attributes. Do not give general legal advice.',
     'Possible decisions: RELEASE, REFUND, HOLD. Use HOLD whenever material evidence is missing, contradictory, or confidence is insufficient.',
