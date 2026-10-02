@@ -11,6 +11,8 @@ test('dispute persistence exposes create, list, read and resolve operations', ()
   assert.match(repo, /createJobDispute/);
   assert.match(repo, /listAdminDisputes/);
   assert.match(repo, /getAdminDispute/);
+  assert.match(repo, /getJobDisputeContext/);
+  assert.match(repo, /updateJobDisputeAnalysis/);
   assert.match(repo, /resolveJobDispute/);
 });
 
