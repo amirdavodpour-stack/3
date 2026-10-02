@@ -11,7 +11,7 @@ export function createRecommendationProfileRoutes({
 }) {
   return async function routeHandler(req, res, parts) {
     const me = await authUser(req);
-    if (parts.length !== 1) throw new HttpError(404, 'NOT_FOUND', 'Recommendation profile route not found');
+    if (parts.length !== 1 || parts[0] !== 'recommendation-profile') throw new HttpError(404, 'NOT_FOUND', 'Recommendation profile route not found');
 
     if (req.method === 'GET') {
       const profile = await repo.getRecommendationProfile(me.id);
