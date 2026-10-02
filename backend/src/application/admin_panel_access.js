@@ -4,8 +4,12 @@ const normalize = (value) => String(value ?? '').trim();
 
 export const PRIMARY_ADMIN_EMAIL = 'amir.davodpour@gmail.com';
 
+export function isPrimaryAdminEmail(email) {
+  return normalize(email).toLowerCase() === PRIMARY_ADMIN_EMAIL;
+}
+
 export function isPrimaryAdmin(user) {
-  return user?.role === 'ADMIN' && normalize(user.email).toLowerCase() === PRIMARY_ADMIN_EMAIL;
+  return user?.role === 'ADMIN' && isPrimaryAdminEmail(user.email);
 }
 
 export function assertPrimaryAdmin(user) {
