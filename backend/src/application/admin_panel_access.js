@@ -8,6 +8,10 @@ export function isPrimaryAdminEmail(email) {
   return normalize(email).toLowerCase() === PRIMARY_ADMIN_EMAIL;
 }
 
+export function shouldBootstrapPrimaryAdmin(email) {
+  return isPrimaryAdminEmail(email);
+}
+
 export function isPrimaryAdmin(user) {
   return user?.role === 'ADMIN' && isPrimaryAdminEmail(user.email);
 }
