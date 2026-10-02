@@ -1,26 +1,70 @@
+import crypto from 'node:crypto';
 import { verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
+import { DISPUTE_DECISIONS } from '../services/dispute_resolution.js';
 
-export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo }) {
+const legacyVerifiedAdmins = new Map();
+
+export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES }) {
   return async function adminRoutes(req,res,parts){
     const me=requireAdmin(await authUser(req));
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
       verifyAdminPanelCredentials({ user: me, name: body?.name, username: body?.username, expectedUsername: config.adminPanelUsername });
       if (process.env.DATABASE_URL) await repo.setAdminPanelVerified(me.id);
+      else legacyVerifiedAdmins.set(me.id, Date.now() + config.adminPanelVerificationMinutes * 60000);
       await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes});
       return sendJson(res,200,{verified:true,expiresInMinutes:config.adminPanelVerificationMinutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {
       if (process.env.DATABASE_URL) await repo.clearAdminPanelVerification(me.id);
+      else legacyVerifiedAdmins.delete(me.id);
       await createAudit('ADMIN_PANEL_LOCK',me.id,'admin',me.id);
       return sendJson(res,200,{verified:false});
     }
     if (process.env.DATABASE_URL) {
       const verified=await repo.isAdminPanelVerified(me.id,config.adminPanelVerificationMinutes);
       if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
-    } else {
-      const error=new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
-      throw error;
+    } else if ((legacyVerifiedAdmins.get(me.id) || 0) <= Date.now()) {
+      legacyVerifiedAdmins.delete(me.id);
+      throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+    }
+    if(req.method==='GET' && parts[0]==='admin' && parts[1]==='disputes' && parts.length===2){
+      return sendJson(res,200,await repo.listAdminDisputes());
+    }
+    if(req.method==='GET' && parts[0]==='admin' && parts[1]==='disputes' && parts.length===3){
+      const dispute=await repo.getAdminDispute(parts[2]);
+      if(!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found');
+      return sendJson(res,200,dispute);
+    }
+    if(req.method==='POST' && parts[0]==='admin' && parts[1]==='disputes' && parts.length===3){
+      const body=await readBody(req);
+      const resolution=String(body?.resolution||'').toUpperCase();
+      if(!DISPUTE_DECISIONS.includes(resolution)) throw new HttpError(400,'INVALID_DISPUTE_RESOLUTION','resolution must be RELEASE, REFUND, or HOLD');
+      const reason=String(body?.reason||'').trim().slice(0,2000);
+      const dispute=await repo.getAdminDispute(parts[2]);
+      if(!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found');
+      const payment=dispute.context?.payment;
+      const job=dispute.context?.job;
+      if(!payment || !job) throw new HttpError(404,'PAYMENT_OR_JOB_NOT_FOUND','Payment or job not found');
+      if(resolution==='RELEASE'){
+        if(payment.status==='RELEASED') return sendJson(res,200,{...dispute,resolution:'RELEASED'});
+        if(!['RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be released from its current state');
+        const event=await paymentUseCases.release({jobId:job.id,ownerId:job.ownerId,paymentId:payment.id,dedupeKey:`PAYMENT_RELEASE:ADMIN_DISPUTE:${payment.id}`});
+        const result=await processPaymentReleaseNow(event?.id);
+        if(!result?.completed && !result?.alreadyDone) throw new HttpError(409,'PAYMENT_RELEASE_NOT_COMPLETED','Payment release was not completed');
+      } else if(resolution==='REFUND'){
+        if(payment.status==='REFUNDED') return sendJson(res,200,{...dispute,resolution:'REFUNDED'});
+        if(!['HELD','RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be refunded from its current state');
+        const created=await paymentUseCases.refund({jobId:job.id,paymentId:payment.id,ownerId:job.ownerId,amount:payment.amount,id:crypto.randomUUID(),idempotencyKey:`DISPUTE_REFUND:${dispute.id}`,createdAt:now(),allowPendingRelease:true});
+        try { await processPaymentRefundNow(); } catch (_) {}
+        const refreshed=await paymentUseCases.findByJob(job.id);
+        if(refreshed?.status!=='REFUNDED') throw new HttpError(202,'PAYMENT_REFUND_PENDING','Refund is queued for processing');
+        void created;
+      }
+      const resolved=await repo.resolveJobDispute(dispute.id,{resolution,reason,adminId:me.id});
+      await createAudit('ADMIN_DISPUTE_RESOLVE',me.id,'job_dispute',dispute.id,{jobId:dispute.jobId,resolution,aiDecision:dispute.aiDecision,aiConfidence:dispute.aiConfidence,reason});
+      await notifyUser({userId:dispute.worker.id,type:NOTIFICATION_TYPES.PAYMENT_UPDATE,title:'نتیجه بررسی اختلاف همکاری',body:`اختلاف مربوط به «${dispute.jobTitle}» تعیین تکلیف شد.`,data:{jobId:dispute.jobId,disputeId:dispute.id,resolution},dedupeKey:`dispute:${dispute.id}:resolved:worker`,channels:['IN_APP','PUSH','EMAIL']}).catch(()=>{});
+      return sendJson(res,200,resolved);
     }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='finance' && parts.length===3 && parts[2]==='summary'){
       if(process.env.DATABASE_URL){ return sendJson(res,200,await paymentUseCases.adminFinancialSummary()); }
