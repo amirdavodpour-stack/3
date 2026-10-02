@@ -2,6 +2,22 @@ import { signAccessToken, verifyAccessToken } from '../security.js';
 
 const normalize = (value) => String(value ?? '').trim();
 
+export const PRIMARY_ADMIN_EMAIL = 'amir.davodpour@gmail.com';
+
+export function isPrimaryAdmin(user) {
+  return user?.role === 'ADMIN' && normalize(user.email).toLowerCase() === PRIMARY_ADMIN_EMAIL;
+}
+
+export function assertPrimaryAdmin(user) {
+  if (!isPrimaryAdmin(user)) {
+    const error = new Error('PRIMARY_ADMIN_ONLY');
+    error.code = 'PRIMARY_ADMIN_ONLY';
+    error.status = 403;
+    throw error;
+  }
+  return true;
+}
+
 export function verifyAdminPanelCredentials({ user, name, username, expectedUsername, expectedEmail } = {}) {
   const ok = user?.role === 'ADMIN' &&
     normalize(name) === normalize(user.displayName) &&
