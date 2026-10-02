@@ -10,6 +10,7 @@ import '../../features/admin/admin_page.dart';
 import '../../features/admin/admin_access_page.dart';
 import '../../features/admin/admin_disputes_page.dart';
 import '../../features/admin/admin_operations_page.dart';
+import '../../features/chat/chat_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/auth/password_reset_page.dart';
 import '../../features/auth/register_page.dart';
@@ -63,6 +64,8 @@ abstract final class HopeRoutes {
   static Route<bool?> recommendationOnboarding() => _page(const RecommendationOnboardingPage());
   static Route<void> financialInsights() => _page(const FinancialInsightsPage());
   static Route<void> jobSatisfaction(String jobId) => _page(JobSatisfactionPage(jobId: jobId));
+  static Route<void> jobChat(String jobId) => _page(ChatPage(jobId: jobId));
+  static Route<void> adminChat() => _page(const ChatPage(adminRoom: true));
   static Route<WalletPage> wallet({required WalletRepository repository}) =>
       _page(WalletPage(repository: repository));
   static Route<void> createJob() => _page(const CreateJobPage());
