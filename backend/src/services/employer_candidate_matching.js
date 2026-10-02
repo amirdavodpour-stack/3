@@ -105,10 +105,23 @@ function preferredSet(candidate, field) {
   return new Set(list(candidate.profile?.[field]).map((item) => item.trim()).filter(Boolean));
 }
 
+const POSITIVE_APPLICATION_STATUSES = new Set([
+  'SHORTLISTED',
+  'FORWARDED',
+  'INTERVIEW',
+  'OFFERED',
+  'ACCEPTED',
+  'HIRED',
+  'COMPLETED',
+]);
+
 function historicalMatch(candidate, field, value) {
   if (!value) return false;
   return (candidate.completedJobs || []).some((job) => String(job?.[field] || '') === String(value))
-    || (candidate.applicationHistory || []).some((item) => String(item?.[field] || '') === String(value));
+    || (candidate.applicationHistory || []).some((item) =>
+      POSITIVE_APPLICATION_STATUSES.has(String(item?.status || '').toUpperCase())
+      && String(item?.[field] || '') === String(value)
+    );
 }
 
 export function scoreEmployerCandidate(job, candidate = {}) {
