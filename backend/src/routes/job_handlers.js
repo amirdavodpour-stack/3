@@ -110,7 +110,7 @@ export async function handleMine(ctx, req, res, parts, user) {
 export async function handleJobActions(ctx, req, res, parts, job) {
   const {
     authUser, id, repo, legacyJobs, jobUseCases, readBody, sendJson, HttpError, requireFields,
-    textField, jobView, enforceJobState, createAudit, now,
+    textField, jobView, enforceJobState, createAudit, now, notifyUser, NOTIFICATION_TYPES,
   } = ctx;
   const user = req.headers.authorization ? await authUser(req) : null;
   if (req.method === 'POST' && parts[2] === 'publish') {
@@ -179,6 +179,26 @@ export async function handleJobActions(ctx, req, res, parts, job) {
     if (process.env.DATABASE_URL) {
       const result = await jobUseCases.accept(job.id, now());
       await createAudit('JOB_ACCEPT', me.id, 'job', job.id);
+      await notifyUser({
+        userId: job.ownerId,
+        type: NOTIFICATION_TYPES.JOB_UPDATE,
+        title: 'گزارش رضایت همکاری',
+        body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
+        data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
+        dedupeKey: `job:${job.id}:satisfaction:owner`,
+        channels: ['IN_APP', 'PUSH'],
+      });
+      if (job.providerId) {
+        await notifyUser({
+          userId: job.providerId,
+          type: NOTIFICATION_TYPES.JOB_UPDATE,
+          title: 'گزارش رضایت همکاری',
+          body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
+          data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
+          dedupeKey: `job:${job.id}:satisfaction:worker`,
+          channels: ['IN_APP', 'PUSH'],
+        });
+      }
       await sendJson(res, 200, await jobView(result.job, me.id));
       return true;
     }
@@ -189,6 +209,26 @@ export async function handleJobActions(ctx, req, res, parts, job) {
     legacyJobs.touch('jobs', 'payments');
     await legacyJobs.save();
     await createAudit('JOB_ACCEPT', me.id, 'job', job.id);
+    await notifyUser({
+      userId: job.ownerId,
+      type: NOTIFICATION_TYPES.JOB_UPDATE,
+      title: 'گزارش رضایت همکاری',
+      body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
+      data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
+      dedupeKey: `job:${job.id}:satisfaction:owner`,
+      channels: ['IN_APP', 'PUSH'],
+    });
+    if (job.providerId) {
+      await notifyUser({
+        userId: job.providerId,
+        type: NOTIFICATION_TYPES.JOB_UPDATE,
+        title: 'گزارش رضایت همکاری',
+        body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
+        data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
+        dedupeKey: `job:${job.id}:satisfaction:worker`,
+        channels: ['IN_APP', 'PUSH'],
+      });
+    }
     await sendJson(res, 200, await jobView(job, me.id));
     return true;
   }
