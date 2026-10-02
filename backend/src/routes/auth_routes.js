@@ -1,4 +1,4 @@
-import { isPrimaryAdminEmail } from '../application/admin_panel_access.js';
+import { isPrimaryAdminEmail, shouldBootstrapPrimaryAdmin } from '../application/admin_panel_access.js';
 
 export function createAuthRoutes({
   authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser,
