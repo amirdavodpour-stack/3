@@ -240,20 +240,17 @@ class _ErrorBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: MaterialBanner(
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              Localizations.localeOf(context).languageCode == 'en'
-                  ? 'Dismiss'
-                  : 'بستن',
-            ),
-          ),
-        ],
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
+        ),
       ),
     );
   }
