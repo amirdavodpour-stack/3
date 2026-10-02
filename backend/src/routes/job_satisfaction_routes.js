@@ -19,6 +19,9 @@ export function createJobSatisfactionRoutes({
     if (!gate.ready || !payment) {
       if (payment && feedback.length === 2 && feedback.every((item) => item.status === 'ANALYZED')) {
         const conflict = await repo.createJobDispute({ jobId: job.id, openedBy: me.id, triggerType: 'SATISFACTION_CONFLICT' });
+        if (conflict.status === 'AI_ANALYZED' || conflict.status === 'ADMIN_REVIEW') {
+          return { gate, payment, autoReleased:false, dispute:conflict };
+        }
         if (conflict.status !== 'RESOLVED') {
           try {
             assertAutomatedAiAccess({ route: 'dispute-adjudication', source: 'SYSTEM' });
