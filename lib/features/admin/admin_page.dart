@@ -31,18 +31,41 @@ class _AdminPageState extends State<AdminPage>
   late Future<List<HopeAdminAuditEvent>> _audit;
   late TabController _tabs;
   bool _actionBusy = false;
+  bool _panelVerified = false;
+  bool _checkingPanel = true;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 4, vsync: this);
-    _reload();
+    _checkPanelAccess();
   }
 
   @override
   void dispose() {
     _tabs.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkPanelAccess() async {
+    try {
+      final access = await context.read<AdminRepository>().getPanelAccess();
+      if (!mounted) return;
+      if (access['verified'] != true) {
+        setState(() => _checkingPanel = false);
+        Navigator.pushReplacement(context, HopeRoutes.adminAccess());
+        return;
+      }
+      setState(() {
+        _panelVerified = true;
+        _checkingPanel = false;
+      });
+      _reload();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _checkingPanel = false);
+      Navigator.pushReplacement(context, HopeRoutes.adminAccess());
+    }
   }
 
   void _reload() {
@@ -147,7 +170,12 @@ class _AdminPageState extends State<AdminPage>
       };
 
   @override
-  Widget build(BuildContext context) => Directionality(
+  Widget build(BuildContext context) {
+    if (_checkingPanel) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (!_panelVerified) return const SizedBox.shrink();
+    return Directionality(
         textDirection: Localizations.localeOf(context).languageCode == 'en'
             ? TextDirection.ltr
             : TextDirection.rtl,
@@ -236,6 +264,7 @@ class _AdminPageState extends State<AdminPage>
           ),
         ),
       );
+  }
 
   Widget _summaryGrid(BuildContext context, HopeAdminSummary? raw) {
     final m = raw;
