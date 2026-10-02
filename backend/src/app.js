@@ -53,7 +53,7 @@ import { verifyGoogleIdToken } from './google_auth.js';
 import { createAiRoutes } from './routes/ai_routes.js';
 import { createRecommendationProfileRoutes } from './routes/recommendation_profile_routes.js';
 import { createOpportunityAgentRoutes } from './routes/opportunity_agent_routes.js';
-import { buildOpportunityAgentState } from './services/opportunity_agent.js';
+import { buildOpportunityAgentState, parseOpportunityAgentState } from './services/opportunity_agent.js';
 import { askAI } from './services/ai.js';
 import { enrichRecommendationProfile, buildRecommendationInterviewPrompt, parseInterviewResponse } from './services/recommendation_profile.js';
 
@@ -155,6 +155,7 @@ const opportunityAgentRoutes = createOpportunityAgentRoutes({
   HttpError,
   repo,
   buildOpportunityAgentState: (input) => buildOpportunityAgentState(input),
+  parseOpportunityAgentState: (input) => parseOpportunityAgentState(input),
 });
 
 
