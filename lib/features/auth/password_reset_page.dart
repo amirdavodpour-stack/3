@@ -56,6 +56,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
         child: Scaffold(
           body: SafeArea(
             child: PremiumPageFrame(
+              page: HopePageId.passwordReset,
               maxWidth: 640,
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
               child: ListView(
@@ -79,6 +80,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                   ),
                   const SizedBox(height: 14),
                   PremiumHero(
+                    domain: HopeProductDomain.account,
                     eyebrow: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     title: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     message: HopeCopy.of(context).copy_enter_your_account_email_and_we_will_start_16caa6e,
