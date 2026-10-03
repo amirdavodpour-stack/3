@@ -128,7 +128,7 @@ class _FakeAdmin implements AdminRepository {
         'primaryAdmin': primaryAdmin,
         'userId': primaryAdmin ? 'owner-1' : 'admin-1',
         'permissions': [
-          if (primaryAdmin) 'admin.manage_admins',
+          'admin.manage_admins',
         ],
       };
 
@@ -250,6 +250,8 @@ void main() {
     expect(find.text('Ops'), findsOneWidget);
   });
 
+  // Adversarial permission fixture: even when the backend reports the
+  // management permission, UI controls stay owner-only.
   testWidgets('operational administrators do not see administrator-management controls',
       (tester) async {
     final repo = _FakeAdmin(primaryAdmin: false)

@@ -274,7 +274,7 @@ class _AdminPageState extends State<AdminPage>
                     ),
                   ],
                 ),
-                if (_hasPermission('admin.manage_admins')) ...[
+                if (_isPrimaryAdmin && _hasPermission('admin.manage_admins')) ...[
                   const SizedBox(height: 14),
                   PremiumSectionHeader(
                     page: HopePageId.admin,
