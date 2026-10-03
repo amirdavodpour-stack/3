@@ -31,3 +31,5 @@ The backend contract suite is the active verification gate after the Flutter che
 
 <!-- [runtime-capture-fa] post-rollback narrow metadata fix validation; visual composition unchanged. -->
 <!-- [runtime-capture-fa] compact hero domain-row guard validation -->
+
+<!-- [runtime-capture-fa] forensic deferred-layout diagnostics -->
