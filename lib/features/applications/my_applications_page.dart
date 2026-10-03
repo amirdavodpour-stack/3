@@ -145,6 +145,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
             padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
+              domain: HopeProductDomain.work,
               eyebrow: _t('درخواست‌ها', 'APPLICATIONS'),
               title: _t('درخواست‌های من', 'My applications'),
               subtitle: _t(
