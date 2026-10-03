@@ -54,4 +54,26 @@ void main() {
     expect(source, contains('HopeProductDomain? domain'));
     expect(source, contains('PremiumDomainMarker'));
   });
+
+  test('profile keeps account and work surfaces separate', () {
+    final source = _read('lib/features/profile/profile_page.dart');
+    expect(source, contains('HopeProductDomain.account'));
+    expect(source, contains('HopeProductDomain.work'));
+    expect(source, contains('Work center'));
+    expect(source, contains('Work destinations'));
+    expect(source, isNot(contains('FutureBuilder<List<HopeApplication>>')));
+  });
+
+  test('admin control surfaces do not stack legacy AppBars over PremiumHeader', () {
+    const paths = <String>[
+      'lib/features/admin/admin_page.dart',
+      'lib/features/admin/admin_operations_page.dart',
+      'lib/features/admin/admin_disputes_page.dart',
+    ];
+    for (final path in paths) {
+      final source = _read(path);
+      expect(source, isNot(contains('appBar: AppBar(')), reason: path);
+      expect(source, contains('HopeProductDomain.control'), reason: path);
+    }
+  });
 }
