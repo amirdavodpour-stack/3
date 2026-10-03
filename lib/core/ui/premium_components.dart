@@ -42,7 +42,7 @@ class PremiumNavigationBar extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: dark
-                  ? Colors.white.withValues(alpha: .035)
+                  ? Colors.white.withValues(alpha: .045)
                   : surface.withValues(alpha: .82),
               border: Border.all(
                 color: dark
@@ -689,7 +689,7 @@ class PremiumPanel extends StatelessWidget {
           color: highlight
               ? scheme.primary.withValues(alpha: dark ? .24 : .18)
               : (dark
-                  ? Colors.white.withValues(alpha: glass ? .085 : .055)
+                  ? Colors.white.withValues(alpha: glass ? .10 : .075)
                   : HopeV2Surfaces.border(context)),
           width: 1,
         ),
@@ -698,14 +698,14 @@ class PremiumPanel extends StatelessWidget {
                 if (highlight)
                   BoxShadow(
                     color: scheme.primary.withValues(alpha: glass ? .085 : .065),
-                    blurRadius: glass ? 28 : 22,
+                    blurRadius: glass ? 26 : 24,
                     offset: const Offset(0, 9),
                   ),
                 if (glass)
                   BoxShadow(
-                    color: HopeV2Colors.secondary.withValues(alpha: .025),
-                    blurRadius: 32,
-                    offset: const Offset(-8, 14),
+                    color: HopeV2Colors.secondary.withValues(alpha: .018),
+                    blurRadius: 26,
+                    offset: const Offset(-7, 12),
                   ),
               ]
             : [
@@ -741,7 +741,7 @@ class PremiumHero extends StatelessWidget {
     this.action,
     this.icon,
     this.mediaUrl,
-    this.height = 280,
+    this.height = 264,
     this.semanticLabel,
     this.domain,
     this.page,
@@ -766,8 +766,8 @@ class PremiumHero extends StatelessWidget {
     final resolvedDomain = domain ?? page?.spec.domain;
     final heroHeight = compact
         // Compact mobile hero stays editorial and leaves room for actionable data.
-        ? height.clamp(188.0, 360.0).toDouble()
-        : (height < 344 ? 344.0 : height);
+        ? height.clamp(180.0, 320.0).toDouble()
+        : (height < 320 ? 320.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
     return Semantics(
@@ -829,8 +829,8 @@ class PremiumHero extends StatelessWidget {
             PositionedDirectional(
                 end: compact ? -84 : -48,
                 top: compact ? -76 : -54,
-                width: compact ? 190 : 220,
-                height: compact ? 190 : 220,
+                width: compact ? 176 : 204,
+                height: compact ? 176 : 204,
                 child: ExcludeSemantics(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -848,8 +848,8 @@ class PremiumHero extends StatelessWidget {
               PositionedDirectional(
                 start: compact ? -92 : -56,
                 bottom: compact ? -108 : -84,
-                width: compact ? 210 : 250,
-                height: compact ? 210 : 250,
+                width: compact ? 190 : 224,
+                height: compact ? 190 : 224,
                 child: ExcludeSemantics(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -875,8 +875,8 @@ class PremiumHero extends StatelessWidget {
                 top: horizontal,
                 child: ExcludeSemantics(
                   child: Container(
-                    width: 54,
-                    height: 54,
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .12),
                       borderRadius: BorderRadius.circular(HopeV2Radii.iconTile),
@@ -983,7 +983,7 @@ class PremiumHero extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: dense ? 24 : 28,
+                              fontSize: dense ? 23 : 27,
                               height: 1.03,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -.9,
@@ -994,7 +994,7 @@ class PremiumHero extends StatelessWidget {
                           ),
                           Text(
                             message,
-                            maxLines: dense ? 2 : 4,
+                            maxLines: dense ? 2 : 3,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white70,

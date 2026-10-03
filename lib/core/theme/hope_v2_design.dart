@@ -40,18 +40,18 @@ class HopeV2Colors {
   static const softPrimary = Color(0xFFE0E7FF);
   static const darkBackground = Color(0xFF070A12);
   static const darkSurface = Color(0xFF0F111A);
-  static const darkCard = Color(0xFF111827);
+  static const darkCard = Color(0xFF13192A);
   static const darkText = Color(0xFFF8FAFC);
   static const darkMuted = Color(0xFFA5ADBD);
 
   static const pageLight = Color(0xFFF1EDF8);
   static const pageDark = Color(0xFF070A12);
   static const panelLight = Color(0xFFFFFFFF);
-  static const panelDark = Color(0xFF0F111A);
+  static const panelDark = Color(0xFF101522);
   static const panelSoftLight = Color(0xFFFBF9FE);
-  static const panelSoftDark = Color(0xFF121726);
+  static const panelSoftDark = Color(0xFF151B2A);
   static const chipLight = Color(0xFFEFEBF8);
-  static const chipDark = Color(0x1AFFFFFF);
+  static const chipDark = Color(0x20FFFFFF);
   static const chipSelectedDark = Color(0x356366F1);
   static const disabledLight = Color(0xFFE8E3F0);
   static const borderControlLight = Color(0xFFDED9E8);
@@ -62,7 +62,7 @@ class HopeV2Colors {
   static const navigationIndicatorLight = Color(0xFFE5DFFF);
   static const navigationIndicatorDark = Color(0x3A6366F1);
   static const inputDark = Color(0xFF0D1320);
-  static const darkBorder = Color(0x1AFFFFFF);
+  static const darkBorder = Color(0x20FFFFFF);
   static const darkBorderStrong = Color(0x2DFFFFFF);
   static const darkDivider = Color(0x16FFFFFF);
   static const cardBorderLight = Color(0xFFE5E0EF);

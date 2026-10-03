@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/google_sign_in_service.dart';
 import '../../core/router/auth_return_intent.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/recommendation/recommendation_profile_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/premium_components.dart';
@@ -26,6 +29,44 @@ class _RegisterPageState extends State<RegisterPage> {
   final password = TextEditingController();
   bool obscure = true;
   bool loading = false;
+
+  Future<void> submitGoogle() async {
+    final google = context.read<GoogleSignInService?>();
+    if (google == null || !google.isConfigured) return;
+    setState(() => loading = true);
+    try {
+      await context.read<AuthController>().loginWithGoogle(google);
+      if (mounted) {
+        try {
+          final profile =
+              await context.read<RecommendationProfileRepository>().get();
+          if (!profile.onboardingCompleted && mounted) {
+            await Navigator.of(context)
+                .push(HopeRoutes.recommendationOnboarding());
+          }
+        } catch (_) {
+          // Existing auth must not fail because personalization is unavailable.
+        }
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(widget.returnIntent);
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        HopeFeedback.show(
+          context,
+          apiErrorMessage(
+            error,
+            fallback: AppLocalizations.of(context).loginFailedGeneric,
+          ),
+          tone: HopeFeedbackTone.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
 
   @override
   void dispose() {
@@ -104,13 +145,48 @@ class _RegisterPageState extends State<RegisterPage> {
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
                     icon: HopeV2Icons.userAdd,
-                    height: 300,
+                    height: 260,
                   ),
                   const SizedBox(height: 16),
                   PremiumPanel(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
+                        if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: loading ? null : submitGoogle,
+                              icon: const HopeIcon(HopeV2Icons.userAdd, size: 19),
+                              label: Text(
+                                AppLocalizations.of(context).signInWithGoogle,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: Theme.of(context).dividerColor,
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 10),
+                                child: Text(
+                                  AppLocalizations.of(context).orDivider,
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: Theme.of(context).dividerColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                        ],
                         TextField(
                           controller: name,
                           textInputAction: TextInputAction.next,

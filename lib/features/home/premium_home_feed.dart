@@ -134,15 +134,43 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     }
   }
 
-  void _handleAgentAction(
+  Future<void> _handleAgentAction(
     BuildContext context,
     HopeOpportunityAgentAction action,
-  ) {
+  ) async {
     if (action.type == 'COMPLETE_PROFILE') {
-      Navigator.push(context, HopeRoutes.recommendationOnboarding());
+      await Navigator.push(context, HopeRoutes.recommendationOnboarding());
       return;
     }
-    widget.onOpenExplore();
+
+    final jobId = action.jobId?.trim();
+    if (jobId != null && jobId.isNotEmpty) {
+      try {
+        final jobs =
+            await (_opportunities ?? Future.value(const <HopeJob>[]));
+        final job = jobs.cast<HopeJob?>().firstWhere(
+          (item) => item?.id == jobId,
+          orElse: () => null,
+        );
+        if (job != null && context.mounted) {
+          await Navigator.push(context, HopeRoutes.jobDetail(job));
+          return;
+        }
+      } catch (_) {
+        // Fall through to the closest capability-level destination.
+      }
+    }
+
+    if (!context.mounted) return;
+    switch (action.type) {
+      case 'FOLLOW_UP_APPLICATION':
+        Navigator.push(context, HopeRoutes.myApplications());
+        return;
+      case 'PREPARE_APPLICATION':
+      case 'REVIEW_OPPORTUNITY':
+      default:
+        widget.onOpenExplore();
+    }
   }
 
   String _t(BuildContext context, String fa, String en) =>

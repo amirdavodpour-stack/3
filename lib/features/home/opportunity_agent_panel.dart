@@ -32,6 +32,8 @@ class OpportunityAgentPanel extends StatelessWidget {
     final icon = switch (action.type) {
       'COMPLETE_PROFILE' => HopeV2Icons.profile,
       'FOLLOW_UP_APPLICATION' => HopeV2Icons.message,
+      'PREPARE_APPLICATION' => HopeV2Icons.job,
+      'REVIEW_OPPORTUNITY' => HopeV2Icons.featured,
       _ => HopeV2Icons.featured,
     };
 
@@ -125,9 +127,15 @@ class OpportunityAgentPanel extends StatelessWidget {
                   FilledButton.tonal(
                     onPressed: () => onAction(action),
                     child: Text(
-                      action.type == 'COMPLETE_PROFILE'
-                          ? _t(context, 'تکمیل پروفایل', 'Complete profile')
-                          : _t(context, 'بررسی فرصت', 'Review opportunity'),
+                      switch (action.type) {
+                        'COMPLETE_PROFILE' =>
+                          _t(context, 'تکمیل پروفایل', 'Complete profile'),
+                        'FOLLOW_UP_APPLICATION' =>
+                          _t(context, 'پیگیری درخواست', 'Follow up application'),
+                        'PREPARE_APPLICATION' =>
+                          _t(context, 'آماده‌سازی درخواست', 'Prepare application'),
+                        _ => _t(context, 'بررسی فرصت', 'Review opportunity'),
+                      },
                     ),
                   ),
                 ],
