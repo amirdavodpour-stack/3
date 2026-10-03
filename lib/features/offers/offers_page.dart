@@ -98,10 +98,6 @@ class _OffersPageState extends State<OffersPage> {
         ? all
         : all.where((x) => x.status.toUpperCase() == _filter).toList();
 
-    if (_loading && _items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _reload,
@@ -139,6 +135,17 @@ class _OffersPageState extends State<OffersPage> {
                 ),
               ),
               const SizedBox(height: 20),
+              if (_loading && _items.isEmpty)
+                HopeAsyncState(
+                  kind: HopeStateKind.loading,
+                  title: _t('در حال دریافت پیشنهادها', 'Loading offers'),
+                  message: _t(
+                    'پیشنهادهای کاری در حال دریافت هستند.',
+                    'Your work offers are loading.',
+                  ),
+                ),
+              if (_loading && _items.isEmpty)
+                const SizedBox(height: 14),
               if (_loadError != null) ...[
                 HopeAsyncState(
                   kind: hopeStateKindForError(_loadError!),
