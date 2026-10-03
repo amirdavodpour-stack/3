@@ -106,6 +106,8 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                             _SummaryCard(data: data, money: _money, t: _t),
                             const SizedBox(height: HopeV2Spacing.section),
                             PremiumSectionHeader(
+                              page: HopePageId.financialInsights,
+                              domain: HopeProductDomain.finance,
                               title: _t('روندهای مالی', 'Financial trends'),
                               subtitle: _t(
                                 'جریان نقدی، موجودی و منابع فعالیت را در یک نمای واحد ببینید.',
