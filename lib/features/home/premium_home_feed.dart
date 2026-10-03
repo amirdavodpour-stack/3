@@ -66,6 +66,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     final settings = context.read<HopeSettingsController>();
     final registry = applicationRegistryOf(context);
     _error = null;
+    final auth = context.read<AuthController>();
     final agentRepository = registry.opportunityAgent;
     if (!auth.isGuest && agentRepository != null) {
       _agentState = agentRepository.getState();
@@ -86,7 +87,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       _opportunities = Future.value(const <HopeJob>[]);
       _error = 'load';
     }
-    final auth = context.read<AuthController>();
     if (!auth.isGuest) {
       try {
         _activeJobs = registry.listMyJobs();
