@@ -137,7 +137,6 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_t('درخواست‌های من', 'My applications'))),
       body: PremiumPageFrame(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
         child: RefreshIndicator(
@@ -152,7 +151,23 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 'وضعیت هر درخواست را بررسی کنید و فقط در وضعیت‌های مجاز آن را پس بگیرید.',
                 'Track every application and withdraw only while its workflow still allows it.',
               ),
-              trailing: PremiumTag(icon: HopeV2Icons.mission, label: _items.length.toString()),
+              trailing: Wrap(
+                spacing: 8,
+                children: [
+                  PremiumIconButton(
+                    icon: Localizations.localeOf(context).languageCode == 'en'
+                        ? HopeV2Icons.arrowLeft
+                        : HopeV2Icons.arrowRight,
+                    tooltip: _t('بازگشت', 'Back'),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                  PremiumIconButton(
+                    icon: HopeV2Icons.refresh,
+                    tooltip: _t('بازخوانی', 'Refresh'),
+                    onPressed: _loading ? null : _load,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             if (!_loading)
