@@ -810,8 +810,8 @@ padding: const EdgeInsets.all(14),
       }
 
       return PremiumPanel(
-        glass: true,
-padding: const EdgeInsets.all(12),
+        glass: false,
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             if (_internalTopUpEnabled)
