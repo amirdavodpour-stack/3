@@ -128,6 +128,121 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     }
   }
 
+  List<HopeApplication> _activeApplicationList(
+    List<HopeApplication> items,
+  ) =>
+      items
+          .where(
+            (item) => const {
+              'PENDING',
+              'SHORTLISTED',
+              'FORWARDED',
+              'INTERVIEW',
+              'ACCEPTED',
+            }.contains(item.status.toUpperCase()),
+          )
+          .toList(growable: false);
+
+  List<HopeApplication> _decisionApplicationList(
+    List<HopeApplication> items,
+  ) =>
+      items
+          .where((item) => item.status.toUpperCase() == 'OFFERED')
+          .toList(growable: false);
+
+  List<HopeApplication> _closedApplicationList(
+    List<HopeApplication> items,
+  ) =>
+      items
+          .where(
+            (item) => const {
+              'REJECTED',
+              'WITHDRAWN',
+            }.contains(item.status.toUpperCase()),
+          )
+          .toList(growable: false);
+
+  List<Widget> _applicationSections(
+    BuildContext context,
+    List<HopeApplication> items,
+  ) {
+    final activeApplications = _activeApplicationList(items);
+    final decisionApplications = _decisionApplicationList(items);
+    final closedApplications = _closedApplicationList(items);
+    final sections = <Widget>[];
+
+    void addSection(
+      String title,
+      String subtitle,
+      List<HopeApplication> rows,
+      HopeProductDomain domain,
+    ) {
+      if (rows.isEmpty) return;
+      if (sections.isNotEmpty) {
+        sections.add(const SizedBox(height: 10));
+      }
+      sections.add(
+        PremiumSectionHeader(
+          page: HopePageId.myApplications,
+          domain: domain,
+          title: title,
+          subtitle: subtitle,
+        ),
+      );
+      sections.add(const SizedBox(height: 10));
+      sections.addAll(rows.map(_applicationCard));
+    }
+
+    addSection(
+      _t('در حال پیگیری', 'In progress'),
+      _t(
+        'درخواست‌هایی که هنوز در چرخه انتخاب و همکاری هستند.',
+        'Applications still moving through selection and collaboration.',
+      ),
+      activeApplications,
+      HopeProductDomain.work,
+    );
+    addSection(
+      _t('نیازمند تصمیم', 'Needs decision'),
+      _t(
+        'پیشنهادهایی که به اقدام مستقیم شما نیاز دارند.',
+        'Offers that require a direct decision from you.',
+      ),
+      decisionApplications,
+      HopeProductDomain.work,
+    );
+    addSection(
+      _t('بسته‌شده', 'Closed'),
+      _t(
+        'درخواست‌هایی که دیگر اقدام کاری روی آن‌ها باز نیست.',
+        'Applications that no longer have an active work action.',
+      ),
+      closedApplications,
+      HopeProductDomain.trust,
+    );
+
+    final known = {
+      ...activeApplications.map((item) => item.id),
+      ...decisionApplications.map((item) => item.id),
+      ...closedApplications.map((item) => item.id),
+    };
+    final uncategorized = items
+        .where((item) => !known.contains(item.id))
+        .toList(growable: false);
+    if (uncategorized.isNotEmpty) {
+      addSection(
+        _t('نیازمند بررسی', 'Needs review'),
+        _t(
+          'وضعیتی که در چرخهٔ استاندارد درخواست تعریف نشده است.',
+          'A status outside the standard application lifecycle.',
+        ),
+        uncategorized,
+        HopeProductDomain.work,
+      );
+    }
+    return sections;
+  }
+
   @override
   Widget build(BuildContext context) {
     final visible = _visible;
@@ -210,7 +325,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     child: Text(_t('تلاش دوباره', 'Retry')),
                   ),
                 ),
-                ...visible.map(_applicationCard),
+                ..._applicationSections(context, visible),
               ]
             else if (visible.isEmpty)
               PremiumPanel(
