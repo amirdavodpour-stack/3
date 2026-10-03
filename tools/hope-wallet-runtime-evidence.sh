@@ -14,14 +14,12 @@ source "${GITHUB_WORKSPACE:-$PWD}/tools/android-runtime-device-recovery.sh"
 hope_android_device_ready "$RUNTIME_SERIAL"
 
 ADB_TIMEOUT_SECONDS="${HOPE_ADB_TIMEOUT_SECONDS:-20}"
-RUNTIME_APK="${GITHUB_WORKSPACE:-$PWD}/build/app/outputs/flutter-apk/app-debug.apk"
 ADB_KILL_AFTER_SECONDS="${HOPE_ADB_KILL_AFTER_SECONDS:-5}"
 SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS="${HOPE_SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS:-60}"
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-8}"
 DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-20}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-120}"
-RUNTIME_BUILD_TIMEOUT_SECONDS="${HOPE_RUNTIME_BUILD_TIMEOUT_SECONDS:-420}"
-RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"
+RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
@@ -41,29 +39,7 @@ case "$CAPTURE_LOCALE" in
     ;;
 esac
 
-echo "HOPE_RUNTIME_PREBUILD:$RUNTIME_APK"
-echo "HOPE_RUNTIME_BUILD_TIMEOUT_SECONDS:$RUNTIME_BUILD_TIMEOUT_SECONDS"
-build_status=0
-timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_BUILD_TIMEOUT_SECONDS}s" \
-  flutter build apk --debug --no-pub \
-    --target=integration_test/runtime/critical_screens_evidence_test.dart \
-    --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-    --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
-    --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" || build_status=$?
-if [ "$build_status" -ne 0 ]; then
-  echo "HOPE_RUNTIME_BUILD_FAILED:exit=$build_status" >&2
-  exit "$build_status"
-fi
-test -s "$RUNTIME_APK"
-# Preserve the exact APK built from this feature-branch SHA for local/runtime Maestro inspection.
-cp "$RUNTIME_APK" "$evidence_dir/HOPE-${GITHUB_SHA}-debug.apk"
-
-# The custom emulator runner provisions the emulator but does not install our APK.
-# Install the exact artifact before any app-private marker handoff or flutter drive.
-timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-  adb install -r "$RUNTIME_APK"
-timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${ADB_TIMEOUT_SECONDS}s" \
-  adb shell pm path com.hope.marketplace >/dev/null
+echo "HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -273,41 +249,10 @@ elif [ "$CAPTURE_LOCALE" = "en" ]; then
   baseline_screens=("${screens[@]:15:15}")
 fi
 
-wait_for_screenshot_file() {
-  local marker="$1"
-  local process_pid="$2"
-  local log_path="$3"
-  local output="$evidence_dir/$marker.png"
-  local deadline=$((SECONDS + SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS))
-
-  while (( SECONDS < deadline )); do
-    if test -s "$output" && grep -Fq -- "HOPE_SCREENSHOT_READY:$marker" "$log_path"; then
-      local magic
-      magic="$(od -An -tx1 -N8 "$output" | tr -d '[:space:]')"
-      if [ "$magic" != "89504e470d0a1a0a" ]; then
-        echo "HOPE_HOST_CAPTURE_FAILED:$marker:invalid-png" >&2
-        return 1
-      fi
-      echo "HOPE_HOST_SCREENSHOT_READY:$marker"
-      return 0
-    fi
-
-    if ! kill -0 "$process_pid" 2>/dev/null; then
-      echo "HOPE_HOST_CAPTURE_FAILED:$marker:driver-exited" >&2
-      return 1
-    fi
-    sleep 0.2
-  done
-
-  echo "HOPE_HOST_CAPTURE_FAILED:$marker:timeout" >&2
-  return 1
-}
 run_host_batch_session() {
   local mode="$1"
-  local route_mode="$2"
-  shift 2
+  shift
   local -a markers=("$@")
-  local locale="$CAPTURE_LOCALE"
   local log_path="$runner_temp/hope-$mode-runtime.log"
   local launch_mode="$mode"
   local responsive_only="false"
@@ -342,7 +287,6 @@ run_host_batch_session() {
     --dart-define=HOPE_RESPONSIVE_BATCH="${responsive_batch}" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
-    --route="/__hope_runtime_capture__/$locale/$launch_mode" \
     >"$log_path" 2>&1 &
   process_pid=$!
   tail -n +1 -f "$log_path" &
@@ -443,7 +387,7 @@ run_host_batch_session() {
 }
 echo "HOPE_RUNTIME_CAPTURE_LOCALE:$CAPTURE_LOCALE"
 baseline_status=0
-run_host_batch_session baseline baseline "${baseline_screens[@]}" || baseline_status=$?
+run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
 if [ "$baseline_status" -eq 0 ] &&
    ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$log_file" "${baseline_screens[@]}"; then
   baseline_status=1
@@ -485,7 +429,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   # responsive screenshot and keeping the baseline session untouched.
   responsive_first_status=0
   responsive_second_status=0
-  run_host_batch_session responsive-a responsive "${responsive_session_screens[@]:0:3}" || responsive_first_status=$?
+  run_host_batch_session responsive-a "${responsive_session_screens[@]:0:3}" || responsive_first_status=$?
   if [ "$responsive_first_status" -eq 0 ] && \
      ! validate_capture_set "responsive-$CAPTURE_LOCALE-a" "$runner_temp/hope-responsive-a-runtime.log" "${responsive_session_screens[@]:0:3}"; then
     responsive_first_status=1
@@ -495,7 +439,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
     hope_android_device_ready "$RUNTIME_SERIAL" || true
   fi
 
-  run_host_batch_session responsive-b responsive "${responsive_session_screens[@]:3:3}" || responsive_second_status=$?
+  run_host_batch_session responsive-b "${responsive_session_screens[@]:3:3}" || responsive_second_status=$?
   if [ "$responsive_second_status" -eq 0 ] && \
      ! validate_capture_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-responsive-b-runtime.log" "${responsive_session_screens[@]:3:3}"; then
     responsive_second_status=1
