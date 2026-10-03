@@ -80,8 +80,11 @@ HopeJob _job() => HopeJob.fromMap(const {
 });
 
 void main() {
-  testWidgets('opportunity detail exposes a compact snapshot of its core facts',
+  testWidgets('opportunity detail keeps duplicate core facts below primary context',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final auth = AuthController(_AuthRepo(), SecureStore());
     await auth.applyRefreshedUser({'id': 'worker', 'displayName': 'Worker'});
 
@@ -114,9 +117,12 @@ void main() {
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('Duration'), findsOneWidget);
 
+    final heroSize = tester.getSize(find.byType(PremiumHero).first);
+    expect(heroSize.height, lessThanOrEqualTo(180));
+
     final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
     final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
-    expect(snapshotTop, lessThan(descriptionTop));
+    expect(descriptionTop, lessThan(snapshotTop));
   });
 }
 
