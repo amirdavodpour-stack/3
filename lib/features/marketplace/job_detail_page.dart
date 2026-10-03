@@ -82,6 +82,24 @@ class _JobDetailPageState extends State<JobDetailPage> {
     return _candidateStatusLabel(raw);
   }
 
+  Future<void> _openEmployerCandidateMatches(
+    BuildContext context,
+    HopeJob job,
+  ) async {
+    final repository =
+        context.read<EmployerCandidateMatchingRepository?>();
+    if (repository == null) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _EmployerCandidateMatchesLoader(
+          future: repository.listForJob(job.id),
+          jobTitle: job.title,
+        ),
+      ),
+    );
+  }
+
   Future<void> action() async {
     final auth = context.read<AuthController?>();
 
@@ -1130,7 +1148,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
-                          const HugeIcon(icon: HopeV2Icons.chat, size: 21),
+                          const HugeIcon(icon: HopeV2Icons.message, size: 21),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -1622,6 +1640,7 @@ class _EmployerCandidateMatchesLoader extends StatelessWidget {
   });
 
   final Future<HopeEmployerCandidateMatchList> future;
+  final String jobTitle;
   @override
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
