@@ -1630,33 +1630,71 @@ class _EmployerCandidateMatchesLoader extends StatelessWidget {
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          english
-              ? 'Applicants by compatibility'
-              : 'پذیرندگان بر اساس انطباق',
-        ),
-      ),
-      body: FutureBuilder<HopeEmployerCandidateMatchList>(
-        future: future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || snapshot.data == null) {
-            return Center(
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const HugeIcon(icon: HopeV2Icons.arrowLeft, size: 18),
-                label: Text(english ? 'Back' : 'بازگشت'),
-              ),
+      body: PremiumPageFrame(
+        maxWidth: 1180,
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 40),
+        child: FutureBuilder<HopeEmployerCandidateMatchList>(
+          future: future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return HopeAsyncState(
+                kind: HopeStateKind.loading,
+                title: english ? 'Loading matches' : 'در حال بارگذاری انطباق',
+                message: english
+                    ? 'Compatibility signals are being prepared.'
+                    : 'شاخص‌های انطباق در حال آماده‌سازی هستند.',
+              );
+            }
+            if (snapshot.hasError || snapshot.data == null) {
+              return ListView(
+                children: [
+                  PremiumHeader(
+                    domain: HopeProductDomain.intelligence,
+                    eyebrow: english ? 'MATCH INTELLIGENCE' : 'هوشمندی تطبیق',
+                    title: english
+                        ? 'Applicant compatibility'
+                        : 'انطباق متقاضیان',
+                    subtitle: english
+                        ? 'Compatibility is a separate intelligence surface from opportunity details.'
+                        : 'انطباق متقاضیان یک سطح مستقل از جزئیات فرصت است.',
+                    trailing: PremiumIconButton(
+                      icon: english
+                          ? HopeV2Icons.arrowLeft
+                          : HopeV2Icons.arrowRight,
+                      tooltip: english ? 'Back' : 'بازگشت',
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
+                  ),
+                  const SizedBox(height: HopeV2Spacing.lg),
+                  EmptyState(
+                    icon: HopeV2Icons.error,
+                    title: english
+                        ? 'Could not load matches'
+                        : 'بارگذاری انطباق ناموفق بود',
+                    message: english
+                        ? 'Compatibility data is temporarily unavailable.'
+                        : 'داده‌های انطباق موقتاً در دسترس نیست.',
+                    action: OutlinedButton.icon(
+                      onPressed: () => Navigator.maybePop(context),
+                      icon: const HopeIcon(HopeV2Icons.arrowRight, size: 18),
+                      label: Text(english ? 'Back' : 'بازگشت'),
+                    ),
+                  ),
+                ],
+              );
+            }
+            return Column(
+              children: [
+                Expanded(
+                  child: EmployerCandidateMatchesPage(
+                    data: snapshot.data!,
+                    onRetry: () {},
+                  ),
+                ),
+              ],
             );
-          }
-          return EmployerCandidateMatchesPage(
-            data: snapshot.data!,
-            onRetry: () {},
-          );
-        },
+          },
+        ),
       ),
     );
   }
