@@ -221,9 +221,14 @@ class PremiumPageFrame extends StatelessWidget {
                   padding: padding.copyWith(
                     bottom: padding.bottom + bottomInset,
                   ),
-                  child: Material(
-                    type: MaterialType.transparency,
-                    child: child,
+                  child: Semantics(
+                    container: true,
+                    explicitChildNodes: true,
+                    label: page?.title(context),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: child,
+                    ),
                   ),
                 ),
               ),
@@ -543,6 +548,7 @@ class PremiumHeader extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < HopeV2Breakpoints.compact;
+          final resolvedDomain = domain ?? page?.spec.domain;
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -557,7 +563,7 @@ class PremiumHeader extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                       decoration: BoxDecoration(
-                        color: (domain?.spec.accent ?? Theme.of(context).colorScheme.primary)
+                        color: (resolvedDomain?.spec.accent ?? Theme.of(context).colorScheme.primary)
                             .withValues(alpha: .09),
                         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
                       ),
@@ -1072,7 +1078,7 @@ class PremiumSectionHeader extends StatelessWidget {
                     child: Text(
                       title,
                       style: HopeV2Type.section(context).copyWith(
-                        color: domain == null ? null : accent,
+                        color: resolvedDomain == null ? null : accent,
                       ),
                     ),
                   ),
