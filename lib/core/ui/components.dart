@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'hope_l10n.dart';
 import '../theme/hope_v2_design.dart';
-import '../finance/toman_formatter.dart';
 
 /// Resolves the accessible secondary accent for the current brightness.
 /// Text/icons in the brand teal need >= 4.5:1 against the surface they sit
@@ -13,13 +12,6 @@ Color secondaryAccent(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
         ? HopeV2Colors.secondaryDark
         : HopeV2Colors.secondaryStrong;
-
-String moneyLabel(BuildContext context, Object value) {
-  final amount = HopeTomanFormatter.grouped(value);
-  final label =
-      Localizations.localeOf(context).languageCode == 'en' ? 'Toman' : 'تومان';
-  return '$amount $label';
-}
 
 class AnimatedEntrance extends StatelessWidget {
   const AnimatedEntrance(
