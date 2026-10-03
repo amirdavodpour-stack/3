@@ -241,6 +241,7 @@ void main() {
     expect(find.text('Payment status'), findsOneWidget);
     expect(find.text('Payment & job flow'), findsOneWidget);
     expect(find.text('Start work'), findsOneWidget);
+    expect(find.text('Stage 2 of 6'), findsOneWidget);
   });
 
   testWidgets('loading then funded payload shows status, amount and start work',
