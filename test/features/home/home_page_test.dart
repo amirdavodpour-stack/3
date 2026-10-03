@@ -93,6 +93,16 @@ void main() {
     expect(find.text('HOPE Pulse'), findsOneWidget);
     expect(find.bySemanticsLabel('منو'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+    expect(find.byType(HopeNavigationGlyph), findsNWidgets(10));
+    final selectedHome = tester.widget<HopeNavigationGlyph>(
+      find.byKey(const ValueKey('hope-nav-home-selected')),
+    );
+    expect(selectedHome.selected, isTrue);
+    final unselectedExplore = tester.widget<HopeNavigationGlyph>(
+      find.byKey(const ValueKey('hope-nav-explore')),
+    );
+    expect(unselectedExplore.selected, isFalse);
     expect(find.byType(FloatingActionButton), findsOneWidget);
     expect(find.text('کاوش'), findsOneWidget);
   });
