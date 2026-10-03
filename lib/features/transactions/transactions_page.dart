@@ -477,6 +477,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             value: '${items.length}',
                             icon: HopeV2Icons.job,
                             caption: _t('تمام همکاری‌های ثبت‌شده', 'All recorded collaborations'),
+                            compact: constraints.maxWidth < 500,
                           ),
                           PremiumStatCard(
                             label: _t('در حال اجرا', 'Active work'),
@@ -484,6 +485,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             icon: HopeV2Icons.mission,
                             accent: secondaryAccent(context),
                             caption: _t('در مسیر انجام یا بررسی', 'In progress or under review'),
+                            compact: constraints.maxWidth < 500,
                           ),
                           PremiumStatCard(
                             label: _t('تسویه‌شده', 'Settled'),
@@ -491,6 +493,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             icon: HopeV2Icons.completed,
                             accent: HopeV2Colors.success,
                             caption: _t('پایان‌یافته مالی', 'Financially settled'),
+                            compact: constraints.maxWidth < 500,
                           ),
                         ];
 
@@ -517,17 +520,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         );
                       },
                     ),
-                    const SizedBox(height: 20),
-                    PremiumSectionHeader(
-                      page: HopePageId.workCenter,
-                      domain: HopeProductDomain.work,
-                      title: _t('جریان همکاری‌ها', 'Work stream'),
-                      subtitle: _t(
-                        'وضعیت جاری را جدا از همکاری‌های تسویه‌شده دنبال کنید.',
-                        'Track current work separately from financially settled collaborations.',
+                    const SizedBox(height: 16),
+                    if (activeItems.isNotEmpty || settledItems.isNotEmpty) ...[
+                      PremiumSectionHeader(
+                        page: HopePageId.workCenter,
+                        domain: HopeProductDomain.work,
+                        title: _t('جریان همکاری‌ها', 'Work stream'),
+                        subtitle: _t(
+                          'وضعیت جاری را جدا از همکاری‌های تسویه‌شده دنبال کنید.',
+                          'Track current work separately from financially settled collaborations.',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
+                    ],
                     if (activeItems.isNotEmpty) ...[
                       PremiumSectionHeader(
                         page: HopePageId.workCenter,

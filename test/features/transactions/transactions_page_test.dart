@@ -145,6 +145,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('compact work-center metrics hide secondary captions on narrow screens',
+      (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('compact', status: 'IN_PROGRESS')];
+    await _pump(tester, repo, width: 360);
+
+    expect(find.text('تمام همکاری‌های ثبت‌شده'), findsNothing);
+    expect(find.text('در مسیر انجام یا بررسی'), findsNothing);
+    expect(find.text('پایان‌یافته مالی'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('work-center omits a redundant parent header for other-only states',
+      (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('other-only', status: 'PUBLISHED')];
+    await _pump(tester, repo);
+
+    expect(find.text('جریان همکاری‌ها'), findsNothing);
+    expect(find.text('سایر وضعیت‌ها'), findsOneWidget);
+    expect(find.text('پروژه other-only'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('transactions avoids nested quick-action blur on the heavy work surface',
       (tester) async {
     final repo = _Transactions()..jobs = [_job('blur-check', status: 'IN_PROGRESS')];

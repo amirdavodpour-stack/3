@@ -1079,6 +1079,7 @@ class PremiumStatCard extends StatelessWidget {
   final Object icon;
   final Color? accent;
   final String? caption;
+  final bool compact;
   /// Focal stat surfaces may opt into the stronger gradient treatment.
   /// Ordinary support metrics stay quiet by default.
   final bool highlight;
@@ -1086,6 +1087,50 @@ class PremiumStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = accent ?? Theme.of(context).colorScheme.primary;
+    if (compact) {
+      return PremiumPanel(
+        semanticLabel: '$label: $value',
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        highlight: highlight,
+        child: Row(
+          children: [
+            ExcludeSemantics(
+              child: HopeIconTile(
+                icon,
+                color: color,
+                filled: true,
+                size: 36,
+              ),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: HopeV2Type.metric(context).copyWith(fontSize: 21),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return PremiumPanel(
       semanticLabel: '$label: $value',
       padding: const EdgeInsets.all(14),
@@ -1112,6 +1157,7 @@ class PremiumStatCard extends StatelessWidget {
       ),
     );
   }
+}
 }
 
 class PremiumSectionHeader extends StatelessWidget {
