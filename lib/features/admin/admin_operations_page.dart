@@ -228,6 +228,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
                   _t('نمای مالی پلتفرم', 'Platform financial overview'),
                   _t('اعداد مستقیماً از کنترل مالی Backend خوانده می‌شوند.',
                       'Values are read directly from the backend financial control.'),
+                  domain: HopeProductDomain.finance,
                 ),
                 const SizedBox(height: 14),
                 _metricGrid(entries),
@@ -244,8 +245,12 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               child: ListView(
                 padding: const EdgeInsets.all(18),
                 children: [
-                  _header(HopeV2Icons.secure, _t('Trust & Safety', 'Trust & Safety'),
-                      _t('گزارش‌های واقعی کاربران و وضعیت رسیدگی.', 'Real user reports and their review state.')),
+                  _header(
+                    HopeV2Icons.secure,
+                    _t('Trust & Safety', 'Trust & Safety'),
+                    _t('گزارش‌های واقعی کاربران و وضعیت رسیدگی.', 'Real user reports and their review state.'),
+                    domain: HopeProductDomain.trust,
+                  ),
                   const SizedBox(height: 12),
                   if (rows.isEmpty)
                     _empty(HopeV2Icons.secure, _t('گزارشی وجود ندارد', 'No reports'))
@@ -317,9 +322,15 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
               child: ListView(
                 padding: const EdgeInsets.all(18),
                 children: [
-                  _header(HopeV2Icons.payments, _t('کنترل تسویه', 'Payout operations'),
-                      _t('مواردی که Backend برای تصمیم عملیاتی علامت‌گذاری کرده است.',
-                          'Cases explicitly awaiting backend operational resolution.')),
+                  _header(
+                    HopeV2Icons.payments,
+                    _t('کنترل تسویه', 'Payout operations'),
+                    _t(
+                      'مواردی که Backend برای تصمیم عملیاتی علامت‌گذاری کرده است.',
+                      'Cases explicitly awaiting backend operational resolution.',
+                    ),
+                    domain: HopeProductDomain.finance,
+                  ),
                   const SizedBox(height: 12),
                   if (rows.isEmpty)
                     _empty(HopeV2Icons.completed, _t('تسویه ناشناخته‌ای نیست', 'No unknown payouts'))
@@ -426,8 +437,15 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             builder: (_, s) => _loadingOrError(s, (data) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _header(HopeV2Icons.insights, _t('تحلیل محصول', 'Product analytics'),
-                    _t('خلاصه رویدادهای ثبت‌شده در بازه انتخابی.', 'Recorded product analytics for the selected period.')),
+                _header(
+                  HopeV2Icons.insights,
+                  _t('تحلیل محصول', 'Product analytics'),
+                  _t(
+                    'خلاصه رویدادهای ثبت‌شده در بازه انتخابی.',
+                    'Recorded product analytics for the selected period.',
+                  ),
+                  domain: HopeProductDomain.intelligence,
+                ),
                 const SizedBox(height: 12),
                 _metricGrid(data.entries.where((e) => e.value is num || e.value is String).toList()),
               ],
@@ -454,8 +472,15 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             child: ListView(
               padding: const EdgeInsets.all(18),
               children: [
-                _header(HopeV2Icons.error, _t('Crash Center', 'Crash Center'),
-                    _t('خلاصه خطاهای گزارش‌شده از کلاینت‌ها.', 'Reported client crash summary.')),
+                _header(
+                  HopeV2Icons.error,
+                  _t('Crash Center', 'Crash Center'),
+                  _t(
+                    'خلاصه خطاهای گزارش‌شده از کلاینت‌ها.',
+                    'Reported client crash summary.',
+                  ),
+                  domain: HopeProductDomain.control,
+                ),
                 const SizedBox(height: 12),
                 _metricGrid(rows),
                 const SizedBox(height: 14),
@@ -466,17 +491,30 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         }),
       );
 
-  Widget _header(Object icon, String title, String subtitle) => PremiumPanel(
+  Widget _header(
+    Object icon,
+    String title,
+    String subtitle, {
+    HopeProductDomain domain = HopeProductDomain.control,
+  }) =>
+      PremiumPanel(
         padding: const EdgeInsets.all(16),
-        child: Row(children: [
-          HopeIconTile(icon, filled: true, size: 46),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(subtitle),
-          ])),
-        ]),
+        child: Row(
+          children: [
+            PremiumDomainMarker(domain: domain),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text(subtitle),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
 
   Widget _metricGrid(List<MapEntry<String, dynamic>> entries) {
