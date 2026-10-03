@@ -151,3 +151,4 @@ jobs:
             ${{ runner.temp }}/hope-*-runtime.log
           if-no-files-found: warn
 # [runtime-capture-fa] Compact mobile density visual wave — exact-head capture.
+# [runtime-capture-fa] iconography + navigation dock + shared shape-language wave — exact-head capture.
