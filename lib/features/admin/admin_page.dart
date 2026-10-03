@@ -203,9 +203,8 @@ class _AdminPageState extends State<AdminPage>
                         .copy_monitor_and_manage_hope_in_one_place_bea3b7d,
                     subtitle: HopeCopy.of(context)
                         .copy_review_users_opportunities_applications_an_e30b9d2,
-                    trailing: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         PremiumIconButton(
                           icon: HopeV2Icons.message,
@@ -214,6 +213,7 @@ class _AdminPageState extends State<AdminPage>
                               ? null
                               : () => Navigator.push(context, HopeRoutes.adminChat()),
                         ),
+                        const SizedBox(width: 6),
                         PremiumIconButton(
                           icon: HopeV2Icons.secure,
                           tooltip: _t('قفل پنل', 'Lock admin panel'),
@@ -229,19 +229,14 @@ class _AdminPageState extends State<AdminPage>
                                   }
                                 },
                         ),
-                        const HopeIconTile(
-                          HopeV2Icons.secure,
-                          size: 50,
-                          filled: true,
-                        ),
                       ],
                     ),
                   ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
                 FutureBuilder<HopeAdminSummary>(
                     future: _summary,
                     builder: (context, s) => _summaryGrid(context, s.data)),
-                const SizedBox(height: 14),
+                const SizedBox(height: 11),
                 PremiumQuickActionStrip(
                   domain: HopeProductDomain.control,
                   title: _t('کنترل‌های اصلی', 'Control actions'),
@@ -297,7 +292,7 @@ class _AdminPageState extends State<AdminPage>
                     label: Text(_t('افزودن مدیر جدید', 'Add new administrator')),
                   ),
                 ],
-                const SizedBox(height: 18),
+                const SizedBox(height: 13),
                 TabBar(controller: _tabs, isScrollable: true, tabs: [
                   Tab(text: HopeCopy.of(context).copy_opportunities_015066e),
                   Tab(text: HopeCopy.of(context).copy_applications_6655869),
@@ -305,7 +300,7 @@ class _AdminPageState extends State<AdminPage>
                   Tab(text: HopeCopy.of(context).copy_audit_log_ff87181),
                 ]),
                 SizedBox(
-                    height: 620,
+                    height: 580,
                     child: TabBarView(controller: _tabs, children: [
                       _jobsTab(context),
                       _applicationsTab(context),
