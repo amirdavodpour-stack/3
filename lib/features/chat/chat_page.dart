@@ -239,7 +239,7 @@ class _ChatPageState extends State<ChatPage> {
                       message: _error!,
                       action: FilledButton.icon(
                         onPressed: _busy ? null : _load,
-                        icon: const HopeIcon(
+                        icon: HopeIcon(
                           HopeV2Icons.refresh,
                           size: 19,
                         ),
@@ -259,7 +259,7 @@ class _ChatPageState extends State<ChatPage> {
                               message: _error!,
                               action: FilledButton.icon(
                                 onPressed: _busy ? null : _load,
-                                icon: const HopeIcon(
+                                icon: HopeIcon(
                                   HopeV2Icons.refresh,
                                   size: 19,
                                 ),
@@ -286,7 +286,7 @@ class _ChatPageState extends State<ChatPage> {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const HopeIcon(
+                                      HopeIcon(
                                         HopeV2Icons.message,
                                         size: 38,
                                       ),
@@ -404,7 +404,7 @@ class _ChatPageState extends State<ChatPage> {
                                 'پیام خود را بنویسید',
                                 'Write a message',
                               ),
-                              prefixIcon: const HopeIcon(
+                              prefixIcon: HopeIcon(
                                 HopeV2Icons.message,
                                 size: 20,
                               ),
@@ -427,7 +427,7 @@ class _ChatPageState extends State<ChatPage> {
                     glass: true,
                     child: Row(
                       children: [
-                        const HopeIcon(HopeV2Icons.secure, size: 20),
+                        HopeIcon(HopeV2Icons.secure, size: 20),
                         const SizedBox(width: 9),
                         Expanded(
                           child: Text(
