@@ -40,6 +40,7 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
       body: PremiumPageFrame(maxWidth: 620, padding: const EdgeInsets.all(22), child: ListView(
         children: [
           PremiumHeader(
+            page: HopePageId.adminAccess,
             domain: HopeProductDomain.control,
             eyebrow: _t('دسترسی محدود', 'Restricted access'), title: _t('ورود به مرکز مدیریت', 'Enter admin control center'), subtitle: _t('نام حساب و نام کاربری مدیریتی باید دقیقاً با هویت مجاز سامانه منطبق باشد.', 'Your account name and configured admin username must match exactly.'), trailing: const HopeIconTile(HopeV2Icons.secure, size: 52, filled: true)),
           const SizedBox(height: 20),
