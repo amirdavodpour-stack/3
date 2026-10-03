@@ -233,7 +233,7 @@ testWidgets('settings changes reload home opportunities',
 
       expect(
         tester.getTopLeft(find.text('Best match for you')).dy,
-        lessThan(390),
+        lessThan(350),
       );
     } finally {
       tester.view.resetPhysicalSize();
