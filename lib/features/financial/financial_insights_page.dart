@@ -130,10 +130,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                             ),
                             const SizedBox(height: HopeV2Spacing.md),
                             _ChartCard(
-                              title: _t(
-                                'منابع فعالیت مالی',
-                                'Financial activity sources',
-                              ),
+                              title: _t('منابع فعالیت مالی', 'Financial activity sources'),
                               subtitle: _t(
                                 'بر اساس نوع مرجع تراکنش',
                                 'Grouped by transaction reference',
