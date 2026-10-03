@@ -16,6 +16,8 @@ import '../../core/theme/hope_v2_design.dart';
 
 ApplicationRegistry _applicationRegistry(BuildContext context) => applicationRegistryOf(context);
 
+// Runtime certification marker: compact Control Center composition batch.
+
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
   @override
