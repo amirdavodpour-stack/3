@@ -694,7 +694,7 @@ class _WalletPageState extends State<WalletPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              _t('موجودی قابل استفاده', 'Available balance'),
+              _t('کل موجودی', 'Total balance'),
               style: const TextStyle(
                 color: Colors.white70,
                 fontWeight: FontWeight.w800,
@@ -705,7 +705,7 @@ class _WalletPageState extends State<WalletPage> {
               alignment: AlignmentDirectional.centerStart,
               fit: BoxFit.scaleDown,
               child: Text(
-                _money(wallet.availableBalance),
+                _money(wallet.totalBalance),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 25,
@@ -736,11 +736,11 @@ class _WalletPageState extends State<WalletPage> {
                     (constraints.maxWidth - gap * (columns - 1)) / columns;
                 final metrics = <({String label, String value})>[
                   (
-                    label: _t('کل موجودی', 'Total balance'),
-                    value: _money(wallet.totalBalance),
+                    label: _t('قابل استفاده', 'Available'),
+                    value: _money(wallet.availableBalance),
                   ),
                   (
-                    label: _t('قفل‌شده', 'Protected'),
+                    label: _t('محافظت‌شده', 'Protected'),
                     value: _money(wallet.lockedBalance),
                   ),
                   (
@@ -973,33 +973,6 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 14),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const columns = 1;
-                final tiles = [
-                  PremiumStatCard(
-                    label: _t('برداشت‌های در جریان', 'Pending payouts'),
-                    value: '$_pendingPayoutCount',
-                    icon: HopeV2Icons.pending,
-                    accent: AppColors.warning,
-                    caption: _t(
-                      'درخواست‌های نیازمند پیگیری',
-                      'Requests awaiting completion',
-                    ),
-                  ),
-                ];
-                return GridView.count(
-                  crossAxisCount: columns,
-                  childAspectRatio: columns == 1 ? 3.2 : 1.9,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: tiles,
-                );
-              },
             ),
             const SizedBox(height: 18),
             PremiumSectionHeader(
