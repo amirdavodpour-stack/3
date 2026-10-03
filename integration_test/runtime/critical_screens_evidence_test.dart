@@ -567,6 +567,13 @@ class _EvidenceHost extends StatelessWidget {
         theme: AppTheme.dark(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.dark,
+        builder: (context, appChild) {
+          final media = MediaQuery.of(context);
+          return MediaQuery(
+            data: media.copyWith(disableAnimations: true),
+            child: appChild!,
+          );
+        },
         home: Directionality(
           textDirection: locale.languageCode == 'en'
               ? TextDirection.ltr
