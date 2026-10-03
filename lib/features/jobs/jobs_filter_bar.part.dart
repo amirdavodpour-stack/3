@@ -281,6 +281,7 @@ class _JobsFilterHeader extends StatelessWidget {
     required this.visibility,
     required this.categoryError,
     required this.cityLabel,
+    required this.cityIsExplicit,
     required this.categoryLabel,
     required this.resultCount,
     required this.onQueryChanged,
@@ -299,6 +300,7 @@ class _JobsFilterHeader extends StatelessWidget {
   final String visibility;
   final String? categoryError;
   final String cityLabel;
+  final bool cityIsExplicit;
   final String categoryLabel;
   final int resultCount;
   final ValueChanged<String> onQueryChanged;
@@ -356,6 +358,7 @@ class _JobsFilterHeader extends StatelessWidget {
               kind: kind,
               visibility: visibility,
               cityLabel: cityLabel,
+              cityIsExplicit: cityIsExplicit,
               categoryLabel: categoryLabel,
               categoryError: categoryError,
               onKindChanged: onKindChanged,
