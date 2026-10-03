@@ -623,16 +623,6 @@ class PremiumHeader extends StatelessWidget {
           );
 
           if (trailing == null) return content;
-          if (compact && constraints.maxWidth < 380) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                content,
-                const SizedBox(height: HopeV2Spacing.sm),
-                trailing!,
-              ],
-            );
-          }
           return Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [

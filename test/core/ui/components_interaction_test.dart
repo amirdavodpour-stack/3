@@ -80,6 +80,45 @@ void main() {
     expect(semantics.value, 'work');
   });
 
+  testWidgets('compact PremiumHeader keeps trailing action in the same visual row',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: PremiumHeader(
+              eyebrow: 'FINANCE',
+              title: 'Wallet',
+              subtitle: 'Balance and activity',
+              trailing: PremiumIconButton(
+                key: const ValueKey('header-action'),
+                icon: HopeV2Icons.insights,
+                tooltip: 'Financial insights',
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final header = find.byType(PremiumHeader);
+    expect(header, findsOneWidget);
+    expect(tester.getSize(header).height, lessThan(160));
+    expect(
+      tester.getSize(find.byKey(const ValueKey('header-action'))),
+      const Size(48, 48),
+    );
+  });
+
   testWidgets('PressableScale preserves child semantics when no override label is provided',
       (tester) async {
     await tester.pumpWidget(
