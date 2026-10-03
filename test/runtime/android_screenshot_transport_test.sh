@@ -63,6 +63,7 @@ if grep -Fq 'HOPE_ADB_SCREENSHOT_CAPTURE=true' "$script_file"; then
   exit 1
 fi
 
+# Compile-time capture inputs must be baked into the APK because --use-application-binary does not rebuild the target with flutter drive defines.
 # The Android build itself must also be bounded; otherwise a Gradle stall hides the real runtime state.
 grep -Fq 'RUNTIME_BUILD_TIMEOUT_SECONDS="${HOPE_RUNTIME_BUILD_TIMEOUT_SECONDS:-420}"' "$script_file"
 build_block="$(sed -n '/^echo "HOPE_RUNTIME_PREBUILD/,/^test -s "$RUNTIME_APK"/p' "$script_file")"
