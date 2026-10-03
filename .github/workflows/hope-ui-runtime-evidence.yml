@@ -16,6 +16,8 @@ on:
           - fa
           - en
 
+  # Current-head visual validation bridge: 2026-10-03 UI architecture batch.
+
   push:
     branches:
       - feat/google-sign-in-2026-09-20
