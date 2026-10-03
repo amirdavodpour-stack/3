@@ -207,6 +207,22 @@ void main() {
     expect(tester.takeException(), isNull);
   }
 
+  testWidgets('compact explore uses a short search hint so the control band stays overflow-free',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repo = _Repo();
+    await _pump(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('جستجو'), findsOneWidget);
+    expect(find.bySemanticsLabel('عنوان، شهر یا مهارت...'), findsNothing);
+    expect(tester.takeException(), isNull);
+  }
+
   testWidgets('search narrows the rendered opportunity list', (tester) async {
     final repo = _Repo();
     await _pump(tester, repo);
