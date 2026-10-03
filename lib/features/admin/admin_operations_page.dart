@@ -121,6 +121,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           child: Column(
             children: [
               PremiumHeader(
+                page: HopePageId.adminOperations,
                 domain: HopeProductDomain.control,
                 eyebrow: _t('کنترل عملیات', 'OPERATIONS CONTROL'),
                 title: _t('مرکز عملیات HOPE', 'HOPE Operations Center'),
