@@ -742,6 +742,8 @@ class PremiumHero extends StatelessWidget {
     this.mediaUrl,
     this.height = 280,
     this.semanticLabel,
+    this.domain,
+    this.page,
   });
   final String eyebrow;
   final String title;
@@ -753,11 +755,14 @@ class PremiumHero extends StatelessWidget {
   final String? mediaUrl;
   final double height;
   final String? semanticLabel;
+  final HopeProductDomain? domain;
+  final HopePageId? page;
 
   @override
   Widget build(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final resolvedDomain = domain ?? page?.spec.domain;
     final heroHeight = compact
         ? height.clamp(220.0, 360.0).toDouble()
         : (height < 344 ? 344.0 : height);
@@ -915,6 +920,46 @@ class PremiumHero extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (resolvedDomain != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 7),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: resolvedDomain.spec.accent.withValues(alpha: .18),
+                                      borderRadius: BorderRadius.circular(9),
+                                      border: Border.all(
+                                        color: resolvedDomain.spec.accent.withValues(alpha: .34),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: HopeIcon(
+                                        resolvedDomain.spec.icon,
+                                        size: 15,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 7),
+                                  Flexible(
+                                    child: Text(
+                                      resolvedDomain.spec.label(context),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: resolvedDomain.spec.accent,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           Text(
                             eyebrow.toUpperCase(),
                             maxLines: 1,
