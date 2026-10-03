@@ -103,18 +103,6 @@ class _OffersPageState extends State<OffersPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.jobId == null
-            ? _t('پیشنهادهای من', 'My offers')
-            : _t('پیشنهادهای این فرصت', 'Job offers')),
-        actions: [
-          IconButton(
-            onPressed: _reload,
-            icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-            tooltip: _t('بازخوانی', 'Refresh'),
-          ),
-        ],
-      ),
       body: RefreshIndicator(
         onRefresh: _reload,
         child: PremiumPageFrame(
@@ -129,9 +117,23 @@ class _OffersPageState extends State<OffersPage> {
                   'مبلغ، وضعیت و اقدام مجاز هر پیشنهاد را بررسی کنید.',
                   'Review amount, status, and the next allowed action for each offer.',
                 ),
-                trailing: PremiumTag(
-                  icon: HopeV2Icons.featured,
-                  label: all.length.toString(),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PremiumIconButton(
+                      icon: Localizations.localeOf(context).languageCode == 'en'
+                          ? HopeV2Icons.arrowLeft
+                          : HopeV2Icons.arrowRight,
+                      tooltip: _t('بازگشت', 'Back'),
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    PremiumIconButton(
+                      icon: HopeV2Icons.refresh,
+                      tooltip: _t('بازخوانی', 'Refresh'),
+                      onPressed: _reload,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),
