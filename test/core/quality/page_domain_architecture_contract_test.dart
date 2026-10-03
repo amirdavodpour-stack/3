@@ -229,6 +229,13 @@ void main() {
     expect(professional, greaterThan(trust));
   });
 
+  test('satisfaction is a trust surface in title and error state', () {
+    final source = _read('lib/features/jobs/job_satisfaction_page.dart');
+    expect(source, contains("eyebrow: _t('اعتماد', 'TRUST')"));
+    expect(source, contains('HopeStateKind.error'));
+    expect(source, isNot(contains('Center(child: OutlinedButton.icon')));
+  });
+
   test('profile exposes trust separately from account settings', () {
     final source = _read('lib/features/profile/profile_page.dart');
     expect(source, contains('domain: HopeProductDomain.trust'));
