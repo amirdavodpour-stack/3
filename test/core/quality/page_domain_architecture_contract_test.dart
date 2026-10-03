@@ -101,6 +101,12 @@ void main() {
     );
   });
 
+  test('opportunity agent uses intelligence visual language', () {
+    final source = _read('lib/features/home/opportunity_agent_panel.dart');
+    expect(source, contains('HopeProductDomain.intelligence'));
+    expect(source, contains('PremiumDomainMarker'));
+  });
+
   test('home places active work before discovery feed', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
     final active = source.indexOf('_activeWork(context)');
