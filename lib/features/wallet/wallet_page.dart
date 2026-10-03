@@ -811,7 +811,7 @@ padding: const EdgeInsets.all(14),
         );
       }
 
-      // Runtime visual certification: wallet actions stay opaque and calm.
+      // Runtime certification: compact wallet actions + focal balance hierarchy.
       return PremiumPanel(
         glass: false,
         padding: const EdgeInsets.all(12),
