@@ -520,6 +520,11 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   adb shell wm size reset || true
   adb shell sleep 1 >/dev/null 2>&1 || true
 
+  if [ "$responsive_status" -eq 0 ] && \
+     ! validate_capture_set "responsive-$CAPTURE_LOCALE-combined" "/dev/null" "${responsive_target_screens[@]}"; then
+    responsive_status=1
+  fi
+
   if [ "$responsive_status" -ne 0 ] && [ "$test_status" -eq 0 ]; then
     test_status="$responsive_status"
   fi
