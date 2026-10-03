@@ -216,7 +216,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                             hintText: isEn
                                 ? 'Write your answer…'
                                 : 'پاسخ خود را بنویسید…',
-                            prefixIcon: const HopeIcon(
+                            prefixIcon: HopeIcon(
                               HopeV2Icons.message,
                               size: 20,
                             ),
