@@ -664,13 +664,6 @@ padding: const EdgeInsets.all(14),
           border: Border.all(
             color: HopeV2Colors.primary.withValues(alpha: .24),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: HopeV2Colors.primary.withValues(alpha: .09),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
