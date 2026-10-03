@@ -32,3 +32,5 @@ The backend contract suite is the active verification gate after the Flutter che
 
 <!-- [runtime-capture-fa] compact hostile-width visual wave capture marker; no semantic behavior. -->
 <!-- [runtime-capture-fa] compact visual reconstruction wave 2026-10-03; no semantic behavior. -->
+
+<!-- [runtime-capture-fa] skeleton/hero/page-frame visual repair wave 2026-10-03; no semantic behavior. -->
