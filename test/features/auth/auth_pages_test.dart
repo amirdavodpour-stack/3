@@ -76,6 +76,12 @@ void main() {
     expect(find.textContaining('ساخت حساب'), findsOneWidget);
   });
 
+  testWidgets('login keeps the auth surface free of backdrop blur', (tester) async {
+    await tester.pumpWidget(await _screen(const LoginPage()));
+    await tester.pumpAndSettle();
+    expect(find.byType(BackdropFilter), findsNothing);
+  });
+
   testWidgets('guest action changes authentication state without credentials',
       (tester) async {
     await tester.pumpWidget(await _screen(const LoginPage()));
