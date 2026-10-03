@@ -730,30 +730,37 @@ class OpportunitySkeletonCard extends StatelessWidget {
   const OpportunitySkeletonCard({super.key});
 
   @override
-  Widget build(BuildContext context) => const HopeSurface(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SkeletonBox(height: 110, radius: HopeV2Radii.xl),
-          Padding(
-            padding: EdgeInsets.all(HopeV2Spacing.lg),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SkeletonBox(height: 20, width: 240),
-              SizedBox(height: 9),
-              SkeletonBox(height: 14, width: 180),
-              SizedBox(height: 15),
-              SkeletonBox(height: 14, width: 90),
-              SizedBox(height: 8),
-              SkeletonBox(height: 20, width: 150),
-              SizedBox(height: 12),
-              LayoutBuilder(
+  Widget build(BuildContext context) => HopeSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SkeletonBox(height: 110, radius: HopeV2Radii.xl),
+            Padding(
+              padding: const EdgeInsets.all(HopeV2Spacing.lg),
+              child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final stack = constraints.maxWidth < 240;
-                  final items = [
-                    const SkeletonBox(height: 28, width: 100),
-                    const SkeletonBox(height: 28, width: 118),
+                  final width = constraints.maxWidth;
+                  final titleWidth = width < 240 ? width : 240.0;
+                  final subtitleWidth = width < 180 ? width : 180.0;
+                  final detailWidth = width < 150 ? width : 150.0;
+                  final stack = width < 240;
+                  final items = const [
+                    SkeletonBox(height: 28, width: 100),
+                    SkeletonBox(height: 28, width: 118),
                   ];
-                  return stack
-                      ? Column(
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonBox(height: 20, width: titleWidth),
+                      const SizedBox(height: 9),
+                      SkeletonBox(height: 14, width: subtitleWidth),
+                      const SizedBox(height: 15),
+                      SkeletonBox(height: 14, width: detailWidth),
+                      const SizedBox(height: 8),
+                      SkeletonBox(height: 20, width: detailWidth),
+                      const SizedBox(height: 12),
+                      if (stack)
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             items[0],
@@ -761,18 +768,21 @@ class OpportunitySkeletonCard extends StatelessWidget {
                             items[1],
                           ],
                         )
-                      : Row(
+                      else
+                        Row(
                           children: [
                             items[0],
                             const SizedBox(width: 8),
                             items[1],
                           ],
-                        );
+                        ),
+                    ],
+                  );
                 },
               ),
-            ]),
-          ),
-        ]),
+            ),
+          ],
+        ),
       );
 }
 
