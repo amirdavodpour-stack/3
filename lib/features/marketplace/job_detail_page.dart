@@ -1486,11 +1486,11 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: 72, height: 72,
+                        width: 64, height: 64,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            SizedBox.square(dimension: 72, child: CircularProgressIndicator(value: 1, strokeWidth: 6, color: primary.withValues(alpha: .10))),
+                            SizedBox.square(dimension: 64, child: CircularProgressIndicator(value: 1, strokeWidth: 6, color: primary.withValues(alpha: .10))),
                             SizedBox.square(dimension: 72, child: CircularProgressIndicator(value: value, strokeWidth: 6, strokeCap: StrokeCap.round, color: primary)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
                               Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 17, height: 1, fontWeight: FontWeight.w900)),
@@ -1500,7 +1500,7 @@ class _MatchIntelligence extends StatelessWidget {
                           ],
                         ),
                       ),
-                    if (score != null) const SizedBox(width: 11),
+                    if (score != null) const SizedBox(width: 9),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
@@ -1515,15 +1515,15 @@ class _MatchIntelligence extends StatelessWidget {
                   ],
                 ),
                 if (hasComponents) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 9),
                   Text(_t(context, 'تجزیه تطبیق', 'Match breakdown'), style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final columns = constraints.maxWidth >= 520 ? 2 : 1;
+                      final columns = constraints.maxWidth >= 240 ? 2 : 1;
                       const gap = 10.0;
                       final width = columns == 2 ? (constraints.maxWidth - gap) / 2 : constraints.maxWidth;
-                      return Wrap(spacing: gap, runSpacing: 8, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
+                      return Wrap(spacing: gap, runSpacing: 6, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
                     },
                   ),
                 ],
@@ -1551,7 +1551,7 @@ class _MatchIntelligence extends StatelessWidget {
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
       key: ValueKey('match-breakdown-${key}'),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),
