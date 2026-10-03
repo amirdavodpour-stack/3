@@ -194,10 +194,11 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
     return Semantics(
       button: true,
       label: _t(context, 'باز کردن فیلترهای فرصت', 'Open opportunity filters'),
-      child: OutlinedButton.icon(
-        onPressed: () => _open(context),
-        icon: const HopeIcon(HopeV2Icons.filter, size: 18),
-        label: Text(label),
+      child: PremiumFilterChip(
+        icon: HopeV2Icons.filter,
+        label: label,
+        selected: activeCount > 0,
+        onTap: () => _open(context),
       ),
     );
   }

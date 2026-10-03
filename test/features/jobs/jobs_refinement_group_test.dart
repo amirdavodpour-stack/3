@@ -56,48 +56,59 @@ void main() {
     }
     expect(tester.takeException(), isNull);
   });
-  testWidgets('refinement launcher keeps secondary filters out of the first viewport',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('en'),
-        supportedLocales: const [Locale('fa'), Locale('en')],
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        home: Scaffold(
-          body: HopeOpportunityRefinementLauncher(
-            activeCount: 2,
-            kind: 'MISSION',
-            visibility: 'PUBLIC',
-            cityLabel: 'Tehran',
-            categoryLabel: 'Design',
-            categoryError: null,
-            onKindChanged: (_) {},
-            onVisibilityChanged: (_) {},
-            onPickCity: () {},
-            onPickCategory: () {},
-            onRetryCategories: () {},
+  testWidgets(
+    'refinement launcher stays finite inside a loose action row',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HopeOpportunityRefinementLauncher(
+                    activeCount: 2,
+                    kind: 'MISSION',
+                    visibility: 'PUBLIC',
+                    cityLabel: 'Tehran',
+                    categoryLabel: 'Design',
+                    categoryError: null,
+                    onKindChanged: (_) {},
+                    onVisibilityChanged: (_) {},
+                    onPickCity: () {},
+                    onPickCategory: () {},
+                    onRetryCategories: () {},
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.textContaining('Filters'), findsOneWidget);
-    expect(find.text('Missions'), findsNothing);
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Filters'), findsOneWidget);
+      expect(find.text('Missions'), findsNothing);
 
-    await tester.tap(find.text('Filters'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Filters'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Refine results'), findsOneWidget);
-    expect(find.text('Missions'), findsOneWidget);
-    expect(find.text('Public'), findsOneWidget);
-    expect(find.text('Tehran'), findsOneWidget);
-    expect(find.text('Design'), findsOneWidget);
-  });
+      expect(find.text('Refine results'), findsOneWidget);
+      expect(find.text('Missions'), findsOneWidget);
+      expect(find.text('Public'), findsOneWidget);
+      expect(find.text('Tehran'), findsOneWidget);
+      expect(find.text('Design'), findsOneWidget);
+    },
+  );
 
 }
