@@ -20,6 +20,7 @@ SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS="${HOPE_SCREENSHOT_FRESHNESS_TIMEOUT_SECOND
 FOCUS_CHECK_TIMEOUT_SECONDS="${HOPE_FOCUS_CHECK_TIMEOUT_SECONDS:-8}"
 DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-20}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-120}"
+RUNTIME_BUILD_TIMEOUT_SECONDS="${HOPE_RUNTIME_BUILD_TIMEOUT_SECONDS:-300}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"
 RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
@@ -41,11 +42,18 @@ case "$CAPTURE_LOCALE" in
 esac
 
 echo "HOPE_RUNTIME_PREBUILD:$RUNTIME_APK"
-flutter build apk --debug --no-pub \
-  --target=integration_test/runtime/critical_screens_evidence_test.dart \
-  --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-  --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
-  --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"
+echo "HOPE_RUNTIME_BUILD_TIMEOUT_SECONDS:$RUNTIME_BUILD_TIMEOUT_SECONDS"
+build_status=0
+timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_BUILD_TIMEOUT_SECONDS}s" \
+  flutter build apk --debug --no-pub \
+    --target=integration_test/runtime/critical_screens_evidence_test.dart \
+    --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+    --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
+    --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" || build_status=$?
+if [ "$build_status" -ne 0 ]; then
+  echo "HOPE_RUNTIME_BUILD_FAILED:exit=$build_status" >&2
+  exit "$build_status"
+fi
 test -s "$RUNTIME_APK"
 # Preserve the exact APK built from this feature-branch SHA for local/runtime Maestro inspection.
 cp "$RUNTIME_APK" "$evidence_dir/HOPE-${GITHUB_SHA}-debug.apk"
