@@ -73,6 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: EdgeInsets.zero,
         children: [
           PremiumHeader(
+            page: HopePageId.profile,
             domain: HopeProductDomain.account,
             eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
             title: name,
