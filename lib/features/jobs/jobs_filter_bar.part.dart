@@ -186,6 +186,7 @@ class _JobsFilterHeader extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
               const SizedBox(height: HopeV2Spacing.sm),
               if (categoryError != null)
                 Padding(
@@ -230,6 +231,7 @@ class _JobsFilterHeader extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
             ],
           ),
         ),
