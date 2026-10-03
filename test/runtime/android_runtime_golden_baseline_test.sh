@@ -29,12 +29,28 @@ require_line "$test_file" "await binding.takeScreenshot(marker);"
 require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
 require_line "$test_file" "HOPE_SCREENSHOT_SOURCE:flutter-driver:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
+require_line "$test_file" "IntegrationTestWidgetsFlutterBinding.ensureInitialized();"
+require_line "$test_file" "String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '')"
+require_line "$test_file" "String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: 'baseline')"
 require_line "$driver_file" "integrationDriver("
 require_line "$driver_file" "onScreenshot:"
 require_line "$driver_file" "writeAsBytes(image, flush: true)"
 require_line "$runtime" 'flutter drive --no-pub --no-dds'
-require_line "$runtime" 'wait_for_screenshot_file'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE'
+require_line "$runtime" 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build'
+require_line "$runtime" '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"'
+require_line "$runtime" '--dart-define=HOPE_CAPTURE_MODE="${launch_mode}"'
+require_line "$runtime" '--dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"'
+if grep -Fq -- '--use-application-binary' "$runtime"; then
+  printf 'FAIL: runtime baseline still bypasses flutter drive target compilation.
+' >&2
+  exit 1
+fi
+if grep -Fq -- '--route=' "$runtime"; then
+  printf 'FAIL: runtime baseline still configures capture through route transport.
+' >&2
+  exit 1
+fi
 if grep -Fq 'HOPE_ADB_SCREENSHOT_CAPTURE=true' "$runtime"; then
   printf 'FAIL: retired ADB screenshot mode is still part of the runtime baseline.\n' >&2
   exit 1
