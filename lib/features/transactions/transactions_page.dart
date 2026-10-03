@@ -108,6 +108,25 @@ class _TransactionsPageState extends State<TransactionsPage> {
         _t('نیازمند بررسی', 'Needs review');
   }
 
+  bool _isWorkCenterActive(String status) => const {
+        'ASSIGNED',
+        'IN_PROGRESS',
+        'DELIVERED',
+        'UNDER_REVIEW',
+        'COMPLETED',
+      }.contains(status.toUpperCase());
+
+  bool _isWorkCenterSettled(String status) => const {
+        'RELEASED',
+        'SETTLED',
+      }.contains(status.toUpperCase());
+
+  int _countWorkCenterActive(List<HopeJob> items) =>
+      items.where((job) => _isWorkCenterActive(job.status ?? '')).length;
+
+  int _countWorkCenterSettled(List<HopeJob> items) =>
+      items.where((job) => _isWorkCenterSettled(job.status ?? '')).length;
+
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
@@ -320,6 +339,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
+                    _activityNavigation(context),
+                    const SizedBox(height: 16),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
                         kind: HopeStateKind.error,
@@ -335,19 +356,28 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ],
                     LayoutBuilder(
                       builder: (context, constraints) {
+                        final activeCount = _countWorkCenterActive(items);
+                        final settledCount = _countWorkCenterSettled(items);
                         final metrics = [
                           PremiumStatCard(
-                            label: HopeCopy.of(context).copy_total_projects_78ce548,
+                            label: _t('همکاری‌ها', 'Collaborations'),
                             value: '${items.length}',
                             icon: HopeV2Icons.job,
-                            caption: HopeCopy.of(context).copy_latest_activity_a05277b,
+                            caption: _t('تمام همکاری‌های ثبت‌شده', 'All recorded collaborations'),
                           ),
                           PremiumStatCard(
-                            label: HopeCopy.of(context).copy_status_b81f9c7,
-                            value: HopeCopy.of(context).copy_active_5726b26,
+                            label: _t('در حال اجرا', 'Active work'),
+                            value: '$activeCount',
                             icon: HopeV2Icons.mission,
                             accent: secondaryAccent(context),
-                            caption: HopeCopy.of(context).copy_work_status_eb2d6f2,
+                            caption: _t('در مسیر انجام یا بررسی', 'In progress or under review'),
+                          ),
+                          PremiumStatCard(
+                            label: _t('تسویه‌شده', 'Settled'),
+                            value: '$settledCount',
+                            icon: HopeV2Icons.completed,
+                            accent: HopeV2Colors.success,
+                            caption: _t('پایان‌یافته مالی', 'Financially settled'),
                           ),
                         ];
 
@@ -374,9 +404,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     PremiumSectionHeader(
                       page: HopePageId.workCenter,
                       domain: HopeProductDomain.work,
-                      title: HopeCopy.of(context).copy_latest_activity_a05277b,
-                      subtitle: HopeCopy.of(context)
-                          .copy_the_most_recent_project_updates_5e402d8,
+                      title: _t('جریان همکاری‌ها', 'Work stream'),
+                      subtitle: _t(
+                        'وضعیت جاری را جدا از همکاری‌های تسویه‌شده دنبال کنید.',
+                        'Track current work separately from financially settled collaborations.',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     ...items.map((job) {
@@ -471,7 +503,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           ),
                         );
                     }),
-                    _activityNavigation(context),
                   ],
                 ),
               ));
