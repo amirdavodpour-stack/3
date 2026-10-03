@@ -75,6 +75,11 @@ driver_block="$(sed -n '/^run_host_batch_session()/,/^echo "HOPE_RUNTIME_CAPTURE
 grep -Fq 'timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s"' <<<"$driver_block"
 grep -Fq 'flutter drive --no-pub --no-dds' <<<"$driver_block"
 
+# The current Work Center/Transactions surface uses a bounded fast capture path to avoid a second headless pump deadlock.
+grep -Fq 'if (child is TransactionsPage)' "$test_file"
+grep -Fq 'HOPE_RUNTIME_TRANSACTION_FAST_SETTLE_DONE:$marker' "$test_file"
+grep -Fq 'await tester.pump(const Duration(milliseconds: 1200));' "$test_file"
+
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"
 completion_line="$(grep -Fn 'if [ "$completion_status" -eq 0 ]; then' "$script_file" | head -n1 | cut -d: -f1)"
