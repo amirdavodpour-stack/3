@@ -277,6 +277,14 @@ void main() {
     expect(source.allMatches("HopeRoutes.financialInsights()").length, 1);
   });
 
+  test('create opportunity separates form sections', () {
+    final source = _read('lib/features/marketplace/create_job_widgets.part.dart');
+    expect(source, contains('Opportunity details'));
+    expect(source, contains('HopeProductDomain.work'));
+    expect(source, contains('Fee and acceptance'));
+    expect(source, contains('Acceptance criteria'));
+  });
+
   test('explore uses the shared discovery header', () {
     final source = _read('lib/features/jobs/jobs_filter_bar.part.dart');
     expect(source, contains('PremiumHeader('));
