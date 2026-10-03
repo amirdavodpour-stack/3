@@ -111,6 +111,38 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets("premium hero honors compact requested height under narrow width",
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: SizedBox(
+            width: 240,
+            child: PremiumHero(
+              eyebrow: "DISCOVERY",
+              title: "یک فرصت متناسب",
+              message: "اطلاعات کلیدی فرصت در یک سطح فشرده و خوانا.",
+              height: 152,
+              domain: HopeProductDomain.discovery,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(PremiumHero)).height,
+      lessThanOrEqualTo(152),
+    );
+  });
+
   testWidgets("section title stacks action on narrow screens",
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
