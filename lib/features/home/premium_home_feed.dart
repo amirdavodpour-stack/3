@@ -153,184 +153,136 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     BuildContext context, {
     required AuthController auth,
     required HopeSettingsController settings,
+    required String displayName,
+    required String initial,
+    required String? avatarUrl,
     required VoidCallback onOpenMenu,
   }) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
-    final title = auth.isGuest
-        ? (isEn ? 'Find work that fits your next move' : 'فرصتی برای مسیر بعدی شما')
-        : (isEn ? 'Better opportunities for your next move' : 'فرصت‌های بهتر برای مسیر بعدی شما');
+    final greeting = auth.isGuest
+        ? (isEn ? 'Good to see you' : 'خوش آمدید')
+        : (isEn
+            ? 'Good evening, ' + (displayName.isEmpty ? 'there' : displayName)
+            : 'سلام ' + (displayName.isEmpty ? 'به شما' : displayName));
 
-    return Container(
-      constraints: const BoxConstraints(minHeight: 168),
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(HopeV2Radii.hero),
-        gradient: const LinearGradient(
-          begin: AlignmentDirectional.topStart,
-          end: AlignmentDirectional.bottomEnd,
-          colors: [
-            Color(0xFF171A34),
-            Color(0xFF151A2B),
-            Color(0xFF0A0F18),
-          ],
-          stops: [0, .52, 1],
-        ),
-        border: Border.all(
-          color: HopeV2Colors.primary.withValues(alpha: .22),
-        ),
-      ),
-      child: Stack(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PositionedDirectional(
-            end: -44,
-            top: -74,
-            child: Container(
-              width: 190,
-              height: 190,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    HopeV2Colors.primary.withValues(alpha: .22),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            start: -48,
-            bottom: -90,
-            child: Container(
-              width: 210,
-              height: 210,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    HopeV2Colors.secondary.withValues(alpha: .10),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: HopeMark(size: 38, showText: true),
-                    ),
-                  ),
-                  Semantics(
-                    button: true,
-                    label: isEn ? 'App menu' : 'منوی برنامه',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: onOpenMenu,
-                        customBorder: const CircleBorder(),
-                        child: Ink(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: .045),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: .10),
-                            ),
-                          ),
-                          child: const Center(
-                            child: HopeIcon(
-                              HopeV2Icons.menu,
-                              size: 19,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    ClipOval(
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        color: HopeV2Colors.primary.withValues(alpha: .12),
+                        child: avatarUrl != null
+                            ? Image.network(
+                                avatarUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Center(
+                                  child: Text(
+                                    initial,
+                                    style: const TextStyle(
+                                      color: HopeV2Colors.primaryDark,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Center(
+                                child: Text(
+                                  initial,
+                                  style: const TextStyle(
+                                    color: HopeV2Colors.primaryDark,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  _heroCapability(
-                    icon: HopeV2Icons.workshop,
-                    label: isEn ? 'Intelligent work' : 'کار هوشمند',
-                    accent: HopeV2Colors.primaryDark,
-                  ),
-                  _heroCapability(
-                    icon: HopeV2Icons.secure,
-                    label: isEn ? 'Trusted money' : 'پول مطمئن',
-                    accent: HopeV2Colors.secondaryDark,
-                  ),
-                  _heroCapability(
-                    icon: HopeV2Icons.completed,
-                    label: isEn ? 'Human progress' : 'پیشرفت انسانی',
-                    accent: HopeV2Colors.warningDark,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 9),
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontSize: 22,
-                      height: 1.08,
-                      letterSpacing: -.45,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                isEn
-                    ? 'Discover, execute, and protect every collaboration.'
-                    : 'کشف، اجرا و حفاظت از هر همکاری در یک مسیر.',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: HopeV2Colors.darkMuted,
-                      height: 1.35,
-                    ),
-              ),
-              if (settings.city.trim().isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const HopeIcon(
-                      HopeV2Icons.location,
-                      size: 12,
-                      color: HopeV2Colors.darkMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      settings.city,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: HopeV2Colors.darkMuted,
-                            fontSize: 10,
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            greeting,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
                           ),
+                          if (settings.city.trim().isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const HopeIcon(
+                                  HopeV2Icons.location,
+                                  size: 12,
+                                  color: HopeV2Colors.darkMuted,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  settings.city,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: HopeV2Colors.darkMuted,
+                                        fontSize: 10,
+                                      ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ],
+              ),
+              Semantics(
+                button: true,
+                label: isEn ? 'App menu' : 'منوی برنامه',
+                child: PremiumIconButton(
+                  icon: HopeV2Icons.menu,
+                  tooltip: isEn ? 'App menu' : 'منوی برنامه',
+                  onPressed: onOpenMenu,
+                ),
+              ),
             ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            isEn
+                ? 'Intelligent work • Trusted money • Human progress.'
+                : 'کار هوشمند • پول مطمئن • پیشرفت انسانی',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: HopeV2Type.eyebrow(context).copyWith(
+              color: HopeV2Colors.primaryDark,
+              letterSpacing: .15,
+              fontSize: 10.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isEn ? 'Opportunities that fit your next move.' : 'فرصت‌های بهتر برای مسیر بعدی شما',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontSize: 20,
+                  height: 1.08,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -.35,
+                ),
           ),
         ],
       ),
     );
   }
-
   Widget _heroCapability({
     required Object icon,
     required String label,
@@ -393,6 +345,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               context,
               auth: auth,
               settings: settings,
+              displayName: displayName,
+              initial: initial,
+              avatarUrl: avatarUrl,
               onOpenMenu: widget.onOpenMenu,
             ),
             const SizedBox(height: HopeV2Spacing.md),
