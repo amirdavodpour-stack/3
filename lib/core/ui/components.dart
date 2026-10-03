@@ -735,22 +735,38 @@ class OpportunitySkeletonCard extends StatelessWidget {
           SkeletonBox(height: 110, radius: HopeV2Radii.xl),
           Padding(
             padding: EdgeInsets.all(HopeV2Spacing.lg),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SkeletonBox(height: 20, width: 240),
-              SizedBox(height: 9),
-              SkeletonBox(height: 14, width: 180),
-              SizedBox(height: 15),
-              SkeletonBox(height: 14, width: 90),
-              SizedBox(height: 8),
-              SkeletonBox(height: 20, width: 150),
-              SizedBox(height: 12),
-              Row(children: [
-                SkeletonBox(height: 28, width: 100),
-                SizedBox(width: 8),
-                SkeletonBox(height: 28, width: 118)
-              ]),
-            ]),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                ConstrainedBox fit(SkeletonBox child) => ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: child,
+                    );
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    fit(const SkeletonBox(height: 20, width: 240)),
+                    const SizedBox(height: 9),
+                    fit(const SkeletonBox(height: 14, width: 180)),
+                    const SizedBox(height: 15),
+                    fit(const SkeletonBox(height: 14, width: 90)),
+                    const SizedBox(height: 8),
+                    fit(const SkeletonBox(height: 20, width: 150)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        fit(const SkeletonBox(height: 28, width: 100)),
+                        fit(const SkeletonBox(height: 28, width: 118)),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ]),
       );
