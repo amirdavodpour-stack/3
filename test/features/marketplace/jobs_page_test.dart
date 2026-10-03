@@ -228,29 +228,6 @@ void main() {
   }
 
   testWidgets(
-      'compact explore hides the secondary result count to protect the control row',
-      (tester) async {
-    tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final repo = _Repo();
-    await _pump(tester, repo);
-    await tester.pumpAndSettle();
-
-    expect(
-      find.byKey(const ValueKey('hope-explore-result-count')),
-      findsNothing,
-    );
-    expect(
-      find.byKey(const ValueKey('hope-opportunity-refinement-launcher')),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-  }
-
-  testWidgets(
       'automatic city context does not count as an active filter, but an explicit city does',
       (tester) async {
     final repo = _Repo();

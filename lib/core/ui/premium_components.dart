@@ -213,9 +213,7 @@ class PremiumPageFrame extends StatelessWidget {
       constraints: BoxConstraints(
         minHeight: MediaQuery.sizeOf(context).height,
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: DecoratedBox(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           color: HopeV2Surfaces.page(context),
         gradient: HopeV2Surfaces.pageHalo(context),
@@ -573,7 +571,7 @@ class PremiumHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisSize: MainAxisSize.max,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   if (resolvedDomain != null &&
                       !compact) ...[
@@ -773,10 +771,9 @@ class PremiumHero extends StatelessWidget {
     final resolvedDomain = domain ?? page?.spec.domain;
     final heroHeight = compact
         // Compact mobile hero stays editorial and leaves room for actionable data.
-        ? height.clamp(152.0, 320.0).toDouble()
+        ? height.clamp(180.0, 320.0).toDouble()
         : (height < 320 ? 320.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
-    final vertical = compact ? 14.0 : horizontal;
 
     return Semantics(
       container: true,
@@ -919,10 +916,7 @@ class PremiumHero extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontal,
-                vertical: vertical,
-              ),
+              padding: EdgeInsets.all(horizontal),
               child: Align(
                 alignment: AlignmentDirectional.bottomStart,
                 child: LayoutBuilder(
@@ -938,7 +932,7 @@ class PremiumHero extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 7),
                               child: Row(
-                                mainAxisSize: MainAxisSize.max,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
                                     width: 28,

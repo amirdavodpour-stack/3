@@ -203,8 +203,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   children: [
                     ClipOval(
                       child: Container(
-                        width: 38,
-                        height: 38,
+                        width: 42,
+                        height: 42,
                         color: HopeV2Colors.primary.withValues(alpha: .12),
                         child: avatarUrl != null
                             ? Image.network(
@@ -242,7 +242,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w800,
-                                  fontSize: 14,
+                                  fontSize: 15,
                                 ),
                           ),
                           if (settings.city.trim().isNotEmpty)
@@ -259,7 +259,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                   settings.city,
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: HopeV2Colors.darkMuted,
-                                        fontSize: 9.5,
+                                        fontSize: 10,
                                       ),
                                 ),
                               ],
@@ -287,8 +287,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 17,
-                  height: 1.10,
+                  fontSize: 18,
+                  height: 1.12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -.35,
                 ),
@@ -349,7 +349,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     return PremiumPageFrame(
       page: HopePageId.home,
       maxWidth: 1180,
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 28),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
       child: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
@@ -364,7 +364,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               avatarUrl: avatarUrl,
               onOpenMenu: widget.onOpenMenu,
             ),
-            const SizedBox(height: HopeV2Spacing.sm),
+            const SizedBox(height: HopeV2Spacing.md),
 
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
@@ -415,7 +415,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 
                 return PremiumPanel(
                   glass: false,
-padding: const EdgeInsets.all(10),
+padding: const EdgeInsets.all(12),
                   highlight: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -423,8 +423,8 @@ padding: const EdgeInsets.all(10),
                       Row(
                         children: [
                           Container(
-                            width: 28,
-                            height: 28,
+                            width: 30,
+                            height: 30,
                             decoration: BoxDecoration(
                               color: HopeV2Colors.primary.withValues(alpha: .14),
                               shape: BoxShape.circle,
@@ -435,12 +435,12 @@ padding: const EdgeInsets.all(10),
                             child: const Center(
                               child: HopeIcon(
                                 HopeV2Icons.featured,
-                                size: 14,
+                                size: 15,
                                 color: HopeV2Colors.primaryDark,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 7),
+                          const SizedBox(width: 9),
                           Expanded(
                             child: Text(
                               _t(context, 'HOPE Pulse', 'HOPE Pulse'),
@@ -454,7 +454,7 @@ padding: const EdgeInsets.all(10),
                           ),
                         ],
                       ),
-                      const SizedBox(height: HopeV2Spacing.sm),
+                      const SizedBox(height: HopeV2Spacing.md),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           // Mobile keeps the pulse readable as a 2x2 metric grid;
@@ -489,7 +489,7 @@ padding: const EdgeInsets.all(10),
                 );
               },
             ),
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.lg),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -636,10 +636,10 @@ padding: const EdgeInsets.all(10),
     required Color accent,
   }) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 42),
+      constraints: const BoxConstraints(minHeight: 48),
       padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
+        horizontal: 9,
+        vertical: 9,
       ),
       decoration: BoxDecoration(
         color: HopeV2Colors.panelSoftDark,
@@ -670,26 +670,27 @@ padding: const EdgeInsets.all(10),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 8.5,
+                      fontSize: 9,
                       color: HopeV2Colors.darkMuted,
                     ),
               ),
             ],
           );
           if (compact) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ExcludeSemantics(
                   child: HopeIcon(
                     icon,
-                    size: 13,
+                    size: 16,
                     color: accent,
                     strokeWidth: 1.9,
                   ),
                 ),
-                const SizedBox(width: 6),
-                Expanded(child: metric),
+                const SizedBox(height: 3),
+                metric,
               ],
             );
           }

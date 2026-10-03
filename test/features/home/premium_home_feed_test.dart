@@ -214,33 +214,6 @@ testWidgets('settings changes reload home opportunities',
     }
   });
 
-  testWidgets('home keeps the pulse dense enough at hostile compact width',
-      (tester) async {
-    tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
-
-    try {
-      final repository = _SequencedMarketplaceRepository();
-      final harness = await _host(repository);
-      await tester.pumpWidget(harness.widget);
-      await tester.pumpAndSettle();
-
-      for (var index = 0; index < 4; index++) {
-        final stat = find.byKey(ValueKey('home-pulse-stat-$index'));
-        expect(stat, findsOneWidget);
-        expect(tester.getSize(stat).height, lessThan(64));
-      }
-
-      expect(
-        tester.getTopLeft(find.text('Best match for you')).dy,
-        lessThan(350),
-      );
-    } finally {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    }
-  });
-
   testWidgets('home money labels use the canonical Toman copy helper',
       (tester) async {
     final harness = await _host(_SequencedMarketplaceRepository());

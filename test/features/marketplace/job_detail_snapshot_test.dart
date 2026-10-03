@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/features/marketplace/job_detail_page.dart';
-import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
@@ -81,48 +80,6 @@ HopeJob _job() => HopeJob.fromMap(const {
 });
 
 void main() {
-  testWidgets('opportunity detail keeps the compact hero bounded on narrow devices',
-      (tester) async {
-    final auth = AuthController(_AuthRepo(), SecureStore());
-    await auth.applyRefreshedUser({'id': 'worker', 'displayName': 'Worker'});
-
-    tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
-
-    try {
-      await tester.pumpWidget(
-        MultiProvider(
-          providers: [
-            ChangeNotifierProvider.value(value: auth),
-            Provider<JobDetailRepository>.value(value: _DetailRepo()),
-            Provider<TransactionRepository>.value(value: _TxRepo()),
-            Provider<UploadQueue>.value(value: _Queue()),
-          ],
-          child: MaterialApp(
-            locale: const Locale('en'),
-            supportedLocales: const [Locale('fa'), Locale('en')],
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            home: JobDetailPage(job: _job()),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(
-        tester.getSize(find.byType(PremiumHero)).height,
-        lessThanOrEqualTo(168),
-      );
-    } finally {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    }
-  });
-
   testWidgets('opportunity detail exposes a compact snapshot of its core facts',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());

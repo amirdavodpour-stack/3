@@ -76,10 +76,8 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      body: ColoredBox(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: SafeArea(
-          child: isDesktop
+      body: SafeArea(
+        child: isDesktop
             ? Row(
                 children: [
                   PremiumNavigationRail(
@@ -102,8 +100,7 @@ class _HomePageState extends State<HomePage> {
                   Expanded(child: content),
                 ],
               )
-              : content,
-        ),
+            : content,
       ),
       bottomNavigationBar: isDesktop
           ? null

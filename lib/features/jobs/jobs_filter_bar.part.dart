@@ -341,20 +341,18 @@ class _JobsFilterHeader extends StatelessWidget {
                     : copy.copy_title_city_or_skill_bccb024,
               ),
             ),
-            if (!compact) ...[
-              const SizedBox(width: HopeV2Spacing.sm),
-              Text(
-                '$resultCount ${copy.copy_results_2d120a3}',
-                key: const ValueKey('hope-explore-result-count'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: HopeV2Colors.muted,
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(width: HopeV2Spacing.sm),
-            ],
+            const SizedBox(width: HopeV2Spacing.sm),
+            Text(
+              '$resultCount ${copy.copy_results_2d120a3}',
+              key: const ValueKey('hope-explore-result-count'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: HopeV2Colors.muted,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(width: HopeV2Spacing.sm),
             HopeOpportunityRefinementLauncher(
               activeCount: filterCount,
               kind: kind,

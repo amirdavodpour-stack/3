@@ -43,24 +43,6 @@ void main() {
     }
   });
 
-  test('premium shell paints a full opaque canvas behind tab content', () {
-    final source = _read('lib/features/home/home_page.dart');
-    expect(source, contains('body: ColoredBox('));
-    expect(source, contains('Theme.of(context).scaffoldBackgroundColor'));
-  });
-
-  test('compact premium hero preserves the requested short height', () {
-    final source = _read('lib/core/ui/premium_components.dart');
-    expect(source, contains('height.clamp(152.0, 320.0)'));
-    expect(source, contains('mainAxisSize: MainAxisSize.max'));
-    expect(source, contains('final vertical = compact ? 14.0 : horizontal;'));
-  });
-
-  test('responsive match breakdown becomes two-column before desktop width', () {
-    final source = _read('lib/features/marketplace/job_detail_page.dart');
-    expect(source, contains('constraints.maxWidth >= 200'));
-  });
-
   test('transaction detail keeps its canonical shell in the part file', () {
     final source = _read('lib/features/transactions/transaction_widgets.part.dart');
     expect(source, contains('PremiumPageFrame'));

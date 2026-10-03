@@ -56,57 +56,6 @@ void main() {
   });
 
 
-  testWidgets('featured opportunity media stays compact at hostile mobile width',
-      (tester) async {
-    tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
-
-    try {
-      final job = HopeJob.fromMap({
-        'id': 'job-featured-mobile',
-        'title': 'Product designer',
-        'description': 'Compact featured media contract.',
-        'categoryId': 'design',
-        'category': 'Design',
-        'jobType': 'FIXED',
-        'budgetMin': '1500000',
-        'kind': 'JOB',
-        'visibility': 'PUBLIC',
-        'status': 'OPEN',
-        'recommendationScore': 0.94,
-      });
-
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('en'),
-          supportedLocales: const [Locale('fa'), Locale('en')],
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          theme: ThemeData(brightness: Brightness.dark),
-          home: Scaffold(
-            body: OpportunityCard(
-              job: job,
-              variant: OpportunityCardVariant.featured,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final media = find.byKey(
-        const ValueKey('opportunity-card-media-header'),
-      );
-      expect(tester.getSize(media).height, lessThan(96));
-    } finally {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    }
-  });
-
   testWidgets('recommended opportunity exposes its real match score signal',
       (tester) async {
     final job = HopeJob.fromMap({
