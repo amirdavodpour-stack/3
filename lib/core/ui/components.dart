@@ -730,7 +730,7 @@ class OpportunitySkeletonCard extends StatelessWidget {
   const OpportunitySkeletonCard({super.key});
 
   @override
-  Widget build(BuildContext context) => const HopeSurface(
+  Widget build(BuildContext context) => HopeSurface(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SkeletonBox(height: 110, radius: HopeV2Radii.xl),
           Padding(
