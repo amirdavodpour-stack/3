@@ -9,5 +9,10 @@ if grep -Fq '),\n              if' "$file"; then
   exit 1
 fi
 
-grep -Fq "if (!auth.isGuest) _drawerTile(context, Icons.auto_awesome" "$file"
+grep -Fq "PremiumDomainNavigationGroup(" "$file"
+grep -Fq "HopeProductDomain.discovery" "$file"
+grep -Fq "HopeProductDomain.work" "$file"
+grep -Fq "HopeProductDomain.intelligence" "$file"
+grep -Fq "HopeProductDomain.communication" "$file"
+grep -Fq "HopeProductDomain.control" "$file"
 echo "PASS: home_page.dart source integrity"
