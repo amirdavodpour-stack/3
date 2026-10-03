@@ -112,6 +112,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets("opportunity skeleton stays overflow-safe at compact width",
+      (tester) async {
+    tester.view.physicalSize = const Size(600, 1200);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: SizedBox(
+            width: 204,
+            child: OpportunitySkeletonCard(),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets("premium hero honors compact requested height under narrow width",
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
