@@ -218,6 +218,9 @@ Future<void> _openTab(WidgetTester tester, String label) async {
 }
 
 
+
+void main() {
+
   testWidgets('only the primary administrator sees administrator-management controls',
       (tester) async {
     final repo = _FakeAdmin(primaryAdmin: true)
@@ -266,7 +269,7 @@ Future<void> _openTab(WidgetTester tester, String label) async {
     expect(find.text('Add new administrator'), findsNothing);
   });
 
-void main() {
+
   testWidgets('admin presentation localizes backend enum fields', (tester) async {
     final repo = _FakeAdmin()
       ..jobs = [_job('j1', kind: 'MISSION', status: 'CANCELLED')]
