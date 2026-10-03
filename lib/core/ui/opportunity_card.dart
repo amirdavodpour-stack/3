@@ -125,7 +125,7 @@ class OpportunityCard extends StatelessWidget {
                   ]
                 : HopeV2Shadows.card,
           ),
-          padding: EdgeInsets.all(compact || featured ? HopeV2Spacing.md : HopeV2Spacing.lg),
+          padding: EdgeInsets.all(compact || featured ? HopeV2Spacing.md : 14),
           child: compact
               ? _compact(context, title, city, amount, primary, copy)
               : _standard(
@@ -580,10 +580,10 @@ class OpportunityCard extends StatelessWidget {
             ],
           ),
         ],
-        const SizedBox(height: HopeV2Spacing.md),
+        const SizedBox(height: HopeV2Spacing.sm),
         Wrap(
           spacing: HopeV2Spacing.sm,
-          runSpacing: HopeV2Spacing.sm,
+          runSpacing: HopeV2Spacing.xs,
           children: [
             PremiumTag(icon: HopeV2Icons.location, label: city, color: secondaryAccent(context)),
             if ((job.category ?? '').isNotEmpty)
@@ -595,7 +595,7 @@ class OpportunityCard extends StatelessWidget {
           ],
         ),
         if (amount.isNotEmpty) ...[
-          const SizedBox(height: HopeV2Spacing.lg),
+          const SizedBox(height: HopeV2Spacing.md),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
@@ -613,7 +613,7 @@ class OpportunityCard extends StatelessWidget {
                 HugeIcon(
                   icon: HopeV2Icons.payments,
                   color: primary,
-                  size: 21,
+                  size: 19,
                   strokeWidth: 1.9,
                 ),
                 const SizedBox(width: 9),
@@ -631,7 +631,7 @@ class OpportunityCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: HopeV2Type.metric(context).copyWith(
-                          fontSize: featured ? 22 : 20,
+                          fontSize: featured ? 21 : 18,
                           color: primary,
                         ),
                       ),
@@ -643,7 +643,7 @@ class OpportunityCard extends StatelessWidget {
           ),
         ],
         if (reasons.isNotEmpty) ...[
-          const SizedBox(height: HopeV2Spacing.md),
+          const SizedBox(height: HopeV2Spacing.sm),
           Text(copy.copy_match_signals, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: HopeV2Spacing.xs),
           Wrap(
@@ -653,10 +653,10 @@ class OpportunityCard extends StatelessWidget {
           ),
         ],
         if (expanded && job.description.trim().isNotEmpty) ...[
-          const SizedBox(height: HopeV2Spacing.lg),
+          const SizedBox(height: HopeV2Spacing.md),
           Text(job.description.trim(), maxLines: 5, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
         ],
-        const SizedBox(height: HopeV2Spacing.lg),
+        const SizedBox(height: HopeV2Spacing.md),
         if (featured)
           Container(
             width: double.infinity,
