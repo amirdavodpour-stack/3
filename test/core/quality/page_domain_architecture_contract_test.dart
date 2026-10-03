@@ -93,6 +93,9 @@ void main() {
     final architecture = _read('lib/core/ui/hope_product_architecture.dart');
     final screens = <String, String>{
       'premium_home_feed.dart': 'HopePageId.home',
+      'login_page.dart': 'HopePageId.login',
+      'register_page.dart': 'HopePageId.register',
+      'password_reset_page.dart': 'HopePageId.passwordReset',
       'jobs_page.dart': 'HopePageId.explore',
       'my_applications_page.dart': 'HopePageId.myApplications',
       'offers_page.dart': 'HopePageId.offers',
