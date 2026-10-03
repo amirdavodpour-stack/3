@@ -409,6 +409,43 @@ void main() {
     },
   );
 
+  testWidgets(
+    'wallet hero exposes compact financial signals without inventing lifetime balance',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('کل موجودی'), findsOneWidget);
+      expect(find.text('قفل‌شده'), findsWidgets);
+      expect(find.text('برداشت در انتظار'), findsOneWidget);
+      expect(find.text('نوع کیف پول'), findsOneWidget);
+      expect(find.textContaining('کیف پول داخلی'), findsOneWidget);
+      expect(find.text('موجودی مادام‌العمر'), findsNothing);
+    },
+  );
+
   testWidgets('wallet refresh failure keeps stale wallet visible with retry error',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
