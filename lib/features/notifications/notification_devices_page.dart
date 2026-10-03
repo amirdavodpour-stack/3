@@ -114,6 +114,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
             padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
+              page: HopePageId.notificationDevices,
               domain: HopeProductDomain.communication,
               eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
               title: _t('دستگاه‌های متصل', 'Connected devices'),
