@@ -147,6 +147,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
           padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
+              page: HopePageId.privacy,
               domain: HopeProductDomain.account,
               eyebrow: _t('کنترل حساب', 'ACCOUNT CONTROL'),
               title: _t('داده‌ها تحت کنترل شماست', 'Your data, under your control'),
