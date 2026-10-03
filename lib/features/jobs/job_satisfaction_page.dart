@@ -91,12 +91,6 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: Text(_t(
-            'گزارش رضایت همکاری',
-            'Work satisfaction report',
-          )),
-        ),
         body: SafeArea(
           child: PremiumPageFrame(
             maxWidth: 820,
@@ -111,10 +105,23 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                     'رضایت، کیفیت اجرا و ارتباط این همکاری را ثبت کنید تا چرخه کار کامل شود.',
                     'Record satisfaction, execution quality, and communication so this collaboration can close cleanly.',
                   ),
-                  trailing: const HopeIconTile(
-                    HopeV2Icons.completed,
-                    size: 52,
-                    filled: true,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PremiumIconButton(
+                        icon: _en
+                            ? HopeV2Icons.arrowLeft
+                            : HopeV2Icons.arrowRight,
+                        tooltip: _t('بازگشت', 'Back'),
+                        onPressed: () => Navigator.maybePop(context),
+                      ),
+                      const SizedBox(width: 8),
+                      const HopeIconTile(
+                        HopeV2Icons.completed,
+                        size: 52,
+                        filled: true,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: HopeV2Spacing.lg),
