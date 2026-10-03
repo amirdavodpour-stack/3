@@ -1,3 +1,5 @@
+export 'hope_product_architecture.dart';
+
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -325,15 +327,18 @@ class PremiumQuickActionStrip extends StatelessWidget {
     required this.title,
     required this.actions,
     this.subtitle,
+    this.domain,
   });
 
   final String title;
   final String? subtitle;
   final List<PremiumQuickAction> actions;
+  final HopeProductDomain? domain;
 
   @override
   Widget build(BuildContext context) {
     if (actions.isEmpty) return const SizedBox.shrink();
+    final accent = domain?.spec.accent ?? Theme.of(context).colorScheme.primary;
     return PremiumPanel(
       glass: true,
       padding: const EdgeInsets.all(HopeV2Spacing.md),
@@ -341,9 +346,22 @@ class PremiumQuickActionStrip extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: HopeV2Type.section(context),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (domain != null) ...[
+                PremiumDomainMarker(domain: domain!, compact: true),
+                const SizedBox(width: HopeV2Spacing.sm),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  style: HopeV2Type.section(context).copyWith(
+                    color: domain == null ? null : accent,
+                  ),
+                ),
+              ),
+            ],
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
@@ -396,6 +414,56 @@ class PremiumQuickActionStrip extends StatelessWidget {
   }
 }
 
+class PremiumDomainMarker extends StatelessWidget {
+  const PremiumDomainMarker({
+    super.key,
+    required this.domain,
+    this.compact = false,
+  });
+
+  final HopeProductDomain domain;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = domain.spec;
+    final accent = spec.accent;
+    final size = compact ? 30.0 : 36.0;
+    return Semantics(
+      container: true,
+      label: spec.label(context),
+      child: Container(
+        constraints: BoxConstraints(
+          minHeight: size,
+          minWidth: size,
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 7 : 9,
+          vertical: compact ? 4 : 6,
+        ),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: .10),
+          borderRadius: BorderRadius.circular(compact ? 10 : HopeV2Radii.button),
+          border: Border.all(color: accent.withValues(alpha: .18)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            HopeIcon(spec.icon, size: compact ? 16 : 18, color: accent, strokeWidth: 1.9),
+            if (!compact) ...[
+              const SizedBox(width: 6),
+              Text(
+                spec.label(context),
+                style: HopeV2Type.eyebrow(context).copyWith(color: accent),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumHeader extends StatelessWidget {
   const PremiumHeader({
     super.key,
@@ -403,12 +471,14 @@ class PremiumHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.trailing,
+    this.domain,
   });
 
   final String eyebrow;
   final String title;
   final String? subtitle;
   final Widget? trailing;
+  final HopeProductDomain? domain;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -417,18 +487,32 @@ class PremiumHeader extends StatelessWidget {
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: .09),
-                  borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-                ),
-                child: Text(
-                  eyebrow.toUpperCase(),
-                style: HopeV2Type.eyebrow(context).copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (domain != null) ...[
+                    PremiumDomainMarker(domain: domain!, compact: true),
+                    const SizedBox(width: HopeV2Spacing.sm),
+                  ],
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: (domain?.spec.accent ?? Theme.of(context).colorScheme.primary)
+                            .withValues(alpha: .09),
+                        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                      ),
+                      child: Text(
+                        eyebrow.toUpperCase(),
+                        overflow: TextOverflow.ellipsis,
+                        style: HopeV2Type.eyebrow(context).copyWith(
+                          color: domain?.spec.accent ??
+                              Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: HopeV2Spacing.sm),
               Text(
@@ -886,20 +970,51 @@ class PremiumSectionHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.action,
+    this.domain,
   });
 
   final String title;
   final String? subtitle;
   final Widget? action;
+  final HopeProductDomain? domain;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < HopeV2Breakpoints.compact;
+          final accent = domain?.spec.accent ?? Theme.of(context).colorScheme.primary;
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: HopeV2Type.section(context)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (domain != null)
+                    Container(
+                      width: 4,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(alpha: .18),
+                            blurRadius: 12,
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (domain != null) const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: HopeV2Type.section(context).copyWith(
+                        color: domain == null ? null : accent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
                 Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
