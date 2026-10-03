@@ -101,6 +101,12 @@ void main() {
     );
   });
 
+  test('opportunity detail exposes back action', () {
+    final source = _read('lib/features/marketplace/job_detail_page.dart');
+    expect(source, contains('PremiumIconButton'));
+    expect(source, contains('بازگشت'));
+  });
+
   test('opportunity agent uses intelligence visual language', () {
     final source = _read('lib/features/home/opportunity_agent_panel.dart');
     expect(source, contains('HopeProductDomain.intelligence'));
