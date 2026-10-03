@@ -137,6 +137,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 22),
               PremiumHero(
+                page: HopePageId.login,
                 domain: HopeProductDomain.account,
                 eyebrow: l10n.copy_hope_account_4ba3966,
                 title: l10n.loginWelcomeBack,
