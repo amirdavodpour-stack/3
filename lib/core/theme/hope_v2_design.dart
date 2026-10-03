@@ -366,9 +366,9 @@ class HopeV2Shadows {
       offset: Offset(0, 18),
     ),
     BoxShadow(
-      color: Color(0x3322D3EE),
-      blurRadius: 48,
-      offset: Offset(-10, 20),
+      color: Color(0x263F3AA0),
+      blurRadius: 42,
+      offset: Offset(-8, 18),
     ),
   ];
 
