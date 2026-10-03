@@ -13,7 +13,7 @@ grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
 grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
 grep -Fq 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build' "$script_file"
 # Self-build includes Flutter/Gradle compilation before VM-service connection.
-grep -Fq 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-300}"' "$script_file"
+grep -Fq 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"' "$script_file"
 
 if grep -Fq -- '--use-application-binary' "$script_file"; then
   echo "FAIL: runtime evidence must not use --use-application-binary" >&2
