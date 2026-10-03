@@ -28,3 +28,5 @@ A release candidate requires source checks, backend contracts, Flutter verificat
 ## Current hardening checkpoint
 
 The backend contract suite is the active verification gate after the Flutter checkpoint. Treat its latest real GitHub Actions run as the source of truth for remaining backend/CI failures; do not reuse an older failing run after source changes.
+
+<!-- [runtime-capture-fa] post-rollback narrow metadata fix validation; visual composition unchanged. -->
