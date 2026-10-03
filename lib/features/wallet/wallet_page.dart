@@ -902,17 +902,6 @@ padding: const EdgeInsets.all(12),
               },
             ),
             const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                HopeRoutes.financialInsights(),
-              ),
-              icon: const HopeIcon(HopeV2Icons.wallet, size: 19),
-              label: Text(
-                _t('تحلیل مالی و نمودارها', 'Financial insights & charts'),
-              ),
-            ),
-            const SizedBox(height: 12),
             PremiumPanel(
               glass: true,
 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
