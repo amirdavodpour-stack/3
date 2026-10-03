@@ -150,3 +150,4 @@ jobs:
             docs/audit/evidence/android-runtime/**
             ${{ runner.temp }}/hope-*-runtime.log
           if-no-files-found: warn
+# [runtime-capture-fa] Compact mobile density visual wave — exact-head capture.
