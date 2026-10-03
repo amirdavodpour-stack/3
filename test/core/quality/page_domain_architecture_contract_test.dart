@@ -285,6 +285,16 @@ void main() {
     expect(source, isNot(contains('applications = _controller.loadApplications')));
   });
 
+  test('applications are grouped by actionable lifecycle', () {
+    final source = _read('lib/features/applications/my_applications_page.dart');
+    expect(source, contains('final activeApplications ='));
+    expect(source, contains('final decisionApplications ='));
+    expect(source, contains('final closedApplications ='));
+    expect(source, contains("_t('در حال پیگیری', 'In progress')"));
+    expect(source, contains("_t('نیازمند تصمیم', 'Needs decision')"));
+    expect(source, contains("_t('بسته‌شده', 'Closed')"));
+  });
+
   test('offers keeps loading inside its page shell', () {
     final source = _read('lib/features/offers/offers_page.dart');
     expect(source, isNot(contains('return const Center(child: CircularProgressIndicator());')));
