@@ -15,6 +15,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -40,7 +43,15 @@ class _ProfileRepo implements ProfileRepository {
       throw UnimplementedError();
 }
 
-Future<void> _pump(WidgetTester tester, {bool authenticated = false}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  bool authenticated = false,
+  double width = 900,
+}) async {
+  tester.view.physicalSize = Size(width, 2400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -82,10 +93,23 @@ void main() {
     expect(find.textContaining('ورود'), findsWidgets);
   });
 
+  testWidgets('profile settings stay usable on narrow screens',
+      (tester) async {
+    await _pump(tester, authenticated: true, width: 360);
+    await tester.pumpAndSettle();
+
+    expect(find.text('کاربر'), findsWidgets);
+    expect(find.text('فارسی'), findsOneWidget);
+    expect(find.text('انگلیسی'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('authenticated profile displays account and provider data',
       (tester) async {
     await _pump(tester, authenticated: true);
-    expect(find.text('کاربر'), findsOneWidget);
+    expect(find.text('کاربر'), findsWidgets);
+    expect(find.text('سلام، کاربر'), findsNothing);
+
     final individual = find.text('INDIVIDUAL');
     var attempts = 0;
     while (attempts < 6 && individual.evaluate().isEmpty) {

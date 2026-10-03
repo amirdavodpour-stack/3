@@ -3,6 +3,8 @@ import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class AboutHopePage extends StatelessWidget {
   const AboutHopePage({super.key});
@@ -15,10 +17,13 @@ class AboutHopePage extends StatelessWidget {
       child: Scaffold(
         appBar:
             AppBar(title: Text(HopeCopy.of(context).copy_about_hope_f8ee86b)),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-          children: [
-            const HeroBanner(image: 'assets/images/hope_marketplace_hero.png'),
+        body: PremiumPageFrame(
+          maxWidth: 980,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+            const HeroBanner(),
             const SizedBox(height: 18),
             const Center(child: HopeMark(size: 72, showText: true)),
             const SizedBox(height: 20),
@@ -91,14 +96,6 @@ class AboutHopePage extends StatelessWidget {
                           .copy_admins_can_remove_opportunities_that_viola_82df522),
                 ])),
             const SizedBox(height: 24),
-            Center(
-                child: Text(
-                    HopeCopy.of(context).copy_hope_work_grow_together_6a1d9f0,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelLarge
-                        ?.copyWith(color: AppColors.muted))),
-            const SizedBox(height: 6),
             // Reuses the same build-time HOPE_VERSION convention already
             // used by telemetry_service.dart, so About always shows the
             // actual shipped version rather than a hard-coded string.
@@ -109,7 +106,8 @@ class AboutHopePage extends StatelessWidget {
                         .textTheme
                         .labelSmall
                         ?.copyWith(color: AppColors.muted))),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -153,44 +151,93 @@ class AboutHopePage extends StatelessWidget {
 }
 
 class HeroBanner extends StatelessWidget {
-  const HeroBanner({super.key, required this.image});
-  final String image;
+  const HeroBanner({super.key});
+
+  static const _height = 220.0;
+
   @override
-  Widget build(BuildContext context) => ClipRRect(
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: SizedBox(
-          height: 180,
-          child: Stack(fit: StackFit.expand, children: [
-            Image.asset(image, fit: BoxFit.cover),
-            DecoratedBox(
-                decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                  Colors.black12,
-                  Colors.black.withValues(alpha: .62)
-                ]))),
-            Padding(
-                padding: const EdgeInsets.all(20),
+        height: _height,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                scheme.primary,
+                scheme.secondary,
+                scheme.surfaceContainerHighest,
+              ],
+            ),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned(
+                right: -42,
+                top: -56,
+                child: ExcludeSemantics(
+                  child: Container(
+                    width: 190,
+                    height: 190,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: .16),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: -26,
+                bottom: -74,
+                child: ExcludeSemantics(
+                  child: Container(
+                    width: 180,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: .08),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(HopeV2Spacing.xl),
                 child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                          HopeCopy.of(context)
-                              .copy_a_better_path_to_finding_work_5802652,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 4),
-                      Text(
-                          HopeCopy.of(context)
-                              .copy_opportunities_meet_the_right_people_d51fef5,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 23,
-                              fontWeight: FontWeight.w900))
-                    ]))
-          ])));
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEn ? 'Work marketplace' : 'فرصت‌های کاری',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isEn ? 'Available opportunities' : 'فرصت‌های موجود',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

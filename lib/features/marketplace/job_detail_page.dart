@@ -11,9 +11,11 @@ import '../../core/uploads/upload_queue.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
 import '../../core/ui/copy.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 
 class JobDetailPage extends StatefulWidget {
@@ -232,7 +234,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_offer_price_d8fc5f4,
                 prefixIcon: const Icon(Icons.payments_outlined),
-                suffixText: 'TOMAN',
+                suffixText: _t('تومان', 'Toman'),
                 helperText: _t(
                   'قیمت پیشنهادی را به تومان و به‌صورت عدد صحیح وارد کنید.',
                   'Enter your offer in whole Toman.',
@@ -579,37 +581,53 @@ class _JobDetailPageState extends State<JobDetailPage> {
           ),
         ),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: 1180,
-                minHeight: constraints.maxHeight,
-              ),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 5, 20, 20),
-                children: [
+      body: PremiumPageFrame(
+        maxWidth: 1180,
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 112),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(28),
                     child: SizedBox(
-                      height: 175,
+                      height: 198,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image.asset(
-                            'assets/images/hope_marketplace_hero.png',
-                            fit: BoxFit.cover,
-                          ),
                           DecoratedBox(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
+                                begin: Alignment.topRight,
+                                end: Alignment.bottomLeft,
                                 colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: .65),
+                                  Theme.of(context).colorScheme.primary,
+                                  Theme.of(context).colorScheme.secondary,
+                                  Theme.of(context).colorScheme.surfaceContainerHighest,
                                 ],
+                              ),
+                            ),
+                          ),
+                          PositionedDirectional(
+                            top: 18,
+                            end: 18,
+                            child: ExcludeSemantics(
+                              child: Container(
+                                width: 54,
+                                height: 54,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: .12),
+                                  borderRadius: BorderRadius.circular(17),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: .18),
+                                  ),
+                                ),
+                                child: Icon(
+                                  isJob
+                                      ? Icons.business_center_rounded
+                                      : Icons.bolt_rounded,
+                                  color: Colors.white,
+                                  size: 27,
+                                ),
                               ),
                             ),
                           ),
@@ -619,9 +637,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             end: 16,
                             child: Text(
                               j.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 25,
+                                height: 1.12,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -675,14 +696,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: MetricTile(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final tiles = [
+                        PremiumStatCard(
                           label: isJob
                               ? HopeCopy.of(context).copy_monthly_pay_d62519b
-                              : HopeCopy.of(context)
-                                  .copy_mission_budget_923bb6e,
+                              : HopeCopy.of(context).copy_mission_budget_923bb6e,
                           value: isJob
                               ? moneyLabel(
                                   context,
@@ -693,18 +713,32 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   '${j.budgetMin ?? '—'} تا ${j.budgetMax ?? '—'}',
                                 ),
                           icon: Icons.payments_outlined,
+                          accent: Theme.of(context).colorScheme.primary,
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: MetricTile(
+                        PremiumStatCard(
                           label: HopeCopy.of(context).copy_field_fcb7b26,
                           value: j.category ?? j.categoryId ?? '—',
                           icon: Icons.category_outlined,
-                          color: secondaryAccent(context),
+                          accent: secondaryAccent(context),
                         ),
-                      ),
-                    ],
+                      ];
+                      if (constraints.maxWidth < 500) {
+                        return Column(
+                          children: [
+                            tiles[0],
+                            const SizedBox(height: 10),
+                            tiles[1],
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: tiles[0]),
+                          const SizedBox(width: 10),
+                          Expanded(child: tiles[1]),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 14),
                   HopeSurface(
@@ -1068,11 +1102,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         ],
                       ),
                     ),
-                ],
-              ),
-            ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

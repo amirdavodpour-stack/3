@@ -152,6 +152,8 @@ abstract class AppLocalizations {
   /// **'ورود به HOPE'**
   String get loginButton;
 
+  String get signInWithGoogle;
+
   /// Button to skip login and browse as a guest.
   ///
   /// In fa, this message translates to:

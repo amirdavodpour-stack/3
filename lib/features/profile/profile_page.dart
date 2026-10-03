@@ -77,57 +77,70 @@ class _ProfilePageState extends State<ProfilePage> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
             children: [
-          PremiumHeader(
-            eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
-            title: '${HopeCopy.of(context).copy_hello_fc7ef4a}, $name',
-            subtitle: HopeCopy.of(context)
-                .copy_professional_identity_preferences_and_acco_7f164ce,
-            trailing: const HopeMark(size: 42, showText: false),
-          ),
-          const SizedBox(height: 18),
-          PremiumPanel(
-            highlight: true,
-            padding: const EdgeInsets.all(18),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ],
+              ),
+              boxShadow: HopeV2Shadows.hero,
+            ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   radius: 31,
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: Colors.white.withValues(alpha: .13),
                   foregroundColor: Colors.white,
                   child: Text(
                     initial,
-                    style: const TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
                   ),
                 ),
-                const SizedBox(width: 13),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        name,
-                        style: Theme.of(context).textTheme.titleLarge,
+                        HopeCopy.of(context).copy_profile_8b081d3,
+                        style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 12),
                       ),
+                      const SizedBox(height: 4),
                       Text(
-                        '${user['email'] ?? ''}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900),
                       ),
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 3),
+                      Text(
+                        user['email']?.toString() ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      const SizedBox(height: 10),
                       StatusPill(
                         HopeCopy.of(context).copy_active_account_bef80da,
-                        color: AppColors.success,
+                        color: Colors.white,
                         icon: Icons.person_outline_rounded,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 10),
+                const HopeMark(size: 42, showText: false),
               ],
             ),
           ),
-          const SizedBox(height: 19),
+          const SizedBox(height: 20),
           SectionTitle(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: HopeCopy.of(context)
@@ -306,7 +319,7 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 14),
           SectionTitle(
             title: _t(context, 'مرکز کنترل حساب', 'Account control center'),
-            subtitle: _t(context, 'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کن.', 'Manage privacy, devices, and your work applications in one place.'),
+            subtitle: _t(context, 'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کنید.', 'Manage privacy, devices, and your work applications in one place.'),
           ),
           const SizedBox(height: 10),
           PremiumPanel(
@@ -502,34 +515,73 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
-          ListTile(
-            leading: const HopeIconTile(Icons.translate_rounded),
-            title: Text(
-              HopeCopy.of(context).copy_app_language_789c9c4,
-            ),
-            subtitle: Text(
-              settings.language == 'fa'
-                  ? HopeCopy.of(context).copy_language_persian_3ffcd3e
-                  : HopeCopy.of(context).copy_language_english_d9f5a4a,
-            ),
-            trailing: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'fa',
-                  label: Text(
-                    HopeCopy.of(context).copy_persian_62775b3,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final selector = SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'fa',
+                    label: Text(
+                      HopeCopy.of(context).copy_persian_62775b3,
+                    ),
                   ),
-                ),
-                ButtonSegment(
-                  value: 'en',
-                  label: Text(
-                    HopeCopy.of(context).copy_english_8396fe3,
+                  ButtonSegment(
+                    value: 'en',
+                    label: Text(
+                      HopeCopy.of(context).copy_english_8396fe3,
+                    ),
                   ),
+                ],
+                selected: {settings.language},
+                onSelectionChanged: (value) => settings.setLanguage(value.first),
+              );
+
+              final details = ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                leading: const HopeIconTile(Icons.translate_rounded),
+                title: Text(
+                  HopeCopy.of(context).copy_app_language_789c9c4,
                 ),
-              ],
-              selected: {settings.language},
-              onSelectionChanged: (value) => settings.setLanguage(value.first),
-            ),
+                subtitle: Text(
+                  settings.language == 'fa'
+                      ? HopeCopy.of(context).copy_language_persian_3ffcd3e
+                      : HopeCopy.of(context).copy_language_english_d9f5a4a,
+                ),
+              );
+
+              if (constraints.maxWidth < 500) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      details,
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(15, 0, 15, 8),
+                          child: selector,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                leading: const HopeIconTile(Icons.translate_rounded),
+                title: Text(
+                  HopeCopy.of(context).copy_app_language_789c9c4,
+                ),
+                subtitle: Text(
+                  settings.language == 'fa'
+                      ? HopeCopy.of(context).copy_language_persian_3ffcd3e
+                      : HopeCopy.of(context).copy_language_english_d9f5a4a,
+                ),
+                trailing: selector,
+              );
+            },
           ),
           const Divider(height: 1),
           ListTile(

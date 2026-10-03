@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/brand.dart';
-import '../../core/ui/components.dart';
+import '../../core/ui/premium_components.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -69,101 +69,113 @@ class _RegisterPageState extends State<RegisterPage> {
             : TextDirection.rtl,
         child: Scaffold(
           body: SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 30),
-              children: [
-                Row(children: [
-                  IconButton(
-                      onPressed: () => Navigator.maybePop(context),
-                      icon: Icon(
+            child: PremiumPageFrame(
+              maxWidth: 640,
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.maybePop(context),
+                        icon: Icon(
                           Localizations.localeOf(context).languageCode == 'en'
                               ? Icons.arrow_back_rounded
-                              : Icons.arrow_forward_rounded),
-                      tooltip: HopeCopy.of(context).copy_back_6e09f79),
-                  const Spacer(),
-                  const HopeMark(size: 40)
-                ]),
-                const SizedBox(height: 32),
-                const HopeIconTile(Icons.person_add_alt_1_rounded, size: 60),
-                const SizedBox(height: 18),
-                Text(
-                    HopeCopy.of(context)
-                        .copy_start_a_good_collaboration_9df52cf,
-                    style: Theme.of(context).textTheme.displaySmall),
-                const SizedBox(height: 8),
-                Text(
-                    HopeCopy.of(context)
-                        .copy_create_a_hope_account_and_take_the_first_s_9ccd119,
-                    style: Theme.of(context).textTheme.bodyLarge),
-                const SizedBox(height: 24),
-                HopeSurface(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(children: [
-                      TextField(
+                              : Icons.arrow_forward_rounded,
+                        ),
+                        tooltip: HopeCopy.of(context).copy_back_6e09f79,
+                      ),
+                      const Spacer(),
+                      const HopeMark(size: 38),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  PremiumHero(
+                    eyebrow: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
+                    title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
+                    message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
+                    icon: Icons.person_add_alt_1_rounded,
+                    height: 300,
+                  ),
+                  const SizedBox(height: 16),
+                  PremiumPanel(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        TextField(
                           controller: name,
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
-                              labelText:
-                                  HopeCopy.of(context).copy_full_name_c7448f1,
-                              prefixIcon:
-                                  const Icon(Icons.person_outline_rounded))),
-                      const SizedBox(height: 12),
-                      TextField(
+                            labelText: HopeCopy.of(context).copy_full_name_c7448f1,
+                            prefixIcon: const Icon(Icons.person_outline_rounded),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
                           controller: email,
                           keyboardType: TextInputType.emailAddress,
                           textDirection: TextDirection.ltr,
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
-                              labelText:
-                                  HopeCopy.of(context).copy_email_0cc870e,
-                              prefixIcon:
-                                  const Icon(Icons.mail_outline_rounded))),
-                      const SizedBox(height: 12),
-                      TextField(
+                            labelText: HopeCopy.of(context).copy_email_0cc870e,
+                            prefixIcon: const Icon(Icons.mail_outline_rounded),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
                           controller: password,
                           obscureText: obscure,
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
-                              labelText:
-                                  HopeCopy.of(context).copy_password_656eabe,
-                              prefixIcon:
-                                  const Icon(Icons.lock_outline_rounded),
-                              suffixIcon: IconButton(
-                                  icon: Icon(obscure
-                                      ? Icons.visibility_off_rounded
-                                      : Icons.visibility_rounded),
-                                  tooltip: obscure
-                                      ? HopeCopy.of(context).showPasswordTooltip
-                                      : HopeCopy.of(context)
-                                          .hidePasswordTooltip,
-                                  onPressed: () =>
-                                      setState(() => obscure = !obscure)))),
-                      const SizedBox(height: 8),
-                      Align(
-                          alignment: Alignment.centerRight,
+                            labelText: HopeCopy.of(context).copy_password_656eabe,
+                            prefixIcon: const Icon(Icons.lock_outline_rounded),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                obscure
+                                    ? Icons.visibility_off_rounded
+                                    : Icons.visibility_rounded,
+                              ),
+                              tooltip: obscure
+                                  ? HopeCopy.of(context).showPasswordTooltip
+                                  : HopeCopy.of(context).hidePasswordTooltip,
+                              onPressed: () => setState(() => obscure = !obscure),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
                           child: Text(
-                              HopeCopy.of(context)
-                                  .copy_at_least_8_characters_eb24592,
-                              style: Theme.of(context).textTheme.bodyMedium)),
-                      const SizedBox(height: 15),
-                      FilledButton(
-                          onPressed: loading ? null : submit,
-                          child: loading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2))
-                              : Text(HopeCopy.of(context)
-                                  .copy_create_account_bfa3517)),
-                    ])),
-                const SizedBox(height: 14),
-                Text(
-                    HopeCopy.of(context)
-                        .copy_your_account_data_is_kept_securely_by_hope_b91dd1f,
+                            HopeCopy.of(context).copy_at_least_8_characters_eb24592,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: loading ? null : submit,
+                            child: loading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : Text(HopeCopy.of(context).copy_create_account_bfa3517),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    HopeCopy.of(context).copy_your_account_data_is_kept_securely_by_hope_b91dd1f,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium),
-              ],
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -37,7 +37,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginButton => 'Log in to HOPE';
 
   @override
-  String get continueAsGuest => 'Continue as a guest for now';
+  String get signInWithGoogle => 'Continue with Google';
+
+  @override
+  String get continueAsGuest => 'Continue as guest';
 
   @override
   String get orDivider => 'or';
@@ -65,11 +68,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_a_better_path_to_finding_work_5802652 =>
-      'A better path to finding work';
+      'Find work opportunities';
 
   @override
   String get copy_a_clearer_more_human_way_to_find_work_3553ab8 =>
-      'A clearer, more human way to find work.';
+      'Work opportunities, missions, and jobs';
 
   @override
   String get copy_a_defined_task_with_a_clear_price_and_deli_bf299f3 =>
@@ -81,7 +84,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_a_home_for_your_professional_path_52dbb09 =>
-      'A home for your professional path.';
+      'Account and professional information';
 
   @override
   String get copy_a_part_time_or_full_time_role_with_monthly_ac5f029 =>
@@ -195,7 +198,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_broaden_your_filters_or_try_another_city_e8e32cb =>
-      'Broaden your filters or try another city.';
+      'Change the filters or select another city.';
 
   @override
   String get copy_cancel_9955c4b => 'Cancel';
@@ -208,24 +211,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Candidate identity stays hidden during selection to reduce collusion risk.';
 
   @override
-  String get copy_choose_79a9d79 => 'Choose';
+  String get copy_choose_79a9d79 => 'Select';
 
   @override
-  String get copy_choose_a_category_b77d860 => 'Choose a category';
+  String get copy_choose_a_category_b77d860 => 'Select a category';
 
   @override
-  String get copy_choose_a_city_a93b334 => 'Choose a city';
+  String get copy_choose_a_city_a93b334 => 'Select a city';
 
   @override
   String get copy_choose_a_professional_category_b4cf5b8 =>
-      'Choose a professional category.';
+      'Select a professional field.';
 
   @override
   String get copy_choose_another_city_1375095 => 'Choose another city';
 
   @override
   String get copy_choose_your_preferred_city_c19f66a =>
-      'Choose your preferred city';
+      'Select your preferred city';
 
   @override
   String get copy_city_3d7dc3e => 'City';
@@ -244,7 +247,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_controls_that_make_hope_fit_you_better_ace4c0c =>
-      'Controls that make HOPE fit you better.';
+      'Account and app settings';
 
   @override
   String get copy_could_not_load_activity_335b923 => 'Could not load activity';
@@ -259,7 +262,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_create_a_hope_account_and_take_the_first_s_9ccd119 =>
-      'Create a HOPE account and take the first step.';
+      'Enter your name, email, and password.';
 
   @override
   String get copy_create_account_bfa3517 => 'Create account';
@@ -270,7 +273,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_create_an_account_to_apply_post_and_person_6fd6b91 =>
-      'Create an account to apply, post and personalize your experience.';
+      'Sign in to apply, post opportunities, and manage your settings.';
 
   @override
   String get copy_current_location_182622a => 'Current location';
@@ -340,7 +343,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_filter_by_city_field_and_opportunity_type_1d75340 =>
-      'Filter by city, field and opportunity type.';
+      'Filter by city, field, and opportunity type.';
 
   @override
   String get copy_filters_df4d10e => 'Filters';
@@ -354,7 +357,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_first_choose_what_kind_of_opportunity_you__f035ca9 =>
-      'First choose what kind of opportunity you are posting.';
+      'Select the opportunity type.';
 
   @override
   String get copy_fit_more_information_on_a_page_aedc497 =>
@@ -454,7 +457,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_keep_your_profile_opportunities_transactio_39f443d =>
-      'Keep your profile, opportunities, transactions and preferences together.';
+      'Profile, opportunities, transactions, and settings';
 
   @override
   String get copy_latest_activity_a05277b => 'Latest activity';
@@ -464,7 +467,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_limit_notifications_during_rest_b5e0db3 =>
-      'Limit notifications during rest';
+      'Limit notifications during rest hours.';
 
   @override
   String get copy_location_city_46ccc39 => 'Location & city';
@@ -714,7 +717,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copy_quiet_hours_02885b4 => 'Quiet hours';
 
   @override
-  String get copy_recommended_for_you_e56d06b => 'Recommended for you';
+  String get copy_recommended_for_you_e56d06b => 'Recommendations';
 
   @override
   String get copy_reference_aa63360 => 'Reference';
@@ -742,7 +745,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_review_users_opportunities_applications_an_e30b9d2 =>
-      'Review users, opportunities, applications and sensitive events from one dashboard.';
+      'Review users, opportunities, applications, and sensitive events.';
 
   @override
   String get copy_salary_schedule_bab0cb3 => 'Salary & schedule';
@@ -772,11 +775,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_set_a_defined_price_and_delivery_time_1e53f1a =>
-      'Set a defined price and delivery time.';
+      'Set the price and delivery time.';
 
   @override
   String get copy_set_an_application_deadline_for_jobs_5fd80f8 =>
-      'Set an application deadline for jobs.';
+      'Set the application deadline.';
 
   @override
   String get copy_settings_a8a6c67 => 'Settings';
@@ -799,7 +802,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_start_a_good_collaboration_9df52cf =>
-      'Start a good collaboration.';
+      'Create your account';
 
   @override
   String get copy_start_here_555e56f => 'Start here';
@@ -846,7 +849,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_the_server_did_not_return_data_try_again_bccfbb3 =>
-      'The server did not return data. Try again.';
+      'No data was returned by the server. Please try again.';
 
   @override
   String get copy_this_transaction_is_settled_04f8174 =>
@@ -924,7 +927,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_your_account_data_is_kept_securely_by_hope_b91dd1f =>
-      'Your account data is kept securely by HOPE.';
+      'Your account information is stored securely.';
 
   @override
   String get copy_your_activity_is_private_1363766 =>
@@ -939,7 +942,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your offer was submitted.';
 
   @override
-  String get copy_your_professional_path_2da0026 => 'Your professional path';
+  String get copy_your_professional_path_2da0026 => 'Professional information';
 
   @override
   String get copy_your_projects_applications_and_payments_wi_bec5340 =>
@@ -947,7 +950,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_hope_work_grow_together_6a1d9f0 =>
-      'HOPE • Work • Grow • Together';
+      'HOPE • Opportunities • Work';
 
   @override
   String get copy_language_english_d9f5a4a => 'Language: English';

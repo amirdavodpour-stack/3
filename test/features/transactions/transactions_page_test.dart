@@ -15,6 +15,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -66,8 +69,16 @@ class _Transactions implements TransactionRepository {
       required String type}) async {}
 }
 
-Future<void> _pump(WidgetTester tester, _Transactions repo,
-    {bool guest = false}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  _Transactions repo, {
+  bool guest = false,
+  double width = 900,
+}) async {
+  tester.view.physicalSize = Size(width, 2400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -119,6 +130,17 @@ void main() {
     expect(find.textContaining('فعالیتی'), findsWidgets);
   });
 
+  testWidgets('activity metrics stack on narrow screens',
+      (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('a', status: 'IN_PROGRESS')];
+    await _pump(tester, repo, width: 360);
+
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('فعال'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('authenticated transactions render active and completed jobs',
       (tester) async {
     final repo = _Transactions()
@@ -140,6 +162,16 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('پروژه b'), findsOneWidget);
+  });
+
+  testWidgets('transactions safely localize unknown job status',
+      (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('unknown', status: 'UNKNOWN_STATE')];
+    await _pump(tester, repo);
+
+    expect(find.text('UNKNOWN_STATE'), findsNothing);
+    expect(find.text('نیازمند بررسی'), findsWidgets);
   });
 
   testWidgets('transactions still render when payment lookup is unavailable',

@@ -85,25 +85,52 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
     }
   }
 
+  String _platformLabel(String platform) {
+    switch (platform.toUpperCase()) {
+      case 'ANDROID':
+        return 'Android';
+      case 'IOS':
+        return 'iPhone / iPad';
+      case 'WEB':
+        return 'Web';
+      default:
+        return platform.isEmpty ? _t('دستگاه', 'Device') : platform;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(_t('دستگاه‌های اعلان', 'Notification devices'))),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      body: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
               eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
               title: _t('دستگاه‌های متصل', 'Connected devices'),
               subtitle: _t(
-                'دستگاه‌هایی که Push برای حساب تو روی آن‌ها فعال است را ببین و هرکدام را جداگانه غیرفعال کن.',
+                'دستگاه‌هایی که Push برای حساب شما روی آن‌ها فعال است را ببینید و هرکدام را جداگانه غیرفعال کنید.',
                 'Review devices registered for Push notifications and disable any device independently.',
               ),
               trailing: const HopeIconTile(Icons.devices_rounded, size: 50, filled: true),
             ),
             const SizedBox(height: 18),
+            if (!_loading && _error == null)
+              PremiumStatCard(
+                label: _t('دستگاه فعال برای Push', 'Active Push devices'),
+                value: '${_devices.where((device) => device.enabled).length}',
+                icon: Icons.notifications_active_rounded,
+                accent: Theme.of(context).colorScheme.primary,
+                caption: _t(
+                  'فقط توکن‌ها و وضعیت لازم برای مدیریت اعلان نمایش داده می‌شود.',
+                  'Only the state needed to manage notifications is exposed.',
+                ),
+              ),
+            if (!_loading && _error == null) const SizedBox(height: 12),
             if (_loading)
               const PremiumPanel(
                 child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator())),
@@ -139,7 +166,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _t('وقتی Push را در یک دستگاه فعال کنی، اینجا نمایش داده می‌شود.',
+                      _t('وقتی Push را در یک دستگاه فعال کنید، اینجا نمایش داده می‌شود.',
                           'A device appears here after Push notifications are enabled.'),
                       textAlign: TextAlign.center,
                     ),
@@ -154,11 +181,24 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                     final busy = _busyId == device.id;
                     return ListTile(
                       leading: HopeIconTile(_icon(device.platform), filled: true),
-                      title: Text(device.platform),
-                      subtitle: Text(
-                        device.enabled
-                            ? _t('فعال برای Push', 'Enabled for Push')
-                            : _t('غیرفعال', 'Disabled'),
+                      title: Text(
+                        _platformLabel(device.platform),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      subtitle: Row(
+                        children: [
+                          PremiumTag(
+                            icon: device.enabled
+                                ? Icons.check_circle_rounded
+                                : Icons.pause_circle_outline_rounded,
+                            label: device.enabled
+                                ? _t('فعال', 'Enabled')
+                                : _t('غیرفعال', 'Disabled'),
+                            color: device.enabled
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                        ],
                       ),
                       trailing: device.enabled
                           ? TextButton(
@@ -169,7 +209,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                                       height: 18,
                                       child: CircularProgressIndicator(strokeWidth: 2),
                                     )
-                                  : Text(_t('غیرفعال کن', 'Disable')),
+                                  : Text(_t('غیرفعال کنید', 'Disable')),
                             )
                           : null,
                     );
@@ -196,6 +236,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
