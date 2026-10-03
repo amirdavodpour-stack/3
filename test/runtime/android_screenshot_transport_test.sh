@@ -84,6 +84,12 @@ grep -Fq 'if (child is LoginPage)' "$test_file"
 grep -Fq 'run_host_batch_session responsive-a responsive' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b responsive' "$script_file"
 grep -Fq 'platformDispatcher.defaultRouteName' "$test_file"
+binding_init_line="$(grep -Fn 'IntegrationTestWidgetsFlutterBinding.ensureInitialized();' "$test_file" | head -n1 | cut -d: -f1)"
+route_line="$(grep -Fn 'platformDispatcher.defaultRouteName' "$test_file" | head -n1 | cut -d: -f1)"
+if [ -z "$binding_init_line" ] || [ -z "$route_line" ] || [ "$route_line" -le "$binding_init_line" ]; then
+  echo "FAIL: runtime capture route must be read only after IntegrationTestWidgetsFlutterBinding is initialized" >&2
+  exit 1
+fi
 grep -Fq -- '--route="/__hope_runtime_capture__/$locale/$launch_mode"' "$script_file"
 grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY' "$script_file"
 grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH' "$script_file"
