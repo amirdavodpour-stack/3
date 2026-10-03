@@ -94,7 +94,8 @@ grep -Fq -- '--route="/__hope_runtime_capture__/$locale/$launch_mode"' "$script_
 grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY' "$script_file"
 grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH' "$script_file"
 grep -Fq 'String.fromEnvironment' "$test_file"
-grep -Fq "final captureLocaleFromDefine = String.fromEnvironment('HOPE_CAPTURE_LOCALE'" "$test_file"
+grep -Fq "final _captureLocaleFromDefine =" "$test_file"
+grep -Fq "String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '')" "$test_file"
 grep -Fq 'HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker' "$test_file"
 
 grep -Fq 'if (child is TransactionsPage)' "$test_file"
