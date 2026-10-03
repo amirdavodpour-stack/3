@@ -255,6 +255,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                     width: 1.5,
                   ),
                 ),
+                key: const ValueKey('hope-opportunity-refinement-active-count'),
                 child: Text(
                   '$activeCount',
                   textAlign: TextAlign.center,
