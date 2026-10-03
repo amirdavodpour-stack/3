@@ -811,7 +811,7 @@ padding: const EdgeInsets.all(14),
         );
       }
 
-      // Runtime certification: compact wallet actions + focal balance hierarchy.
+      // Runtime certification: mobile-first focal balance + compact financial controls.
       return PremiumPanel(
         glass: false,
         padding: const EdgeInsets.all(12),
