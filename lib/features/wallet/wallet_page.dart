@@ -735,14 +735,6 @@ padding: const EdgeInsets.all(14),
                 Expanded(
                   child: walletHeroMetric(
                     context,
-                    _t('قابل استفاده', 'Available'),
-                    _money(wallet.availableBalance),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: walletHeroMetric(
-                    context,
                     _t('قفل‌شده', 'Locked'),
                     _money(wallet.lockedBalance),
                   ),
@@ -767,7 +759,7 @@ padding: const EdgeInsets.all(14),
             : HopeV2Colors.secondary;
         return Expanded(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 66),
+            constraints: const BoxConstraints(minHeight: 60),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
