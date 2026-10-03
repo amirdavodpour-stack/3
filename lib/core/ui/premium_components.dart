@@ -866,6 +866,7 @@ class PremiumHero extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
+                          // Runtime visual certification: hero lower ambient light stays violet-led.
                           HopeV2Colors.primary.withValues(
                             alpha: Theme.of(context).brightness == Brightness.dark
                                 ? .09
