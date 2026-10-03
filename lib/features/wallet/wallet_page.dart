@@ -420,7 +420,7 @@ class _WalletPageState extends State<WalletPage> {
             shrinkWrap: true,
             children: [
               Text(_entryTitle(item), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _DetailRow(label: _t('مبلغ', 'Amount'), value: '${item.isCredit ? '+' : '-'}${_money(item.amount)}'),
               _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: _entryTypeLabel(item.entryType)),
               _DetailRow(label: _t('جهت', 'Direction'), value: _directionLabel(item.direction)),
@@ -648,7 +648,7 @@ padding: const EdgeInsets.all(14),
     Widget balanceHero() {
       final scheme = Theme.of(context).colorScheme;
       return Container(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: HopeV2Gradients.heroDark,
@@ -675,7 +675,7 @@ padding: const EdgeInsets.all(14),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Text(
               _t('موجودی قابل استفاده', 'Available balance'),
               style: const TextStyle(
@@ -691,7 +691,7 @@ padding: const EdgeInsets.all(14),
                 _money(wallet.availableBalance),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 36,
+                  fontSize: 32,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1.0,
@@ -710,7 +710,7 @@ padding: const EdgeInsets.all(14),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             walletHeroMetric(
               context,
               _t('مجموع موجودی', 'Total balance'),
