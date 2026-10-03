@@ -490,8 +490,8 @@ padding: const EdgeInsets.all(12),
                 },
               ),
             if (!auth.isGuest && _agentState != null)
-              const SizedBox(height: HopeV2Spacing.lg),
-            FutureBuilder<List<HopeJob>>(
+              const SizedBox(height: HopeV2Spacing.md),
+            FutureBuilder<List<HopeJob>>
               future: _opportunities,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -524,13 +524,13 @@ padding: const EdgeInsets.all(12),
                 return _opportunitySections(context, jobs, settings);
               },
             ),
-            const SizedBox(height: HopeV2Spacing.lg),
+            const SizedBox(height: HopeV2Spacing.md),
             if (!auth.isGuest) ...[
               _activeWork(context),
-              const SizedBox(height: HopeV2Spacing.lg),
+              const SizedBox(height: HopeV2Spacing.md),
             ],
             _quickActions(context, auth),
-            const SizedBox(height: HopeV2Spacing.lg),
+            const SizedBox(height: HopeV2Spacing.md),
             if (!auth.isGuest) ...[
               _financialSnapshot(context),
             ],
@@ -748,7 +748,7 @@ child: Column(
             job: recommended.first,
             variant: OpportunityCardVariant.featured,
           ),
-          const SizedBox(height: HopeV2Spacing.xl),
+          const SizedBox(height: HopeV2Spacing.lg),
           _section(
             context,
             _t(context, 'تطابق‌ها', 'Matches'),
@@ -766,7 +766,7 @@ child: Column(
             ),
           ),
         ],
-        const SizedBox(height: HopeV2Spacing.section),
+        const SizedBox(height: HopeV2Spacing.xl),
         _section(
           context,
           _t(context, 'نزدیک شما', 'Near you'),
@@ -774,7 +774,7 @@ child: Column(
           widget.onOpenExplore,
         ),
         if (remaining.isNotEmpty) ...[
-          const SizedBox(height: HopeV2Spacing.section),
+          const SizedBox(height: HopeV2Spacing.xl),
           _section(
             context,
             _t(context, 'سایر فرصت‌ها', 'Other opportunities'),
@@ -824,14 +824,15 @@ child: Column(
         };
         return PremiumPanel(
           glass: true,
-highlight: true,
+          highlight: true,
+          padding: const EdgeInsets.all(14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             PremiumSectionHeader(
               domain: HopeProductDomain.work,
               title: _t(context, 'اقدام بعدی شما', 'Your next action'),
               subtitle: _t(context, 'اولویت با کاری است که همین حالا فعال است.', 'Active work takes priority over discovery.'),
             ),
-            const SizedBox(height: HopeV2Spacing.lg),
+            const SizedBox(height: HopeV2Spacing.md),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
             const SizedBox(height: HopeV2Spacing.md),
             Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: HugeIcon(
