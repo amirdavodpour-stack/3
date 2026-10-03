@@ -207,4 +207,38 @@ void main() {
     expect(find.byType(InkWell), findsOneWidget);
   });
 
+  testWidgets('quick action strip keeps secondary destinations visible',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumQuickActionStrip(
+            title: 'Quick access',
+            actions: const [
+              PremiumQuickAction(
+                label: 'Applications',
+                icon: HopeV2Icons.mission,
+              ),
+              PremiumQuickAction(
+                label: 'Offers',
+                icon: HopeV2Icons.featured,
+              ),
+              PremiumQuickAction(
+                label: 'Notifications',
+                icon: HopeV2Icons.notifications,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(PremiumQuickActionStrip), findsOneWidget);
+    expect(find.text('Applications'), findsOneWidget);
+    expect(find.text('Offers'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
+  });
+
+
 }
