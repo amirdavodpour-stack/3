@@ -372,6 +372,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ),
                     const SizedBox(height: 20),
                     PremiumSectionHeader(
+                      page: HopePageId.activity,
+                      domain: HopeProductDomain.work,
                       title: HopeCopy.of(context).copy_latest_activity_a05277b,
                       subtitle: HopeCopy.of(context)
                           .copy_the_most_recent_project_updates_5e402d8,
