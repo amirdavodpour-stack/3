@@ -131,88 +131,114 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
     return Directionality(
       textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(isEn ? 'HOPE AI work profile' : 'پروفایل کاری با هوش مصنوعی'),
-          actions: [
-            IconButton(
-              onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-              tooltip: isEn ? 'Skip' : 'بعداً',
-              icon: const Icon(Icons.close),
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            if (_loading) const LinearProgressIndicator(minHeight: 2),
-            Expanded(
-              child: ListView.builder(
-                controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                itemCount: _messages.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: PremiumHero(
-                        eyebrow: 'HOPE AI',
-                        title: isEn ? 'Let HOPE learn your work preferences' : 'بگذارید HOPE سلیقه کاری شما را بشناسد',
-                        message: isEn ? 'One question at a time. Your answers shape future opportunity recommendations.' : 'هر بار یک سؤال کوتاه؛ پاسخ‌های شما پایه پیشنهادهای شغلی بعدی می‌شوند.',
-                        icon: Icons.auto_awesome,
-                        height: 210,
+        body: SafeArea(
+          child: PremiumPageFrame(
+            maxWidth: 820,
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              children: [
+                PremiumHeader(
+                  eyebrow: 'HOPE AI',
+                  title: isEn
+                      ? 'Let HOPE learn your work preferences'
+                      : 'بگذارید HOPE سلیقه کاری شما را بشناسد',
+                  subtitle: isEn
+                      ? 'One question at a time. Your answers shape future opportunity recommendations.'
+                      : 'هر بار یک سؤال کوتاه؛ پاسخ‌های شما پایه پیشنهادهای شغلی بعدی می‌شوند.',
+                  trailing: PremiumIconButton(
+                    icon: HopeV2Icons.close,
+                    tooltip: isEn ? 'Skip' : 'بعداً',
+                    onPressed:
+                        _saving ? null : () => Navigator.of(context).pop(false),
+                  ),
+                ),
+                const SizedBox(height: HopeV2Spacing.lg),
+                if (_loading) ...[
+                  const LinearProgressIndicator(minHeight: 2),
+                  const SizedBox(height: HopeV2Spacing.sm),
+                ],
+                Expanded(
+                  child: PremiumPanel(
+                    glass: true,
+                    padding: const EdgeInsets.all(HopeV2Spacing.md),
+                    child: ListView.builder(
+                      controller: _scroll,
+                      padding: const EdgeInsets.fromLTRB(
+                        HopeV2Spacing.sm,
+                        HopeV2Spacing.xs,
+                        HopeV2Spacing.sm,
+                        HopeV2Spacing.md,
                       ),
-                    );
-                  }
-                  final item = _messages[index - 1];
-                  final user = item['role'] == 'user';
-                  return Align(
-                    alignment: user ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 680),
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                      decoration: BoxDecoration(
-                        color: user ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                      ),
-                      child: Text(item['content'] ?? ''),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final item = _messages[index];
+                        final user = item['role'] == 'user';
+                        return Align(
+                          alignment: user
+                              ? AlignmentDirectional.centerEnd
+                              : AlignmentDirectional.centerStart,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 680),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: PremiumPanel(
+                                highlight: user,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 11,
+                                ),
+                                child: Text(item['content'] ?? ''),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _input,
-                        minLines: 1,
-                        maxLines: 4,
-                        enabled: !_loading && !_sending && !_saving && !_complete,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _send(),
-                        decoration: InputDecoration(
-                          hintText: isEn ? 'Write your answer…' : 'پاسخ خود را بنویسید…',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(HopeV2Radii.md)),
+                  ),
+                ),
+                const SizedBox(height: HopeV2Spacing.md),
+                SafeArea(
+                  top: false,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _input,
+                          minLines: 1,
+                          maxLines: 4,
+                          enabled:
+                              !_loading && !_sending && !_saving && !_complete,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _send(),
+                          decoration: InputDecoration(
+                            hintText: isEn
+                                ? 'Write your answer…'
+                                : 'پاسخ خود را بنویسید…',
+                            prefixIcon: const HopeIcon(
+                              HopeV2Icons.message,
+                              size: 20,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      onPressed: (_loading || _sending || _saving || _complete) ? null : _send,
-                      icon: _sending || _saving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.arrow_upward),
-                      tooltip: isEn ? 'Send' : 'ارسال',
-                    ),
-                  ],
+                      const SizedBox(width: HopeV2Spacing.sm),
+                      PremiumIconButton(
+                        icon: HopeV2Icons.arrowRight,
+                        tooltip: isEn ? 'Send' : 'ارسال',
+                        onPressed: (_loading ||
+                                _sending ||
+                                _saving ||
+                                _complete)
+                            ? null
+                            : _send,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
