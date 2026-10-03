@@ -372,7 +372,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 
                 return PremiumPanel(
                   glass: true,
-padding: const EdgeInsets.all(14),
+padding: const EdgeInsets.all(12),
                   highlight: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,8 +447,6 @@ padding: const EdgeInsets.all(14),
               },
             ),
             const SizedBox(height: HopeV2Spacing.lg),
-            _quickActions(context, auth),
-            const SizedBox(height: HopeV2Spacing.lg),
             if (!auth.isGuest && _agentState != null)
               FutureBuilder<HopeOpportunityAgentState>(
                 future: _agentState,
@@ -465,10 +463,6 @@ padding: const EdgeInsets.all(14),
               ),
             if (!auth.isGuest && _agentState != null)
               const SizedBox(height: HopeV2Spacing.lg),
-            if (!auth.isGuest) ...[
-              _activeWork(context),
-              const SizedBox(height: HopeV2Spacing.lg),
-            ],
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -502,6 +496,12 @@ padding: const EdgeInsets.all(14),
                 return _opportunitySections(context, jobs, settings);
               },
             ),
+            const SizedBox(height: HopeV2Spacing.lg),
+            if (!auth.isGuest) ...[
+              _activeWork(context),
+              const SizedBox(height: HopeV2Spacing.lg),
+            ],
+            _quickActions(context, auth),
             const SizedBox(height: HopeV2Spacing.lg),
             if (!auth.isGuest) ...[
               _financialSnapshot(context),
@@ -592,7 +592,7 @@ padding: const EdgeInsets.all(14),
     required Color accent,
   }) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 66),
+      constraints: const BoxConstraints(minHeight: 58),
       padding: const EdgeInsets.symmetric(
         horizontal: 9,
         vertical: 9,
@@ -616,7 +616,7 @@ padding: const EdgeInsets.all(14),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.metric(context).copyWith(
-                  fontSize: compact ? 16 : (value.length > 7 ? 14 : 18),
+                  fontSize: compact ? 15 : (value.length > 7 ? 13.5 : 17),
                   color: Colors.white,
                 ),
               ),
@@ -626,7 +626,7 @@ padding: const EdgeInsets.all(14),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 9.5,
+                      fontSize: 9,
                       color: HopeV2Colors.darkMuted,
                     ),
               ),
