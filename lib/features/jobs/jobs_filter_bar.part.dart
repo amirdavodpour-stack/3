@@ -2,6 +2,7 @@ part of 'jobs_page.dart';
 
 class _JobsFilterHeader extends StatelessWidget {
   const _JobsFilterHeader({
+    required this.domain,
     required this.kind,
     required this.visibility,
     required this.categoryError,
@@ -19,6 +20,7 @@ class _JobsFilterHeader extends StatelessWidget {
     required this.onOpenSavedSearches,
   });
 
+  final HopeProductDomain domain;
   final String kind;
   final String visibility;
   final String? categoryError;
@@ -49,11 +51,19 @@ class _JobsFilterHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    copy.copy_explore_115e9fd.toUpperCase(),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      PremiumDomainMarker(domain: domain, compact: true),
+                      const SizedBox(width: HopeV2Spacing.sm),
+                      Expanded(
+                        child: Text(
+                          copy.copy_explore_115e9fd.toUpperCase(),
                     style: HopeV2Type.eyebrow(context).copyWith(
                       color: HopeV2Colors.secondaryDark,
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 5),
                   Text(
