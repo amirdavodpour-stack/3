@@ -113,5 +113,9 @@ void main() {
     expect(find.text('Field'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('Duration'), findsOneWidget);
+
+    final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
+    final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
+    expect(snapshotTop, lessThan(descriptionTop));
   });
 }
