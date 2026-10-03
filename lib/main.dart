@@ -26,6 +26,7 @@ import 'core/uploads/upload_queue.dart';
 import 'core/theme/vazirmatn_loader.dart';
 import 'dart:ui';
 import 'core/theme/app_theme.dart';
+import 'core/ui/premium_components.dart';
 import 'core/router/app_router.dart';
 import 'core/marketplace/marketplace_repository.dart';
 import 'core/marketplace/saved_search_repository.dart';
@@ -178,6 +179,9 @@ class WorkMarketplaceApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
+        builder: (context, child) => PremiumAppCanvas(
+          child: child!,
+        ),
         home: Directionality(
           textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
           child: const AppRouter(),
