@@ -25,6 +25,7 @@ import 'package:hope_mobile/core/notifications/notification_repository.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/testing/runtime_render_settle.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
@@ -673,7 +674,7 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
 
   for (var attempt = 0; attempt < 100; attempt++) {
     final hasSpinner =
-        find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+        find.byWidgetPredicate(isBlockingRuntimeProgressIndicator).evaluate().isNotEmpty;
     final hasSkeleton =
         find.byType(SkeletonBox).evaluate().isNotEmpty;
     if (!hasSpinner && !hasSkeleton) {
@@ -683,7 +684,7 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
   }
 
   final hasSpinner =
-      find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+      find.byWidgetPredicate(isBlockingRuntimeProgressIndicator).evaluate().isNotEmpty;
   final hasSkeleton =
       find.byType(SkeletonBox).evaluate().isNotEmpty;
   if (hasSpinner || hasSkeleton) {
