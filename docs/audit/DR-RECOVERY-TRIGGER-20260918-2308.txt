@@ -1,1 +1,0 @@
-Trigger-only marker for latest isolated DR checkpoint attempt.

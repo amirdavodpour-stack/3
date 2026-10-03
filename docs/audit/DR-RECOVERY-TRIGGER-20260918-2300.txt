@@ -1,1 +1,0 @@
-Trigger-only marker for DR schema preflight after restore surfaced missing required public.users.

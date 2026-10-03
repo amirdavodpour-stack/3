@@ -6,6 +6,9 @@ import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/ui/components.dart';
+import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -135,7 +138,16 @@ Future<void> _pump(WidgetTester tester, _Repo repo,
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-Finder _choiceChip(String label) => find.widgetWithText(ChoiceChip, label);
+Future<void> _tapFilter(
+  WidgetTester tester,
+  String label,
+) async {
+  final all = find.text(label, skipOffstage: false);
+  expect(all, findsWidgets);
+  final target = all.first;
+  await tester.ensureVisible(target);
+  await tester.tap(target);
+}
 
 void main() {
   testWidgets('jobs page requests categories and opportunities',
@@ -149,12 +161,77 @@ void main() {
     expect(repo.calls.any((e) => e.startsWith('jobs:تهران:')), isTrue);
   });
 
+  testWidgets(
+      'explore keeps the control band compact and leads with the featured opportunity',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repo = _Repo();
+    await _pump(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(find.text('فرصت بعدی خود را پیدا کنید'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('hope-explore-result-count')),
+      findsOneWidget,
+    );
+    expect(
+      tester.getSize(
+        find.byKey(
+          const ValueKey('hope-opportunity-refinement-launcher'),
+        ),
+      ),
+      const Size(48, 48),
+    );
+
+    final searchRect = tester.getRect(find.byType(PremiumSearchBar));
+    final filterRect = tester.getRect(
+      find.byKey(
+        const ValueKey('hope-opportunity-refinement-launcher'),
+      ),
+    );
+    final featuredFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is OpportunityCard &&
+          widget.variant == OpportunityCardVariant.featured,
+    );
+    expect(featuredFinder, findsOneWidget);
+    final featuredRect = tester.getRect(featuredFinder);
+
+    expect(filterRect.top, closeTo(searchRect.top, 2));
+    expect(filterRect.bottom, lessThanOrEqualTo(searchRect.bottom + 2));
+    expect(featuredRect.top - searchRect.bottom, lessThan(40));
+    expect(tester.takeException(), isNull);
+  }
+
+  testWidgets('compact explore uses a short search hint so the control band stays overflow-free',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repo = _Repo();
+    await _pump(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('جستجو'), findsOneWidget);
+    expect(find.bySemanticsLabel('عنوان، شهر یا مهارت...'), findsNothing);
+    expect(tester.takeException(), isNull);
+  }
+
   testWidgets('search narrows the rendered opportunity list', (tester) async {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Flutter');
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(repo.calls.where((call) => call.startsWith('jobs:')).length,
+        greaterThanOrEqualTo(2));
     expect(find.text('استخدام Flutter'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
   });
@@ -172,7 +249,7 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await tester.tap(_choiceChip('ماموریت‌ها'));
+    await _tapFilter(tester, 'ماموریت‌ها');
     await tester.pumpAndSettle();
     expect(find.text('طراحی اپ'), findsOneWidget);
     expect(find.text('استخدام Flutter'), findsNothing);
@@ -182,7 +259,7 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await tester.tap(_choiceChip('شغل‌ها'));
+    await _tapFilter(tester, 'شغل‌ها');
     await tester.pumpAndSettle();
     expect(find.text('استخدام Flutter'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
@@ -193,7 +270,7 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await tester.tap(_choiceChip('تخصصی'));
+    await _tapFilter(tester, 'تخصصی');
     await tester.pumpAndSettle();
     expect(find.text('همکاری تخصصی'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
@@ -204,10 +281,10 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await tester.tap(_choiceChip('تخصصی'));
+    await _tapFilter(tester, 'تخصصی');
     await tester.pumpAndSettle();
     expect(find.text('طراحی اپ'), findsNothing);
-    await tester.tap(_choiceChip('عمومی'));
+    await _tapFilter(tester, 'عمومی');
     await tester.pumpAndSettle();
     expect(find.text('طراحی اپ'), findsOneWidget);
     expect(find.text('همکاری تخصصی'), findsNothing);
@@ -221,13 +298,16 @@ void main() {
     await _pump(tester, repo);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
+    await _tapFilter(tester, 'همه حوزه‌ها');
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ListTile, 'طراحی'), findsOneWidget);
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(ActionChip, 'طراحی'), findsOneWidget);
+    expect(
+      find.widgetWithText(PremiumFilterChip, 'طراحی'),
+      findsOneWidget,
+    );
     expect(find.text('design'), findsNothing);
     expect(find.text('طراحی گرافیک'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
@@ -240,12 +320,12 @@ void main() {
     final repo = _Repo();
     await _pump(tester, repo);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ActionChip, 'همه حوزه‌ها'));
+    await _tapFilter(tester, 'همه حوزه‌ها');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ActionChip, 'طراحی'));
+    await _tapFilter(tester, 'طراحی');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'همه حوزه‌ها'));
     await tester.pumpAndSettle();
@@ -270,13 +350,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('طراحی در شیراز'), findsNothing);
-    await tester.tap(find.widgetWithText(ActionChip, 'اطراف تهران'));
+    await _tapFilter(tester, 'اطراف تهران');
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'همه'), 200,
+    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'همه شهرها'), 200,
         scrollable: find.byType(Scrollable).last);
-    await tester.ensureVisible(find.widgetWithText(ListTile, 'همه'));
+    await tester.ensureVisible(find.widgetWithText(ListTile, 'همه شهرها'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'همه'));
+    await tester.tap(find.widgetWithText(ListTile, 'همه شهرها'));
     await tester.pumpAndSettle();
 
     expect(find.text('طراحی اپ'), findsOneWidget);
@@ -298,7 +378,7 @@ void main() {
     await _pump(tester, repo, settings: settings);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ActionChip, 'اطراف تهران'));
+    await _tapFilter(tester, 'اطراف تهران');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'شیراز'));
     await tester.pumpAndSettle();
