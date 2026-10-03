@@ -82,6 +82,18 @@ void main() {
     expect(source, contains('PremiumDomainMarker'));
   });
 
+  test('activity states keep the same page identity', () {
+    final source = _read('lib/features/transactions/transactions_page.dart');
+    expect(
+      RegExp(r'PremiumHeader\(\n(?!\s*page:)').allMatches(source).length,
+      0,
+    );
+    expect(
+      RegExp(r'PremiumPageFrame\(\n(?!\s*page:)').allMatches(source).length,
+      0,
+    );
+  });
+
   test('home places active work before discovery feed', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
     final active = source.indexOf('_activeWork(context)');
