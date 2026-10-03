@@ -226,16 +226,6 @@ padding: const EdgeInsets.all(16),
             title: _t(context, 'مرکز کار', 'Work center'),
             subtitle: _t(
               context,
-              'درخواست‌ها و جست‌وجوهای کاری در بخش اختصاصی خودشان.',
-              'Applications and saved work searches live in their dedicated area.',
-            ),
-          ),
-          const SizedBox(height: 10),
-          PremiumSectionHeader(
-            domain: HopeProductDomain.work,
-            title: _t(context, 'مرکز کار', 'Work center'),
-            subtitle: _t(
-              context,
               'درخواست‌های شغلی مسیر مستقل خودشان را دارند.',
               'Job applications have their own dedicated workspace.',
             ),
