@@ -207,7 +207,7 @@ class PremiumPageFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
-    final domainAccent = page?.spec.domain.accent;
+    final domainAccent = page?.spec.domain.spec.accent;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: HopeV2Surfaces.page(context),
@@ -234,7 +234,7 @@ class PremiumPageFrame extends StatelessWidget {
                   child: Semantics(
                     container: true,
                     explicitChildNodes: true,
-                    label: page?.title(context),
+                    label: page?.spec.title(context),
                     child: Material(
                       type: MaterialType.transparency,
                       child: child,
