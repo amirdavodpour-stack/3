@@ -159,11 +159,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     required VoidCallback onOpenMenu,
   }) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
-    final greeting = auth.isGuest
-        ? (isEn ? 'Good to see you' : 'خوش آمدید')
-        : (isEn
-            ? 'Good evening, ' + (displayName.isEmpty ? 'there' : displayName)
-            : 'سلام ' + (displayName.isEmpty ? 'به شما' : displayName));
+    final greeting = isEn
+        ? 'HOPE workspace'
+        : 'فضای کاری HOPE';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
@@ -215,7 +213,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
                                 ),
                           ),
                           if (settings.city.trim().isNotEmpty)
@@ -254,7 +253,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 7),
           Text(
             isEn
                 ? 'Intelligent work • Trusted money • Human progress.'
@@ -264,7 +263,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             style: HopeV2Type.eyebrow(context).copyWith(
               color: HopeV2Colors.primaryDark,
               letterSpacing: .15,
-              fontSize: 10.5,
+              fontSize: 9.5,
             ),
           ),
           const SizedBox(height: 4),
@@ -273,9 +272,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 20,
-                  height: 1.08,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  height: 1.12,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: -.35,
                 ),
           ),
