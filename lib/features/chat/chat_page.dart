@@ -187,7 +187,7 @@ class _ChatPageState extends State<ChatPage> {
         body: SafeArea(
           child: PremiumPageFrame(
             maxWidth: 920,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: Column(
               children: [
                 PremiumHeader(
