@@ -106,16 +106,6 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_t('دستگاه‌های اعلان', 'Notification devices')),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            tooltip: _t('بازخوانی', 'Refresh'),
-            icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-          ),
-        ],
-      ),
       body: PremiumPageFrame(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
         child: RefreshIndicator(
@@ -124,13 +114,31 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
             padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
+              domain: HopeProductDomain.communication,
               eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
               title: _t('دستگاه‌های متصل', 'Connected devices'),
               subtitle: _t(
                 'دستگاه‌هایی که Push برای حساب شما روی آن‌ها فعال است را ببینید و هرکدام را جداگانه غیرفعال کنید.',
                 'Review devices registered for Push notifications and disable any device independently.',
               ),
-              trailing: const HopeIconTile(HopeV2Icons.secure, size: 50, filled: true),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PremiumIconButton(
+                    icon: Localizations.localeOf(context).languageCode == 'en'
+                        ? HopeV2Icons.arrowLeft
+                        : HopeV2Icons.arrowRight,
+                    tooltip: _t('بازگشت', 'Back'),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                  const SizedBox(width: 8),
+                  PremiumIconButton(
+                    icon: HopeV2Icons.refresh,
+                    tooltip: _t('بازخوانی', 'Refresh'),
+                    onPressed: _load,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 18),
             if (!_loading && _error == null)
