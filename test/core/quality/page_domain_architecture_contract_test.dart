@@ -39,6 +39,12 @@ void main() {
     }
   });
 
+  test('chat page distinguishes collaboration and control identities', () {
+    final source = _read('lib/features/chat/chat_page.dart');
+    expect(source, contains('HopePageId.jobChat'));
+    expect(source, contains('HopePageId.adminChat'));
+  });
+
   test('admin and job chat use distinct domains', () {
     final source = _read('lib/features/chat/chat_page.dart');
     expect(
