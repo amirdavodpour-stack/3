@@ -176,15 +176,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
       return PremiumPageFrame(
-                page: HopePageId.activity,
+                page: HopePageId.workCenter,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
         child: ListView(
           children: [
             PremiumHeader(
-              page: HopePageId.activity,
+              page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
-              eyebrow: HopeCopy.of(context).copy_activity_4b38716,
-              title: HopeCopy.of(context).copy_your_activity_is_private_1363766,
+              eyebrow: _t('مرکز کار', 'WORK CENTER'),
+              title: _t('مرکز کار خصوصی شما', 'Your private work center'),
               subtitle: HopeCopy.of(context)
                   .copy_sign_in_to_view_your_projects_and_payments_32a2bc2,
               trailing: const HopeIconTile(
@@ -209,7 +209,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     }
     if (future == null) {
       return const PremiumPageFrame(
-                page: HopePageId.activity,
+                page: HopePageId.workCenter,
         child: Center(child: CircularProgressIndicator()),
       );
     }
@@ -223,15 +223,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
             return RefreshIndicator(
               onRefresh: reload,
               child: PremiumPageFrame(
-                page: HopePageId.activity,
+                page: HopePageId.workCenter,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
                 child: ListView(
                   children: [
                     PremiumHeader(
-              page: HopePageId.activity,
+              page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
-                      eyebrow: HopeCopy.of(context).copy_activity_4b38716,
-                      title: HopeCopy.of(context).copy_could_not_load_activity_335b923,
+                      eyebrow: _t('مرکز کار', 'WORK CENTER'),
+                      title: _t('مرکز کار بارگذاری نشد', 'Work center could not be loaded'),
                       subtitle: HopeCopy.of(context)
                           .copy_pull_down_to_try_again_c41d215,
                       trailing: const HopeIconTile(
@@ -259,15 +259,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
             return RefreshIndicator(
               onRefresh: reload,
               child: PremiumPageFrame(
-                page: HopePageId.activity,
+                page: HopePageId.workCenter,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
                 child: ListView(
                   children: [
                     PremiumHeader(
-              page: HopePageId.activity,
+              page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
-                      eyebrow: HopeCopy.of(context).copy_activity_4b38716,
-                      title: HopeCopy.of(context).copy_no_activity_yet_264ceb0,
+                      eyebrow: _t('مرکز کار', 'WORK CENTER'),
+                      title: _t('هنوز کاری ثبت نشده است', 'No work activity yet'),
                       subtitle: HopeCopy.of(context)
                           .copy_your_projects_applications_and_payments_wi_bec5340,
                       trailing: const HopeIconTile(
@@ -301,16 +301,16 @@ class _TransactionsPageState extends State<TransactionsPage> {
           return RefreshIndicator(
               onRefresh: reload,
               child: PremiumPageFrame(
-                page: HopePageId.activity,
+                page: HopePageId.workCenter,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
                     PremiumHeader(
-              page: HopePageId.activity,
+              page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
-                      eyebrow: HopeCopy.of(context).copy_activity_4b38716,
-                      title: HopeCopy.of(context).copy_latest_activity_a05277b,
+                      eyebrow: _t('مرکز کار', 'WORK CENTER'),
+                      title: _t('مرکز کار', 'Work center'),
                       subtitle: HopeCopy.of(context)
                           .copy_projects_progress_and_payments_at_a_glance_a0178c8,
                       trailing: const HopeIconTile(
@@ -372,7 +372,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ),
                     const SizedBox(height: 20),
                     PremiumSectionHeader(
-                      page: HopePageId.activity,
+                      page: HopePageId.workCenter,
                       domain: HopeProductDomain.work,
                       title: HopeCopy.of(context).copy_latest_activity_a05277b,
                       subtitle: HopeCopy.of(context)
