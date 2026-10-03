@@ -105,38 +105,37 @@ void main() {
   });
 
   test('operational screens declare a centralized page identity', () {
-    final architecture = _read('lib/core/ui/hope_product_architecture.dart');
-    final screens = <String, String>{
-      'premium_home_feed.dart': 'HopePageId.home',
-      'login_page.dart': 'HopePageId.login',
-      'register_page.dart': 'HopePageId.register',
-      'password_reset_page.dart': 'HopePageId.passwordReset',
-      'jobs_page.dart': 'HopePageId.explore',
-      'my_applications_page.dart': 'HopePageId.myApplications',
-      'offers_page.dart': 'HopePageId.offers',
-      'transactions_page.dart': 'HopePageId.activity',
-      'wallet_page.dart': 'HopePageId.wallet',
-      'profile_page.dart': 'HopePageId.profile',
-      'notifications_page.dart': 'HopePageId.notifications',
-      'chat_page.dart': 'HopePageId.chat',
-      'job_satisfaction_page.dart': 'HopePageId.satisfaction',
-      'financial_insights_page.dart': 'HopePageId.financialInsights',
-      'admin_page.dart': 'HopePageId.admin',
-      'admin_operations_page.dart': 'HopePageId.adminOperations',
-      'admin_disputes_page.dart': 'HopePageId.adminDisputes',
-      'recommendation_onboarding_page.dart': 'HopePageId.recommendation',
-      'create_job_page.dart': 'HopePageId.createOpportunity',
-      'saved_searches_page.dart': 'HopePageId.savedSearches',
-      'notification_devices_page.dart': 'HopePageId.notificationDevices',
-      'privacy_center_page.dart': 'HopePageId.privacy',
-      'admin_access_page.dart': 'HopePageId.adminAccess',
-      'job_detail_page.dart': 'HopePageId.opportunityDetail',
-      'employer_candidate_matches_page.dart': 'HopePageId.candidateMatches',
-      'transaction_widgets.part.dart': 'HopePageId.transactionDetail',
-      'about_page.dart': 'HopePageId.about',
+    const screens = <String, String>{
+      'lib/features/home/premium_home_feed.dart': 'HopePageId.home',
+      'lib/features/auth/login_page.dart': 'HopePageId.login',
+      'lib/features/auth/register_page.dart': 'HopePageId.register',
+      'lib/features/auth/password_reset_page.dart': 'HopePageId.passwordReset',
+      'lib/features/jobs/jobs_page.dart': 'HopePageId.explore',
+      'lib/features/applications/my_applications_page.dart': 'HopePageId.myApplications',
+      'lib/features/offers/offers_page.dart': 'HopePageId.offers',
+      'lib/features/transactions/transactions_page.dart': 'HopePageId.activity',
+      'lib/features/wallet/wallet_page.dart': 'HopePageId.wallet',
+      'lib/features/profile/profile_page.dart': 'HopePageId.profile',
+      'lib/features/notifications/notifications_page.dart': 'HopePageId.notifications',
+      'lib/features/chat/chat_page.dart': 'HopePageId.chat',
+      'lib/features/jobs/job_satisfaction_page.dart': 'HopePageId.satisfaction',
+      'lib/features/financial/financial_insights_page.dart': 'HopePageId.financialInsights',
+      'lib/features/admin/admin_page.dart': 'HopePageId.admin',
+      'lib/features/admin/admin_operations_page.dart': 'HopePageId.adminOperations',
+      'lib/features/admin/admin_disputes_page.dart': 'HopePageId.adminDisputes',
+      'lib/features/recommendation/recommendation_onboarding_page.dart': 'HopePageId.recommendation',
+      'lib/features/marketplace/create_job_page.dart': 'HopePageId.createOpportunity',
+      'lib/features/jobs/saved_searches_page.dart': 'HopePageId.savedSearches',
+      'lib/features/notifications/notification_devices_page.dart': 'HopePageId.notificationDevices',
+      'lib/features/privacy/privacy_center_page.dart': 'HopePageId.privacy',
+      'lib/features/admin/admin_access_page.dart': 'HopePageId.adminAccess',
+      'lib/features/marketplace/job_detail_page.dart': 'HopePageId.opportunityDetail',
+      'lib/features/marketplace/employer_candidate_matches_page.dart': 'HopePageId.candidateMatches',
+      'lib/features/transactions/transaction_widgets.part.dart': 'HopePageId.transactionDetail',
+      'lib/features/about/about_page.dart': 'HopePageId.about',
     };
     for (final entry in screens.entries) {
-      expect(architecture, contains(entry.value), reason: entry.key);
+      expect(_read(entry.key), contains(entry.value), reason: entry.key);
     }
   });
 
