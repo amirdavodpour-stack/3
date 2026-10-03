@@ -733,12 +733,7 @@ class PremiumPanel extends StatelessWidget {
 
     final content = ClipRRect(
       borderRadius: BorderRadius.circular(radius),
-      child: glass
-          ? BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 7, sigmaY: 7),
-              child: panel,
-            )
-          : panel,
+      child: panel,
     );
 
     return semanticLabel == null
