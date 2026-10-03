@@ -648,7 +648,7 @@ padding: const EdgeInsets.all(14),
     Widget balanceHero() {
       final scheme = Theme.of(context).colorScheme;
       return Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -672,7 +672,7 @@ padding: const EdgeInsets.all(14),
               children: [
                 const HopeIconTile(
                   HopeV2Icons.wallet,
-                  size: 48,
+                  size: 40,
                   filled: true,
                 ),
                 const Spacer(),
@@ -686,7 +686,7 @@ padding: const EdgeInsets.all(14),
                 ),
               ],
             ),
-            const SizedBox(height: 11),
+            const SizedBox(height: 8),
             Text(
               _t('موجودی قابل استفاده', 'Available balance'),
               style: const TextStyle(
@@ -702,14 +702,14 @@ padding: const EdgeInsets.all(14),
                 _money(wallet.availableBalance),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 28,
+                  fontSize: 25,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -.7,
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 7),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -721,7 +721,7 @@ padding: const EdgeInsets.all(14),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 7),
             Row(
               children: [
                 Expanded(
