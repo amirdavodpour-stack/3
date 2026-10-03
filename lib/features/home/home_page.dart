@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
     final destinations = [
       NavigationDestination(icon: const HugeIcon(icon: HopeV2Icons.home, size: 24), selectedIcon: const HugeIcon(icon: HopeV2Icons.homeSelected, size: 24), label: _t(context, 'خانه', 'Home')),
       NavigationDestination(icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 24), selectedIcon: const HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24), label: _t(context, 'کاوش', 'Explore')),
-      NavigationDestination(icon: const HugeIcon(icon: HopeV2Icons.activity, size: 24), selectedIcon: const HugeIcon(icon: HopeV2Icons.activitySelected, size: 24), label: _t(context, 'فعالیت', 'Activity')),
+      NavigationDestination(icon: const HugeIcon(icon: HopeV2Icons.activity, size: 24), selectedIcon: const HugeIcon(icon: HopeV2Icons.activitySelected, size: 24), label: _t(context, 'کار', 'Work')),
       NavigationDestination(icon: const HugeIcon(icon: HopeV2Icons.wallet, size: 24), selectedIcon: const HugeIcon(icon: HopeV2Icons.walletSelected, size: 24), label: _t(context, 'کیف پول', 'Wallet')),
       NavigationDestination(icon: const HugeIcon(icon: HopeV2Icons.profile, size: 24), selectedIcon: const HugeIcon(icon: HopeV2Icons.profileSelected, size: 24), label: _t(context, 'پروفایل', 'Profile')),
     ];
