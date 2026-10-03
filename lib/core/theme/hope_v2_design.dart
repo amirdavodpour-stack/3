@@ -197,8 +197,8 @@ class HopeV2Touch {
 class HopeV2Navigation {
   const HopeV2Navigation._();
 
-  static const barHeight = 76.0;
-  static const dockRadius = 22.0;
+  static const barHeight = 72.0;
+  static const dockRadius = 20.0;
   static const itemRadius = 13.0;
   static const itemWidth = 42.0;
   static const itemHeight = 32.0;
