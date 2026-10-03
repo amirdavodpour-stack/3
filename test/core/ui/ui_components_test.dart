@@ -5,6 +5,7 @@ import "package:hope_mobile/core/ui/components.dart";
 import "package:hope_mobile/core/ui/premium_components.dart";
 import "package:hope_mobile/l10n/generated/app_localizations.dart";
 import "package:hope_mobile/core/theme/app_theme.dart";
+import "package:hope_mobile/core/theme/hope_v2_design.dart";
 
 MaterialApp _app(Widget home) => MaterialApp(
       theme: AppTheme.light(),
