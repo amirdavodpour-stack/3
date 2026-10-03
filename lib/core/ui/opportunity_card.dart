@@ -177,7 +177,7 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: featured ? 124 : 152,
+        height: featured ? 108 : 146,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -221,14 +221,14 @@ class OpportunityCard extends StatelessWidget {
             PositionedDirectional(
               start: 14,
               end: 14,
-              bottom: 11,
+              bottom: 9,
               child: Text(
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 18.5,
+                  fontSize: 17.5,
                   height: 1.08,
                   fontWeight: FontWeight.w900,
                   shadows: [
@@ -420,7 +420,7 @@ class OpportunityCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
                   style: HopeV2Type.metric(context).copyWith(
-                    fontSize: 15,
+                    fontSize: 14,
                     color: primary,
                   ),
                 ),
@@ -432,7 +432,7 @@ class OpportunityCard extends StatelessWidget {
         Container(
           width: double.infinity,
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-          padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 12, 10),
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 10, 8),
           decoration: BoxDecoration(
             color: primary.withValues(alpha: .14),
             borderRadius: BorderRadius.circular(HopeV2Radii.button),
