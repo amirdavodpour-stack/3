@@ -39,6 +39,12 @@ extension on _TransactionPageState {
               ),
             ],
           ),
+          const SizedBox(height: 9),
+          _lifecycleProgress(
+            context,
+            current: current,
+            total: en.length,
+          ),
           const SizedBox(height: 11),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
@@ -56,6 +62,50 @@ extension on _TransactionPageState {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _lifecycleProgress(
+    BuildContext context, {
+    required int current,
+    required int total,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final safeCurrent = current.clamp(0, total - 1);
+    final progress = total <= 1 ? 1.0 : safeCurrent / (total - 1);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _t(
+                  'مرحله ${safeCurrent + 1} از ${total}',
+                  'Stage ${safeCurrent + 1} of ${total}',
+                ),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ),
+            Text(
+              _t('پیشرفت چرخه', 'Cycle progress'),
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+          child: LinearProgressIndicator(
+            minHeight: 5,
+            value: progress,
+            backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .55),
+            valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
+          ),
+        ),
+      ],
     );
   }
 
