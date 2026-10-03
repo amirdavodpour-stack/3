@@ -178,6 +178,11 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    PremiumDomainMarker(
+                      domain: HopeProductDomain.overview,
+                      compact: true,
+                    ),
+                    const SizedBox(width: HopeV2Spacing.sm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -703,6 +708,7 @@ child: Column(
       children: [
         if (recommended.isNotEmpty) ...[
           PremiumSectionHeader(
+            domain: HopeProductDomain.discovery,
             title: _t(context, 'بهترین تطابق برای شما', 'Best match for you'),
           ),
           const SizedBox(height: HopeV2Spacing.md),
@@ -719,6 +725,7 @@ child: Column(
           ),
         ] else ...[
           PremiumSectionHeader(
+            domain: HopeProductDomain.discovery,
             title: _t(context, 'فرصت‌ها', 'Opportunities'),
             subtitle: _t(
               context,
@@ -749,7 +756,10 @@ child: Column(
   Widget _section(BuildContext context, String title, List<HopeJob> jobs, VoidCallback action) {
     if (jobs.isEmpty) return const SizedBox.shrink();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      PremiumSectionHeader(title: title, action: TextButton(onPressed: action, child: Text(_t(context, 'مشاهده همه', 'View all')))),
+      PremiumSectionHeader(
+        domain: HopeProductDomain.discovery,
+        title: title,
+        action: TextButton(onPressed: action, child: Text(_t(context, 'مشاهده همه', 'View all')))),
       const SizedBox(height: HopeV2Spacing.md),
       LayoutBuilder(builder: (context, constraints) {
         final columns = constraints.maxWidth >= HopeV2Breakpoints.expanded ? 3 : constraints.maxWidth >= HopeV2Breakpoints.medium ? 2 : 1;
@@ -784,7 +794,11 @@ child: Column(
           glass: true,
 highlight: true,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            PremiumSectionHeader(title: _t(context, 'اقدام بعدی شما', 'Your next action'), subtitle: _t(context, 'اولویت با کاری است که همین حالا فعال است.', 'Active work takes priority over discovery.')),
+            PremiumSectionHeader(
+              domain: HopeProductDomain.work,
+              title: _t(context, 'اقدام بعدی شما', 'Your next action'),
+              subtitle: _t(context, 'اولویت با کاری است که همین حالا فعال است.', 'Active work takes priority over discovery.'),
+            ),
             const SizedBox(height: HopeV2Spacing.lg),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
             const SizedBox(height: HopeV2Spacing.md),
@@ -820,9 +834,20 @@ highlight: true,
               final balance = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _t(context, 'وضعیت مالی', 'Financial snapshot'),
-                    style: HopeV2Type.eyebrow(context),
+                  Row(
+                    children: [
+                      PremiumDomainMarker(
+                        domain: HopeProductDomain.finance,
+                        compact: true,
+                      ),
+                      const SizedBox(width: HopeV2Spacing.sm),
+                      Expanded(
+                        child: Text(
+                          _t(context, 'وضعیت مالی', 'Financial snapshot'),
+                          style: HopeV2Type.eyebrow(context),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 5),
                   Text(
