@@ -36,9 +36,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<HopeProviderProfile>? profile;
   String? _loadedUserId;
-  String? _applicationBusyId;
-  String? _applicationsReloadError;
-  int _applicationsReloadRequestId = 0;
 
   @override
   void didChangeDependencies() {
@@ -49,12 +46,10 @@ class _ProfilePageState extends State<ProfilePage> {
     if (id == null) {
       profile = null;
       return;
-      return;
     }
     // Keep backend errors observable so the UI can communicate an unknown
     // verification/trust state instead of silently presenting empty data.
     profile = _controller.loadProfile();
-    applications = _controller.loadApplications();
   }
 
   @override
@@ -136,7 +131,7 @@ padding: const EdgeInsets.symmetric(
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
-              if (snapshot.hasError && _applicationsReloadError == null) {
+              if (snapshot.hasError) {
                 return HopeAsyncState(
                   kind: HopeStateKind.error,
                   title: _t(context, 'اطلاعات حرفه‌ای در دسترس نیست', 'Professional profile unavailable'),
