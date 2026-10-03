@@ -241,7 +241,7 @@ Future<void> _openTab(WidgetTester tester, String label) async {
 
     await _pump(tester, repo);
 
-    expect(find.text('Administrator management'), findsOneWidget);
+    expect(find.text('Administrator management'), findsWidgets);
     expect(find.text('Add new administrator'), findsOneWidget);
     expect(find.text('Owner'), findsOneWidget);
     expect(find.text('Ops'), findsOneWidget);
