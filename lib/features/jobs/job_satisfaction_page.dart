@@ -101,7 +101,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                 PremiumHeader(
                   page: HopePageId.satisfaction,
                   domain: HopeProductDomain.trust,
-                  eyebrow: _t('همکاری', 'COLLABORATION'),
+                  eyebrow: _t('اعتماد', 'TRUST'),
                   title: _t('گزارش رضایت همکاری', 'Work satisfaction report'),
                   subtitle: _t(
                     'رضایت، کیفیت اجرا و ارتباط این همکاری را ثبت کنید تا چرخه کار کامل شود.',
@@ -145,8 +145,17 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
               );
             }
             if (snapshot.hasError || snapshot.data == null) {
-              return Center(
-                child: OutlinedButton.icon(
+              return HopeAsyncState(
+                kind: HopeStateKind.error,
+                title: _t(
+                  'وضعیت رضایت قابل دریافت نیست',
+                  'Satisfaction state unavailable',
+                ),
+                message: _t(
+                  'وضعیت این همکاری فعلاً در دسترس نیست. دوباره تلاش کنید.',
+                  'The state for this collaboration is temporarily unavailable. Try again.',
+                ),
+                action: OutlinedButton.icon(
                   onPressed: () => setState(() => _future = _load()),
                   icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                   label: Text(_t('تلاش دوباره', 'Try again')),
