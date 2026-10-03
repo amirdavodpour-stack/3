@@ -12,6 +12,7 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/features/profile/profile_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -65,11 +66,20 @@ class _ProfileRepo implements ProfileRepository {
   }
 }
 
+class _PendingProfileRepo extends _ProfileRepo {
+  final Completer<HopeProviderProfile> profileCompleter =
+      Completer<HopeProviderProfile>();
+
+  @override
+  Future<HopeProviderProfile> getProviderProfile() => profileCompleter.future;
+}
+
 Future<void> _pump(
   WidgetTester tester, {
   bool authenticated = false,
   double width = 900,
   ProfileRepository? repository,
+  bool settle = true,
 }) async {
   tester.view.physicalSize = Size(width, 2400);
   tester.view.devicePixelRatio = 1.0;
@@ -106,10 +116,41 @@ Future<void> _pump(
       ),
     ),
   ));
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 void main() {
+  testWidgets(
+    'profile professional loading uses the canonical async state',
+    (tester) async {
+      final repo = _PendingProfileRepo();
+      await _pump(
+        tester,
+        authenticated: true,
+        repository: repo,
+        settle: false,
+      );
+
+      expect(find.byType(HopeAsyncState), findsOneWidget);
+      expect(find.text('در حال بارگذاری اطلاعات حرفه‌ای'), findsOneWidget);
+
+      repo.profileCompleter.complete(
+        const HopeProviderProfile(
+          providerType: 'INDIVIDUAL',
+          capacity: 'OPEN',
+          verificationStatus: 'VERIFIED',
+          trustSignals: {'verified': true},
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('مجری مستقل'), findsOneWidget);
+    },
+  );
+
 testWidgets('withdrawing an application disables the action until completion',
       (tester) async {
     const application = HopeApplication(
