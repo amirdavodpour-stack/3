@@ -134,7 +134,7 @@ void main() {
     expect(find.textContaining('فعالیتی'), findsWidgets);
   });
 
-  testWidgets('activity metrics use a compact two-column grid on narrow screens',
+  testWidgets('activity metrics fit three compact cells on one narrow row',
       (tester) async {
     final repo = _Transactions()
       ..jobs = [_job('a', status: 'IN_PROGRESS')];
@@ -151,6 +151,7 @@ void main() {
     );
     expect(find.text('1'), findsOneWidget);
     expect(find.text('فعال'), findsOneWidget);
+    expect(tester.getSize(metrics).height, lessThan(120));
     expect(tester.takeException(), isNull);
   });
 
