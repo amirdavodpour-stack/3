@@ -340,7 +340,6 @@ run_host_batch_session() {
     --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
     --dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}" \
     --dart-define=HOPE_RESPONSIVE_BATCH="${responsive_batch}" \
-    --use-application-binary="$RUNTIME_APK" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
     --route="/__hope_runtime_capture__/$locale/$launch_mode" \
