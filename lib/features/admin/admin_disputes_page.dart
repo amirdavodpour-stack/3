@@ -104,6 +104,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                 return ListView(
                   children: [
                     PremiumHeader(
+                      page: HopePageId.adminDisputes,
                       domain: HopeProductDomain.control,
                       eyebrow: _t('کنترل اختلاف', 'DISPUTE CONTROL'),
                       title: _t('پرونده‌های اختلاف', 'Dispute cases'),
