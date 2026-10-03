@@ -256,6 +256,12 @@ void main() {
     expect(source, contains('HopeV2Icons.arrowLeft'));
   });
 
+  test('chat separates sender and recipient alignment', () {
+    final source = _read('lib/features/chat/chat_page.dart');
+    expect(source, contains('AlignmentDirectional.centerEnd'));
+    expect(source, contains('mine ? AlignmentDirectional.centerEnd'));
+  });
+
   test('satisfaction is a trust surface in title and error state', () {
     final source = _read('lib/features/jobs/job_satisfaction_page.dart');
     expect(source, contains("eyebrow: _t('اعتماد', 'TRUST')"));
