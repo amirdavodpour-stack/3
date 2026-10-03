@@ -129,6 +129,16 @@ padding: const EdgeInsets.symmetric(
           const SizedBox(height: 10),
           _settingsCard(context, settings, theme),
           const SizedBox(height: 19),
+          PremiumSectionHeader(
+            domain: HopeProductDomain.trust,
+            title: _t(context, 'اعتماد و پروفایل حرفه‌ای', 'Trust & professional profile'),
+            subtitle: _t(
+              context,
+              'وضعیت تأیید و شاخص‌های کاری مستقل از تنظیمات حساب.',
+              'Verification and work signals are kept separate from account settings.',
+            ),
+          ),
+          const SizedBox(height: 10),
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
