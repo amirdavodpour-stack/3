@@ -188,6 +188,32 @@ class PremiumNavigationRail extends StatelessWidget {
   }
 }
 
+/// App-wide opaque canvas used behind every routed surface.
+///
+/// Some flagship routes are direct page widgets rather than Scaffolds. Keeping
+/// the base canvas at the MaterialApp builder seam prevents transparent gaps
+/// from exposing the platform surface while preserving each page's own
+/// composition and surface hierarchy.
+class PremiumAppCanvas extends StatelessWidget {
+  const PremiumAppCanvas({
+    super.key,
+    required this.child,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: HopeV2Surfaces.page(context),
+        gradient: HopeV2Surfaces.pageHalo(context),
+      ),
+      child: SizedBox.expand(child: child),
+    );
+  }
+}
+
 class PremiumPageFrame extends StatelessWidget {
   const PremiumPageFrame({
     super.key,
