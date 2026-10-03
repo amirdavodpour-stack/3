@@ -17,43 +17,52 @@ class HopeOpportunityRefinementGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final copy = HopeCopy.of(context);
-    return Wrap(
-      spacing: HopeV2Spacing.sm,
-      runSpacing: HopeV2Spacing.sm,
-      children: [
-        _item(
-          context,
-          label: copy.copy_all_ba7d5b6,
-          selected: kind == 'ALL',
-          onTap: () => onKindChanged('ALL'),
+    return SizedBox(
+      height: HopeV2Touch.minimum,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _item(
+              context,
+              label: copy.copy_all_ba7d5b6,
+              selected: kind == 'ALL',
+              onTap: () => onKindChanged('ALL'),
+            ),
+            const SizedBox(width: HopeV2Spacing.sm),
+            _item(
+              context,
+              label: copy.copy_missions_a833d13,
+              selected: kind == 'MISSION',
+              onTap: () => onKindChanged('MISSION'),
+              icon: HopeV2Icons.mission,
+            ),
+            const SizedBox(width: HopeV2Spacing.sm),
+            _item(
+              context,
+              label: copy.copy_jobs_ebf9a80,
+              selected: kind == 'JOB',
+              onTap: () => onKindChanged('JOB'),
+              icon: HopeV2Icons.job,
+            ),
+            const SizedBox(width: HopeV2Spacing.sm),
+            _item(
+              context,
+              label: copy.copy_public_21e97be,
+              selected: visibility == 'PUBLIC',
+              onTap: () => onVisibilityChanged('PUBLIC'),
+            ),
+            const SizedBox(width: HopeV2Spacing.sm),
+            _item(
+              context,
+              label: copy.copy_specialized_5d1ca04,
+              selected: visibility == 'SPECIALIZED',
+              onTap: () => onVisibilityChanged('SPECIALIZED'),
+            ),
+          ],
         ),
-        _item(
-          context,
-          label: copy.copy_missions_a833d13,
-          selected: kind == 'MISSION',
-          onTap: () => onKindChanged('MISSION'),
-          icon: HopeV2Icons.mission,
-        ),
-        _item(
-          context,
-          label: copy.copy_jobs_ebf9a80,
-          selected: kind == 'JOB',
-          onTap: () => onKindChanged('JOB'),
-          icon: HopeV2Icons.job,
-        ),
-        _item(
-          context,
-          label: copy.copy_public_21e97be,
-          selected: visibility == 'PUBLIC',
-          onTap: () => onVisibilityChanged('PUBLIC'),
-        ),
-        _item(
-          context,
-          label: copy.copy_specialized_5d1ca04,
-          selected: visibility == 'SPECIALIZED',
-          onTap: () => onVisibilityChanged('SPECIALIZED'),
-        ),
-      ],
+      ),
     );
   }
 
