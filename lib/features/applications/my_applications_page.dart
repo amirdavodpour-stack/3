@@ -305,10 +305,15 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               ),
             const SizedBox(height: 12),
             if (_loading)
-              const PremiumPanel(
-                child: SizedBox(
-                  height: 220,
-                  child: Center(child: CircularProgressIndicator()),
+              HopeAsyncState(
+                kind: HopeStateKind.loading,
+                title: _t(
+                  'در حال بارگذاری درخواست‌ها',
+                  'Loading applications',
+                ),
+                message: _t(
+                  'آخرین وضعیت درخواست‌ها و چرخه همکاری در حال دریافت است.',
+                  'The latest application and collaboration state is loading.',
                 ),
               )
             else if (_loadError != null)
