@@ -82,6 +82,13 @@ void main() {
     expect(source, contains('PremiumDomainMarker'));
   });
 
+  test('home finance preview does not leak backend currency', () {
+    final source = _read('lib/features/home/premium_home_feed.dart');
+    expect(source, contains('moneyLabel(context'));
+    expect(source, isNot(contains("wallet.currency == 'TOMAN'")));
+    expect(source, isNot(contains(" : wallet.currency")));
+  });
+
   test('activity states keep the same page identity', () {
     final source = _read('lib/features/transactions/transactions_page.dart');
     expect(
