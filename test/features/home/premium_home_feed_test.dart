@@ -31,18 +31,6 @@ class _AuthRepo implements AuthRepository {
   @override
   Future<void> requestPasswordReset(String e) async {}
 
-  testWidgets('home money labels use the canonical Toman copy helper',
-      (tester) async {
-    final harness = await _host(_SequencedMarketplaceRepository());
-    await tester.pumpWidget(harness.widget);
-    await tester.pumpAndSettle();
-
-    expect(
-      moneyLabel(tester.element(find.byType(PremiumHomeFeed)), 125000),
-      contains('۱۲۵٬۰۰۰'),
-    );
-  });
-
 }
 
 class _SequencedMarketplaceRepository implements MarketplaceRepository {
@@ -187,6 +175,19 @@ testWidgets('settings changes reload home opportunities',
       tester.view.resetDevicePixelRatio();
     }
   });
+
+  testWidgets('home money labels use the canonical Toman copy helper',
+      (tester) async {
+    final harness = await _host(_SequencedMarketplaceRepository());
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    expect(
+      moneyLabel(tester.element(find.byType(PremiumHomeFeed)), 125000),
+      contains('۱۲۵٬۰۰۰'),
+    );
+  });
+
 
   testWidgets('latest home refresh wins over an older failed refresh',
       (tester) async {
