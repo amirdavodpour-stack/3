@@ -28,6 +28,7 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/testing/runtime_render_settle.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/ui/components.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/vazirmatn_loader.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
@@ -584,9 +585,11 @@ class _EvidenceHost extends StatelessWidget {
         themeMode: ThemeMode.dark,
         builder: (context, appChild) {
           final media = MediaQuery.of(context);
-          return MediaQuery(
-            data: media.copyWith(disableAnimations: true),
-            child: appChild!,
+          return PremiumAppCanvas(
+            child: MediaQuery(
+              data: media.copyWith(disableAnimations: true),
+              child: appChild!,
+            ),
           );
         },
         home: Directionality(
