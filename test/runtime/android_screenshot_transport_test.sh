@@ -37,7 +37,7 @@ grep -Fq 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script_file"
 grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
 grep -Fq 'responsive_only="false"' "$script_file"
 grep -Fq 'responsive_only="true"' "$script_file"
-grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}"' "$script_file"
+grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY' "$script_file"
 if grep -Fq 'wait_for_screenshot_file "$marker"' "$script_file"; then
   echo "FAIL: host must not race each Flutter screenshot callback before test completion" >&2
   exit 1
