@@ -56,6 +56,58 @@ void main() {
   });
 
 
+  testWidgets('featured opportunity metadata stays overflow-safe at narrow card width',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final job = HopeJob.fromMap({
+      'id': 'job-featured-narrow',
+      'title': 'طراحی رابط موبایل حرفه‌ای',
+      'description': 'Narrow featured metadata regression.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'kind': 'MISSION',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'city': 'تهران',
+      'recommendationScore': 0.94,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 224,
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featured,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('recommended opportunity exposes its real match score signal',
       (tester) async {
     final job = HopeJob.fromMap({
