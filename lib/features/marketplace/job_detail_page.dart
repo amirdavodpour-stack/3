@@ -1491,7 +1491,7 @@ class _MatchIntelligence extends StatelessWidget {
                           alignment: Alignment.center,
                           children: [
                             SizedBox.square(dimension: 64, child: CircularProgressIndicator(value: 1, strokeWidth: 6, color: primary.withValues(alpha: .10))),
-                            SizedBox.square(dimension: 72, child: CircularProgressIndicator(value: value, strokeWidth: 6, strokeCap: StrokeCap.round, color: primary)),
+                            SizedBox.square(dimension: 64, child: CircularProgressIndicator(value: value, strokeWidth: 6, strokeCap: StrokeCap.round, color: primary)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
                               Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 17, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
