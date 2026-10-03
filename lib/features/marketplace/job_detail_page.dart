@@ -568,7 +568,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
       extendBodyBehindAppBar: true,
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
           child: Center(
             heightFactor: 1,
             child: ConstrainedBox(
@@ -627,7 +627,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
       body: PremiumPageFrame(
         page: HopePageId.opportunityDetail,
         maxWidth: 1180,
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 112),
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 102),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -655,7 +655,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                     icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                     mediaUrl: _mediaUrl(),
-                    height: 228,
+                    height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 188 : 280,
                     semanticLabel: j.title,
                   ),
                   const SizedBox(height: 14),
