@@ -313,7 +313,9 @@ extension on _TransactionPageState {
                   'Review payment state, the work lifecycle, and the next allowed action in one view.',
                 ),
                 trailing: PremiumIconButton(
-                  icon: HopeV2Icons.arrowLeft,
+                  icon: Localizations.localeOf(context).languageCode == 'en'
+                      ? HopeV2Icons.arrowLeft
+                      : HopeV2Icons.arrowRight,
                   tooltip: _t('بازگشت', 'Back'),
                   onPressed: () => Navigator.maybePop(context),
                 ),
