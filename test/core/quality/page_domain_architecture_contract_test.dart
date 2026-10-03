@@ -125,6 +125,22 @@ void main() {
     expect(source, contains('PremiumDomainMarker'));
   });
 
+  test('work center metrics derive from lifecycle state', () {
+    final source = _read('lib/features/transactions/transactions_page.dart');
+    expect(source, contains("_countWorkCenterActive"));
+    expect(source, contains("_countWorkCenterSettled"));
+    expect(source, contains("_t('در حال اجرا', 'Active work')"));
+    expect(source, contains("_t('تسویه‌شده', 'Settled')"));
+  });
+
+  test('work center quick access appears before project stream and only once', () {
+    final source = _read('lib/features/transactions/transactions_page.dart');
+    final quick = '_activityNavigation(context)'.allMatches(source).length;
+    final projects = source.indexOf("HopeCopy.of(context).copy_latest_activity_a05277b");
+    expect(quick, 1);
+    expect(projects, greaterThan(quick));
+  });
+
   test('home places active work before discovery feed', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
     final active = source.indexOf('_activeWork(context)');
