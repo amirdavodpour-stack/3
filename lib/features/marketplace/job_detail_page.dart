@@ -745,37 +745,42 @@ class _JobDetailPageState extends State<JobDetailPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: PremiumIconButton(
-                icon: Localizations.localeOf(context).languageCode == 'en'
-                    ? HopeV2Icons.arrowLeft
-                    : HopeV2Icons.arrowRight,
-                tooltip: _t('بازگشت', 'Back'),
-                onPressed: () => Navigator.maybePop(context),
-              ),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                PremiumHero(
+                  page: HopePageId.opportunityDetail,
+                  domain: HopeProductDomain.discovery,
+                  eyebrow: isJob
+                      ? HopeCopy.of(context).copy_job_ce2feba
+                      : HopeCopy.of(context).copy_mission_fb4c5e1,
+                  title: j.title,
+                  message: [
+                    j.category ?? j.categoryId,
+                    if (j.city != null && j.city!.trim().isNotEmpty) j.city,
+                  ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
+                  icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
+                  mediaUrl: _mediaUrl(),
+                  height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 156 : 228,
+                  semanticLabel: j.title,
+                ),
+                PositionedDirectional(
+                  top: 10,
+                  start: 10,
+                  child: PremiumIconButton(
+                    icon: Localizations.localeOf(context).languageCode == 'en'
+                        ? HopeV2Icons.arrowLeft
+                        : HopeV2Icons.arrowRight,
+                    tooltip: _t('بازگشت', 'Back'),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
-                  PremiumHero(
-                    page: HopePageId.opportunityDetail,
-                    domain: HopeProductDomain.discovery,
-                    eyebrow: isJob
-                        ? HopeCopy.of(context).copy_job_ce2feba
-                        : HopeCopy.of(context).copy_mission_fb4c5e1,
-                    title: j.title,
-                    message: [
-                      j.category ?? j.categoryId,
-                      if (j.city != null && j.city!.trim().isNotEmpty) j.city,
-                    ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
-                    icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
-                    mediaUrl: _mediaUrl(),
-                    height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 204 : 276,
-                    semanticLabel: j.title,
-                  ),
-                  const SizedBox(height: 10),
                   Wrap(
-                    spacing: HopeV2Spacing.sm,
-                    runSpacing: HopeV2Spacing.sm,
+                    spacing: 6,
+                    runSpacing: 6,
                     children: [
                       PremiumTag(
                         label: isJob
@@ -814,12 +819,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     _MatchIntelligence(job: j),
                   ],
                   const SizedBox(height: 12),
-                  _OpportunitySnapshot(job: j),
-                  const SizedBox(height: 16),
+                  Text(
+                    _t('شرح فرصت', 'Job description'),
+                    style: HopeV2Type.section(context),
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     j.description,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
+                  const SizedBox(height: 12),
+                  _OpportunitySnapshot(job: j),
                   const SizedBox(height: 14),
                   PremiumPanel(
                     padding: const EdgeInsets.all(17),
@@ -1476,7 +1486,7 @@ class _MatchIntelligence extends StatelessWidget {
           borderRadius: BorderRadius.circular(HopeV2Radii.lg),
           onTap: () => _showDetails(context),
           child: PremiumPanel(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
             highlight: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1486,12 +1496,12 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: 72, height: 72,
+                        width: 64, height: 64,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            SizedBox.square(dimension: 72, child: CircularProgressIndicator(value: 1, strokeWidth: 6, color: primary.withValues(alpha: .10))),
-                            SizedBox.square(dimension: 72, child: CircularProgressIndicator(value: value, strokeWidth: 6, strokeCap: StrokeCap.round, color: primary)),
+                            SizedBox.square(dimension: 64, child: CircularProgressIndicator(value: 1, strokeWidth: 5.5, color: primary.withValues(alpha: .10))),
+                            SizedBox.square(dimension: 64, child: CircularProgressIndicator(value: value, strokeWidth: 5.5, strokeCap: StrokeCap.round, color: primary)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
                               Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 17, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
@@ -1521,7 +1531,7 @@ class _MatchIntelligence extends StatelessWidget {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final columns = constraints.maxWidth >= 520 ? 2 : 1;
-                      const gap = 10.0;
+                      const gap = 8.0;
                       final width = columns == 2 ? (constraints.maxWidth - gap) / 2 : constraints.maxWidth;
                       return Wrap(spacing: gap, runSpacing: 8, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
                     },
@@ -1551,7 +1561,7 @@ class _MatchIntelligence extends StatelessWidget {
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
       key: ValueKey('match-breakdown-${key}'),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),
