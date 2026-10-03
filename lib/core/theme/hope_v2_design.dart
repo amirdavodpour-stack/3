@@ -359,6 +359,7 @@ class HopeV2Shadows {
     ),
   ];
 
+  // Runtime visual certification target: no cyan spill on dark hero edges.
   static const heroDark = [
     BoxShadow(
       color: Color(0x552E2A72),
