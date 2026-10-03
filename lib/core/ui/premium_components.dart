@@ -735,7 +735,7 @@ class PremiumPanel extends StatelessWidget {
       borderRadius: BorderRadius.circular(radius),
       child: glass
           ? BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              filter: ui.ImageFilter.blur(sigmaX: 7, sigmaY: 7),
               child: panel,
             )
           : panel,
