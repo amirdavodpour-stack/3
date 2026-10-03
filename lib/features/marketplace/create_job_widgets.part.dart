@@ -294,6 +294,16 @@ class _CreateJobForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 20),
+          PremiumSectionHeader(
+            page: HopePageId.createOpportunity,
+            domain: HopeProductDomain.work,
+            title: translate('اطلاعات فرصت', 'Opportunity details'),
+            subtitle: translate(
+              'عنوان، توضیحات، دسته‌بندی و موقعیت همکاری.',
+              'Title, description, category, and collaboration location.',
+            ),
+          ),
+          const SizedBox(height: 10),
           PremiumPanel(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -520,6 +530,16 @@ class _CreateJobForm extends StatelessWidget {
               ],
             ),
           const SizedBox(height: 20),
+          PremiumSectionHeader(
+            page: HopePageId.createOpportunity,
+            domain: HopeProductDomain.finance,
+            title: translate('کارمزد HOPE', 'HOPE fee'),
+            subtitle: translate(
+              'هزینه‌های مرتبط با این نوع همکاری قبل از انتشار مشخص است.',
+              'The applicable collaboration fee is stated before publishing.',
+            ),
+          ),
+          const SizedBox(height: 10),
           PremiumPanel(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -541,7 +561,17 @@ class _CreateJobForm extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 20),
+          PremiumSectionHeader(
+            page: HopePageId.createOpportunity,
+            domain: HopeProductDomain.trust,
+            title: translate('معیار پذیرش', 'Acceptance criteria'),
+            subtitle: translate(
+              'شرایطی که مبنای بررسی و تکمیل این همکاری خواهد بود.',
+              'The conditions used to review and complete this collaboration.',
+            ),
+          ),
+          const SizedBox(height: 10),
           TextField(
             controller: acceptanceCriteria,
             maxLines: 3,
