@@ -37,6 +37,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
         PremiumSectionHeader(
+          domain: HopeProductDomain.intelligence,
           title: _t(
             context,
             'پذیرندگان بر اساس انطباق',
