@@ -141,13 +141,13 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_t('حریم خصوصی و داده‌ها', 'Privacy & data'))),
       body: PremiumPageFrame(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
+              domain: HopeProductDomain.account,
               eyebrow: _t('کنترل حساب', 'ACCOUNT CONTROL'),
               title: _t('داده‌ها تحت کنترل شماست', 'Your data, under your control'),
               subtitle: _t(
