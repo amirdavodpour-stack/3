@@ -353,12 +353,12 @@ class _JobsPageState extends State<JobsPage> {
                   child: PremiumHeader(
                     page: HopePageId.explore,
                     domain: HopeProductDomain.discovery,
-                    eyebrow: _t('کاوش', 'EXPLORE'),
-                    title: _t(
+                    eyebrow: _t(context, 'کاوش', 'EXPLORE'),
+                    title: _t(context,
                       'فرصت بعدی خود را پیدا کنید',
                       'Find your next opportunity',
                     ),
-                    subtitle: _t(
+                    subtitle: _t(context,
                       'کار و مأموریت‌های متناسب با مسیر کاری شما.',
                       'Jobs and missions matched to your professional path.',
                     ),
