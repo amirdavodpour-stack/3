@@ -5,6 +5,7 @@ import '../../core/admin/admin_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class AdminDisputesPage extends StatefulWidget {
   const AdminDisputesPage({super.key});
@@ -158,7 +159,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                             tooltip: _t('بازخوانی', 'Refresh'),
                             onPressed: _busy ? null : _load,
                           ),
-                          const HopeIconTile(
+                          HopeIconTile(
                             HopeV2Icons.secure,
                             size: 50,
                             filled: true,
