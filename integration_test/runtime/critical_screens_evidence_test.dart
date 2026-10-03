@@ -701,7 +701,14 @@ Future<void> _captureRuntimeScreen(
   // zero-duration pump can block the headless driver before the screenshot
   // request; give this page one deterministic 1.2s frame window instead.
   if (child is TransactionsPage) {
-    await tester.pump(const Duration(milliseconds: 1200));
+    // TransactionsPage materializes its FutureBuilder one frame after the
+    // initial host build. Give the Flutter raster thread several committed
+    // frame turns before requesting the Android surface image.
+    await tester.pump(const Duration(milliseconds: 1800));
+    for (var frame = 0; frame < 6; frame++) {
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+    }
     print('HOPE_RUNTIME_TRANSACTION_FAST_SETTLE_DONE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
