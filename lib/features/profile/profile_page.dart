@@ -235,9 +235,19 @@ padding: const EdgeInsets.all(16),
             ),
           ),
           const SizedBox(height: 10),
+          PremiumSectionHeader(
+            domain: HopeProductDomain.work,
+            title: _t(context, 'مرکز کار', 'Work center'),
+            subtitle: _t(
+              context,
+              'درخواست‌های شغلی مسیر مستقل خودشان را دارند.',
+              'Job applications have their own dedicated workspace.',
+            ),
+          ),
+          const SizedBox(height: 10),
           PremiumQuickActionStrip(
             domain: HopeProductDomain.work,
-            title: _t(context, 'دسترسی‌های کاری', 'Work destinations'),
+            title: _t(context, 'درخواست‌های کاری', 'Work destinations'),
             actions: [
               PremiumQuickAction(
                 label: _t(context, 'درخواست‌های من', 'My applications'),
@@ -249,8 +259,34 @@ padding: const EdgeInsets.all(16),
                 ),
               ),
               PremiumQuickAction(
+                label: _t(context, 'پیشنهادها', 'Offers'),
+                icon: HopeV2Icons.featured,
+                onPressed: () => Navigator.push(
+                  context,
+                  HopeRoutes.offers(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          PremiumSectionHeader(
+            domain: HopeProductDomain.discovery,
+            title: _t(context, 'جست‌وجو و کشف', 'Discovery'),
+            subtitle: _t(
+              context,
+              'فیلترهای ذخیره‌شده را در فضای کاوش مدیریت کنید.',
+              'Manage saved filters in the discovery workspace.',
+            ),
+          ),
+          const SizedBox(height: 10),
+          PremiumQuickActionStrip(
+            domain: HopeProductDomain.discovery,
+            title: _t(context, 'دسترسی‌های کاوش', 'Discovery destinations'),
+            actions: [
+              PremiumQuickAction(
                 label: _t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches'),
                 icon: HopeV2Icons.savedSearches,
+                primary: true,
                 onPressed: () => Navigator.push(
                   context,
                   HopeRoutes.savedSearches(),
@@ -258,7 +294,6 @@ padding: const EdgeInsets.all(16),
               ),
             ],
           ),
-          const SizedBox(height: 14),
           const SizedBox(height: 14),
           PremiumSectionHeader(
             domain: HopeProductDomain.account,
