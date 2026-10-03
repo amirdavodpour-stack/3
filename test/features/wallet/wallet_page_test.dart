@@ -440,8 +440,8 @@ void main() {
       expect(find.text('کل موجودی'), findsOneWidget);
       expect(find.text('قفل‌شده'), findsWidgets);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
-      expect(find.text('نوع کیف پول'), findsOneWidget);
-      expect(find.textContaining('کیف پول داخلی'), findsOneWidget);
+      expect(find.text('درخواست‌های برداشت'), findsOneWidget);
+      expect(find.text('برداشت در انتظار'), findsOneWidget);
       expect(find.text('موجودی مادام‌العمر'), findsNothing);
     },
   );
