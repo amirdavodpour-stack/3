@@ -243,6 +243,14 @@ void main() {
     expect(source, isNot(contains('applications = _controller.loadApplications')));
   });
 
+  test('wallet has an explicit finance page header', () {
+    final source = _read('lib/features/wallet/wallet_page.dart');
+    expect(source, contains('PremiumHeader('));
+    expect(source, contains('page: HopePageId.wallet'));
+    expect(source, contains('domain: HopeProductDomain.finance'));
+    expect(source, contains('کیف پول داخلی HOPE'));
+  });
+
   test('admin exposes control actions as a dedicated group', () {
     final source = _read('lib/features/admin/admin_page.dart');
     expect(source, contains('کنترل‌های اصلی'));
