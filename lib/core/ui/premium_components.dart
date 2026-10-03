@@ -568,7 +568,8 @@ class PremiumHeader extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (resolvedDomain != null) ...[
+                  if (resolvedDomain != null &&
+                      !compact) ...[
                     PremiumDomainMarker(domain: resolvedDomain, compact: true),
                     const SizedBox(width: HopeV2Spacing.sm),
                   ],
@@ -1118,22 +1119,17 @@ class PremiumSectionHeader extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (resolvedDomain != null)
+                  if (resolvedDomain != null && !compact)
                     Container(
-                      width: 4,
-                      height: 24,
+                      width: 3,
+                      height: 20,
                       decoration: BoxDecoration(
                         color: accent,
                         borderRadius: BorderRadius.circular(999),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withValues(alpha: .18),
-                            blurRadius: 12,
-                          ),
-                        ],
                       ),
                     ),
-                  if (resolvedDomain != null) const SizedBox(width: 8),
+                  if (resolvedDomain != null && !compact)
+                    const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       title,
