@@ -127,6 +127,11 @@ void main() {
     expect(discovery, greaterThan(active));
   });
 
+  test('main navigation names the work center explicitly', () {
+    final source = _read('lib/features/home/home_page.dart');
+    expect(source, contains("_t(context, 'کار', 'Work')"));
+  });
+
   test('secondary navigation groups expose HOPE product domains', () {
     final source = _read('lib/features/home/home_page.dart');
     expect(source, contains('PremiumDomainNavigationGroup'));
@@ -150,7 +155,7 @@ void main() {
       'lib/features/jobs/jobs_page.dart': 'HopePageId.explore',
       'lib/features/applications/my_applications_page.dart': 'HopePageId.myApplications',
       'lib/features/offers/offers_page.dart': 'HopePageId.offers',
-      'lib/features/transactions/transactions_page.dart': 'HopePageId.activity',
+      'lib/features/transactions/transactions_page.dart': 'HopePageId.workCenter',
       'lib/features/wallet/wallet_page.dart': 'HopePageId.wallet',
       'lib/features/profile/profile_page.dart': 'HopePageId.profile',
       'lib/features/notifications/notifications_page.dart': 'HopePageId.notifications',
