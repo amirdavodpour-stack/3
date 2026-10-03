@@ -75,10 +75,19 @@ class _JobsResultsSliver extends StatelessWidget {
                 if (!identical(job, featuredJob)) job,
             ];
 
+            final recommendedLabel = Text(
+              _t(context, 'پیشنهادشده برای شما', 'Recommended for you'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            );
+
             if (columns == 1) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  recommendedLabel,
+                  const SizedBox(height: 8),
                   AnimatedEntrance(
                     child: OpportunityCard(
                       job: featuredJob,
@@ -106,6 +115,8 @@ class _JobsResultsSliver extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                recommendedLabel,
+                const SizedBox(height: 8),
                 OpportunityCard(
                   job: featuredJob,
                   variant: OpportunityCardVariant.featuredScan,

@@ -232,52 +232,54 @@ class PremiumPageFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
     final domainAccent = page?.spec.domain.spec.accent;
-    final showDomainRail = MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium;
+    final showDomainRail = size.width >= HopeV2Breakpoints.medium;
+    final pageColor = HopeV2Surfaces.page(context);
+
+    // Paint the page color on the frame itself, not only on a positioned child.
+    // Runtime integration_test captures direct page subtrees; those must remain
+    // opaque even when no parent Scaffold participates in the captured layer.
     return ConstrainedBox(
       constraints: BoxConstraints(
-        minHeight: MediaQuery.sizeOf(context).height,
+        minHeight: size.height,
       ),
-      child: DecoratedBox(
+      child: Container(
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: HopeV2Surfaces.page(context),
-        gradient: HopeV2Surfaces.pageHalo(context),
-        border: domainAccent == null || !showDomainRail
-            ? null
-            : BorderDirectional(
-                start: BorderSide(
-                  color: domainAccent.withValues(alpha: .24),
-                  width: 1,
+          color: pageColor,
+          gradient: HopeV2Surfaces.pageHalo(context),
+          border: domainAccent == null || !showDomainRail
+              ? null
+              : BorderDirectional(
+                  start: BorderSide(
+                    color: domainAccent.withValues(alpha: .24),
+                    width: 1,
+                  ),
                 ),
+        ),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Padding(
+              padding: padding.copyWith(
+                bottom: padding.bottom + bottomInset,
               ),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: Padding(
-                  padding: padding.copyWith(
-                    bottom: padding.bottom + bottomInset,
-                  ),
-                  child: Semantics(
-                    container: true,
-                    explicitChildNodes: true,
-                    label: page?.spec.title(context),
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: child,
-                    ),
-                  ),
+              child: Semantics(
+                container: true,
+                explicitChildNodes: true,
+                label: page?.spec.title(context),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: child,
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
-    ),
     );
   }
 }

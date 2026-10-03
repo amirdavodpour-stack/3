@@ -48,4 +48,36 @@ void main() {
       expect(bytes.getUint8(3), 255);
     },
   );
+  testWidgets(
+    'premium page frame paints an opaque viewport when captured directly',
+    (tester) async {
+      final boundaryKey = GlobalKey();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: SizedBox(
+            width: 360,
+            height: 640,
+            child: RepaintBoundary(
+              key: boundaryKey,
+              child: PremiumPageFrame(
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final boundary =
+          boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 1);
+      final bytes =
+          (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+
+      expect(bytes.getUint8(3), 255);
+    },
+  );
+
 }

@@ -90,7 +90,7 @@ class OpportunityCard extends StatelessWidget {
                     end: AlignmentDirectional.bottomEnd,
                     colors: Theme.of(context).brightness == Brightness.dark
                         ? [
-                            primary.withValues(alpha: .14),
+                            primary.withValues(alpha: .10),
                             const Color(0xFF101522),
                             Theme.of(context).colorScheme.surface,
                           ]
@@ -110,7 +110,7 @@ class OpportunityCard extends StatelessWidget {
               color: featured || featuredScan
                   ? primary.withValues(
                       alpha: Theme.of(context).brightness == Brightness.dark
-                          ? (featuredScan ? .30 : .21)
+                          ? (featuredScan ? .18 : .21)
                           : .18,
                     )
                   : HopeV2Surfaces.border(context),
@@ -119,7 +119,7 @@ class OpportunityCard extends StatelessWidget {
                 ? [
                     if (featured || featuredScan)
                       BoxShadow(
-                        color: primary.withValues(alpha: .025),
+                        color: primary.withValues(alpha: .015),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),

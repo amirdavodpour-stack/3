@@ -337,12 +337,36 @@ class _JobsPageState extends State<JobsPage> {
         future: _future,
         builder: (context, snapshot) {
           final jobs = _filter(snapshot.data ?? const <HopeJob>[]);
+          final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
           return PremiumPageFrame(
             page: HopePageId.explore,
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 20,
+              compact ? 10 : 20,
+              compact ? 16 : 20,
+              72,
+            ),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
+                SliverToBoxAdapter(
+                  child: PremiumHeader(
+                    page: HopePageId.explore,
+                    domain: HopeProductDomain.discovery,
+                    eyebrow: _t('کاوش', 'EXPLORE'),
+                    title: _t(
+                      'فرصت بعدی خود را پیدا کنید',
+                      'Find your next opportunity',
+                    ),
+                    subtitle: _t(
+                      'کار و مأموریت‌های متناسب با مسیر کاری شما.',
+                      'Jobs and missions matched to your professional path.',
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 12),
+                ),
                 SliverToBoxAdapter(
                   child: _JobsFilterHeader(
                     domain: HopeProductDomain.discovery,
