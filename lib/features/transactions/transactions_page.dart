@@ -361,7 +361,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           .copy_pull_down_to_try_again_c41d215,
                       trailing: const HopeIconTile(
                         HopeV2Icons.pending,
-                        size: 50,
+                        size: 42,
                         filled: true,
                       ),
                     ),
@@ -453,9 +453,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         filled: true,
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    _activityNavigation(context),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
                         kind: HopeStateKind.error,
@@ -573,6 +571,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       const SizedBox(height: 12),
                       ...settledItems.map(_workItemCard),
                     ],
+                    const SizedBox(height: 12),
+                    _activityNavigation(context),
                   ],
                 ),
               ));
