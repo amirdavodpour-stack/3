@@ -150,34 +150,34 @@ class _JobsFilterHeader extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                    _chip(
+                      _chip(
                       context,
                       copy.copy_all_ba7d5b6,
                       kind == 'ALL',
                       () => onKindChanged('ALL'),
                     ),
-                    _chip(
+                      _chip(
                       context,
                       copy.copy_missions_a833d13,
                       kind == 'MISSION',
                       () => onKindChanged('MISSION'),
                       icon: HopeV2Icons.mission,
                     ),
-                    _chip(
+                      _chip(
                       context,
                       copy.copy_jobs_ebf9a80,
                       kind == 'JOB',
                       () => onKindChanged('JOB'),
                       icon: HopeV2Icons.job,
                     ),
-                    const SizedBox(width: HopeV2Spacing.sm),
-                    _chip(
+                      const SizedBox(width: HopeV2Spacing.sm),
+                      _chip(
                       context,
                       copy.copy_public_21e97be,
                       visibility == 'PUBLIC',
                       () => onVisibilityChanged('PUBLIC'),
                     ),
-                    _chip(
+                      _chip(
                       context,
                       copy.copy_specialized_5d1ca04,
                       visibility == 'SPECIALIZED',
@@ -213,15 +213,15 @@ class _JobsFilterHeader extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                    PremiumFilterChip(
+                      PremiumFilterChip(
                       icon: HopeV2Icons.location,
                       label: cityLabel,
                       selected: false,
                       onTap: onPickCity,
                       color: HopeV2Colors.secondary,
                     ),
-                    const SizedBox(width: HopeV2Spacing.sm),
-                    PremiumFilterChip(
+                      const SizedBox(width: HopeV2Spacing.sm),
+                      PremiumFilterChip(
                       icon: HopeV2Icons.category,
                       label: categoryLabel,
                       selected: false,
