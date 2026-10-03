@@ -15,7 +15,7 @@ extension on _TransactionPageState {
     ];
 
     return PremiumPanel(
-      padding: const EdgeInsets.fromLTRB(13, 13, 13, 11),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 9),
       highlight: paymentStatus == 'HELD' ||
           paymentStatus == 'RELEASED' ||
           paymentStatus == 'HOLD_PENDING' ||
@@ -39,13 +39,13 @@ extension on _TransactionPageState {
               ),
             ],
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: 7),
           _lifecycleProgress(
             context,
             current: current,
             total: en.length,
           ),
-          const SizedBox(height: 11),
+          const SizedBox(height: 9),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
               context,
@@ -55,10 +55,36 @@ extension on _TransactionPageState {
               icon: icons[i],
               last: i == en.length - 1,
             ),
-          const SizedBox(height: 6),
-          Text(
-            _statusHint(paymentStatus),
-            style: Theme.of(context).textTheme.bodySmall,
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .42),
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
+              border: Border.all(
+                color: HopeV2Surfaces.border(context).withValues(alpha: .72),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HopeIcon(
+                  _statusIcon(paymentStatus),
+                  size: 17,
+                  color: _statusColor(paymentStatus),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _statusHint(paymentStatus),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          height: 1.3,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -139,8 +165,8 @@ extension on _TransactionPageState {
                   duration: MediaQuery.disableAnimationsOf(context)
                       ? Duration.zero
                       : HopeV2Motion.fast,
-                  width: 27,
-                  height: 27,
+                  width: 25,
+                  height: 25,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: fill,
@@ -162,7 +188,7 @@ extension on _TransactionPageState {
                     child: Center(
                       child: Container(
                         width: 1,
-                        margin: const EdgeInsets.symmetric(vertical: 3),
+                        margin: const EdgeInsets.symmetric(vertical: 2),
                         color: completed
                             ? scheme.primary.withValues(alpha: .42)
                             : HopeV2Surfaces.border(context),
@@ -175,10 +201,10 @@ extension on _TransactionPageState {
           const SizedBox(width: 10),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 6),
               child: Container(
-                constraints: const BoxConstraints(minHeight: 38),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                constraints: const BoxConstraints(minHeight: 34),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
                   color: active
                       ? scheme.primary.withValues(alpha: .07)
@@ -306,10 +332,10 @@ extension on _TransactionPageState {
             'Follow the allowed action for the current financial state.',
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 7),
         for (var i = 0; i < actions.length; i++) ...[
           actions[i],
-          if (i != actions.length - 1) const SizedBox(height: 8),
+          if (i != actions.length - 1) const SizedBox(height: 7),
         ],
       ],
     );
