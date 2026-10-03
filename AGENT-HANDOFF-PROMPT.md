@@ -36,3 +36,4 @@ The backend contract suite is the active verification gate after the Flutter che
 <!-- [runtime-capture-fa] validate narrow standard opportunity metadata overflow fix -->
 <!-- [runtime-capture-fa] validate skeleton narrow-layout closure before broad visual wave -->
 <!-- [runtime-capture-fa] revalidate fully constraint-aware skeleton after compile repair -->
+<!-- [runtime-capture-fa] validate shared opaque app canvas after routed-surface repair -->
