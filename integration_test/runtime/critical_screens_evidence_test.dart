@@ -870,6 +870,9 @@ void main() {
           suffix: 'en-ltr',
         );
       }
+      // Keep the final responsive surface mounted for a deterministic frame
+      // window so any deferred layout assertion retains its active widget creator.
+      await tester.pump(const Duration(seconds: 2));
       await _signalRuntimeTestBodyComplete();
       await Future<void>.delayed(const Duration(seconds: 1));
       return;
