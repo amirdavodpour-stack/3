@@ -206,10 +206,19 @@ class PremiumPageFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
+    final domainAccent = page?.spec.domain.accent;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: HopeV2Surfaces.page(context),
         gradient: HopeV2Surfaces.pageHalo(context),
+        border: domainAccent == null
+            ? null
+            : BorderDirectional(
+                start: BorderSide(
+                  color: domainAccent.withValues(alpha: .42),
+                  width: 2,
+                ),
+              ),
       ),
       child: Stack(
         children: [
