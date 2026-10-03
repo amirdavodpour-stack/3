@@ -193,7 +193,7 @@ class _AdminPageState extends State<AdminPage>
           body: RefreshIndicator(
             onRefresh: () async => _reload(),
             child: PremiumPageFrame(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -465,7 +465,7 @@ class _AdminPageState extends State<AdminPage>
       mainAxisSpacing: 10,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 2.2,
+      childAspectRatio: 2.45,
       children: items.map((item) {
         final key = item['key']! as String;
         return PremiumStatCard(
