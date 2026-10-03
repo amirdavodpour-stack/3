@@ -133,6 +133,15 @@ void main() {
     expect(source, contains("_t('تسویه‌شده', 'Settled')"));
   });
 
+  test('work center separates active and settled streams', () {
+    final source = _read('lib/features/transactions/transactions_page.dart');
+    expect(source, contains('final activeItems ='));
+    expect(source, contains('final settledItems ='));
+    expect(source, contains("_t('در حال اجرا', 'Active work')"));
+    expect(source, contains("_t('تسویه‌شده', 'Settled')"));
+    expect(source, contains('_workItemCard'));
+  });
+
   test('work center quick access appears before project stream and only once', () {
     final source = _read('lib/features/transactions/transactions_page.dart');
     final quick = '_activityNavigation(context)'.allMatches(source).length;
