@@ -113,6 +113,13 @@ void main() {
     );
   });
 
+  test('accepted applications expose collaboration chat', () {
+    final source = _read('lib/features/applications/my_applications_page.dart');
+    expect(source, contains("'ACCEPTED'"));
+    expect(source, contains('HopeRoutes.jobChat(item.jobId)'));
+    expect(source, contains('گفتگوی همکاری'));
+  });
+
   test('accepted offers expose collaboration chat', () {
     final source = _read('lib/features/offers/offers_page.dart');
     expect(source, contains("'ACCEPTED'"));
