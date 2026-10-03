@@ -97,7 +97,7 @@ class ApiClient {
           throw ApiException('UNAUTHENTICATED', 'Authentication required',
               status: 401);
         }
-        request.requestHeaders['Authorization'] = 'Bearer $token';
+        request.headers['Authorization'] = 'Bearer $token';
       }
       request.files.add(await http.MultipartFile.fromPath('file', file.path));
       final streamed =
