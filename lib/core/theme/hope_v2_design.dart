@@ -217,21 +217,22 @@ class HopeV2Surfaces {
 
   static Gradient pageHalo(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    // Avoid visible radial contour rings on Android. The reference uses
-    // a nearly-black canvas with only a controlled atmospheric tint.
-    return LinearGradient(
+    // The dark reference uses a controlled near-black canvas. Keep the page
+    // layer flat so domain surfaces, hero cards, and content carry the visual
+    // hierarchy instead of a full-page color wash.
+    if (dark) {
+      return const LinearGradient(
+        colors: [Colors.transparent, Colors.transparent],
+      );
+    }
+    return const LinearGradient(
       begin: AlignmentDirectional.topEnd,
       end: AlignmentDirectional.bottomStart,
       colors: [
-        dark
-            ? HopeV2Colors.primary.withValues(alpha: .035)
-            : HopeV2Colors.warmHalo.withValues(alpha: .045),
-        dark
-            ? HopeV2Colors.secondary.withValues(alpha: .012)
-            : HopeV2Colors.warmHalo.withValues(alpha: .015),
+        HopeV2Colors.warmHalo,
         Colors.transparent,
       ],
-      stops: const [0.0, 0.34, 1.0],
+      stops: [0.0, 0.42],
     );
   }
 
@@ -307,12 +308,12 @@ class HopeV2Gradients {
 
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF171B35),
-      Color(0xFF35338D),
-      Color(0xFF0B4A43),
-      Color(0xFF0F111A),
+      Color(0xFF171A36),
+      Color(0xFF37318C),
+      Color(0xFF161A32),
+      Color(0xFF0B0E16),
     ],
-    stops: [0, .36, .72, 1],
+    stops: [0, .38, .72, 1],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
