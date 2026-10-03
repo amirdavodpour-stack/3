@@ -313,7 +313,7 @@ class HopeIconTile extends StatelessWidget {
   const HopeIconTile(this.icon,
       {super.key,
       this.color = HopeV2Colors.primary,
-      this.size = 46,
+      this.size = 44,
       this.filled = false,
       this.semanticLabel});
   final Object icon;
@@ -349,8 +349,8 @@ class HopeIconTile extends StatelessWidget {
       boxShadow: filled
           ? [
               BoxShadow(
-                color: color.withValues(alpha: dark ? .16 : .12),
-                blurRadius: size * .28,
+                color: color.withValues(alpha: dark ? .10 : .10),
+                blurRadius: size * .24,
                 offset: Offset(0, size * .10),
               ),
             ]
