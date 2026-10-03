@@ -99,6 +99,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 PremiumHeader(
+                  page: HopePageId.satisfaction,
                   domain: HopeProductDomain.trust,
                   eyebrow: _t('همکاری', 'COLLABORATION'),
                   title: _t('گزارش رضایت همکاری', 'Work satisfaction report'),
