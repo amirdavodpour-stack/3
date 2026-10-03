@@ -464,6 +464,56 @@ class PremiumDomainMarker extends StatelessWidget {
   }
 }
 
+class PremiumDomainNavigationGroup extends StatelessWidget {
+  const PremiumDomainNavigationGroup({
+    super.key,
+    required this.domain,
+    required this.children,
+    this.compact = false,
+  });
+
+  final HopeProductDomain domain;
+  final List<Widget> children;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = domain.spec;
+    return Padding(
+      padding: EdgeInsets.only(bottom: compact ? 8 : HopeV2Spacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 4, 7),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                PremiumDomainMarker(domain: domain, compact: true),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    spec.label(context),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: spec.accent,
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PremiumPanel(
+            glass: true,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(children: children),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class PremiumHeader extends StatelessWidget {
   const PremiumHeader({
     super.key,
