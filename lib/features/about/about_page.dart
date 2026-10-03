@@ -16,6 +16,7 @@ class AboutHopePage extends StatelessWidget {
       textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
       child: Scaffold(
         body: PremiumPageFrame(
+          page: HopePageId.about,
           maxWidth: 980,
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
           child: ListView(
