@@ -585,13 +585,22 @@ class _EvidenceHost extends StatelessWidget {
   }
 }
 
-const _responsiveOnly =
-    bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
-const _captureLocale =
-    String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
-const _captureHomeOnly = bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
-const _responsiveBatch =
-    String.fromEnvironment('HOPE_RESPONSIVE_BATCH', defaultValue: 'all');
+final _captureRoute =
+    WidgetsBinding.instance.platformDispatcher.defaultRouteName;
+final _routeSegments =
+    Uri.tryParse(_captureRoute)?.pathSegments ?? const <String>[];
+final _captureMode =
+    _routeSegments.isEmpty ? 'baseline' : _routeSegments.last;
+final _responsiveOnly =
+    _captureMode == 'responsive-a' || _captureMode == 'responsive-b';
+final _captureLocale =
+    _routeSegments.length >= 2 ? _routeSegments[_routeSegments.length - 2] : '';
+final _captureHomeOnly = false;
+final _responsiveBatch = switch (_captureMode) {
+  'responsive-a' => '1',
+  'responsive-b' => '2',
+  _ => 'all',
+};
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
