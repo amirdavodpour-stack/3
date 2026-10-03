@@ -613,26 +613,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-                  Row(
-                    children: [
-                      PremiumDomainMarker(
-                        domain: HopeProductDomain.discovery,
-                        compact: true,
-                      ),
-                      const SizedBox(width: HopeV2Spacing.sm),
-                      Expanded(
-                        child: PremiumTag(
-                          label: isJob
-                              ? HopeCopy.of(context).copy_job_ce2feba
-                              : HopeCopy.of(context).copy_mission_fb4c5e1,
-                          icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
                   PremiumHero(
+                    page: HopePageId.opportunityDetail,
+                    domain: HopeProductDomain.discovery,
                     eyebrow: isJob
                         ? HopeCopy.of(context).copy_job_ce2feba
                         : HopeCopy.of(context).copy_mission_fb4c5e1,
