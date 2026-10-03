@@ -271,6 +271,9 @@ class _JobsFilterHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
   Widget _chip(
     BuildContext context,
     String text,
