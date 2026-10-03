@@ -37,10 +37,11 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
   @override Widget build(BuildContext context) => Directionality(
     textDirection: Localizations.localeOf(context).languageCode == 'en' ? TextDirection.ltr : TextDirection.rtl,
     child: Scaffold(
-      appBar: AppBar(title: Text(_t('احراز هویت پنل مدیریت', 'Admin panel verification'))),
       body: PremiumPageFrame(maxWidth: 620, padding: const EdgeInsets.all(22), child: ListView(
         children: [
-          PremiumHeader(eyebrow: _t('دسترسی محدود', 'Restricted access'), title: _t('ورود به مرکز مدیریت', 'Enter admin control center'), subtitle: _t('نام حساب و نام کاربری مدیریتی باید دقیقاً با هویت مجاز سامانه منطبق باشد.', 'Your account name and configured admin username must match exactly.'), trailing: const HopeIconTile(HopeV2Icons.secure, size: 52, filled: true)),
+          PremiumHeader(
+            domain: HopeProductDomain.control,
+            eyebrow: _t('دسترسی محدود', 'Restricted access'), title: _t('ورود به مرکز مدیریت', 'Enter admin control center'), subtitle: _t('نام حساب و نام کاربری مدیریتی باید دقیقاً با هویت مجاز سامانه منطبق باشد.', 'Your account name and configured admin username must match exactly.'), trailing: const HopeIconTile(HopeV2Icons.secure, size: 52, filled: true)),
           const SizedBox(height: 20),
           TextField(controller: _name, textInputAction: TextInputAction.next, decoration: InputDecoration(labelText: _t('نام مدیر', 'Admin name'), prefixIcon: const Icon(Icons.badge_outlined))),
           const SizedBox(height: 12),
