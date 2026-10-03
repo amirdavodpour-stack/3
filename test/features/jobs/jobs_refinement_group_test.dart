@@ -57,6 +57,76 @@ void main() {
     expect(tester.takeException(), isNull);
   });
   testWidgets(
+    'refinement action cluster stays within a narrow mobile header width',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: SizedBox(
+                width: 200,
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      HopeOpportunityRefinementLauncher(
+                        activeCount: 2,
+                        kind: 'MISSION',
+                        visibility: 'PUBLIC',
+                        cityLabel: 'Tehran',
+                        categoryLabel: 'Design',
+                        categoryError: null,
+                        onKindChanged: (_) {},
+                        onVisibilityChanged: (_) {},
+                        onPickCity: () {},
+                        onPickCategory: () {},
+                        onRetryCategories: () {},
+                      ),
+                      const SizedBox(width: 4),
+                      PremiumIconButton(
+                        icon: HopeV2Icons.savedSearches,
+                        tooltip: 'Saved searches',
+                        onPressed: () {},
+                      ),
+                      const SizedBox(width: 4),
+                      PremiumIconButton(
+                        icon: HopeV2Icons.add,
+                        tooltip: 'Save search',
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(
+          find.byKey(
+            const ValueKey('hope-opportunity-refinement-launcher'),
+          ),
+        ),
+        const Size(48, 48),
+      );
+    },
+  );
+
+  testWidgets(
     'refinement launcher stays finite inside a loose action row',
     (tester) async {
       await tester.pumpWidget(
@@ -97,10 +167,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.textContaining('Filters'), findsOneWidget);
+      expect(
+        tester.getSize(
+          find.byKey(
+            const ValueKey('hope-opportunity-refinement-launcher'),
+          ),
+        ),
+        const Size(48, 48),
+      );
+      expect(find.textContaining('Filters'), findsNothing);
       expect(find.text('Missions'), findsNothing);
 
-      await tester.tap(find.textContaining('Filters'));
+      await tester.tap(
+        find.byKey(
+          const ValueKey('hope-opportunity-refinement-launcher'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Refine results'), findsOneWidget);

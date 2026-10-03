@@ -191,15 +191,49 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
     final label = activeCount == 0
         ? _t(context, 'فیلترها', 'Filters')
         : _t(context, 'فیلترها · $activeCount', 'Filters · $activeCount');
-    return Semantics(
-      button: true,
-      label: _t(context, 'باز کردن فیلترهای فرصت', 'Open opportunity filters'),
-      child: PremiumFilterChip(
-        icon: HopeV2Icons.filter,
-        label: label,
-        selected: activeCount > 0,
-        onTap: () => _open(context),
-      ),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        PremiumIconButton(
+          key: const ValueKey('hope-opportunity-refinement-launcher'),
+          icon: HopeV2Icons.filter,
+          tooltip: label,
+          selected: activeCount > 0,
+          onPressed: () => _open(context),
+        ),
+        if (activeCount > 0)
+          PositionedDirectional(
+            top: -2,
+            end: -2,
+            child: ExcludeSemantics(
+              child: Container(
+                constraints: const BoxConstraints(
+                  minWidth: 18,
+                  minHeight: 18,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                  border: Border.all(
+                    color: HopeV2Surfaces.page(context),
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  '$activeCount',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
