@@ -229,6 +229,13 @@ void main() {
     expect(professional, greaterThan(trust));
   });
 
+  test('financial insights exposes local navigation actions', () {
+    final source = _read('lib/features/financial/financial_insights_page.dart');
+    expect(source, contains('PremiumIconButton'));
+    expect(source, contains('HopeV2Icons.refresh'));
+    expect(source, contains('HopeV2Icons.arrowLeft'));
+  });
+
   test('satisfaction is a trust surface in title and error state', () {
     final source = _read('lib/features/jobs/job_satisfaction_page.dart');
     expect(source, contains("eyebrow: _t('اعتماد', 'TRUST')"));
