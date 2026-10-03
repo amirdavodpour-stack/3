@@ -31,6 +31,18 @@ void main() {
     }
   });
 
+  test('admin and job chat use distinct domains', () {
+    final source = _read('lib/features/chat/chat_page.dart');
+    expect(
+      source,
+      contains('HopeProductDomain.control'),
+    );
+    expect(
+      source,
+      contains('HopeProductDomain.collaboration'),
+    );
+  });
+
   test('HOPE domain language is centralized instead of screen-local', () {
     final source = _read('lib/core/ui/hope_product_architecture.dart');
     for (final name in const [
