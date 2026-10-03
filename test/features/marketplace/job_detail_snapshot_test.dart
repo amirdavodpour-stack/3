@@ -119,3 +119,41 @@ void main() {
     expect(snapshotTop, lessThan(descriptionTop));
   });
 }
+
+
+testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
+    (tester) async {
+  await tester.pumpWidget(
+    MediaQuery(
+      data: const MediaQueryData(size: Size(240, 640)),
+      child: MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: const Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: Padding(
+              padding: EdgeInsets.all(20),
+              child: PremiumHero(
+                eyebrow: 'ماموریت',
+                title: 'طراحی رابط موبایل حرفه‌ای',
+                message: 'Software • تهران',
+                icon: Icons.work_outline,
+                domain: HopeProductDomain.discovery,
+                height: 204,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  expect(tester.takeException(), isNull);
+});
