@@ -176,7 +176,9 @@ class _ChatPageState extends State<ChatPage> {
                                   final m = _thread!.messages[i];
                                   final mine = currentUserId != null && m.senderId == currentUserId;
                                   return Align(
-                                    alignment: AlignmentDirectional.centerStart,
+                                    alignment: mine
+                                        ? AlignmentDirectional.centerEnd
+                                        : AlignmentDirectional.centerStart,
                                     child: ConstrainedBox(
                                       constraints: const BoxConstraints(
                                         maxWidth: 680,
