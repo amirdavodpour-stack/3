@@ -21,6 +21,7 @@ void main() {
       'lib/features/offers/offers_page.dart',
       'lib/features/notifications/notifications_page.dart',
       'lib/features/applications/my_applications_page.dart',
+      'lib/features/marketplace/create_job_page.dart',
     ];
     for (final path in paths) {
       final source = _read(path);
@@ -34,6 +35,7 @@ void main() {
       'lib/features/offers/offers_page.dart',
       'lib/features/notifications/notifications_page.dart',
       'lib/features/applications/my_applications_page.dart',
+      'lib/features/marketplace/create_job_page.dart',
     ];
     for (final path in paths) {
       final source = _read(path);
