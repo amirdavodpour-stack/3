@@ -352,6 +352,7 @@ class _JobsPageState extends State<JobsPage> {
                     cityLabel: _city == 'AUTO'
                         ? '${HopeCopy.of(context).copy_near_1df6db0} ${settings.city}'
                         : _city,
+                    cityIsExplicit: _city != 'AUTO',
                     categoryLabel: _categoryLabel(context),
                     resultCount: jobs.length,
                     onQueryChanged: _setQuery,
