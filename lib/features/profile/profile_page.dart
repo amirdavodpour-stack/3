@@ -813,18 +813,19 @@ child: Column(
                 return const SizedBox.shrink();
               }
               return ListTile(
-            leading: const HopeIconTile(HopeV2Icons.insights),
-            title: Text(
-              HopeCopy.of(context).copy_about_hope_f8ee86b,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context).copy_mission_jobs_fees_and_privacy_a947037,
-            ),
-            onTap: () => Navigator.push(context, HopeRoutes.about()),
-          ),
-;
+                leading: const HopeIconTile(HopeV2Icons.insights),
+                title: Text(
+                  HopeCopy.of(context).copy_about_hope_f8ee86b,
+                ),
+                subtitle: Text(
+                  HopeCopy.of(context)
+                      .copy_mission_jobs_fees_and_privacy_a947037,
+                ),
+                onTap: () => Navigator.push(context, HopeRoutes.about()),
+              );
             },
-          ),        ],
+          ),
+        ],
       ),
     );
   }
