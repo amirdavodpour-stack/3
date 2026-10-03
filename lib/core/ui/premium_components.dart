@@ -571,7 +571,7 @@ class PremiumHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: MainAxisSize.max,
                 children: [
                   if (resolvedDomain != null &&
                       !compact) ...[
@@ -771,7 +771,7 @@ class PremiumHero extends StatelessWidget {
     final resolvedDomain = domain ?? page?.spec.domain;
     final heroHeight = compact
         // Compact mobile hero stays editorial and leaves room for actionable data.
-        ? height.clamp(180.0, 320.0).toDouble()
+        ? height.clamp(152.0, 320.0).toDouble()
         : (height < 320 ? 320.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
@@ -932,7 +932,7 @@ class PremiumHero extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 7),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                                mainAxisSize: MainAxisSize.max,
                                 children: [
                                   Container(
                                     width: 28,
