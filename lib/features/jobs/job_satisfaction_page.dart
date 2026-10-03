@@ -148,12 +148,12 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
               return HopeAsyncState(
                 kind: HopeStateKind.error,
                 title: _t(
-                  'وضعیت رضایت قابل دریافت نیست',
-                  'Satisfaction state unavailable',
+                  'گزارش رضایت در دسترس نیست',
+                  'Satisfaction report unavailable',
                 ),
                 message: _t(
-                  'وضعیت این همکاری فعلاً در دسترس نیست. دوباره تلاش کنید.',
-                  'The state for this collaboration is temporarily unavailable. Try again.',
+                  'اطلاعات اعتماد این همکاری فعلاً قابل دریافت نیست.',
+                  'Trust information for this collaboration is temporarily unavailable.',
                 ),
                 action: OutlinedButton.icon(
                   onPressed: () => setState(() => _future = _load()),
