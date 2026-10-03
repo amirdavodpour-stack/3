@@ -7,6 +7,7 @@ import 'package:hugeicons/hugeicons.dart';
 /// instead of inventing per-page spacing, radii, or breakpoints.
 
 /// Premium reference contract: deep surfaces, restrained cyan/teal, violet focus.
+/// Runtime certification batch: compact home, deterministic glass, restrained bloom.
 /// Canonical HOPE visual tokens. Legacy theme APIs alias these values so
 /// existing screens can migrate without creating a second design system.
 class HopeV2Colors {
