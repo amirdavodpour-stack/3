@@ -344,6 +344,7 @@ class _JobsPageState extends State<JobsPage> {
               slivers: [
                 SliverToBoxAdapter(
                   child: _JobsFilterHeader(
+                    domain: HopeProductDomain.discovery,
                     kind: _kind,
                     visibility: _visibility,
                     categoryError: _categoryError,
