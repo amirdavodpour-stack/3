@@ -247,6 +247,7 @@ class _CreateJobForm extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           PremiumSectionHeader(
+            domain: HopeProductDomain.work,
             title: HopeCopy.of(context).copy_audience_visibility_5a0ddcb,
             subtitle:
                 HopeCopy.of(context).copy_make_it_public_or_specialized_e890215,
