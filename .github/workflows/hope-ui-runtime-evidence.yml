@@ -24,6 +24,7 @@ on:
 # [runtime-capture-fa] validate finance + opportunity-detail hierarchy wave at exact current HEAD.
 # [runtime-capture-fa] validate grouped finance + discovery-detail consolidation.
 # [runtime-capture-fa] validate compile-fix before next visual evidence wave.
+# [runtime-capture-fa] validate explicit page-canvas surface after shared frame hardening.
 
   push:
     branches:
