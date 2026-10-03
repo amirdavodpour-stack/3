@@ -164,11 +164,6 @@ class _CreateJobPageState extends State<CreateJobPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
-        ),
-      ),
       body: PremiumPageFrame(
         maxWidth: 980,
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
@@ -182,10 +177,23 @@ class _CreateJobPageState extends State<CreateJobPage> {
                   'نوع فرصت، مشخصات، مبلغ و شرایط را مشخص کنید.',
                   'Set the opportunity type, details, budget, and requirements.',
                 ),
-                trailing: const HopeIconTile(
-                  HopeV2Icons.add,
-                  size: 52,
-                  filled: true,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PremiumIconButton(
+                      icon: Localizations.localeOf(context).languageCode == 'en'
+                          ? HopeV2Icons.arrowLeft
+                          : HopeV2Icons.arrowRight,
+                      tooltip: _t('بازگشت', 'Back'),
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    const HopeIconTile(
+                      HopeV2Icons.add,
+                      size: 52,
+                      filled: true,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: HopeV2Spacing.lg),
