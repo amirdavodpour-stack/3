@@ -312,6 +312,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           child: Column(
             children: [
               PremiumHeader(
+                page: HopePageId.notifications,
                 domain: HopeProductDomain.communication,
                 eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
                 title: _t('اعلان‌ها', 'Notifications'),
