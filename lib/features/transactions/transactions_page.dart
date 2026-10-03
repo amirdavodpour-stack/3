@@ -155,6 +155,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   Widget _activityNavigation(BuildContext context) {
     final copy = HopeCopy.of(context);
     return PremiumQuickActionStrip(
+      domain: HopeProductDomain.work,
       title: _t('دسترسی سریع', 'Quick access'),
       subtitle: _t(
         'درخواست‌ها، پیشنهادها و اعلان‌ها را بدون باز کردن منوی کناری در دسترس داشته باشید.',
@@ -378,6 +379,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
             );
           }
           final items = snap.data ?? const <HopeJob>[];
+          final activeItems =
+              items.where((job) => _isWorkCenterActive(job.status ?? '')).toList();
+          final settledItems =
+              items.where((job) => _isWorkCenterSettled(job.status ?? '')).toList();
+          final otherItems = items
+              .where((job) =>
+                  !_isWorkCenterActive(job.status ?? '') &&
+                  !_isWorkCenterSettled(job.status ?? ''))
+              .toList();
           if (items.isEmpty) {
             return RefreshIndicator(
               onRefresh: reload,
@@ -519,16 +529,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    final activeItems =
-                        items.where((job) => _isWorkCenterActive(job.status ?? '')).toList();
-                    final settledItems =
-                        items.where((job) => _isWorkCenterSettled(job.status ?? '')).toList();
-                    final otherItems = items
-                        .where((job) =>
-                            !_isWorkCenterActive(job.status ?? '') &&
-                            !_isWorkCenterSettled(job.status ?? ''))
-                        .toList();
-
                     if (activeItems.isNotEmpty) ...[
                       PremiumSectionHeader(
                         page: HopePageId.workCenter,
