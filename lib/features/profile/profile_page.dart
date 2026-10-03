@@ -101,7 +101,7 @@ padding: const EdgeInsets.symmetric(
               horizontal: HopeV2Spacing.lg,
               vertical: HopeV2Spacing.md,
             ),
-            highlight: true,
+            highlight: false,
             child: Row(
               children: [
                 const HopeIconTile(HopeV2Icons.secure, filled: true),
