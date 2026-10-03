@@ -108,6 +108,53 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('standard opportunity metadata stays overflow-safe at narrow card width',
+      (tester) async {
+    tester.view.physicalSize = const Size(440, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final job = HopeJob.fromMap({
+      'id': 'job-standard-narrow',
+      'title': 'توسعه Flutter برای محصول جدید',
+      'description': 'Narrow standard metadata regression.',
+      'categoryId': 'software',
+      'category': 'نرم افزار',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'kind': 'JOB',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'city': 'تهران',
+      'recommendationScore': 0.87,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: OpportunityCard(job: job),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('recommended opportunity exposes its real match score signal',
       (tester) async {
     final job = HopeJob.fromMap({
