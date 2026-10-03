@@ -113,6 +113,12 @@ void main() {
     );
   });
 
+  test('chat aligns own messages separately', () {
+    final source = _read('lib/features/chat/chat_page.dart');
+    expect(source, contains('final mine ='));
+    expect(source, contains('mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart'));
+  });
+
   test('opportunity detail exposes back action', () {
     final source = _read('lib/features/marketplace/job_detail_page.dart');
     expect(source, contains('PremiumIconButton'));
