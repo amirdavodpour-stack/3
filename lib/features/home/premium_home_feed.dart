@@ -459,7 +459,7 @@ padding: const EdgeInsets.all(12),
                         builder: (context, constraints) {
                           // Mobile keeps the pulse readable as a 2x2 metric grid;
                           // desktop can expand to four compact metrics.
-                          final columns = constraints.maxWidth < 220 ? 2 : 4;
+                          final columns = constraints.maxWidth < 300 ? 2 : 4;
                           const gap = HopeV2Spacing.sm;
                           final width =
                               (constraints.maxWidth - gap * (columns - 1)) /
@@ -636,7 +636,7 @@ padding: const EdgeInsets.all(12),
     required Color accent,
   }) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 54),
+      constraints: const BoxConstraints(minHeight: 48),
       padding: const EdgeInsets.symmetric(
         horizontal: 9,
         vertical: 9,
@@ -660,7 +660,7 @@ padding: const EdgeInsets.all(12),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.metric(context).copyWith(
-                  fontSize: compact ? 14 : (value.length > 7 ? 13 : 16),
+                  fontSize: compact ? 13 : (value.length > 7 ? 12 : 15),
                   color: Colors.white,
                 ),
               ),
@@ -689,7 +689,7 @@ padding: const EdgeInsets.all(12),
                     strokeWidth: 1.9,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 3),
                 metric,
               ],
             );
