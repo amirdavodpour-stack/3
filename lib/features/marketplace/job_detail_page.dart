@@ -786,10 +786,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                     icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                     mediaUrl: _mediaUrl(),
-                    height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 188 : 280,
+                    height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 168 : 252,
                     semanticLabel: j.title,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   Wrap(
                     spacing: HopeV2Spacing.sm,
                     runSpacing: HopeV2Spacing.sm,
@@ -827,10 +827,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (j.isRecommended &&
                       (j.recommendationScore != null ||
                           j.recommendationReasons.isNotEmpty)) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _MatchIntelligence(job: j),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _OpportunitySnapshot(job: j),
                   const SizedBox(height: 16),
                   Text(
