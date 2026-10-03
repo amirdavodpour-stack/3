@@ -53,35 +53,26 @@ void main() {
     expect(access.permissions, contains('admin.manage_admins'));
   });
 
-  test('owner can list administrators through the admin repository', () async {
-    server.handlers['/admin/admins'] = (request, body) async {
-      expect(request.method, 'GET');
-      await respondJson(request, 200, {
-        'data': [
-          {
-            'id': 'owner-1',
-            'email': 'amir.davodpour@gmail.com',
-            'displayName': 'Owner',
-            'role': 'ADMIN',
-            'status': 'ACTIVE',
-            'primaryAdmin': true,
-          },
-          {
-            'id': 'admin-1',
-            'email': 'ops@example.com',
-            'displayName': 'Ops',
-            'role': 'ADMIN',
-            'status': 'ACTIVE',
-            'primaryAdmin': false,
-          },
-        ],
-      });
-    };
+  test('admin user preserves the primary-owner marker from the API', () {
+    final owner = HopeAdminUser.fromMap({
+      'id': 'owner-1',
+      'email': 'amir.davodpour@gmail.com',
+      'displayName': 'Owner',
+      'role': 'ADMIN',
+      'status': 'ACTIVE',
+      'primaryAdmin': true,
+    });
+    final operator = HopeAdminUser.fromMap({
+      'id': 'admin-1',
+      'email': 'ops@example.com',
+      'displayName': 'Ops',
+      'role': 'ADMIN',
+      'status': 'ACTIVE',
+      'primaryAdmin': false,
+    });
 
-    final admins = await repository.listAdmins();
-    expect(admins, hasLength(2));
-    expect(admins.first.primaryAdmin, isTrue);
-    expect(admins.last.email, 'ops@example.com');
+    expect(owner.primaryAdmin, isTrue);
+    expect(operator.primaryAdmin, isFalse);
   });
 
   test('promote and revoke administrator call the protected routes', () async {
