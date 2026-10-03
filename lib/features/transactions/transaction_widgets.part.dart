@@ -306,6 +306,7 @@ extension on _TransactionPageState {
           child: Column(
             children: [
               PremiumHeader(
+                domain: HopeProductDomain.finance,
                 eyebrow: _t('مالی', 'FINANCE'),
                 title: HopeCopy.of(context).copy_transaction_7e0ea3b,
                 subtitle: _t(
