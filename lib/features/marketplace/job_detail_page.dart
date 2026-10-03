@@ -613,6 +613,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: PremiumIconButton(
+                icon: Localizations.localeOf(context).languageCode == 'en'
+                    ? HopeV2Icons.arrowLeft
+                    : HopeV2Icons.arrowRight,
+                tooltip: _t('بازگشت', 'Back'),
+                onPressed: () => Navigator.maybePop(context),
+              ),
+            ),
+            const SizedBox(height: 8),
                   PremiumHero(
                     page: HopePageId.opportunityDetail,
                     domain: HopeProductDomain.discovery,
