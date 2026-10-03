@@ -35,9 +35,6 @@ grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
 grep -Fq 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script_file"
 grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
-grep -Fq 'responsive_only="false"' "$script_file"
-grep -Fq 'responsive_only="true"' "$script_file"
-grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY' "$script_file"
 if grep -Fq 'wait_for_screenshot_file "$marker"' "$script_file"; then
   echo "FAIL: host must not race each Flutter screenshot callback before test completion" >&2
   exit 1
@@ -88,7 +85,14 @@ grep -Fq 'run_host_batch_session responsive-a responsive' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b responsive' "$script_file"
 grep -Fq 'platformDispatcher.defaultRouteName' "$test_file"
 grep -Fq '--route="/__hope_runtime_capture__/$locale/$launch_mode"' "$script_file"
-grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH' "$script_file"
+if grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY' "$script_file"; then
+  echo "FAIL: responsive mode must not depend on compile-time dart-define state" >&2
+  exit 1
+fi
+if grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH' "$script_file"; then
+  echo "FAIL: responsive batch must be selected from the launch route" >&2
+  exit 1
+fi
 grep -Fq 'HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker' "$test_file"
 
 grep -Fq 'if (child is TransactionsPage)' "$test_file"
