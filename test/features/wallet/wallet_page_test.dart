@@ -266,7 +266,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
+      expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
 
       final refreshIndicator =
           tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
@@ -356,7 +356,7 @@ void main() {
   );
 
   testWidgets(
-    'wallet keeps available, locked and pending payout metrics distinct',
+    'wallet keeps total balance, available, protected and pending signals distinct',
     (tester) async {
       final auth = AuthController(_AuthRepo(), SecureStore());
       await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
@@ -382,30 +382,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('2,500,000 تومان'),
-        findsWidgets,
-      );
-      await tester.scrollUntilVisible(
-        find.text('برداشت‌های در جریان'),
-        500,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-
-      expect(
-        find.textContaining('1,000,000 تومان'),
-        findsWidgets,
-      );
-      final statCards = tester.widgetList<PremiumStatCard>(
-        find.byType(PremiumStatCard),
-      ).toList();
-      expect(
-        statCards.map((card) => '${card.label}=${card.value}').toList(),
-        contains('برداشت‌های در جریان=1'),
-      );
-      expect(find.text('قفل‌شده'), findsWidgets);
-      expect(find.text('برداشت‌های در جریان'), findsOneWidget);
+      expect(find.textContaining('3,500,000 تومان'), findsOneWidget);
+      expect(find.textContaining('2,500,000 تومان'), findsWidgets);
+      expect(find.text('قابل استفاده'), findsOneWidget);
+      expect(find.text('محافظت‌شده'), findsOneWidget);
+      expect(find.text('برداشت در انتظار'), findsOneWidget);
+      expect(find.text('درخواست‌های برداشت'), findsOneWidget);
     },
   );
 
@@ -473,7 +455,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
+    expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
     wallet.failLoad = true;
 
     await tester.fling(
@@ -484,7 +466,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
+    expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
     expect(find.text('Wallet refresh failed'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
@@ -623,7 +605,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('2,500,000 TOMAN'), findsNWidgets(2));
+    expect(find.textContaining('3,500,000 TOMAN'), findsOneWidget);
     expect(find.textContaining('2,500,000 IRR'), findsNothing);
     expect(find.textContaining('1,000,000 TOMAN'), findsWidgets);
     expect(find.textContaining('IRR'), findsNothing);
