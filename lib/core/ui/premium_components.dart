@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
+import 'hope_product_architecture.dart';
 
 /// Shared page shell. Every V2 flagship surface should use this instead of
 /// inventing its own max-width, page padding, or bottom safe-area behavior.
