@@ -448,6 +448,8 @@ padding: const EdgeInsets.all(14),
               },
             ),
             const SizedBox(height: HopeV2Spacing.lg),
+            _quickActions(context, auth),
+            const SizedBox(height: HopeV2Spacing.lg),
             if (!auth.isGuest && _agentState != null)
               FutureBuilder<HopeOpportunityAgentState>(
                 future: _agentState,
@@ -506,6 +508,69 @@ padding: const EdgeInsets.all(14),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _quickActions(BuildContext context, AuthController auth) {
+    final actions = <PremiumQuickAction>[
+      PremiumQuickAction(
+        label: _t(context, 'کاوش فرصت‌ها', 'Explore opportunities'),
+        icon: HopeV2Icons.workshop,
+        onPressed: widget.onOpenExplore,
+        primary: true,
+      ),
+      PremiumQuickAction(
+        label: _t(context, 'درخواست‌های من', 'My applications'),
+        icon: HopeV2Icons.mission,
+        onPressed: auth.isGuest
+            ? widget.onOpenCreate
+            : () => Navigator.push(context, HopeRoutes.myApplications()),
+      ),
+      PremiumQuickAction(
+        label: _t(context, 'پیشنهادها', 'Offers'),
+        icon: HopeV2Icons.featured,
+        onPressed: auth.isGuest
+            ? widget.onOpenCreate
+            : () => Navigator.push(context, HopeRoutes.offers()),
+      ),
+      PremiumQuickAction(
+        label: _t(context, 'اعلان‌ها', 'Notifications'),
+        icon: HopeV2Icons.notifications,
+        onPressed: auth.isGuest
+            ? widget.onOpenCreate
+            : () => Navigator.push(context, HopeRoutes.notifications()),
+      ),
+      if (!auth.isGuest)
+        PremiumQuickAction(
+          label: _t(context, 'جستجوهای ذخیره‌شده', 'Saved searches'),
+          icon: HopeV2Icons.search,
+          onPressed: () => Navigator.push(context, HopeRoutes.savedSearches()),
+        ),
+      if (!auth.isGuest)
+        PremiumQuickAction(
+          label: _t(context, 'پروفایل کاری هوشمند', 'AI work profile'),
+          icon: HopeV2Icons.insights,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.recommendationOnboarding(),
+          ),
+        ),
+      if (!auth.isGuest && auth.user?['role'] == 'ADMIN')
+        PremiumQuickAction(
+          label: _t(context, 'مرکز مدیریت', 'Admin center'),
+          icon: HopeV2Icons.secure,
+          onPressed: () => Navigator.push(context, HopeRoutes.adminAccess()),
+        ),
+    ];
+
+    return PremiumQuickActionStrip(
+      title: _t(context, 'دسترسی سریع', 'Quick access'),
+      subtitle: _t(
+        context,
+        'قابلیت‌های اصلی بدون نیاز به باز کردن منوی کناری.',
+        'Core destinations without opening the side menu.',
+      ),
+      actions: actions,
     );
   }
 
