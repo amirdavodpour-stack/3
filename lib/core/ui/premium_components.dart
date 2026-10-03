@@ -780,7 +780,7 @@ class PremiumHero extends StatelessWidget {
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final resolvedDomain = domain ?? page?.spec.domain;
     final heroHeight = compact
-        ? height.clamp(220.0, 360.0).toDouble()
+        ? height.clamp(188.0, 360.0).toDouble()
         : (height < 344 ? 344.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
