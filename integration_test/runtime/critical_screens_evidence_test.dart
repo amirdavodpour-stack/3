@@ -590,6 +590,8 @@ late final bool _responsiveOnly;
 late final String _captureLocale;
 late final bool _captureHomeOnly;
 late final String _responsiveBatch;
+final _captureLocaleFromDefine =
+    String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -822,8 +824,11 @@ void main() {
       : (routeSegments.isEmpty ? 'baseline' : routeSegments.last);
   _responsiveOnly =
       _captureMode == 'responsive-a' || _captureMode == 'responsive-b';
-  _captureLocale =
-      routeSegments.length >= 2 ? routeSegments[routeSegments.length - 2] : '';
+  _captureLocale = _captureLocaleFromDefine.isNotEmpty
+      ? _captureLocaleFromDefine
+      : (routeSegments.length >= 2
+          ? routeSegments[routeSegments.length - 2]
+          : '');
   _captureHomeOnly = const bool.fromEnvironment(
     'HOPE_CAPTURE_HOME_ONLY',
     defaultValue: false,
