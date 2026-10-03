@@ -325,8 +325,11 @@ class HopeIconTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final radius = BorderRadius.circular(size * .30);
-    final fill = filled ? color : color.withValues(alpha: dark ? .13 : .09);
+    final radius =
+        BorderRadius.circular((size * .26).clamp(10.0, 16.0).toDouble());
+    final fill = filled
+        ? color.withValues(alpha: dark ? .88 : .96)
+        : color.withValues(alpha: dark ? .13 : .09);
     final iconColor = filled ? Colors.white : color;
     final decoration = BoxDecoration(
       color: fill,
@@ -336,22 +339,12 @@ class HopeIconTile extends StatelessWidget {
             ? Colors.white.withValues(alpha: dark ? .12 : .20)
             : color.withValues(alpha: dark ? .22 : .16),
       ),
-      gradient: filled
-          ? LinearGradient(
-              begin: AlignmentDirectional.topStart,
-              end: AlignmentDirectional.bottomEnd,
-              colors: [
-                color.withValues(alpha: .98),
-                color.withValues(alpha: .72),
-              ],
-            )
-          : null,
       boxShadow: filled
           ? [
               BoxShadow(
-                color: color.withValues(alpha: dark ? .10 : .10),
-                blurRadius: size * .24,
-                offset: Offset(0, size * .10),
+                color: color.withValues(alpha: dark ? .08 : .07),
+                blurRadius: size * .16,
+                offset: Offset(0, size * .07),
               ),
             ]
           : const [],
