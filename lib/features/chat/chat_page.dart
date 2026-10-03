@@ -81,6 +81,7 @@ class _ChatPageState extends State<ChatPage> {
             child: Column(
               children: [
                 PremiumHeader(
+                  page: HopePageId.chat,
                   domain: widget.adminRoom
                       ? HopeProductDomain.control
                       : HopeProductDomain.collaboration,
