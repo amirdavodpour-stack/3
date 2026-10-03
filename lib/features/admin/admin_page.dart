@@ -241,7 +241,54 @@ class _AdminPageState extends State<AdminPage>
                 FutureBuilder<HopeAdminSummary>(
                     future: _summary,
                     builder: (context, s) => _summaryGrid(context, s.data)),
+                const SizedBox(height: 14),
+                PremiumQuickActionStrip(
+                  domain: HopeProductDomain.control,
+                  title: _t('کنترل‌های اصلی', 'Control actions'),
+                  subtitle: _t(
+                    'عملیات حساس، اختلاف‌ها و ارتباط داخلی مدیران در سطح اختصاصی کنترل.',
+                    'Sensitive operations, disputes, and internal administrator communication.',
+                  ),
+                  actions: [
+                    PremiumQuickAction(
+                      label: _t('مرکز عملیات', 'Operations center'),
+                      icon: HopeV2Icons.insights,
+                      primary: true,
+                      onPressed: () => Navigator.push(
+                        context,
+                        HopeRoutes.adminOperations(),
+                      ),
+                    ),
+                    PremiumQuickAction(
+                      label: _t('مرکز اختلاف', 'Dispute center'),
+                      icon: HopeV2Icons.pending,
+                      onPressed: () => Navigator.push(
+                        context,
+                        HopeRoutes.adminDisputes(),
+                      ),
+                    ),
+                    PremiumQuickAction(
+                      label: _t('گفتگوی مدیران', 'Admin chat'),
+                      icon: HopeV2Icons.message,
+                      onPressed: () => Navigator.push(
+                        context,
+                        HopeRoutes.adminChat(),
+                      ),
+                    ),
+                  ],
+                ),
                 if (_hasPermission('admin.manage_admins')) ...[
+                  const SizedBox(height: 14),
+                  PremiumSectionHeader(
+                    page: HopePageId.admin,
+                    domain: HopeProductDomain.control,
+                    title: _t('مدیریت مدیران', 'Administrator management'),
+                    subtitle: _t(
+                      'افزودن یا لغو دسترسی مدیریتی فقط در این سطح محافظت‌شده.',
+                      'Admin promotion and access revocation stay inside this protected control surface.',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   _adminManagementSection(),
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
@@ -249,28 +296,7 @@ class _AdminPageState extends State<AdminPage>
                     icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
                     label: Text(_t('افزودن مدیر جدید', 'Add new administrator')),
                   ),
-                  const SizedBox(height: 8),
                 ],
-                const SizedBox(height: 14),
-                FilledButton.tonalIcon(
-                  onPressed: () => Navigator.push(context, HopeRoutes.adminOperations()),
-                  icon: const HopeIcon(HopeV2Icons.insights, size: 19),
-                  label: Text(
-                    Localizations.localeOf(context).languageCode == 'en'
-                        ? 'Open Operations Center'
-                        : 'باز کردن مرکز عملیات',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                FilledButton.tonalIcon(
-                  onPressed: () => Navigator.push(context, HopeRoutes.adminDisputes()),
-                  icon: const Icon(Icons.gavel_outlined, size: 20),
-                  label: Text(
-                    Localizations.localeOf(context).languageCode == 'en'
-                        ? 'Open Dispute Adjudication'
-                        : 'باز کردن مرکز اختلاف و ارزیابی',
-                  ),
-                ),
                 const SizedBox(height: 18),
                 TabBar(controller: _tabs, isScrollable: true, tabs: [
                   Tab(text: HopeCopy.of(context).copy_opportunities_015066e),
