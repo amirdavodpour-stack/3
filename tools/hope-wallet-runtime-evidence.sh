@@ -48,6 +48,7 @@ timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${
   flutter build apk --debug --no-pub \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+    --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" || build_status=$?
 if [ "$build_status" -ne 0 ]; then
   echo "HOPE_RUNTIME_BUILD_FAILED:exit=$build_status" >&2
