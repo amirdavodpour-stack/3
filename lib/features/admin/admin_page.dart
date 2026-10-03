@@ -225,6 +225,7 @@ class _AdminPageState extends State<AdminPage>
                 padding: EdgeInsets.zero,
                 children: [
                   PremiumHeader(
+                    domain: HopeProductDomain.control,
                     eyebrow: HopeCopy.of(context).copy_control_center_15e20c8,
                     title: HopeCopy.of(context)
                         .copy_monitor_and_manage_hope_in_one_place_bea3b7d,
