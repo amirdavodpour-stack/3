@@ -240,6 +240,7 @@ void main() {
     expect(find.text('Financial summary'), findsOneWidget);
     expect(find.text('Payment status'), findsOneWidget);
     expect(find.text('Payment & job flow'), findsOneWidget);
+    expect(find.text('Protected by HOPE'), findsOneWidget);
     expect(find.text('Start work'), findsOneWidget);
     expect(find.text('Stage 2 of 6'), findsOneWidget);
   });
