@@ -834,6 +834,7 @@ padding: const EdgeInsets.all(12),
     return RefreshIndicator(
       onRefresh: _load,
       child: PremiumPageFrame(
+        page: HopePageId.wallet,
         maxWidth: 1020,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
         child: ListView(
