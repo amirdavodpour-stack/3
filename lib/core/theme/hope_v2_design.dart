@@ -13,9 +13,9 @@ class HopeV2Colors {
 
   static const primary = Color(0xFF6366F1);
   static const primaryDark = Color(0xFF818CF8);
-  static const secondary = Color(0xFF22D3EE);
-  static const secondaryStrong = Color(0xFF06B6D4);
-  static const secondaryDark = Color(0xFF67E8F9);
+  static const secondary = Color(0xFF14B8A6);
+  static const secondaryStrong = Color(0xFF0D9488);
+  static const secondaryDark = Color(0xFF5EEAD4);
   static const accent = Color(0xFFF59E0B);
   /// Focus accent for featured/recommended work surfaces; use sparingly.
   static const orange = Color(0xFFF97316);
@@ -48,7 +48,7 @@ class HopeV2Colors {
   static const panelSoftDark = Color(0xFF121726);
   static const chipLight = Color(0xFFEFEBF8);
   static const chipDark = Color(0x1AFFFFFF);
-  static const chipSelectedDark = Color(0x336366F1);
+  static const chipSelectedDark = Color(0x356366F1);
   static const disabledLight = Color(0xFFE8E3F0);
   static const borderControlLight = Color(0xFFDED9E8);
   static const dividerLight = Color(0xFFE4E0EA);
@@ -306,10 +306,10 @@ class HopeV2Gradients {
 
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF211A4A),
-      Color(0xFF3B3BAA),
-      Color(0xFF0D4A58),
-      Color(0xFF070A12),
+      Color(0xFF171B35),
+      Color(0xFF35338D),
+      Color(0xFF0B4A43),
+      Color(0xFF0F111A),
     ],
     stops: [0, .36, .72, 1],
     begin: Alignment.topRight,
