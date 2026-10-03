@@ -97,9 +97,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final media = find.byType(Image).evaluate().isNotEmpty
-          ? find.byType(ClipRRect).first
-          : find.byType(ClipRRect).first;
+      final media = find.byKey(
+        const ValueKey('opportunity-card-media-header'),
+      );
       expect(tester.getSize(media).height, lessThan(120));
     } finally {
       tester.view.resetPhysicalSize();
