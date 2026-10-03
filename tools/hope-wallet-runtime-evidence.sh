@@ -309,6 +309,10 @@ run_host_batch_session() {
   local -a markers=("$@")
   local locale="$CAPTURE_LOCALE"
   local log_path="$runner_temp/hope-$mode-runtime.log"
+  local responsive_only="false"
+  if [ "$mode" = "responsive" ] || [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ]; then
+    responsive_only="true"
+  fi
   local process_pid
   local tail_pid
   local driver_status=0
@@ -325,6 +329,7 @@ run_host_batch_session() {
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
+    --dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}" \
     --use-application-binary="$RUNTIME_APK" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
