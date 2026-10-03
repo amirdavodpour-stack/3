@@ -8,6 +8,7 @@ import '../../core/application/application_registry_context.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_async_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/transactions/transaction_repository.dart';
@@ -362,23 +363,35 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   child: loading
                       ? ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          children: const [
-                            SizedBox(height: 180),
-                            Center(child: CircularProgressIndicator()),
+                          children: [
+                            const SizedBox(height: 120),
+                            HopeAsyncState(
+                              kind: HopeStateKind.loading,
+                              title: _t(
+                                'در حال بارگذاری اعلان‌ها',
+                                'Loading notifications',
+                              ),
+                              message: _t(
+                                'آخرین به‌روزرسانی‌های حساب و کارهای شما در حال دریافت است.',
+                                'The latest account and work updates are loading.',
+                              ),
+                            ),
                           ],
                         )
                       : error != null
                           ? ListView(
                               physics: const AlwaysScrollableScrollPhysics(),
-                              padding: EdgeInsets.only(top: 24),
+                              padding: const EdgeInsets.only(top: 24),
                               children: [
-                                EmptyState(
-                                  icon: HopeV2Icons.pending,
-                                  title: HopeCopy.of(context)
-                                      .copy_could_not_load_notifications_a904a88,
+                                HopeAsyncState(
+                                  kind: HopeStateKind.error,
+                                  title: _t(
+                                    'اعلان‌ها در دسترس نیستند',
+                                    'Notifications unavailable',
+                                  ),
                                   message: error!,
                                   action: FilledButton.icon(
-                                    onPressed: _load,
+                                    onPressed: loading ? null : _load,
                                     icon: const HopeIcon(
                                       HopeV2Icons.refresh,
                                       size: 19,
