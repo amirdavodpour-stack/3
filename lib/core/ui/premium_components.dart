@@ -27,7 +27,7 @@ class HopeNavigationGlyph extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     final color = selected
-        ? (dark ? HopeV2Colors.primaryDark : primary)
+        ? Colors.white
         : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted);
 
     return SizedBox(
@@ -42,13 +42,13 @@ class HopeNavigationGlyph extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
-                ? primary.withValues(alpha: dark ? .18 : .10)
+                ? primary.withValues(alpha: dark ? .92 : .96)
                 : Colors.transparent,
             borderRadius:
                 BorderRadius.circular(HopeV2Navigation.itemRadius),
             border: Border.all(
               color: selected
-                  ? primary.withValues(alpha: dark ? .34 : .22)
+                  ? Colors.white.withValues(alpha: dark ? .12 : .22)
                   : Colors.transparent,
             ),
             boxShadow: selected
@@ -56,7 +56,7 @@ class HopeNavigationGlyph extends StatelessWidget {
                     BoxShadow(
                       color: primary.withValues(alpha: dark ? .10 : .06),
                       blurRadius: 14,
-                      offset: const Offset(0, 5),
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : const [],
@@ -92,10 +92,10 @@ class PremiumNavigationBar extends StatelessWidget {
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(
-        HopeV2Spacing.sm,
+        14,
         0,
-        HopeV2Spacing.sm,
-        HopeV2Spacing.md,
+        14,
+        10,
       ),
       child: Container(
         key: const ValueKey('hope-navigation-dock'),
