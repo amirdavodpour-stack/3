@@ -312,6 +312,7 @@ run_host_batch_session() {
   set +e
   export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
   HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
+  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s" \
   flutter drive --no-pub --no-dds \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
