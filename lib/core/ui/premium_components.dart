@@ -593,7 +593,7 @@ class PremiumHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: HopeV2Spacing.sm),
+              const SizedBox(height: 6),
               Text(
                 title,
                 maxLines: compact ? 2 : 3,
@@ -603,13 +603,13 @@ class PremiumHeader extends StatelessWidget {
                   // the entire first viewport.
                   // Keep compact page headers subordinate to the focal content,
                   // matching the reference's dense editorial hierarchy.
-                  fontSize: compact ? 22 : 30,
-                  height: compact ? 1.12 : 1.06,
+                  fontSize: compact ? 20 : 30,
+                  height: compact ? 1.08 : 1.06,
                   letterSpacing: compact ? -.45 : -.75,
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: HopeV2Spacing.sm),
+                const SizedBox(height: 4),
                 Text(
                   subtitle!,
                   maxLines: compact ? 3 : 4,
