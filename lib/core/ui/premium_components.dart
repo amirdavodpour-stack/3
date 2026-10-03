@@ -208,16 +208,17 @@ class PremiumPageFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
     final domainAccent = page?.spec.domain.spec.accent;
+    final showDomainRail = MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: HopeV2Surfaces.page(context),
         gradient: HopeV2Surfaces.pageHalo(context),
-        border: domainAccent == null
+        border: domainAccent == null || !showDomainRail
             ? null
             : BorderDirectional(
                 start: BorderSide(
-                  color: domainAccent.withValues(alpha: .42),
-                  width: 2,
+                  color: domainAccent.withValues(alpha: .24),
+                  width: 1,
                 ),
               ),
       ),
@@ -601,8 +602,8 @@ class PremiumHeader extends StatelessWidget {
                   // the entire first viewport.
                   // Keep compact page headers subordinate to the focal content,
                   // matching the reference's dense editorial hierarchy.
-                  fontSize: compact ? 24 : 30,
-                  height: compact ? 1.10 : 1.06,
+                  fontSize: compact ? 22 : 30,
+                  height: compact ? 1.12 : 1.06,
                   letterSpacing: compact ? -.45 : -.75,
                 ),
               ),
@@ -666,7 +667,7 @@ class PremiumPanel extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final panelFill = dark
-        ? Colors.white.withValues(alpha: glass ? .028 : 0)
+        ? Colors.white.withValues(alpha: glass ? .052 : 0)
         : Colors.white.withValues(alpha: glass ? .64 : 0);
     final gradient = highlight
         ? LinearGradient(
@@ -695,15 +696,17 @@ class PremiumPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? scheme.primary.withValues(alpha: dark ? .26 : .18)
-              : HopeV2Surfaces.border(context),
+              ? scheme.primary.withValues(alpha: dark ? .24 : .18)
+              : (dark
+                  ? Colors.white.withValues(alpha: glass ? .085 : .055)
+                  : HopeV2Surfaces.border(context)),
           width: 1,
         ),
         boxShadow: dark
             ? [
                 if (highlight)
                   BoxShadow(
-                    color: scheme.primary.withValues(alpha: glass ? .10 : .075),
+                    color: scheme.primary.withValues(alpha: glass ? .085 : .065),
                     blurRadius: glass ? 28 : 22,
                     offset: const Offset(0, 9),
                   ),
@@ -1134,9 +1137,7 @@ class PremiumSectionHeader extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: HopeV2Type.section(context).copyWith(
-                        color: resolvedDomain == null ? null : accent,
-                      ),
+                      style: HopeV2Type.section(context),
                     ),
                   ),
                 ],
