@@ -184,7 +184,7 @@ testWidgets('settings changes reload home opportunities',
 
     expect(
       moneyLabel(tester.element(find.byType(PremiumHomeFeed)), 125000),
-      contains('۱۲۵٬۰۰۰'),
+      contains('125,000 TOMAN'),
     );
   });
 
