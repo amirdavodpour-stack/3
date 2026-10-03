@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hope_mobile/core/ui/hope_l10n.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
 
 void main() {
@@ -17,7 +19,12 @@ void main() {
       MaterialApp(
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa'), Locale('en')],
-        localizationsDelegates: HopeL10n.localizationsDelegates,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: Directionality(
           textDirection: TextDirection.rtl,
           child: Scaffold(
