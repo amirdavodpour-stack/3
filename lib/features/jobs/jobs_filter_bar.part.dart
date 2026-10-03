@@ -222,7 +222,6 @@ class _JobsFilterHeader extends StatelessWidget {
                 onKindChanged: onKindChanged,
                 onVisibilityChanged: onVisibilityChanged,
               ),
-            ),
               const SizedBox(height: HopeV2Spacing.sm),
               if (categoryError != null)
                 Padding(
@@ -250,31 +249,28 @@ class _JobsFilterHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       PremiumFilterChip(
-                      icon: HopeV2Icons.location,
-                      label: cityLabel,
-                      selected: false,
-                      onTap: onPickCity,
-                      color: HopeV2Colors.secondary,
-                    ),
+                        icon: HopeV2Icons.location,
+                        label: cityLabel,
+                        selected: false,
+                        onTap: onPickCity,
+                        color: HopeV2Colors.secondary,
+                      ),
                       const SizedBox(width: HopeV2Spacing.sm),
                       PremiumFilterChip(
-                      icon: HopeV2Icons.category,
-                      label: categoryLabel,
-                      selected: false,
-                      onTap: onPickCategory,
-                      color: HopeV2Colors.primary,
-                    ),
-                  ],
+                        icon: HopeV2Icons.category,
+                        label: categoryLabel,
+                        selected: false,
+                        onTap: onPickCategory,
+                        color: HopeV2Colors.primary,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
             ],
           ),
         ),
       ],
-    );
-  }
-
   Widget _chip(
     BuildContext context,
     String text,
