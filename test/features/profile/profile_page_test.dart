@@ -245,6 +245,15 @@ testWidgets('withdrawing an application disables the action until completion',
     }
   });
 
+  testWidgets('authenticated profile compresses secondary settings on narrow screens', (tester) async {
+    await _pump(tester, authenticated: true, width: 390);
+
+    final panel = find.byKey(const ValueKey('profile-settings-panel'));
+    expect(panel, findsOneWidget);
+    expect(tester.getSize(panel).height, lessThan(760));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('authenticated profile displays account and provider data',
       (tester) async {
     await _pump(tester, authenticated: true);

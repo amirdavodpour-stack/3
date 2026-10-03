@@ -509,25 +509,33 @@ padding: const EdgeInsets.symmetric(vertical: 6),
     ThemeController theme,
   ) {
     return PremiumPanel(
+      key: const ValueKey('profile-settings-panel'),
       glass: true,
 child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(15, 15, 15, 8),
-            child: Row(
-              children: [
-                const HopeIconTile(
-                  HopeV2Icons.insights,
-                  filled: true,
-                  size: 42,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 500) {
+                return const SizedBox(height: 4);
+              }
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(15, 15, 15, 8),
+                child: Row(
+                  children: [
+                    const HopeIconTile(
+                      HopeV2Icons.insights,
+                      filled: true,
+                      size: 42,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      HopeCopy.of(context).copy_settings_a8a6c67,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  HopeCopy.of(context).copy_settings_a8a6c67,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
+              );
+            },
           ),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -672,62 +680,139 @@ child: Column(
             onTap: () => _pickCity(context, settings),
           ),
           const Divider(height: 1),
-          SwitchListTile.adaptive(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(
-              HopeV2Icons.notifications,
-            ),
-            title: Text(
-              HopeCopy.of(context).copy_notifications_370b4a1,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context)
-                  .copy_new_opportunities_and_application_updates_d3e84aa,
-            ),
-            value: settings.notifications,
-            onChanged: settings.setNotifications,
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(
-              HopeV2Icons.featured,
-            ),
-            title: Text(
-              HopeCopy.of(context).copy_personalized_recommendations_a4e4411,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context)
-                  .copy_based_on_city_and_professional_interests_e0ba2f1,
-            ),
-            value: settings.personalizedRecommendations,
-            onChanged: settings.setPersonalizedRecommendations,
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(HopeV2Icons.pending),
-            title: Text(
-              HopeCopy.of(context).copy_quiet_hours_02885b4,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context).copy_limit_notifications_during_rest_b5e0db3,
-            ),
-            value: settings.quietHours,
-            onChanged: settings.setQuietHours,
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(HopeV2Icons.activity),
-            title: Text(
-              HopeCopy.of(context).copy_compact_cards_71ed24c,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context).copy_fit_more_information_on_a_page_aedc497,
-            ),
-            value: settings.compactCards,
-            onChanged: settings.setCompactCards,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 500) {
+                final itemWidth = (constraints.maxWidth - 10) / 2;
+
+                Widget compactToggle({
+                  required Object icon,
+                  required String title,
+                  required bool value,
+                  required ValueChanged<bool> onChanged,
+                }) {
+                  return SizedBox(
+                    width: itemWidth,
+                    child: SwitchListTile.adaptive(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      secondary: HopeIconTile(icon, size: 36),
+                      title: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      value: value,
+                      onChanged: onChanged,
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 2, 4, 6),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      compactToggle(
+                        icon: HopeV2Icons.notifications,
+                        title: HopeCopy.of(context).copy_notifications_370b4a1,
+                        value: settings.notifications,
+                        onChanged: settings.setNotifications,
+                      ),
+                      compactToggle(
+                        icon: HopeV2Icons.featured,
+                        title: HopeCopy.of(context).copy_personalized_recommendations_a4e4411,
+                        value: settings.personalizedRecommendations,
+                        onChanged: settings.setPersonalizedRecommendations,
+                      ),
+                      compactToggle(
+                        icon: HopeV2Icons.pending,
+                        title: HopeCopy.of(context).copy_quiet_hours_02885b4,
+                        value: settings.quietHours,
+                        onChanged: settings.setQuietHours,
+                      ),
+                      compactToggle(
+                        icon: HopeV2Icons.activity,
+                        title: HopeCopy.of(context).copy_compact_cards_71ed24c,
+                        value: settings.compactCards,
+                        onChanged: settings.setCompactCards,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                children: [
+                            SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                              secondary: const HopeIconTile(
+                                HopeV2Icons.notifications,
+                              ),
+                              title: Text(
+                                HopeCopy.of(context).copy_notifications_370b4a1,
+                              ),
+                              subtitle: Text(
+                                HopeCopy.of(context)
+                                    .copy_new_opportunities_and_application_updates_d3e84aa,
+                              ),
+                              value: settings.notifications,
+                              onChanged: settings.setNotifications,
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                              secondary: const HopeIconTile(
+                                HopeV2Icons.featured,
+                              ),
+                              title: Text(
+                                HopeCopy.of(context).copy_personalized_recommendations_a4e4411,
+                              ),
+                              subtitle: Text(
+                                HopeCopy.of(context)
+                                    .copy_based_on_city_and_professional_interests_e0ba2f1,
+                              ),
+                              value: settings.personalizedRecommendations,
+                              onChanged: settings.setPersonalizedRecommendations,
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                              secondary: const HopeIconTile(HopeV2Icons.pending),
+                              title: Text(
+                                HopeCopy.of(context).copy_quiet_hours_02885b4,
+                              ),
+                              subtitle: Text(
+                                HopeCopy.of(context).copy_limit_notifications_during_rest_b5e0db3,
+                              ),
+                              value: settings.quietHours,
+                              onChanged: settings.setQuietHours,
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                              secondary: const HopeIconTile(HopeV2Icons.activity),
+                              title: Text(
+                                HopeCopy.of(context).copy_compact_cards_71ed24c,
+                              ),
+                              subtitle: Text(
+                                HopeCopy.of(context).copy_fit_more_information_on_a_page_aedc497,
+                              ),
+                              value: settings.compactCards,
+                              onChanged: settings.setCompactCards,
+                            ),
+                  
+                ],
+              );
+            },
           ),
           const Divider(height: 1),
-          ListTile(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 500) {
+                return const SizedBox.shrink();
+              }
+              return ListTile(
             leading: const HopeIconTile(HopeV2Icons.insights),
             title: Text(
               HopeCopy.of(context).copy_about_hope_f8ee86b,
@@ -737,7 +822,9 @@ child: Column(
             ),
             onTap: () => Navigator.push(context, HopeRoutes.about()),
           ),
-        ],
+;
+            },
+          ),        ],
       ),
     );
   }

@@ -498,18 +498,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         ];
 
                         if (constraints.maxWidth < 500) {
-                          return Column(
+                          final cardWidth = (constraints.maxWidth - 10) / 2;
+                          return Wrap(
+                            key: const ValueKey('work-center-metrics'),
+                            spacing: 10,
+                            runSpacing: 10,
                             children: [
-                              for (var index = 0; index < metrics.length; index++) ...[
-                                metrics[index],
-                                if (index != metrics.length - 1)
-                                  const SizedBox(height: 10),
-                              ],
+                              for (final metric in metrics)
+                                SizedBox(
+                                  width: cardWidth,
+                                  child: metric,
+                                ),
                             ],
                           );
                         }
 
                         return Row(
+                          key: const ValueKey('work-center-metrics'),
                           children: [
                             for (var index = 0; index < metrics.length; index++) ...[
                               Expanded(child: metrics[index]),

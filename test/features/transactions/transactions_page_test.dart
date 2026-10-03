@@ -134,12 +134,21 @@ void main() {
     expect(find.textContaining('فعالیتی'), findsWidgets);
   });
 
-  testWidgets('activity metrics stack on narrow screens',
+  testWidgets('activity metrics use a compact two-column grid on narrow screens',
       (tester) async {
     final repo = _Transactions()
       ..jobs = [_job('a', status: 'IN_PROGRESS')];
     await _pump(tester, repo, width: 360);
 
+    final metrics = find.byKey(const ValueKey('work-center-metrics'));
+    expect(metrics, findsOneWidget);
+    expect(
+      find.descendant(
+        of: metrics,
+        matching: find.byType(PremiumStatCard),
+      ),
+      findsNWidgets(3),
+    );
     expect(find.text('1'), findsOneWidget);
     expect(find.text('فعال'), findsOneWidget);
     expect(tester.takeException(), isNull);
