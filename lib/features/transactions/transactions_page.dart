@@ -176,6 +176,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
       return PremiumPageFrame(
+                page: HopePageId.activity,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
         child: ListView(
           children: [
@@ -208,6 +209,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     }
     if (future == null) {
       return const PremiumPageFrame(
+                page: HopePageId.activity,
         child: Center(child: CircularProgressIndicator()),
       );
     }
@@ -221,10 +223,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
             return RefreshIndicator(
               onRefresh: reload,
               child: PremiumPageFrame(
+                page: HopePageId.activity,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
                 child: ListView(
                   children: [
                     PremiumHeader(
+              page: HopePageId.activity,
+              domain: HopeProductDomain.work,
                       eyebrow: HopeCopy.of(context).copy_activity_4b38716,
                       title: HopeCopy.of(context).copy_could_not_load_activity_335b923,
                       subtitle: HopeCopy.of(context)
@@ -254,10 +259,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
             return RefreshIndicator(
               onRefresh: reload,
               child: PremiumPageFrame(
+                page: HopePageId.activity,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
                 child: ListView(
                   children: [
                     PremiumHeader(
+              page: HopePageId.activity,
+              domain: HopeProductDomain.work,
                       eyebrow: HopeCopy.of(context).copy_activity_4b38716,
                       title: HopeCopy.of(context).copy_no_activity_yet_264ceb0,
                       subtitle: HopeCopy.of(context)
@@ -293,11 +301,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
           return RefreshIndicator(
               onRefresh: reload,
               child: PremiumPageFrame(
+                page: HopePageId.activity,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
                     PremiumHeader(
+              page: HopePageId.activity,
+              domain: HopeProductDomain.work,
                       eyebrow: HopeCopy.of(context).copy_activity_4b38716,
                       title: HopeCopy.of(context).copy_latest_activity_a05277b,
                       subtitle: HopeCopy.of(context)
