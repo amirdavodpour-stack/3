@@ -55,6 +55,20 @@ void main() {
     expect(source, contains('PremiumDomainMarker'));
   });
 
+  test('secondary navigation groups expose HOPE product domains', () {
+    final source = _read('lib/features/home/home_page.dart');
+    expect(source, contains('PremiumDomainNavigationGroup'));
+    for (final domain in const [
+      'discovery',
+      'work',
+      'intelligence',
+      'communication',
+      'control',
+    ]) {
+      expect(source, contains('HopeProductDomain.$domain'), reason: domain);
+    }
+  });
+
   test('profile keeps account and work surfaces separate', () {
     final source = _read('lib/features/profile/profile_page.dart');
     expect(source, contains('HopeProductDomain.account'));
