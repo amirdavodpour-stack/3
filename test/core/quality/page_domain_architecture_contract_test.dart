@@ -69,6 +69,13 @@ void main() {
     }
   });
 
+  test('PremiumHero accepts HOPE page identity', () {
+    final source = _read('lib/core/ui/premium_components.dart');
+    expect(source, contains('final HopePageId? page;'));
+    expect(source, contains('class PremiumHero'));
+    expect(source, contains('resolvedDomain'));
+  });
+
   test('PremiumHeader and PremiumSectionHeader accept domain semantics', () {
     final source = _read('lib/core/ui/premium_components.dart');
     expect(source, contains('HopeProductDomain? domain'));
