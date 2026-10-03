@@ -1374,6 +1374,15 @@ class _MatchIntelligence extends StatelessWidget {
     final score = job.recommendationScore;
     final primary = Theme.of(context).colorScheme.primary;
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
+    final fit = score == null
+        ? null
+        : score >= 90
+            ? _t(context, 'تناسب بسیار قوی', 'Very strong fit')
+            : score >= 75
+                ? _t(context, 'تناسب قوی', 'Strong fit')
+                : score >= 60
+                    ? _t(context, 'تناسب خوب', 'Good fit')
+                    : _t(context, 'تناسب اولیه', 'Early fit');
 
     return Semantics(
       button: true,
@@ -1388,7 +1397,7 @@ class _MatchIntelligence extends StatelessWidget {
           borderRadius: BorderRadius.circular(HopeV2Radii.lg),
           onTap: () => _showDetails(context),
           child: PremiumPanel(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
             highlight: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1398,21 +1407,21 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: 82,
-                        height: 82,
+                        width: 88,
+                        height: 88,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
                             SizedBox.square(
-                              dimension: 82,
+                              dimension: 88,
                               child: CircularProgressIndicator(
                                 value: 1,
                                 strokeWidth: 7,
-                                color: primary.withValues(alpha: .12),
+                                color: primary.withValues(alpha: .10),
                               ),
                             ),
                             SizedBox.square(
-                              dimension: 82,
+                              dimension: 88,
                               child: CircularProgressIndicator(
                                 value: value,
                                 strokeWidth: 7,
@@ -1420,19 +1429,36 @@ class _MatchIntelligence extends StatelessWidget {
                                 color: primary,
                               ),
                             ),
-                            Text(
-                              '${score.clamp(0, 100).toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                fontSize: 20,
-                                height: 1,
-                                fontWeight: FontWeight.w900,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${score.clamp(0, 100).toStringAsFixed(0)}%',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    height: 1,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  _t(context, 'تطبیق', 'MATCH'),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w900,
+                                        color: primary,
+                                        letterSpacing: .6,
+                                      ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                    if (score != null) const SizedBox(width: 14),
+                    if (score != null) const SizedBox(width: 13),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1442,25 +1468,45 @@ class _MatchIntelligence extends StatelessWidget {
                               const HopeIcon(
                                 HopeV2Icons.featured,
                                 color: HopeV2Colors.primaryDark,
-                                size: 19,
+                                size: 18,
                               ),
                               const SizedBox(width: 7),
                               Expanded(
                                 child: Text(
-                                  _t(context, 'هوش تطبیق', 'Match intelligence'),
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  _t(
+                                    context,
+                                    'هوش تطبیق',
+                                    'Match intelligence',
+                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
                                         fontWeight: FontWeight.w900,
                                       ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 5),
+                          if (fit != null) ...[
+                            const SizedBox(height: 5),
+                            Text(
+                              fit,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                          ],
+                          const SizedBox(height: 4),
                           Text(
                             _t(
                               context,
-                              'سیگنال‌های توصیه برای این فرصت',
-                              'Recommendation signals for this opportunity',
+                              'سیگنال‌های واقعی پیشنهاد برای همین فرصت',
+                              'Live recommendation signals for this opportunity',
                             ),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
@@ -1478,10 +1524,10 @@ class _MatchIntelligence extends StatelessWidget {
                   ],
                 ),
                 if (job.recommendationReasons.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 11),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 6,
+                    runSpacing: 6,
                     children: job.recommendationReasons
                         .take(4)
                         .map(
@@ -1491,7 +1537,7 @@ class _MatchIntelligence extends StatelessWidget {
                             icon: HopeV2Icons.completed,
                           ),
                         )
-                        .toList(),
+                        .toList(growable: false),
                   ),
                 ],
               ],
