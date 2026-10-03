@@ -160,8 +160,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   }) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
     final greeting = isEn
-        ? 'HOPE workspace'
-        : 'فضای کاری HOPE';
+        ? 'HOPE'
+        : 'HOPE';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
@@ -444,7 +444,7 @@ padding: const EdgeInsets.all(12),
                         builder: (context, constraints) {
                           // Mobile keeps the pulse readable as a 2x2 metric grid;
                           // desktop can expand to four compact metrics.
-                          final columns = constraints.maxWidth < 245 ? 2 : 4;
+                          final columns = constraints.maxWidth < 220 ? 2 : 4;
                           const gap = HopeV2Spacing.sm;
                           final width =
                               (constraints.maxWidth - gap * (columns - 1)) /
