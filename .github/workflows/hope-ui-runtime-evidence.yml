@@ -1,0 +1,121 @@
+name: HOPE UI Runtime Evidence
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - Main
+
+concurrency:
+  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  critical-screens-runtime-evidence:
+    name: Critical screens Android runtime evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Checkout pinned Android Emulator Runner
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: soloturn/android-emulator-runner
+          ref: ab495a9b42f2af30f5222bd978136f9b0a85b68a
+          path: .ci/android-emulator-runner
+          fetch-depth: 1
+
+      - name: Install pinned Android Emulator Runner dependencies
+        working-directory: .ci/android-emulator-runner
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify pinned Android Emulator Runner
+        run: |
+          test -s .ci/android-emulator-runner/action.yml
+          test -s .ci/android-emulator-runner/lib/main.js
+          test -f .ci/android-emulator-runner/node_modules/@actions/core/package.json
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Setup Gradle caching
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic
+
+      - name: Cache Android SDK components
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.0.1
+        with:
+          path: |
+            /usr/local/lib/android/sdk/cmake/3.22.1
+            /usr/local/lib/android/sdk/system-images/android-35/default/x86_64
+          key: hope-android-sdk-api35-cmake3.22.1-default-${{ runner.os }}-v1
+
+      - name: Cache Android AVD
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.0.1
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: hope-android-avd-api35-default-pixel2-${{ runner.os }}-v1
+
+      - name: Verify HOPE design/runtime guardrails
+        run: bash tools/verify-design-quality.sh
+
+      - name: Prepare Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+
+      - name: Enable KVM for Android emulator
+        # android-emulator-runner checks /dev/kvm read/write access before choosing
+        # Linux hardware acceleration. GitHub-hosted Linux runners can expose
+        # /dev/kvm without granting the runner user access to it.
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm || true
+          fi
+          ls -l /dev/kvm
+          test -r /dev/kvm
+          test -w /dev/kvm
+
+      - name: Android runtime evidence
+        # Execute the pinned emulator-runner checkout from this repository without relying on fork-packaged node_modules.
+        uses: ./.ci/android-emulator-runner
+        env:
+          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+          HOPE_REQUIRE_GOOGLE_AUTH: '1'
+        with:
+          api-level: 35
+          arch: x86_64
+          target: default
+          profile: pixel_2
+          force-avd-creation: false
+          cores: 4
+          ram-size: 6144M
+          disable-linux-hw-accel: false
+          emulator-boot-timeout: 1200
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          disable-animations: true
+          script: bash tools/hope-wallet-runtime-evidence.sh
+
+      - name: Upload critical-screen runtime evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
+        with:
+          name: hope-critical-screens-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            docs/audit/evidence/android-runtime/**
+            ${{ runner.temp }}/hope-critical-screens-runtime.log
+          if-no-files-found: warn

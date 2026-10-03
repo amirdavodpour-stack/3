@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { config } from '../config.js';
 
 export const tableColumns = {
-  users: ['email','password_hash','display_name','role','status','session_version','created_at'],
+  users: ['email','password_hash','display_name','role','status','session_version','created_at','google_subject'],
   providers: ['user_id','provider_type','capacity','verification_status','created_at','updated_at'],
   refresh_tokens: ['user_id','token_hash','family_id','expires_at','created_at','revoked_at','replaced_by'],
   reset_tokens: ['user_id','token_hash','family_id','expires_at','used_at','created_at'],
@@ -30,7 +30,7 @@ export const tableColumns = {
 
 export function toDbRow(collection, row) {
   switch (collection) {
-    case 'users': return [row.id,row.email,row.passwordHash,row.displayName,row.role,row.status,row.sessionVersion || 0,row.createdAt];
+    case 'users': return [row.id,row.email,row.passwordHash,row.displayName,row.role,row.status,row.sessionVersion || 0,row.createdAt,row.googleSubject || null];
     case 'providers': return [row.id,row.userId,row.providerType,row.capacity,row.verificationStatus,row.createdAt,row.updatedAt];
     case 'refreshTokens': return [row.id,row.userId,row.tokenHash,row.familyId,row.expiresAt,row.createdAt,row.revokedAt,row.replacedBy];
     case 'resetTokens': return [row.id,row.userId,row.tokenHash,row.familyId || crypto.randomUUID(),row.expiresAt,row.usedAt,row.createdAt];
@@ -66,7 +66,7 @@ function financialValue(currency, value) {
 
 export function fromDbRow(collection, r) {
   switch (collection) {
-    case 'users': return { id:r.id,email:r.email,passwordHash:r.password_hash,displayName:r.display_name,role:r.role,status:r.status,sessionVersion:Number(r.session_version || 0),createdAt:r.created_at?.toISOString?.() ?? r.created_at };
+    case 'users': return { id:r.id,email:r.email,passwordHash:r.password_hash,displayName:r.display_name,role:r.role,status:r.status,sessionVersion:Number(r.session_version || 0),createdAt:r.created_at?.toISOString?.() ?? r.created_at,googleSubject:r.google_subject || null };
     case 'providers': return { id:r.id,userId:r.user_id,providerType:r.provider_type,capacity:r.capacity,verificationStatus:r.verification_status,createdAt:r.created_at?.toISOString?.() ?? r.created_at,updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at };
     case 'refreshTokens': return { id:r.id,userId:r.user_id,tokenHash:r.token_hash,familyId:r.family_id,expiresAt:r.expires_at?.toISOString?.() ?? r.expires_at,createdAt:r.created_at?.toISOString?.() ?? r.created_at,revokedAt:r.revoked_at ? (r.revoked_at.toISOString?.() ?? r.revoked_at) : null,replacedBy:r.replaced_by };
     case 'resetTokens': return { id:r.id,userId:r.user_id,tokenHash:r.token_hash,familyId:r.family_id,expiresAt:r.expires_at?.toISOString?.() ?? r.expires_at,usedAt:r.used_at ? (r.used_at.toISOString?.() ?? r.used_at) : null,createdAt:r.created_at?.toISOString?.() ?? r.created_at };

@@ -25,6 +25,22 @@ void main() {
     expect(source, contains('positionUnavailable'));
   });
 
+  test('location operation exposes a busy gate and request generation guard', () {
+    final source =
+        File('lib/core/settings/settings_controller.dart').readAsStringSync();
+    expect(source, contains('bool _locationBusy = false;'));
+    expect(source, contains('int _locationRequestId = 0;'));
+    expect(source, contains('if (_locationBusy) return false;'));
+    expect(source, contains('requestId != _locationRequestId'));
+    expect(source, contains('bool get locationBusy => _locationBusy;'));
+  });
+
+  test('location switch is disabled while the controller is busy', () {
+    final source =
+        File('lib/features/profile/profile_page.dart').readAsStringSync();
+    expect(source, contains('onChanged: settings.locationBusy'));
+  });
+
   test('location permission denial clears persisted location state', () {
     final source =
         File('lib/core/settings/settings_controller.dart').readAsStringSync();

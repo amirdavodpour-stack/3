@@ -15,6 +15,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -28,8 +31,12 @@ class _AuthRepo implements AuthRepository {
 class _Transactions implements TransactionRepository {
   List<HopeJob> jobs = const [];
   bool paymentUnavailable = false;
+  bool failList = false;
   @override
-  Future<List<HopeJob>> listMyJobs() async => jobs;
+  Future<List<HopeJob>> listMyJobs() async {
+    if (failList) throw StateError('activity unavailable');
+    return jobs;
+  }
   @override
   Future<HopePayment> getPayment(String id) async {
     if (paymentUnavailable) {
@@ -66,8 +73,16 @@ class _Transactions implements TransactionRepository {
       required String type}) async {}
 }
 
-Future<void> _pump(WidgetTester tester, _Transactions repo,
-    {bool guest = false}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  _Transactions repo, {
+  bool guest = false,
+  double width = 900,
+}) async {
+  tester.view.physicalSize = Size(width, 2400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -119,6 +134,17 @@ void main() {
     expect(find.textContaining('فعالیتی'), findsWidgets);
   });
 
+  testWidgets('activity metrics stack on narrow screens',
+      (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('a', status: 'IN_PROGRESS')];
+    await _pump(tester, repo, width: 360);
+
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('فعال'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('authenticated transactions render active and completed jobs',
       (tester) async {
     final repo = _Transactions()
@@ -140,6 +166,51 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('پروژه b'), findsOneWidget);
+  });
+
+  testWidgets('activity refresh failure preserves existing items and shows retry state',
+      (tester) async {
+    final repo = _Transactions()..jobs = [_job('refresh-stale', status: 'IN_PROGRESS')];
+    await _pump(tester, repo);
+
+    expect(find.text('پروژه refresh-stale'), findsOneWidget);
+    repo.failList = true;
+
+    tester.view.physicalSize = const Size(390, 900);
+    await tester.pump();
+
+    final refreshIndicator =
+        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
+    await refreshIndicator.onRefresh();
+    await tester.pump();
+
+    expect(find.text('پروژه refresh-stale'), findsOneWidget);
+    expect(find.text('دریافت فعالیت ناموفق بود'), findsOneWidget);
+    expect(find.text('تلاش دوباره'), findsOneWidget);
+  });
+
+  testWidgets('transactions safely localize unknown job status',
+      (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('unknown', status: 'UNKNOWN_STATE')];
+    await _pump(tester, repo);
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.data == 'وضعیت کار: UNKNOWN_STATE',
+      ),
+      findsNothing,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.data == 'وضعیت کار: نیازمند بررسی',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('transactions still render when payment lookup is unavailable',

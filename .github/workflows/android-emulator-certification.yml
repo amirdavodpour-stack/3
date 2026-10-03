@@ -52,6 +52,9 @@ jobs:
           sudo apt-get install -y adb
           adb version
 
+      - name: Verify HOPE design/runtime guardrails
+        run: bash tools/verify-design-quality.sh
+
       - name: Resolve staging host
         id: resolve_staging_host
         shell: bash

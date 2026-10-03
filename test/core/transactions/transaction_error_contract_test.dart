@@ -6,7 +6,7 @@ void main() {
     final source = File('lib/features/transactions/transaction_page.dart')
         .readAsStringSync();
     expect(
-        RegExp(r'catch \(e\)[\s\S]{0,400}apiErrorMessage\(e,')
+        RegExp(r'catch \(e\)[\s\S]{0,500}apiErrorMessage\(\s*e\s*,')
             .allMatches(source)
             .length,
         greaterThanOrEqualTo(2));

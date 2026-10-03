@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,14 @@ class _JobsPageState extends State<JobsPage> {
   List<HopeCategory> _categories = const [];
   List<HopeSavedSearch> _savedSearches = const [];
   String? _categoryError;
+  bool _savedSearchMutationBusy = false;
+  Timer? _searchDebounce;
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -90,11 +99,29 @@ class _JobsPageState extends State<JobsPage> {
     return parts.isEmpty ? (Localizations.localeOf(context).languageCode == 'en' ? 'All opportunities' : 'همه فرصت‌ها') : parts.join(' • ');
   }
 
+  void _setQuery(String value) {
+    setState(() => _query = value);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) _reloadForCurrentFilters();
+    });
+  }
+
+  Future<void> _reloadForCurrentFilters() async {
+    if (!mounted) return;
+    final next = _loadOpportunities();
+    setState(() { _future = next; });
+    await next.catchError((_) => const <HopeJob>[]);
+  }
+
   Future<void> _saveCurrentSearch() async {
+    if (_savedSearchMutationBusy) return;
+    setState(() => _savedSearchMutationBusy = true);
     final locale = Localizations.localeOf(context).languageCode;
     final controller = TextEditingController(text: _savedSearchName());
-    final name = await showDialog<String>(
-      context: context,
+    try {
+      final name = await showDialog<String>(
+        context: context,
       builder: (context) => AlertDialog(
         title: Text(locale == 'en' ? 'Save search' : 'ذخیره جست‌وجو'),
         content: TextField(
@@ -108,13 +135,40 @@ class _JobsPageState extends State<JobsPage> {
           FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: Text(locale == 'en' ? 'Save' : 'ذخیره')),
         ],
       ),
-    );
-    controller.dispose();
-    if (!mounted || name == null || name.isEmpty) return;
-    final now = DateTime.now().toUtc().toIso8601String();
-    final saved = HopeSavedSearch(id: 'search-${now.hashCode.abs()}', name: name, query: _query, kind: _kind, visibility: _visibility, city: _city, category: _category, updatedAt: now);
-    await _applicationRegistry(context).savedSearches.upsert(saved);
-    await _loadSavedSearches();
+      );
+      if (!mounted || name == null || name.isEmpty) return;
+      final now = DateTime.now().toUtc().toIso8601String();
+      final saved = HopeSavedSearch(
+        id: 'search-${now.hashCode.abs()}',
+        name: name,
+        query: _query,
+        kind: _kind,
+        visibility: _visibility,
+        city: _city,
+        category: _category,
+        updatedAt: now,
+      );
+      await _applicationRegistry(context).savedSearches.upsert(saved);
+      await _loadSavedSearches();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              apiErrorMessage(
+                error,
+                fallback: locale == 'en'
+                    ? 'Could not save the search.'
+                    : 'ذخیره جست‌وجو ناموفق بود.',
+              ),
+            ),
+          ),
+        );
+      }
+    } finally {
+      controller.dispose();
+      if (mounted) setState(() => _savedSearchMutationBusy = false);
+    }
   }
 
   Future<void> _openSavedSearches() async {
@@ -122,29 +176,79 @@ class _JobsPageState extends State<JobsPage> {
     final selected = await showModalBottomSheet<HopeSavedSearch>(
       context: context,
       showDragHandle: true,
-      builder: (context) => ListView.separated(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        shrinkWrap: true,
-        itemCount: _savedSearches.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final item = _savedSearches[index];
-          return ListTile(
-            title: Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: Text([item.query, item.kind == 'ALL' ? '' : item.kind, item.visibility == 'ALL' ? '' : item.visibility].where((value) => value.isNotEmpty).join(' • ')),
-            onTap: () => Navigator.pop(context, item),
-            trailing: IconButton(
-              tooltip: Localizations.localeOf(context).languageCode == 'en' ? 'Delete' : 'حذف',
-              onPressed: () async {
-                await _applicationRegistry(context).savedSearches.delete(item.id);
-                if (context.mounted) Navigator.pop(context);
-                await _loadSavedSearches();
-              },
-              icon: const Icon(Icons.delete_outline_rounded),
-            ),
-          );
-        },
-      ),
+      builder: (context) {
+        String? deleteBusyId;
+        return StatefulBuilder(
+          builder: (context, setSheetState) => ListView.separated(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            shrinkWrap: true,
+            itemCount: _savedSearches.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final item = _savedSearches[index];
+              final deleting = deleteBusyId == item.id;
+              return ListTile(
+                title: Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  [
+                    item.query,
+                    item.kind == 'ALL' ? '' : item.kind,
+                    item.visibility == 'ALL' ? '' : item.visibility,
+                  ].where((value) => value.isNotEmpty).join(' • '),
+                ),
+                onTap: deleting ? null : () => Navigator.pop(context, item),
+                trailing: IconButton(
+                  tooltip: Localizations.localeOf(context).languageCode == 'en'
+                      ? 'Delete'
+                      : 'حذف',
+                  onPressed: deleting
+                      ? null
+                      : () async {
+                          setSheetState(() => deleteBusyId = item.id);
+                          try {
+                            await _applicationRegistry(context)
+                                .savedSearches
+                                .delete(item.id);
+                            if (!context.mounted) return;
+                            Navigator.pop(context);
+                            await _loadSavedSearches();
+                          } catch (error) {
+                            if (!context.mounted) return;
+                            setSheetState(() => deleteBusyId = null);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  apiErrorMessage(
+                                    error,
+                                    fallback:
+                                        Localizations.localeOf(context)
+                                                    .languageCode ==
+                                                'en'
+                                            ? 'Could not delete the saved search.'
+                                            : 'حذف جست‌وجو ناموفق بود.',
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                  icon: deleting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.delete_outline_rounded),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
     if (!mounted || selected == null) return;
     setState(() {
@@ -160,7 +264,7 @@ class _JobsPageState extends State<JobsPage> {
   Future<void> _refresh() async {
     if (!mounted) return;
     final next = _loadOpportunities();
-    setState(() => _future = next);
+    setState(() { _future = next; });
     await next.catchError((_) => const <HopeJob>[]);
   }
 
@@ -224,55 +328,62 @@ class _JobsPageState extends State<JobsPage> {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
-    return Material(
-        color: Colors.transparent,
-        child: RefreshIndicator(
-            onRefresh: _refresh,
-            child: FutureBuilder<List<HopeJob>>(
-                future: _future,
-                builder: (context, snapshot) {
-                  final jobs = _filter(snapshot.data ?? const <HopeJob>[]);
-                  return CustomScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                            sliver: SliverToBoxAdapter(
-                                child: _JobsFilterHeader(
-                              kind: _kind,
-                              visibility: _visibility,
-                              categoryError: _categoryError,
-                              cityLabel: _city == 'AUTO'
-                                  ? '${HopeCopy.of(context).copy_near_1df6db0} ${settings.city}'
-                                  : _city,
-                              categoryLabel: _categoryLabel(context),
-                              resultCount: jobs.length,
-                              onQueryChanged: (v) {
-                                setState(() => _query = v);
-                              },
-                              onKindChanged: (v) => setState(() => _kind = v),
-                              onVisibilityChanged: (v) =>
-                                  setState(() => _visibility = v),
-                              onRetryCategories: () {
-                                setState(() {
-                                  _categoryError = null;
-                                  _loadCategories();
-                                });
-                              },
-                              onPickCity: () => _pickCity(context, settings),
-                              onPickCategory: () => _pickCategory(context),
-                              savedSearchCount: _savedSearches.length,
-                              onSaveSearch: _saveCurrentSearch,
-                              onOpenSavedSearches: _openSavedSearches,
-                            ))),
-                        _JobsResultsSliver(
-                          jobs: jobs,
-                          isLoading: snapshot.connectionState ==
-                              ConnectionState.waiting,
-                          hasError: snapshot.hasError,
-                        ),
-                      ]);
-                })));
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: FutureBuilder<List<HopeJob>>(
+        future: _future,
+        builder: (context, snapshot) {
+          final jobs = _filter(snapshot.data ?? const <HopeJob>[]);
+          return PremiumPageFrame(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _JobsFilterHeader(
+                    kind: _kind,
+                    visibility: _visibility,
+                    categoryError: _categoryError,
+                    cityLabel: _city == 'AUTO'
+                        ? '${HopeCopy.of(context).copy_near_1df6db0} ${settings.city}'
+                        : _city,
+                    categoryLabel: _categoryLabel(context),
+                    resultCount: jobs.length,
+                    onQueryChanged: _setQuery,
+                    onKindChanged: (v) {
+                      setState(() => _kind = v);
+                      _reloadForCurrentFilters();
+                    },
+                    onVisibilityChanged: (v) {
+                      setState(() => _visibility = v);
+                      _reloadForCurrentFilters();
+                    },
+                    onRetryCategories: () {
+                      setState(() {
+                        _categoryError = null;
+                        _loadCategories();
+                      });
+                    },
+                    onPickCity: () => _pickCity(context, settings),
+                    onPickCategory: () => _pickCategory(context),
+                    savedSearchCount: _savedSearches.length,
+                    onSaveSearch:
+                        _savedSearchMutationBusy ? null : _saveCurrentSearch,
+                    onOpenSavedSearches: _openSavedSearches,
+                  ),
+                ),
+                _JobsResultsSliver(
+                  jobs: jobs,
+                  isLoading:
+                      snapshot.connectionState == ConnectionState.waiting,
+                  hasError: snapshot.hasError,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _pickCity(
@@ -329,6 +440,9 @@ class _JobsPageState extends State<JobsPage> {
                           x.description.isEmpty ? null : Text(x.description),
                       onTap: () => Navigator.pop(context, x.slug)))
                 ]));
-    if (c != null && mounted) setState(() => _category = c);
+    if (c != null && mounted) {
+      setState(() => _category = c);
+      await _reloadForCurrentFilters();
+    }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -25,10 +26,15 @@ import 'package:provider/provider.dart';
 /// candidate pipeline, owner transaction navigation, non-owner candidate
 /// suppression. Fresh fakes per test, no network.
 class _FakeDetail implements JobDetailRepository {
-  _FakeDetail({this.candidates = const []});
+  _FakeDetail({
+    this.candidates = const [],
+    this.compareResult = const {},
+  });
 
   List<HopeCandidate> candidates;
+  final Map<String, dynamic> compareResult;
   final List<String> calls = [];
+  Completer<void>? candidateGate;
 
   @override
   Future<List<HopeCandidate>> listCandidates(String jobId) async => candidates;
@@ -59,12 +65,13 @@ class _FakeDetail implements JobDetailRepository {
   Future<void> candidateAction(
       String jobId, String candidateId, String action) async {
     calls.add('candidate:$candidateId:$action');
+    if (candidateGate != null) await candidateGate!.future;
   }
 
   @override
   Future<Map<String, dynamic>> compareCandidates(
           String jobId, List<String> applicationIds) async =>
-      const {};
+      compareResult;
 
   @override
   Future<void> reportJob(String jobId,
@@ -135,6 +142,9 @@ class _FakeQueue implements UploadQueue {
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -151,10 +161,12 @@ HopeJob _job({
   String visibility = 'PUBLIC',
   String? ownerId = 'u1',
   String? city = 'Tehran',
+  String? title,
+  String status = 'PUBLISHED',
 }) =>
     HopeJob.fromMap({
       'id': id,
-      'title': kind == 'JOB' ? 'Flutter developer' : 'Design a logo',
+      'title': title ?? (kind == 'JOB' ? 'Flutter developer' : 'Design a logo'),
       'description': 'A clear, concise deliverable description for the page.',
       'categoryId': 'c1',
       'category': 'Design',
@@ -164,7 +176,7 @@ HopeJob _job({
       'budgetMax': '1500000',
       'duration': '8',
       'acceptanceCriteria': 'Acceptance criteria are listed here.',
-      'status': 'PUBLISHED',
+      'status': status,
       'ownerId': ownerId,
       'providerId': 'p1',
       'city': city,
@@ -254,6 +266,23 @@ void main() {
     expect(find.text('View financial flow'), findsNothing);
   });
 
+  testWidgets('long opportunity titles stay contained in the hero',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(
+        title:
+            'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل',
+      ),
+    );
+
+    final title = find.textContaining('طراحی و پیاده‌سازی کامل');
+    expect(title, findsOneWidget);
+    final widget = tester.widget<Text>(title);
+    expect(widget.maxLines, 2);
+    expect(widget.overflow, TextOverflow.ellipsis);
+  });
+
   testWidgets('owner job with forwarded candidates renders candidate actions',
       (tester) async {
     final detail = _FakeDetail(candidates: const [
@@ -282,6 +311,28 @@ void main() {
     expect(find.text('Interview'), findsOneWidget);
     expect(find.text('Hire'), findsOneWidget);
 
+    // A candidate action is serialized across the whole pipeline; another
+    // candidate cannot submit a concurrent transition while one is pending.
+    detail.candidateGate = Completer<void>();
+    await tester.ensureVisible(find.text('Interview'));
+    await tester.tap(find.text('Interview'));
+    await tester.pump();
+    expect(
+      tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Interview')).onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Hire')).onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Compare')).onPressed,
+      isNull,
+    );
+    detail.candidateGate!.complete();
+    await tester.pumpAndSettle();
+    expect(detail.calls, contains('candidate:c1:interview'));
+
     await tester.ensureVisible(find.text('Interview'));
     await tester.tap(find.text('Interview'));
     await tester.pumpAndSettle();
@@ -291,6 +342,77 @@ void main() {
     await tester.tap(find.text('Hire'));
     await tester.pumpAndSettle();
     expect(detail.calls, contains('candidate:c2:hire'));
+  });
+
+  testWidgets('candidate comparison localizes backend status enums', (tester) async {
+    final detail = _FakeDetail(
+      candidates: const [
+        HopeCandidate(
+          id: 'c1',
+          skills: 'Flutter',
+          resumeText: 'Cross-platform experience.',
+          status: 'FORWARDED',
+        ),
+        HopeCandidate(
+          id: 'c2',
+          skills: 'Dart',
+          resumeText: 'Backend experience.',
+          status: 'OFFERED',
+        ),
+      ],
+      compareResult: {
+        'candidates': [
+          {
+            'skills': 'Flutter',
+            'resumeHighlights': 'Cross-platform experience.',
+            'status': 'OFFERED',
+          },
+        ],
+      },
+    );
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      detail: detail,
+      userId: 'u1',
+    );
+
+    await tester.ensureVisible(find.text('Compare'));
+    await tester.tap(find.text('Compare'));
+    await tester.pumpAndSettle();
+
+    final dialog = find.byType(AlertDialog);
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text('Offer sent'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('OFFERED'), findsNothing);
+  });
+
+  testWidgets('unknown job lifecycle status is presented safely', (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1', status: 'FUTURE_STATE'),
+      userId: 'u1',
+    );
+
+    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('FUTURE_STATE'), findsNothing);
+  });
+  testWidgets('unknown lifecycle status does not mark a stage complete', (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1', status: 'FUTURE_STATE'),
+      userId: 'u1',
+    );
+
+    final draft = tester.widget<Text>(find.text('Draft'));
+    expect(draft.style?.fontWeight, isNot(FontWeight.w800));
+    expect(find.text('Needs review'), findsOneWidget);
   });
 
   testWidgets('non-owner never sees the candidate pipeline', (tester) async {

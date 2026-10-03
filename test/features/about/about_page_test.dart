@@ -24,14 +24,17 @@ void main() {
     await tester.pumpWidget(_app(const Locale('fa')));
     await tester.pumpAndSettle();
     expect(find.byType(HeroBanner), findsOneWidget);
-    expect(find.text('ماموریت'), findsWidgets);
+    final listView = find.byType(ListView);
+    final missionText = find.text('ماموریت');
     final jobText = find.text('شغل');
     var attempts = 0;
-    while (attempts < 6 && jobText.evaluate().isEmpty) {
-      await tester.drag(find.byType(ListView), const Offset(0, -200));
+    while (attempts < 8 &&
+        (missionText.evaluate().isEmpty || jobText.evaluate().isEmpty)) {
+      await tester.drag(listView, const Offset(0, -240));
       await tester.pump();
       attempts++;
     }
+    expect(missionText, findsWidgets);
     expect(jobText, findsWidgets);
   });
 

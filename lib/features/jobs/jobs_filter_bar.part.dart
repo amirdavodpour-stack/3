@@ -32,27 +32,34 @@ class _JobsFilterHeader extends StatelessWidget {
   final VoidCallback onPickCity;
   final VoidCallback onPickCategory;
   final int savedSearchCount;
-  final VoidCallback onSaveSearch;
+  final VoidCallback? onSaveSearch;
   final VoidCallback onOpenSavedSearches;
+
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PremiumSectionHeader(
-          title: HopeCopy.of(context).copy_explore_115e9fd,
+        PremiumHeader(
+          eyebrow: HopeCopy.of(context).copy_explore_115e9fd,
+          title: _t(
+            context,
+            'فرصت مناسب خود را پیدا کنید',
+            'Find the right opportunity',
+          ),
           subtitle: HopeCopy.of(context)
               .copy_see_missions_and_jobs_together_then_narrow_7e573a3,
-          action: const HopeIconTile(
-            Icons.explore_rounded,
-            size: 52,
-            filled: true,
+          trailing: PremiumTag(
+            icon: Icons.grid_view_rounded,
+            label: '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
           ),
         ),
-        const SizedBox(height: HopeV2Spacing.lg),
+        const SizedBox(height: HopeV2Spacing.xl),
         PremiumPanel(
-          padding: const EdgeInsets.all(HopeV2Spacing.md),
+          padding: const EdgeInsets.all(HopeV2Spacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -67,8 +74,22 @@ class _JobsFilterHeader extends StatelessWidget {
                 children: [
                   OutlinedButton.icon(
                     onPressed: onSaveSearch,
-                    icon: const Icon(Icons.bookmark_add_outlined, size: 18),
-                    label: Text(Localizations.localeOf(context).languageCode == 'en' ? 'Save search' : 'ذخیره جست‌وجو'),
+                    icon: onSaveSearch == null
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.bookmark_add_outlined, size: 18),
+                    label: Text(
+                      onSaveSearch == null
+                          ? (Localizations.localeOf(context).languageCode == 'en'
+                              ? 'Saving...'
+                              : 'در حال ذخیره…')
+                          : (Localizations.localeOf(context).languageCode == 'en'
+                              ? 'Save search'
+                              : 'ذخیره جست‌وجو'),
+                    ),
                   ),
                   if (savedSearchCount > 0)
                     OutlinedButton.icon(
@@ -152,15 +173,6 @@ class _JobsFilterHeader extends StatelessWidget {
                     avatar: const Icon(Icons.category_outlined, size: 17),
                     label: Text(categoryLabel),
                     onPressed: onPickCategory,
-                  ),
-                  Semantics(
-                    liveRegion: true,
-                    label:
-                        '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
-                    child: StatusPill(
-                      '$resultCount ${HopeCopy.of(context).copy_results_2d120a3}',
-                      icon: Icons.grid_view_rounded,
-                    ),
                   ),
                 ],
               ),

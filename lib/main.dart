@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/auth/auth_controller.dart';
 import 'core/auth/auth_repository.dart';
+import 'core/auth/google_sign_in_service.dart';
 import 'core/account/account_privacy_repository.dart';
 import 'core/network/api_client.dart';
 import 'core/settings/settings_controller.dart';
@@ -16,6 +17,7 @@ import 'core/notifications/notification_service.dart';
 import 'core/notifications/notification_repository.dart';
 import 'core/profile/profile_repository.dart';
 import 'core/uploads/upload_queue.dart';
+import 'core/theme/vazirmatn_loader.dart';
 import 'dart:ui';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -30,12 +32,15 @@ import 'core/application/application_registry.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await loadVazirmatnFont();
   final settings = HopeSettingsController();
   await settings.load();
 
   final store = SecureStore();
   final api = ApiClient(store);
   final authRepository = ApiAuthRepository(api);
+  final googleSignIn = GoogleSignInService();
+  await googleSignIn.initialize();
   final profileRepository = ApiProfileRepository(api);
   final notificationRepository = ApiNotificationRepository(api);
   final telemetry = TelemetryService(store, baseUrl: api.baseUrl);
@@ -73,6 +78,7 @@ Future<void> main() async {
       ChangeNotifierProvider(create: (_) => ThemeController(settings)),
       ChangeNotifierProvider.value(value: auth),
       Provider<AuthRepository>.value(value: authRepository),
+      Provider<GoogleSignInService>.value(value: googleSignIn),
       Provider<ProfileRepository>.value(value: profileRepository),
       Provider<NotificationRepository>.value(value: notificationRepository),
       Provider<MarketplaceRepository>(

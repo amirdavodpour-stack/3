@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +17,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -26,21 +31,49 @@ class _AuthRepo implements AuthRepository {
 }
 
 class _ProfileRepo implements ProfileRepository {
+  _ProfileRepo({this.applications = const []});
+
+  final List<HopeApplication> applications;
+  final Completer<HopeApplication> withdrawResult =
+      Completer<HopeApplication>();
+  int withdrawCalls = 0;
+
   @override
   Future<HopeProviderProfile> getProviderProfile() async =>
       const HopeProviderProfile(
           providerType: 'INDIVIDUAL',
-          capacity: '3',
+          capacity: 'OPEN',
           verificationStatus: 'VERIFIED',
           trustSignals: {'verified': true});
+
+  bool failApplicationReload = false;
+
   @override
-  Future<List<HopeApplication>> listApplications() async => const [];
+  Future<List<HopeApplication>> listApplications() async {
+    await Future<void>.delayed(Duration.zero);
+    if (failApplicationReload) {
+      throw StateError('applications unavailable');
+    }
+    return applications;
+  }
+
   @override
-  Future<HopeApplication> withdrawApplication(String applicationId) =>
-      throw UnimplementedError();
+  Future<HopeApplication> withdrawApplication(String applicationId) {
+    withdrawCalls += 1;
+    return withdrawResult.future;
+  }
 }
 
-Future<void> _pump(WidgetTester tester, {bool authenticated = false}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  bool authenticated = false,
+  double width = 900,
+  ProfileRepository? repository,
+}) async {
+  tester.view.physicalSize = Size(width, 2400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -66,7 +99,7 @@ Future<void> _pump(WidgetTester tester, {bool authenticated = false}) async {
           ChangeNotifierProvider.value(value: settings),
           ChangeNotifierProvider(create: (_) => ThemeController(settings)),
           ChangeNotifierProvider.value(value: auth),
-          Provider<ProfileRepository>.value(value: _ProfileRepo()),
+          Provider<ProfileRepository>.value(value: repository ?? _ProfileRepo()),
         ],
         child: const ProfilePage(),
       ),
@@ -76,24 +109,110 @@ Future<void> _pump(WidgetTester tester, {bool authenticated = false}) async {
 }
 
 void main() {
+testWidgets('withdrawing an application disables the action until completion',
+      (tester) async {
+    const application = HopeApplication(
+      id: 'a1',
+      jobId: 'j1',
+      jobTitle: 'Flutter developer',
+      jobCity: 'تهران',
+      jobKind: 'JOB',
+      resumeText: 'A concise resume with enough detail.',
+      skills: 'Flutter',
+      status: 'PENDING',
+      createdAt: null,
+      updatedAt: null,
+    );
+    final repo = _ProfileRepo(applications: [application]);
+    await _pump(tester, authenticated: true, repository: repo);
+
+    await tester.scrollUntilVisible(
+      find.text('Flutter developer'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final undo = find.widgetWithIcon(IconButton, Icons.undo_rounded);
+    expect(undo, findsOneWidget);
+
+    await tester.tap(undo);
+    await tester.pump();
+
+    expect(repo.withdrawCalls, 1);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is IconButton &&
+            widget.icon is SizedBox &&
+            widget.onPressed == null,
+      ),
+      findsOneWidget,
+    );
+
+    repo.withdrawResult.complete(application);
+    await tester.pumpAndSettle();
+    expect(repo.withdrawCalls, 1);
+  });
+
+  testWidgets('withdraw refresh failure stays visible instead of becoming empty',
+      (tester) async {
+    final application = const HopeApplication(
+      id: 'a2',
+      jobId: 'j2',
+      jobTitle: 'Backend engineer',
+      jobCity: 'تهران',
+      jobKind: 'JOB',
+      resumeText: 'A concise resume with enough detail.',
+      skills: 'Dart',
+      status: 'PENDING',
+      createdAt: null,
+      updatedAt: null,
+    );
+    final repo = _ProfileRepo(applications: [application]);
+    await _pump(tester, authenticated: true, repository: repo);
+
+    await tester.scrollUntilVisible(
+      find.text('Backend engineer'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.undo_rounded));
+    await tester.pump();
+    repo.failApplicationReload = true;
+    repo.withdrawResult.complete(application);
+    await tester.pumpAndSettle();
+
+    expect(find.text('درخواست‌ها در دسترس نیستند'), findsOneWidget);
+    expect(find.text('Backend engineer'), findsOneWidget);
+  });
+
   testWidgets('guest profile explains sign-in requirement', (tester) async {
     await _pump(tester);
     expect(find.byType(ProfilePage), findsOneWidget);
     expect(find.textContaining('ورود'), findsWidgets);
   });
 
+  testWidgets('profile settings stay usable on narrow screens',
+      (tester) async {
+    await _pump(tester, authenticated: true, width: 360);
+    await tester.pumpAndSettle();
+
+    expect(find.text('کاربر'), findsWidgets);
+    expect(find.text('فارسی'), findsOneWidget);
+    expect(find.text('انگلیسی'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('authenticated profile displays account and provider data',
       (tester) async {
     await _pump(tester, authenticated: true);
-    expect(find.text('کاربر'), findsOneWidget);
-    final individual = find.text('INDIVIDUAL');
-    var attempts = 0;
-    while (attempts < 6 && individual.evaluate().isEmpty) {
-      await tester.drag(find.byType(ListView), const Offset(0, -200));
-      await tester.pump();
-      attempts++;
-    }
-    expect(individual, findsOneWidget);
-    expect(find.textContaining('VERIFIED'), findsOneWidget);
+    expect(find.text('کاربر'), findsWidgets);
+    expect(find.text('سلام، کاربر'), findsNothing);
+
+    expect(find.text('مجری مستقل'), findsOneWidget);
+    expect(find.text('آماده همکاری'), findsWidgets);
+    expect(find.text('OPEN'), findsNothing);
+    expect(find.text('INDIVIDUAL'), findsNothing);
+    expect(find.text('تأییدشده'), findsWidgets);
+    expect(find.textContaining('VERIFIED'), findsNothing);
   });
 }

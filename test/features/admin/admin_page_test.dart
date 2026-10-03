@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +23,8 @@ class _FakeAdmin implements AdminRepository {
 
   /// When true the next state-mutating action throws (error-path coverage).
   bool failNextAction = false;
+  bool holdNextAction = false;
+  final Completer<void> actionGate = Completer<void>();
 
   final List<String> calls = [];
 
@@ -68,6 +72,7 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<void> shortlistApplication(String id) async {
     calls.add('shortlist:$id');
+    if (holdNextAction) await actionGate.future;
     if (failNextAction) throw Exception('action boom');
   }
 
@@ -181,6 +186,71 @@ Future<void> _openTab(WidgetTester tester, String label) async {
 }
 
 void main() {
+  testWidgets('admin presentation localizes backend enum fields', (tester) async {
+    final repo = _FakeAdmin()
+      ..jobs = [_job('j1', kind: 'MISSION', status: 'CANCELLED')]
+      ..applications = [
+        HopeApplication.fromMap({
+          'id': 'a1',
+          'jobId': 'j1',
+          'jobTitle': 'Mission',
+          'status': 'FORWARDED',
+        }),
+      ]
+      ..users = [
+        const HopeAdminUser(
+          id: 'u1',
+          displayName: 'Sara',
+          email: 'sara@example.com',
+          role: 'USER',
+          status: 'SUSPENDED',
+        ),
+      ];
+    await _pump(tester, repo);
+
+    expect(find.textContaining('Mission'), findsWidgets);
+    expect(find.textContaining('Cancelled'), findsOneWidget);
+    expect(find.textContaining('FORWARDED'), findsNothing);
+
+    await _openTab(tester, 'Applications');
+    expect(find.textContaining('Forwarded'), findsOneWidget);
+    expect(find.textContaining('FORWARDED'), findsNothing);
+
+    await _openTab(tester, 'Users');
+    expect(find.textContaining('User'), findsWidgets);
+    expect(find.textContaining('Suspended'), findsOneWidget);
+    expect(find.textContaining('SUSPENDED'), findsNothing);
+  });
+
+testWidgets('admin action runner ignores duplicate submissions while busy',
+      (tester) async {
+    final repo = _FakeAdmin()
+      ..applications = [
+        HopeApplication.fromMap({
+          'id': 'a1',
+          'jobId': 'j1',
+          'jobTitle': 'Job',
+          'status': 'PENDING'
+        }),
+      ]
+      ..holdNextAction = true;
+    await _pump(tester, repo);
+    await _openTab(tester, 'Applications');
+
+    final shortlist = find.widgetWithText(OutlinedButton, 'Shortlist');
+    await tester.tap(shortlist);
+    await tester.pump();
+
+    await tester.tap(shortlist);
+    await tester.pump();
+
+    expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
+
+    repo.actionGate.complete();
+    await tester.pumpAndSettle();
+    expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
+  });
+
   testWidgets('admin renders summary metrics and moderation actions',
       (tester) async {
     final repo = _FakeAdmin()
@@ -232,7 +302,8 @@ void main() {
 
     // Opportunities tab: draft rows offer the publish action.
     expect(find.text('Design a logo'), findsOneWidget);
-    expect(find.textContaining('DRAFT'), findsOneWidget);
+    expect(find.textContaining('Draft'), findsOneWidget);
+    expect(find.textContaining('DRAFT'), findsNothing);
     final publish = find.byTooltip('Publish');
     expect(publish, findsOneWidget);
     await tester.ensureVisible(publish);
@@ -260,7 +331,8 @@ void main() {
 
     // Audit log tab: system actor fallback for empty actor name.
     await _openTab(tester, 'Audit log');
-    expect(find.text('JOB_MODERATED'), findsOneWidget);
+    expect(find.text('Opportunity moderation'), findsOneWidget);
+    expect(find.text('JOB_MODERATED'), findsNothing);
     expect(find.textContaining('System'), findsOneWidget);
   });
 
@@ -275,7 +347,7 @@ void main() {
     expect(find.text('No applications'), findsOneWidget);
 
     await _openTab(tester, 'Users');
-    expect(find.text('The server did not return data. Try again.'),
+    expect(find.text('No data was returned by the server. Please try again.'),
         findsOneWidget);
   });
 

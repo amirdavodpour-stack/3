@@ -75,7 +75,7 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
     }
     if (!['RESERVED','PROCESSING'].includes(payout.status)) return { marked: false, reason: 'INVALID_PAYOUT_STATE' };
     await client.query(`UPDATE payouts SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=$2,updated_at=NOW() WHERE id=$1`, [payoutId, String(reason).slice(0, 1000)]);
-    await client.query(`UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=(SELECT id FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' LIMIT 1)`, [payoutId]);
+    await client.query(`UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=$1`, [payout.financial_operation_id]);
     await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`, [payoutId, JSON.stringify({ eventId, reason })]);
     await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
     return { marked: true, alreadyUnknown: false };

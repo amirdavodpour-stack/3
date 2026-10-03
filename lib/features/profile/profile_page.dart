@@ -37,6 +37,9 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<HopeProviderProfile>? profile;
   Future<List<HopeApplication>>? applications;
   String? _loadedUserId;
+  String? _applicationBusyId;
+  String? _applicationsReloadError;
+  int _applicationsReloadRequestId = 0;
 
   @override
   void didChangeDependencies() {
@@ -44,6 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final id = context.read<AuthController>().user?['id']?.toString();
     if (id == _loadedUserId) return;
     _loadedUserId = id;
+    _applicationsReloadError = null;
     if (id == null) {
       profile = null;
       applications = null;
@@ -53,6 +57,34 @@ class _ProfilePageState extends State<ProfilePage> {
     // verification/trust state instead of silently presenting empty data.
     profile = _controller.loadProfile();
     applications = _controller.loadApplications();
+  }
+
+  Future<void> _reloadApplications() async {
+    if (!mounted) return;
+    final requestId = ++_applicationsReloadRequestId;
+    if (_applicationBusyId == null) {
+      setState(() => _applicationsReloadError = null);
+    }
+    try {
+      final items = await _controller.loadApplications();
+      if (!mounted || requestId != _applicationsReloadRequestId) return;
+      setState(() {
+        applications = Future<List<HopeApplication>>.value(items);
+        _applicationsReloadError = null;
+      });
+    } catch (error) {
+      if (!mounted || requestId != _applicationsReloadRequestId) return;
+      setState(() {
+        _applicationsReloadError = apiErrorMessage(
+          error,
+          fallback: _t(
+            context,
+            'درخواست‌ها قابل دریافت نیستند.',
+            'Could not load applications.',
+          ),
+        );
+      });
+    }
   }
 
   @override
@@ -77,57 +109,70 @@ class _ProfilePageState extends State<ProfilePage> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
             children: [
-          PremiumHeader(
-            eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
-            title: '${HopeCopy.of(context).copy_hello_fc7ef4a}, $name',
-            subtitle: HopeCopy.of(context)
-                .copy_professional_identity_preferences_and_acco_7f164ce,
-            trailing: const HopeMark(size: 42, showText: false),
-          ),
-          const SizedBox(height: 18),
-          PremiumPanel(
-            highlight: true,
-            padding: const EdgeInsets.all(18),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ],
+              ),
+              boxShadow: HopeV2Shadows.hero,
+            ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   radius: 31,
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: Colors.white.withValues(alpha: .13),
                   foregroundColor: Colors.white,
                   child: Text(
                     initial,
-                    style: const TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
                   ),
                 ),
-                const SizedBox(width: 13),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        name,
-                        style: Theme.of(context).textTheme.titleLarge,
+                        HopeCopy.of(context).copy_profile_8b081d3,
+                        style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 12),
                       ),
+                      const SizedBox(height: 4),
                       Text(
-                        '${user['email'] ?? ''}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900),
                       ),
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 3),
+                      Text(
+                        user['email']?.toString() ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      const SizedBox(height: 10),
                       StatusPill(
                         HopeCopy.of(context).copy_active_account_bef80da,
-                        color: AppColors.success,
+                        color: Colors.white,
                         icon: Icons.person_outline_rounded,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 10),
+                const HopeMark(size: 42, showText: false),
               ],
             ),
           ),
-          const SizedBox(height: 19),
+          const SizedBox(height: 20),
           SectionTitle(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: HopeCopy.of(context)
@@ -139,7 +184,7 @@ class _ProfilePageState extends State<ProfilePage> {
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
-              if (snapshot.hasError) {
+              if (snapshot.hasError && _applicationsReloadError == null) {
                 return HopeAsyncState(
                   kind: HopeStateKind.error,
                   title: _t(context, 'اطلاعات حرفه‌ای در دسترس نیست', 'Professional profile unavailable'),
@@ -173,7 +218,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         HopeCopy.of(context).copy_work_profile_885ecac,
                       ),
                       subtitle: Text(
-                        '${data?.providerType.isNotEmpty == true ? data!.providerType : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? data!.capacity : HopeCopy.of(context).copy_open_to_work_aa59263}',
+                        '${data?.providerType.isNotEmpty == true ? _providerTypeLabel(context, data!.providerType) : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? _capacityLabel(context, data!.capacity) : HopeCopy.of(context).copy_open_to_work_aa59263}',
                       ),
                     ),
                     const Divider(height: 1),
@@ -185,8 +230,20 @@ class _ProfilePageState extends State<ProfilePage> {
                           runSpacing: 10,
                           children: [
                             _trustMetric(context, Icons.verified_rounded, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : AppColors.muted),
-                            if (data.providerType.isNotEmpty) _trustMetric(context, Icons.work_outline_rounded, data.providerType, Theme.of(context).colorScheme.secondary),
-                            if (data.capacity.isNotEmpty) _trustMetric(context, Icons.timelapse_rounded, data.capacity, AppColors.warning),
+                            if (data.providerType.isNotEmpty)
+                              _trustMetric(
+                                context,
+                                Icons.work_outline_rounded,
+                                _providerTypeLabel(context, data.providerType),
+                                Theme.of(context).colorScheme.secondary,
+                              ),
+                            if (data.capacity.isNotEmpty)
+                              _trustMetric(
+                                context,
+                                Icons.timelapse_rounded,
+                                _capacityLabel(context, data.capacity),
+                                AppColors.warning,
+                              ),
                             if (data.completedJobs > 0) _trustMetric(context, Icons.task_alt_rounded, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', AppColors.success),
                             if (data.activeJobs > 0) _trustMetric(context, Icons.play_circle_outline_rounded, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
                           ],
@@ -204,7 +261,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       subtitle: Text(
                         data?.verificationStatus.isNotEmpty == true
-                            ? data!.verificationStatus
+                            ? _verificationStatusLabel(
+                                context, data!.verificationStatus)
                             : HopeCopy.of(context).copy_not_completed_f8a6746,
                       ),
                     ),
@@ -214,6 +272,23 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           const SizedBox(height: 14),
+          if (_applicationsReloadError != null) ...[
+            HopeAsyncState(
+              kind: HopeStateKind.error,
+              title: _t(
+                context,
+                'درخواست‌ها در دسترس نیستند',
+                'Applications unavailable',
+              ),
+              message: _applicationsReloadError!,
+              action: OutlinedButton.icon(
+                onPressed: _applicationBusyId != null ? null : _reloadApplications,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(_t(context, 'تلاش دوباره', 'Retry')),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           FutureBuilder<List<HopeApplication>>(
             future: applications,
             builder: (context, snapshot) {
@@ -223,9 +298,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: _t(context, 'درخواست‌ها در دسترس نیستند', 'Applications unavailable'),
                   message: _t(context, 'امکان دریافت وضعیت درخواست‌ها وجود ندارد.', 'Application status could not be loaded.'),
                   action: OutlinedButton.icon(
-                    onPressed: () => setState(() {
-                      applications = _controller.loadApplications();
-                    }),
+                    onPressed: _reloadApplications,
                     icon: const Icon(Icons.refresh_rounded),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),
@@ -271,29 +344,39 @@ class _ProfilePageState extends State<ProfilePage> {
                         subtitle: Text(a.statusLabel),
                         trailing: a.canWithdraw
                             ? IconButton(
-                                onPressed: () async {
-                                  try {
-                                    await _controller.withdrawApplication(a.id);
-                                    if (!mounted) return;
-                                    setState(() {
-                                      applications = _controller
-                                          .loadApplications()
-                                          .catchError(
-                                              (_) => const <HopeApplication>[]);
-                                    });
-                                  } catch (error) {
-                                    if (!mounted || !context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(apiErrorMessage(error,
-                                              fallback: HopeCopy.of(context)
-                                                  .copy_operation_failed_eb38c4c))),
-                                    );
-                                  }
-                                },
-                                tooltip:
-                                    HopeCopy.of(context).copy_cancel_9955c4b,
-                                icon: const Icon(Icons.undo_rounded),
+                                onPressed: _applicationBusyId == a.id
+                                    ? null
+                                    : () async {
+                                        setState(() => _applicationBusyId = a.id);
+                                        try {
+                                          await _controller.withdrawApplication(a.id);
+                                          if (!mounted) return;
+                                          await _reloadApplications();
+                                        } catch (error) {
+                                          if (!mounted || !context.mounted) return;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(apiErrorMessage(
+                                                error,
+                                                fallback: HopeCopy.of(context)
+                                                    .copy_operation_failed_eb38c4c,
+                                              )),
+                                            ),
+                                          );
+                                        } finally {
+                                          if (mounted) {
+                                            setState(() => _applicationBusyId = null);
+                                          }
+                                        }
+                                      },
+                                tooltip: HopeCopy.of(context).copy_cancel_9955c4b,
+                                icon: _applicationBusyId == a.id
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.undo_rounded),
                               )
                             : null,
                       );
@@ -306,7 +389,7 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 14),
           SectionTitle(
             title: _t(context, 'مرکز کنترل حساب', 'Account control center'),
-            subtitle: _t(context, 'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کن.', 'Manage privacy, devices, and your work applications in one place.'),
+            subtitle: _t(context, 'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کنید.', 'Manage privacy, devices, and your work applications in one place.'),
           ),
           const SizedBox(height: 10),
           PremiumPanel(
@@ -408,6 +491,47 @@ class _ProfilePageState extends State<ProfilePage> {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  String _providerTypeLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'INDIVIDUAL':
+      case 'FREELANCER':
+        return _t(context, 'مجری مستقل', 'Independent provider');
+      case 'BUSINESS':
+        return _t(context, 'کسب‌وکار', 'Business');
+      default:
+        return HopeCopy.of(context).copy_professional_user_54818b8;
+    }
+  }
+
+  String _capacityLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'OPEN':
+        return HopeCopy.of(context).copy_open_to_work_aa59263;
+      case 'FULL_TIME':
+        return HopeCopy.of(context).copy_full_time_1e4bd4e;
+      case 'PART_TIME':
+        return HopeCopy.of(context).copy_part_time_086787b;
+      case 'PART_FULL_TIME':
+      case 'FULL_TIME_PART_TIME':
+        return HopeCopy.of(context).copy_part_full_time_4d952a9;
+      default:
+        return value;
+    }
+  }
+
+  String _verificationStatusLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'VERIFIED':
+        return _t(context, 'تأییدشده', 'Verified');
+      case 'UNVERIFIED':
+        return _t(context, 'تأیید نشده', 'Not verified');
+      case 'PENDING':
+        return _t(context, 'در انتظار بررسی', 'Pending review');
+      default:
+        return _t(context, 'نیازمند بررسی', 'Needs review');
+    }
+  }
+
   Widget _guest(
     BuildContext context,
     HopeSettingsController settings,
@@ -502,34 +626,73 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
-          ListTile(
-            leading: const HopeIconTile(Icons.translate_rounded),
-            title: Text(
-              HopeCopy.of(context).copy_app_language_789c9c4,
-            ),
-            subtitle: Text(
-              settings.language == 'fa'
-                  ? HopeCopy.of(context).copy_language_persian_3ffcd3e
-                  : HopeCopy.of(context).copy_language_english_d9f5a4a,
-            ),
-            trailing: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'fa',
-                  label: Text(
-                    HopeCopy.of(context).copy_persian_62775b3,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final selector = SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'fa',
+                    label: Text(
+                      HopeCopy.of(context).copy_persian_62775b3,
+                    ),
                   ),
-                ),
-                ButtonSegment(
-                  value: 'en',
-                  label: Text(
-                    HopeCopy.of(context).copy_english_8396fe3,
+                  ButtonSegment(
+                    value: 'en',
+                    label: Text(
+                      HopeCopy.of(context).copy_english_8396fe3,
+                    ),
                   ),
+                ],
+                selected: {settings.language},
+                onSelectionChanged: (value) => settings.setLanguage(value.first),
+              );
+
+              final details = ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                leading: const HopeIconTile(Icons.translate_rounded),
+                title: Text(
+                  HopeCopy.of(context).copy_app_language_789c9c4,
                 ),
-              ],
-              selected: {settings.language},
-              onSelectionChanged: (value) => settings.setLanguage(value.first),
-            ),
+                subtitle: Text(
+                  settings.language == 'fa'
+                      ? HopeCopy.of(context).copy_language_persian_3ffcd3e
+                      : HopeCopy.of(context).copy_language_english_d9f5a4a,
+                ),
+              );
+
+              if (constraints.maxWidth < 500) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      details,
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(15, 0, 15, 8),
+                          child: selector,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                leading: const HopeIconTile(Icons.translate_rounded),
+                title: Text(
+                  HopeCopy.of(context).copy_app_language_789c9c4,
+                ),
+                subtitle: Text(
+                  settings.language == 'fa'
+                      ? HopeCopy.of(context).copy_language_persian_3ffcd3e
+                      : HopeCopy.of(context).copy_language_english_d9f5a4a,
+                ),
+                trailing: selector,
+              );
+            },
           ),
           const Divider(height: 1),
           ListTile(
@@ -551,7 +714,9 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             trailing: Switch(
               value: settings.locationEnabled,
-              onChanged: (value) async {
+              onChanged: settings.locationBusy
+                  ? null
+                  : (value) async {
                 if (value) {
                   final ok = await settings.enableLocation();
                   if (!ok && mounted && context.mounted) {
