@@ -48,7 +48,6 @@ timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${
   flutter build apk --debug --no-pub \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-    --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" || build_status=$?
 if [ "$build_status" -ne 0 ]; then
   echo "HOPE_RUNTIME_BUILD_FAILED:exit=$build_status" >&2
@@ -310,15 +309,7 @@ run_host_batch_session() {
   local locale="$CAPTURE_LOCALE"
   local log_path="$runner_temp/hope-$mode-runtime.log"
   local launch_mode="$mode"
-  local responsive_only="false"
-  local responsive_batch="all"
-  if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ]; then
-    responsive_only="true"
-    case "$mode" in
-      responsive-a) responsive_batch="1" ;;
-      responsive-b) responsive_batch="2" ;;
-    esac
-  elif [ "$CAPTURE_HOME_ONLY" = "1" ] && [ "$mode" = "baseline" ]; then
+  if [ "$CAPTURE_HOME_ONLY" = "1" ] && [ "$mode" = "baseline" ]; then
     launch_mode="home-only"
   fi
   local process_pid
@@ -336,10 +327,6 @@ run_host_batch_session() {
   flutter drive --no-pub --no-dds \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
-    --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
-    --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
-    --dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}" \
-    --dart-define=HOPE_RESPONSIVE_BATCH="${responsive_batch}" \
     --use-application-binary="$RUNTIME_APK" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
