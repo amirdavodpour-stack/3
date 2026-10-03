@@ -9,6 +9,7 @@ import 'package:hugeicons/hugeicons.dart';
 /// Premium reference contract: deep surfaces, restrained cyan/teal, violet focus.
 /// Runtime certification batch: compact home, deterministic glass, restrained bloom.
 /// Certification round three: opaque premium surfaces + controlled wallet hero.
+/// Final visual checkpoint: wallet/profile bloom removed; home remains compact.
 /// Canonical HOPE visual tokens. Legacy theme APIs alias these values so
 /// existing screens can migrate without creating a second design system.
 class HopeV2Colors {
