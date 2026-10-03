@@ -36,7 +36,7 @@ class _RegisterPageState extends State<RegisterPage> {
               HopeCopy.of(context).copy_please_complete_all_fields_55c07bb)));
       return;
     }
-    if (password.text.length < 8) {
+    if (password.text.length < 12) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(HopeCopy.of(context)
               .copy_password_must_be_at_least_8_characters_8ad17c6)));
@@ -122,6 +122,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       TextField(
                           controller: password,
                           obscureText: obscure,
+                          maxLength: 128,
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                               labelText:

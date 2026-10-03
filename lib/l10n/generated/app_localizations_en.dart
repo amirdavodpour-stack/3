@@ -168,7 +168,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'As described in the opportunity.';
 
   @override
-  String get copy_at_least_8_characters_eb24592 => 'At least 8 characters';
+  String get copy_at_least_8_characters_eb24592 => 'At least 12 characters';
 
   @override
   String get copy_audience_visibility_5a0ddcb => 'Audience & visibility';
@@ -634,7 +634,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copy_password_must_be_at_least_8_characters_8ad17c6 =>
-      'Password must be at least 8 characters.';
+      'Password must be at least 12 characters.';
 
   @override
   String get copy_pay_4121159 => 'Pay';

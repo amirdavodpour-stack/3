@@ -166,7 +166,7 @@ class AppLocalizationsFa extends AppLocalizations {
       'مطابق شرح فرصت و توافق طرفین.';
 
   @override
-  String get copy_at_least_8_characters_eb24592 => 'حداقل ۸ کاراکتر';
+  String get copy_at_least_8_characters_eb24592 => 'حداقل ۱۲ کاراکتر';
 
   @override
   String get copy_audience_visibility_5a0ddcb => 'مخاطب و دیده‌شدن';
@@ -631,7 +631,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get copy_password_must_be_at_least_8_characters_8ad17c6 =>
-      'رمز عبور باید حداقل ۸ کاراکتر باشد.';
+      'رمز عبور باید حداقل ۱۲ کاراکتر باشد.';
 
   @override
   String get copy_pay_4121159 => 'مبلغ پیشنهادی';
