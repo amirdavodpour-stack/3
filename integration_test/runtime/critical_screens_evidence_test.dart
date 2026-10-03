@@ -691,6 +691,12 @@ Future<void> _captureRuntimeScreen(
     ),
   );
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
+  if (child is LoginPage) {
+    await tester.pump(const Duration(milliseconds: 1200));
+    print('HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker');
+    await _captureRuntimeScreenshot(marker);
+    return;
+  }
   // TransactionsPage is the heaviest current Work Center surface. A second
   // zero-duration pump can block the headless driver before the screenshot
   // request; give this page one deterministic 1.2s frame window instead.
