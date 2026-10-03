@@ -82,7 +82,7 @@ class _JobsResultsSliver extends StatelessWidget {
                   AnimatedEntrance(
                     child: OpportunityCard(
                       job: featuredJob,
-                      variant: OpportunityCardVariant.featured,
+                      variant: OpportunityCardVariant.featuredScan,
                     ),
                   ),
                   if (remaining.isNotEmpty)
@@ -108,7 +108,7 @@ class _JobsResultsSliver extends StatelessWidget {
               children: [
                 OpportunityCard(
                   job: featuredJob,
-                  variant: OpportunityCardVariant.featured,
+                  variant: OpportunityCardVariant.featuredScan,
                 ),
                 if (remaining.isNotEmpty)
                   const SizedBox(height: HopeV2Spacing.xl),
