@@ -823,9 +823,7 @@ highlight: true,
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox.shrink();
         final wallet = snapshot.data!;
-        String money(int v) =>
-            '${v.toString().replaceAllMapped(RegExp(r'(?<=\d)(?=(\d{3})+(?!\d))'), (_) => ',')} '
-            '${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'TOMAN') : wallet.currency}';
+        String money(int v) => moneyLabel(context, v);
 
         return PremiumPanel(
           glass: true,
