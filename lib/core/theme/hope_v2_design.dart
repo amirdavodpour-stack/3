@@ -306,6 +306,7 @@ class HopeV2Gradients {
     end: Alignment.bottomLeft,
   );
 
+  // Runtime visual certification target: flat dark canvas + violet-led hero.
   static const heroDark = LinearGradient(
     colors: [
       Color(0xFF171A36),
