@@ -84,15 +84,10 @@ grep -Fq 'if (child is LoginPage)' "$test_file"
 grep -Fq 'run_host_batch_session responsive-a responsive' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b responsive' "$script_file"
 grep -Fq 'platformDispatcher.defaultRouteName' "$test_file"
-grep -Fq '--route="/__hope_runtime_capture__/$locale/$launch_mode"' "$script_file"
-if grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY' "$script_file"; then
-  echo "FAIL: responsive mode must not depend on compile-time dart-define state" >&2
-  exit 1
-fi
-if grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH' "$script_file"; then
-  echo "FAIL: responsive batch must be selected from the launch route" >&2
-  exit 1
-fi
+grep -Fq -- '--route="/__hope_runtime_capture__/$locale/$launch_mode"' "$script_file"
+grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY' "$script_file"
+grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH' "$script_file"
+grep -Fq 'String.fromEnvironment' "$test_file"
 grep -Fq 'HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker' "$test_file"
 
 grep -Fq 'if (child is TransactionsPage)' "$test_file"
