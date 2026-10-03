@@ -80,6 +80,9 @@ grep -Fq "disableAnimations: true" "$test_file"
 # The current Work Center/Transactions surface uses a bounded fast capture path to avoid a second headless pump deadlock.
 # Login is the first auth surface in the baseline and must use the deterministic runtime-only host path.
 grep -Fq 'if (child is LoginPage)' "$test_file"
+# Responsive evidence is split into two independent Flutter Driver sessions to limit emulator/session pressure.
+grep -Fq 'run_host_batch_session responsive-a responsive' "$script_file"
+grep -Fq 'run_host_batch_session responsive-b responsive' "$script_file"
 grep -Fq 'HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker' "$test_file"
 
 grep -Fq 'if (child is TransactionsPage)' "$test_file"
