@@ -338,6 +338,7 @@ class _JobsPageState extends State<JobsPage> {
         builder: (context, snapshot) {
           final jobs = _filter(snapshot.data ?? const <HopeJob>[]);
           return PremiumPageFrame(
+            page: HopePageId.explore,
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
