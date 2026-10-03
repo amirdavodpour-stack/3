@@ -589,8 +589,12 @@ final _captureRoute =
     WidgetsBinding.instance.platformDispatcher.defaultRouteName;
 final _routeSegments =
     Uri.tryParse(_captureRoute)?.pathSegments ?? const <String>[];
+final _captureModeFromDefine =
+    String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: '');
 final _captureMode =
-    _routeSegments.isEmpty ? 'baseline' : _routeSegments.last;
+    _captureModeFromDefine.isNotEmpty
+        ? _captureModeFromDefine
+        : (_routeSegments.isEmpty ? 'baseline' : _routeSegments.last);
 final _responsiveOnly =
     _captureMode == 'responsive-a' || _captureMode == 'responsive-b';
 final _captureLocale =
