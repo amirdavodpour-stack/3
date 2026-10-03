@@ -100,7 +100,7 @@ void main() {
       final media = find.byKey(
         const ValueKey('opportunity-card-media-header'),
       );
-      expect(tester.getSize(media).height, lessThan(120));
+      expect(tester.getSize(media).height, lessThan(96));
     } finally {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
