@@ -831,12 +831,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     _MatchIntelligence(job: j),
                   ],
                   const SizedBox(height: 16),
+                  _OpportunitySnapshot(job: j),
+                  const SizedBox(height: 16),
                   Text(
                     j.description,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  const SizedBox(height: 16),
-                  _OpportunitySnapshot(job: j),
                   const SizedBox(height: 14),
                   PremiumPanel(
                     padding: const EdgeInsets.all(17),
