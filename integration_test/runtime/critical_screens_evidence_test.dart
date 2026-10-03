@@ -585,13 +585,16 @@ class _EvidenceHost extends StatelessWidget {
   }
 }
 
-late final String _captureMode;
-late final bool _responsiveOnly;
-late final String _captureLocale;
-late final bool _captureHomeOnly;
-late final String _responsiveBatch;
-final _captureLocaleFromDefine =
+const _captureMode =
+    String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: 'baseline');
+const _responsiveOnly =
+    bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
+const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
+const _captureHomeOnly =
+    bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
+const _responsiveBatch =
+    String.fromEnvironment('HOPE_RESPONSIVE_BATCH', defaultValue: 'all');
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -813,31 +816,7 @@ Future<void> _captureResponsiveLocale(
   }
 }
 void main() {
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  final captureRoute = binding.platformDispatcher.defaultRouteName;
-  final routeSegments =
-      Uri.tryParse(captureRoute)?.pathSegments ?? const <String>[];
-  final captureModeFromDefine =
-      String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: '');
-  _captureMode = captureModeFromDefine.isNotEmpty
-      ? captureModeFromDefine
-      : (routeSegments.isEmpty ? 'baseline' : routeSegments.last);
-  _responsiveOnly =
-      _captureMode == 'responsive-a' || _captureMode == 'responsive-b';
-  _captureLocale = _captureLocaleFromDefine.isNotEmpty
-      ? _captureLocaleFromDefine
-      : (routeSegments.length >= 2
-          ? routeSegments[routeSegments.length - 2]
-          : '');
-  _captureHomeOnly = const bool.fromEnvironment(
-    'HOPE_CAPTURE_HOME_ONLY',
-    defaultValue: false,
-  );
-  _responsiveBatch = switch (_captureMode) {
-    'responsive-a' => '1',
-    'responsive-b' => '2',
-    _ => 'all',
-  };
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   if (_captureLocale != 'fa' && _captureLocale != 'en') {
     throw StateError(
       'HOPE_CAPTURE_LOCALE must be supplied as fa or en for exact-locale runtime evidence.',
