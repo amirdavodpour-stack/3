@@ -135,41 +135,39 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   Widget _activityNavigation(BuildContext context) {
     final copy = HopeCopy.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: PremiumPanel(
-        padding: const EdgeInsets.all(12),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            OutlinedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                HopeRoutes.myApplications(),
-              ),
-              icon: const HopeIcon(HopeV2Icons.mission, size: 19),
-              label: Text(copy.copy_applications_6655869),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                HopeRoutes.offers(),
-              ),
-              icon: const HopeIcon(HopeV2Icons.featured, size: 19),
-              label: Text(copy.copy_offers),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                HopeRoutes.notifications(),
-              ),
-              icon: const HopeIcon(HopeV2Icons.notifications, size: 19),
-              label: Text(copy.copy_notifications_370b4a1),
-            ),
-          ],
-        ),
+    return PremiumQuickActionStrip(
+      title: _t('دسترسی سریع', 'Quick access'),
+      subtitle: _t(
+        'درخواست‌ها، پیشنهادها و اعلان‌ها را بدون باز کردن منوی کناری در دسترس داشته باشید.',
+        'Reach applications, offers, and notifications without opening the side menu.',
       ),
+      actions: [
+        PremiumQuickAction(
+          label: copy.copy_applications_6655869,
+          icon: HopeV2Icons.mission,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.myApplications(),
+          ),
+          primary: true,
+        ),
+        PremiumQuickAction(
+          label: copy.copy_offers,
+          icon: HopeV2Icons.featured,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.offers(),
+          ),
+        ),
+        PremiumQuickAction(
+          label: copy.copy_notifications_370b4a1,
+          icon: HopeV2Icons.notifications,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.notifications(),
+          ),
+        ),
+      ],
     );
   }
 
