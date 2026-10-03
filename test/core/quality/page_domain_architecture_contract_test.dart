@@ -221,6 +221,14 @@ void main() {
     expect(source, isNot(contains('FutureBuilder<List<HopeApplication>>')));
   });
 
+  test('profile trust heading precedes professional state', () {
+    final source = _read('lib/features/profile/profile_page.dart');
+    final trust = source.indexOf("title: _t(context, 'اعتماد و پروفایل حرفه‌ای'");
+    final professional = source.indexOf('FutureBuilder<HopeProviderProfile>');
+    expect(trust, greaterThanOrEqualTo(0));
+    expect(professional, greaterThan(trust));
+  });
+
   test('profile exposes trust separately from account settings', () {
     final source = _read('lib/features/profile/profile_page.dart');
     expect(source, contains('domain: HopeProductDomain.trust'));
