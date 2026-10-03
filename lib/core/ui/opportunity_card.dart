@@ -163,7 +163,7 @@ class OpportunityCard extends StatelessWidget {
 
   // Premium runtime certification: featured opportunity bloom is restrained.
   // Runtime certification: featured card glow is intentionally restrained.
-  // Runtime certification: featured card has no neon halo spill.
+  // Runtime certification: featured card stays compact and neon-free.
   Widget _mediaHeader(
     BuildContext context, {
     required String title,
