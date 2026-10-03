@@ -489,7 +489,7 @@ padding: const EdgeInsets.all(12),
                 );
               },
             ),
-            const SizedBox(height: HopeV2Spacing.lg),
+            const SizedBox(height: HopeV2Spacing.md),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -636,10 +636,10 @@ padding: const EdgeInsets.all(12),
     required Color accent,
   }) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 48),
+      constraints: const BoxConstraints(minHeight: 46),
       padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 9,
+        horizontal: 8,
+        vertical: 7,
       ),
       decoration: BoxDecoration(
         color: HopeV2Colors.panelSoftDark,
@@ -677,20 +677,19 @@ padding: const EdgeInsets.all(12),
             ],
           );
           if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 ExcludeSemantics(
                   child: HopeIcon(
                     icon,
-                    size: 16,
+                    size: 14,
                     color: accent,
                     strokeWidth: 1.9,
                   ),
                 ),
-                const SizedBox(height: 3),
-                metric,
+                const SizedBox(width: 6),
+                Expanded(child: metric),
               ],
             );
           }
