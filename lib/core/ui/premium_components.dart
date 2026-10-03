@@ -1089,46 +1089,89 @@ class PremiumStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = accent ?? Theme.of(context).colorScheme.primary;
     if (compact) {
-      return PremiumPanel(
-        semanticLabel: '$label: $value',
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        highlight: highlight,
-        child: Row(
-          children: [
-            ExcludeSemantics(
-              child: HopeIconTile(
-                icon,
-                color: color,
-                filled: true,
-                size: 36,
-              ),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final ultraCompact = constraints.maxWidth < 135;
+          return PremiumPanel(
+            semanticLabel: '$label: $value',
+            padding: EdgeInsets.symmetric(
+              horizontal: ultraCompact ? 8 : 12,
+              vertical: ultraCompact ? 8 : 9,
             ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+            highlight: highlight,
+            child: ultraCompact
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ExcludeSemantics(
+                        child: HopeIconTile(
+                          icon,
+                          color: color,
+                          filled: true,
+                          size: 32,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: HopeV2Type.metric(context).copyWith(fontSize: 20),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      ExcludeSemantics(
+                        child: HopeIconTile(
+                          icon,
+                          color: color,
+                          filled: true,
+                          size: 36,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: HopeV2Type.metric(context)
+                                  .copyWith(fontSize: 21),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 1),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: HopeV2Type.metric(context).copyWith(fontSize: 21),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       );
     }
 
