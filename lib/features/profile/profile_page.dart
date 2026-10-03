@@ -157,9 +157,18 @@ padding: const EdgeInsets.symmetric(
                 );
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const PremiumPanel(
-                  glass: true,
-child: SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
+                return HopeAsyncState(
+                  kind: HopeStateKind.loading,
+                  title: _t(
+                    context,
+                    'در حال بارگذاری اطلاعات حرفه‌ای',
+                    'Loading professional profile',
+                  ),
+                  message: _t(
+                    context,
+                    'وضعیت تأیید و شاخص‌های اعتماد در حال دریافت است.',
+                    'Verification and trust signals are loading.',
+                  ),
                 );
               }
               final data = snapshot.data;
