@@ -634,50 +634,73 @@ class OpportunityCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: HopeV2Spacing.sm),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Wrap(
-                spacing: HopeV2Spacing.sm,
-                runSpacing: HopeV2Spacing.xs,
-                children: [
-                  PremiumTag(
-                    icon: HopeV2Icons.location,
-                    label: city,
-                    color: secondaryAccent(context),
-                  ),
-                  if ((job.category ?? '').isNotEmpty)
-                    PremiumTag(
-                      icon: HopeV2Icons.category,
-                      label: job.category!,
-                      color: HopeV2Colors.muted,
-                    ),
-                  if (job.visibility == 'SPECIALIZED')
-                    PremiumTag(
-                      icon: HopeV2Icons.secure,
-                      label: copy.copy_specialized_5d1ca04,
-                      color: HopeV2Colors.warning,
-                    ),
-                ],
-              ),
-            ),
-            if (amount.isNotEmpty) ...[
-              const SizedBox(width: HopeV2Spacing.sm),
-              Flexible(
-                child: Text(
-                  '${_formatAmount(amount)} ${copy.copy_toman}',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                  style: HopeV2Type.metric(context).copyWith(
-                    fontSize: 13,
-                    color: primary,
-                  ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final narrowMeta = constraints.maxWidth < 280;
+            final tags = Wrap(
+              spacing: HopeV2Spacing.sm,
+              runSpacing: HopeV2Spacing.xs,
+              children: [
+                PremiumTag(
+                  icon: HopeV2Icons.location,
+                  label: city,
+                  color: secondaryAccent(context),
                 ),
-              ),
-            ],
-          ],
+                if ((job.category ?? '').isNotEmpty)
+                  PremiumTag(
+                    icon: HopeV2Icons.category,
+                    label: job.category!,
+                    color: HopeV2Colors.muted,
+                  ),
+                if (job.visibility == 'SPECIALIZED')
+                  PremiumTag(
+                    icon: HopeV2Icons.secure,
+                    label: copy.copy_specialized_5d1ca04,
+                    color: HopeV2Colors.warning,
+                  ),
+              ],
+            );
+            final amountText = amount.isEmpty
+                ? null
+                : Text(
+                    '${_formatAmount(amount)} ${copy.copy_toman}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: HopeV2Type.metric(context).copyWith(
+                      fontSize: 13,
+                      color: primary,
+                    ),
+                  );
+            if (narrowMeta) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  tags,
+                  if (amountText != null) ...[
+                    const SizedBox(height: HopeV2Spacing.xs),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                        child: amountText,
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: tags),
+                if (amountText != null) ...[
+                  const SizedBox(width: HopeV2Spacing.sm),
+                  Flexible(child: amountText),
+                ],
+              ],
+            );
+          },
         ),
       ],
     );
