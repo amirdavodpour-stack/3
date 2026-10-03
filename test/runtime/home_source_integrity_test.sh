@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Current UI architecture runtime trigger: 2026-10-03
+# Current grouped UI batch visual validation bridge: 2026-10-03.
 set -eu
 
 file="lib/features/home/home_page.dart"
