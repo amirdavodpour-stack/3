@@ -64,7 +64,7 @@ if grep -Fq 'HOPE_ADB_SCREENSHOT_CAPTURE=true' "$script_file"; then
 fi
 
 # The Android build itself must also be bounded; otherwise a Gradle stall hides the real runtime state.
-grep -Fq 'RUNTIME_BUILD_TIMEOUT_SECONDS="${HOPE_RUNTIME_BUILD_TIMEOUT_SECONDS:-300}"' "$script_file"
+grep -Fq 'RUNTIME_BUILD_TIMEOUT_SECONDS="${HOPE_RUNTIME_BUILD_TIMEOUT_SECONDS:-420}"' "$script_file"
 build_block="$(sed -n '/^echo "HOPE_RUNTIME_PREBUILD/,/^test -s "$RUNTIME_APK"/p' "$script_file")"
 grep -Fq 'timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_BUILD_TIMEOUT_SECONDS}s"' <<<"$build_block"
 grep -Fq 'flutter build apk --debug --no-pub' <<<"$build_block"
