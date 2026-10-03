@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
+import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/features/applications/my_applications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -107,6 +108,38 @@ class _FailingProfileRepository implements ProfileRepository {
 }
 
 void main() {
+  testWidgets(
+    'applications loading uses the canonical async state',
+    (tester) async {
+      final profile = _SequencedProfileRepository();
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Provider<ApplicationRegistry>.value(
+            value: ApplicationRegistry(profile: profile),
+            child: const MyApplicationsPage(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(HopeAsyncState), findsOneWidget);
+      expect(find.text('در حال بارگذاری درخواست‌ها'), findsOneWidget);
+
+      profile.initialLoad.complete(const []);
+      await tester.pumpAndSettle();
+      expect(find.text('You have not submitted any applications yet.'), findsOneWidget);
+    },
+  );
+
+  testWidgets('applications do not expose unknown backend statuses',
   testWidgets('applications do not expose unknown backend statuses',
       (tester) async {
     const application = HopeApplication(
