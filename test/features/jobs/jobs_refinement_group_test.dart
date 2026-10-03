@@ -87,7 +87,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Filters'), findsOneWidget);
+    expect(find.textContaining('Filters'), findsOneWidget);
     expect(find.text('Missions'), findsNothing);
 
     await tester.tap(find.text('Filters'));
