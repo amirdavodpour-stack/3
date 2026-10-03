@@ -245,35 +245,40 @@ class PremiumPageFrame extends StatelessWidget {
       constraints: BoxConstraints(
         minHeight: size.height,
       ),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: pageColor,
-          gradient: HopeV2Surfaces.pageHalo(context),
-          border: domainAccent == null || !showDomainRail
-              ? null
-              : BorderDirectional(
-                  start: BorderSide(
-                    color: domainAccent.withValues(alpha: .24),
-                    width: 1,
+      child: Material(
+        // Use an explicit canvas Material at the frame root. This gives direct
+        // Android integration_test captures an opaque surface before any
+        // transparent gradient/surface layers are composited above it.
+        type: MaterialType.canvas,
+        color: pageColor,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: HopeV2Surfaces.pageHalo(context),
+            border: domainAccent == null || !showDomainRail
+                ? null
+                : BorderDirectional(
+                    start: BorderSide(
+                      color: domainAccent.withValues(alpha: .24),
+                      width: 1,
+                    ),
                   ),
+          ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Padding(
+                padding: padding.copyWith(
+                  bottom: padding.bottom + bottomInset,
                 ),
-        ),
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
-            child: Padding(
-              padding: padding.copyWith(
-                bottom: padding.bottom + bottomInset,
-              ),
-              child: Semantics(
-                container: true,
-                explicitChildNodes: true,
-                label: page?.spec.title(context),
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: child,
+                child: Semantics(
+                  container: true,
+                  explicitChildNodes: true,
+                  label: page?.spec.title(context),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: child,
+                  ),
                 ),
               ),
             ),
