@@ -75,6 +75,8 @@ driver_block="$(sed -n '/^run_host_batch_session()/,/^echo "HOPE_RUNTIME_CAPTURE
 grep -Fq 'timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s"' <<<"$driver_block"
 grep -Fq 'flutter drive --no-pub --no-dds' <<<"$driver_block"
 
+# Runtime screenshot evidence must explicitly disable custom Flutter animations through MediaQuery.
+grep -Fq "disableAnimations: true" "$test_file"
 # The current Work Center/Transactions surface uses a bounded fast capture path to avoid a second headless pump deadlock.
 grep -Fq 'if (child is TransactionsPage)' "$test_file"
 grep -Fq 'HOPE_RUNTIME_TRANSACTION_FAST_SETTLE_DONE:$marker' "$test_file"
