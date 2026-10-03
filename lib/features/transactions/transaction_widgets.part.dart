@@ -480,7 +480,7 @@ extension on _TransactionPageState {
               ],
               const SizedBox(height: 12),
               PremiumPanel(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
                 highlight: status == 'HELD' ||
                     status == 'RELEASED' ||
                     status == 'HOLD_PENDING' ||
@@ -534,8 +534,20 @@ extension on _TransactionPageState {
                             ),
                       ),
                     ),
+                    if (status == 'HELD' ||
+                        status == 'RELEASE_PENDING') ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: PremiumTag(
+                          icon: HopeV2Icons.secure,
+                          label: _t('محافظت‌شده توسط HOPE', 'Protected by HOPE'),
+                          color: HopeV2Colors.success,
+                        ),
+                      ),
+                    ],
                     if (payment?.providerRef?.trim().isNotEmpty ?? false) ...[
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
