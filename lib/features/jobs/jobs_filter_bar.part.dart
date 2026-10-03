@@ -1,5 +1,78 @@
 part of 'jobs_page.dart';
 
+class HopeOpportunityRefinementGroup extends StatelessWidget {
+  const HopeOpportunityRefinementGroup({
+    super.key,
+    required this.kind,
+    required this.visibility,
+    required this.onKindChanged,
+    required this.onVisibilityChanged,
+  });
+
+  final String kind;
+  final String visibility;
+  final ValueChanged<String> onKindChanged;
+  final ValueChanged<String> onVisibilityChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = HopeCopy.of(context);
+    return Wrap(
+      spacing: HopeV2Spacing.sm,
+      runSpacing: HopeV2Spacing.sm,
+      children: [
+        _item(
+          context,
+          label: copy.copy_all_ba7d5b6,
+          selected: kind == 'ALL',
+          onTap: () => onKindChanged('ALL'),
+        ),
+        _item(
+          context,
+          label: copy.copy_missions_a833d13,
+          selected: kind == 'MISSION',
+          onTap: () => onKindChanged('MISSION'),
+          icon: HopeV2Icons.mission,
+        ),
+        _item(
+          context,
+          label: copy.copy_jobs_ebf9a80,
+          selected: kind == 'JOB',
+          onTap: () => onKindChanged('JOB'),
+          icon: HopeV2Icons.job,
+        ),
+        _item(
+          context,
+          label: copy.copy_public_21e97be,
+          selected: visibility == 'PUBLIC',
+          onTap: () => onVisibilityChanged('PUBLIC'),
+        ),
+        _item(
+          context,
+          label: copy.copy_specialized_5d1ca04,
+          selected: visibility == 'SPECIALIZED',
+          onTap: () => onVisibilityChanged('SPECIALIZED'),
+        ),
+      ],
+    );
+  }
+
+  Widget _item(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    Object? icon,
+  }) {
+    return PremiumFilterChip(
+      label: label,
+      selected: selected,
+      onTap: onTap,
+      icon: icon,
+    );
+  }
+}
+
 class _JobsFilterHeader extends StatelessWidget {
   const _JobsFilterHeader({
     required this.domain,
@@ -143,48 +216,11 @@ class _JobsFilterHeader extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: HopeV2Spacing.sm),
-              SizedBox(
-                height: HopeV2Touch.minimum,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _chip(
-                      context,
-                      copy.copy_all_ba7d5b6,
-                      kind == 'ALL',
-                      () => onKindChanged('ALL'),
-                    ),
-                      _chip(
-                      context,
-                      copy.copy_missions_a833d13,
-                      kind == 'MISSION',
-                      () => onKindChanged('MISSION'),
-                      icon: HopeV2Icons.mission,
-                    ),
-                      _chip(
-                      context,
-                      copy.copy_jobs_ebf9a80,
-                      kind == 'JOB',
-                      () => onKindChanged('JOB'),
-                      icon: HopeV2Icons.job,
-                    ),
-                      const SizedBox(width: HopeV2Spacing.sm),
-                      _chip(
-                      context,
-                      copy.copy_public_21e97be,
-                      visibility == 'PUBLIC',
-                      () => onVisibilityChanged('PUBLIC'),
-                    ),
-                      _chip(
-                      context,
-                      copy.copy_specialized_5d1ca04,
-                      visibility == 'SPECIALIZED',
-                      () => onVisibilityChanged('SPECIALIZED'),
-                    ),
-                  ],
-                ),
+              HopeOpportunityRefinementGroup(
+                kind: kind,
+                visibility: visibility,
+                onKindChanged: onKindChanged,
+                onVisibilityChanged: onVisibilityChanged,
               ),
             ),
               const SizedBox(height: HopeV2Spacing.sm),
