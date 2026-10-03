@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../core/ui/hope_async_state.dart';
 
 import '../../core/auth/auth_controller.dart';
-import '../../core/marketplace/application.dart';
 import '../../core/profile/profile_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
@@ -36,7 +35,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<HopeProviderProfile>? profile;
-  Future<List<HopeApplication>>? applications;
   String? _loadedUserId;
   String? _applicationBusyId;
   String? _applicationsReloadError;
@@ -48,44 +46,15 @@ class _ProfilePageState extends State<ProfilePage> {
     final id = context.read<AuthController>().user?['id']?.toString();
     if (id == _loadedUserId) return;
     _loadedUserId = id;
-    _applicationsReloadError = null;
     if (id == null) {
       profile = null;
-      applications = null;
+      return;
       return;
     }
     // Keep backend errors observable so the UI can communicate an unknown
     // verification/trust state instead of silently presenting empty data.
     profile = _controller.loadProfile();
     applications = _controller.loadApplications();
-  }
-
-  Future<void> _reloadApplications() async {
-    if (!mounted) return;
-    final requestId = ++_applicationsReloadRequestId;
-    if (_applicationBusyId == null) {
-      setState(() => _applicationsReloadError = null);
-    }
-    try {
-      final items = await _controller.loadApplications();
-      if (!mounted || requestId != _applicationsReloadRequestId) return;
-      setState(() {
-        applications = Future<List<HopeApplication>>.value(items);
-        _applicationsReloadError = null;
-      });
-    } catch (error) {
-      if (!mounted || requestId != _applicationsReloadRequestId) return;
-      setState(() {
-        _applicationsReloadError = apiErrorMessage(
-          error,
-          fallback: _t(
-            context,
-            'درخواست‌ها قابل دریافت نیستند.',
-            'Could not load applications.',
-          ),
-        );
-      });
-    }
   }
 
   @override
@@ -256,130 +225,48 @@ padding: const EdgeInsets.all(16),
               );
             },
           ),
-          const SizedBox(height: 14),
-          if (_applicationsReloadError != null) ...[
-            HopeAsyncState(
-              kind: HopeStateKind.error,
-              title: _t(
-                context,
-                'درخواست‌ها در دسترس نیستند',
-                'Applications unavailable',
-              ),
-              message: _applicationsReloadError!,
-              action: OutlinedButton.icon(
-                onPressed: _applicationBusyId != null ? null : _reloadApplications,
-                icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-                label: Text(_t(context, 'تلاش دوباره', 'Retry')),
-              ),
+          PremiumSectionHeader(
+            domain: HopeProductDomain.work,
+            title: _t(context, 'مرکز کار', 'Work center'),
+            subtitle: _t(
+              context,
+              'درخواست‌ها و جست‌وجوهای کاری در بخش اختصاصی خودشان.',
+              'Applications and saved work searches live in their dedicated area.',
             ),
-            const SizedBox(height: 12),
-          ],
-          FutureBuilder<List<HopeApplication>>(
-            future: applications,
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return HopeAsyncState(
-                  kind: HopeStateKind.error,
-                  title: _t(context, 'درخواست‌ها در دسترس نیستند', 'Applications unavailable'),
-                  message: _t(context, 'امکان دریافت وضعیت درخواست‌ها وجود ندارد.', 'Application status could not be loaded.'),
-                  action: OutlinedButton.icon(
-                    onPressed: _reloadApplications,
-                    icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-                    label: Text(_t(context, 'تلاش دوباره', 'Retry')),
-                  ),
-                );
-              }
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const PremiumPanel(
-                  glass: true,
-child: SizedBox(height: 96, child: Center(child: CircularProgressIndicator())),
-                );
-              }
-              final list = snapshot.data ?? const <HopeApplication>[];
-
-              if (list.isEmpty) {
-                return const SizedBox.shrink();
-              }
-
-              return PremiumPanel(
-                glass: true,
-padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      HopeCopy.of(context).copy_my_job_applications_90701f0,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 10),
-                    ...list.take(6).map<Widget>((a) {
-                      final status = a.status;
-
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: HopeIconTile(
-                          status == 'ACCEPTED'
-                              ? HopeV2Icons.completed
-                              : HopeV2Icons.job,
-                          filled: status == 'ACCEPTED',
-                        ),
-                        title: Text(
-                          a.jobTitle.isEmpty
-                              ? HopeCopy.of(context).copy_job_ce2feba
-                              : a.jobTitle,
-                        ),
-                        subtitle: Text(a.statusLabel),
-                        trailing: a.canWithdraw
-                            ? IconButton(
-                                onPressed: _applicationBusyId == a.id
-                                    ? null
-                                    : () async {
-                                        setState(() => _applicationBusyId = a.id);
-                                        try {
-                                          await _controller.withdrawApplication(a.id);
-                                          if (!mounted) return;
-                                          await _reloadApplications();
-                                        } catch (error) {
-                                          if (!mounted || !context.mounted) return;
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(apiErrorMessage(
-                                                error,
-                                                fallback: HopeCopy.of(context)
-                                                    .copy_operation_failed_eb38c4c,
-                                              )),
-                                            ),
-                                          );
-                                        } finally {
-                                          if (mounted) {
-                                            setState(() => _applicationBusyId = null);
-                                          }
-                                        }
-                                      },
-                                tooltip: HopeCopy.of(context).copy_cancel_9955c4b,
-                                icon: _applicationBusyId == a.id
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : const HopeIcon(HopeV2Icons.transferOut, size: 19),
-                              )
-                            : null,
-                      );
-                    }),
-                  ],
+          ),
+          const SizedBox(height: 10),
+          PremiumQuickActionStrip(
+            domain: HopeProductDomain.work,
+            title: _t(context, 'دسترسی‌های کاری', 'Work destinations'),
+            actions: [
+              PremiumQuickAction(
+                label: _t(context, 'درخواست‌های من', 'My applications'),
+                icon: HopeV2Icons.mission,
+                primary: true,
+                onPressed: () => Navigator.push(
+                  context,
+                  HopeRoutes.myApplications(),
                 ),
-              );
-            },
+              ),
+              PremiumQuickAction(
+                label: _t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches'),
+                icon: HopeV2Icons.savedSearches,
+                onPressed: () => Navigator.push(
+                  context,
+                  HopeRoutes.savedSearches(),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 14),
+          const SizedBox(height: 14),
           PremiumSectionHeader(
+            domain: HopeProductDomain.account,
             title: _t(context, 'مرکز کنترل حساب', 'Account control center'),
             subtitle: _t(
               context,
-              'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کنید.',
-              'Manage privacy, devices, and your work applications in one place.',
+              'حریم خصوصی، دستگاه‌ها و تنظیمات خود حساب را مدیریت کنید.',
+              'Manage privacy, devices, and account settings in one place.',
             ),
           ),
           const SizedBox(height: 10),
@@ -388,14 +275,6 @@ padding: const EdgeInsets.all(16),
 padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               children: [
-                ListTile(
-                  leading: const HopeIconTile(HopeV2Icons.mission, filled: true),
-                  title: Text(_t(context, 'درخواست‌های من', 'My applications')),
-                  subtitle: Text(_t(context, 'پیگیری مرحله‌به‌مرحله همه درخواست‌های شغلی', 'Track every job application through its workflow')),
-                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
-                  onTap: () => Navigator.push(context, HopeRoutes.myApplications()),
-                ),
-                const Divider(height: 1, indent: 72),
                 ListTile(
                   leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'دستگاه‌های اعلان', 'Notification devices')),
@@ -410,13 +289,6 @@ padding: const EdgeInsets.symmetric(vertical: 6),
                   subtitle: Text(_t(context, 'دریافت خروجی اطلاعات یا حذف حساب', 'Export your data or delete your account')),
                   trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.privacyCenter()),
-                ),
-                ListTile(
-                  leading: const HopeIconTile(HopeV2Icons.savedSearches, filled: true),
-                  title: Text(_t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches')),
-                  subtitle: Text(_t(context, 'ویرایش و مدیریت فیلترهای ذخیره‌شده', 'Edit and manage saved-search filters')),
-                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
-                  onTap: () => Navigator.push(context, HopeRoutes.savedSearches()),
                 ),
               ],
             ),
