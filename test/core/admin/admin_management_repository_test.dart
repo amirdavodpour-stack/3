@@ -106,6 +106,6 @@ void main() {
     expect(granted['role'], 'ADMIN');
 
     final revoked = await repository.revokeAdministrator('admin-2');
-    expect(true, isTrue);
+    // The fake server assertions above verify the DELETE contract.
   });
 }
