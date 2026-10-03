@@ -464,7 +464,11 @@ padding: const EdgeInsets.all(14),
               ),
             if (!auth.isGuest && _agentState != null)
               const SizedBox(height: HopeV2Spacing.lg),
-                        FutureBuilder<List<HopeJob>>(
+            if (!auth.isGuest) ...[
+              _activeWork(context),
+              const SizedBox(height: HopeV2Spacing.lg),
+            ],
+            FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -499,8 +503,6 @@ padding: const EdgeInsets.all(14),
             ),
             const SizedBox(height: HopeV2Spacing.lg),
             if (!auth.isGuest) ...[
-              _activeWork(context),
-              const SizedBox(height: HopeV2Spacing.lg),
               _financialSnapshot(context),
             ],
           ],
