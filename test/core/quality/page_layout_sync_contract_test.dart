@@ -57,7 +57,7 @@ void main() {
 
   test('responsive match breakdown becomes two-column before desktop width', () {
     final source = _read('lib/features/marketplace/job_detail_page.dart');
-    expect(source, contains('constraints.maxWidth >= 240'));
+    expect(source, contains('constraints.maxWidth >= 200'));
   });
 
   test('transaction detail keeps its canonical shell in the part file', () {
