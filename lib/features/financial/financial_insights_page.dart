@@ -46,6 +46,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 PremiumHeader(
+                  domain: HopeProductDomain.finance,
                   eyebrow: _t('مالی', 'FINANCE'),
                   title: _t('تحلیل مالی', 'Financial insights'),
                   subtitle: _t(
