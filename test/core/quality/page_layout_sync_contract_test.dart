@@ -18,11 +18,26 @@ void main() {
       'lib/features/financial/financial_insights_page.dart',
       'lib/features/jobs/job_satisfaction_page.dart',
       'lib/features/chat/chat_page.dart',
+      'lib/features/offers/offers_page.dart',
+      'lib/features/notifications/notifications_page.dart',
+      'lib/features/applications/my_applications_page.dart',
     ];
     for (final path in paths) {
       final source = _read(path);
       expect(source, contains('PremiumPageFrame'), reason: path);
       expect(source, contains('PremiumHeader'), reason: path);
+    }
+  });
+
+  test('secondary premium pages do not duplicate the page shell with AppBar', () {
+    const paths = <String>[
+      'lib/features/offers/offers_page.dart',
+      'lib/features/notifications/notifications_page.dart',
+      'lib/features/applications/my_applications_page.dart',
+    ];
+    for (final path in paths) {
+      final source = _read(path);
+      expect(source, isNot(contains('AppBar(')), reason: path);
     }
   });
 
