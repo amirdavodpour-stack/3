@@ -1495,13 +1495,13 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: 88,
-                        height: 88,
+                        width: 76,
+                        height: 76,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
                             SizedBox.square(
-                              dimension: 88,
+                              dimension: 76,
                               child: CircularProgressIndicator(
                                 value: 1,
                                 strokeWidth: 7,
@@ -1523,7 +1523,7 @@ class _MatchIntelligence extends StatelessWidget {
                                 Text(
                                   '${score.clamp(0, 100).toStringAsFixed(0)}%',
                                   style: const TextStyle(
-                                    fontSize: 20,
+                                    fontSize: 18,
                                     height: 1,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -1546,7 +1546,7 @@ class _MatchIntelligence extends StatelessWidget {
                           ],
                         ),
                       ),
-                    if (score != null) const SizedBox(width: 13),
+                    if (score != null) const SizedBox(width: 11),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1612,7 +1612,7 @@ class _MatchIntelligence extends StatelessWidget {
                   ],
                 ),
                 if (job.recommendationReasons.isNotEmpty) ...[
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 9),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
