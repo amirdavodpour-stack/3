@@ -1058,6 +1058,7 @@ padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               ),
             const SizedBox(height: 18),
             PremiumSectionHeader(
+              domain: HopeProductDomain.finance,
               title: _t('برداشت‌ها', 'Withdrawals'),
               subtitle: _t(
                 'وضعیت درخواست‌های برداشت داخلی.',
