@@ -148,6 +148,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  // Premium reference batch: editorial identity + capability-led first viewport.
   Widget _homeHero(
     BuildContext context, {
     required AuthController auth,
