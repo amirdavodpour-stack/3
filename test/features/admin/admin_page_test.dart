@@ -14,12 +14,13 @@ import 'package:provider/provider.dart';
 /// in-memory AdminRepository fake, so tests are order-independent and touch
 /// no real network or shared global state.
 class _FakeAdmin implements AdminRepository {
-  _FakeAdmin({this.failJobs = false});
+  _FakeAdmin({this.failJobs = false, this.primaryAdmin = false});
 
   /// Only [listJobs] can fail (it powers the initially-active tab, whose
   /// FutureBuilder observes the error future from the very first frame, so
   /// no unobserved async error can be raised).
   bool failJobs = false;
+  final bool primaryAdmin;
 
   /// When true the next state-mutating action throws (error-path coverage).
   bool failNextAction = false;
@@ -99,6 +100,37 @@ class _FakeAdmin implements AdminRepository {
     calls.add('status:$id:$status');
     if (failNextAction) throw Exception('action boom');
   }
+
+  @override
+  Future<Map<String, dynamic>> grantAdminByEmail(String email) async {
+    calls.add('grant:$email');
+    return {
+      'id': 'u-new',
+      'email': email,
+      'displayName': 'New Admin',
+      'role': 'ADMIN',
+    };
+  }
+
+  @override
+  Future<void> revokeAdministrator(String id) async {
+    calls.add('revoke-admin:$id');
+  }
+
+  @override
+  Future<void> revokeUserSessions(String id) async {
+    calls.add('revoke-sessions:$id');
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPanelAccess() async => {
+        'verified': true,
+        'primaryAdmin': primaryAdmin,
+        'userId': primaryAdmin ? 'owner-1' : 'admin-1',
+        'permissions': [
+          if (primaryAdmin) 'admin.manage_admins',
+        ],
+      };
 
   @override
   Future<void> deleteJob(String id) async {
@@ -184,6 +216,55 @@ Future<void> _openTab(WidgetTester tester, String label) async {
       find.descendant(of: find.byType(TabBar), matching: find.text(label)));
   await tester.pumpAndSettle();
 }
+
+
+  testWidgets('only the primary administrator sees administrator-management controls',
+      (tester) async {
+    final repo = _FakeAdmin(primaryAdmin: true)
+      ..users = [
+        const HopeAdminUser(
+          id: 'owner-1',
+          displayName: 'Owner',
+          email: 'amir.davodpour@gmail.com',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          primaryAdmin: true,
+        ),
+        const HopeAdminUser(
+          id: 'admin-1',
+          displayName: 'Ops',
+          email: 'ops@example.com',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+        ),
+      ];
+
+    await _pump(tester, repo);
+
+    expect(find.text('Administrator management'), findsOneWidget);
+    expect(find.text('Add new administrator'), findsOneWidget);
+    expect(find.text('Owner'), findsOneWidget);
+    expect(find.text('Ops'), findsOneWidget);
+  });
+
+  testWidgets('operational administrators do not see administrator-management controls',
+      (tester) async {
+    final repo = _FakeAdmin(primaryAdmin: false)
+      ..users = [
+        const HopeAdminUser(
+          id: 'admin-1',
+          displayName: 'Ops',
+          email: 'ops@example.com',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+        ),
+      ];
+
+    await _pump(tester, repo);
+
+    expect(find.text('Administrator management'), findsNothing);
+    expect(find.text('Add new administrator'), findsNothing);
+  });
 
 void main() {
   testWidgets('admin presentation localizes backend enum fields', (tester) async {
