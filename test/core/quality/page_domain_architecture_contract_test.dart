@@ -256,6 +256,14 @@ void main() {
     expect(source.allMatches("HopeRoutes.financialInsights()").length, 1);
   });
 
+  test('explore uses the shared discovery header', () {
+    final source = _read('lib/features/jobs/jobs_filter_bar.part.dart');
+    expect(source, contains('PremiumHeader('));
+    expect(source, contains('page: HopePageId.explore'));
+    expect(source, contains('domain: HopeProductDomain.discovery'));
+    expect(source, contains('PremiumSearchBar'));
+  });
+
   test('wallet has an explicit finance page header', () {
     final source = _read('lib/features/wallet/wallet_page.dart');
     expect(source, contains('PremiumHeader('));
