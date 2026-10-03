@@ -18,9 +18,9 @@ void main() {
           home: SizedBox(
             width: 360,
             height: 640,
-            child: PremiumAppCanvas(
-              child: RepaintBoundary(
-                key: boundaryKey,
+            child: RepaintBoundary(
+              key: boundaryKey,
+              child: PremiumAppCanvas(
                 child: const Center(
                   child: SizedBox(
                     width: 120,
