@@ -145,7 +145,7 @@ void main() {
   test('work center quick access appears before project stream and only once', () {
     final source = _read('lib/features/transactions/transactions_page.dart');
     final quick = '_activityNavigation(context)'.allMatches(source).length;
-    final projects = source.indexOf("HopeCopy.of(context).copy_latest_activity_a05277b");
+    final projects = source.indexOf("title: _t('جریان همکاری‌ها', 'Work stream')");
     expect(quick, 2);
     expect(projects, greaterThan(quick));
   });
