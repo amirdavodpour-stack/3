@@ -28,6 +28,7 @@ import '../../features/jobs/jobs_page.dart';
 import '../../features/transactions/transaction_page.dart';
 import '../../features/wallet/wallet_page.dart';
 import '../transactions/transaction_repository.dart';
+import '../admin/admin_access_guard.dart';
 import '../transactions/wallet_repository.dart';
 import '../uploads/upload_queue.dart';
 
@@ -56,16 +57,16 @@ abstract final class HopeRoutes {
   static Route<void> savedSearches() => _page(const SavedSearchesPage());
   static Route<void> jobs() => _page(const JobsPage());
   static Route<void> offers({String? jobId}) => _page(OffersPage(jobId: jobId));
-  static Route<void> adminAccess() => _page(const AdminAccessPage());
-  static Route<void> admin() => _page(const AdminPage());
-  static Route<void> adminDisputes() => _page(const AdminDisputesPage());
-  static Route<void> adminOperations() => _page(const AdminOperationsPage());
+  static Route<void> adminAccess() => _adminPage(const AdminAccessPage());
+  static Route<void> admin() => _adminPage(const AdminPage());
+  static Route<void> adminDisputes() => _adminPage(const AdminDisputesPage());
+  static Route<void> adminOperations() => _adminPage(const AdminOperationsPage());
   static Route<void> about() => _page(const AboutHopePage());
   static Route<bool?> recommendationOnboarding() => _page(const RecommendationOnboardingPage());
   static Route<void> financialInsights() => _page(const FinancialInsightsPage());
   static Route<void> jobSatisfaction(String jobId) => _page(JobSatisfactionPage(jobId: jobId));
   static Route<void> jobChat(String jobId) => _page(ChatPage(jobId: jobId));
-  static Route<void> adminChat() => _page(const ChatPage(adminRoom: true));
+  static Route<void> adminChat() => _adminPage(const ChatPage(adminRoom: true));
   static Route<WalletPage> wallet({required WalletRepository repository}) =>
       _page(WalletPage(repository: repository));
   static Route<void> createJob() => _page(const CreateJobPage());
@@ -83,6 +84,8 @@ abstract final class HopeRoutes {
         uploadQueue: uploadQueue,
         jobId: jobId,
       ));
+
+  static Route<void> _adminPage(Widget page) => _page(AdminOnly(child: page));
 
   static Route<T> _page<T>(Widget page) => MaterialPageRoute<T>(
         builder: (_) => page,
