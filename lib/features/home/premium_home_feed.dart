@@ -148,7 +148,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  // Premium reference batch: four-signal pulse on compact phones.
+  // Premium reference batch: four-signal compact pulse + concise brand header.
   Widget _homeHero(
     BuildContext context, {
     required AuthController auth,
