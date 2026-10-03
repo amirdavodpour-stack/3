@@ -585,26 +585,11 @@ class _EvidenceHost extends StatelessWidget {
   }
 }
 
-final _captureRoute =
-    WidgetsBinding.instance.platformDispatcher.defaultRouteName;
-final _routeSegments =
-    Uri.tryParse(_captureRoute)?.pathSegments ?? const <String>[];
-final _captureModeFromDefine =
-    String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: '');
-final _captureMode =
-    _captureModeFromDefine.isNotEmpty
-        ? _captureModeFromDefine
-        : (_routeSegments.isEmpty ? 'baseline' : _routeSegments.last);
-final _responsiveOnly =
-    _captureMode == 'responsive-a' || _captureMode == 'responsive-b';
-final _captureLocale =
-    _routeSegments.length >= 2 ? _routeSegments[_routeSegments.length - 2] : '';
-final _captureHomeOnly = false;
-final _responsiveBatch = switch (_captureMode) {
-  'responsive-a' => '1',
-  'responsive-b' => '2',
-  _ => 'all',
-};
+late final String _captureMode;
+late final bool _responsiveOnly;
+late final String _captureLocale;
+late final bool _captureHomeOnly;
+late final String _responsiveBatch;
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -826,7 +811,28 @@ Future<void> _captureResponsiveLocale(
   }
 }
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final captureRoute = binding.platformDispatcher.defaultRouteName;
+  final routeSegments =
+      Uri.tryParse(captureRoute)?.pathSegments ?? const <String>[];
+  final captureModeFromDefine =
+      String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: '');
+  _captureMode = captureModeFromDefine.isNotEmpty
+      ? captureModeFromDefine
+      : (routeSegments.isEmpty ? 'baseline' : routeSegments.last);
+  _responsiveOnly =
+      _captureMode == 'responsive-a' || _captureMode == 'responsive-b';
+  _captureLocale =
+      routeSegments.length >= 2 ? routeSegments[routeSegments.length - 2] : '';
+  _captureHomeOnly = const bool.fromEnvironment(
+    'HOPE_CAPTURE_HOME_ONLY',
+    defaultValue: false,
+  );
+  _responsiveBatch = switch (_captureMode) {
+    'responsive-a' => '1',
+    'responsive-b' => '2',
+    _ => 'all',
+  };
   if (_captureLocale != 'fa' && _captureLocale != 'en') {
     throw StateError(
       'HOPE_CAPTURE_LOCALE must be supplied as fa or en for exact-locale runtime evidence.',
