@@ -118,9 +118,9 @@ class OpportunityCard extends StatelessWidget {
                 ? [
                     if (featured)
                       BoxShadow(
-                        color: primary.withValues(alpha: .13),
-                        blurRadius: 28,
-                        offset: const Offset(0, 14),
+                        color: primary.withValues(alpha: .045),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
                       ),
                   ]
                 : HopeV2Shadows.card,
@@ -288,8 +288,8 @@ class OpportunityCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: HopeV2Colors.secondary.withValues(alpha: .12),
-                  width: 1.2,
+                  color: HopeV2Colors.primary.withValues(alpha: .06),
+                  width: 1.0,
                 ),
               ),
             ),
