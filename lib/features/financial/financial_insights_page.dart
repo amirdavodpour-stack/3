@@ -38,70 +38,117 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(_t('تحلیل مالی', 'Financial insights'))),
-        body: FutureBuilder<HopeFinancialInsights>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return HopeAsyncState(
-                kind: HopeStateKind.loading,
-                title: _t('در حال تحلیل کیف پول', 'Analyzing wallet'),
-                message: _t(
-                  'روند موجودی و جریان‌های مالی شما در حال محاسبه است.',
-                  'Your balance and cash-flow trends are being calculated.',
+        body: SafeArea(
+          child: PremiumPageFrame(
+            maxWidth: 1100,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 72),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PremiumHeader(
+                  eyebrow: _t('مالی', 'FINANCE'),
+                  title: _t('تحلیل مالی', 'Financial insights'),
+                  subtitle: _t(
+                    'تصویر مالی شما بر پایه لجر داخلی تومان و فعالیت‌های ثبت‌شده در HOPE.',
+                    'A ledger-based view of your balance and recorded financial activity in HOPE.',
+                  ),
+                  trailing: const HopeIconTile(
+                    HopeV2Icons.insights,
+                    size: 52,
+                    filled: true,
+                  ),
                 ),
-              );
-            }
-            if (snapshot.hasError || snapshot.data == null) {
-              return Center(
-                child: OutlinedButton.icon(
-                  onPressed: () => setState(() => _future = _load()),
-                  icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-                  label: Text(_t('تلاش دوباره', 'Try again')),
+                const SizedBox(height: HopeV2Spacing.lg),
+                Expanded(
+                  child: FutureBuilder<HopeFinancialInsights>(
+                    future: _future,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return HopeAsyncState(
+                          kind: HopeStateKind.loading,
+                          title: _t('در حال تحلیل کیف پول', 'Analyzing wallet'),
+                          message: _t(
+                            'روند موجودی و جریان‌های مالی شما در حال محاسبه است.',
+                            'Your balance and cash-flow trends are being calculated.',
+                          ),
+                        );
+                      }
+                      if (snapshot.hasError || snapshot.data == null) {
+                        return HopeAsyncState(
+                          kind: HopeStateKind.error,
+                          title: _t(
+                            'تحلیل مالی در دسترس نیست',
+                            'Financial insights unavailable',
+                          ),
+                          message: _t(
+                            'داده‌های مالی فعلاً قابل دریافت نیستند.',
+                            'Financial data is temporarily unavailable.',
+                          ),
+                          action: OutlinedButton.icon(
+                            onPressed: () => setState(() => _future = _load()),
+                            icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
+                            label: Text(_t('تلاش دوباره', 'Try again')),
+                          ),
+                        );
+                      }
+                      final data = snapshot.data!;
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          setState(() => _future = _load());
+                          await _future;
+                        },
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          children: [
+                            _SummaryCard(data: data, money: _money, t: _t),
+                            const SizedBox(height: HopeV2Spacing.section),
+                            PremiumSectionHeader(
+                              title: _t('روندهای مالی', 'Financial trends'),
+                              subtitle: _t(
+                                'جریان نقدی، موجودی و منابع فعالیت را در یک نمای واحد ببینید.',
+                                'Review cash flow, balance, and activity sources in one view.',
+                              ),
+                            ),
+                            const SizedBox(height: HopeV2Spacing.md),
+                            _ChartCard(
+                              title: _t('جریان نقدی ماهانه', 'Monthly cash flow'),
+                              subtitle: _t(
+                                'ورودی، خروجی و مبلغ رزروشده',
+                                'Inflow, outflow and reserved funds',
+                              ),
+                              child: _BarChart(data: data.monthlyCashFlow),
+                            ),
+                            const SizedBox(height: HopeV2Spacing.md),
+                            _ChartCard(
+                              title: _t('روند موجودی', 'Balance trend'),
+                              subtitle: _t(
+                                'آخرین موجودی ثبت‌شده در لجر',
+                                'Recorded closing balance from the ledger',
+                              ),
+                              child: _LineChart(points: data.balanceTrend),
+                            ),
+                            const SizedBox(height: HopeV2Spacing.md),
+                            _ChartCard(
+                              title: _t(
+                                'منابع فعالیت مالی',
+                                'Financial activity sources',
+                              ),
+                              subtitle: _t(
+                                'بر اساس نوع مرجع تراکنش',
+                                'Grouped by transaction reference',
+                              ),
+                              child: _SourceChart(data: data.bySource, t: _t),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              );
-            }
-            final data = snapshot.data!;
-            return RefreshIndicator(
-              onRefresh: () async => setState(() => _future = _load()),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 64),
-                children: [
-                  _SummaryCard(data: data, money: _money, t: _t),
-                  const SizedBox(height: 14),
-                  _ChartCard(
-                    title: _t('جریان نقدی ماهانه', 'Monthly cash flow'),
-                    subtitle: _t(
-                      'ورودی، خروجی و مبلغ رزروشده',
-                      'Inflow, outflow and reserved funds',
-                    ),
-                    child: _BarChart(data: data.monthlyCashFlow),
-                  ),
-                  const SizedBox(height: 14),
-                  _ChartCard(
-                    title: _t('روند موجودی', 'Balance trend'),
-                    subtitle: _t(
-                      'آخرین موجودی ثبت‌شده در لجر',
-                      'Recorded closing balance from the ledger',
-                    ),
-                    child: _LineChart(points: data.balanceTrend),
-                  ),
-                  const SizedBox(height: 14),
-                  _ChartCard(
-                    title: _t(
-                      'منابع فعالیت مالی',
-                      'Financial activity sources',
-                    ),
-                    subtitle: _t(
-                      'بر اساس نوع مرجع تراکنش',
-                      'Grouped by transaction reference',
-                    ),
-                    child: _SourceChart(data: data.bySource, t: _t),
-                  ),
-                ],
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         ),
       );
 }
