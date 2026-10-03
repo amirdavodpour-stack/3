@@ -298,9 +298,18 @@ extension on _TransactionPageState {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        PremiumSectionHeader(
+          domain: HopeProductDomain.finance,
+          title: _t('اقدام بعدی', 'Next action'),
+          subtitle: _t(
+            'فقط اقدام مجاز در وضعیت فعلی را در این بخش دنبال کنید.',
+            'Follow the allowed action for the current financial state.',
+          ),
+        ),
+        const SizedBox(height: 8),
         for (var i = 0; i < actions.length; i++) ...[
           actions[i],
-          if (i != actions.length - 1) const SizedBox(height: 9),
+          if (i != actions.length - 1) const SizedBox(height: 8),
         ],
       ],
     );
