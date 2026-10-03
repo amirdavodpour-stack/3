@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/notifications/notification.dart';
 import 'package:hope_mobile/core/notifications/notification_repository.dart';
+import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/features/notifications/notifications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +13,7 @@ import 'package:provider/provider.dart';
 class _Repo implements NotificationRepository {
   int readAllCalls = 0;
   int markReadCalls = 0;
+  bool failList = false;
   List<HopeNotification> items = [
     const HopeNotification(
       id: 'n1',
@@ -24,10 +26,16 @@ class _Repo implements NotificationRepository {
   ];
 
   @override
-  Future<HopeNotificationPage> listNotifications(
-          {int limit = 50, int offset = 0}) async =>
-      HopeNotificationPage(
-          items: items, unreadCount: items.where((e) => e.isUnread).length);
+  Future<HopeNotificationPage> listNotifications({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    if (failList) throw StateError('list failed');
+    return HopeNotificationPage(
+      items: items,
+      unreadCount: items.where((e) => e.isUnread).length,
+    );
+  }
 
   @override
   Future<HopeNotification> markRead(String id) async {
@@ -38,12 +46,13 @@ class _Repo implements NotificationRepository {
         for (var i = 0; i < items.length; i++)
           if (i == index)
             HopeNotification(
-                id: items[i].id,
-                type: items[i].type,
-                title: items[i].title,
-                body: items[i].body,
-                createdAt: items[i].createdAt,
-                readAt: 'now')
+              id: items[i].id,
+              type: items[i].type,
+              title: items[i].title,
+              body: items[i].body,
+              createdAt: items[i].createdAt,
+              readAt: 'now',
+            )
           else
             items[i],
       ];
@@ -52,10 +61,22 @@ class _Repo implements NotificationRepository {
   }
 
   @override
-  Future<HopeNotificationPreferences> getPreferences() async => const HopeNotificationPreferences(inApp: true, push: true, email: true, jobAlerts: true, applicationUpdates: true, paymentUpdates: true, marketing: false);
+  Future<HopeNotificationPreferences> getPreferences() async =>
+      const HopeNotificationPreferences(
+        inApp: true,
+        push: true,
+        email: true,
+        jobAlerts: true,
+        applicationUpdates: true,
+        paymentUpdates: true,
+        marketing: false,
+      );
 
   @override
-  Future<HopeNotificationPreferences> updatePreferences(Map<String, bool> patch) async => getPreferences();
+  Future<HopeNotificationPreferences> updatePreferences(
+    Map<String, bool> patch,
+  ) async =>
+      getPreferences();
 
   @override
   Future<int> markAllRead() async {
@@ -63,21 +84,34 @@ class _Repo implements NotificationRepository {
     items = [
       for (final item in items)
         HopeNotification(
-            id: item.id,
-            type: item.type,
-            title: item.title,
-            body: item.body,
-            createdAt: item.createdAt,
-            readAt: 'now')
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          body: item.body,
+          createdAt: item.createdAt,
+          readAt: 'now',
+        ),
     ];
     return items.length;
   }
+
   @override
   Future<List<HopeNotificationDevice>> listDevices() async => const [];
 
   @override
   Future<void> disableDevice(String id) async {}
+}
 
+class _PendingNotificationRepository extends _Repo {
+  final Completer<HopeNotificationPage> initialLoad =
+      Completer<HopeNotificationPage>();
+
+  @override
+  Future<HopeNotificationPage> listNotifications({
+    int limit = 50,
+    int offset = 0,
+  }) =>
+      initialLoad.future;
 }
 
 class _SequencedNotificationRepository extends _Repo {
@@ -131,7 +165,48 @@ Widget _app(_Repo repo) => MaterialApp(
     );
 
 void main() {
-testWidgets('latest notification refresh wins over an older in-flight load',
+  testWidgets(
+    'notifications loading uses the canonical async state inside the page shell',
+    (tester) async {
+      final repo = _PendingNotificationRepository();
+      await tester.pumpWidget(_app(repo));
+      await tester.pump();
+
+      expect(find.byType(HopeAsyncState), findsOneWidget);
+      expect(find.text('در حال بارگذاری اعلان‌ها'), findsOneWidget);
+
+      repo.initialLoad.complete(
+        const HopeNotificationPage(
+          items: [],
+          unreadCount: 0,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('اعلانی وجود ندارد'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'notifications error uses the canonical async state and retry recovers',
+    (tester) async {
+      final repo = _Repo()..failList = true;
+      await tester.pumpWidget(_app(repo));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(HopeAsyncState), findsOneWidget);
+      expect(find.text('اعلان‌ها در دسترس نیستند'), findsOneWidget);
+
+      repo.failList = false;
+      await tester.tap(find.text('تلاش دوباره'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('اعلان‌ها در دسترس نیستند'), findsNothing);
+      expect(find.text('عنوان اعلان'), findsOneWidget);
+    },
+  );
+
+  testWidgets('latest notification refresh wins over an older in-flight load',
       (tester) async {
     final repo = _SequencedNotificationRepository();
     await tester.pumpWidget(_app(repo));
