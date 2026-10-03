@@ -345,7 +345,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ),
               )
             else
-              ...visible.map(_applicationCard),
+              ..._applicationSections(context, visible),
             ],
           ),
         ),
