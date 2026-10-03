@@ -64,71 +64,56 @@ class _JobsFilterHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: HopeV2Spacing.md),
-        PremiumPanel(
-          padding: const EdgeInsets.all(HopeV2Spacing.sm),
-          highlight: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 560;
-              final search = PremiumSearchBar(
-                onChanged: onQueryChanged,
-                hint: copy.copy_title_city_or_skill_bccb024,
-              );
-              final actions = Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton.filledTonal(
-                    onPressed: onSaveSearch,
-                    tooltip: copy.copy_save_search,
-                    icon: onSaveSearch == null
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const HugeIcon(
-                            icon: HopeV2Icons.add,
-                            size: 19,
-                          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 560;
+            final search = PremiumSearchBar(
+              onChanged: onQueryChanged,
+              hint: copy.copy_title_city_or_skill_bccb024,
+            );
+            final actions = Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PremiumIconButton(
+                  icon: HopeV2Icons.add,
+                  tooltip: copy.copy_save_search,
+                  onPressed: onSaveSearch,
+                ),
+                if (savedSearchCount > 0) ...[
+                  const SizedBox(width: HopeV2Spacing.xs),
+                  PremiumIconButton(
+                    icon: HopeV2Icons.savedSearches,
+                    tooltip: copy.copy_saved_searches,
+                    onPressed: onOpenSavedSearches,
                   ),
-                  if (savedSearchCount > 0)
-                    IconButton.filledTonal(
-                      onPressed: onOpenSavedSearches,
-                      tooltip: copy.copy_saved_searches,
-                      icon: const HugeIcon(
-                        icon: HopeV2Icons.savedSearches,
-                        size: 19,
-                      ),
-                    ),
                 ],
-              );
+              ],
+            );
 
-              if (compact) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    search,
-                    const SizedBox(height: HopeV2Spacing.sm),
-                    Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: actions,
-                    ),
-                  ],
-                );
-              }
-
-              return Row(
+            if (compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(child: search),
-                  const SizedBox(width: HopeV2Spacing.sm),
-                  actions,
+                  search,
+                  const SizedBox(height: HopeV2Spacing.sm),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: actions,
+                  ),
                 ],
               );
-            },
-          ),
+            }
+
+            return Row(
+              children: [
+                Expanded(child: search),
+                const SizedBox(width: HopeV2Spacing.sm),
+                actions,
+              ],
+            );
+          },
         ),
-        const SizedBox(height: HopeV2Spacing.md),
-        Padding(
+
           padding: const EdgeInsets.only(top: 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
