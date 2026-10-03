@@ -866,10 +866,10 @@ class PremiumHero extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          HopeV2Colors.secondary.withValues(
+                          HopeV2Colors.primary.withValues(
                             alpha: Theme.of(context).brightness == Brightness.dark
-                                ? .13
-                                : .10,
+                                ? .09
+                                : .07,
                           ),
                           Colors.transparent,
                         ],
