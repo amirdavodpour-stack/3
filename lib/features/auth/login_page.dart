@@ -148,7 +148,9 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 14),
               AnimatedEntrance(
                 child: PremiumPanel(
-                  glass: true,
+                  // Auth is a dense primary surface; avoid a nested GPU blur
+                  // here so the first Android frame remains deterministic.
+                  glass: false,
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
