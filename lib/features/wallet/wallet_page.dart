@@ -651,8 +651,26 @@ padding: const EdgeInsets.all(14),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
-          gradient: HopeV2Gradients.heroDark,
-          boxShadow: HopeV2Shadows.heroDark,
+          gradient: const LinearGradient(
+            begin: AlignmentDirectional.topStart,
+            end: AlignmentDirectional.bottomEnd,
+            colors: [
+              Color(0xFF15182D),
+              Color(0xFF25215F),
+              Color(0xFF0F1421),
+            ],
+            stops: [0, .58, 1],
+          ),
+          border: Border.all(
+            color: HopeV2Colors.primary.withValues(alpha: .24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: HopeV2Colors.primary.withValues(alpha: .09),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
