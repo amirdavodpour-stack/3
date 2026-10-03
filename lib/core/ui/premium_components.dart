@@ -346,6 +346,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
     this.subtitle,
     this.domain,
     this.page,
+    this.glass = true,
   });
 
   final String title;
@@ -353,6 +354,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
   final List<PremiumQuickAction> actions;
   final HopeProductDomain? domain;
   final HopePageId? page;
+  final bool glass;
 
   @override
   Widget build(BuildContext context) {
@@ -362,7 +364,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
     final accent = resolvedDomain?.spec.accent ??
         Theme.of(context).colorScheme.primary;
     return PremiumPanel(
-      glass: true,
+      glass: glass,
       padding: const EdgeInsets.all(HopeV2Spacing.md),
       semanticLabel: title,
       child: Column(
