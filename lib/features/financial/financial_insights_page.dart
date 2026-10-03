@@ -54,10 +54,23 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                     'تصویر مالی شما بر پایه لجر داخلی تومان و فعالیت‌های ثبت‌شده در HOPE.',
                     'A ledger-based view of your balance and recorded financial activity in HOPE.',
                   ),
-                  trailing: const HopeIconTile(
-                    HopeV2Icons.insights,
-                    size: 52,
-                    filled: true,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PremiumIconButton(
+                        icon: Localizations.localeOf(context).languageCode == 'en'
+                            ? HopeV2Icons.arrowLeft
+                            : HopeV2Icons.arrowRight,
+                        tooltip: _t('بازگشت', 'Back'),
+                        onPressed: () => Navigator.maybePop(context),
+                      ),
+                      const SizedBox(width: 8),
+                      PremiumIconButton(
+                        icon: HopeV2Icons.refresh,
+                        tooltip: _t('بازخوانی', 'Refresh'),
+                        onPressed: () => setState(() => _future = _load()),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: HopeV2Spacing.lg),
