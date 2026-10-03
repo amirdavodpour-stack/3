@@ -18,6 +18,7 @@ on:
 
   # Current-head visual validation bridge: 2026-10-03 UI architecture batch.
 # [runtime-capture-fa] one-shot capture requested from GitHub connector.
+# [runtime-capture-fa] fresh current-head capture requested after clearing prior run.
 
   push:
     branches:
@@ -107,7 +108,9 @@ jobs:
           test -r /dev/kvm
           test -w /dev/kvm
 
-      # Use the maintained ReactiveCircus runner; current known-good device contract remains Android 35/default/Pixel 2.\n      # Current failures on Android 34/google_apis/Pixel 5 reached launcher ANR + screencap hang; isolate the image/profile first.\n      # Runtime evidence is tied to this exact feature-branch SHA; lib/assets changes trigger it.
+      # Use the maintained ReactiveCircus runner; current known-good device contract remains Android 35/default/Pixel 2.
+      # Current failures on Android 34/google_apis/Pixel 5 reached launcher ANR + screencap hang; isolate the image/profile first.
+      # Runtime evidence is tied to this exact feature-branch SHA; lib/assets changes trigger it.
       - name: Android runtime evidence
         uses: ReactiveCircus/android-emulator-runner@v2.38.0
         env:
