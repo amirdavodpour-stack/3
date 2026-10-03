@@ -19,18 +19,21 @@ class HopeAdminUser {
       required this.displayName,
       required this.email,
       required this.role,
-      required this.status});
+      required this.status,
+      this.primaryAdmin = false});
   final String id;
   final String displayName;
   final String email;
   final String role;
   final String status;
+  final bool primaryAdmin;
   factory HopeAdminUser.fromMap(Map<String, dynamic> map) => HopeAdminUser(
         id: '${map['id'] ?? ''}',
         displayName: '${map['displayName'] ?? ''}',
         email: '${map['email'] ?? ''}',
         role: '${map['role'] ?? 'USER'}',
         status: '${map['status'] ?? 'ACTIVE'}',
+        primaryAdmin: map['primaryAdmin'] == true,
       );
 }
 
