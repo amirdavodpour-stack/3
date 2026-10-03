@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/chat/chat_repository.dart';
 import '../../core/network/api_error_presenter.dart';
+import '../../core/theme/hope_v2_design.dart';
+import '../../core/ui/hope_async_state.dart';
+import '../../core/ui/premium_components.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key, this.repository, this.jobId, this.adminRoom = false});
@@ -56,28 +59,202 @@ class _ChatPageState extends State<ChatPage> {
 
   String _t(String fa,String en)=>Localizations.localeOf(context).languageCode=='en'?en:fa;
 
-  @override Widget build(BuildContext context){
-    final c=_thread?.conversation;
-    final title=widget.adminRoom?_t('گفتگوی مدیران','Admin room'):c?.otherUserName.isNotEmpty==true?c!.otherUserName:_t('گفتگوی این کار','Job chat');
-    return Scaffold(
-      appBar:AppBar(title:Text(title)),
-      body:SafeArea(child:Column(children:[
-        if(_error!=null) Padding(padding:const EdgeInsets.all(12),child:Text(_error!,style:TextStyle(color:Theme.of(context).colorScheme.error))),
-        Expanded(child:_thread==null
-          ? const Center(child:CircularProgressIndicator())
-          : _thread!.messages.isEmpty
-            ? Center(child:Text(_t('هنوز پیامی ثبت نشده است.','No messages yet.')))
-            : ListView.builder(controller:_scroll,padding:const EdgeInsets.all(16),itemCount:_thread!.messages.length,itemBuilder:(context,i){
-                final m=_thread!.messages[i];
-                return Align(alignment:AlignmentDirectional.centerStart,child:Card(child:Padding(padding:const EdgeInsets.symmetric(horizontal:14,vertical:11),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m.senderName,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:4),Text(m.body)]))));
-              })),
-        if(c?.status.toUpperCase()=='OPEN') Padding(padding:const EdgeInsets.fromLTRB(12,8,12,14),child:Row(children:[
-          Expanded(child:TextField(controller:_controller,maxLines:4,minLines:1,enabled:!_busy,onSubmitted:(_)=>_send(),decoration:InputDecoration(hintText:_t('پیام خود را بنویسید','Write a message'),border:const OutlineInputBorder()))),
-          const SizedBox(width:8),
-          IconButton.filled(onPressed:_busy?null:_send,tooltip:_t('ارسال','Send'),icon:const Icon(Icons.send_rounded))
-        ]))
-        else if(c!=null) Padding(padding:const EdgeInsets.all(16),child:Text(_t('این گفتگو با پایان کار و تسویه بسته شده است.','This conversation is closed because the job has ended and settled.')))
-      ])),
+  @override
+  Widget build(BuildContext context) {
+    final c = _thread?.conversation;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final title = widget.adminRoom
+        ? _t('گفتگوی مدیران', 'Admin room')
+        : c?.otherUserName.isNotEmpty == true
+            ? c!.otherUserName
+            : _t('گفتگوی این کار', 'Job chat');
+
+    return Directionality(
+      textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
+      child: Scaffold(
+        body: SafeArea(
+          child: PremiumPageFrame(
+            maxWidth: 920,
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              children: [
+                PremiumHeader(
+                  eyebrow: widget.adminRoom
+                      ? _t('مدیریت', 'ADMIN')
+                      : _t('همکاری', 'WORK'),
+                  title: title,
+                  subtitle: widget.adminRoom
+                      ? _t(
+                          'گفتگوی داخلی مدیران؛ فقط اعضای مجاز این اتاق آن را می‌بینند.',
+                          'Internal admin conversation visible only to authorized members of this room.',
+                        )
+                      : _t(
+                          'گفتگوی این همکاری تا پایان کار و تسویه در دسترس است.',
+                          'This collaboration chat stays available through completion and settlement.',
+                        ),
+                  trailing: PremiumIconButton(
+                    icon: HopeV2Icons.close,
+                    tooltip: isEn ? 'Close' : 'بستن',
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                ),
+                const SizedBox(height: HopeV2Spacing.md),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm),
+                    child: HopeAsyncState(
+                      kind: HopeStateKind.error,
+                      title: _t('گفتگو در دسترس نیست', 'Conversation unavailable'),
+                      message: _error!,
+                      action: FilledButton.icon(
+                        onPressed: _busy ? null : _load,
+                        icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
+                        label: Text(_t('تلاش دوباره', 'Retry')),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: _thread == null
+                      ? const HopeAsyncState(
+                          kind: HopeStateKind.loading,
+                          title: '...',
+                          message: '...',
+                        )
+                      : _thread!.messages.isEmpty
+                          ? PremiumPanel(
+                              glass: true,
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(28),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const HopeIcon(
+                                        HopeV2Icons.message,
+                                        size: 38,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _t(
+                                          'هنوز پیامی ثبت نشده است.',
+                                          'No messages yet.',
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                          : PremiumPanel(
+                              glass: true,
+                              padding: const EdgeInsets.all(HopeV2Spacing.md),
+                              child: ListView.builder(
+                                controller: _scroll,
+                                padding: const EdgeInsets.fromLTRB(
+                                  HopeV2Spacing.sm,
+                                  HopeV2Spacing.xs,
+                                  HopeV2Spacing.sm,
+                                  HopeV2Spacing.md,
+                                ),
+                                itemCount: _thread!.messages.length,
+                                itemBuilder: (context, i) {
+                                  final m = _thread!.messages[i];
+                                  final mine = m.senderId == _thread!.conversation.id;
+                                  return Align(
+                                    alignment: AlignmentDirectional.centerStart,
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 680,
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(bottom: 10),
+                                        child: PremiumPanel(
+                                          highlight: mine,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 11,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                m.senderName,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(m.body),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                ),
+                const SizedBox(height: HopeV2Spacing.md),
+                if (c?.status.toUpperCase() == 'OPEN')
+                  SafeArea(
+                    top: false,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            maxLines: 4,
+                            minLines: 1,
+                            enabled: !_busy,
+                            onSubmitted: (_) => _send(),
+                            decoration: InputDecoration(
+                              hintText: _t(
+                                'پیام خود را بنویسید',
+                                'Write a message',
+                              ),
+                              prefixIcon: const HopeIcon(
+                                HopeV2Icons.message,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: HopeV2Spacing.sm),
+                        PremiumIconButton(
+                          icon: HopeV2Icons.arrowRight,
+                          tooltip: _t('ارسال', 'Send'),
+                          onPressed: _busy ? null : _send,
+                        ),
+                      ],
+                    ),
+                  )
+                else if (c != null)
+                  PremiumPanel(
+                    glass: true,
+                    child: Row(
+                      children: [
+                        const HopeIcon(HopeV2Icons.secure, size: 20),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: Text(
+                            _t(
+                              'این گفتگو با پایان کار و تسویه بسته شده است.',
+                              'This conversation is closed because the job has ended and settled.',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
