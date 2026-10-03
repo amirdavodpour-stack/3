@@ -227,6 +227,30 @@ void main() {
     expect(tester.takeException(), isNull);
   }
 
+  testWidgets(
+      'automatic city context does not count as an active filter, but an explicit city does',
+      (tester) async {
+    final repo = _Repo();
+    await _pump(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hope-opportunity-refinement-active-count')),
+      findsNothing,
+    );
+
+    await _tapFilter(tester, 'اطراف تهران');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'شیراز'));
+    await tester.pumpAndSettle();
+
+    final activeCount = find.byKey(
+      const ValueKey('hope-opportunity-refinement-active-count'),
+    );
+    expect(activeCount, findsOneWidget);
+    expect(find.text('1', skipOffstage: false), findsWidgets);
+  }
+
   testWidgets('search narrows the rendered opportunity list', (tester) async {
     final repo = _Repo();
     await _pump(tester, repo);
