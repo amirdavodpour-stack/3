@@ -78,6 +78,10 @@ grep -Fq 'flutter drive --no-pub --no-dds' <<<"$driver_block"
 # Runtime screenshot evidence must explicitly disable custom Flutter animations through MediaQuery.
 grep -Fq "disableAnimations: true" "$test_file"
 # The current Work Center/Transactions surface uses a bounded fast capture path to avoid a second headless pump deadlock.
+# Login is the first auth surface in the baseline and must use the deterministic runtime-only host path.
+grep -Fq 'if (child is LoginPage)' "$test_file"
+grep -Fq 'HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker' "$test_file"
+
 grep -Fq 'if (child is TransactionsPage)' "$test_file"
 grep -Fq 'HOPE_RUNTIME_TRANSACTION_FAST_SETTLE_DONE:$marker' "$test_file"
 grep -Fq 'await tester.pump(const Duration(milliseconds: 1200));' "$test_file"
