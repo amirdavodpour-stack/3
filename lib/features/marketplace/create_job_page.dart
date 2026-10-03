@@ -171,6 +171,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
           child: Column(
             children: [
               PremiumHeader(
+                domain: HopeProductDomain.work,
                 eyebrow: HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
                 title: _t('ثبت فرصت جدید', 'Post an opportunity'),
                 subtitle: _t(
