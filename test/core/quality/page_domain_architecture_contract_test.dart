@@ -23,6 +23,14 @@ void main() {
       'lib/features/admin/admin_disputes_page.dart': 'HopeProductDomain.control',
       'lib/features/recommendation/recommendation_onboarding_page.dart': 'HopeProductDomain.intelligence',
       'lib/features/marketplace/create_job_page.dart': 'HopeProductDomain.work',
+      'lib/features/jobs/saved_searches_page.dart': 'HopeProductDomain.discovery',
+      'lib/features/notifications/notification_devices_page.dart': 'HopeProductDomain.communication',
+      'lib/features/privacy/privacy_center_page.dart': 'HopeProductDomain.account',
+      'lib/features/admin/admin_access_page.dart': 'HopeProductDomain.control',
+      'lib/features/marketplace/employer_candidate_matches_page.dart': 'HopeProductDomain.intelligence',
+      'lib/features/transactions/transaction_page.dart': 'HopeProductDomain.finance',
+      'lib/features/about/about_page.dart': 'HopeProductDomain.overview',
+      'lib/features/marketplace/job_detail_page.dart': 'HopeProductDomain.discovery',
     };
 
     for (final entry in expectations.entries) {
