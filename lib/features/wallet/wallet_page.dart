@@ -648,7 +648,7 @@ padding: const EdgeInsets.all(14),
     Widget balanceHero() {
       final scheme = Theme.of(context).colorScheme;
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -686,7 +686,7 @@ padding: const EdgeInsets.all(14),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             Text(
               _t('موجودی قابل استفاده', 'Available balance'),
               style: const TextStyle(
@@ -765,7 +765,7 @@ padding: const EdgeInsets.all(14),
             : HopeV2Colors.secondary;
         return Expanded(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 76),
+            constraints: const BoxConstraints(minHeight: 66),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
@@ -885,7 +885,7 @@ padding: const EdgeInsets.all(14),
                   label: Text(_t('تلاش دوباره', 'Try again')),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
             ],
             const SizedBox(height: HopeV2Spacing.sm),
             LayoutBuilder(
@@ -983,7 +983,7 @@ padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 );
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
             PremiumSectionHeader(
               domain: HopeProductDomain.finance,
               title: _t('تاریخچه کیف پول', 'Wallet history'),
