@@ -223,16 +223,6 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_t('جست‌وجوهای ذخیره‌شده', 'Saved searches')),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            tooltip: _t('بازخوانی', 'Refresh'),
-            icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _edit(),
         icon: const HopeIcon(HopeV2Icons.add, size: 20),
@@ -246,13 +236,31 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
             padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
+              domain: HopeProductDomain.discovery,
               eyebrow: _t('جست‌وجو', 'SEARCH'),
               title: _t('جست‌وجوهای ذخیره‌شده', 'Saved searches'),
               subtitle: _t(
                 'فیلترهای ذخیره‌شده حساب را ویرایش یا حذف کنید.',
                 'Edit or delete the real saved-search filters stored on your account.',
               ),
-              trailing: const HopeIconTile(HopeV2Icons.savedSearches, size: 50, filled: true),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PremiumIconButton(
+                    icon: Localizations.localeOf(context).languageCode == 'en'
+                        ? HopeV2Icons.arrowLeft
+                        : HopeV2Icons.arrowRight,
+                    tooltip: _t('بازگشت', 'Back'),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                  const SizedBox(width: 8),
+                  PremiumIconButton(
+                    icon: HopeV2Icons.refresh,
+                    tooltip: _t('بازخوانی', 'Refresh'),
+                    onPressed: _load,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 18),
             if (!_loading && _error == null && _items.isNotEmpty)
