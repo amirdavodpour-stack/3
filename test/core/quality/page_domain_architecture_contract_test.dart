@@ -251,6 +251,13 @@ void main() {
     expect(source, isNot(contains('applications = _controller.loadApplications')));
   });
 
+  test('offers keeps loading inside its page shell', () {
+    final source = _read('lib/features/offers/offers_page.dart');
+    expect(source, isNot(contains('return const Center(child: CircularProgressIndicator());')));
+    expect(source, contains('HopeStateKind.loading'));
+    expect(source, contains('page: HopePageId.offers'));
+  });
+
   test('wallet financial insights has a single entry point', () {
     final source = _read('lib/features/wallet/wallet_page.dart');
     expect(source.allMatches("HopeRoutes.financialInsights()").length, 1);
