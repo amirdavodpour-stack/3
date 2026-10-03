@@ -794,7 +794,13 @@ Future<void> _captureResponsiveLocale(
     'wallet': () => WalletPage(repository: runtime.registry.wallets!),
     'profile': () => const ProfilePage(),
   };
-  final capturePages = _captureHomeOnly ? <String, Widget Function()>{'home': () => const HomePage()} : pages;
+  final capturePages = _captureHomeOnly
+      ? <String, Widget Function()>{'home': () => const HomePage()}
+      : _responsiveBatch == '1'
+          ? Map<String, Widget Function()>.fromEntries(pages.entries.take(3))
+          : _responsiveBatch == '2'
+              ? Map<String, Widget Function()>.fromEntries(pages.entries.skip(3).take(3))
+              : pages;
   for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:responsive-${entry.key}-$suffix');
     await _captureRuntimeScreen(
