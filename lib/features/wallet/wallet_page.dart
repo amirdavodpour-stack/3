@@ -809,6 +809,7 @@ padding: const EdgeInsets.all(14),
         );
       }
 
+      // Runtime visual certification: wallet actions stay opaque and calm.
       return PremiumPanel(
         glass: false,
         padding: const EdgeInsets.all(12),
