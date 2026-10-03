@@ -115,51 +115,73 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           ? TextDirection.ltr
           : TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(_t('مرکز عملیات', 'Operations center')),
-          actions: [
-            DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                value: _days,
-                onChanged: (v) {
-                  if (v == null) return;
-                  setState(() => _days = v);
-                  _reload();
-                },
-                items: const [7, 30, 90, 365]
-                    .map((d) => DropdownMenuItem(value: d, child: Text('$d ${_t('روز', 'days')}')))
-                    .toList(),
-              ),
-            ),
-            IconButton(
-              tooltip: _t('بازخوانی', 'Refresh'),
-              onPressed: _reload,
-              icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-            ),
-          ],
-          bottom: TabBar(
-            controller: _tabs,
-            isScrollable: true,
-            tabs: [
-              Tab(text: _t('مالی', 'Finance')),
-              Tab(text: _t('امنیت و اعتماد', 'Trust & Safety')),
-              Tab(text: _t('تسویه‌های ناشناخته', 'Unknown payouts')),
-              Tab(text: _t('تحلیل', 'Analytics')),
-              Tab(text: _t('Crash', 'Crashes')),
-            ],
-          ),
-        ),
         body: PremiumPageFrame(
           maxWidth: 1280,
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 56),
-          child: TabBarView(
-            controller: _tabs,
+          child: Column(
             children: [
-              _financeTab(),
-              _reportsTab(),
-              _payoutsTab(),
-              _analyticsTab(),
-              _crashTab(),
+              PremiumHeader(
+                domain: HopeProductDomain.control,
+                eyebrow: _t('کنترل عملیات', 'OPERATIONS CONTROL'),
+                title: _t('مرکز عملیات HOPE', 'HOPE Operations Center'),
+                subtitle: _t(
+                  'مالی، اعتماد، تسویه‌های ناشناخته، تحلیل و خطاهای عملیاتی را از هم جدا بررسی کنید.',
+                  'Review finance, trust, unknown payouts, analytics, and operational errors as separate workstreams.',
+                ),
+                trailing: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    SizedBox(
+                      width: 112,
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          value: _days,
+                          isExpanded: true,
+                          onChanged: (v) {
+                            if (v == null) return;
+                            setState(() => _days = v);
+                            _reload();
+                          },
+                          items: const [7, 30, 90, 365]
+                              .map((d) => DropdownMenuItem(value: d, child: Text('$d')))
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                    PremiumIconButton(
+                      icon: HopeV2Icons.refresh,
+                      tooltip: _t('بازخوانی', 'Refresh'),
+                      onPressed: _reload,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: HopeV2Spacing.lg),
+              TabBar(
+                controller: _tabs,
+                isScrollable: true,
+                tabs: [
+                  Tab(text: _t('مالی', 'Finance')),
+                  Tab(text: _t('امنیت و اعتماد', 'Trust & Safety')),
+                  Tab(text: _t('تسویه‌های ناشناخته', 'Unknown payouts')),
+                  Tab(text: _t('تحلیل', 'Analytics')),
+                  Tab(text: _t('Crash', 'Crashes')),
+                ],
+              ),
+              const SizedBox(height: HopeV2Spacing.md),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabs,
+                  children: [
+                    _financeTab(),
+                    _reportsTab(),
+                    _payoutsTab(),
+                    _analyticsTab(),
+                    _crashTab(),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
