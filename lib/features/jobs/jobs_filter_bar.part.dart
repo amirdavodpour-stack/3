@@ -44,60 +44,26 @@ class _JobsFilterHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      PremiumDomainMarker(domain: domain, compact: true),
-                      const SizedBox(width: HopeV2Spacing.sm),
-                      Expanded(
-                        child: Text(
-                          copy.copy_explore_115e9fd.toUpperCase(),
-                    style: HopeV2Type.eyebrow(context).copyWith(
-                      color: HopeV2Colors.secondaryDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    _t(context, 'فرصت بعدی خود را پیدا کنید', 'Find your next opportunity'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          // Keep discovery heading compact so the first viewport
-                          // prioritizes search and opportunity content.
-                          fontSize: 24,
-                          letterSpacing: -.45,
-                          height: 1.10,
-                        ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _t(context, 'فرصت‌ها را جست‌وجو کنید و با فیلترها دقیق‌تر شوید.', 'Search opportunities and refine with filters.'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          height: 1.35,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: HopeV2Spacing.md),
-            PremiumTag(
-              icon: HopeV2Icons.workshop,
-              label: '$resultCount ${copy.copy_results_2d120a3}',
-            ),
-          ],
+        PremiumHeader(
+          page: HopePageId.explore,
+          domain: domain,
+          eyebrow: copy.copy_explore_115e9fd,
+          title: _t(
+            context,
+            'فرصت بعدی خود را پیدا کنید',
+            'Find your next opportunity',
+          ),
+          subtitle: _t(
+            context,
+            'فرصت‌ها را جست‌وجو کنید و با فیلترها دقیق‌تر شوید.',
+            'Search opportunities and refine with filters.',
+          ),
+          trailing: PremiumTag(
+            icon: HopeV2Icons.workshop,
+            label: '$resultCount ${copy.copy_results_2d120a3}',
+          ),
         ),
-        const SizedBox(height: HopeV2Spacing.lg),
+        const SizedBox(height: HopeV2Spacing.md),
         PremiumPanel(
           padding: const EdgeInsets.all(HopeV2Spacing.sm),
           highlight: false,
