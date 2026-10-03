@@ -1072,6 +1072,7 @@ class PremiumStatCard extends StatelessWidget {
     this.accent,
     this.caption,
     this.highlight = false,
+    this.compact = false,
   });
 
   final String label;
