@@ -218,7 +218,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         'Applications that no longer have an active work action.',
       ),
       closedApplications,
-      HopeProductDomain.trust,
+      HopeProductDomain.work,
     );
 
     final known = {
