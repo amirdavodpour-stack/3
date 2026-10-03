@@ -209,9 +209,13 @@ class PremiumPageFrame extends StatelessWidget {
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
     final domainAccent = page?.spec.domain.spec.accent;
     final showDomainRail = MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: HopeV2Surfaces.page(context),
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.sizeOf(context).height,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: HopeV2Surfaces.page(context),
         gradient: HopeV2Surfaces.pageHalo(context),
         border: domainAccent == null || !showDomainRail
             ? null
@@ -247,6 +251,7 @@ class PremiumPageFrame extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }
