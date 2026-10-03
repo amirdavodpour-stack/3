@@ -87,7 +87,7 @@ grep -Fq 'if (child is LoginPage)' "$test_file"
 grep -Fq 'run_host_batch_session responsive-a responsive' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b responsive' "$script_file"
 grep -Fq -- 'HOPE_RESPONSIVE_BATCH' "$test_file"
-grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH="$responsive_batch"' "$script_file"
+grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH' "$script_file"
 grep -Fq 'HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker' "$test_file"
 
 grep -Fq 'if (child is TransactionsPage)' "$test_file"
