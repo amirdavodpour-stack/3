@@ -6,6 +6,7 @@ import 'package:hugeicons/hugeicons.dart';
 /// This is intentionally token-first: screens should consume these values
 /// instead of inventing per-page spacing, radii, or breakpoints.
 
+/// Premium reference contract: deep surfaces, restrained cyan/teal, violet focus.
 /// Canonical HOPE visual tokens. Legacy theme APIs alias these values so
 /// existing screens can migrate without creating a second design system.
 class HopeV2Colors {
