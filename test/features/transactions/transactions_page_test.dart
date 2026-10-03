@@ -145,6 +145,13 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('transactions avoids nested quick-action blur on the heavy work surface',
+      (tester) async {
+    final repo = _Transactions()..jobs = [_job('blur-check', status: 'IN_PROGRESS')];
+    await _pump(tester, repo);
+    expect(find.byType(BackdropFilter), findsNothing);
+  });
+
   testWidgets('authenticated transactions render active and completed jobs',
       (tester) async {
     final repo = _Transactions()
