@@ -745,11 +745,31 @@ class OpportunitySkeletonCard extends StatelessWidget {
               SizedBox(height: 8),
               SkeletonBox(height: 20, width: 150),
               SizedBox(height: 12),
-              Row(children: [
-                SkeletonBox(height: 28, width: 100),
-                SizedBox(width: 8),
-                SkeletonBox(height: 28, width: 118)
-              ]),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stack = constraints.maxWidth < 240;
+                  final items = [
+                    const SkeletonBox(height: 28, width: 100),
+                    const SkeletonBox(height: 28, width: 118),
+                  ];
+                  return stack
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            items[0],
+                            const SizedBox(height: 8),
+                            items[1],
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            items[0],
+                            const SizedBox(width: 8),
+                            items[1],
+                          ],
+                        );
+                },
+              ),
             ]),
           ),
         ]),
