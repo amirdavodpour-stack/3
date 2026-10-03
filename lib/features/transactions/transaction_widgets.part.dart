@@ -258,27 +258,35 @@ extension on _TransactionPageState {
 
   Widget _buildPage(BuildContext context) {
     if (loading && payment == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        body: SafeArea(
+          child: PremiumPageFrame(
+            maxWidth: 980,
+            child: HopeAsyncState(
+              kind: HopeStateKind.loading,
+              title: _t('در حال بارگذاری وضعیت مالی', 'Loading financial status'),
+              message: _t(
+                'آخرین وضعیت کار و پرداخت در حال دریافت است.',
+                'The latest job and payment state is loading.',
+              ),
+            ),
+          ),
+        ),
+      );
     }
     if (error != null && payment == null) {
       return Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: HopeAsyncState(
-                kind: HopeStateKind.error,
-                title: _t(
-                  'به‌روزرسانی پرداخت ناموفق بود',
-                  'Payment refresh failed',
-                ),
-                message: error!,
-                action: FilledButton.icon(
-                  onPressed: loading ? null : refresh,
-                  icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-                  label: Text(HopeCopy.of(context).copy_retry_49f3eba),
-                ),
+        body: SafeArea(
+          child: PremiumPageFrame(
+            maxWidth: 980,
+            child: HopeAsyncState(
+              kind: HopeStateKind.error,
+              title: _t('به‌روزرسانی پرداخت ناموفق بود', 'Payment refresh failed'),
+              message: error!,
+              action: FilledButton.icon(
+                onPressed: loading ? null : refresh,
+                icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
+                label: Text(HopeCopy.of(context).copy_retry_49f3eba),
               ),
             ),
           ),
@@ -292,21 +300,27 @@ extension on _TransactionPageState {
           ? TextDirection.ltr
           : TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(
-            leading: IconButton(
-                onPressed: () => Navigator.maybePop(context),
-                icon: HopeIcon(
-                  Localizations.localeOf(context).languageCode == 'en'
-                      ? HopeV2Icons.arrowLeft
-                      : HopeV2Icons.arrowRight,
-                  size: 21,
-                ),
-                tooltip: HopeCopy.of(context).copy_back_6e09f79),
-            title: Text(HopeCopy.of(context).copy_transaction_7e0ea3b)),
         body: PremiumPageFrame(
           maxWidth: 980,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 72),
-          child: RefreshIndicator(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
+          child: Column(
+            children: [
+              PremiumHeader(
+                eyebrow: _t('مالی', 'FINANCE'),
+                title: HopeCopy.of(context).copy_transaction_7e0ea3b,
+                subtitle: _t(
+                  'وضعیت پرداخت، مسیر انجام کار و اقدام بعدی را در یک نما ببینید.',
+                  'Review payment state, the work lifecycle, and the next allowed action in one view.',
+                ),
+                trailing: PremiumIconButton(
+                  icon: HopeV2Icons.arrowLeft,
+                  tooltip: _t('بازگشت', 'Back'),
+                  onPressed: () => Navigator.maybePop(context),
+                ),
+              ),
+              const SizedBox(height: HopeV2Spacing.md),
+              Expanded(
+                child: RefreshIndicator(
             onRefresh: refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -546,7 +560,8 @@ extension on _TransactionPageState {
                     onChanged: refresh),
               ],
               ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
