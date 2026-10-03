@@ -80,6 +80,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
     required this.kind,
     required this.visibility,
     required this.cityLabel,
+    required this.cityIsExplicit,
     required this.categoryLabel,
     required this.categoryError,
     required this.onKindChanged,
@@ -96,6 +97,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
   final String kind;
   final String visibility;
   final String cityLabel;
+  final bool cityIsExplicit;
   final String categoryLabel;
   final String? categoryError;
   final ValueChanged<String> onKindChanged;
@@ -316,9 +318,7 @@ class _JobsFilterHeader extends StatelessWidget {
     final filterCount = [
       if (kind != 'ALL') 1,
       if (visibility != 'ALL') 1,
-      if (cityLabel.trim().isNotEmpty &&
-          cityLabel != copy.copy_near_1df6db0)
-        1,
+      if (cityIsExplicit) 1,
       if (categoryLabel.trim().isNotEmpty &&
           categoryLabel != copy.copy_all_fields_4f77401)
         1,
