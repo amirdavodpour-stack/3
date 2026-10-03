@@ -677,6 +677,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final collaborationChatOpen = (isOwner || isProvider) && ['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].contains(j.status?.toUpperCase());
 
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final heroBudgetRaw = isJob ? (j.monthlySalary ?? j.budgetMin) : j.budgetMin;
+    final heroBudget = heroBudgetRaw == null
+        ? null
+        : moneyLabel(
+            context,
+            isJob
+                ? heroBudgetRaw
+                : '${j.budgetMin ?? '—'} تا ${j.budgetMax ?? '—'}',
+          );
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -782,6 +791,27 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     spacing: 6,
                     runSpacing: 6,
                     children: [
+                      if (j.recommendationScore != null)
+                        KeyedSubtree(
+                          key: const ValueKey('opportunity-detail-hero-match'),
+                          child: PremiumTag(
+                            icon: HopeV2Icons.featured,
+                            label: _t(
+                              '\${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% تطبیق',
+                              '\${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% Match',
+                            ),
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      if (heroBudget != null)
+                        KeyedSubtree(
+                          key: const ValueKey('opportunity-detail-hero-budget'),
+                          child: PremiumTag(
+                            icon: HopeV2Icons.payments,
+                            label: heroBudget,
+                            color: HopeV2Colors.secondary,
+                          ),
+                        ),
                       PremiumTag(
                         label: isJob
                             ? HopeCopy.of(context).copy_job_ce2feba
