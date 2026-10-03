@@ -274,11 +274,29 @@ class _OffersPageState extends State<OffersPage> {
               child: FilledButton.icon(
                 onPressed: _acceptingId == o.id ? null : () => _accept(o),
                 icon: _acceptingId == o.id
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const HopeIcon(HopeV2Icons.completed, size: 19),
                 label: Text(_acceptingId == o.id
                     ? _t('در حال پذیرش...', 'Accepting...')
                     : _t('پذیرش پیشنهاد', 'Accept offer')),
+              ),
+            ),
+          if (o.status.toUpperCase() == 'ACCEPTED' && o.jobId.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  HopeRoutes.jobChat(o.jobId),
+                ),
+                icon: const HopeIcon(HopeV2Icons.message, size: 19),
+                label: Text(
+                  _t('گفتگوی همکاری', 'Collaboration chat'),
+                ),
               ),
             ),
         ],
