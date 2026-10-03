@@ -22,6 +22,137 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 
+class _OpportunitySnapshot extends StatelessWidget {
+  const _OpportunitySnapshot({required this.job});
+
+  final HopeJob job;
+
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  @override
+  Widget build(BuildContext context) {
+    final isJob = job.isJob;
+    final facts = <({Object icon, String label, String value, Color color})>[
+      (
+        icon: HopeV2Icons.payments,
+        label: isJob ? _t(context, 'حقوق ماهانه', 'Monthly pay') : _t(context, 'بودجه', 'Budget'),
+        value: isJob
+            ? moneyLabel(context, job.monthlySalary ?? job.budgetMin ?? '—')
+            : moneyLabel(context, '${job.budgetMin ?? '—'} تا ${job.budgetMax ?? '—'}'),
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      (
+        icon: HopeV2Icons.category,
+        label: _t(context, 'زمینه', 'Field'),
+        value: job.category ?? job.categoryId ?? '—',
+        color: secondaryAccent(context),
+      ),
+      (
+        icon: HopeV2Icons.location,
+        label: _t(context, 'مکان', 'Location'),
+        value: job.city?.trim().isNotEmpty == true ? job.city! : _t(context, 'از راه دور', 'Remote'),
+        color: HopeV2Colors.secondary,
+      ),
+      (
+        icon: HopeV2Icons.pending,
+        label: isJob ? _t(context, 'مهلت درخواست', 'Application deadline') : _t(context, 'مدت', 'Duration'),
+        value: isJob
+            ? (job.applicationDeadline ?? '—')
+            : '${job.duration ?? '—'} ${HopeCopy.of(context).copy_hours_7408608}',
+        color: AppColors.warning,
+      ),
+    ];
+
+    return PremiumPanel(
+      padding: const EdgeInsets.all(13),
+      semanticLabel: _t(context, 'خلاصه سریع فرصت', 'Opportunity snapshot'),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = constraints.maxWidth >= 720
+              ? 4
+              : constraints.maxWidth >= 390
+                  ? 2
+                  : 1;
+          final gap = HopeV2Spacing.sm;
+          final width = columns == 1
+              ? constraints.maxWidth
+              : (constraints.maxWidth - gap * (columns - 1)) / columns;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _t(context, 'خلاصه فرصت', 'Opportunity snapshot'),
+                      style: HopeV2Type.section(context),
+                    ),
+                  ),
+                  PremiumTag(
+                    icon: HopeV2Icons.insights,
+                    label: _t(context, 'اطلاعات کلیدی', 'Key facts'),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final fact in facts)
+                    SizedBox(
+                      width: width,
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 70),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: HopeV2Surfaces.panelSoft(context),
+                          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                          border: Border.all(color: HopeV2Surfaces.border(context)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            HopeIcon(fact.icon, size: 18, color: fact.color),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    fact.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.labelSmall,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    fact.value,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 class JobDetailPage extends StatefulWidget {
   const JobDetailPage({super.key, required this.job});
   final HopeJob job;
@@ -705,50 +836,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 16),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final tiles = [
-                        PremiumStatCard(
-                          label: isJob
-                              ? HopeCopy.of(context).copy_monthly_pay_d62519b
-                              : HopeCopy.of(context).copy_mission_budget_923bb6e,
-                          value: isJob
-                              ? moneyLabel(
-                                  context,
-                                  j.monthlySalary ?? j.budgetMin ?? '—',
-                                )
-                              : moneyLabel(
-                                  context,
-                                  '${j.budgetMin ?? '—'} تا ${j.budgetMax ?? '—'}',
-                                ),
-                          icon: HopeV2Icons.payments,
-                          accent: Theme.of(context).colorScheme.primary,
-                        ),
-                        PremiumStatCard(
-                          label: HopeCopy.of(context).copy_field_fcb7b26,
-                          value: j.category ?? j.categoryId ?? '—',
-                          icon: HopeV2Icons.category,
-                          accent: secondaryAccent(context),
-                        ),
-                      ];
-                      if (constraints.maxWidth < 500) {
-                        return Column(
-                          children: [
-                            tiles[0],
-                            const SizedBox(height: 10),
-                            tiles[1],
-                          ],
-                        );
-                      }
-                      return Row(
-                        children: [
-                          Expanded(child: tiles[0]),
-                          const SizedBox(width: 10),
-                          Expanded(child: tiles[1]),
-                        ],
-                      );
-                    },
-                  ),
+                  _OpportunitySnapshot(job: j),
                   const SizedBox(height: 14),
                   PremiumPanel(
                     padding: const EdgeInsets.all(17),
