@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../theme/hope_v2_design.dart';
 
-Color primaryNavigationGlow(BuildContext context) =>
-    Theme.of(context).colorScheme.primary.withValues(alpha: .10);
 import 'components.dart';
 import 'hope_product_architecture.dart';
 
@@ -115,7 +113,7 @@ class PremiumNavigationBar extends StatelessWidget {
           boxShadow: dark
               ? [
                   BoxShadow(
-                    color: primaryNavigationGlow(context),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: .10),
                     blurRadius: 28,
                     offset: const Offset(0, 10),
                   ),
