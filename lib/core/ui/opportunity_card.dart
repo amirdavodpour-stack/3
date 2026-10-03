@@ -161,6 +161,7 @@ class OpportunityCard extends StatelessWidget {
     return null;
   }
 
+  // Premium runtime certification: featured opportunity bloom is restrained.
   Widget _mediaHeader(
     BuildContext context, {
     required String title,
