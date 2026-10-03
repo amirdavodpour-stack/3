@@ -186,6 +186,10 @@ void main() {
       ),
       const Size(48, 48),
     );
+    expect(
+      find.byKey(const ValueKey('hope-opportunity-refinement-active-count')),
+      findsNothing,
+    );
 
     final searchRect = tester.getRect(find.byType(PremiumSearchBar));
     final filterRect = tester.getRect(
