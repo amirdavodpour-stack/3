@@ -160,6 +160,12 @@ void main() {
     expect(source, isNot(contains('FutureBuilder<List<HopeApplication>>')));
   });
 
+  test('profile exposes trust separately from account settings', () {
+    final source = _read('lib/features/profile/profile_page.dart');
+    expect(source, contains('domain: HopeProductDomain.trust'));
+    expect(source, contains('اعتماد و پروفایل حرفه‌ای'));
+  });
+
   test('profile has a single work hub header', () {
     final source = _read('lib/features/profile/profile_page.dart');
     expect(
