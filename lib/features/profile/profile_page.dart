@@ -123,8 +123,10 @@ padding: const EdgeInsets.symmetric(
           const SizedBox(height: 20),
           PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
-            subtitle: HopeCopy.of(context)
-                .copy_controls_that_make_hope_fit_you_better_ace4c0c,
+            subtitle: MediaQuery.sizeOf(context).width < 500
+                ? null
+                : HopeCopy.of(context)
+                    .copy_controls_that_make_hope_fit_you_better_ace4c0c,
           ),
           const SizedBox(height: 10),
           _settingsCard(context, settings, theme),
@@ -572,6 +574,19 @@ child: Column(
               );
 
               if (constraints.maxWidth < 500) {
+                if (constraints.maxWidth >= 360) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(child: details),
+                        const SizedBox(width: 8),
+                        selector,
+                      ],
+                    ),
+                  );
+                }
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Column(
@@ -606,13 +621,31 @@ child: Column(
             },
           ),
           const Divider(height: 1),
-          ListTile(
-            leading: const HopeIconTile(HopeV2Icons.secure),
-            title: Text(
-              HopeCopy.of(context).copy_appearance_c90f540,
-            ),
-            subtitle: Text(_themeLabel(context, theme.mode)),
-            onTap: () => _pickTheme(context, settings, theme),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 500;
+              return ListTile(
+                dense: compact,
+                visualDensity: compact
+                    ? const VisualDensity(horizontal: -2, vertical: -1)
+                    : null,
+                leading: const HopeIconTile(HopeV2Icons.secure),
+                title: Text(
+                  HopeCopy.of(context).copy_appearance_c90f540,
+                ),
+                subtitle: compact
+                    ? null
+                    : Text(_themeLabel(context, theme.mode)),
+                trailing: compact
+                    ? PremiumTag(
+                        icon: HopeV2Icons.secure,
+                        label: _themeLabel(context, theme.mode),
+                        color: Theme.of(context).colorScheme.primary,
+                      )
+                    : null,
+                onTap: () => _pickTheme(context, settings, theme),
+              );
+            },
           ),
           const Divider(height: 1),
           ListTile(
