@@ -1520,7 +1520,7 @@ class _MatchIntelligence extends StatelessWidget {
                   const SizedBox(height: 6),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final columns = constraints.maxWidth >= 240 ? 2 : 1;
+                      final columns = constraints.maxWidth >= 200 ? 2 : 1;
                       const gap = 10.0;
                       final width = columns == 2 ? (constraints.maxWidth - gap) / 2 : constraints.maxWidth;
                       return Wrap(spacing: gap, runSpacing: 6, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
