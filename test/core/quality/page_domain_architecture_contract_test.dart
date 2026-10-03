@@ -82,6 +82,14 @@ void main() {
     expect(source, contains('PremiumDomainMarker'));
   });
 
+  test('home places active work before discovery feed', () {
+    final source = _read('lib/features/home/premium_home_feed.dart');
+    final active = source.indexOf('_activeWork(context)');
+    final discovery = source.indexOf('_opportunitySections(context, jobs, settings)');
+    expect(active, greaterThanOrEqualTo(0));
+    expect(discovery, greaterThan(active));
+  });
+
   test('secondary navigation groups expose HOPE product domains', () {
     final source = _read('lib/features/home/home_page.dart');
     expect(source, contains('PremiumDomainNavigationGroup'));
