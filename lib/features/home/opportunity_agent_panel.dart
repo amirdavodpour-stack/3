@@ -47,7 +47,7 @@ class OpportunityAgentPanel extends StatelessWidget {
         ),
       ),
       child: PremiumPanel(
-        glass: true,
+        glass: false,
         highlight: !requiresApproval,
         padding: const EdgeInsets.all(14),
         child: Row(

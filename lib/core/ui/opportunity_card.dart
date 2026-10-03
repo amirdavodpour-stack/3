@@ -177,7 +177,7 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: featured ? 108 : 146,
+        height: featured ? 148 : 146,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,

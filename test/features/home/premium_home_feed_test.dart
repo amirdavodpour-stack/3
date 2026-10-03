@@ -10,6 +10,7 @@ import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
+import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/ui/copy.dart';
@@ -17,6 +18,22 @@ import 'package:hope_mobile/features/home/premium_home_feed.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+
+class _FakeOpportunityAgent implements OpportunityAgentRepository {
+  @override
+  Future<HopeOpportunityAgentState> getState() async =>
+      HopeOpportunityAgentState(
+        profileCompleteness: HopeOpportunityAgentProfileCompleteness(score: 1),
+        activity: const HopeOpportunityAgentActivity(),
+        actions: const [
+          HopeOpportunityAgentAction(
+            type: 'FOLLOW_UP_APPLICATION',
+            title: 'Review your next opportunity',
+            reason: 'A recent match needs your attention.',
+          ),
+        ],
+      );
+}
 
 class _AuthRepo implements AuthRepository {
   @override
@@ -37,7 +54,11 @@ class _SequencedMarketplaceRepository implements MarketplaceRepository {
   int calls = 0;
   final Completer<List<HopeJob>> staleRefresh =
       Completer<List<HopeJob>>();
-  final initial = _job('initial', 'Initial opportunity');
+  final initial = _job(
+    'initial',
+    'Initial opportunity',
+    recommended: true,
+  );
   final fresh = _job('fresh', 'Fresh opportunity');
 
   @override
@@ -71,7 +92,7 @@ class _SequencedMarketplaceRepository implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
-HopeJob _job(String id, String title) => HopeJob.fromMap({
+HopeJob _job(String id, String title, {bool recommended = false}) => HopeJob.fromMap({
   'id': id,
   'title': title,
   'description': 'description',
@@ -81,6 +102,10 @@ HopeJob _job(String id, String title) => HopeJob.fromMap({
   'status': 'PUBLISHED',
   'categoryId': 'tech',
   'category': 'فناوری',
+  'isRecommended': recommended,
+  'recommendationScore': recommended ? 92 : null,
+  'recommendationReasons':
+      recommended ? ['SKILL_MATCH'] : const <String>[],
 });
 
 class _HomeHarness {
@@ -91,12 +116,21 @@ class _HomeHarness {
 }
 
 Future<_HomeHarness> _host(
-    _SequencedMarketplaceRepository repository) async {
+    _SequencedMarketplaceRepository repository, {
+    bool authenticated = false,
+  }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
   final auth = AuthController(_AuthRepo(), SecureStore());
-  auth.continueAsGuest();
+  if (authenticated) {
+    await auth.applyRefreshedUser({
+      'id': 'u1',
+      'displayName': 'Ali',
+    });
+  } else {
+    auth.continueAsGuest();
+  }
   return _HomeHarness(
     MaterialApp(
       locale: const Locale('en'),
@@ -112,7 +146,11 @@ Future<_HomeHarness> _host(
           ChangeNotifierProvider.value(value: settings),
           ChangeNotifierProvider.value(value: auth),
           Provider<ApplicationRegistry>.value(
-            value: ApplicationRegistry(marketplace: repository),
+            value: ApplicationRegistry(
+              marketplace: repository,
+              opportunityAgent:
+                  authenticated ? _FakeOpportunityAgent() : null,
+            ),
           ),
         ],
         child: const PremiumHomeFeed(
@@ -188,6 +226,27 @@ testWidgets('settings changes reload home opportunities',
     );
   });
 
+
+  testWidgets(
+    'home prioritizes matched work before intelligence follow-up',
+    (tester) async {
+    final repository = _SequencedMarketplaceRepository();
+    final harness = await _host(repository, authenticated: true);
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    final bestMatch = find.text('Best match for you');
+    final intelligence = find.byKey(
+      const ValueKey('opportunity-agent-panel'),
+    );
+
+    expect(bestMatch, findsOneWidget);
+    expect(intelligence, findsOneWidget);
+    expect(
+      tester.getTopLeft(bestMatch).dy,
+      lessThan(tester.getTopLeft(intelligence).dy),
+    );
+  });
 
   testWidgets('latest home refresh wins over an older failed refresh',
       (tester) async {

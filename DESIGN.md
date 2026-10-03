@@ -119,3 +119,10 @@ The premium reconstruction borrows principles, not assets or copied screens:
 - Paychain / OrbitPay-style finance patterns: dense but legible state/value hierarchy and purpose-built wallet navigation.
 - HOPE-specific rule: warm brown is an underlay accent only; the product surface remains lavender in light mode and cool navy/violet in dark mode.
 - Expressive glow is concentrated in hero/opportunity surfaces rather than applied across every card or the whole page.
+
+
+## Runtime visual acceptance observations — 2026-10-03
+
+Run #1339 at exact feature HEAD `966e7c0356ccfbc140ae6cd17d86d61e51322fb1` completed successfully and its rendered Android artifact was inspected. The remaining visual work is compositional rather than runtime plumbing: Home was competing across intelligence/finance/quick-access surfaces; Explore spent too much first-viewport height on filter controls; featured opportunities needed a stronger image-led anchor.
+
+This calibration keeps the domain contracts and moves the hierarchy toward matched opportunity first, active next action second, intelligence follow-up after the work signal; compact responsive refinement controls; stronger featured imagery/hero proportions; and opaque layered product surfaces instead of decorative glass. Backend semantics, authorization gates, and Main-branch state remain unchanged.

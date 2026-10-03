@@ -253,19 +253,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               ),
             ],
           ),
-          const SizedBox(height: 7),
-          Text(
-            isEn
-                ? 'Intelligent work • Trusted money • Human progress.'
-                : 'کار هوشمند • پول مطمئن • پیشرفت انسانی',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: HopeV2Type.eyebrow(context).copyWith(
-              color: HopeV2Colors.primaryDark,
-              letterSpacing: .15,
-              fontSize: 9.5,
-            ),
-          ),
           const SizedBox(height: 4),
           Text(
             isEn ? 'Opportunities that fit your next move.' : 'فرصت‌های بهتر برای مسیر بعدی شما',
@@ -399,7 +386,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 ];
 
                 return PremiumPanel(
-                  glass: true,
+                  glass: false,
 padding: const EdgeInsets.all(12),
                   highlight: true,
                   child: Column(
@@ -475,22 +462,6 @@ padding: const EdgeInsets.all(12),
               },
             ),
             const SizedBox(height: HopeV2Spacing.lg),
-            if (!auth.isGuest && _agentState != null)
-              FutureBuilder<HopeOpportunityAgentState>(
-                future: _agentState,
-                builder: (context, agentSnapshot) {
-                  final state = agentSnapshot.data;
-                  if (state == null || agentSnapshot.hasError || state.actions.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return OpportunityAgentPanel(
-                    state: state,
-                    onAction: (action) => _handleAgentAction(context, action),
-                  );
-                },
-              ),
-            if (!auth.isGuest && _agentState != null)
-              const SizedBox(height: HopeV2Spacing.md),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -529,6 +500,23 @@ padding: const EdgeInsets.all(12),
               _activeWork(context),
               const SizedBox(height: HopeV2Spacing.md),
             ],
+            const SizedBox(height: HopeV2Spacing.md),
+            if (!auth.isGuest && _agentState != null)
+              FutureBuilder<HopeOpportunityAgentState>(
+                future: _agentState,
+                builder: (context, agentSnapshot) {
+                  final state = agentSnapshot.data;
+                  if (state == null || agentSnapshot.hasError || state.actions.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return OpportunityAgentPanel(
+                    state: state,
+                    onAction: (action) => _handleAgentAction(context, action),
+                  );
+                },
+              ),
+            if (!auth.isGuest && _agentState != null)
+              const SizedBox(height: HopeV2Spacing.md),
             _quickActions(context, auth),
             const SizedBox(height: HopeV2Spacing.md),
             if (!auth.isGuest) ...[
@@ -707,7 +695,7 @@ padding: const EdgeInsets.all(12),
 
     if (jobs.isEmpty) {
       return PremiumPanel(
-        glass: true,
+        glass: false,
 child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -823,7 +811,7 @@ child: Column(
           _ => _t(context, 'مشاهده پروژه', 'Open project'),
         };
         return PremiumPanel(
-          glass: true,
+          glass: false,
           highlight: true,
           padding: const EdgeInsets.all(14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -856,7 +844,7 @@ child: Column(
         String money(int v) => moneyLabel(context, v);
 
         return PremiumPanel(
-          glass: true,
+          glass: false,
 highlight: true,
           padding: const EdgeInsets.all(HopeV2Spacing.lg),
           child: LayoutBuilder(
