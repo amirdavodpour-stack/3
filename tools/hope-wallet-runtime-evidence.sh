@@ -273,6 +273,11 @@ run_host_batch_session() {
   local driver_status=0
   local capture_status=0
 
+  # Pre-create the logfile before starting the background process so the log follower
+  # cannot race the child shell's redirection and fail with ENOENT.
+  mkdir -p "$runner_temp"
+  : > "$log_path"
+
   # One Flutter Driver session owns the whole screen batch. Each screenshot
   # is produced by integration_test's onScreenshot callback, so the artifact
   # is tied to the exact Flutter render request instead of a later framebuffer.
