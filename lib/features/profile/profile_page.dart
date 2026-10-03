@@ -109,6 +109,7 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: EdgeInsets.zero,
         children: [
           PremiumHeader(
+            domain: HopeProductDomain.account,
             eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
             title: name,
             subtitle: user['email']?.toString().trim().isEmpty == true
