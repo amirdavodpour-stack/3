@@ -53,6 +53,11 @@ class OpportunityAgentPanel extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            PremiumDomainMarker(
+              domain: HopeProductDomain.intelligence,
+              compact: true,
+            ),
+            const SizedBox(width: 8),
             Container(
               width: 40,
               height: 40,
