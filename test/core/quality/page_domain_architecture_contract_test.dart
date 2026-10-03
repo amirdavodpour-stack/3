@@ -28,7 +28,7 @@ void main() {
       'lib/features/privacy/privacy_center_page.dart': 'HopeProductDomain.account',
       'lib/features/admin/admin_access_page.dart': 'HopeProductDomain.control',
       'lib/features/marketplace/employer_candidate_matches_page.dart': 'HopeProductDomain.intelligence',
-      'lib/features/transactions/transaction_page.dart': 'HopeProductDomain.finance',
+      'lib/features/transactions/transaction_widgets.part.dart': 'HopeProductDomain.finance',
       'lib/features/about/about_page.dart': 'HopeProductDomain.overview',
       'lib/features/marketplace/job_detail_page.dart': 'HopeProductDomain.discovery',
     };
