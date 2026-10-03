@@ -150,21 +150,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();
-    final rawDisplayName = [
-      auth.user?['displayName'],
-      auth.user?['name'],
-      auth.user?['firstName'],
-    ]
-        .map((value) => value?.toString().trim() ?? '')
-        .firstWhere(
-          (value) => value.isNotEmpty,
-          orElse: () => '',
-        );
-    final displayName = rawDisplayName.isNotEmpty
-        ? rawDisplayName
-        : _t(context, 'فضای کاری', 'Workspace');
-    final initial = displayName.trim().isNotEmpty
-        ? displayName.trim().substring(0, 1).toUpperCase()
+    final displayName = auth.user?['displayName']?.toString().trim() ?? '';
+    final initial = displayName.isNotEmpty
+        ? displayName.substring(0, 1).toUpperCase()
         : 'H';
     final avatarUrl = [
       auth.user?['photoUrl'],
@@ -214,7 +202,11 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                     'فرصت مناسب خود را پیدا کنید',
                                     'Find work that fits you',
                                   )
-                                : '$displayName 👋',
+                                : _t(
+                                    context,
+                                    'فرصت‌های مناسب برای شما',
+                                    'Opportunities that fit you',
+                                  ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -337,7 +329,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     ? '—'
                     : _activeJobCount?.toString() ?? '—';
                 final protected = !auth.isGuest && _walletData != null
-                    ? _walletData!.lockedBalance.toString()
+                    ? moneyLabel(context, _walletData!.lockedBalance)
                     : '—';
 
                 final stats = <({String value, String label, Object icon, Color accent})>[
@@ -519,34 +511,39 @@ padding: const EdgeInsets.all(14),
         onPressed: widget.onOpenExplore,
         primary: true,
       ),
-      PremiumQuickAction(
-        label: _t(context, 'درخواست‌های من', 'My applications'),
-        icon: HopeV2Icons.mission,
-        onPressed: auth.isGuest
-            ? widget.onOpenCreate
-            : () => Navigator.push(context, HopeRoutes.myApplications()),
-      ),
-      PremiumQuickAction(
-        label: _t(context, 'پیشنهادها', 'Offers'),
-        icon: HopeV2Icons.featured,
-        onPressed: auth.isGuest
-            ? widget.onOpenCreate
-            : () => Navigator.push(context, HopeRoutes.offers()),
-      ),
-      PremiumQuickAction(
-        label: _t(context, 'اعلان‌ها', 'Notifications'),
-        icon: HopeV2Icons.notifications,
-        onPressed: auth.isGuest
-            ? widget.onOpenCreate
-            : () => Navigator.push(context, HopeRoutes.notifications()),
-      ),
-      if (!auth.isGuest)
+      if (!auth.isGuest) ...[
+        PremiumQuickAction(
+          label: _t(context, 'درخواست‌های من', 'My applications'),
+          icon: HopeV2Icons.mission,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.myApplications(),
+          ),
+        ),
+        PremiumQuickAction(
+          label: _t(context, 'پیشنهادها', 'Offers'),
+          icon: HopeV2Icons.featured,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.offers(),
+          ),
+        ),
+        PremiumQuickAction(
+          label: _t(context, 'اعلان‌ها', 'Notifications'),
+          icon: HopeV2Icons.notifications,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.notifications(),
+          ),
+        ),
         PremiumQuickAction(
           label: _t(context, 'جستجوهای ذخیره‌شده', 'Saved searches'),
           icon: HopeV2Icons.search,
-          onPressed: () => Navigator.push(context, HopeRoutes.savedSearches()),
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.savedSearches(),
+          ),
         ),
-      if (!auth.isGuest)
         PremiumQuickAction(
           label: _t(context, 'پروفایل کاری هوشمند', 'AI work profile'),
           icon: HopeV2Icons.insights,
@@ -555,12 +552,16 @@ padding: const EdgeInsets.all(14),
             HopeRoutes.recommendationOnboarding(),
           ),
         ),
-      if (!auth.isGuest && auth.user?['role'] == 'ADMIN')
-        PremiumQuickAction(
-          label: _t(context, 'مرکز مدیریت', 'Admin center'),
-          icon: HopeV2Icons.secure,
-          onPressed: () => Navigator.push(context, HopeRoutes.adminAccess()),
-        ),
+        if (auth.user?['role'] == 'ADMIN')
+          PremiumQuickAction(
+            label: _t(context, 'مرکز مدیریت', 'Admin center'),
+            icon: HopeV2Icons.secure,
+            onPressed: () => Navigator.push(
+              context,
+              HopeRoutes.adminAccess(),
+            ),
+          ),
+      ],
     ];
 
     return PremiumQuickActionStrip(
