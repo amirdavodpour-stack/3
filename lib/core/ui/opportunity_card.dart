@@ -109,8 +109,8 @@ class OpportunityCard extends StatelessWidget {
               color: featured
                   ? primary.withValues(
                       alpha: Theme.of(context).brightness == Brightness.dark
-                          ? .34
-                          : .24,
+                          ? .26
+                          : .20,
                     )
                   : HopeV2Surfaces.border(context),
             ),
