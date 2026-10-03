@@ -141,6 +141,14 @@ void main() {
     expect(source, isNot(contains('FutureBuilder<List<HopeApplication>>')));
   });
 
+  test('profile has a single work hub header', () {
+    final source = _read('lib/features/profile/profile_page.dart');
+    expect(
+      RegExp(r"title: _t\(context, 'مرکز کار', 'Work center'\),").allMatches(source).length,
+      1,
+    );
+  });
+
   test('profile does not retain removed application state', () {
     final source = _read('lib/features/profile/profile_page.dart');
     expect(source, isNot(contains('_applicationBusyId')));
