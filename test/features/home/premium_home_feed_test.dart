@@ -12,6 +12,7 @@ import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/ui/copy.dart';
 import 'package:hope_mobile/features/home/premium_home_feed.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +30,19 @@ class _AuthRepo implements AuthRepository {
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String e) async {}
+
+  testWidgets('home money labels use the canonical Toman copy helper',
+      (tester) async {
+    final harness = await _host(_SequencedMarketplaceRepository());
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    expect(
+      moneyLabel(tester.element(find.byType(PremiumHomeFeed)), 125000),
+      contains('۱۲۵٬۰۰۰'),
+    );
+  });
+
 }
 
 class _SequencedMarketplaceRepository implements MarketplaceRepository {
