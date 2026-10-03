@@ -137,6 +137,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
             child: Column(
               children: [
                 PremiumHeader(
+                  page: HopePageId.recommendation,
                   domain: HopeProductDomain.intelligence,
                   eyebrow: 'HOPE AI',
                   title: isEn
