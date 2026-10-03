@@ -1158,7 +1158,6 @@ class PremiumStatCard extends StatelessWidget {
     );
   }
 }
-}
 
 class PremiumSectionHeader extends StatelessWidget {
   const PremiumSectionHeader({
