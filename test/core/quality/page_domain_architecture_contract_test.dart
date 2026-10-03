@@ -243,6 +243,15 @@ void main() {
     expect(source, isNot(contains('applications = _controller.loadApplications')));
   });
 
+  test('admin exposes control actions as a dedicated group', () {
+    final source = _read('lib/features/admin/admin_page.dart');
+    expect(source, contains('کنترل‌های اصلی'));
+    expect(source, contains('Control actions'));
+    expect(source, contains('PremiumQuickActionStrip'));
+    expect(source, contains('HopeRoutes.adminOperations()'));
+    expect(source, contains('HopeRoutes.adminDisputes()'));
+  });
+
   test('admin control surfaces do not stack legacy AppBars over PremiumHeader', () {
     const paths = <String>[
       'lib/features/admin/admin_page.dart',
