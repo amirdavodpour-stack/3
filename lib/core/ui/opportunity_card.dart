@@ -12,7 +12,7 @@ import 'hope_l10n.dart';
 import 'premium_components.dart';
 
 // Core marketplace card pattern for the HOPE visual system.
-enum OpportunityCardVariant { compact, standard, featured, expanded }
+enum OpportunityCardVariant { compact, standard, featured, featuredScan, expanded }
 
 class OpportunityCard extends StatelessWidget {
   const OpportunityCard({
@@ -60,6 +60,7 @@ class OpportunityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = variant == OpportunityCardVariant.compact;
     final featured = variant == OpportunityCardVariant.featured;
+    final featuredScan = variant == OpportunityCardVariant.featuredScan;
     final expanded = variant == OpportunityCardVariant.expanded;
     final copy = HopeCopy.of(context);
     final city = job.city?.trim().isNotEmpty == true ? job.city! : copy.copy_remote_dcbb625;
@@ -83,7 +84,7 @@ class OpportunityCard extends StatelessWidget {
         onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
         child: Container(
           decoration: BoxDecoration(
-            gradient: featured
+            gradient: featured || featuredScan
                 ? LinearGradient(
                     begin: AlignmentDirectional.topStart,
                     end: AlignmentDirectional.bottomEnd,
@@ -106,17 +107,17 @@ class OpportunityCard extends StatelessWidget {
               HopeV2Radii.lg,
             ),
             border: Border.all(
-              color: featured
+              color: featured || featuredScan
                   ? primary.withValues(
                       alpha: Theme.of(context).brightness == Brightness.dark
-                          ? .21
+                          ? (featuredScan ? .30 : .21)
                           : .18,
                     )
                   : HopeV2Surfaces.border(context),
             ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
                 ? [
-                    if (featured)
+                    if (featured || featuredScan)
                       BoxShadow(
                         color: primary.withValues(alpha: .025),
                         blurRadius: 18,
@@ -125,7 +126,7 @@ class OpportunityCard extends StatelessWidget {
                   ]
                 : HopeV2Shadows.card,
           ),
-          padding: EdgeInsets.all(featured ? 12 : (compact ? 12 : 14)),
+          padding: EdgeInsets.all(featured ? 12 : (featuredScan ? 11 : (compact ? 12 : 14))),
           child: compact
               ? _compact(context, title, city, amount, primary, copy)
               : _standard(
@@ -137,6 +138,7 @@ class OpportunityCard extends StatelessWidget {
                   reasons,
                   expanded,
                   featured,
+                  featuredScan,
                   mediaUrl,
                   copy,
                 ),
@@ -501,6 +503,7 @@ class OpportunityCard extends StatelessWidget {
     List<String> reasons,
     bool expanded,
     bool featured,
+    bool featuredScan,
     String? mediaUrl,
     HopeCopy copy,
   ) {
@@ -512,6 +515,18 @@ class OpportunityCard extends StatelessWidget {
         amount: amount,
         primary: primary,
         score: job.recommendationScore,
+        mediaUrl: mediaUrl,
+        copy: copy,
+      );
+    }
+
+    if (featuredScan) {
+      return _scanStandard(
+        context,
+        title: title,
+        city: city,
+        amount: amount,
+        primary: primary,
         mediaUrl: mediaUrl,
         copy: copy,
       );
