@@ -15,7 +15,7 @@ extension on _TransactionPageState {
     ];
 
     return PremiumPanel(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 11),
       highlight: paymentStatus == 'HELD' ||
           paymentStatus == 'RELEASED' ||
           paymentStatus == 'HOLD_PENDING' ||
@@ -39,7 +39,7 @@ extension on _TransactionPageState {
               ),
             ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 11),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
               context,
@@ -89,8 +89,8 @@ extension on _TransactionPageState {
                   duration: MediaQuery.disableAnimationsOf(context)
                       ? Duration.zero
                       : HopeV2Motion.fast,
-                  width: 30,
-                  height: 30,
+                  width: 27,
+                  height: 27,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: fill,
@@ -102,7 +102,7 @@ extension on _TransactionPageState {
                   ),
                   child: HopeIcon(
                     completed ? HopeV2Icons.completed : icon,
-                    size: 15,
+                    size: 14,
                     color: completed ? scheme.onPrimary : color,
                     strokeWidth: 1.9,
                   ),
@@ -125,10 +125,10 @@ extension on _TransactionPageState {
           const SizedBox(width: 10),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 11),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Container(
-                constraints: const BoxConstraints(minHeight: 42),
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+                constraints: const BoxConstraints(minHeight: 38),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
                   color: active
                       ? scheme.primary.withValues(alpha: .07)
