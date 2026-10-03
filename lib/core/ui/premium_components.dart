@@ -1198,8 +1198,8 @@ class PremiumTag extends StatelessWidget {
       label: label,
       container: true,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 26),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        constraints: const BoxConstraints(minHeight: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
@@ -1207,7 +1207,7 @@ class PremiumTag extends StatelessWidget {
             color: inverse
                 ? Colors.white24
                 : base.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark ? .16 : .08,
+                    alpha: Theme.of(context).brightness == Brightness.dark ? .12 : .07,
                   ),
           ),
         ),
