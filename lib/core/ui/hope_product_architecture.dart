@@ -33,6 +33,9 @@ enum HopePageId {
   candidateMatches,
   transactionDetail,
   about,
+  login,
+  register,
+  passwordReset,
 }
 
 class HopePageSpec {
@@ -276,6 +279,33 @@ extension HopePageIdX on HopePageId {
             purposeEn: 'Execute and observe the collaboration financial lifecycle.',
             primaryActionFa: 'اقدام مالی بعدی',
             primaryActionEn: 'Next financial action',
+          ),
+        HopePageId.login => const HopePageSpec(
+            domain: HopeProductDomain.account,
+            titleFa: 'ورود',
+            titleEn: 'Sign in',
+            purposeFa: 'ورود امن به حساب HOPE.',
+            purposeEn: 'Secure entry to a HOPE account.',
+            primaryActionFa: 'ورود به حساب',
+            primaryActionEn: 'Sign in',
+          ),
+        HopePageId.register => const HopePageSpec(
+            domain: HopeProductDomain.account,
+            titleFa: 'ثبت‌نام',
+            titleEn: 'Create account',
+            purposeFa: 'ساخت حساب و آغاز مسیر HOPE.',
+            purposeEn: 'Create an account and start using HOPE.',
+            primaryActionFa: 'ساخت حساب',
+            primaryActionEn: 'Create account',
+          ),
+        HopePageId.passwordReset => const HopePageSpec(
+            domain: HopeProductDomain.account,
+            titleFa: 'بازیابی رمز',
+            titleEn: 'Password reset',
+            purposeFa: 'بازیابی کنترل امن حساب.',
+            purposeEn: 'Restore secure account access.',
+            primaryActionFa: 'بازیابی دسترسی',
+            primaryActionEn: 'Restore access',
           ),
         HopePageId.about => const HopePageSpec(
             domain: HopeProductDomain.overview,
