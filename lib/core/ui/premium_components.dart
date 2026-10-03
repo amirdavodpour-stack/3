@@ -668,8 +668,8 @@ class PremiumPanel extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final panelFill = dark
-        ? Colors.white.withValues(alpha: glass ? .052 : 0)
-        : Colors.white.withValues(alpha: glass ? .64 : 0);
+        ? (glass ? HopeV2Colors.panelSoftDark : Colors.transparent)
+        : (glass ? HopeV2Colors.panelSoftLight : Colors.transparent);
     final gradient = highlight
         ? LinearGradient(
             begin: AlignmentDirectional.topStart,
