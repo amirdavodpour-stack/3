@@ -87,6 +87,9 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
     required this.onPickCity,
     required this.onPickCategory,
     required this.onRetryCategories,
+    required this.savedSearchCount,
+    required this.onSaveSearch,
+    required this.onOpenSavedSearches,
   });
 
   final int activeCount;
@@ -100,6 +103,9 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
   final VoidCallback onPickCity;
   final VoidCallback onPickCategory;
   final VoidCallback onRetryCategories;
+  final int savedSearchCount;
+  final VoidCallback? onSaveSearch;
+  final VoidCallback onOpenSavedSearches;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -175,7 +181,34 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: HopeV2Spacing.lg),
+            if (savedSearchCount > 0 || onSaveSearch != null) ...[
+              const SizedBox(height: HopeV2Spacing.md),
+              Wrap(
+                spacing: HopeV2Spacing.sm,
+                runSpacing: HopeV2Spacing.xs,
+                children: [
+                  if (savedSearchCount > 0)
+                    TextButton.icon(
+                      onPressed: onOpenSavedSearches,
+                      icon: const HopeIcon(HopeV2Icons.savedSearches, size: 18),
+                      label: Text(
+                        _t(
+                          context,
+                          'جستجوهای ذخیره‌شده · $savedSearchCount',
+                          'Saved searches · $savedSearchCount',
+                        ),
+                      ),
+                    ),
+                  if (onSaveSearch != null)
+                    TextButton.icon(
+                      onPressed: onSaveSearch,
+                      icon: const HopeIcon(HopeV2Icons.add, size: 18),
+                      label: Text(_t(context, 'ذخیره این جستجو', 'Save this search')),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: HopeV2Spacing.md),
             FilledButton(
               onPressed: () => Navigator.pop(sheetContext),
               child: Text(_t(context, 'اعمال فیلترها', 'Done')),
@@ -278,6 +311,16 @@ class _JobsFilterHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final copy = HopeCopy.of(context);
+    final filterCount = [
+      if (kind != 'ALL') 1,
+      if (visibility != 'ALL') 1,
+      if (cityLabel.trim().isNotEmpty &&
+          cityLabel != copy.copy_near_1df6db0)
+        1,
+      if (categoryLabel.trim().isNotEmpty &&
+          categoryLabel != copy.copy_all_fields_4f77401)
+        1,
+    ].length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,101 +329,41 @@ class _JobsFilterHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Text(
-                _t(
-                  context,
-                  'فرصت بعدی خود را پیدا کنید',
-                  'Find your next opportunity',
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -.45,
-                    ),
+              child: PremiumSearchBar(
+                onChanged: onQueryChanged,
+                hint: copy.copy_title_city_or_skill_bccb024,
               ),
             ),
             const SizedBox(width: HopeV2Spacing.sm),
-            PremiumTag(
-              icon: HopeV2Icons.workshop,
-              label: '$resultCount ${copy.copy_results_2d120a3}',
+            Text(
+              '$resultCount ${copy.copy_results_2d120a3}',
+              key: const ValueKey('hope-explore-result-count'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: HopeV2Colors.muted,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(width: HopeV2Spacing.sm),
+            HopeOpportunityRefinementLauncher(
+              activeCount: filterCount,
+              kind: kind,
+              visibility: visibility,
+              cityLabel: cityLabel,
+              categoryLabel: categoryLabel,
+              categoryError: categoryError,
+              onKindChanged: onKindChanged,
+              onVisibilityChanged: onVisibilityChanged,
+              onPickCity: onPickCity,
+              onPickCategory: onPickCategory,
+              onRetryCategories: onRetryCategories,
+              savedSearchCount: savedSearchCount,
+              onSaveSearch: onSaveSearch,
+              onOpenSavedSearches: onOpenSavedSearches,
             ),
           ],
         ),
-        const SizedBox(height: HopeV2Spacing.sm),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final compact = constraints.maxWidth < 560;
-            final search = PremiumSearchBar(
-              onChanged: onQueryChanged,
-              hint: copy.copy_title_city_or_skill_bccb024,
-            );
-            final actions = Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                HopeOpportunityRefinementLauncher(
-                  activeCount: [
-                    if (kind != 'ALL') 1,
-                    if (visibility != 'ALL') 1,
-                    if (cityLabel.trim().isNotEmpty &&
-                        cityLabel != copy.copy_near_1df6db0) 1,
-                    if (categoryLabel.trim().isNotEmpty &&
-                        categoryLabel !=
-                            HopeCopy.of(context).copy_all_fields_4f77401)
-                      1,
-                  ].length,
-                  kind: kind,
-                  visibility: visibility,
-                  cityLabel: cityLabel,
-                  categoryLabel: categoryLabel,
-                  categoryError: categoryError,
-                  onKindChanged: onKindChanged,
-                  onVisibilityChanged: onVisibilityChanged,
-                  onPickCity: onPickCity,
-                  onPickCategory: onPickCategory,
-                  onRetryCategories: onRetryCategories,
-                ),
-                if (savedSearchCount > 0) ...[
-                  const SizedBox(width: HopeV2Spacing.xs),
-                  PremiumIconButton(
-                    icon: HopeV2Icons.savedSearches,
-                    tooltip: copy.copy_saved_searches,
-                    onPressed: onOpenSavedSearches,
-                  ),
-                ],
-                const SizedBox(width: HopeV2Spacing.xs),
-                PremiumIconButton(
-                  icon: HopeV2Icons.add,
-                  tooltip: copy.copy_save_search,
-                  onPressed: onSaveSearch,
-                ),
-              ],
-            );
-
-            if (compact) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  search,
-                  const SizedBox(height: HopeV2Spacing.sm),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: actions,
-                  ),
-                ],
-              );
-            }
-
-            return Row(
-              children: [
-                Expanded(child: search),
-                const SizedBox(width: HopeV2Spacing.sm),
-                actions,
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: HopeV2Spacing.xs),
         if (categoryError != null)
           Padding(
             padding: const EdgeInsets.only(top: HopeV2Spacing.xs),

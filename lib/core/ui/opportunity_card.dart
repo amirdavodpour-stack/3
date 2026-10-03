@@ -491,107 +491,291 @@ class OpportunityCard extends StatelessWidget {
       );
     }
 
+    if (!expanded) {
+      return _scanStandard(
+        context,
+        title: title,
+        city: city,
+        amount: amount,
+        primary: primary,
+        mediaUrl: mediaUrl,
+        copy: copy,
+      );
+    }
+
+    return _expandedStandard(
+      context,
+      title: title,
+      city: city,
+      amount: amount,
+      primary: primary,
+      reasons: reasons,
+      mediaUrl: mediaUrl,
+      copy: copy,
+    );
+  }
+
+  Widget _scanStandard(
+    BuildContext context, {
+    required String title,
+    required String city,
+    required String amount,
+    required Color primary,
+    required String? mediaUrl,
+    required HopeCopy copy,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (featured || expanded) ...[
-          _mediaHeader(
-            context,
-            title: title,
-            primary: primary,
-            mediaUrl: mediaUrl,
-            score: job.recommendationScore,
-            featured: featured,
-          ),
-          const SizedBox(height: HopeV2Spacing.md),
-        ],
-        if (!featured) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (mediaUrl != null && mediaUrl.trim().isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                  child: SizedBox(
-                    width: 58,
-                    height: 58,
-                    child: Image.network(
-                      mediaUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => HopeIconTile(
-                        job.isMission
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (mediaUrl != null && mediaUrl.trim().isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                child: SizedBox(
+                  width: 58,
+                  height: 58,
+                  child: Image.network(
+                    mediaUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => HopeIconTile(
+                      job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
+                      color: primary,
+                      filled: true,
+                      size: 46,
+                    ),
+                  ),
+                ),
+              )
+            else
+              HopeIconTile(
+                job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
+                color: primary,
+                filled: true,
+                size: 46,
+              ),
+            const SizedBox(width: HopeV2Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: HopeV2Spacing.xs,
+                    runSpacing: HopeV2Spacing.xs,
+                    children: [
+                      PremiumTag(
+                        label: job.isMission
+                            ? copy.copy_mission_fb4c5e1
+                            : copy.copy_job_ce2feba,
+                        icon: job.isMission
                             ? HopeV2Icons.mission
                             : HopeV2Icons.job,
                         color: primary,
-                        filled: true,
-                        size: 46,
                       ),
-                    ),
-                  ),
-                )
-              else
-                HopeIconTile(
-                  job.isMission
-                      ? HopeV2Icons.mission
-                      : HopeV2Icons.job,
-                  color: primary,
-                  filled: true,
-                  size: 46,
-                ),
-              const SizedBox(width: HopeV2Spacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: HopeV2Spacing.xs,
-                      runSpacing: HopeV2Spacing.xs,
-                      children: [
+                      if (job.recommendationScore != null)
                         PremiumTag(
-                          label: job.isMission
-                              ? copy.copy_mission_fb4c5e1
-                              : copy.copy_job_ce2feba,
-                          icon: job.isMission
-                              ? HopeV2Icons.mission
-                              : HopeV2Icons.job,
-                          color: primary,
+                          icon: HopeV2Icons.match,
+                          label: '${((job.recommendationScore! <= 1
+                                      ? job.recommendationScore! * 100
+                                      : job.recommendationScore!))
+                                  .round()}% ${_t(context, 'تطابق', 'match')}',
+                          color: HopeV2Colors.success,
                         ),
-                        if (job.recommendationScore != null)
-                          PremiumTag(
-                            icon: HopeV2Icons.match,
-                            label: '${((job.recommendationScore! <= 1
-                                        ? job.recommendationScore! * 100
-                                        : job.recommendationScore!))
-                                    .round()}% ${_t(context, 'تطابق', 'match')}',
-                            color: HopeV2Colors.success,
-                          ),
-                      ],
+                    ],
+                  ),
+                  const SizedBox(height: HopeV2Spacing.xs),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: HopeV2Spacing.sm),
+            HugeIcon(
+              icon: Directionality.of(context) == ui.TextDirection.rtl
+                  ? HopeV2Icons.arrowLeft
+                  : HopeV2Icons.arrowRight,
+              size: 19,
+              color: primary,
+              strokeWidth: 1.9,
+            ),
+          ],
+        ),
+        const SizedBox(height: HopeV2Spacing.sm),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: HopeV2Spacing.sm,
+                runSpacing: HopeV2Spacing.xs,
+                children: [
+                  PremiumTag(
+                    icon: HopeV2Icons.location,
+                    label: city,
+                    color: secondaryAccent(context),
+                  ),
+                  if ((job.category ?? '').isNotEmpty)
+                    PremiumTag(
+                      icon: HopeV2Icons.category,
+                      label: job.category!,
+                      color: HopeV2Colors.muted,
                     ),
-                    const SizedBox(height: HopeV2Spacing.sm),
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleLarge,
+                  if (job.visibility == 'SPECIALIZED')
+                    PremiumTag(
+                      icon: HopeV2Icons.secure,
+                      label: copy.copy_specialized_5d1ca04,
+                      color: HopeV2Colors.warning,
                     ),
-                  ],
+                ],
+              ),
+            ),
+            if (amount.isNotEmpty) ...[
+              const SizedBox(width: HopeV2Spacing.sm),
+              Flexible(
+                child: Text(
+                  '${_formatAmount(amount)} ${copy.copy_toman}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: HopeV2Type.metric(context).copyWith(
+                    fontSize: 13,
+                    color: primary,
+                  ),
                 ),
               ),
             ],
-          ),
-        ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _expandedStandard(
+    BuildContext context, {
+    required String title,
+    required String city,
+    required String amount,
+    required Color primary,
+    required List<String> reasons,
+    required String? mediaUrl,
+    required HopeCopy copy,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _mediaHeader(
+          context,
+          title: title,
+          primary: primary,
+          mediaUrl: mediaUrl,
+          score: job.recommendationScore,
+          featured: false,
+        ),
+        const SizedBox(height: HopeV2Spacing.md),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (mediaUrl != null && mediaUrl.trim().isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                child: SizedBox(
+                  width: 58,
+                  height: 58,
+                  child: Image.network(
+                    mediaUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => HopeIconTile(
+                      job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
+                      color: primary,
+                      filled: true,
+                      size: 46,
+                    ),
+                  ),
+                ),
+              )
+            else
+              HopeIconTile(
+                job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
+                color: primary,
+                filled: true,
+                size: 46,
+              ),
+            const SizedBox(width: HopeV2Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: HopeV2Spacing.xs,
+                    runSpacing: HopeV2Spacing.xs,
+                    children: [
+                      PremiumTag(
+                        label: job.isMission
+                            ? copy.copy_mission_fb4c5e1
+                            : copy.copy_job_ce2feba,
+                        icon: job.isMission
+                            ? HopeV2Icons.mission
+                            : HopeV2Icons.job,
+                        color: primary,
+                      ),
+                      if (job.recommendationScore != null)
+                        PremiumTag(
+                          icon: HopeV2Icons.match,
+                          label: '${((job.recommendationScore! <= 1
+                                      ? job.recommendationScore! * 100
+                                      : job.recommendationScore!))
+                                  .round()}% ${_t(context, 'تطابق', 'match')}',
+                          color: HopeV2Colors.success,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: HopeV2Spacing.sm),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: HopeV2Spacing.sm),
         Wrap(
           spacing: HopeV2Spacing.sm,
           runSpacing: HopeV2Spacing.xs,
           children: [
-            PremiumTag(icon: HopeV2Icons.location, label: city, color: secondaryAccent(context)),
+            PremiumTag(
+              icon: HopeV2Icons.location,
+              label: city,
+              color: secondaryAccent(context),
+            ),
             if ((job.category ?? '').isNotEmpty)
-              PremiumTag(icon: HopeV2Icons.category, label: job.category!, color: HopeV2Colors.muted),
+              PremiumTag(
+                icon: HopeV2Icons.category,
+                label: job.category!,
+                color: HopeV2Colors.muted,
+              ),
             if (job.distanceKm != null)
-              PremiumTag(icon: HopeV2Icons.distance, label: '${job.distanceKm!.toStringAsFixed(1)} km', color: secondaryAccent(context)),
+              PremiumTag(
+                icon: HopeV2Icons.distance,
+                label: '${job.distanceKm!.toStringAsFixed(1)} km',
+                color: secondaryAccent(context),
+              ),
             if (job.visibility == 'SPECIALIZED')
-              PremiumTag(icon: HopeV2Icons.secure, label: copy.copy_specialized_5d1ca04, color: HopeV2Colors.warning),
+              PremiumTag(
+                icon: HopeV2Icons.secure,
+                label: copy.copy_specialized_5d1ca04,
+                color: HopeV2Colors.warning,
+              ),
           ],
         ),
         if (amount.isNotEmpty) ...[
@@ -608,7 +792,6 @@ class OpportunityCard extends StatelessWidget {
               border: Border.all(color: primary.withValues(alpha: .12)),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 HugeIcon(
                   icon: HopeV2Icons.payments,
@@ -622,7 +805,9 @@ class OpportunityCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        job.isMission ? copy.copy_mission_budget_923bb6e : copy.copy_monthly_salary_1d770dc,
+                        job.isMission
+                            ? copy.copy_mission_budget_923bb6e
+                            : copy.copy_monthly_salary_1d770dc,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 2),
@@ -631,7 +816,7 @@ class OpportunityCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: HopeV2Type.metric(context).copyWith(
-                          fontSize: featured ? 21 : 18,
+                          fontSize: 18,
                           color: primary,
                         ),
                       ),
@@ -644,75 +829,57 @@ class OpportunityCard extends StatelessWidget {
         ],
         if (reasons.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.sm),
-          Text(copy.copy_match_signals, style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            copy.copy_match_signals,
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           const SizedBox(height: HopeV2Spacing.xs),
           Wrap(
             spacing: HopeV2Spacing.sm,
             runSpacing: HopeV2Spacing.sm,
-            children: reasons.map((r) => PremiumTag(icon: HopeV2Icons.completed, label: _reason(context, r), color: primary)).toList(),
+            children: reasons
+                .map(
+                  (r) => PremiumTag(
+                    icon: HopeV2Icons.completed,
+                    label: _reason(context, r),
+                    color: primary,
+                  ),
+                )
+                .toList(),
           ),
         ],
-        if (expanded && job.description.trim().isNotEmpty) ...[
+        if (job.description.trim().isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.md),
-          Text(job.description.trim(), maxLines: 5, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            job.description.trim(),
+            maxLines: 5,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ],
         const SizedBox(height: HopeV2Spacing.md),
-        if (featured)
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-            padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 12, 10),
-            decoration: BoxDecoration(
-              color: primary.withValues(alpha: .14),
-              borderRadius: BorderRadius.circular(HopeV2Radii.button),
-              border: Border.all(color: primary.withValues(alpha: .28)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    job.isMission
-                        ? copy.copy_view_and_act_on_mission
-                        : copy.copy_view_details_and_act,
-                    style: TextStyle(
-                      color: primary,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                HugeIcon(
-                  icon: Directionality.of(context) == ui.TextDirection.rtl
-                      ? HopeV2Icons.arrowLeft
-                      : HopeV2Icons.arrowRight,
-                  size: 20,
-                  color: primary,
-                  strokeWidth: 1.9,
-                ),
-              ],
-            ),
-          )
-        else
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  job.isMission
-                      ? copy.copy_view_and_act_on_mission
-                      : copy.copy_view_details_and_act,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                job.isMission
+                    ? copy.copy_view_and_act_on_mission
+                    : copy.copy_view_details_and_act,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-              HugeIcon(
-                icon: Directionality.of(context) == ui.TextDirection.rtl
-                    ? HopeV2Icons.arrowLeft
-                    : HopeV2Icons.arrowRight,
-                size: 20,
-                color: primary,
-                strokeWidth: 1.9,
-              ),
-            ],
-          ),
+            ),
+            HugeIcon(
+              icon: Directionality.of(context) == ui.TextDirection.rtl
+                  ? HopeV2Icons.arrowLeft
+                  : HopeV2Icons.arrowRight,
+              size: 20,
+              color: primary,
+              strokeWidth: 1.9,
+            ),
+          ],
+        ),
       ],
     );
   }
+
 }

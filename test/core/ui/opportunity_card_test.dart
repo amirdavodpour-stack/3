@@ -6,6 +6,56 @@ import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
+  testWidgets(
+      'standard opportunity cards stay scan-dense and avoid repeated detail panels',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-standard-dense',
+      'title': 'طراحی اپ',
+      'description': 'این توضیح باید در کارت اسکن استاندارد پنهان بماند.',
+      'categoryId': 'design',
+      'category': 'طراحی',
+      'jobType': 'FIXED',
+      'budgetMin': '1000000',
+      'budgetMax': '1500000',
+      'kind': 'MISSION',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'recommendationScore': 0.91,
+      'recommendationReasons': ['SKILL_MATCH', 'CATEGORY_MATCH'],
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: OpportunityCard(
+            job: job,
+            variant: OpportunityCardVariant.standard,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('طراحی اپ'), findsOneWidget);
+    expect(find.text('دلایل تطابق'), findsNothing);
+    expect(find.text('بودجه ماموریت'), findsNothing);
+    expect(find.text('1,000,000 – 1,500,000 تومان'), findsOneWidget);
+    expect(
+      tester.getSize(find.byType(OpportunityCard)).height,
+      lessThan(180),
+    );
+  });
+
+
   testWidgets('recommended opportunity exposes its real match score signal',
       (tester) async {
     final job = HopeJob.fromMap({
@@ -235,7 +285,12 @@ void main() {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: Scaffold(body: OpportunityCard(job: job)),
+          home: Scaffold(
+            body: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.expanded,
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();
