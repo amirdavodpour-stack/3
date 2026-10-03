@@ -840,6 +840,25 @@ padding: const EdgeInsets.all(12),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
+            PremiumHeader(
+              page: HopePageId.wallet,
+              domain: HopeProductDomain.finance,
+              eyebrow: _t('کیف پول', 'WALLET'),
+              title: _t('کیف پول داخلی HOPE', 'HOPE internal wallet'),
+              subtitle: _t(
+                'موجودی، وجه محافظت‌شده، انتقال داخلی و وضعیت برداشت را در یک سطح مالی مستقل مدیریت کنید.',
+                'Manage balance, protected funds, internal transfers, and withdrawals in one dedicated finance surface.',
+              ),
+              trailing: PremiumIconButton(
+                icon: HopeV2Icons.insights,
+                tooltip: _t('تحلیل مالی', 'Financial insights'),
+                onPressed: () => Navigator.push(
+                  context,
+                  HopeRoutes.financialInsights(),
+                ),
+              ),
+            ),
+            const SizedBox(height: HopeV2Spacing.md),
             if (_error != null) ...[
               HopeAsyncState(
                 kind: hopeStateKindForError(_error!),
