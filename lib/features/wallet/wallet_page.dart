@@ -748,8 +748,8 @@ class _WalletPageState extends State<WalletPage> {
                     value: _money(_pendingPayoutAmount),
                   ),
                   (
-                    label: _t('نوع کیف پول', 'Wallet type'),
-                    value: _providerLabel('INTERNAL'),
+                    label: _t('درخواست‌های برداشت', 'Withdrawal requests'),
+                    value: '$_pendingPayoutCount',
                   ),
                 ];
                 return Wrap(
