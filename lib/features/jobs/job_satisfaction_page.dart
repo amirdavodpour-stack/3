@@ -97,7 +97,29 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
             'Work satisfaction report',
           )),
         ),
-        body: FutureBuilder<JobSatisfactionState>(
+        body: SafeArea(
+          child: PremiumPageFrame(
+            maxWidth: 820,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 72),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PremiumHeader(
+                  eyebrow: _t('همکاری', 'COLLABORATION'),
+                  title: _t('گزارش رضایت همکاری', 'Work satisfaction report'),
+                  subtitle: _t(
+                    'رضایت، کیفیت اجرا و ارتباط این همکاری را ثبت کنید تا چرخه کار کامل شود.',
+                    'Record satisfaction, execution quality, and communication so this collaboration can close cleanly.',
+                  ),
+                  trailing: const HopeIconTile(
+                    HopeV2Icons.completed,
+                    size: 52,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: HopeV2Spacing.lg),
+                Expanded(
+                  child: FutureBuilder<JobSatisfactionState>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -268,6 +290,11 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
               ],
             );
           },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
 }
