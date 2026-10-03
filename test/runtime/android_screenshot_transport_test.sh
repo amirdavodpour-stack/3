@@ -86,7 +86,8 @@ grep -Fq 'if (child is LoginPage)' "$test_file"
 # Responsive evidence is split into two independent Flutter Driver sessions to limit emulator/session pressure.
 grep -Fq 'run_host_batch_session responsive-a responsive' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b responsive' "$script_file"
-grep -Fq -- 'HOPE_RESPONSIVE_BATCH' "$test_file"
+grep -Fq 'platformDispatcher.defaultRouteName' "$test_file"
+grep -Fq '--route="/__hope_runtime_capture__/$locale/$launch_mode"' "$script_file"
 grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH' "$script_file"
 grep -Fq 'HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker' "$test_file"
 
