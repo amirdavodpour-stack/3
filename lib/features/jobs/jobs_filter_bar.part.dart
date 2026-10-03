@@ -145,9 +145,11 @@ class _JobsFilterHeader extends StatelessWidget {
               const SizedBox(height: HopeV2Spacing.sm),
               SizedBox(
                 height: HopeV2Touch.minimum,
-                child: ListView(
+                child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  children: [
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     _chip(
                       context,
                       copy.copy_all_ba7d5b6,
@@ -205,9 +207,11 @@ class _JobsFilterHeader extends StatelessWidget {
                 ),
               SizedBox(
                 height: HopeV2Touch.minimum,
-                child: ListView(
+                child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  children: [
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     PremiumFilterChip(
                       icon: HopeV2Icons.location,
                       label: cityLabel,
