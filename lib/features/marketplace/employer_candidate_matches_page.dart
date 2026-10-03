@@ -34,7 +34,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       children: [
         PremiumSectionHeader(
           page: HopePageId.candidateMatches,
@@ -50,7 +50,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
             'Workers are ordered by skills, experience, and opportunity fit.',
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         if (data.candidates.isEmpty)
           PremiumPanel(
             padding: const EdgeInsets.all(16),
@@ -88,8 +88,8 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
             (candidate) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: PremiumPanel(
-                glass: true,
-                padding: const EdgeInsets.all(14),
+                glass: false,
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -97,8 +97,8 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 42,
-                          height: 42,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: HopeV2Colors.primary.withValues(alpha: .12),
@@ -106,11 +106,12 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           child: Center(
                             child: Text(
                               '${candidate.rank}',
-                              style: const TextStyle(fontWeight: FontWeight.w900),
+                              style: const TextStyle(fontWeight: FontWeight.w900,
+                                fontSize: 13),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 9),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,6 +139,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           '${candidate.score.toStringAsFixed(candidate.score == candidate.score.roundToDouble() ? 0 : 1)}٪',
                           style: HopeV2Type.metric(context).copyWith(
                             color: HopeV2Colors.primary,
+                            fontSize: 22,
                           ),
                         ),
                       ],
