@@ -466,7 +466,35 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
       "responsive-720x1280-profile-fa-rtl"
     )
   fi
-  run_host_batch_session responsive responsive "${responsive_session_screens[@]}" || responsive_status=$?
+  # Split the responsive capture set across two fresh Flutter Driver sessions.
+  # This limits long-lived emulator/VM-service pressure while preserving every
+  # responsive screenshot and keeping the baseline session untouched.
+  responsive_first_status=0
+  responsive_second_status=0
+  run_host_batch_session responsive-a responsive "${responsive_session_screens[@]:0:3}" || responsive_first_status=$?
+  if [ "$responsive_first_status" -eq 0 ] && \
+     ! validate_capture_set "responsive-$CAPTURE_LOCALE-a" "$runner_temp/hope-responsive-a-runtime.log" "${responsive_session_screens[@]:0:3}"; then
+    responsive_first_status=1
+  fi
+
+  if [ "$responsive_first_status" -eq 0 ]; then
+    hope_android_device_ready "$RUNTIME_SERIAL" || true
+  fi
+
+  run_host_batch_session responsive-b responsive "${responsive_session_screens[@]:3:3}" || responsive_second_status=$?
+  if [ "$responsive_second_status" -eq 0 ] && \
+     ! validate_capture_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-responsive-b-runtime.log" "${responsive_session_screens[@]:3:3}"; then
+    responsive_second_status=1
+  fi
+
+  if [ "$responsive_first_status" -ne 0 ]; then
+    responsive_status="$responsive_first_status"
+  elif [ "$responsive_second_status" -ne 0 ]; then
+    responsive_status="$responsive_second_status"
+  else
+    responsive_status=0
+  fi
+
   responsive_screens=(
     "responsive-720x1280-home-fa-rtl"
     "responsive-720x1280-jobs-fa-rtl"
@@ -487,10 +515,6 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
     responsive_target_screens=("${responsive_screens[@]:0:6}")
   elif [ "$CAPTURE_LOCALE" = "en" ]; then
     responsive_target_screens=("${responsive_screens[@]:6:6}")
-  fi
-
-  if [ "$responsive_status" -eq 0 ] &&     ! validate_capture_set "responsive-$CAPTURE_LOCALE" "$runner_temp/hope-responsive-runtime.log" "${responsive_target_screens[@]}"; then
-    responsive_status=1
   fi
 
   adb shell wm size reset || true
