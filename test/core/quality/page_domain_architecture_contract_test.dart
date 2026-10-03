@@ -243,6 +243,11 @@ void main() {
     expect(source, isNot(contains('applications = _controller.loadApplications')));
   });
 
+  test('wallet financial insights has a single entry point', () {
+    final source = _read('lib/features/wallet/wallet_page.dart');
+    expect(source.allMatches("HopeRoutes.financialInsights()").length, 1);
+  });
+
   test('wallet has an explicit finance page header', () {
     final source = _read('lib/features/wallet/wallet_page.dart');
     expect(source, contains('PremiumHeader('));
