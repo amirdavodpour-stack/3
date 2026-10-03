@@ -722,14 +722,16 @@ padding: const EdgeInsets.all(14),
               ],
             ),
             const SizedBox(height: 8),
-            walletHeroMetric(
-              context,
-              _t('مجموع موجودی', 'Total balance'),
-              _money(wallet.totalBalance),
-            ),
-            const SizedBox(height: 10),
             Row(
               children: [
+                Expanded(
+                  child: walletHeroMetric(
+                    context,
+                    _t('مجموع', 'Total'),
+                    _money(wallet.totalBalance),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: walletHeroMetric(
                     context,
@@ -737,7 +739,7 @@ padding: const EdgeInsets.all(14),
                     _money(wallet.availableBalance),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: walletHeroMetric(
                     context,
