@@ -250,11 +250,11 @@ class OpportunityCard extends StatelessWidget {
           begin: AlignmentDirectional.topStart,
           end: AlignmentDirectional.bottomEnd,
           colors: [
-            primary.withValues(alpha: .44),
-            const Color(0xFF18213A),
-            const Color(0xFF080D18),
+            primary.withValues(alpha: .30),
+            const Color(0xFF171B2E),
+            const Color(0xFF0B0E17),
           ],
-          stops: const [0, .46, 1],
+          stops: const [0, .42, 1],
         ),
       ),
       child: Stack(
