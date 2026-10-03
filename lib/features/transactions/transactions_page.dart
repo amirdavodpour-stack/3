@@ -314,7 +314,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   .copy_sign_in_to_view_your_projects_and_payments_32a2bc2,
               trailing: const HopeIconTile(
                 HopeV2Icons.secure,
-                size: 50,
+                size: 42,
                 filled: true,
               ),
             ),
@@ -406,7 +406,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           .copy_your_projects_applications_and_payments_wi_bec5340,
                       trailing: const HopeIconTile(
                         HopeV2Icons.insights,
-                        size: 50,
+                        size: 42,
                         filled: true,
                       ),
                     ),
@@ -449,7 +449,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           .copy_projects_progress_and_payments_at_a_glance_a0178c8,
                       trailing: const HopeIconTile(
                         HopeV2Icons.activity,
-                        size: 50,
+                        size: 42,
                         filled: true,
                       ),
                     ),
