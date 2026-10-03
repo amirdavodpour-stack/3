@@ -9,6 +9,7 @@ import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/router/app_routes.dart';
 
 class OffersPage extends StatefulWidget {
   const OffersPage({super.key, this.jobId});
