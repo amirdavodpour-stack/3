@@ -5,12 +5,76 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../theme/hope_v2_design.dart';
+
+Color primaryNavigationGlow(BuildContext context) =>
+    Theme.of(context).colorScheme.primary.withValues(alpha: .10);
 import 'components.dart';
 import 'hope_product_architecture.dart';
 
 /// Shared page shell. Every V2 flagship surface should use this instead of
 /// inventing its own max-width, page padding, or bottom safe-area behavior.
 /// Canonical mobile navigation surface for the HOPE shell.
+class HopeNavigationGlyph extends StatelessWidget {
+  const HopeNavigationGlyph({
+    super.key,
+    required this.icon,
+    required this.selected,
+  });
+
+  final Object icon;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final color = selected
+        ? (dark ? HopeV2Colors.primaryDark : primary)
+        : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted);
+
+    return SizedBox(
+      width: HopeV2Touch.minimum,
+      height: HopeV2Touch.minimum,
+      child: Center(
+        child: AnimatedContainer(
+          duration: HopeV2Motion.fast,
+          curve: Curves.easeOutCubic,
+          width: selected ? HopeV2Navigation.itemWidth : 34,
+          height: HopeV2Navigation.itemHeight,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected
+                ? primary.withValues(alpha: dark ? .18 : .10)
+                : Colors.transparent,
+            borderRadius:
+                BorderRadius.circular(HopeV2Navigation.itemRadius),
+            border: Border.all(
+              color: selected
+                  ? primary.withValues(alpha: dark ? .34 : .22)
+                  : Colors.transparent,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: primary.withValues(alpha: dark ? .10 : .06),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
+                : const [],
+          ),
+          child: HopeIcon(
+            icon,
+            size: selected ? 20 : 19,
+            color: color,
+            strokeWidth: selected ? 2.2 : 1.9,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumNavigationBar extends StatelessWidget {
   const PremiumNavigationBar({
     super.key,
@@ -30,96 +94,70 @@ class PremiumNavigationBar extends StatelessWidget {
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(
-        HopeV2Spacing.md,
+        HopeV2Spacing.sm,
         0,
-        HopeV2Spacing.md,
+        HopeV2Spacing.sm,
         HopeV2Spacing.md,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(HopeV2Radii.lg),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: dark
-                  ? Colors.white.withValues(alpha: .045)
-                  : surface.withValues(alpha: .82),
-              border: Border.all(
-                color: dark
-                    ? Colors.white.withValues(alpha: .10)
-                    : HopeV2Surfaces.border(context),
-              ),
-              boxShadow: [
-                if (!dark) ...HopeV2Shadows.card,
-                if (dark) ...[
+      child: Container(
+        key: const ValueKey('hope-navigation-dock'),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: dark
+              ? HopeV2Colors.navigationDark.withValues(alpha: .98)
+              : surface.withValues(alpha: .96),
+          borderRadius: BorderRadius.circular(HopeV2Navigation.dockRadius),
+          border: Border.all(
+            color: dark
+                ? Colors.white.withValues(alpha: .10)
+                : HopeV2Surfaces.border(context),
+          ),
+          boxShadow: dark
+              ? [
                   BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: .10),
-                    blurRadius: 26,
+                    color: primaryNavigationGlow(context),
+                    blurRadius: 28,
                     offset: const Offset(0, 10),
                   ),
-                  BoxShadow(
-                    color: HopeV2Colors.secondary.withValues(alpha: .035),
-                    blurRadius: 40,
-                    offset: const Offset(-8, 18),
-                  ),
-                ],
-              ],
-            ),
-            child: NavigationBarTheme(
-              data: NavigationBarThemeData(
-                height: HopeV2Navigation.barHeight,
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                elevation: 0,
-                indicatorColor: HopeV2Surfaces.navigationIndicator(context),
-                indicatorShape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(HopeV2Radii.navigation),
-                  side: BorderSide(
-                    color: dark
-                        ? Colors.white.withValues(alpha: .08)
-                        : HopeV2Surfaces.border(context),
-                  ),
-                ),
-                labelBehavior:
-                    NavigationDestinationLabelBehavior.alwaysShow,
-                labelTextStyle:
-                    WidgetStateProperty.resolveWith<TextStyle?>(
-                  (states) => TextStyle(
-                    fontSize: 10,
-                    height: 1.05,
-                    fontWeight: states.contains(WidgetState.selected)
-                        ? FontWeight.w900
-                        : FontWeight.w700,
-                    color: states.contains(WidgetState.selected)
-                        ? Theme.of(context).colorScheme.primary
-                        : HopeV2Colors.darkMuted,
-                  ),
-                ),
-                iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>(
-                  (states) => IconThemeData(
-                    size: 21,
-                    color: states.contains(WidgetState.selected)
-                        ? Theme.of(context).colorScheme.primary
-                        : HopeV2Colors.darkMuted,
-                  ),
-                ),
-              ),
-              child: NavigationBar(
-                selectedIndex: selectedIndex,
-                onDestinationSelected: onDestinationSelected,
-                destinations: destinations,
-                height: HopeV2Navigation.barHeight,
+                ]
+              : HopeV2Shadows.card,
+        ),
+        child: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            height: HopeV2Navigation.barHeight,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            indicatorColor: Colors.transparent,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            labelTextStyle:
+                WidgetStateProperty.resolveWith<TextStyle?>(
+              (states) => TextStyle(
+                fontSize: 10,
+                height: 1.05,
+                fontWeight: states.contains(WidgetState.selected)
+                    ? FontWeight.w900
+                    : FontWeight.w700,
+                color: states.contains(WidgetState.selected)
+                    ? (dark
+                        ? HopeV2Colors.primaryDark
+                        : Theme.of(context).colorScheme.primary)
+                    : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted),
               ),
             ),
+          ),
+          child: NavigationBar(
+            selectedIndex: selectedIndex,
+            onDestinationSelected: onDestinationSelected,
+            destinations: destinations,
+            height: HopeV2Navigation.barHeight,
           ),
         ),
       ),
     );
   }
 }
+
 class PremiumNavigationRail extends StatelessWidget {
   const PremiumNavigationRail({
     super.key,
@@ -142,45 +180,42 @@ class PremiumNavigationRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return ClipRect(
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: dark
-                ? Colors.white.withValues(alpha: .03)
-                : HopeV2Surfaces.navigation(context).withValues(alpha: .82),
-            border: BorderDirectional(
-              end: BorderSide(color: HopeV2Surfaces.border(context)),
-            ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: dark
+              ? HopeV2Colors.navigationDark
+              : HopeV2Surfaces.navigation(context).withValues(alpha: .96),
+          border: BorderDirectional(
+            end: BorderSide(color: HopeV2Surfaces.border(context)),
           ),
-          child: SafeArea(
-            left: false,
-            top: false,
-            bottom: false,
-            child: NavigationRail(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: onDestinationSelected,
-              destinations: [
-                for (final destination in destinations)
-                  NavigationRailDestination(
-                    icon: destination.icon,
-                    selectedIcon: destination.selectedIcon,
-                    label: Text(destination.label),
-                  ),
-              ],
-              extended: extended,
-              minWidth: HopeV2Navigation.railMinWidth,
-              minExtendedWidth: HopeV2Navigation.railExtendedWidth,
-              labelType: extended
-                  ? NavigationRailLabelType.none
-                  : NavigationRailLabelType.all,
-              leading: leading,
-              trailing: trailing,
-              backgroundColor: Colors.transparent,
-              indicatorColor: HopeV2Surfaces.navigationIndicator(context),
-              useIndicator: true,
-              groupAlignment: -.6,
-            ),
+        ),
+        child: SafeArea(
+          left: false,
+          top: false,
+          bottom: false,
+          child: NavigationRail(
+            selectedIndex: selectedIndex,
+            onDestinationSelected: onDestinationSelected,
+            destinations: [
+              for (final destination in destinations)
+                NavigationRailDestination(
+                  icon: destination.icon,
+                  selectedIcon: destination.selectedIcon,
+                  label: Text(destination.label),
+                ),
+            ],
+            extended: extended,
+            minWidth: HopeV2Navigation.railMinWidth,
+            minExtendedWidth: HopeV2Navigation.railExtendedWidth,
+            labelType: extended
+                ? NavigationRailLabelType.none
+                : NavigationRailLabelType.all,
+            leading: leading,
+            trailing: trailing,
+            backgroundColor: Colors.transparent,
+            indicatorColor: Colors.transparent,
+            useIndicator: false,
+            groupAlignment: -.6,
           ),
         ),
       ),
