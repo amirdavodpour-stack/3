@@ -98,6 +98,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 14),
                   PremiumHero(
+                    page: HopePageId.register,
                     domain: HopeProductDomain.account,
                     eyebrow: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
