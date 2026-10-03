@@ -140,7 +140,6 @@ void main() {
   );
 
   testWidgets('applications do not expose unknown backend statuses',
-  testWidgets('applications do not expose unknown backend statuses',
       (tester) async {
     const application = HopeApplication(
       id: 'app-1',
