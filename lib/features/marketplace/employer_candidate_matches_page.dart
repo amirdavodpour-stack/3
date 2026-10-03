@@ -37,6 +37,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
         PremiumSectionHeader(
+          page: HopePageId.candidateMatches,
           domain: HopeProductDomain.intelligence,
           title: _t(
             context,
