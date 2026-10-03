@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/chat/chat_repository.dart';
+import '../../core/auth/auth_controller.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_async_state.dart';
@@ -63,6 +64,7 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     final c = _thread?.conversation;
     final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final currentUserId = context.read<AuthController?>()?.user?['id']?.toString();
     final title = widget.adminRoom
         ? _t('گفتگوی مدیران', 'Admin room')
         : c?.otherUserName.isNotEmpty == true
@@ -115,10 +117,16 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 Expanded(
                   child: _thread == null
-                      ? const HopeAsyncState(
+                      ? HopeAsyncState(
                           kind: HopeStateKind.loading,
-                          title: '...',
-                          message: '...',
+                          title: _t(
+                            'در حال بارگذاری گفتگو',
+                            'Loading conversation',
+                          ),
+                          message: _t(
+                            'پیام‌های این گفتگو در حال دریافت هستند.',
+                            'Messages in this conversation are loading.',
+                          ),
                         )
                       : _thread!.messages.isEmpty
                           ? PremiumPanel(
@@ -160,7 +168,7 @@ class _ChatPageState extends State<ChatPage> {
                                 itemCount: _thread!.messages.length,
                                 itemBuilder: (context, i) {
                                   final m = _thread!.messages[i];
-                                  final mine = m.senderId == _thread!.conversation.id;
+                                  final mine = currentUserId != null && m.senderId == currentUserId;
                                   return Align(
                                     alignment: AlignmentDirectional.centerStart,
                                     child: ConstrainedBox(
