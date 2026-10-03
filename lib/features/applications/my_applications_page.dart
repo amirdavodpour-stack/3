@@ -292,6 +292,21 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
             ),
             const SizedBox(height: 12),
             _timeline(item),
+            if (item.status.toUpperCase() == 'ACCEPTED' &&
+                item.jobId.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    HopeRoutes.jobChat(item.jobId),
+                  ),
+                  icon: const HopeIcon(HopeV2Icons.message, size: 19),
+                  label: Text(_t('گفتگوی همکاری', 'Collaboration chat')),
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             Row(
               children: [
