@@ -303,6 +303,99 @@ class PremiumIconButton extends StatelessWidget {
   }
 }
 
+class PremiumQuickAction {
+  const PremiumQuickAction({
+    required this.label,
+    required this.icon,
+    this.onPressed,
+    this.primary = false,
+    this.semanticLabel,
+  });
+
+  final String label;
+  final Object icon;
+  final VoidCallback? onPressed;
+  final bool primary;
+  final String? semanticLabel;
+}
+
+class PremiumQuickActionStrip extends StatelessWidget {
+  const PremiumQuickActionStrip({
+    super.key,
+    required this.title,
+    required this.actions,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+  final List<PremiumQuickAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    if (actions.isEmpty) return const SizedBox.shrink();
+    return PremiumPanel(
+      glass: true,
+      padding: const EdgeInsets.all(HopeV2Spacing.md),
+      semanticLabel: title,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: HopeV2Type.section(context),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          const SizedBox(height: HopeV2Spacing.sm),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final twoColumns = constraints.maxWidth >= 520;
+              final width = twoColumns
+                  ? (constraints.maxWidth - HopeV2Spacing.sm) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: HopeV2Spacing.sm,
+                runSpacing: HopeV2Spacing.sm,
+                children: [
+                  for (final action in actions)
+                    SizedBox(
+                      width: width,
+                      child: action.primary
+                          ? FilledButton.icon(
+                              onPressed: action.onPressed,
+                              icon: HopeIcon(action.icon, size: 18),
+                              label: Text(
+                                action.label,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          : OutlinedButton.icon(
+                              onPressed: action.onPressed,
+                              icon: HopeIcon(action.icon, size: 18),
+                              label: Text(
+                                action.label,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class PremiumHeader extends StatelessWidget {
   const PremiumHeader({
     super.key,
