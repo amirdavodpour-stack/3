@@ -491,7 +491,7 @@ padding: const EdgeInsets.all(12),
               ),
             if (!auth.isGuest && _agentState != null)
               const SizedBox(height: HopeV2Spacing.md),
-            FutureBuilder<List<HopeJob>>
+            FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
