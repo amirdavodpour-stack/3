@@ -964,6 +964,7 @@ padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
             const SizedBox(height: 24),
             PremiumSectionHeader(
+              domain: HopeProductDomain.finance,
               title: _t('تاریخچه کیف پول', 'Wallet history'),
               subtitle: _t(
                 'ثبت‌های مالی به ترتیب زمانی، با بارگذاری مرحله‌ای.',
