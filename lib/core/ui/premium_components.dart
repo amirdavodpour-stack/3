@@ -355,7 +355,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
           const SizedBox(height: HopeV2Spacing.sm),
           LayoutBuilder(
             builder: (context, constraints) {
-              final twoColumns = constraints.maxWidth >= 520;
+              final twoColumns = constraints.maxWidth >= 360;
               final width = twoColumns
                   ? (constraints.maxWidth - HopeV2Spacing.sm) / 2
                   : constraints.maxWidth;
