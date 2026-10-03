@@ -89,7 +89,7 @@ class OpportunityCard extends StatelessWidget {
                     end: AlignmentDirectional.bottomEnd,
                     colors: Theme.of(context).brightness == Brightness.dark
                         ? [
-                            primary.withValues(alpha: .18),
+                            primary.withValues(alpha: .14),
                             const Color(0xFF101522),
                             Theme.of(context).colorScheme.surface,
                           ]
@@ -109,8 +109,8 @@ class OpportunityCard extends StatelessWidget {
               color: featured
                   ? primary.withValues(
                       alpha: Theme.of(context).brightness == Brightness.dark
-                          ? .26
-                          : .20,
+                          ? .21
+                          : .18,
                     )
                   : HopeV2Surfaces.border(context),
             ),
@@ -118,14 +118,14 @@ class OpportunityCard extends StatelessWidget {
                 ? [
                     if (featured)
                       BoxShadow(
-                        color: primary.withValues(alpha: .045),
+                        color: primary.withValues(alpha: .025),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
                   ]
                 : HopeV2Shadows.card,
           ),
-          padding: EdgeInsets.all(compact || featured ? HopeV2Spacing.md : 14),
+          padding: EdgeInsets.all(featured ? 12 : (compact ? 12 : 14)),
           child: compact
               ? _compact(context, title, city, amount, primary, copy)
               : _standard(
@@ -177,7 +177,7 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: featured ? 148 : 146,
+        height: featured ? 132 : 116,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -228,7 +228,7 @@ class OpportunityCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 17.5,
+                  fontSize: 16.5,
                   height: 1.08,
                   fontWeight: FontWeight.w900,
                   shadows: [
@@ -543,7 +543,7 @@ class OpportunityCard extends StatelessWidget {
                       job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
                       color: primary,
                       filled: true,
-                      size: 46,
+                      size: 42,
                     ),
                   ),
                 ),
