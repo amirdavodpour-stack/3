@@ -336,16 +336,17 @@ class _ChatPageState extends State<ChatPage> {
                                         : AlignmentDirectional.centerStart,
                                     child: ConstrainedBox(
                                       constraints: const BoxConstraints(
-                                        maxWidth: 680,
+                                        maxWidth: 560,
                                       ),
                                       child: Padding(
                                         padding:
                                             const EdgeInsets.only(bottom: 10),
                                         child: PremiumPanel(
+                                          glass: false,
                                           highlight: mine,
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 11,
+                                            horizontal: 12,
+                                            vertical: 9,
                                           ),
                                           child: Column(
                                             crossAxisAlignment:
@@ -374,8 +375,13 @@ class _ChatPageState extends State<ChatPage> {
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(message.body),
+                                              const SizedBox(height: 5),
+                                              Text(
+                                                message.body,
+                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                      height: 1.42,
+                                                    ),
+                                              ),
                                             ],
                                           ),
                                         ),
