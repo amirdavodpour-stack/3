@@ -245,5 +245,24 @@ void main() {
   });
 }
 
+testWidgets('opportunity skeleton stays overflow-safe in narrow cards',
+    (tester) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: ThemeData(brightness: Brightness.dark),
+      home: const Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 200,
+            child: OpportunitySkeletonCard(),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  expect(tester.takeException(), isNull);
+});
+
 void _noop(String _) {}
 void _noopAction() {}
