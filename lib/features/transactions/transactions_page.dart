@@ -180,6 +180,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         child: ListView(
           children: [
             PremiumHeader(
+              domain: HopeProductDomain.work,
               eyebrow: HopeCopy.of(context).copy_activity_4b38716,
               title: HopeCopy.of(context).copy_your_activity_is_private_1363766,
               subtitle: HopeCopy.of(context)
