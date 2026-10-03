@@ -932,7 +932,6 @@ class PremiumHero extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 7),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
                                     width: 28,
