@@ -113,6 +113,7 @@ class _LoginPageState extends State<LoginPage> {
       child: Scaffold(
         body: SafeArea(
           child: PremiumPageFrame(
+            page: HopePageId.login,
             maxWidth: 760,
             padding: const EdgeInsets.fromLTRB(20, 15, 20, 30),
             child: ListView(
@@ -136,6 +137,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 22),
               PremiumHero(
+                domain: HopeProductDomain.account,
                 eyebrow: l10n.copy_hope_account_4ba3966,
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
