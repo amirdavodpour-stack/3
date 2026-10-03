@@ -7,6 +7,290 @@ import '../theme/hope_v2_design.dart';
 /// A page can contain many widgets, but its primary domain should remain clear:
 /// discovery, work, finance, account, trust, control, communication,
 /// collaboration, intelligence, or overview.
+
+enum HopePageId {
+  home,
+  explore,
+  myApplications,
+  offers,
+  activity,
+  wallet,
+  profile,
+  notifications,
+  chat,
+  satisfaction,
+  financialInsights,
+  admin,
+  adminOperations,
+  adminDisputes,
+  recommendation,
+  createOpportunity,
+  savedSearches,
+  notificationDevices,
+  privacy,
+  adminAccess,
+  opportunityDetail,
+  candidateMatches,
+  transactionDetail,
+  about,
+}
+
+class HopePageSpec {
+  const HopePageSpec({
+    required this.domain,
+    required this.titleFa,
+    required this.titleEn,
+    required this.purposeFa,
+    required this.purposeEn,
+    required this.primaryActionFa,
+    required this.primaryActionEn,
+  });
+
+  final HopeProductDomain domain;
+  final String titleFa;
+  final String titleEn;
+  final String purposeFa;
+  final String purposeEn;
+  final String primaryActionFa;
+  final String primaryActionEn;
+
+  String title(BuildContext context) =>
+      Localizations.localeOf(context).languageCode == 'en' ? titleEn : titleFa;
+
+  String purpose(BuildContext context) =>
+      Localizations.localeOf(context).languageCode == 'en'
+          ? purposeEn
+          : purposeFa;
+
+  String primaryAction(BuildContext context) =>
+      Localizations.localeOf(context).languageCode == 'en'
+          ? primaryActionEn
+          : primaryActionFa;
+}
+
+extension HopePageIdX on HopePageId {
+  HopePageSpec get spec => switch (this) {
+        HopePageId.home => const HopePageSpec(
+            domain: HopeProductDomain.overview,
+            titleFa: 'خانه',
+            titleEn: 'Home',
+            purposeFa: 'نمای کلی وضعیت و مسیر بعدی.',
+            purposeEn: 'Overview of status and the next path.',
+            primaryActionFa: 'ادامه',
+            primaryActionEn: 'Continue',
+          ),
+        HopePageId.explore => const HopePageSpec(
+            domain: HopeProductDomain.discovery,
+            titleFa: 'کاوش فرصت‌ها',
+            titleEn: 'Explore opportunities',
+            purposeFa: 'جست‌وجو و ارزیابی فرصت‌های کاری.',
+            purposeEn: 'Search and evaluate work opportunities.',
+            primaryActionFa: 'مشاهده فرصت',
+            primaryActionEn: 'Open opportunity',
+          ),
+        HopePageId.myApplications => const HopePageSpec(
+            domain: HopeProductDomain.work,
+            titleFa: 'درخواست‌های من',
+            titleEn: 'My applications',
+            purposeFa: 'پیگیری چرخه درخواست‌های کاری.',
+            purposeEn: 'Track the work-application lifecycle.',
+            primaryActionFa: 'پیگیری درخواست',
+            primaryActionEn: 'Track application',
+          ),
+        HopePageId.offers => const HopePageSpec(
+            domain: HopeProductDomain.work,
+            titleFa: 'پیشنهادها',
+            titleEn: 'Offers',
+            purposeFa: 'مدیریت پیشنهادهای همکاری.',
+            purposeEn: 'Manage collaboration offers.',
+            primaryActionFa: 'بررسی پیشنهاد',
+            primaryActionEn: 'Review offer',
+          ),
+        HopePageId.activity => const HopePageSpec(
+            domain: HopeProductDomain.work,
+            titleFa: 'فعالیت',
+            titleEn: 'Activity',
+            purposeFa: 'مرکز رویدادها و پیگیری اجرای همکاری.',
+            purposeEn: 'Track events and active work execution.',
+            primaryActionFa: 'باز کردن فعالیت',
+            primaryActionEn: 'Open activity',
+          ),
+        HopePageId.wallet => const HopePageSpec(
+            domain: HopeProductDomain.finance,
+            titleFa: 'کیف پول',
+            titleEn: 'Wallet',
+            purposeFa: 'موجودی، وجه محافظت‌شده و تراکنش‌ها.',
+            purposeEn: 'Balance, protected funds, and transactions.',
+            primaryActionFa: 'مدیریت وجه',
+            primaryActionEn: 'Manage funds',
+          ),
+        HopePageId.profile => const HopePageSpec(
+            domain: HopeProductDomain.account,
+            titleFa: 'پروفایل',
+            titleEn: 'Profile',
+            purposeFa: 'هویت و تنظیمات حساب.',
+            purposeEn: 'Account identity and settings.',
+            primaryActionFa: 'ویرایش حساب',
+            primaryActionEn: 'Edit account',
+          ),
+        HopePageId.notifications => const HopePageSpec(
+            domain: HopeProductDomain.communication,
+            titleFa: 'اعلان‌ها',
+            titleEn: 'Notifications',
+            purposeFa: 'پیگیری پیام‌ها و رخدادهای سیستمی.',
+            purposeEn: 'Track system messages and events.',
+            primaryActionFa: 'بررسی اعلان',
+            primaryActionEn: 'Review notification',
+          ),
+        HopePageId.chat => const HopePageSpec(
+            domain: HopeProductDomain.collaboration,
+            titleFa: 'گفتگو',
+            titleEn: 'Chat',
+            purposeFa: 'ارتباط انسانی در بستر همکاری.',
+            purposeEn: 'Human communication inside a collaboration.',
+            primaryActionFa: 'ارسال پیام',
+            primaryActionEn: 'Send message',
+          ),
+        HopePageId.satisfaction => const HopePageSpec(
+            domain: HopeProductDomain.trust,
+            titleFa: 'رضایت همکاری',
+            titleEn: 'Work satisfaction',
+            purposeFa: 'ثبت بازخورد و سیگنال‌های اعتماد پس از کار.',
+            purposeEn: 'Capture post-work feedback and trust signals.',
+            primaryActionFa: 'ثبت رضایت',
+            primaryActionEn: 'Submit feedback',
+          ),
+        HopePageId.financialInsights => const HopePageSpec(
+            domain: HopeProductDomain.finance,
+            titleFa: 'بینش مالی',
+            titleEn: 'Financial insights',
+            purposeFa: 'تحلیل روندهای مالی حساب.',
+            purposeEn: 'Analyze account financial trends.',
+            primaryActionFa: 'بررسی روند',
+            primaryActionEn: 'Review trends',
+          ),
+        HopePageId.admin => const HopePageSpec(
+            domain: HopeProductDomain.control,
+            titleFa: 'مرکز مدیریت',
+            titleEn: 'Admin center',
+            purposeFa: 'کنترل و عملیات محافظت‌شده سامانه.',
+            purposeEn: 'Protected system control and operations.',
+            primaryActionFa: 'باز کردن عملیات',
+            primaryActionEn: 'Open operations',
+          ),
+        HopePageId.adminOperations => const HopePageSpec(
+            domain: HopeProductDomain.control,
+            titleFa: 'مرکز عملیات',
+            titleEn: 'Operations center',
+            purposeFa: 'بررسی مستقل مالی، اعتماد و خطاهای عملیاتی.',
+            purposeEn: 'Review finance, trust, and operational failures separately.',
+            primaryActionFa: 'رسیدگی',
+            primaryActionEn: 'Review case',
+          ),
+        HopePageId.adminDisputes => const HopePageSpec(
+            domain: HopeProductDomain.control,
+            titleFa: 'اختلاف‌های همکاری',
+            titleEn: 'Work disputes',
+            purposeFa: 'بررسی اختلاف و اجرای اقدام مجاز.',
+            purposeEn: 'Review disputes and execute permitted actions.',
+            primaryActionFa: 'بررسی پرونده',
+            primaryActionEn: 'Review case',
+          ),
+        HopePageId.recommendation => const HopePageSpec(
+            domain: HopeProductDomain.intelligence,
+            titleFa: 'پروفایل هوشمند کاری',
+            titleEn: 'AI work profile',
+            purposeFa: 'ساخت سیگنال‌های شخصی‌سازی و تطبیق.',
+            purposeEn: 'Build personalization and matching signals.',
+            primaryActionFa: 'تکمیل پروفایل',
+            primaryActionEn: 'Complete profile',
+          ),
+        HopePageId.createOpportunity => const HopePageSpec(
+            domain: HopeProductDomain.work,
+            titleFa: 'ثبت فرصت',
+            titleEn: 'Create opportunity',
+            purposeFa: 'تعریف یک همکاری با شرایط روشن.',
+            purposeEn: 'Define a collaboration with clear terms.',
+            primaryActionFa: 'ثبت فرصت',
+            primaryActionEn: 'Create opportunity',
+          ),
+        HopePageId.savedSearches => const HopePageSpec(
+            domain: HopeProductDomain.discovery,
+            titleFa: 'جست‌وجوهای ذخیره‌شده',
+            titleEn: 'Saved searches',
+            purposeFa: 'مدیریت فیلترهای دائمی کاوش.',
+            purposeEn: 'Manage persistent discovery filters.',
+            primaryActionFa: 'ایجاد جست‌وجو',
+            primaryActionEn: 'Create search',
+          ),
+        HopePageId.notificationDevices => const HopePageSpec(
+            domain: HopeProductDomain.communication,
+            titleFa: 'دستگاه‌های اعلان',
+            titleEn: 'Notification devices',
+            purposeFa: 'مدیریت دستگاه‌های دریافت Push.',
+            purposeEn: 'Manage devices registered for Push.',
+            primaryActionFa: 'مدیریت دستگاه',
+            primaryActionEn: 'Manage device',
+          ),
+        HopePageId.privacy => const HopePageSpec(
+            domain: HopeProductDomain.account,
+            titleFa: 'حریم خصوصی',
+            titleEn: 'Privacy',
+            purposeFa: 'کنترل داده و چرخه عمر حساب.',
+            purposeEn: 'Control account data and lifecycle.',
+            primaryActionFa: 'مدیریت داده',
+            primaryActionEn: 'Manage data',
+          ),
+        HopePageId.adminAccess => const HopePageSpec(
+            domain: HopeProductDomain.control,
+            titleFa: 'احراز هویت مدیریت',
+            titleEn: 'Admin access',
+            purposeFa: 'ورود کنترل‌شده به مرکز مدیریت.',
+            purposeEn: 'Controlled entry to admin operations.',
+            primaryActionFa: 'باز کردن پنل',
+            primaryActionEn: 'Unlock panel',
+          ),
+        HopePageId.opportunityDetail => const HopePageSpec(
+            domain: HopeProductDomain.discovery,
+            titleFa: 'جزئیات فرصت',
+            titleEn: 'Opportunity detail',
+            purposeFa: 'ارزیابی شرایط و شروع همکاری.',
+            purposeEn: 'Evaluate terms and start a collaboration.',
+            primaryActionFa: 'اقدام روی فرصت',
+            primaryActionEn: 'Act on opportunity',
+          ),
+        HopePageId.candidateMatches => const HopePageSpec(
+            domain: HopeProductDomain.intelligence,
+            titleFa: 'انطباق متقاضیان',
+            titleEn: 'Candidate matches',
+            purposeFa: 'ارزیابی و مقایسه افراد بر اساس سیگنال‌های انطباق.',
+            purposeEn: 'Evaluate and compare candidates by compatibility signals.',
+            primaryActionFa: 'بررسی انطباق',
+            primaryActionEn: 'Review match',
+          ),
+        HopePageId.transactionDetail => const HopePageSpec(
+            domain: HopeProductDomain.finance,
+            titleFa: 'جزئیات تراکنش',
+            titleEn: 'Transaction detail',
+            purposeFa: 'اجرای و مشاهده چرخه مالی همکاری.',
+            purposeEn: 'Execute and observe the collaboration financial lifecycle.',
+            primaryActionFa: 'اقدام مالی بعدی',
+            primaryActionEn: 'Next financial action',
+          ),
+        HopePageId.about => const HopePageSpec(
+            domain: HopeProductDomain.overview,
+            titleFa: 'درباره HOPE',
+            titleEn: 'About HOPE',
+            purposeFa: 'فهم محصول، مدل همکاری و اصول اعتماد.',
+            purposeEn: 'Understand the product, work model, and trust principles.',
+            primaryActionFa: 'شناخت HOPE',
+            primaryActionEn: 'Understand HOPE',
+          ),
+      };
+
+  HopeProductDomain get domain => spec.domain;
+}
+
 enum HopeProductDomain {
   overview,
   discovery,
