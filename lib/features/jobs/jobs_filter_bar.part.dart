@@ -27,7 +27,6 @@ class HopeOpportunityRefinementGroup extends StatelessWidget {
               selected: kind == 'ALL',
               onTap: () => onKindChanged('ALL'),
             ),
-            const SizedBox(width: HopeV2Spacing.sm),
             _item(
               context,
               label: copy.copy_missions_a833d13,
@@ -35,7 +34,6 @@ class HopeOpportunityRefinementGroup extends StatelessWidget {
               onTap: () => onKindChanged('MISSION'),
               icon: HopeV2Icons.mission,
             ),
-            const SizedBox(width: HopeV2Spacing.sm),
             _item(
               context,
               label: copy.copy_jobs_ebf9a80,
@@ -43,14 +41,12 @@ class HopeOpportunityRefinementGroup extends StatelessWidget {
               onTap: () => onKindChanged('JOB'),
               icon: HopeV2Icons.job,
             ),
-            const SizedBox(width: HopeV2Spacing.sm),
             _item(
               context,
               label: copy.copy_public_21e97be,
               selected: visibility == 'PUBLIC',
               onTap: () => onVisibilityChanged('PUBLIC'),
             ),
-            const SizedBox(width: HopeV2Spacing.sm),
             _item(
               context,
               label: copy.copy_specialized_5d1ca04,
@@ -139,7 +135,6 @@ class _JobsFilterHeader extends StatelessWidget {
                     ),
               ),
             ),
-            const SizedBox(width: HopeV2Spacing.sm),
             PremiumTag(
               icon: HopeV2Icons.workshop,
               label: '$resultCount ${copy.copy_results_2d120a3}',
@@ -190,8 +185,7 @@ class _JobsFilterHeader extends StatelessWidget {
             return Row(
               children: [
                 Expanded(child: search),
-                const SizedBox(width: HopeV2Spacing.sm),
-                actions,
+                    actions,
               ],
             );
           },
