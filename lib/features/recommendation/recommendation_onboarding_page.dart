@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/recommendation/recommendation_profile_repository.dart';
 import '../../core/theme/hope_v2_design.dart';
-import '../../core/ui/brand.dart';
 import '../../core/ui/hope_feedback.dart';
 import '../../core/ui/premium_components.dart';
 
