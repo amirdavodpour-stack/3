@@ -213,7 +213,9 @@ class PremiumPageFrame extends StatelessWidget {
       constraints: BoxConstraints(
         minHeight: MediaQuery.sizeOf(context).height,
       ),
-      child: DecoratedBox(
+      child: SizedBox(
+        width: double.infinity,
+        child: DecoratedBox(
         decoration: BoxDecoration(
           color: HopeV2Surfaces.page(context),
         gradient: HopeV2Surfaces.pageHalo(context),
@@ -774,6 +776,7 @@ class PremiumHero extends StatelessWidget {
         ? height.clamp(152.0, 320.0).toDouble()
         : (height < 320 ? 320.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
+    final vertical = compact ? 14.0 : horizontal;
 
     return Semantics(
       container: true,
@@ -916,7 +919,10 @@ class PremiumHero extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: EdgeInsets.all(horizontal),
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontal,
+                vertical: vertical,
+              ),
               child: Align(
                 alignment: AlignmentDirectional.bottomStart,
                 child: LayoutBuilder(
