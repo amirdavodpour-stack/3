@@ -74,6 +74,7 @@ class _RegisterPageState extends State<RegisterPage> {
         child: Scaffold(
           body: SafeArea(
             child: PremiumPageFrame(
+              page: HopePageId.register,
               maxWidth: 640,
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
               child: ListView(
@@ -97,6 +98,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 14),
                   PremiumHero(
+                    domain: HopeProductDomain.account,
                     eyebrow: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
