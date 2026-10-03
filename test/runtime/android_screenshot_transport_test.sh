@@ -63,6 +63,13 @@ if grep -Fq 'HOPE_ADB_SCREENSHOT_CAPTURE=true' "$script_file"; then
   exit 1
 fi
 
+# The bounded runtime timeout must wrap the actual Flutter Driver process.
+grep -Fq 'RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"' "$script_file"
+if ! grep -Fq '"${RUNTIME_TEST_TIMEOUT_SECONDS}s" flutter drive --no-pub --no-dds' "$script_file"; then
+  echo "FAIL: RUNTIME_TEST_TIMEOUT_SECONDS is not applied to the Flutter Driver process" >&2
+  exit 1
+fi
+
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"
 completion_line="$(grep -Fn 'if [ "$completion_status" -eq 0 ]; then' "$script_file" | head -n1 | cut -d: -f1)"
