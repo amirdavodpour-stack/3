@@ -56,4 +56,48 @@ void main() {
     }
     expect(tester.takeException(), isNull);
   });
+  testWidgets('refinement launcher keeps secondary filters out of the first viewport',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: HopeOpportunityRefinementLauncher(
+            activeCount: 2,
+            kind: 'MISSION',
+            visibility: 'PUBLIC',
+            cityLabel: 'Tehran',
+            categoryLabel: 'Design',
+            categoryError: null,
+            onKindChanged: (_) {},
+            onVisibilityChanged: (_) {},
+            onPickCity: () {},
+            onPickCategory: () {},
+            onRetryCategories: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Missions'), findsNothing);
+
+    await tester.tap(find.text('Filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Refine results'), findsOneWidget);
+    expect(find.text('Missions'), findsOneWidget);
+    expect(find.text('Public'), findsOneWidget);
+    expect(find.text('Tehran'), findsOneWidget);
+    expect(find.text('Design'), findsOneWidget);
+  });
+
 }

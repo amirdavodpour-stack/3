@@ -73,6 +73,136 @@ class HopeOpportunityRefinementGroup extends StatelessWidget {
   }
 }
 
+class HopeOpportunityRefinementLauncher extends StatelessWidget {
+  const HopeOpportunityRefinementLauncher({
+    super.key,
+    required this.activeCount,
+    required this.kind,
+    required this.visibility,
+    required this.cityLabel,
+    required this.categoryLabel,
+    required this.categoryError,
+    required this.onKindChanged,
+    required this.onVisibilityChanged,
+    required this.onPickCity,
+    required this.onPickCategory,
+    required this.onRetryCategories,
+  });
+
+  final int activeCount;
+  final String kind;
+  final String visibility;
+  final String cityLabel;
+  final String categoryLabel;
+  final String? categoryError;
+  final ValueChanged<String> onKindChanged;
+  final ValueChanged<String> onVisibilityChanged;
+  final VoidCallback onPickCity;
+  final VoidCallback onPickCategory;
+  final VoidCallback onRetryCategories;
+
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  Future<void> _open(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 28),
+          children: [
+            Text(
+              _t(context, 'تنظیم نتایج', 'Refine results'),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -.35,
+                  ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              _t(
+                context,
+                'فیلترهای جزئی را اینجا تنظیم کنید؛ viewport اصلی برای فرصت‌ها آزاد می‌ماند.',
+                'Set secondary filters here and keep the main viewport focused on opportunities.',
+              ),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: HopeV2Spacing.md),
+            HopeOpportunityRefinementGroup(
+              kind: kind,
+              visibility: visibility,
+              onKindChanged: onKindChanged,
+              onVisibilityChanged: onVisibilityChanged,
+            ),
+            if (categoryError != null) ...[
+              const SizedBox(height: HopeV2Spacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      categoryError!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: onRetryCategories,
+                    child: Text(_t(context, 'دوباره', 'Retry')),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: HopeV2Spacing.sm),
+            Wrap(
+              spacing: HopeV2Spacing.sm,
+              runSpacing: HopeV2Spacing.xs,
+              children: [
+                PremiumFilterChip(
+                  icon: HopeV2Icons.location,
+                  label: cityLabel,
+                  selected: false,
+                  onTap: onPickCity,
+                  color: HopeV2Colors.secondary,
+                ),
+                PremiumFilterChip(
+                  icon: HopeV2Icons.category,
+                  label: categoryLabel,
+                  selected: false,
+                  onTap: onPickCategory,
+                  color: HopeV2Colors.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: HopeV2Spacing.lg),
+            FilledButton(
+              onPressed: () => Navigator.pop(sheetContext),
+              child: Text(_t(context, 'اعمال فیلترها', 'Done')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = activeCount == 0
+        ? _t(context, 'فیلترها', 'Filters')
+        : _t(context, 'فیلترها · $activeCount', 'Filters · $activeCount');
+    return Semantics(
+      button: true,
+      label: _t(context, 'باز کردن فیلترهای فرصت', 'Open opportunity filters'),
+      child: OutlinedButton.icon(
+        onPressed: () => _open(context),
+        icon: const HopeIcon(HopeV2Icons.filter, size: 18),
+        label: Text(label),
+      ),
+    );
+  }
+}
+
 class _JobsFilterHeader extends StatelessWidget {
   const _JobsFilterHeader({
     required this.domain,
@@ -135,13 +265,14 @@ class _JobsFilterHeader extends StatelessWidget {
                     ),
               ),
             ),
+            const SizedBox(width: HopeV2Spacing.sm),
             PremiumTag(
               icon: HopeV2Icons.workshop,
               label: '$resultCount ${copy.copy_results_2d120a3}',
             ),
           ],
         ),
-        const SizedBox(height: HopeV2Spacing.md),
+        const SizedBox(height: HopeV2Spacing.sm),
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 560;
@@ -152,10 +283,27 @@ class _JobsFilterHeader extends StatelessWidget {
             final actions = Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                PremiumIconButton(
-                  icon: HopeV2Icons.add,
-                  tooltip: copy.copy_save_search,
-                  onPressed: onSaveSearch,
+                HopeOpportunityRefinementLauncher(
+                  activeCount: [
+                    if (kind != 'ALL') 1,
+                    if (visibility != 'ALL') 1,
+                    if (cityLabel.trim().isNotEmpty &&
+                        cityLabel != copy.copy_near_1df6db0) 1,
+                    if (categoryLabel.trim().isNotEmpty &&
+                        categoryLabel !=
+                            HopeCopy.of(context).copy_all_fields_4f77401)
+                      1,
+                  ].length,
+                  kind: kind,
+                  visibility: visibility,
+                  cityLabel: cityLabel,
+                  categoryLabel: categoryLabel,
+                  categoryError: categoryError,
+                  onKindChanged: onKindChanged,
+                  onVisibilityChanged: onVisibilityChanged,
+                  onPickCity: onPickCity,
+                  onPickCategory: onPickCategory,
+                  onRetryCategories: onRetryCategories,
                 ),
                 if (savedSearchCount > 0) ...[
                   const SizedBox(width: HopeV2Spacing.xs),
@@ -165,6 +313,12 @@ class _JobsFilterHeader extends StatelessWidget {
                     onPressed: onOpenSavedSearches,
                   ),
                 ],
+                const SizedBox(width: HopeV2Spacing.xs),
+                PremiumIconButton(
+                  icon: HopeV2Icons.add,
+                  tooltip: copy.copy_save_search,
+                  onPressed: onSaveSearch,
+                ),
               ],
             );
 
@@ -185,60 +339,27 @@ class _JobsFilterHeader extends StatelessWidget {
             return Row(
               children: [
                 Expanded(child: search),
-                    actions,
+                const SizedBox(width: HopeV2Spacing.sm),
+                actions,
               ],
             );
           },
         ),
         const SizedBox(height: HopeV2Spacing.xs),
-        HopeOpportunityRefinementGroup(
-          kind: kind,
-          visibility: visibility,
-          onKindChanged: onKindChanged,
-          onVisibilityChanged: onVisibilityChanged,
-        ),
-        const SizedBox(height: HopeV2Spacing.sm),
         if (categoryError != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    categoryError!,
-                    style: Theme.of(context).textTheme.bodySmall,
+            padding: const EdgeInsets.only(top: HopeV2Spacing.xs),
+            child: Text(
+              categoryError!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
                   ),
-                ),
-                TextButton(
-                  onPressed: onRetryCategories,
-                  child: Text(copy.copy_retry_49f3eba),
-                ),
-              ],
             ),
           ),
-        Wrap(
-          spacing: HopeV2Spacing.sm,
-          runSpacing: HopeV2Spacing.xs,
-          children: [
-            PremiumFilterChip(
-              icon: HopeV2Icons.location,
-              label: cityLabel,
-              selected: false,
-              onTap: onPickCity,
-              color: HopeV2Colors.secondary,
-            ),
-            PremiumFilterChip(
-              icon: HopeV2Icons.category,
-              label: categoryLabel,
-              selected: false,
-              onTap: onPickCategory,
-              color: HopeV2Colors.primary,
-            ),
-          ],
-        ),
       ],
     );
-  }
 
   Widget _chip(
     BuildContext context,

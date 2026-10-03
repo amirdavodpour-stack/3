@@ -478,8 +478,8 @@ class _WalletPageState extends State<WalletPage> {
               _DetailRow(label: _t('زمان ثبت', 'Created'), value: _date(payout.createdAt)),
               if (status == 'UNKNOWN')
                 PremiumPanel(
-                  glass: true,
-padding: const EdgeInsets.all(14),
+                  glass: false,
+                  padding: const EdgeInsets.all(14),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -907,35 +907,41 @@ padding: const EdgeInsets.all(14),
                 );
               },
             ),
-            const SizedBox(height: 14),
-            PremiumPanel(
-              glass: true,
-padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(
+                start: 4,
+                top: 2,
+                bottom: 2,
+              ),
               child: Row(
                 children: [
-                  const HopeIconTile(HopeV2Icons.wallet, size: 42),
-                  const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _t('شناسه کیف پول', 'Wallet ID'),
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        const SizedBox(height: 2),
-                        SelectableText(
-                          wallet.id,
-                          maxLines: 1,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      ],
+                    child: Text(
+                      _t('شناسه کیف پول', 'Wallet ID'),
+                      style: Theme.of(context).textTheme.labelSmall,
                     ),
                   ),
+                  Flexible(
+                    child: SelectableText(
+                      wallet.id,
+                      maxLines: 1,
+                      textAlign: TextAlign.end,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(width: 2),
                   IconButton(
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(
+                      minWidth: HopeV2Touch.minimum,
+                      minHeight: HopeV2Touch.minimum,
+                    ),
                     tooltip: _t('کپی شناسه', 'Copy wallet ID'),
-                    onPressed: wallet.id.isEmpty ? null : () => _copyText(wallet.id),
-                    icon: const HugeIcon(icon: HopeV2Icons.copy, size: 19),
+                    onPressed:
+                        wallet.id.isEmpty ? null : () => _copyText(wallet.id),
+                    icon: const HugeIcon(icon: HopeV2Icons.copy, size: 17),
                   ),
                 ],
               ),
@@ -943,18 +949,8 @@ padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             const SizedBox(height: 14),
             LayoutBuilder(
               builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 650 ? 2 : 1;
+                const columns = 1;
                 final tiles = [
-                  PremiumStatCard(
-                    label: _t('قفل‌شده', 'Locked balance'),
-                    value: _money(wallet.lockedBalance),
-                    icon: HopeV2Icons.secure,
-                    accent: secondaryAccent(context),
-                    caption: _t(
-                      'تا آزادسازی قابل استفاده نیست',
-                      'Unavailable until released',
-                    ),
-                  ),
                   PremiumStatCard(
                     label: _t('برداشت‌های در جریان', 'Pending payouts'),
                     value: '$_pendingPayoutCount',
@@ -1031,8 +1027,8 @@ padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     onTap: () => _showTransaction(item),
                     child: ExcludeSemantics(
                       child: PremiumPanel(
-                        glass: true,
-padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        glass: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           onTap: () => _showTransaction(item),
@@ -1096,8 +1092,8 @@ padding: const EdgeInsets.all(18),
                 (payout) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: PremiumPanel(
-                    glass: true,
-padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    glass: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     child: Semantics(
                       container: true,
                       button: true,
