@@ -90,6 +90,14 @@ void main() {
     expect(source, isNot(contains('FutureBuilder<List<HopeApplication>>')));
   });
 
+  test('profile does not retain removed application state', () {
+    final source = _read('lib/features/profile/profile_page.dart');
+    expect(source, isNot(contains('_applicationBusyId')));
+    expect(source, isNot(contains('_applicationsReloadError')));
+    expect(source, isNot(contains('_applicationsReloadRequestId')));
+    expect(source, isNot(contains('applications = _controller.loadApplications')));
+  });
+
   test('admin control surfaces do not stack legacy AppBars over PremiumHeader', () {
     const paths = <String>[
       'lib/features/admin/admin_page.dart',
