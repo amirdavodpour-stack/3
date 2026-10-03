@@ -540,6 +540,12 @@ class _WalletPageState extends State<WalletPage> {
         'REQUESTED', 'RESERVED', 'PROCESSING', 'UNKNOWN'
       }.contains(p.status.toUpperCase())).length;
 
+  int get _pendingPayoutAmount => _payouts
+      .where((p) => const {
+            'REQUESTED', 'RESERVED', 'PROCESSING', 'UNKNOWN'
+          }.contains(p.status.toUpperCase()))
+      .fold<int>(0, (sum, payout) => sum + payout.amount);
+
   Object _payoutIcon(String status) {
     switch (status.toUpperCase()) {
       case 'SUCCEEDED': return HopeV2Icons.completed;
@@ -722,24 +728,46 @@ class _WalletPageState extends State<WalletPage> {
               ],
             ),
             const SizedBox(height: 7),
-            Row(
-              children: [
-                Expanded(
-                  child: walletHeroMetric(
-                    context,
-                    _t('مجموع', 'Total'),
-                    _money(wallet.totalBalance),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth < 360 ? 2 : 4;
+                const gap = 8.0;
+                final width =
+                    (constraints.maxWidth - gap * (columns - 1)) / columns;
+                final metrics = <({String label, String value})>[
+                  (
+                    label: _t('کل موجودی', 'Total balance'),
+                    value: _money(wallet.totalBalance),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: walletHeroMetric(
-                    context,
-                    _t('قفل‌شده', 'Locked'),
-                    _money(wallet.lockedBalance),
+                  (
+                    label: _t('قفل‌شده', 'Protected'),
+                    value: _money(wallet.lockedBalance),
                   ),
-                ),
-              ],
+                  (
+                    label: _t('برداشت در انتظار', 'Pending withdrawal'),
+                    value: _money(_pendingPayoutAmount),
+                  ),
+                  (
+                    label: _t('نوع کیف پول', 'Wallet type'),
+                    value: _providerLabel('INTERNAL'),
+                  ),
+                ];
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    for (final metric in metrics)
+                      SizedBox(
+                        width: width,
+                        child: walletHeroMetric(
+                          context,
+                          metric.label,
+                          metric.value,
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ],
         ),
