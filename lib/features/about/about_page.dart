@@ -15,8 +15,6 @@ class AboutHopePage extends StatelessWidget {
     return Directionality(
       textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
       child: Scaffold(
-        appBar:
-            AppBar(title: Text(HopeCopy.of(context).copy_about_hope_f8ee86b)),
         body: PremiumPageFrame(
           maxWidth: 980,
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
