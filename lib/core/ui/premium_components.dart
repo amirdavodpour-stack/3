@@ -194,12 +194,14 @@ class PremiumPageFrame extends StatelessWidget {
     this.maxWidth = 1180,
     this.padding = const EdgeInsets.fromLTRB(20, 20, 20, 96),
     this.safeBottom = true,
+    this.page,
   });
 
   final Widget child;
   final double maxWidth;
   final EdgeInsets padding;
   final bool safeBottom;
+  final HopePageId? page;
 
   @override
   Widget build(BuildContext context) {
@@ -328,17 +330,22 @@ class PremiumQuickActionStrip extends StatelessWidget {
     required this.actions,
     this.subtitle,
     this.domain,
+    this.page,
   });
 
   final String title;
   final String? subtitle;
   final List<PremiumQuickAction> actions;
   final HopeProductDomain? domain;
+  final HopePageId? page;
 
   @override
   Widget build(BuildContext context) {
     if (actions.isEmpty) return const SizedBox.shrink();
-    final accent = domain?.spec.accent ?? Theme.of(context).colorScheme.primary;
+    final resolvedDomain =
+        domain ?? page?.spec.domain;
+    final accent = resolvedDomain?.spec.accent ??
+        Theme.of(context).colorScheme.primary;
     return PremiumPanel(
       glass: true,
       padding: const EdgeInsets.all(HopeV2Spacing.md),
@@ -349,15 +356,15 @@ class PremiumQuickActionStrip extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (domain != null) ...[
-                PremiumDomainMarker(domain: domain!, compact: true),
+              if (resolvedDomain != null) ...[
+                PremiumDomainMarker(domain: resolvedDomain, compact: true),
                 const SizedBox(width: HopeV2Spacing.sm),
               ],
               Expanded(
                 child: Text(
                   title,
                   style: HopeV2Type.section(context).copyWith(
-                    color: domain == null ? null : accent,
+                    color: resolvedDomain == null ? null : accent,
                   ),
                 ),
               ),
@@ -522,6 +529,7 @@ class PremiumHeader extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.domain,
+    this.page,
   });
 
   final String eyebrow;
@@ -529,6 +537,7 @@ class PremiumHeader extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final HopeProductDomain? domain;
+  final HopePageId? page;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -540,8 +549,8 @@ class PremiumHeader extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (domain != null) ...[
-                    PremiumDomainMarker(domain: domain!, compact: true),
+                  if (resolvedDomain != null) ...[
+                    PremiumDomainMarker(domain: resolvedDomain, compact: true),
                     const SizedBox(width: HopeV2Spacing.sm),
                   ],
                   Flexible(
@@ -556,7 +565,7 @@ class PremiumHeader extends StatelessWidget {
                         eyebrow.toUpperCase(),
                         overflow: TextOverflow.ellipsis,
                         style: HopeV2Type.eyebrow(context).copyWith(
-                          color: domain?.spec.accent ??
+                          color: resolvedDomain?.spec.accent ??
                               Theme.of(context).colorScheme.primary,
                         ),
                       ),
@@ -1021,25 +1030,29 @@ class PremiumSectionHeader extends StatelessWidget {
     this.subtitle,
     this.action,
     this.domain,
+    this.page,
   });
 
   final String title;
   final String? subtitle;
   final Widget? action;
   final HopeProductDomain? domain;
+  final HopePageId? page;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < HopeV2Breakpoints.compact;
-          final accent = domain?.spec.accent ?? Theme.of(context).colorScheme.primary;
+          final resolvedDomain = domain ?? page?.spec.domain;
+          final accent =
+              resolvedDomain?.spec.accent ?? Theme.of(context).colorScheme.primary;
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (domain != null)
+                  if (resolvedDomain != null)
                     Container(
                       width: 4,
                       height: 24,
@@ -1054,7 +1067,7 @@ class PremiumSectionHeader extends StatelessWidget {
                         ],
                       ),
                     ),
-                  if (domain != null) const SizedBox(width: 8),
+                  if (resolvedDomain != null) const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       title,
