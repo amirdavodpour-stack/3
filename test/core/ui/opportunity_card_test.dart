@@ -108,6 +108,58 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'discovery featured scan card keeps the focal accent without expanding first-fold height',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'job-featured-scan',
+        'title': 'توسعه‌دهنده Flutter',
+        'description': 'Discovery featured scan contract.',
+        'categoryId': 'software',
+        'category': 'Software',
+        'jobType': 'FIXED',
+        'budgetMin': '1500000',
+        'budgetMax': '2500000',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featuredScan,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('توسعه‌دهنده Flutter'), findsOneWidget);
+      expect(find.text('94% تطابق'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(OpportunityCard)).height,
+        lessThan(180),
+      );
+    },
+  );
+
   testWidgets('standard opportunity metadata stays overflow-safe at narrow card width',
       (tester) async {
     tester.view.physicalSize = const Size(440, 800);
