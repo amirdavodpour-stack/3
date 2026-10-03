@@ -1181,7 +1181,8 @@ class PremiumTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = color ?? Theme.of(context).colorScheme.primary;
-    final foreground = inverse ? Colors.white : base;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = inverse ? Colors.white : (dark ? Colors.white : base);
     final background = inverse
         ? Colors.white.withValues(alpha: .12)
         : base.withValues(
