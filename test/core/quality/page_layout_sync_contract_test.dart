@@ -53,6 +53,7 @@ void main() {
     final source = _read('lib/core/ui/premium_components.dart');
     expect(source, contains('height.clamp(152.0, 320.0)'));
     expect(source, contains('mainAxisSize: MainAxisSize.max'));
+    expect(source, contains('final vertical = compact ? 14.0 : horizontal;'));
   });
 
   test('responsive match breakdown becomes two-column before desktop width', () {
