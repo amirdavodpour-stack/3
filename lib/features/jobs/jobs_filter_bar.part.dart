@@ -113,7 +113,7 @@ class _JobsFilterHeader extends StatelessWidget {
             );
           },
         ),
-
+        Padding(
           padding: const EdgeInsets.only(top: 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
