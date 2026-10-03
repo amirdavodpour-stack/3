@@ -250,7 +250,7 @@ testWidgets('withdrawing an application disables the action until completion',
 
     final panel = find.byKey(const ValueKey('profile-settings-panel'));
     expect(panel, findsOneWidget);
-    expect(tester.getSize(panel).height, lessThan(760));
+    expect(tester.getSize(panel).height, lessThan(640));
     expect(tester.takeException(), isNull);
   });
 
