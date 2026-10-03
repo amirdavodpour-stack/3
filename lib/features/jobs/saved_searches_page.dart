@@ -236,6 +236,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
             padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
+              page: HopePageId.savedSearches,
               domain: HopeProductDomain.discovery,
               eyebrow: _t('جست‌وجو', 'SEARCH'),
               title: _t('جست‌وجوهای ذخیره‌شده', 'Saved searches'),
