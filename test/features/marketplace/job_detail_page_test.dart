@@ -191,6 +191,13 @@ HopeJob _job({
       'isRecommended': true,
       'recommendationScore': 94,
       'recommendationReasons': ['SKILL_MATCH', 'WORK_MODE_MATCH', 'CATEGORY_MATCH'],
+       'recommendationComponents': {
+         'skills': 96,
+         'category': 100,
+         'location': 88,
+         'salary': 82,
+       },
+       'aiRecommendationConfidence': 0.92,
     });
 
 Future<void> _pump(
@@ -396,6 +403,23 @@ void main() {
     expect(find.text('OFFERED'), findsNothing);
   });
 
+  testWidgets(
+      'match intelligence exposes four visual breakdown bars and a trust note',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      userId: 'u9',
+    );
+
+    expect(find.byKey(const ValueKey('match-breakdown-skills')), findsOneWidget);
+    expect(find.byKey(const ValueKey('match-breakdown-category')), findsOneWidget);
+    expect(find.byKey(const ValueKey('match-breakdown-location')), findsOneWidget);
+    expect(find.byKey(const ValueKey('match-breakdown-salary')), findsOneWidget);
+    expect(find.text('92% confidence'), findsOneWidget);
+    expect(find.text('Match signals'), findsOneWidget);
+  });
+
   testWidgets('match intelligence opens a detailed evidence sheet', (tester) async {
     await _pump(
       tester,
@@ -423,6 +447,22 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('94%'), findsWidgets);
+  });
+
+  testWidgets(
+      'opportunity snapshot renders as a compact flat fact strip',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      userId: 'u9',
+    );
+
+    expect(find.byKey(const ValueKey('opportunity-snapshot-facts')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-budget')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-field')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-location')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-deadline')), findsOneWidget);
   });
 
   testWidgets('unknown job lifecycle status is presented safely', (tester) async {

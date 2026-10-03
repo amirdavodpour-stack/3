@@ -33,8 +33,9 @@ class _OpportunitySnapshot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isJob = job.isJob;
-    final facts = <({Object icon, String label, String value, Color color})>[
+    final facts = <({String id, Object icon, String label, String value, Color color})>[
       (
+        id: 'budget',
         icon: HopeV2Icons.payments,
         label: isJob ? _t(context, 'حقوق ماهانه', 'Monthly pay') : _t(context, 'بودجه', 'Budget'),
         value: isJob
@@ -43,18 +44,21 @@ class _OpportunitySnapshot extends StatelessWidget {
         color: Theme.of(context).colorScheme.primary,
       ),
       (
+        id: 'field',
         icon: HopeV2Icons.category,
         label: _t(context, 'زمینه', 'Field'),
         value: job.category ?? job.categoryId ?? '—',
         color: secondaryAccent(context),
       ),
       (
+        id: 'location',
         icon: HopeV2Icons.location,
         label: _t(context, 'مکان', 'Location'),
         value: job.city?.trim().isNotEmpty == true ? job.city! : _t(context, 'از راه دور', 'Remote'),
         color: HopeV2Colors.secondary,
       ),
       (
+        id: 'deadline',
         icon: HopeV2Icons.pending,
         label: isJob ? _t(context, 'مهلت درخواست', 'Application deadline') : _t(context, 'مدت', 'Duration'),
         value: isJob
@@ -65,77 +69,55 @@ class _OpportunitySnapshot extends StatelessWidget {
     ];
 
     return PremiumPanel(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 11),
       semanticLabel: _t(context, 'خلاصه سریع فرصت', 'Opportunity snapshot'),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final columns = constraints.maxWidth >= 720
-              ? 4
-              : constraints.maxWidth >= 390
-                  ? 2
-                  : 1;
-          final gap = HopeV2Spacing.sm;
-          final width = columns == 1
-              ? constraints.maxWidth
-              : (constraints.maxWidth - gap * (columns - 1)) / columns;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _t(context, 'خلاصه فرصت', 'Opportunity snapshot'),
-                      style: HopeV2Type.section(context),
-                    ),
-                  ),
-                  PremiumTag(
-                    icon: HopeV2Icons.insights,
-                    label: _t(context, 'اطلاعات کلیدی', 'Key facts'),
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ],
+              Expanded(
+                child: Text(_t(context, 'خلاصه فرصت', 'Opportunity snapshot'), style: HopeV2Type.section(context)),
               ),
-              const SizedBox(height: 10),
-              Wrap(
+              PremiumTag(
+                icon: HopeV2Icons.insights,
+                label: _t(context, 'اطلاعات کلیدی', 'Key facts'),
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 720 ? 4 : constraints.maxWidth >= 360 ? 2 : 1;
+              const gap = 10.0;
+              final width = columns == 1 ? constraints.maxWidth : (constraints.maxWidth - gap * (columns - 1)) / columns;
+              return Wrap(
+                key: const ValueKey('opportunity-snapshot-facts'),
                 spacing: gap,
-                runSpacing: gap,
+                runSpacing: 8,
                 children: [
                   for (final fact in facts)
                     SizedBox(
+                      key: ValueKey('opportunity-snapshot-fact-${fact.id}'),
                       width: width,
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 70),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: HopeV2Surfaces.panelSoft(context),
-                          borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                          border: Border.all(color: HopeV2Surfaces.border(context)),
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            HopeIcon(fact.icon, size: 18, color: fact.color),
-                            const SizedBox(width: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: HopeIcon(fact.icon, size: 18, color: fact.color),
+                            ),
+                            const SizedBox(width: 7),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    fact.label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.labelSmall,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    fact.value,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                  ),
+                                  Text(fact.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall),
+                                  const SizedBox(height: 2),
+                                  Text(fact.value, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800)),
                                 ],
                               ),
                             ),
@@ -144,14 +126,15 @@ class _OpportunitySnapshot extends StatelessWidget {
                       ),
                     ),
                 ],
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
+
 
 class JobDetailPage extends StatefulWidget {
   const JobDetailPage({super.key, required this.job});
@@ -1451,10 +1434,21 @@ class _MatchIntelligence extends StatelessWidget {
       'BEHAVIOR_MATCH': 'Preference fit',
       'GENERAL_MATCH': 'General fit',
     };
-    return (Localizations.localeOf(context).languageCode == 'en'
-            ? en[value]
-            : fa[value]) ??
-        value;
+    return (Localizations.localeOf(context).languageCode == 'en' ? en[value] : fa[value]) ?? value;
+  }
+
+  String _componentLabel(BuildContext context, String key) => switch (key) {
+    'skills' => _t(context, 'مهارت', 'Skills'),
+    'category' => _t(context, 'دسته‌بندی', 'Category'),
+    'location' => _t(context, 'مکان', 'Location'),
+    'salary' => _t(context, 'درآمد', 'Salary'),
+    _ => key,
+  };
+
+  double _componentValue(String key) {
+    final raw = job.recommendationComponents[key];
+    if (raw == null) return 0;
+    return raw <= 1 ? raw : raw / 100;
   }
 
   @override
@@ -1462,23 +1456,20 @@ class _MatchIntelligence extends StatelessWidget {
     final score = job.recommendationScore;
     final primary = Theme.of(context).colorScheme.primary;
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
-    final fit = score == null
-        ? null
-        : score >= 90
-            ? _t(context, 'تناسب بسیار قوی', 'Very strong fit')
-            : score >= 75
-                ? _t(context, 'تناسب قوی', 'Strong fit')
-                : score >= 60
-                    ? _t(context, 'تناسب خوب', 'Good fit')
-                    : _t(context, 'تناسب اولیه', 'Early fit');
+    final fit = score == null ? null : score >= 90
+        ? _t(context, 'تناسب بسیار قوی', 'Very strong fit')
+        : score >= 75
+            ? _t(context, 'تناسب قوی', 'Strong fit')
+            : score >= 60
+                ? _t(context, 'تناسب خوب', 'Good fit')
+                : _t(context, 'تناسب اولیه', 'Early fit');
+    const breakdownKeys = ['skills', 'category', 'location', 'salary'];
+    final confidence = job.aiRecommendationConfidence;
+    final hasComponents = breakdownKeys.any((key) => job.recommendationComponents.containsKey(key));
 
     return Semantics(
       button: true,
-      label: _t(
-        context,
-        'جزئیات تطبیق این فرصت',
-        'Match details for this opportunity',
-      ),
+      label: _t(context, 'جزئیات تطبیق این فرصت', 'Match details for this opportunity'),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -1495,139 +1486,58 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: 76,
-                        height: 76,
+                        width: 72, height: 72,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            SizedBox.square(
-                              dimension: 76,
-                              child: CircularProgressIndicator(
-                                value: 1,
-                                strokeWidth: 7,
-                                color: primary.withValues(alpha: .10),
-                              ),
-                            ),
-                            SizedBox.square(
-                              dimension: 88,
-                              child: CircularProgressIndicator(
-                                value: value,
-                                strokeWidth: 7,
-                                strokeCap: StrokeCap.round,
-                                color: primary,
-                              ),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '${score.clamp(0, 100).toStringAsFixed(0)}%',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    height: 1,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  _t(context, 'تطبیق', 'MATCH'),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
-                                      ?.copyWith(
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.w900,
-                                        color: primary,
-                                        letterSpacing: .6,
-                                      ),
-                                ),
-                              ],
-                            ),
+                            SizedBox.square(dimension: 72, child: CircularProgressIndicator(value: 1, strokeWidth: 6, color: primary.withValues(alpha: .10))),
+                            SizedBox.square(dimension: 72, child: CircularProgressIndicator(value: value, strokeWidth: 6, strokeCap: StrokeCap.round, color: primary)),
+                            Column(mainAxisSize: MainAxisSize.min, children: [
+                              Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 17, height: 1, fontWeight: FontWeight.w900)),
+                              const SizedBox(height: 3),
+                              Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: primary, letterSpacing: .6)),
+                            ]),
                           ],
                         ),
                       ),
                     if (score != null) const SizedBox(width: 11),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const HopeIcon(
-                                HopeV2Icons.featured,
-                                color: HopeV2Colors.primaryDark,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 7),
-                              Expanded(
-                                child: Text(
-                                  _t(
-                                    context,
-                                    'هوش تطبیق',
-                                    'Match intelligence',
-                                  ),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (fit != null) ...[
-                            const SizedBox(height: 5),
-                            Text(
-                              fit,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: primary,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                            ),
-                          ],
-                          const SizedBox(height: 4),
-                          Text(
-                            _t(
-                              context,
-                              'سیگنال‌های واقعی پیشنهاد برای همین فرصت',
-                              'Live recommendation signals for this opportunity',
-                            ),
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 7),
-                          Text(
-                            _t(context, 'جزئیات را ببینید', 'See details'),
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: primary,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                          ),
-                        ],
-                      ),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          const HopeIcon(HopeV2Icons.featured, color: HopeV2Colors.primaryDark, size: 18),
+                          const SizedBox(width: 7),
+                          Expanded(child: Text(_t(context, 'هوش تطبیق', 'Match intelligence'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
+                        ]),
+                        if (fit != null) ...[const SizedBox(height: 4), Text(fit, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: primary, fontWeight: FontWeight.w800))],
+                        if (confidence != null) ...[const SizedBox(height: 4), Text('${(confidence.clamp(0, 1) * 100).round()}% ${_t(context, 'اطمینان', 'confidence')}', key: const ValueKey('match-confidence-note'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: HopeV2Colors.muted))],
+                      ]),
                     ),
                   ],
                 ),
-                if (job.recommendationReasons.isNotEmpty) ...[
-                  const SizedBox(height: 9),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: job.recommendationReasons
-                        .take(4)
-                        .map(
-                          (r) => StatusPill(
-                            _reason(context, r),
-                            color: primary,
-                            icon: HopeV2Icons.completed,
-                          ),
-                        )
-                        .toList(growable: false),
+                if (hasComponents) ...[
+                  const SizedBox(height: 12),
+                  Text(_t(context, 'تجزیه تطبیق', 'Match breakdown'), style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 520 ? 2 : 1;
+                      const gap = 10.0;
+                      final width = columns == 2 ? (constraints.maxWidth - gap) / 2 : constraints.maxWidth;
+                      return Wrap(spacing: gap, runSpacing: 8, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
+                    },
                   ),
                 ],
+                if (job.recommendationReasons.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(_t(context, 'سیگنال‌های تطبیق', 'Match signals'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w900, color: HopeV2Colors.muted)),
+                  const SizedBox(height: 6),
+                  Wrap(spacing: 6, runSpacing: 6, children: job.recommendationReasons.take(4).map((r) => StatusPill(_reason(context, r), color: primary, icon: HopeV2Icons.completed)).toList(growable: false)),
+                ],
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(child: Text(_t(context, 'سیگنال‌های واقعی پیشنهاد برای همین فرصت', 'Live recommendation signals for this opportunity'), style: Theme.of(context).textTheme.bodySmall)),
+                  Text(_t(context, 'جزئیات', 'Details'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: primary, fontWeight: FontWeight.w900)),
+                ]),
               ],
             ),
           ),
@@ -1636,11 +1546,35 @@ class _MatchIntelligence extends StatelessWidget {
     );
   }
 
+  Widget _breakdownBar(BuildContext context, {required String key, required double value}) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final percent = (value.clamp(0, 1) * 100).round();
+    return Container(
+      key: ValueKey('match-breakdown-${key}'),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        border: Border.all(color: HopeV2Surfaces.border(context).withValues(alpha: .72)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Expanded(child: Text(_componentLabel(context, key), style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800))),
+          Text('${percent}%', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: primary, fontWeight: FontWeight.w900)),
+        ]),
+        const SizedBox(height: 5),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+          child: LinearProgressIndicator(minHeight: 5, value: value, backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .5), valueColor: AlwaysStoppedAnimation<Color>(primary)),
+        ),
+      ]),
+    );
+  }
+
   void _showDetails(BuildContext context) {
     final score = job.recommendationScore;
     final primary = Theme.of(context).colorScheme.primary;
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
-
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1651,16 +1585,7 @@ class _MatchIntelligence extends StatelessWidget {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(
-                _t(
-                  context,
-                  'چرا این فرصت مناسب است؟',
-                  'Why this opportunity fits',
-                ),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
+              Text(_t(context, 'چرا این فرصت مناسب است؟', 'Why this opportunity fits'), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 16),
               PremiumPanel(
                 highlight: true,
@@ -1670,93 +1595,33 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: 88,
-                        height: 88,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox.square(
-                              dimension: 88,
-                              child: CircularProgressIndicator(
-                                value: 1,
-                                strokeWidth: 7,
-                                color: primary.withValues(alpha: .12),
-                              ),
-                            ),
-                            SizedBox.square(
-                              dimension: 88,
-                              child: CircularProgressIndicator(
-                                value: value,
-                                strokeWidth: 7,
-                                strokeCap: StrokeCap.round,
-                                color: primary,
-                              ),
-                            ),
-                            Text(
-                              '${score.clamp(0, 100).toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
+                        width: 88, height: 88,
+                        child: Stack(alignment: Alignment.center, children: [
+                          SizedBox.square(dimension: 88, child: CircularProgressIndicator(value: 1, strokeWidth: 7, color: primary.withValues(alpha: .12))),
+                          SizedBox.square(dimension: 88, child: CircularProgressIndicator(value: value, strokeWidth: 7, strokeCap: StrokeCap.round, color: primary)),
+                          Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
+                        ]),
                       ),
                     if (score != null) const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        _t(
-                          context,
-                          'این امتیاز فقط از سیگنال‌های توصیه موجود برای همین فرصت استفاده می‌کند.',
-                          'This score uses only the recommendation signals available for this opportunity.',
-                        ),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              height: 1.45,
-                            ),
-                      ),
-                    ),
+                    Expanded(child: Text(_t(context, 'این امتیاز فقط از سیگنال‌های توصیه موجود برای همین فرصت استفاده می‌کند.', 'This score uses only the recommendation signals available for this opportunity.'), style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.45))),
                   ],
                 ),
               ),
               if (job.recommendationReasons.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                Text(
-                  _t(context, 'سیگنال‌های تطبیق', 'Match signals'),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
+                Text(_t(context, 'سیگنال‌های تطبیق', 'Match signals'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
                 const SizedBox(height: 9),
-                ...job.recommendationReasons.take(6).map(
-                  (reason) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: PremiumPanel(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          const HopeIcon(
-                            HopeV2Icons.completed,
-                            color: HopeV2Colors.success,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 9),
-                          Expanded(
-                            child: Text(
-                              _reason(context, reason),
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                ...job.recommendationReasons.take(6).map((reason) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: PremiumPanel(
+                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+                    child: Row(children: [
+                      const HopeIcon(HopeV2Icons.completed, color: HopeV2Colors.success, size: 18),
+                      const SizedBox(width: 9),
+                      Expanded(child: Text(_reason(context, reason), style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700))),
+                    ]),
                   ),
-                ),
+                )),
               ],
             ],
           ),
@@ -1765,6 +1630,7 @@ class _MatchIntelligence extends StatelessWidget {
     );
   }
 }
+
 
 
 class _EmployerCandidateMatchesLoader extends StatelessWidget {
