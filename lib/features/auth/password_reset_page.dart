@@ -80,6 +80,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                   ),
                   const SizedBox(height: 14),
                   PremiumHero(
+                    page: HopePageId.passwordReset,
                     domain: HopeProductDomain.account,
                     eyebrow: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     title: HopeCopy.of(context).copy_reset_password_18b5d1c,
