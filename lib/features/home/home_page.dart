@@ -131,11 +131,106 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 6),
               Text(_t(context, 'دسترسی به بخش‌های برنامه.', 'App sections.'), style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 20),
-              _drawerTile(context, HopeV2Icons.workshopSelected, _t(context, 'کارگاه فرصت‌ها', 'Workshop opportunities'), () { Navigator.pop(context); _selectTab(1); }),
-              if (!auth.isGuest) _drawerTile(context, HopeV2Icons.featured, _t(context, 'پیشنهادها', 'Offers'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.offers()); }),
-              if (!auth.isGuest) _drawerTile(context, HopeV2Icons.notifications, _t(context, 'اعلان‌ها', 'Notifications'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.notifications()); }),
-              if (!auth.isGuest) _drawerTile(context, Icons.psychology, _t(context, 'پروفایل هوشمند کاری', 'AI work profile'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.recommendationOnboarding()); }),
-              if (auth.user?['role'] == 'ADMIN') _drawerTile(context, HopeV2Icons.secure, _t(context, 'پنل مدیریت', 'Admin panel'), () { Navigator.pop(context); Navigator.push(context, HopeRoutes.adminAccess()); }),
+              PremiumDomainNavigationGroup(
+                domain: HopeProductDomain.discovery,
+                compact: true,
+                children: [
+                  _drawerTile(
+                    context,
+                    HopeV2Icons.workshopSelected,
+                    _t(context, 'کاوش فرصت‌ها', 'Explore opportunities'),
+                    () {
+                      Navigator.pop(context);
+                      _selectTab(1);
+                    },
+                  ),
+                  const Divider(height: 1, indent: 72),
+                  if (!auth.isGuest)
+                    _drawerTile(
+                      context,
+                      HopeV2Icons.savedSearches,
+                      _t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches'),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(context, HopeRoutes.savedSearches());
+                      },
+                    ),
+                ],
+              ),
+              if (!auth.isGuest)
+                PremiumDomainNavigationGroup(
+                  domain: HopeProductDomain.work,
+                  compact: true,
+                  children: [
+                    _drawerTile(
+                      context,
+                      HopeV2Icons.mission,
+                      _t(context, 'درخواست‌های من', 'My applications'),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(context, HopeRoutes.myApplications());
+                      },
+                    ),
+                    const Divider(height: 1, indent: 72),
+                    _drawerTile(
+                      context,
+                      HopeV2Icons.featured,
+                      _t(context, 'پیشنهادها', 'Offers'),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(context, HopeRoutes.offers());
+                      },
+                    ),
+                  ],
+                ),
+              if (!auth.isGuest)
+                PremiumDomainNavigationGroup(
+                  domain: HopeProductDomain.intelligence,
+                  compact: true,
+                  children: [
+                    _drawerTile(
+                      context,
+                      HopeV2Icons.insights,
+                      _t(context, 'پروفایل کاری هوشمند', 'AI work profile'),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(context, HopeRoutes.recommendationOnboarding());
+                      },
+                    ),
+                  ],
+                ),
+              if (!auth.isGuest)
+                PremiumDomainNavigationGroup(
+                  domain: HopeProductDomain.communication,
+                  compact: true,
+                  children: [
+                    _drawerTile(
+                      context,
+                      HopeV2Icons.notifications,
+                      _t(context, 'اعلان‌ها', 'Notifications'),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(context, HopeRoutes.notifications());
+                      },
+                    ),
+                  ],
+                ),
+              if (auth.user?['role'] == 'ADMIN')
+                PremiumDomainNavigationGroup(
+                  domain: HopeProductDomain.control,
+                  compact: true,
+                  children: [
+                    _drawerTile(
+                      context,
+                      HopeV2Icons.secure,
+                      _t(context, 'مرکز کنترل', 'Control center'),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(context, HopeRoutes.adminAccess());
+                      },
+                    ),
+                  ],
+                ),
               ListTile(
                 leading: const HopeIconTile(HopeV2Icons.translate),
                 title: Text(
