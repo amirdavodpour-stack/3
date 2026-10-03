@@ -111,6 +111,7 @@ class _OffersPageState extends State<OffersPage> {
             padding: EdgeInsets.zero,
             children: [
               PremiumHeader(
+                page: HopePageId.offers,
                 domain: HopeProductDomain.work,
                 eyebrow: _t('پیشنهادها', 'OFFERS'),
                 title: _t('پیشنهادهای کاری', 'Job offers'),
