@@ -65,10 +65,9 @@ fi
 
 # The bounded runtime timeout must wrap the actual Flutter Driver process.
 grep -Fq 'RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"' "$script_file"
-if ! grep -Fq '"${RUNTIME_TEST_TIMEOUT_SECONDS}s" flutter drive --no-pub --no-dds' "$script_file"; then
-  echo "FAIL: RUNTIME_TEST_TIMEOUT_SECONDS is not applied to the Flutter Driver process" >&2
-  exit 1
-fi
+driver_block="$(sed -n '/^run_host_batch_session()/,/^echo "HOPE_RUNTIME_CAPTURE_LOCALE/p' "$script_file")"
+grep -Fq 'timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s"' <<<"$driver_block"
+grep -Fq 'flutter drive --no-pub --no-dds' <<<"$driver_block"
 
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"
