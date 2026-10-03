@@ -77,6 +77,18 @@ HopeJob _job() => HopeJob.fromMap(const {
   'city': 'Tehran',
   'kind': 'MISSION',
   'visibility': 'PUBLIC',
+  'recommendationScore': 94,
+  'recommendationComponents': {
+    'skills': 0.98,
+    'category': 0.93,
+    'location': 0.94,
+    'salary': 0.87,
+  },
+  'recommendationReasons': [
+    'SKILL_MATCH',
+    'WORK_MODE_MATCH',
+    'NEARBY',
+  ],
 });
 
 void main() {
@@ -112,6 +124,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Opportunity snapshot'), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-detail-hero-match')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-detail-hero-budget')), findsOneWidget);
     expect(find.text('Budget'), findsOneWidget);
     expect(find.text('Field'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
