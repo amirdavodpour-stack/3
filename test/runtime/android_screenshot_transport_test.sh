@@ -68,6 +68,7 @@ grep -Fq 'RUNTIME_BUILD_TIMEOUT_SECONDS="${HOPE_RUNTIME_BUILD_TIMEOUT_SECONDS:-4
 build_block="$(sed -n '/^echo "HOPE_RUNTIME_PREBUILD/,/^test -s "$RUNTIME_APK"/p' "$script_file")"
 grep -Fq 'timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_BUILD_TIMEOUT_SECONDS}s"' <<<"$build_block"
 grep -Fq 'flutter build apk --debug --no-pub' <<<"$build_block"
+grep -Fq -- '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"' <<<"$build_block"
 
 # The bounded runtime timeout must wrap the actual Flutter Driver process.
 grep -Fq 'RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-180}"' "$script_file"
