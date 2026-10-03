@@ -85,8 +85,230 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
     } catch(e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(apiErrorMessage(e)))); } finally { reasonController.dispose(); if(mounted) setState(()=>_busy=false); }
   }
 
-  @override Widget build(BuildContext context)=>Directionality(textDirection:Localizations.localeOf(context).languageCode=='en'?TextDirection.ltr:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:Text(_t('اختلاف‌ها و داوری عملیاتی','Disputes & adjudication'))),body:PremiumPageFrame(maxWidth:1200,padding:const EdgeInsets.all(18),child:FutureBuilder<List<Map<String,dynamic>>>(future:_future,builder:(context,s)=>s.connectionState==ConnectionState.waiting?const Center(child:CircularProgressIndicator()):s.hasError?Center(child:Text(apiErrorMessage(s.error??Object()))):RefreshIndicator(onRefresh:()async=>_load(),child:ListView(children:[
-    PremiumHeader(domain: HopeProductDomain.control, eyebrow:_t('کنترل اختلاف','Dispute control'),title:_t('پرونده‌های اختلاف همکاری','Work dispute cases'),subtitle:_t('گزارش AI، مبنای حقوقی، شواهد ناقص و اقدامات مجاز ادمین در یک سطح.', 'AI report, legal basis, missing evidence and permitted admin actions in one surface.'),trailing:const HopeIconTile(HopeV2Icons.secure,size:50,filled:true)),
-    const SizedBox(height:14),
-    if((s.data??const[]).isEmpty) const EmptyState(icon:HopeV2Icons.pending,title:'No dispute cases',message:'No dispute cases require attention yet.') else ...s.data!.map((row)=>InkWell(onTap:()=>_open(row),child:Padding(padding:const EdgeInsets.only(bottom:10),child:PremiumPanel(padding:const EdgeInsets.all(14),child:Row(children:[const HopeIconTile(Icons.gavel,size:42,filled:true),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('${row['jobTitle']??'—'}',style:Theme.of(context).textTheme.titleMedium),Text('${row['workerName']??'—'} • ${row['ownerName']??'—'}',style:Theme.of(context).textTheme.bodySmall)])),Text('${row['aiDecision']??'HOLD'}')]))))),
-  ]))))));
+  @override
+  Widget build(BuildContext context) {
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    return Directionality(
+      textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
+      child: Scaffold(
+        body: PremiumPageFrame(
+          maxWidth: 1200,
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 48),
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return ListView(
+                  children: [
+                    PremiumHeader(
+                      domain: HopeProductDomain.control,
+                      eyebrow: _t('کنترل اختلاف', 'DISPUTE CONTROL'),
+                      title: _t('پرونده‌های اختلاف', 'Dispute cases'),
+                      subtitle: _t(
+                        'وضعیت و شواهد پرونده‌های نیازمند رسیدگی.',
+                        'Status and evidence for cases that require review.',
+                      ),
+                      trailing: PremiumIconButton(
+                        icon: HopeV2Icons.refresh,
+                        tooltip: _t('بازخوانی', 'Refresh'),
+                        onPressed: _load,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    EmptyState(
+                      icon: HopeV2Icons.error,
+                      title: _t('بارگذاری پرونده‌ها ناموفق بود', 'Could not load dispute cases'),
+                      message: apiErrorMessage(snapshot.error ?? Object()),
+                      action: FilledButton(
+                        onPressed: _load,
+                        child: Text(_t('تلاش دوباره', 'Retry')),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              final rows = snapshot.data ?? const <Map<String, dynamic>>[];
+              return RefreshIndicator(
+                onRefresh: () async => _load(),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    PremiumHeader(
+                      domain: HopeProductDomain.control,
+                      eyebrow: _t('کنترل اختلاف', 'DISPUTE CONTROL'),
+                      title: _t('پرونده‌های اختلاف همکاری', 'Work dispute cases'),
+                      subtitle: _t(
+                        'گزارش AI، مبنای حقوقی، شواهد و اقدام مجاز ادمین را جدا از سایر عملیات کنترل کنید.',
+                        'Review AI findings, legal basis, evidence, and permitted admin actions as a dedicated operational surface.',
+                      ),
+                      trailing: Wrap(
+                        spacing: 8,
+                        children: [
+                          PremiumIconButton(
+                            icon: isEn ? HopeV2Icons.arrowLeft : HopeV2Icons.arrowRight,
+                            tooltip: _t('بازگشت', 'Back'),
+                            onPressed: () => Navigator.maybePop(context),
+                          ),
+                          PremiumIconButton(
+                            icon: HopeV2Icons.refresh,
+                            tooltip: _t('بازخوانی', 'Refresh'),
+                            onPressed: _busy ? null : _load,
+                          ),
+                          const HopeIconTile(
+                            HopeV2Icons.secure,
+                            size: 50,
+                            filled: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (rows.isEmpty)
+                      EmptyState(
+                        icon: HopeV2Icons.completed,
+                        title: _t('پرونده‌ای نیازمند رسیدگی نیست', 'No dispute cases need attention'),
+                        message: _t(
+                          'در حال حاضر پروندهٔ فعالی برای بررسی وجود ندارد.',
+                          'There are no active dispute cases to review.',
+                        ),
+                      )
+                    else
+                      ...rows.map(
+                        (row) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: InkWell(
+                            onTap: () => _open(row),
+                            borderRadius: BorderRadius.circular(HopeV2Radii.lg),
+                            child: PremiumPanel(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const HopeIconTile(
+                                        Icons.gavel_outlined,
+                                        size: 44,
+                                        filled: true,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${row['jobTitle'] ?? _t('اختلاف همکاری', 'Work dispute')}',
+                                              style: HopeV2Type.section(context),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '${row['workerName'] ?? '—'} • ${row['ownerName'] ?? '—'}',
+                                              style: Theme.of(context).textTheme.bodySmall,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      StatusPill(
+                                        '${row['aiDecision'] ?? 'HOLD'}',
+                                        color: _decisionColor('${row['aiDecision'] ?? 'HOLD'}'),
+                                        icon: _decisionIcon('${row['aiDecision'] ?? 'HOLD'}'),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _caseMeta(
+                                          context,
+                                          HopeV2Icons.secure,
+                                          _t('وضعیت پرونده', 'Case status'),
+                                          '${row['status'] ?? '—'}',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: _caseMeta(
+                                          context,
+                                          HopeV2Icons.payments,
+                                          _t('وضعیت پرداخت', 'Payment'),
+                                          '${row['paymentStatus'] ?? '—'}',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _decisionColor(String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'RELEASE':
+        return HopeV2Colors.success;
+      case 'REFUND':
+        return HopeV2Colors.warning;
+      default:
+        return HopeV2Colors.danger;
+    }
+  }
+
+  Object _decisionIcon(String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'RELEASE':
+        return HopeV2Icons.completed;
+      case 'REFUND':
+        return HopeV2Icons.transferOut;
+      default:
+        return HopeV2Icons.pending;
+    }
+  }
+
+  Widget _caseMeta(
+    BuildContext context,
+    Object icon,
+    String label,
+    String value,
+  ) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: HopeV2Surfaces.panelSoft(context),
+        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        border: Border.all(color: HopeV2Surfaces.border(context)),
+      ),
+      child: Row(
+        children: [
+          HopeIcon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
