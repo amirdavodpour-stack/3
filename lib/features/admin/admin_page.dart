@@ -188,35 +188,6 @@ class _AdminPageState extends State<AdminPage>
             ? TextDirection.ltr
             : TextDirection.rtl,
         child: Scaffold(
-          appBar: AppBar(
-            title: Text(HopeCopy.of(context).copy_hope_admin_center_912aa06),
-            actions: [
-              IconButton(
-                tooltip: Localizations.localeOf(context).languageCode == 'en'
-                    ? 'Admin chat'
-                    : 'گفتگوی مدیران',
-                onPressed: _actionBusy
-                    ? null
-                    : () => Navigator.push(context, HopeRoutes.adminChat()),
-                icon: const Icon(Icons.forum_outlined),
-              ),
-              IconButton(
-                tooltip: Localizations.localeOf(context).languageCode == 'en'
-                    ? 'Lock admin panel'
-                    : 'قفل پنل مدیریت',
-                onPressed: _actionBusy
-                    ? null
-                    : () async {
-                        await context.read<AdminRepository>().lockPanel();
-                        if (mounted) Navigator.pushReplacement(
-                          context,
-                          HopeRoutes.adminAccess(),
-                        );
-                      },
-                icon: const Icon(Icons.lock_outline),
-              ),
-            ],
-          ),
           body: RefreshIndicator(
             onRefresh: () async => _reload(),
             child: PremiumPageFrame(
@@ -231,10 +202,38 @@ class _AdminPageState extends State<AdminPage>
                         .copy_monitor_and_manage_hope_in_one_place_bea3b7d,
                     subtitle: HopeCopy.of(context)
                         .copy_review_users_opportunities_applications_an_e30b9d2,
-                    trailing: const HopeIconTile(
-                      HopeV2Icons.secure,
-                      size: 50,
-                      filled: true,
+                    trailing: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        PremiumIconButton(
+                          icon: HopeV2Icons.message,
+                          tooltip: _t('گفتگوی مدیران', 'Admin chat'),
+                          onPressed: _actionBusy
+                              ? null
+                              : () => Navigator.push(context, HopeRoutes.adminChat()),
+                        ),
+                        PremiumIconButton(
+                          icon: HopeV2Icons.secure,
+                          tooltip: _t('قفل پنل', 'Lock admin panel'),
+                          onPressed: _actionBusy
+                              ? null
+                              : () async {
+                                  await context.read<AdminRepository>().lockPanel();
+                                  if (mounted) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      HopeRoutes.adminAccess(),
+                                    );
+                                  }
+                                },
+                        ),
+                        const HopeIconTile(
+                          HopeV2Icons.secure,
+                          size: 50,
+                          filled: true,
+                        ),
+                      ],
                     ),
                   ),
                 const SizedBox(height: 18),
