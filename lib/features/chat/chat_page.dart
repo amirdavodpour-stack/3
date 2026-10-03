@@ -1,75 +1,184 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/chat/chat_repository.dart';
+
 import '../../core/auth/auth_controller.dart';
+import '../../core/chat/chat_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/premium_components.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, this.repository, this.jobId, this.adminRoom = false});
+  const ChatPage({
+    super.key,
+    this.repository,
+    this.jobId,
+    this.adminRoom = false,
+  });
+
   final ChatRepository? repository;
   final String? jobId;
   final bool adminRoom;
-  @override State<ChatPage> createState() => _ChatPageState();
+
+  @override
+  State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final _controller=TextEditingController();
-  final _scroll=ScrollController();
+  final _controller = TextEditingController();
+  final _scroll = ScrollController();
   late final ChatRepository _repository;
+
   HopeChatThread? _thread;
-  bool _busy=false;
+  bool _busy = false;
   String? _error;
 
-  @override void initState(){super.initState(); _repository=widget.repository ?? context.read<ChatRepository>(); WidgetsBinding.instance.addPostFrameCallback((_)=>_load());}
-  @override void dispose(){_controller.dispose();_scroll.dispose();super.dispose();}
+  @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? context.read<ChatRepository>();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
 
   Future<void> _load() async {
+    if (mounted) {
+      setState(() => _error = null);
+    }
+
     try {
-      final items=await _repository.listConversations();
-      HopeChatConversation? c;
+      final items = await _repository.listConversations();
+      HopeChatConversation? conversation;
+
       for (final item in items) {
         final matches = widget.adminRoom
             ? item.kind.toUpperCase() == 'ADMIN'
             : item.kind.toUpperCase() == 'JOB' && item.jobId == widget.jobId;
-        if (matches) { c = item; break; }
+        if (matches) {
+          conversation = item;
+          break;
+        }
       }
-      if(c==null) throw StateError('Conversation is not available');
-      final thread=await _repository.getMessages(c.id);
-      if(mounted)setState(()=>_thread=thread);
-    } catch(e){if(mounted)setState(()=>_error=apiErrorMessage(e,fallback:_t('گفتگو در دسترس نیست.','Conversation is not available.')));}
+
+      if (conversation == null) {
+        throw StateError('Conversation is not available');
+      }
+
+      final thread = await _repository.getMessages(conversation.id);
+      if (!mounted) return;
+      setState(() {
+        _thread = thread;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(
+        () => _error = apiErrorMessage(
+          e,
+          fallback: _t(
+            'گفتگو در دسترس نیست.',
+            'Conversation is not available.',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _send() async {
-    final text=_controller.text.trim();
-    final thread=_thread;
-    if(text.isEmpty||_busy||thread==null||thread.conversation.status.toUpperCase()!='OPEN')return;
-    setState(()=>_busy=true); _controller.clear();
+    final text = _controller.text.trim();
+    final thread = _thread;
+    if (text.isEmpty ||
+        _busy ||
+        thread == null ||
+        thread.conversation.status.toUpperCase() != 'OPEN') {
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    _controller.clear();
+
     try {
-      final m=await _repository.sendMessage(thread.conversation.id,text);
-      if(!mounted)return;
-      setState(()=>_thread=HopeChatThread(conversation:thread.conversation,messages:[...thread.messages,m]));
+      final message = await _repository.sendMessage(
+        thread.conversation.id,
+        text,
+      );
+      if (!mounted) return;
+
+      setState(
+        () => _thread = HopeChatThread(
+          conversation: thread.conversation,
+          messages: [...thread.messages, message],
+        ),
+      );
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if(_scroll.hasClients)_scroll.animateTo(_scroll.position.maxScrollExtent,duration:const Duration(milliseconds:180),curve:Curves.easeOut);
+        if (_scroll.hasClients) {
+          _scroll.animateTo(
+            _scroll.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+          );
+        }
       });
-    } catch(e){if(mounted)setState(()=>_error=apiErrorMessage(e,fallback:_t('پیام ارسال نشد.','Message could not be sent.')));}
-    finally{if(mounted)setState(()=>_busy=false);}
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = apiErrorMessage(
+            e,
+            fallback: _t(
+              'پیام ارسال نشد.',
+              'Message could not be sent.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
-  String _t(String fa,String en)=>Localizations.localeOf(context).languageCode=='en'?en:fa;
+  String _t(String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _chatStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'OPEN':
+        return _t('باز', 'Open');
+      case 'CLOSED':
+        return _t('بسته', 'Closed');
+      case 'SETTLED':
+        return _t('تسویه‌شده', 'Settled');
+      default:
+        return _t('وضعیت گفتگو', 'Conversation status');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final c = _thread?.conversation;
+    final conversation = _thread?.conversation;
     final isEn = Localizations.localeOf(context).languageCode == 'en';
-    final currentUserId = context.read<AuthController?>()?.user?['id']?.toString();
+    final currentUserId =
+        context.read<AuthController?>()?.user?['id']?.toString();
+
     final title = widget.adminRoom
         ? _t('گفتگوی مدیران', 'Admin room')
-        : c?.otherUserName.isNotEmpty == true
-            ? c!.otherUserName
+        : conversation?.otherUserName.isNotEmpty == true
+            ? conversation!.otherUserName
             : _t('گفتگوی این کار', 'Job chat');
+
+    final conversationStatus = conversation?.status.toUpperCase();
+    final statusColor = conversationStatus == 'OPEN'
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Directionality(
       textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
@@ -106,34 +215,68 @@ class _ChatPageState extends State<ChatPage> {
                     onPressed: () => Navigator.maybePop(context),
                   ),
                 ),
+                if (conversation != null) ...[
+                  const SizedBox(height: HopeV2Spacing.sm),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: PremiumTag(
+                      icon: HopeV2Icons.message,
+                      label: _chatStatusLabel(conversation.status),
+                      color: statusColor,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: HopeV2Spacing.md),
-                if (_error != null)
+                if (_error != null && _thread != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm),
                     child: HopeAsyncState(
                       kind: HopeStateKind.error,
-                      title: _t('گفتگو در دسترس نیست', 'Conversation unavailable'),
+                      title: _t(
+                        'گفتگو در دسترس نیست',
+                        'Conversation unavailable',
+                      ),
                       message: _error!,
                       action: FilledButton.icon(
                         onPressed: _busy ? null : _load,
-                        icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
+                        icon: const HopeIcon(
+                          HopeV2Icons.refresh,
+                          size: 19,
+                        ),
                         label: Text(_t('تلاش دوباره', 'Retry')),
                       ),
                     ),
                   ),
                 Expanded(
                   child: _thread == null
-                      ? HopeAsyncState(
-                          kind: HopeStateKind.loading,
-                          title: _t(
-                            'در حال بارگذاری گفتگو',
-                            'Loading conversation',
-                          ),
-                          message: _t(
-                            'پیام‌های این گفتگو در حال دریافت هستند.',
-                            'Messages in this conversation are loading.',
-                          ),
-                        )
+                      ? _error != null
+                          ? HopeAsyncState(
+                              kind: HopeStateKind.error,
+                              title: _t(
+                                'گفتگو در دسترس نیست',
+                                'Conversation unavailable',
+                              ),
+                              message: _error!,
+                              action: FilledButton.icon(
+                                onPressed: _busy ? null : _load,
+                                icon: const HopeIcon(
+                                  HopeV2Icons.refresh,
+                                  size: 19,
+                                ),
+                                label: Text(_t('تلاش دوباره', 'Retry')),
+                              ),
+                            )
+                          : HopeAsyncState(
+                              kind: HopeStateKind.loading,
+                              title: _t(
+                                'در حال بارگذاری گفتگو',
+                                'Loading conversation',
+                              ),
+                              message: _t(
+                                'پیام‌های این گفتگو در حال دریافت هستند.',
+                                'Messages in this conversation are loading.',
+                              ),
+                            )
                       : _thread!.messages.isEmpty
                           ? PremiumPanel(
                               glass: true,
@@ -162,7 +305,9 @@ class _ChatPageState extends State<ChatPage> {
                             )
                           : PremiumPanel(
                               glass: true,
-                              padding: const EdgeInsets.all(HopeV2Spacing.md),
+                              padding: const EdgeInsets.all(
+                                HopeV2Spacing.md,
+                              ),
                               child: ListView.builder(
                                 controller: _scroll,
                                 padding: const EdgeInsets.fromLTRB(
@@ -172,9 +317,18 @@ class _ChatPageState extends State<ChatPage> {
                                   HopeV2Spacing.md,
                                 ),
                                 itemCount: _thread!.messages.length,
-                                itemBuilder: (context, i) {
-                                  final m = _thread!.messages[i];
-                                  final mine = currentUserId != null && m.senderId == currentUserId;
+                                itemBuilder: (context, index) {
+                                  final message = _thread!.messages[index];
+                                  final mine = currentUserId != null &&
+                                      message.senderId == currentUserId;
+                                  final timestamp =
+                                      MaterialLocalizations.of(context)
+                                          .formatTimeOfDay(
+                                    TimeOfDay.fromDateTime(
+                                      message.createdAt.toLocal(),
+                                    ),
+                                  );
+
                                   return Align(
                                     alignment: mine
                                         ? AlignmentDirectional.centerEnd
@@ -184,7 +338,8 @@ class _ChatPageState extends State<ChatPage> {
                                         maxWidth: 680,
                                       ),
                                       child: Padding(
-                                        padding: const EdgeInsets.only(bottom: 10),
+                                        padding:
+                                            const EdgeInsets.only(bottom: 10),
                                         child: PremiumPanel(
                                           highlight: mine,
                                           padding: const EdgeInsets.symmetric(
@@ -195,14 +350,31 @@ class _ChatPageState extends State<ChatPage> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                m.senderName,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w800,
-                                                ),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      message.senderName,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Text(
+                                                    timestamp,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .labelSmall,
+                                                  ),
+                                                ],
                                               ),
                                               const SizedBox(height: 4),
-                                              Text(m.body),
+                                              Text(message.body),
                                             ],
                                           ),
                                         ),
@@ -214,7 +386,7 @@ class _ChatPageState extends State<ChatPage> {
                             ),
                 ),
                 const SizedBox(height: HopeV2Spacing.md),
-                if (c?.status.toUpperCase() == 'OPEN')
+                if (conversationStatus == 'OPEN')
                   SafeArea(
                     top: false,
                     child: Row(
@@ -241,14 +413,16 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                         const SizedBox(width: HopeV2Spacing.sm),
                         PremiumIconButton(
-                          icon: HopeV2Icons.arrowRight,
+                          icon: isEn
+                              ? HopeV2Icons.arrowLeft
+                              : HopeV2Icons.arrowRight,
                           tooltip: _t('ارسال', 'Send'),
                           onPressed: _busy ? null : _send,
                         ),
                       ],
                     ),
                   )
-                else if (c != null)
+                else if (conversation != null)
                   PremiumPanel(
                     glass: true,
                     child: Row(
@@ -258,8 +432,8 @@ class _ChatPageState extends State<ChatPage> {
                         Expanded(
                           child: Text(
                             _t(
-                              'این گفتگو با پایان کار و تسویه بسته شده است.',
-                              'This conversation is closed because the job has ended and settled.',
+                              'این گفتگو بسته شده است.',
+                              'This conversation is closed.',
                             ),
                           ),
                         ),
