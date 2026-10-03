@@ -173,11 +173,16 @@ class OpportunityCard extends StatelessWidget {
     required bool featured,
   }) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final compactViewport =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final percent = score == null ? null : (score <= 1 ? score * 100 : score);
+    final mediaHeight = featured
+        ? (compactViewport ? 104.0 : 132.0)
+        : (compactViewport ? 92.0 : 116.0);
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: featured ? 132 : 116,
+        height: mediaHeight,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
