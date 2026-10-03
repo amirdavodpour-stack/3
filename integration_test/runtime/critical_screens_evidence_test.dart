@@ -455,6 +455,20 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'schedule': 'FULL_TIME',
       'offerCount': 4,
       'isOwner': false,
+      'isRecommended': true,
+      'recommendationScore': 94,
+      'recommendationReasons': [
+        'SKILL_MATCH',
+        'WORK_MODE_MATCH',
+        'CATEGORY_MATCH',
+      ],
+      'recommendationComponents': {
+        'skills': 96,
+        'category': 100,
+        'location': 88,
+        'salary': 82,
+      },
+      'aiRecommendationConfidence': 0.92,
     });
 
 HopeApplication _applicationFixture() => HopeApplication.fromMap({

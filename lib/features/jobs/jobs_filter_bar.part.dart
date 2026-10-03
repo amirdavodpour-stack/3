@@ -311,6 +311,8 @@ class _JobsFilterHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final copy = HopeCopy.of(context);
+    final compact =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final filterCount = [
       if (kind != 'ALL') 1,
       if (visibility != 'ALL') 1,
@@ -331,7 +333,9 @@ class _JobsFilterHeader extends StatelessWidget {
             Expanded(
               child: PremiumSearchBar(
                 onChanged: onQueryChanged,
-                hint: copy.copy_title_city_or_skill_bccb024,
+                hint: compact
+                    ? _t(context, 'جستجو', 'Search')
+                    : copy.copy_title_city_or_skill_bccb024,
               ),
             ),
             const SizedBox(width: HopeV2Spacing.sm),
