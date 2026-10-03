@@ -21,6 +21,24 @@ class AboutHopePage extends StatelessWidget {
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
+            Row(
+              children: [
+                PremiumDomainMarker(
+                  domain: HopeProductDomain.overview,
+                  compact: true,
+                ),
+                const SizedBox(width: HopeV2Spacing.sm),
+                Expanded(
+                  child: Text(
+                    isEn ? 'ABOUT HOPE' : 'درباره HOPE',
+                    style: HopeV2Type.eyebrow(context).copyWith(
+                      color: HopeProductDomain.overview.spec.accent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             PremiumHero(
               eyebrow: isEn ? 'ABOUT HOPE' : 'درباره HOPE',
               title: isEn ? 'A work marketplace built around trust' : 'بازار کار HOPE با محوریت اعتماد',
