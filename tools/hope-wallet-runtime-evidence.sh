@@ -264,6 +264,7 @@ run_host_batch_session() {
     baseline-a) baseline_batch="a" ;;
     baseline-b) baseline_batch="b" ;;
     baseline-c) baseline_batch="c" ;;
+    baseline-d) baseline_batch="d" ;;
   esac
   if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ] || [ "$mode" = "responsive-c" ]; then
     responsive_only="true"
@@ -406,12 +407,15 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   fi
 else
   baseline_first_status=0
-  baseline_third_status=0
   baseline_second_status=0
+  baseline_third_status=0
+  baseline_fourth_status=0
 
-  baseline_first_screens=("${baseline_screens[@]:0:8}")
-  baseline_second_screens=("${baseline_screens[@]:8:4}")
-  baseline_third_screens=("${baseline_screens[@]:12:3}")
+  # Wallet is index 7; isolate it in a fresh Driver/VM-service session.
+  baseline_first_screens=("${baseline_screens[@]:0:7}")
+  baseline_second_screens=("${baseline_screens[@]:7:1}")
+  baseline_third_screens=("${baseline_screens[@]:8:4}")
+  baseline_fourth_screens=("${baseline_screens[@]:12:3}")
 
   run_host_batch_session baseline-a "${baseline_first_screens[@]}" || baseline_first_status=$?
   if [ "$baseline_first_status" -eq 0 ] &&
@@ -437,12 +441,23 @@ else
     fi
   fi
 
+  if [ "$baseline_third_status" -eq 0 ] && [ "$baseline_second_status" -eq 0 ] && [ "$baseline_first_status" -eq 0 ]; then
+    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    run_host_batch_session baseline-d "${baseline_fourth_screens[@]}" || baseline_fourth_status=$?
+    if [ "$baseline_fourth_status" -eq 0 ] &&
+       ! validate_capture_set "baseline-$CAPTURE_LOCALE-d" "$runner_temp/hope-baseline-d-runtime.log" "${baseline_fourth_screens[@]}"; then
+      baseline_fourth_status=1
+    fi
+  fi
+
   if [ "$baseline_first_status" -ne 0 ]; then
     baseline_status="$baseline_first_status"
   elif [ "$baseline_second_status" -ne 0 ]; then
     baseline_status="$baseline_second_status"
   elif [ "$baseline_third_status" -ne 0 ]; then
     baseline_status="$baseline_third_status"
+  elif [ "$baseline_fourth_status" -ne 0 ]; then
+    baseline_status="$baseline_fourth_status"
   fi
 fi
 

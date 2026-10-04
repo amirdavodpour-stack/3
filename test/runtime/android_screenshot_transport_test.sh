@@ -60,7 +60,12 @@ grep -Fq 'run_host_batch_session responsive-c' "$script_file"
 grep -Fq 'responsive-c) responsive_batch="3"' "$script_file"
 # Baseline capture is intentionally split into three sessions; baseline-c must
 # select only the final three screens instead of silently falling back to all.
-grep -Fq 'baseline-c) baseline_batch="c"' "$script_file"
+grep -Fq 'run_host_batch_session baseline-d' "$script_file"
+grep -Fq 'baseline-d) baseline_batch="d"' "$script_file"
+grep -Fq 'baseline_first_screens=("${baseline_screens[@]:0:7}")' "$script_file"
+grep -Fq 'baseline_second_screens=("${baseline_screens[@]:7:1}")' "$script_file"
+grep -Fq 'baseline_third_screens=("${baseline_screens[@]:8:4}")' "$script_file"
+grep -Fq 'baseline_fourth_screens=("${baseline_screens[@]:12:3}")' "$script_file"
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE' "$test_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
