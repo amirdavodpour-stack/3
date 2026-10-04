@@ -59,6 +59,7 @@ grep -Fq 'run_host_batch_session responsive-b' "$script_file"
 grep -Fq 'run_host_batch_session responsive-c' "$script_file"
 grep -Fq 'responsive-c) responsive_batch="3"' "$script_file"
 # Baseline capture is partitioned into four sessions; Wallet is isolated in baseline-b.
+# Wallet evidence uses direct capture immediately after the completed pumpWidget; no timed settle is required.
 grep -Fq 'baseline-c) baseline_batch="c"' "$script_file"
 grep -Fq 'run_host_batch_session baseline-d' "$script_file"
 grep -Fq 'baseline-d) baseline_batch="d"' "$script_file"
@@ -68,8 +69,6 @@ grep -Fq 'baseline_third_screens=("${baseline_screens[@]:8:4}")' "$script_file"
 grep -Fq 'baseline_fourth_screens=("${baseline_screens[@]:12:3}")' "$script_file"
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE' "$test_file"
-grep -Fq 'HOPE_RUNTIME_WALLET_CHUNKED_SETTLE_DONE' "$test_file"
-grep -Fq 'const Duration(milliseconds: 300)' "$test_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
 if grep -Fq 'await tester.pump(const Duration' "$test_file" && grep -Fq 'if (child is WalletPage)' "$test_file"; then
   echo "FAIL: Wallet runtime contract must not drive a timed tester.pump after pumpWidget" >&2
