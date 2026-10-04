@@ -210,7 +210,7 @@ class _EvidenceTransactionRepository implements TransactionRepository {
 
 class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   final _jobs = <HopeJob>[
-    _jobFixture(),
+    _jobFixture(editorialMedia: true),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-2', 'title': 'توسعه Flutter برای محصول جدید', 'kind': 'JOB', 'recommendationScore': 87, 'recommendationReasons': ['SKILL_MATCH']}),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-3', 'title': 'طراحی هویت بصری استارتاپ', 'kind': 'MISSION', 'recommendationScore': 76, 'recommendationReasons': ['CATEGORY_MATCH']}),
   ];
@@ -435,7 +435,7 @@ class _EvidenceNotificationRepository implements NotificationRepository {
   Future<void> disableDevice(String id) async {}
 }
 
-HopeJob _jobFixture() => HopeJob.fromMap({
+HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
       'id': 'job-runtime-1',
       'title': 'طراحی رابط موبایل حرفه‌ای',
       'description':
@@ -472,7 +472,8 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       },
       'aiRecommendationConfidence': 0.92,
       // Runtime-only editorial media fixture: exercises the existing real media branch.
-      'imageUrl':
+      if (editorialMedia)
+        'imageUrl':
           'https://images.unsplash.com/photo-1758876022836-70b89d3e6944?auto=format&fit=crop&fm=jpg&q=60&w=1600',
     });
 
@@ -787,7 +788,7 @@ Future<void> _captureBaselineLocale(
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
-    'job-detail': () => JobDetailPage(job: _jobFixture()),
+    'job-detail': () => JobDetailPage(job: _jobFixture(editorialMedia: true)),
     'applications': () => const MyApplicationsPage(),
     'saved-searches': () => const SavedSearchesPage(),
     'transactions': () =>
