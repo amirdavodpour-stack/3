@@ -20,6 +20,8 @@ grep -Fq 'validate_capture_set "responsive-$CAPTURE_LOCALE"' "$script"
 grep -Fq 'HOPE_BASELINE_BATCH' "$script"
 grep -Fq 'run_host_batch_session baseline-a' "$script"
 grep -Fq 'run_host_batch_session baseline-b' "$script"
+grep -Fq 'run_host_batch_session baseline-c' "$script"
+grep -Fq "_baselineBatch == 'c'" "$dart_test"
 grep -Fq 'HOPE_BASELINE_BATCH' "$dart_test"
 
 grep -Fq 'onScreenshot:' "$driver"
