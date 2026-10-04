@@ -457,9 +457,10 @@ padding: const EdgeInsets.all(12),
                       const SizedBox(height: HopeV2Spacing.md),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          // Mobile keeps the pulse readable as a 2x2 metric grid;
-                          // desktop can expand to four compact metrics.
-                          final columns = constraints.maxWidth < 300 ? 2 : 4;
+                          // Keep the pulse in the same compact, four-signal row as the
+                          // reference composition on normal phone widths; only extremely
+                          // narrow embedded surfaces fall back to a 2x2 grid.
+                          final columns = constraints.maxWidth < 144 ? 2 : 4;
                           const gap = HopeV2Spacing.sm;
                           final width =
                               (constraints.maxWidth - gap * (columns - 1)) /
