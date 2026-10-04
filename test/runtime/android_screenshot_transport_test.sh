@@ -15,6 +15,7 @@ grep -Fq 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build' "$script_file"
 # Self-build includes Flutter/Gradle compilation before VM-service connection.
 grep -Fq 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"' "$script_file"
 grep -Fq 'emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq -- '-feature -Vulkan' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"; then
   echo "FAIL: runtime evidence must not use the generic software GPU alias" >&2
   exit 1
