@@ -471,6 +471,9 @@ HopeJob _jobFixture() => HopeJob.fromMap({
         'salary': 82,
       },
       'aiRecommendationConfidence': 0.92,
+      // Runtime-only editorial media fixture: exercises the existing real media branch.
+      'imageUrl':
+          'https://images.unsplash.com/photo-1758876022836-70b89d3e6944?auto=format&fit=crop&fm=jpg&q=60&w=1600',
     });
 
 HopeApplication _applicationFixture() => HopeApplication.fromMap({
