@@ -50,6 +50,21 @@ grep -Fq 'String.fromEnvironment' "$test_file"
 grep -Fq "String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '')" "$test_file"
 grep -Fq "String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: 'baseline')" "$test_file"
 grep -Fq 'IntegrationTestWidgetsFlutterBinding.ensureInitialized();' "$test_file"
+# Android screenshot surface preparation must follow the first target page pumpWidget.
+capture_fn_start="$(grep -nF 'Future<void> _captureRuntimeScreen(' "$test_file" | cut -d: -f1 | head -n1)"
+capture_fn_end="$(grep -nF 'Future<void> _captureBaselineLocale(' "$test_file" | cut -d: -f1 | head -n1)"
+capture_block="$(sed -n "${capture_fn_start},$((capture_fn_end - 1))p" "$test_file")"
+pump_widget_line="$(grep -nF 'await tester.pumpWidget(' <<<"$capture_block" | head -n1 | cut -d: -f1)"
+surface_prepare_line="$(grep -nF 'await _prepareRuntimeScreenshotSurface(tester);' <<<"$capture_block" | head -n1 | cut -d: -f1)"
+if [ -z "$pump_widget_line" ] || [ -z "$surface_prepare_line" ] || [ "$surface_prepare_line" -le "$pump_widget_line" ]; then
+  echo "FAIL: Android screenshot surface must be prepared after target screen pumpWidget" >&2
+  exit 1
+fi
+main_block="$(sed -n '/^void main()/,$p' "$test_file")"
+if grep -Fq 'await _prepareRuntimeScreenshotSurface(tester);' <<<"$main_block"; then
+  echo "FAIL: screenshot surface must not be prepared on the initial Home host" >&2
+  exit 1
+fi
 grep -Fq -- '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"' "$script_file"
 grep -Fq -- '--dart-define=HOPE_CAPTURE_MODE="${launch_mode}"' "$script_file"
 grep -Fq -- '--dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"' "$script_file"
