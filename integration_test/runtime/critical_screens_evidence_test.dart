@@ -725,10 +725,11 @@ Future<void> _captureRuntimeScreen(
     // Do not use pumpAndSettle here: the unbounded settle path can stall the
     // headless VM-service driver before the screenshot request.
     await tester.pump(const Duration(milliseconds: 1200));
-    for (var frame = 0; frame < 2; frame++) {
-      await tester.pump();
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    }
+    // The timed pump is the only settle boundary that proved safe for Login.
+    // Do not add another zero-duration pump or real-time delay here: the
+    // integration_test VM-service request remains outstanding until the test
+    // body completes, and this exact post-pump boundary has reproduced the
+    // driver-disposal failure in headless Android runtime evidence.
     print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
