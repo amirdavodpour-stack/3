@@ -96,26 +96,42 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: HopeV2Spacing.md),
           PremiumPanel(
+            key: const ValueKey('profile-account-summary'),
             glass: true,
-padding: const EdgeInsets.symmetric(
-              horizontal: HopeV2Spacing.lg,
-              vertical: HopeV2Spacing.md,
-            ),
-            highlight: false,
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Row(
               children: [
-                const HopeIconTile(HopeV2Icons.secure, filled: true),
-                const SizedBox(width: HopeV2Spacing.md),
+                const HopeIconTile(HopeV2Icons.secure, filled: true, size: 40),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    HopeCopy.of(context).copy_active_account_bef80da,
-                    style: Theme.of(context).textTheme.titleMedium,
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        HopeCopy.of(context).copy_active_account_bef80da,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      PremiumTag(
+                        icon: HopeV2Icons.completed,
+                        label: _t(context, 'حساب فعال', 'Active account'),
+                        color: HopeV2Colors.secondaryStrong,
+                      ),
+                      PremiumTag(
+                        icon: HopeV2Icons.job,
+                        label: _providerTypeLabel(context, 'INDIVIDUAL'),
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      PremiumTag(
+                        icon: HopeV2Icons.verified,
+                        label: _t(context, 'تأییدشده', 'Verified'),
+                        color: HopeV2Colors.success,
+                      ),
+                    ],
                   ),
-                ),
-                PremiumTag(
-                  icon: HopeV2Icons.completed,
-                  label: _t(context, 'حساب فعال', 'Active account'),
-                  color: HopeV2Colors.secondaryStrong,
                 ),
               ],
             ),
