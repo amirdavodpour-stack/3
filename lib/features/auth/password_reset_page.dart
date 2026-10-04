@@ -58,7 +58,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
             child: PremiumPageFrame(
               page: HopePageId.passwordReset,
               maxWidth: 640,
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -78,7 +78,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                       const HopeMark(size: 38),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   PremiumHero(
                     page: HopePageId.passwordReset,
                     domain: HopeProductDomain.account,
@@ -86,11 +86,11 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     title: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     message: HopeCopy.of(context).copy_enter_your_account_email_and_we_will_start_16caa6e,
                     icon: HopeV2Icons.mail,
-                    height: 300,
+                    height: 196,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   PremiumPanel(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(18),
                     child: Column(
                       children: [
                         TextField(
@@ -119,7 +119,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   EmptyState(
                     icon: HopeV2Icons.secure,
                     title: HopeCopy.of(context).copy_you_are_covered_1bbe449,
