@@ -2,6 +2,7 @@
 # [runtime-capture-fa] exact-head discovery density validation.
 # Grouped visual-wave source guard for the runtime-certified discovery surfaces.
 # [runtime-capture-fa-home] isolate editorial media to the Home discovery capture.
+# Final verification capture after adding the scoped fixture contract.
 # The restored #1560 baseline does not require a runtime media fixture; editorial media activation remains a separate visual wave.
 set -eu
 
