@@ -265,11 +265,12 @@ run_host_batch_session() {
     baseline-b) baseline_batch="b" ;;
     baseline-c) baseline_batch="c" ;;
   esac
-  if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ]; then
+  if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ] || [ "$mode" = "responsive-c" ]; then
     responsive_only="true"
     case "$mode" in
       responsive-a) responsive_batch="1" ;;
       responsive-b) responsive_batch="2" ;;
+      responsive-c) responsive_batch="3" ;;
     esac
   elif [ "$CAPTURE_HOME_ONLY" = "1" ] && [ "$mode" = "baseline" ]; then
     launch_mode="home-only"
@@ -480,31 +481,46 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
       "responsive-720x1280-profile-fa-rtl"
     )
   fi
-  # Split the responsive capture set across two fresh Flutter Driver sessions.
-  # This limits long-lived emulator/VM-service pressure while preserving every
-  # responsive screenshot and keeping the baseline session untouched.
+  # Split the responsive capture set across three fresh Flutter Driver sessions.
+  # Transactions and Wallet previously shared one long-lived VM-service session;
+  # isolate Transactions so Wallet gets a fresh driver/emulator boundary.
   responsive_first_status=0
   responsive_second_status=0
-  run_host_batch_session responsive-a "${responsive_session_screens[@]:0:3}" || responsive_first_status=$?
+  responsive_third_status=0
+  responsive_first_screens=("${responsive_session_screens[@]:0:3}")
+  responsive_second_screens=("${responsive_session_screens[@]:3:1}")
+  responsive_third_screens=("${responsive_session_screens[@]:4:2}")
+
+  run_host_batch_session responsive-a "${responsive_first_screens[@]}" || responsive_first_status=$?
   if [ "$responsive_first_status" -eq 0 ] && \
-     ! validate_capture_set "responsive-$CAPTURE_LOCALE-a" "$runner_temp/hope-responsive-a-runtime.log" "${responsive_session_screens[@]:0:3}"; then
+     ! validate_capture_set "responsive-$CAPTURE_LOCALE-a" "$runner_temp/hope-responsive-a-runtime.log" "${responsive_first_screens[@]}"; then
     responsive_first_status=1
   fi
 
   if [ "$responsive_first_status" -eq 0 ]; then
     hope_android_device_ready "$RUNTIME_SERIAL" || true
+    run_host_batch_session responsive-b "${responsive_second_screens[@]}" || responsive_second_status=$?
+    if [ "$responsive_second_status" -eq 0 ] && \
+       ! validate_capture_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-responsive-b-runtime.log" "${responsive_second_screens[@]}"; then
+      responsive_second_status=1
+    fi
   fi
 
-  run_host_batch_session responsive-b "${responsive_session_screens[@]:3:3}" || responsive_second_status=$?
-  if [ "$responsive_second_status" -eq 0 ] && \
-     ! validate_capture_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-responsive-b-runtime.log" "${responsive_session_screens[@]:3:3}"; then
-    responsive_second_status=1
+  if [ "$responsive_second_status" -eq 0 ] && [ "$responsive_first_status" -eq 0 ]; then
+    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    run_host_batch_session responsive-c "${responsive_third_screens[@]}" || responsive_third_status=$?
+    if [ "$responsive_third_status" -eq 0 ] && \
+       ! validate_capture_set "responsive-$CAPTURE_LOCALE-c" "$runner_temp/hope-responsive-c-runtime.log" "${responsive_third_screens[@]}"; then
+      responsive_third_status=1
+    fi
   fi
 
   if [ "$responsive_first_status" -ne 0 ]; then
     responsive_status="$responsive_first_status"
   elif [ "$responsive_second_status" -ne 0 ]; then
     responsive_status="$responsive_second_status"
+  elif [ "$responsive_third_status" -ne 0 ]; then
+    responsive_status="$responsive_third_status"
   else
     responsive_status=0
   fi
