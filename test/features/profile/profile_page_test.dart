@@ -250,7 +250,20 @@ testWidgets('withdrawing an application disables the action until completion',
 
     final panel = find.byKey(const ValueKey('profile-settings-panel'));
     expect(panel, findsOneWidget);
-    expect(tester.getSize(panel).height, lessThan(640));
+    expect(tester.getSize(panel).height, lessThan(520));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('authenticated profile uses a compact account summary',
+      (tester) async {
+    await _pump(tester, authenticated: true, width: 390);
+
+    final summary = find.byKey(const ValueKey('profile-account-summary'));
+    expect(summary, findsOneWidget);
+    expect(tester.getSize(summary).height, lessThan(112));
+    expect(find.text('حساب فعال'), findsOneWidget);
+    expect(find.text('مجری مستقل'), findsOneWidget);
+    expect(find.text('تأییدشده'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
