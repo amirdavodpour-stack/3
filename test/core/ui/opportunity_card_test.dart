@@ -56,6 +56,60 @@ void main() {
   });
 
 
+  testWidgets('featured opportunity media header gets an editorial focal height on mobile',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final job = HopeJob.fromMap({
+      'id': 'job-featured-editorial',
+      'title': 'طراحی رابط کاربری',
+      'description': 'Editorial focal surface contract.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'kind': 'JOB',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'city': 'تهران',
+      'recommendationScore': 0.94,
+      'imageUrl': 'https://example.com/editorial.jpg',
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.featured,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.getSize(find.byKey(const ValueKey('opportunity-media-header'))).height,
+      greaterThanOrEqualTo(100),
+    );
+  });
+
   testWidgets('featured opportunity metadata stays overflow-safe at narrow card width',
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
