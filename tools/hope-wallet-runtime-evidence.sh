@@ -251,6 +251,12 @@ screens=(
 baseline_screens=("${screens[@]}")
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   baseline_screens=("home-${CAPTURE_LOCALE}-rtl")
+elif [ "$CAPTURE_AUTH_ONLY" = "1" ]; then
+  if [ "$CAPTURE_LOCALE" = "fa" ]; then
+    baseline_screens=("login-fa-rtl" "register-fa-rtl" "password-reset-fa-rtl")
+  else
+    baseline_screens=("login-en-ltr" "register-en-ltr" "password-reset-en-ltr")
+  fi
 elif [ "$CAPTURE_LOCALE" = "fa" ]; then
   baseline_screens=("${screens[@]:0:15}")
 elif [ "$CAPTURE_LOCALE" = "en" ]; then
@@ -420,8 +426,18 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   fi
   baseline_status="$session_status"
 else
-  for SCREEN_INDEX in "${!baseline_screens[@]}"; do
-    marker="${baseline_screens[$SCREEN_INDEX]}"
+  for SCREEN_POSITION in "${!baseline_screens[@]}"; do
+    marker="${baseline_screens[$SCREEN_POSITION]}"
+    if [ "$CAPTURE_AUTH_ONLY" = "1" ]; then
+      case "$marker" in
+        login-*) SCREEN_INDEX=12 ;;
+        register-*) SCREEN_INDEX=13 ;;
+        password-reset-*) SCREEN_INDEX=14 ;;
+        *) SCREEN_INDEX="$SCREEN_POSITION" ;;
+      esac
+    else
+      SCREEN_INDEX="$SCREEN_POSITION"
+    fi
     session_status=0
     run_host_batch_session "$([ "$CAPTURE_AUTH_ONLY" = "1" ] && echo auth-only || echo baseline-single)" "$marker" || session_status=$?
     if [ "$session_status" -eq 0 ] &&
@@ -526,6 +542,10 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   CAPTURED_BASELINE_SCREENS=1
   CAPTURED_RESPONSIVE_SCREENS=0
   CAPTURED_LOCALE_LABEL="fa-RTL home-only"
+elif [ "$CAPTURE_AUTH_ONLY" = "1" ]; then
+  CAPTURED_BASELINE_SCREENS=3
+  CAPTURED_RESPONSIVE_SCREENS=0
+  CAPTURED_LOCALE_LABEL="${CAPTURE_LOCALE}-auth-only"
 elif [ "$CAPTURE_LOCALE" = "fa" ]; then
   CAPTURED_BASELINE_SCREENS=15
   CAPTURED_RESPONSIVE_SCREENS=6
