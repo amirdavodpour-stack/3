@@ -75,6 +75,12 @@ if grep -Fq 'await tester.pump(const Duration' <<<"$wallet_block"; then
   exit 1
 fi
 grep -Fq "print('HOPE_RUNTIME_WALLET_DIRECT_CAPTURE:\$marker');" "$test_file"
+login_block="$(sed -n '/if (child is LoginPage)/,/^[[:space:]]*}/p' "$test_file")"
+if grep -Fq 'await tester.pump(const Duration' <<<"$login_block"; then
+  echo "FAIL: Login runtime contract must not drive a timed tester.pump after pumpWidget" >&2
+  exit 1
+fi
+grep -Fq "print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:\$marker');" "$test_file"
 grep -Fq 'HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE' "$script_file"
 # Post-completion screenshot flush must be followed by normal integration_test driver teardown.
 grep -Fq 'screenshot_flush_deadline' "$script_file"
