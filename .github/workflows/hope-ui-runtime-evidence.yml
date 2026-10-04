@@ -199,3 +199,5 @@ jobs:
 # [runtime-capture-fa] validate pinned runner with maximum conservative 8GiB emulator RAM.
 
 # [runtime-capture-fa] 8GiB emulator RAM transport validation at exact HEAD.
+
+# [runtime-capture-fa] validate 8GiB runner after stale golden contract correction.
