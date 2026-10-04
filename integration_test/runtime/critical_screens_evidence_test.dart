@@ -613,26 +613,6 @@ const _captureHomeOnly =
     bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
 const _responsiveBatch =
     String.fromEnvironment('HOPE_RESPONSIVE_BATCH', defaultValue: 'all');
-const _baselineBatch =
-    String.fromEnvironment('HOPE_BASELINE_BATCH', defaultValue: 'all');
-const _screenIndex =
-    int.fromEnvironment('HOPE_SCREEN_INDEX', defaultValue: -1);
-
-Map<String, Widget Function()> _selectScreen(
-  Map<String, Widget Function()> pages, {
-  required int index,
-}) {
-  if (index < 0) {
-    return pages;
-  }
-  final entries = pages.entries.toList(growable: false);
-  if (index >= entries.length) {
-    throw RangeError.range(index, 0, entries.length - 1, 'HOPE_SCREEN_INDEX');
-  }
-  final entry = entries[index];
-  return <String, Widget Function()>{entry.key: entry.value};
-}
-
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -659,14 +639,20 @@ typedef _Runtime = ({
   ApplicationRegistry registry,
 });
 
+var _runtimeScreenshotSurfacePrepared = false;
+
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
-  // Convert the surface only after the target page is mounted and settled.
-  // Auth pages contain EditableText/TextField trees; keeping conversion at the
-  // host-level boundary can leave the Android image surface stale for that tree.
+  if (_runtimeScreenshotSurfacePrepared) {
+    return;
+  }
+
+  // Android integration_test screenshots need the Flutter surface converted
+  // before the first capture so the image comes from the Flutter render surface.
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
   await binding.convertFlutterSurfaceToImage();
   await tester.pump();
+  _runtimeScreenshotSurfacePrepared = true;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
@@ -728,12 +714,9 @@ Future<void> _captureRuntimeScreen(
     ),
   );
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
-  if (child is LoginPage ||
-      child is RegisterPage ||
-      child is PasswordResetPage) {
+  if (child is LoginPage) {
     await tester.pump(const Duration(milliseconds: 1200));
-    print('HOPE_RUNTIME_AUTH_FAST_SETTLE_DONE:$marker');
-    await _prepareRuntimeScreenshotSurface(tester);
+    print('HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
@@ -750,7 +733,6 @@ Future<void> _captureRuntimeScreen(
       await Future<void>.delayed(const Duration(milliseconds: 120));
     }
     print('HOPE_RUNTIME_TRANSACTION_FAST_SETTLE_DONE:$marker');
-    await _prepareRuntimeScreenshotSurface(tester);
     await _captureRuntimeScreenshot(marker);
     return;
   }
@@ -763,7 +745,6 @@ Future<void> _captureRuntimeScreen(
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
 
-  await _prepareRuntimeScreenshotSurface(tester);
   await _captureRuntimeScreenshot(marker);
 }
 
@@ -797,25 +778,15 @@ Future<void> _captureBaselineLocale(
   };
   final capturePages = _captureHomeOnly
       ? <String, Widget Function()>{'home': () => const HomePage()}
-      : _screenIndex >= 0
-          ? _selectScreen(pages, index: _screenIndex)
-          : _responsiveBatch == '1'
+      : _responsiveBatch == '1'
+          ? Map<String, Widget Function()>.fromEntries(
+              pages.entries.take(3),
+            )
+          : _responsiveBatch == '2'
               ? Map<String, Widget Function()>.fromEntries(
-                  pages.entries.take(3),
+                  pages.entries.skip(3).take(3),
                 )
-              : _responsiveBatch == '2'
-                  ? Map<String, Widget Function()>.fromEntries(
-                      pages.entries.skip(3).take(3),
-                    )
-                  : _baselineBatch == 'a'
-                      ? Map<String, Widget Function()>.fromEntries(
-                          pages.entries.take(8),
-                        )
-                      : _baselineBatch == 'b'
-                          ? Map<String, Widget Function()>.fromEntries(
-                              pages.entries.skip(8).take(7),
-                            )
-                          : pages;
+              : pages;
   for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
@@ -846,15 +817,11 @@ Future<void> _captureResponsiveLocale(
   };
   final capturePages = _captureHomeOnly
       ? <String, Widget Function()>{'home': () => const HomePage()}
-      : _screenIndex >= 0
-          ? _selectScreen(pages, index: _screenIndex)
-          : _responsiveBatch == '1'
-              ? Map<String, Widget Function()>.fromEntries(pages.entries.take(3))
-              : _responsiveBatch == '2'
-                  ? Map<String, Widget Function()>.fromEntries(
-                      pages.entries.skip(3).take(3),
-                    )
-                  : pages;
+      : _responsiveBatch == '1'
+          ? Map<String, Widget Function()>.fromEntries(pages.entries.take(3))
+          : _responsiveBatch == '2'
+              ? Map<String, Widget Function()>.fromEntries(pages.entries.skip(3).take(3))
+              : pages;
   for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:responsive-${entry.key}-$suffix');
     await _captureRuntimeScreen(
@@ -886,8 +853,9 @@ void main() {
       ),
     );
     print('HOPE_RUNTIME_HOST_PUMP_DONE');
-    // Surface conversion is deliberately deferred to each rendered target page.
-    // This avoids capturing an image surface created before a TextField/EditableText tree is mounted.
+    // Avoid endOfFrame in the headless driver path. A fixed pump is sufficient
+    // to progress the Flutter tree without blocking VMService request_data.
+    await _prepareRuntimeScreenshotSurface(tester);
     if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
