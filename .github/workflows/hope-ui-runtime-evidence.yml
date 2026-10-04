@@ -138,13 +138,14 @@ jobs:
           # Recreate the AVD from the cached API-35 system image to avoid stale/corrupt AVD state.
           # Use the runner's explicit swiftshader_indirect software renderer rather than the generic software alias.
           # The generic alias was correlated with the native PixelCopy capture boundary dropping ADB offline.
+          # Current evidence also shows gfxstream/Vulkan SwiftShader active when the transport drops; disable Vulkan for this capture lane.
           force-avd-creation: true
           cores: 4
           ram-size: 4096M
           disable-linux-hw-accel: false
           emulator-boot-timeout: 1200
           emulator-build: 16428233
-          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
 
