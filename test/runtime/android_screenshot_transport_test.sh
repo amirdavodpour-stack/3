@@ -65,6 +65,8 @@ grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE' "$test_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
 grep -Fq 'HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE' "$script_file"
+# Post-completion screenshot flush must not require the driver process to remain alive.
+grep -Fq 'screenshot_flush_deadline' "$script_file"
 grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"
 grep -Fq '"capture_transport": "flutter_integration_test_onScreenshot"' "$script_file"
 
