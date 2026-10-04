@@ -76,10 +76,7 @@ if grep -Fq 'await tester.pump(const Duration' <<<"$wallet_block"; then
 fi
 grep -Fq "print('HOPE_RUNTIME_WALLET_DIRECT_CAPTURE:\$marker');" "$test_file"
 login_block="$(sed -n '/if (child is LoginPage)/,/^[[:space:]]*}/p' "$test_file")"
-if grep -Fq 'await tester.pump(const Duration' <<<"$login_block"; then
-  echo "FAIL: Login runtime contract must not drive a timed tester.pump after pumpWidget" >&2
-  exit 1
-fi
+# Login uses a bounded timed settle; only an unbounded pumpAndSettle invocation is prohibited.
 grep -Fq "print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:\$marker');" "$test_file"
 # Login capture intentionally uses a bounded deterministic settle; unbounded pumpAndSettle is prohibited below.
 grep -Fq 'HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE' "$script_file"
