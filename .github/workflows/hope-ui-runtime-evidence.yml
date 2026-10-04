@@ -162,3 +162,5 @@ jobs:
 # [runtime-capture-fa] validate compact Profile account/trust summary wave at exact current HEAD.
 
 # [runtime-capture-fa] validate isolated auth baseline driver session.
+
+# [runtime-capture-fa] validate grouped Auth surface visual calibration.
