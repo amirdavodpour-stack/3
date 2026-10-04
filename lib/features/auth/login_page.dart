@@ -217,15 +217,18 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      FilledButton(
-                        onPressed: loading ? null : submit,
-                        child: loading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : Text(l10n.loginButton),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: loading ? null : submit,
+                          child: loading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Text(l10n.loginButton),
+                        ),
                       ),
                     ],
                   ),
