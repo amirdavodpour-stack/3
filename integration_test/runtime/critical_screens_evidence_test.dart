@@ -721,10 +721,14 @@ Future<void> _captureRuntimeScreen(
   );
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
   if (child is LoginPage) {
-    // Android integration_test requires a post-conversion frame before
-    // takeScreenshot. Login is the first surface in its isolated session, so
-    // settle the rebuilt tree without advancing the clock manually.
-    await tester.pumpAndSettle();
+    // Login can keep scheduled frames alive during its initial auth/hero build.
+    // Do not use pumpAndSettle here: the unbounded settle path can stall the
+    // headless VM-service driver before the screenshot request.
+    await tester.pump(const Duration(milliseconds: 1200));
+    for (var frame = 0; frame < 2; frame++) {
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
     print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
