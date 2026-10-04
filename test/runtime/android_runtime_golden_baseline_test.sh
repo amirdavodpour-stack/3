@@ -16,6 +16,19 @@ require_line() {
 # Locked to the proven Android emulator geometry from Run #322.
 # Screenshot bytes are produced by integration_test and persisted by the
 # Flutter driver callback; the old host-framebuffer transport is retired.
+# The only runtime path with a fully green 15-screen certification is the pinned
+# soloturn runner used by Run #35741811401. Keep this infrastructure contract locked;
+# the maintained ReactiveCircus action is not equivalent for this lane.
+require_line "$workflow" "repository: soloturn/android-emulator-runner"
+require_line "$workflow" "ref: ab495a9b42f2af30f5222bd978136f9b0a85b68a"
+require_line "$workflow" "uses: ./.ci/android-emulator-runner"
+require_line "$workflow" "ram-size: 6144M"
+require_line "$workflow" "force-avd-creation: false"
+if grep -Fq 'uses: ReactiveCircus/android-emulator-runner@' "$workflow"; then
+  printf 'FAIL: runtime golden baseline regressed to the non-certified ReactiveCircus runner.\n' >&2
+  exit 1
+fi
+
 require_line "$workflow" "api-level: 35"
 require_line "$workflow" "target: default"
 require_line "$workflow" "profile: pixel_2"
