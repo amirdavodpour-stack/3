@@ -18,6 +18,7 @@ on:
 
   # Current-head visual validation bridge: 2026-10-03 UI architecture batch.
 # [runtime-capture-fa] one-shot capture requested from GitHub connector.
+# [runtime-capture-fa] validate bounded RegisterPage screenshot settling after transient driver hang.
 # [runtime-capture-fa] fresh current-head capture requested after clearing prior run.
 # [runtime-capture-fa] current-head capture requested after compact-search fix and recommendation fixture.
 # [runtime-capture-fa] validate grouped discovery + wallet hierarchy wave at current feature HEAD.
