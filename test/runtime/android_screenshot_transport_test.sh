@@ -58,8 +58,8 @@ grep -Fq 'run_host_batch_session responsive-a' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b' "$script_file"
 grep -Fq 'run_host_batch_session responsive-c' "$script_file"
 grep -Fq 'responsive-c) responsive_batch="3"' "$script_file"
-# Baseline capture is intentionally split into three sessions; baseline-c must
-# select only the final three screens instead of silently falling back to all.
+# Baseline capture is partitioned into four sessions; Wallet is isolated in baseline-b.
+grep -Fq 'baseline-c) baseline_batch="c"' "$script_file"
 grep -Fq 'run_host_batch_session baseline-d' "$script_file"
 grep -Fq 'baseline-d) baseline_batch="d"' "$script_file"
 grep -Fq 'baseline_first_screens=("${baseline_screens[@]:0:7}")' "$script_file"

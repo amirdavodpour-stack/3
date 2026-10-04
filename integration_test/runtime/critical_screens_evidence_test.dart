@@ -833,13 +833,13 @@ Future<void> _captureBaselineLocale(
                 )
               : _baselineBatch == 'a'
                   ? Map<String, Widget Function()>.fromEntries(
-                      pages.entries.take(8),
+                      pages.entries.take(7),
                     )
                   : _baselineBatch == 'b'
                       ? Map<String, Widget Function()>.fromEntries(
-                          pages.entries.skip(8).take(4),
+                          pages.entries.skip(7).take(1),
                         )
-                       : _baselineBatch == 'c'
+                      : _baselineBatch == 'c'
                           ? Map<String, Widget Function()>.fromEntries(
                               pages.entries.skip(8).take(4),
                             )
