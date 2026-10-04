@@ -259,6 +259,11 @@ run_host_batch_session() {
   local launch_mode="$mode"
   local responsive_only="false"
   local responsive_batch="all"
+  local baseline_batch="all"
+  case "$mode" in
+    baseline-a) baseline_batch="a" ;;
+    baseline-b) baseline_batch="b" ;;
+  esac
   if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ]; then
     responsive_only="true"
     case "$mode" in
@@ -290,6 +295,7 @@ run_host_batch_session() {
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
     --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
+    --dart-define=HOPE_BASELINE_BATCH="${baseline_batch}" \
     --dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}" \
     --dart-define=HOPE_RESPONSIVE_BATCH="${responsive_batch}" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
@@ -394,10 +400,39 @@ run_host_batch_session() {
 }
 echo "HOPE_RUNTIME_CAPTURE_LOCALE:$CAPTURE_LOCALE"
 baseline_status=0
-run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
-if [ "$baseline_status" -eq 0 ] &&
-   ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$log_file" "${baseline_screens[@]}"; then
-  baseline_status=1
+if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
+  run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
+  if [ "$baseline_status" -eq 0 ] &&
+     ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
+    baseline_status=1
+  fi
+else
+  baseline_first_status=0
+  baseline_second_status=0
+
+  baseline_first_screens=("${baseline_screens[@]:0:8}")
+  baseline_second_screens=("${baseline_screens[@]:8:7}")
+
+  run_host_batch_session baseline-a "${baseline_first_screens[@]}" || baseline_first_status=$?
+  if [ "$baseline_first_status" -eq 0 ] &&
+     ! validate_capture_set "baseline-$CAPTURE_LOCALE-a" "$runner_temp/hope-baseline-a-runtime.log" "${baseline_first_screens[@]}"; then
+    baseline_first_status=1
+  fi
+
+  if [ "$baseline_first_status" -eq 0 ]; then
+    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    run_host_batch_session baseline-b "${baseline_second_screens[@]}" || baseline_second_status=$?
+    if [ "$baseline_second_status" -eq 0 ] &&
+       ! validate_capture_set "baseline-$CAPTURE_LOCALE-b" "$runner_temp/hope-baseline-b-runtime.log" "${baseline_second_screens[@]}"; then
+      baseline_second_status=1
+    fi
+  fi
+
+  if [ "$baseline_first_status" -ne 0 ]; then
+    baseline_status="$baseline_first_status"
+  elif [ "$baseline_second_status" -ne 0 ]; then
+    baseline_status="$baseline_second_status"
+  fi
 fi
 
 if [ "$baseline_status" -ne 0 ]; then
