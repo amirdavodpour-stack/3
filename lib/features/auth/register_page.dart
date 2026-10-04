@@ -117,7 +117,7 @@ class _RegisterPageState extends State<RegisterPage> {
             child: PremiumPageFrame(
               page: HopePageId.register,
               maxWidth: 640,
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -137,7 +137,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       const HopeMark(size: 38),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   PremiumHero(
                     page: HopePageId.register,
                     domain: HopeProductDomain.account,
@@ -145,11 +145,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
                     icon: HopeV2Icons.userAdd,
-                    height: 260,
+                    height: 196,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   PremiumPanel(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(18),
                     child: Column(
                       children: [
                         if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
@@ -251,7 +251,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Text(
                     HopeCopy.of(context).copy_your_account_data_is_kept_securely_by_hope_b91dd1f,
                     textAlign: TextAlign.center,
