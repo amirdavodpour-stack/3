@@ -13,15 +13,17 @@ require_line() {
   fi
 }
 
-# Locked to the proven Android emulator geometry from Run #322.\n# Screenshot bytes are produced by integration_test and persisted by the\n# Flutter driver callback; the old host-framebuffer transport is retired.
+# Locked to the proven Android emulator geometry from Run #322.
+# Screenshot bytes are produced by integration_test and persisted by the
+# Flutter driver callback; the old host-framebuffer transport is retired.
 require_line "$workflow" "api-level: 35"
 require_line "$workflow" "target: default"
 require_line "$workflow" "profile: pixel_2"
 require_line "$workflow" "cores: 4"
 require_line "$workflow" "ram-size: 4096M"
-require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu software -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
-if grep -Fq -- '-gpu swiftshader_indirect' "$workflow"; then
-  printf 'FAIL: runtime golden baseline still uses deprecated swiftshader_indirect GPU mode.\n' >&2
+require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
+if grep -Fq -- '-gpu software' "$workflow"; then
+  printf 'FAIL: runtime golden baseline still uses generic software GPU mode; use the runner-stable swiftshader_indirect mode.\n' >&2
   exit 1
 fi
 
@@ -52,13 +54,11 @@ require_line "$runtime" '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"'
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_MODE="${launch_mode}"'
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"'
 if grep -Fq -- '--use-application-binary' "$runtime"; then
-  printf 'FAIL: runtime baseline still bypasses flutter drive target compilation.
-' >&2
+  printf 'FAIL: runtime baseline still bypasses flutter drive target compilation.\n' >&2
   exit 1
 fi
 if grep -Fq -- '--route=' "$runtime"; then
-  printf 'FAIL: runtime baseline still configures capture through route transport.
-' >&2
+  printf 'FAIL: runtime baseline still configures capture through route transport.\n' >&2
   exit 1
 fi
 if grep -Fq 'HOPE_ADB_SCREENSHOT_CAPTURE=true' "$runtime"; then
@@ -72,7 +72,5 @@ fi
 
 # Runtime evidence must reject byte-identical PNGs under different screen names.
 require_line "$runtime" 'duplicate-png-hash'
-
-
 
 echo "PASS: Android runtime screenshot baseline contract is locked."
