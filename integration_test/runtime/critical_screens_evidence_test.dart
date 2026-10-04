@@ -847,6 +847,10 @@ Future<void> _captureBaselineLocale(
               ? Map<String, Widget Function()>.fromEntries(
                   pages.entries.skip(3).take(3),
                 )
+              : _responsiveBatch == '3'
+                  ? Map<String, Widget Function()>.fromEntries(
+                      pages.entries.skip(6).take(2),
+                    )
               : _baselineBatch == 'a'
                   ? Map<String, Widget Function()>.fromEntries(
                       pages.entries.take(7),
