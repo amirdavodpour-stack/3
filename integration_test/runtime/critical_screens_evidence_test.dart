@@ -852,7 +852,7 @@ Future<void> _captureResponsiveLocale(
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
-    'job-detail': () => JobDetailPage(job: _jobFixture()),
+    'job-detail': () => JobDetailPage(job: _jobFixture(editorialMedia: true)),
     'transactions': () =>
         TransactionsPage(repository: runtime.registry.transactions),
     'wallet': () => WalletPage(repository: runtime.registry.wallets!),
