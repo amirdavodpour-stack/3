@@ -735,6 +735,20 @@ Future<void> _captureRuntimeScreen(
     await _captureRuntimeScreenshot(marker);
     return;
   }
+  // PasswordResetPage is a static auth surface, but its compact visual wave can
+  // make the generic render-settle pump stall before the screenshot request.
+  // Keep capture deterministic like Login/Register while still allowing the
+  // initial route/layout work to commit.
+  if (child is PasswordResetPage) {
+    await tester.pump(const Duration(milliseconds: 1200));
+    print('HOPE_RUNTIME_PASSWORD_RESET_FAST_SETTLE_DONE:$marker');
+    for (var frame = 0; frame < 2; frame++) {
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    await _captureRuntimeScreenshot(marker);
+    return;
+  }
   // TransactionsPage is the heaviest current Work Center surface. A second
   // zero-duration pump can block the headless driver before the screenshot
   // request; give this page one deterministic 1.2s frame window instead.
