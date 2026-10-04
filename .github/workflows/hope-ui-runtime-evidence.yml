@@ -136,13 +136,14 @@ jobs:
           target: default
           profile: pixel_2
           # Recreate the AVD from the cached API-35 system image to avoid stale/corrupt AVD state.
-          # Use the current 'swangle' selector; swiftshader_indirect is deprecated in modern Emulator releases.
+          # Use the proven 'software' selector for the locked API-35 visual-evidence baseline; keep the emulator build pinned for reproducibility.
           force-avd-creation: true
           cores: 4
           ram-size: 4096M
           disable-linux-hw-accel: false
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -no-snapshot -gpu swangle -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          emulator-build: 16428233
+          emulator-options: -no-window -no-snapshot -gpu software -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
 
