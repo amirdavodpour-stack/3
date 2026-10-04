@@ -95,7 +95,12 @@ fi
 grep -Fq '"capture_transport": "flutter_integration_test_onScreenshot"' "$script_file"
 grep -Fq 'RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"' "$script_file"
 
-first_baseline_page="$(awk '/final pages = <String, Widget Function()>/{getline; print; exit}' "$test_file")"
+pages_declaration_line="$(grep -nF 'final pages = <String, Widget Function()>{' "$test_file" | head -n1 | cut -d: -f1)"
+if [ -z "$pages_declaration_line" ]; then
+  echo "FAIL: baseline pages declaration not found" >&2
+  exit 1
+fi
+first_baseline_page="$(sed -n "$((pages_declaration_line + 1))p" "$test_file")"
 if [ "$first_baseline_page" != "    'login': () => const LoginPage()," ]; then
   echo "FAIL: unresolved Login runtime evidence must be the first baseline screen" >&2
   exit 1
