@@ -181,9 +181,10 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
+        key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 84 : 122)
-            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 78 : 104),
+            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 104 : 136)
+            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 88 : 112),
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -404,8 +405,8 @@ class OpportunityCard extends StatelessWidget {
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 54,
-        height: 54,
+        width: 62,
+        height: 62,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
@@ -679,8 +680,8 @@ class OpportunityCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(HopeV2Radii.md),
               child: SizedBox(
-                width: 58,
-                height: 58,
+                width: 64,
+                height: 64,
                 child: mediaUrl != null && mediaUrl.trim().isNotEmpty
                     ? Image.network(
                         mediaUrl,
