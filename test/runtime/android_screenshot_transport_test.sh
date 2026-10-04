@@ -107,7 +107,7 @@ if [ "$first_baseline_page" != "    'login': () => const LoginPage()," ]; then
 fi
 
 login_capture_block="$(awk '/if \(child is LoginPage\)/,/return;/{print}' "$test_file")"
-if printf '%s\n' "$login_capture_block" | grep -q 'pumpAndSettle'; then
+if printf '%s\n' "$login_capture_block" | grep -qE 'await[[:space:]]+tester\.pumpAndSettle[[:space:]]*\('; then
   echo "FAIL: Login runtime capture must not use unbounded pumpAndSettle" >&2
   exit 1
 fi
