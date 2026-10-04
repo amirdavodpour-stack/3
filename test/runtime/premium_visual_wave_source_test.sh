@@ -46,3 +46,4 @@ fi
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register runtime capture uses direct screenshot after bounded settle"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
+# [runtime-capture] full EN/LTR editorial media certification after FA/RTL proof.
