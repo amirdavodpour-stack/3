@@ -408,10 +408,12 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   fi
 else
   baseline_first_status=0
+  baseline_third_status=0
   baseline_second_status=0
 
   baseline_first_screens=("${baseline_screens[@]:0:8}")
-  baseline_second_screens=("${baseline_screens[@]:8:7}")
+  baseline_second_screens=("${baseline_screens[@]:8:4}")
+  baseline_third_screens=("${baseline_screens[@]:12:3}")
 
   run_host_batch_session baseline-a "${baseline_first_screens[@]}" || baseline_first_status=$?
   if [ "$baseline_first_status" -eq 0 ] &&
@@ -428,9 +430,21 @@ else
     fi
   fi
 
+  if [ "$baseline_second_status" -eq 0 ] && [ "$baseline_first_status" -eq 0 ]; then
+    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    run_host_batch_session baseline-c "${baseline_third_screens[@]}" || baseline_third_status=$?
+    if [ "$baseline_third_status" -eq 0 ] &&
+       ! validate_capture_set "baseline-$CAPTURE_LOCALE-c" "$runner_temp/hope-baseline-c-runtime.log" "${baseline_third_screens[@]}"; then
+      baseline_third_status=1
+    fi
+  fi
+
   if [ "$baseline_first_status" -ne 0 ]; then
     baseline_status="$baseline_first_status"
   elif [ "$baseline_second_status" -ne 0 ]; then
+    baseline_status="$baseline_second_status"
+  elif [ "$baseline_third_status" -ne 0 ]; then
+    baseline_status="$baseline_third_status"
     baseline_status="$baseline_second_status"
   fi
 fi
