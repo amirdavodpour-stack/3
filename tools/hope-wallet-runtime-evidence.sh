@@ -26,6 +26,7 @@ RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
+SCREEN_INDEX="${HOPE_SCREEN_INDEX:--1}"
 # bool.fromEnvironment only treats the string "true" as true. The workflow
 # contract uses 1/0 for shell semantics, so normalize before passing it to Dart.
 DART_CAPTURE_HOME_ONLY="false"
@@ -264,11 +265,12 @@ run_host_batch_session() {
     baseline-a) baseline_batch="a" ;;
     baseline-b) baseline_batch="b" ;;
   esac
-  if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ]; then
+  if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ] || [ "$mode" = "responsive-single" ]; then
     responsive_only="true"
     case "$mode" in
       responsive-a) responsive_batch="1" ;;
       responsive-b) responsive_batch="2" ;;
+      responsive-single) responsive_batch="all" ;;
     esac
   elif [ "$CAPTURE_HOME_ONLY" = "1" ] && [ "$mode" = "baseline" ]; then
     launch_mode="home-only"
@@ -283,9 +285,9 @@ run_host_batch_session() {
   mkdir -p "$runner_temp"
   : > "$log_path"
 
-  # One Flutter Driver session owns the whole screen batch. Each screenshot
-  # is produced by integration_test's onScreenshot callback, so the artifact
-  # is tied to the exact Flutter render request instead of a later framebuffer.
+  # One Flutter Driver session owns the configured capture set. Isolated modes
+  # use SCREEN_INDEX to capture exactly one page, limiting VM-service/Android
+  # surface lifetime while retaining the official integration_test transport.
   set +e
   export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
   HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
@@ -298,6 +300,7 @@ run_host_batch_session() {
     --dart-define=HOPE_BASELINE_BATCH="${baseline_batch}" \
     --dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}" \
     --dart-define=HOPE_RESPONSIVE_BATCH="${responsive_batch}" \
+    --dart-define=HOPE_SCREEN_INDEX="${SCREEN_INDEX}" \
     --driver=test_driver/hope_runtime_screenshot_driver.dart \
     --target=integration_test/runtime/critical_screens_evidence_test.dart \
     >"$log_path" 2>&1 &
@@ -401,38 +404,29 @@ run_host_batch_session() {
 echo "HOPE_RUNTIME_CAPTURE_LOCALE:$CAPTURE_LOCALE"
 baseline_status=0
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
-  run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
-  if [ "$baseline_status" -eq 0 ] &&
-     ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
-    baseline_status=1
+  SCREEN_INDEX=0
+  session_status=0
+  run_host_batch_session baseline-single "${baseline_screens[@]}" || session_status=$?
+  if [ "$session_status" -eq 0 ] &&
+     ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-single-runtime.log" "${baseline_screens[@]}"; then
+    session_status=1
   fi
+  baseline_status="$session_status"
 else
-  baseline_first_status=0
-  baseline_second_status=0
-
-  baseline_first_screens=("${baseline_screens[@]:0:8}")
-  baseline_second_screens=("${baseline_screens[@]:8:7}")
-
-  run_host_batch_session baseline-a "${baseline_first_screens[@]}" || baseline_first_status=$?
-  if [ "$baseline_first_status" -eq 0 ] &&
-     ! validate_capture_set "baseline-$CAPTURE_LOCALE-a" "$runner_temp/hope-baseline-a-runtime.log" "${baseline_first_screens[@]}"; then
-    baseline_first_status=1
-  fi
-
-  if [ "$baseline_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL" || true
-    run_host_batch_session baseline-b "${baseline_second_screens[@]}" || baseline_second_status=$?
-    if [ "$baseline_second_status" -eq 0 ] &&
-       ! validate_capture_set "baseline-$CAPTURE_LOCALE-b" "$runner_temp/hope-baseline-b-runtime.log" "${baseline_second_screens[@]}"; then
-      baseline_second_status=1
+  for SCREEN_INDEX in "${!baseline_screens[@]}"; do
+    marker="${baseline_screens[$SCREEN_INDEX]}"
+    session_status=0
+    run_host_batch_session baseline-single "$marker" || session_status=$?
+    if [ "$session_status" -eq 0 ] &&
+       ! validate_capture_set "baseline-$CAPTURE_LOCALE-$SCREEN_INDEX" "$runner_temp/hope-baseline-single-runtime.log" "$marker"; then
+      session_status=1
     fi
-  fi
-
-  if [ "$baseline_first_status" -ne 0 ]; then
-    baseline_status="$baseline_first_status"
-  elif [ "$baseline_second_status" -ne 0 ]; then
-    baseline_status="$baseline_second_status"
-  fi
+    if [ "$session_status" -ne 0 ]; then
+      baseline_status="$session_status"
+      break
+    fi
+    hope_android_device_ready "$RUNTIME_SERIAL" || true
+  done
 fi
 
 if [ "$baseline_status" -ne 0 ]; then
@@ -466,34 +460,21 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
       "responsive-720x1280-profile-fa-rtl"
     )
   fi
-  # Split the responsive capture set across two fresh Flutter Driver sessions.
-  # This limits long-lived emulator/VM-service pressure while preserving every
-  # responsive screenshot and keeping the baseline session untouched.
-  responsive_first_status=0
-  responsive_second_status=0
-  run_host_batch_session responsive-a "${responsive_session_screens[@]:0:3}" || responsive_first_status=$?
-  if [ "$responsive_first_status" -eq 0 ] && \
-     ! validate_capture_set "responsive-$CAPTURE_LOCALE-a" "$runner_temp/hope-responsive-a-runtime.log" "${responsive_session_screens[@]:0:3}"; then
-    responsive_first_status=1
-  fi
 
-  if [ "$responsive_first_status" -eq 0 ]; then
+  for SCREEN_INDEX in "${!responsive_session_screens[@]}"; do
+    marker="${responsive_session_screens[$SCREEN_INDEX]}"
+    session_status=0
+    run_host_batch_session responsive-single "$marker" || session_status=$?
+    if [ "$session_status" -eq 0 ] &&
+       ! validate_capture_set "responsive-$CAPTURE_LOCALE-$SCREEN_INDEX" "$runner_temp/hope-responsive-single-runtime.log" "$marker"; then
+      session_status=1
+    fi
+    if [ "$session_status" -ne 0 ]; then
+      responsive_status="$session_status"
+      break
+    fi
     hope_android_device_ready "$RUNTIME_SERIAL" || true
-  fi
-
-  run_host_batch_session responsive-b "${responsive_session_screens[@]:3:3}" || responsive_second_status=$?
-  if [ "$responsive_second_status" -eq 0 ] && \
-     ! validate_capture_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-responsive-b-runtime.log" "${responsive_session_screens[@]:3:3}"; then
-    responsive_second_status=1
-  fi
-
-  if [ "$responsive_first_status" -ne 0 ]; then
-    responsive_status="$responsive_first_status"
-  elif [ "$responsive_second_status" -ne 0 ]; then
-    responsive_status="$responsive_second_status"
-  else
-    responsive_status=0
-  fi
+  done
 
   responsive_screens=(
     "responsive-720x1280-home-fa-rtl"
@@ -520,7 +501,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   adb shell wm size reset || true
   adb shell sleep 1 >/dev/null 2>&1 || true
 
-  if [ "$responsive_status" -eq 0 ] && \
+  if [ "$responsive_status" -eq 0 ] &&
      ! validate_capture_set "responsive-$CAPTURE_LOCALE-combined" "/dev/null" "${responsive_target_screens[@]}"; then
     responsive_status=1
   fi
@@ -529,7 +510,6 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
     test_status="$responsive_status"
   fi
 fi
-
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
 adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || true
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
@@ -568,6 +548,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "theme": "dark",
   "interactive_target_contract": "48px",
   "capture_transport": "flutter_integration_test_onScreenshot",
+  "capture_session_scope": "one-screenshot-per-flutter-driver-session",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
