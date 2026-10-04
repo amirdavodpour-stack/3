@@ -721,8 +721,10 @@ Future<void> _captureRuntimeScreen(
   );
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
   if (child is LoginPage) {
-    await tester.pump(const Duration(milliseconds: 1200));
-    print('HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker');
+    // pumpWidget above already completed the first build/layout pass. Login
+    // has synchronous evidence dependencies, so driving another timed frame
+    // is unnecessary and can cross the headless VM-service/raster boundary.
+    print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
