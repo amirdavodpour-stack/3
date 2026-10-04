@@ -118,6 +118,8 @@ void main() {
 
   testWidgets('auth surfaces keep the hero compact for a denser first fold',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     for (final screen in [
       const LoginPage(),
       const RegisterPage(),
