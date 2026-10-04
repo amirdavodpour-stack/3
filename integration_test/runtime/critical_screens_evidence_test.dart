@@ -801,7 +801,11 @@ Future<void> _captureBaselineLocale(
   required String suffix,
   required _Runtime runtime,
 }) async {
+  // Risk-first baseline ordering: unresolved auth capture runs before the
+  // already-proven discovery/work surfaces, so a transport regression fails
+  // early instead of consuming several successful sessions first.
   final pages = <String, Widget Function()>{
+    'login': () => const LoginPage(),
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
     'job-detail': () => JobDetailPage(job: _jobFixture(editorialMedia: true)),
@@ -809,17 +813,16 @@ Future<void> _captureBaselineLocale(
     'saved-searches': () => const SavedSearchesPage(),
     'transactions': () =>
         TransactionsPage(repository: runtime.registry.transactions),
+    'wallet': () => WalletPage(repository: runtime.registry.wallets!),
     'transaction-detail': () => TransactionPage(
           repository: runtime.registry.transactions!,
           uploadQueue: _EvidenceUploadQueue(),
           jobId: 'job-runtime-1',
         ),
-    'wallet': () => WalletPage(repository: runtime.registry.wallets!),
     'profile': () => const ProfilePage(),
     'notifications': () => const NotificationsPage(),
     'offers': () => const OffersPage(jobId: 'job-runtime-1'),
     'create-job': () => const CreateJobPage(),
-    'login': () => const LoginPage(),
     'register': () => const RegisterPage(),
     'password-reset': () => const PasswordResetPage(),
   };
