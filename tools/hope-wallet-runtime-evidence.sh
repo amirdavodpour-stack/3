@@ -263,6 +263,7 @@ run_host_batch_session() {
   case "$mode" in
     baseline-a) baseline_batch="a" ;;
     baseline-b) baseline_batch="b" ;;
+    baseline-c) baseline_batch="c" ;;
   esac
   if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ]; then
     responsive_only="true"
