@@ -165,3 +165,5 @@ jobs:
 # [runtime-capture-fa] split baseline capture into bounded Flutter Driver sessions.
 
 # [runtime-capture-fa] certify isolated one-screenshot Flutter Driver sessions at exact HEAD.
+
+# [runtime-capture-fa] certify one-screenshot-per-driver-session evidence on current exact head.
