@@ -171,4 +171,4 @@ jobs:
 # [runtime-capture-fa] final capture after restoring exact #1560 runtime driver baseline.
 # [runtime-capture-fa] verification capture after premium visual source guard correction at exact HEAD.
 
-# [runtime-capture] verify wallet VM-service settle-boundary fix at exact current HEAD.
+# [runtime-capture] verify wallet settle fix with restored A/B/C session partition at exact current HEAD.
