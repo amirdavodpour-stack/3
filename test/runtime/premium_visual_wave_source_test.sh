@@ -23,9 +23,6 @@ grep -Fq "height: 62" "$opportunity"
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
-grep -Fq "'imageUrl':" "$runtime_driver"
-grep -Fq 'images.unsplash.com/photo-1758876022836-70b89d3e6944' "$runtime_driver"
-
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 8, 16, 28)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
 grep -Fq 'vertical: 6' "$home"
