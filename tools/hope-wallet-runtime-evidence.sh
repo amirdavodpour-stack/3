@@ -212,19 +212,19 @@ validate_capture_set() {
 }
 
 screens=(
+  "login-fa-rtl"
   "home-fa-rtl"
   "jobs-fa-rtl"
   "job-detail-fa-rtl"
   "applications-fa-rtl"
   "saved-searches-fa-rtl"
   "transactions-fa-rtl"
-  "transaction-detail-fa-rtl"
   "wallet-fa-rtl"
+  "transaction-detail-fa-rtl"
   "profile-fa-rtl"
   "notifications-fa-rtl"
   "offers-fa-rtl"
   "create-job-fa-rtl"
-  "login-fa-rtl"
   "register-fa-rtl"
   "password-reset-fa-rtl"
   "home-en-ltr"
@@ -421,7 +421,7 @@ else
   baseline_third_status=0
   baseline_fourth_status=0
 
-  # Wallet is index 7; isolate it in a fresh Driver/VM-service session.
+  # Wallet is index 7 after the risk-first Login + core discovery pages; isolate it in a fresh Driver/VM-service session.
   baseline_first_screens=("${baseline_screens[@]:0:7}")
   baseline_second_screens=("${baseline_screens[@]:7:1}")
   baseline_third_screens=("${baseline_screens[@]:8:4}")
