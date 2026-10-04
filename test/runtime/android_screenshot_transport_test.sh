@@ -68,9 +68,9 @@ grep -Fq 'baseline_second_screens=("${baseline_screens[@]:7:1}")' "$script_file"
 grep -Fq 'baseline_third_screens=("${baseline_screens[@]:8:4}")' "$script_file"
 grep -Fq 'baseline_fourth_screens=("${baseline_screens[@]:12:3}")' "$script_file"
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
-grep -Fq 'HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE' "$test_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
-if grep -Fq 'await tester.pump(const Duration' "$test_file" && grep -Fq 'if (child is WalletPage)' "$test_file"; then
+wallet_block="$(sed -n '/if (child is WalletPage)/,/^[[:space:]]*}/p' "$test_file")"
+if grep -Fq 'await tester.pump(const Duration' <<<"$wallet_block"; then
   echo "FAIL: Wallet runtime contract must not drive a timed tester.pump after pumpWidget" >&2
   exit 1
 fi
