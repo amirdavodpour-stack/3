@@ -107,6 +107,18 @@ fi
 grep -Fq '"capture_transport": "flutter_integration_test_onScreenshot"' "$script_file"
 grep -Fq 'RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"' "$script_file"
 
+# Baseline host partitions must stay aligned with the Dart page-map insertion order.
+# Login is intentionally first so risk-first capture and host validation inspect the same pages.
+baseline_order="$(sed -n '/^screens=(/,/^)/p' "$script_file" | sed -n '/^[[:space:]]*".*-fa-rtl"/!d; s/^[[:space:]]*"\(.*\)-fa-rtl"$/\1/p' | head -n 15 | paste -sd ' ' -)"
+expected_baseline_order="login home jobs job-detail applications saved-searches transactions wallet transaction-detail profile notifications offers create-job register password-reset"
+if [ "$baseline_order" != "$expected_baseline_order" ]; then
+  echo "FAIL: host baseline screen order drifted from Dart page order" >&2
+  printf 'Expected: %s\\nActual:   %s\\n' "$expected_baseline_order" "$baseline_order" >&2
+  exit 1
+fi
+# Responsive batch 3 must explicitly capture Wallet/Profile; falling through to baseline is forbidden.
+grep -Fq "pages.entries.skip(6).take(2)" "$test_file"
+
 pages_declaration_line="$(grep -nF 'final pages = <String, Widget Function()>{' "$test_file" | head -n1 | cut -d: -f1)"
 if [ -z "$pages_declaration_line" ]; then
   echo "FAIL: baseline pages declaration not found" >&2
