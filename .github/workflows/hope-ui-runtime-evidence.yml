@@ -158,7 +158,7 @@ jobs:
           # Current evidence also shows gfxstream/Vulkan SwiftShader active when the transport drops; disable Vulkan for this capture lane.
           force-avd-creation: false
           cores: 4
-          ram-size: 6144M
+          ram-size: 8192M
           disable-linux-hw-accel: false
           emulator-boot-timeout: 1200
           emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
@@ -196,4 +196,4 @@ jobs:
 
 # [runtime-capture-fa] validate Vulkan-disabled Android screenshot transport after ADB-offline diagnosis.
 
-# [runtime-capture-fa] validate proven pinned Android runner restoration at exact HEAD.
+# [runtime-capture-fa] validate pinned runner with maximum conservative 8GiB emulator RAM.
