@@ -163,3 +163,5 @@ jobs:
 # [runtime-capture-fa] retry exact-head wallet finance hierarchy capture after harness transport failure.
 
 # [runtime-capture-fa] split baseline capture into bounded Flutter Driver sessions.
+
+# [runtime-capture-fa] certify isolated one-screenshot Flutter Driver sessions at exact HEAD.
