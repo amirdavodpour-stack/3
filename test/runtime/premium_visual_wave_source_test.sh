@@ -45,3 +45,4 @@ if printf '%s\n' "$register_capture_tail" | grep -Eq 'await tester\.pump|Future<
 fi
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register runtime capture uses direct screenshot after bounded settle"
+# [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
