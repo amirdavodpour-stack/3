@@ -195,3 +195,5 @@ jobs:
 # [runtime-capture] isolate responsive Wallet from Transactions with fresh driver session.
 
 # [runtime-capture-fa] validate Vulkan-disabled Android screenshot transport after ADB-offline diagnosis.
+
+# [runtime-capture-fa] validate proven pinned Android runner restoration at exact HEAD.
