@@ -770,7 +770,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
-                  height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 156 : 228,
+                  height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 176 : 248,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
