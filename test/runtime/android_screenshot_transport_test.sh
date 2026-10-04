@@ -56,6 +56,9 @@ grep -Fq -- '--dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"' "
 
 grep -Fq 'run_host_batch_session responsive-a' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b' "$script_file"
+# Baseline capture is intentionally split into three sessions; baseline-c must
+# select only the final three screens instead of silently falling back to all.
+grep -Fq 'baseline-c) baseline_batch="c"' "$script_file"
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE' "$test_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
