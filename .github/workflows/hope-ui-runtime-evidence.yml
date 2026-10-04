@@ -166,3 +166,4 @@ jobs:
 # [runtime-capture-fa] validate grouped Auth surface visual calibration.
 
 # [runtime-capture-fa] rerun Auth visual evidence after ADB-offline failure and Login CTA fix.
+# [runtime-capture-fa] validate PasswordReset bounded settle after compact Auth runtime timeout.
