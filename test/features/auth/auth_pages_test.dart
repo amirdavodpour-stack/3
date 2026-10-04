@@ -116,6 +116,32 @@ void main() {
     }
   });
 
+  testWidgets('auth surfaces keep the hero compact for a denser first fold',
+      (tester) async {
+    for (final screen in [
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ]) {
+      await tester.pumpWidget(await _screen(screen));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byType(PremiumHero)).height,
+        lessThanOrEqualTo(210),
+      );
+    }
+  });
+
+  testWidgets('login primary action spans the form content width', (tester) async {
+    await tester.pumpWidget(await _screen(const LoginPage()));
+    await tester.pumpAndSettle();
+
+    final panelWidth = tester.getSize(find.byType(PremiumPanel)).width;
+    final buttonWidth = tester.getSize(find.byType(FilledButton)).width;
+
+    expect(buttonWidth, closeTo(panelWidth - 40, 1));
+  });
+
   testWidgets('password reset renders an email form', (tester) async {
     await tester.pumpWidget(await _screen(const PasswordResetPage()));
     await tester.pumpAndSettle();
