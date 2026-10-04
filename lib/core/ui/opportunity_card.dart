@@ -126,9 +126,11 @@ class OpportunityCard extends StatelessWidget {
                   ]
                 : HopeV2Shadows.card,
           ),
-          padding: EdgeInsets.all(featured ? 12 : (featuredScan ? 11 : (compact ? 12 : 14))),
+          padding: EdgeInsets.all(
+            featured ? 10 : (featuredScan ? 10 : (compact ? 10 : 12)),
+          ),
           child: compact
-              ? _compact(context, title, city, amount, primary, copy)
+              ? _compact(context, title, city, amount, primary, mediaUrl, copy)
               : _standard(
                   context,
                   title,
@@ -179,7 +181,7 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: featured ? 132 : 116,
+        height: featured ? 122 : 104,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -252,83 +254,134 @@ class OpportunityCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: AlignmentDirectional.topStart,
-          end: AlignmentDirectional.bottomEnd,
+          begin: AlignmentDirectional.topEnd,
+          end: AlignmentDirectional.bottomStart,
           colors: [
-            primary.withValues(alpha: .30),
-            const Color(0xFF171B2E),
-            const Color(0xFF0B0E17),
+            primary.withValues(alpha: .34),
+            const Color(0xFF151A31),
+            const Color(0xFF090C14),
           ],
-          stops: const [0, .42, 1],
+          stops: const [0, .44, 1],
         ),
       ),
       child: Stack(
         fit: StackFit.expand,
         children: [
           PositionedDirectional(
-            end: -34,
-            top: -58,
+            end: -28,
+            top: -36,
             child: Container(
-              width: 176,
-              height: 176,
+              width: 150,
+              height: 110,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: .16),
-                    Colors.white.withValues(alpha: 0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            start: -54,
-            bottom: -78,
-            child: Container(
-              width: 214,
-              height: 214,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: HopeV2Colors.primary.withValues(alpha: .06),
-                  width: 1.0,
+                  color: Colors.white.withValues(alpha: .11),
+                ),
+              ),
+              child: Row(
+                children: [
+                  for (var i = 0; i < 3; i++)
+                    Expanded(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: BorderDirectional(
+                            start: i == 0
+                                ? BorderSide.none
+                                : BorderSide(
+                                    color: Colors.white.withValues(alpha: .06),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            start: -22,
+            bottom: -30,
+            child: Container(
+              width: 105,
+              height: 70,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                color: HopeV2Colors.secondary.withValues(alpha: .08),
+                border: Border.all(
+                  color: HopeV2Colors.secondary.withValues(alpha: .12),
                 ),
               ),
             ),
           ),
           PositionedDirectional(
-            start: 34,
-            top: 22,
-            child: Transform.rotate(
-              angle: -.28,
-              child: Container(
-                width: 120,
-                height: 1,
-                color: Colors.white.withValues(alpha: .10),
+            start: 16,
+            bottom: 16,
+            child: Container(
+              width: 82,
+              height: 28,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .055),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: .07),
+                ),
               ),
             ),
           ),
           PositionedDirectional(
-            start: 52,
-            top: 48,
-            child: Transform.rotate(
-              angle: -.28,
-              child: Container(
-                width: 92,
-                height: 1,
-                color: Colors.white.withValues(alpha: .07),
+            start: 24,
+            bottom: 24,
+            child: Container(
+              width: 44,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .11),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
-          const Center(
-            child: Opacity(
-              opacity: .30,
-              child: HopeIcon(
-                HopeV2Icons.featured,
-                color: Colors.white,
-                size: 46,
-                strokeWidth: 1.5,
+          Align(
+            alignment: AlignmentDirectional.center,
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: primary.withValues(alpha: .20),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: .13),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primary.withValues(alpha: .18),
+                    blurRadius: 18,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: HopeIcon(
+                  HopeV2Icons.featured,
+                  color: Colors.white,
+                  size: 20,
+                  strokeWidth: 1.6,
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.topCenter,
+                  end: AlignmentDirectional.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: .02),
+                    Colors.black.withValues(alpha: .20),
+                    Colors.black.withValues(alpha: .52),
+                  ],
+                  stops: const [0, .55, 1],
+                ),
               ),
             ),
           ),
@@ -336,31 +389,79 @@ class OpportunityCard extends StatelessWidget {
       ),
     );
   }
-  Widget _compact(BuildContext context, String title, String city, String amount, Color primary, HopeCopy copy) {
+
+  Widget _compact(
+    BuildContext context,
+    String title,
+    String city,
+    String amount,
+    Color primary,
+    String? mediaUrl,
+    HopeCopy copy,
+  ) {
+    final media = ClipRRect(
+      borderRadius: BorderRadius.circular(HopeV2Radii.md),
+      child: SizedBox(
+        width: 54,
+        height: 54,
+        child: mediaUrl != null && mediaUrl.trim().isNotEmpty
+            ? Image.network(
+                mediaUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
+              )
+            : _fallbackMedia(context, primary),
+      ),
+    );
     return Row(
       children: [
-        HopeIconTile(job.isMission ? HopeV2Icons.mission : HopeV2Icons.job, color: primary, filled: true, size: 46),
-        const SizedBox(width: HopeV2Spacing.md),
+        media,
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+              ),
               const SizedBox(height: 3),
-              Text(city, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                city,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
         ),
         if (amount.isNotEmpty) ...[
-          const SizedBox(width: HopeV2Spacing.md),
-          Flexible(child: Text(amount, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: TextStyle(fontWeight: FontWeight.w800, color: primary))),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              '${_formatAmount(amount)} ${copy.copy_toman}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: primary,
+              ),
+            ),
+          ),
         ],
         const SizedBox(width: 4),
         HugeIcon(
           icon: Directionality.of(context) == ui.TextDirection.rtl
               ? HopeV2Icons.arrowLeft
               : HopeV2Icons.arrowRight,
-          size: 19,
+          size: 18,
           color: primary,
           strokeWidth: 1.9,
         ),
@@ -571,31 +672,21 @@ class OpportunityCard extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (mediaUrl != null && mediaUrl.trim().isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                child: SizedBox(
-                  width: 58,
-                  height: 58,
-                  child: Image.network(
-                    mediaUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => HopeIconTile(
-                      job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
-                      color: primary,
-                      filled: true,
-                      size: 42,
-                    ),
-                  ),
-                ),
-              )
-            else
-              HopeIconTile(
-                job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
-                color: primary,
-                filled: true,
-                size: 46,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
+              child: SizedBox(
+                width: 58,
+                height: 58,
+                child: mediaUrl != null && mediaUrl.trim().isNotEmpty
+                    ? Image.network(
+                        mediaUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            _fallbackMedia(context, primary),
+                      )
+                    : _fallbackMedia(context, primary),
               ),
+            ),
             const SizedBox(width: HopeV2Spacing.md),
             Expanded(
               child: Column(

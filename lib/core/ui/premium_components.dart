@@ -803,6 +803,174 @@ class PremiumPanel extends StatelessWidget {
   }
 }
 
+class _HeroEditorialFallback extends StatelessWidget {
+  const _HeroEditorialFallback({
+    required this.accent,
+    required this.icon,
+  });
+
+  final Color accent;
+  final Object? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topEnd,
+          end: AlignmentDirectional.bottomStart,
+          colors: [
+            accent.withValues(alpha: .22),
+            const Color(0xFF151A31),
+            const Color(0xFF080B13),
+          ],
+          stops: const [0, .42, 1],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          PositionedDirectional(
+            end: -30,
+            top: -22,
+            child: Container(
+              width: 240,
+              height: 140,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(34),
+                color: Colors.white.withValues(alpha: .035),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: .10),
+                ),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            end: 28,
+            top: 8,
+            child: Container(
+              width: 148,
+              height: 1,
+              color: Colors.white.withValues(alpha: .12),
+            ),
+          ),
+          PositionedDirectional(
+            end: 48,
+            top: 34,
+            child: Container(
+              width: 104,
+              height: 1,
+              color: Colors.white.withValues(alpha: .07),
+            ),
+          ),
+          PositionedDirectional(
+            start: -42,
+            bottom: -52,
+            child: Container(
+              width: 190,
+              height: 150,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(38),
+                color: HopeV2Colors.secondary.withValues(alpha: .055),
+                border: Border.all(
+                  color: HopeV2Colors.secondary.withValues(alpha: .10),
+                ),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            start: 20,
+            bottom: 26,
+            child: Container(
+              width: 130,
+              height: 42,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .045),
+                borderRadius: BorderRadius.circular(13),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: .08),
+                ),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            start: 32,
+            bottom: 38,
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(alpha: .72),
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Container(
+                  width: 58,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (icon != null)
+            Align(
+              alignment: AlignmentDirectional.topStart,
+              child: Padding(
+                padding: const EdgeInsets.all(26),
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: .16),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: .13),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withValues(alpha: .18),
+                        blurRadius: 24,
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: HopeIcon(
+                    icon!,
+                    color: Colors.white,
+                    size: 28,
+                    strokeWidth: 2.0,
+                  ),
+                ),
+              ),
+            ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.topCenter,
+                  end: AlignmentDirectional.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: .12),
+                    Colors.black.withValues(alpha: .62),
+                  ],
+                  stops: const [0, .48, 1],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class PremiumHero extends StatelessWidget {
   const PremiumHero({
     super.key,
@@ -872,12 +1040,10 @@ class PremiumHero extends StatelessWidget {
               )
             else
               Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: Theme.of(context).brightness == Brightness.dark
-                        ? HopeV2Gradients.heroDark
-                        : HopeV2Gradients.hero,
-                  ),
+                child: _HeroEditorialFallback(
+                  accent: resolvedDomain?.spec.accent ??
+                      Theme.of(context).colorScheme.primary,
+                  icon: icon,
                 ),
               ),
             if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)

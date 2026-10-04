@@ -349,7 +349,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     return PremiumPageFrame(
       page: HopePageId.home,
       maxWidth: 1180,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       child: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
@@ -489,7 +489,7 @@ padding: const EdgeInsets.all(12),
                 );
               },
             ),
-            const SizedBox(height: HopeV2Spacing.lg),
+            const SizedBox(height: HopeV2Spacing.md),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -638,8 +638,8 @@ padding: const EdgeInsets.all(12),
     return Container(
       constraints: const BoxConstraints(minHeight: 48),
       padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 9,
+        horizontal: 8,
+        vertical: 7,
       ),
       decoration: BoxDecoration(
         color: HopeV2Colors.panelSoftDark,
@@ -782,7 +782,7 @@ child: Column(
             ),
           ),
         ],
-        const SizedBox(height: HopeV2Spacing.xl),
+        const SizedBox(height: HopeV2Spacing.lg),
         _section(
           context,
           _t(context, 'نزدیک شما', 'Near you'),
@@ -790,7 +790,7 @@ child: Column(
           widget.onOpenExplore,
         ),
         if (remaining.isNotEmpty) ...[
-          const SizedBox(height: HopeV2Spacing.xl),
+          const SizedBox(height: HopeV2Spacing.lg),
           _section(
             context,
             _t(context, 'سایر فرصت‌ها', 'Other opportunities'),
@@ -811,7 +811,7 @@ child: Column(
       const SizedBox(height: HopeV2Spacing.md),
       LayoutBuilder(builder: (context, constraints) {
         final columns = constraints.maxWidth >= HopeV2Breakpoints.expanded ? 3 : constraints.maxWidth >= HopeV2Breakpoints.medium ? 2 : 1;
-        if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.md), child: OpportunityCard(job: j))]);
+        if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm), child: OpportunityCard(job: j, variant: OpportunityCardVariant.compact))]);
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
