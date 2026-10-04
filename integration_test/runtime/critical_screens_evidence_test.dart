@@ -721,9 +721,10 @@ Future<void> _captureRuntimeScreen(
   );
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
   if (child is LoginPage) {
-    // pumpWidget above already completed the first build/layout pass. Login
-    // has synchronous evidence dependencies, so driving another timed frame
-    // is unnecessary and can cross the headless VM-service/raster boundary.
+    // Android integration_test requires a post-conversion frame before
+    // takeScreenshot. Login is the first surface in its isolated session, so
+    // settle the rebuilt tree without advancing the clock manually.
+    await tester.pumpAndSettle();
     print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
