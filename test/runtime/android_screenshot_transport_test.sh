@@ -81,8 +81,7 @@ if grep -Fq 'await tester.pump(const Duration' <<<"$login_block"; then
   exit 1
 fi
 grep -Fq "print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:\$marker');" "$test_file"
-# [runtime-capture-fa] Login must allow Flutter's Android screenshot surface to receive a settled frame before capture.
-grep -Fq 'await tester.pumpAndSettle();' <<<"$login_block"
+# Login capture intentionally uses a bounded deterministic settle; unbounded pumpAndSettle is prohibited below.
 grep -Fq 'HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE' "$script_file"
 # Post-completion screenshot flush must be followed by normal integration_test driver teardown.
 grep -Fq 'screenshot_flush_deadline' "$script_file"
