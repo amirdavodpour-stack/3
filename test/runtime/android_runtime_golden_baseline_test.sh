@@ -83,3 +83,5 @@ echo "PASS: Android runtime screenshot baseline contract is locked."
 # [runtime-capture-fa] current-head rerun after debug transport forensics.
 
 # [runtime-capture-fa] verify aligned baseline/responsive partition contract at exact HEAD.
+
+# [runtime-capture-fa] exact-head runtime validation after baseline/responsive alignment forensic check.
