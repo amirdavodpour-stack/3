@@ -22,7 +22,7 @@ DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-20}"
 # Proven prior baseline: assembleDebug reached ~297s on this runner profile.
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
-RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
+RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
@@ -362,20 +362,30 @@ run_host_batch_session() {
       echo "HOPE_HOST_SCREENSHOT_FLUSH_FAILED:$mode" >&2
       capture_status=1
     fi
-    echo "HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE:$mode"
-    kill "$process_pid" >/dev/null 2>&1 || true
+    # Let the official integration_test driver complete its own VM-service
+    # teardown. An unconditional host-side kill can interrupt the VM-service
+    # response/engine shutdown boundary and destabilize the next session.
+    if [ "$screenshot_flush_status" -eq 0 ]; then
+      echo "HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT:$mode"
+    else
+      echo "HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT_AFTER_CAPTURE_FAILURE:$mode"
+    fi
   fi
 
   local shutdown_deadline=$((SECONDS + RUNTIME_SHUTDOWN_GRACE_SECONDS))
   while kill -0 "$process_pid" 2>/dev/null; do
     if (( SECONDS >= shutdown_deadline )); then
-      echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-shutdown:$mode" >&2
+      echo "HOPE_HOST_RUNTIME_DRIVER_NATURAL_EXIT_TIMEOUT:$mode" >&2
+      echo "HOPE_HOST_RUNTIME_DRIVER_FORCE_STOP:$mode" >&2
       kill -KILL "$process_pid" >/dev/null 2>&1 || true
       driver_status=124
       break
     fi
     sleep 0.2
   done
+  if ! kill -0 "$process_pid" 2>/dev/null; then
+    echo "HOPE_HOST_RUNTIME_DRIVER_NATURAL_EXIT_COMPLETE:$mode"
+  fi
 
   if [ "$driver_status" -eq 0 ]; then
     set +e
@@ -424,7 +434,7 @@ else
   fi
 
   if [ "$baseline_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    hope_android_device_ready "$RUNTIME_SERIAL"
     run_host_batch_session baseline-b "${baseline_second_screens[@]}" || baseline_second_status=$?
     if [ "$baseline_second_status" -eq 0 ] &&
        ! validate_capture_set "baseline-$CAPTURE_LOCALE-b" "$runner_temp/hope-baseline-b-runtime.log" "${baseline_second_screens[@]}"; then
@@ -433,7 +443,7 @@ else
   fi
 
   if [ "$baseline_second_status" -eq 0 ] && [ "$baseline_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    hope_android_device_ready "$RUNTIME_SERIAL"
     run_host_batch_session baseline-c "${baseline_third_screens[@]}" || baseline_third_status=$?
     if [ "$baseline_third_status" -eq 0 ] &&
        ! validate_capture_set "baseline-$CAPTURE_LOCALE-c" "$runner_temp/hope-baseline-c-runtime.log" "${baseline_third_screens[@]}"; then
@@ -442,7 +452,7 @@ else
   fi
 
   if [ "$baseline_third_status" -eq 0 ] && [ "$baseline_second_status" -eq 0 ] && [ "$baseline_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    hope_android_device_ready "$RUNTIME_SERIAL"
     run_host_batch_session baseline-d "${baseline_fourth_screens[@]}" || baseline_fourth_status=$?
     if [ "$baseline_fourth_status" -eq 0 ] &&
        ! validate_capture_set "baseline-$CAPTURE_LOCALE-d" "$runner_temp/hope-baseline-d-runtime.log" "${baseline_fourth_screens[@]}"; then
@@ -509,7 +519,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   fi
 
   if [ "$responsive_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    hope_android_device_ready "$RUNTIME_SERIAL"
     run_host_batch_session responsive-b "${responsive_second_screens[@]}" || responsive_second_status=$?
     if [ "$responsive_second_status" -eq 0 ] && \
        ! validate_capture_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-responsive-b-runtime.log" "${responsive_second_screens[@]}"; then
@@ -518,7 +528,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   fi
 
   if [ "$responsive_second_status" -eq 0 ] && [ "$responsive_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL" || true
+    hope_android_device_ready "$RUNTIME_SERIAL"
     run_host_batch_session responsive-c "${responsive_third_screens[@]}" || responsive_third_status=$?
     if [ "$responsive_third_status" -eq 0 ] && \
        ! validate_capture_set "responsive-$CAPTURE_LOCALE-c" "$runner_temp/hope-responsive-c-runtime.log" "${responsive_third_screens[@]}"; then

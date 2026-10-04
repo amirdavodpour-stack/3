@@ -14,7 +14,7 @@ grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
 grep -Fq 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build' "$script_file"
 # Self-build includes Flutter/Gradle compilation before VM-service connection.
 grep -Fq 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"' "$script_file"
-grep -Fq 'emulator-options: -no-window -no-snapshot -gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'emulator-options: -no-window -no-snapshot -gpu swangle' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 if grep -Fq -- '-gpu swiftshader_indirect' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"; then
   echo "FAIL: runtime evidence must not use deprecated swiftshader_indirect GPU mode" >&2
   exit 1
@@ -72,9 +72,15 @@ grep -Fq 'HOPE_RUNTIME_WALLET_CHUNKED_SETTLE_DONE' "$test_file"
 grep -Fq 'const Duration(milliseconds: 300)' "$test_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
 grep -Fq 'HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE' "$script_file"
-# Post-completion screenshot flush must not require the driver process to remain alive.
+# Post-completion screenshot flush must be followed by normal integration_test driver teardown.
 grep -Fq 'screenshot_flush_deadline' "$script_file"
-grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"
+grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT' "$script_file"
+grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_FORCE_STOP' "$script_file"
+if grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"; then
+  echo "FAIL: runtime evidence still force-stops the driver after screenshot flush" >&2
+  exit 1
+fi
 grep -Fq '"capture_transport": "flutter_integration_test_onScreenshot"' "$script_file"
+grep -Fq 'RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"' "$script_file"
 
 echo "PASS: Flutter rendered-screenshot transport contract"

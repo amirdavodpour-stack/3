@@ -40,7 +40,13 @@ require_line "$driver_file" "integrationDriver("
 require_line "$driver_file" "onScreenshot:"
 require_line "$driver_file" "writeAsBytes(image, flush: true)"
 require_line "$runtime" 'flutter drive --no-pub --no-dds'
-require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE'
+require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT'
+require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_FORCE_STOP'
+if grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$runtime"; then
+  printf 'FAIL: runtime baseline still force-stops the driver after screenshot flush.\n' >&2
+  exit 1
+fi
+require_line "$runtime" 'RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"'
 require_line "$runtime" 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build'
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"'
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_MODE="${launch_mode}"'
