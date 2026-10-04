@@ -197,3 +197,5 @@ jobs:
 # [runtime-capture-fa] validate Vulkan-disabled Android screenshot transport after ADB-offline diagnosis.
 
 # [runtime-capture-fa] validate pinned runner with maximum conservative 8GiB emulator RAM.
+
+# [runtime-capture-fa] 8GiB emulator RAM transport validation at exact HEAD.
