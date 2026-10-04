@@ -47,7 +47,6 @@ class _AuthRepo implements AuthRepository {
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String e) async {}
-
 }
 
 class _SequencedMarketplaceRepository implements MarketplaceRepository {
@@ -92,21 +91,22 @@ class _SequencedMarketplaceRepository implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
-HopeJob _job(String id, String title, {bool recommended = false}) => HopeJob.fromMap({
-  'id': id,
-  'title': title,
-  'description': 'description',
-  'kind': 'MISSION',
-  'visibility': 'PUBLIC',
-  'city': 'تهران',
-  'status': 'PUBLISHED',
-  'categoryId': 'tech',
-  'category': 'فناوری',
-  'isRecommended': recommended,
-  'recommendationScore': recommended ? 92 : null,
-  'recommendationReasons':
-      recommended ? ['SKILL_MATCH'] : const <String>[],
-});
+HopeJob _job(String id, String title, {bool recommended = false}) =>
+    HopeJob.fromMap({
+      'id': id,
+      'title': title,
+      'description': 'description',
+      'kind': 'MISSION',
+      'visibility': 'PUBLIC',
+      'city': 'تهران',
+      'status': 'PUBLISHED',
+      'categoryId': 'tech',
+      'category': 'فناوری',
+      'isRecommended': recommended,
+      'recommendationScore': recommended ? 92 : null,
+      'recommendationReasons':
+          recommended ? ['SKILL_MATCH'] : const <String>[],
+    });
 
 class _HomeHarness {
   const _HomeHarness(this.widget, this.settings);
@@ -116,9 +116,9 @@ class _HomeHarness {
 }
 
 Future<_HomeHarness> _host(
-    _SequencedMarketplaceRepository repository, {
-    bool authenticated = false,
-  }) async {
+  _SequencedMarketplaceRepository repository, {
+  bool authenticated = false,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -167,7 +167,7 @@ Future<_HomeHarness> _host(
 void _noop() {}
 
 void main() {
-testWidgets('settings changes reload home opportunities',
+  testWidgets('settings changes reload home opportunities',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();
     final harness = await _host(repository);
@@ -182,7 +182,8 @@ testWidgets('settings changes reload home opportunities',
     expect(repository.calls, 2);
   });
 
-  testWidgets('home pulse uses four compact columns above the inner width threshold',
+  testWidgets(
+      'home pulse uses four compact columns above the inner width threshold',
       (tester) async {
     tester.view.physicalSize = const Size(1179, 2556);
     tester.view.devicePixelRatio = 3;
@@ -214,6 +215,36 @@ testWidgets('settings changes reload home opportunities',
     }
   });
 
+  testWidgets(
+      'home pulse stays in one visual row at the 720x1280 responsive viewport',
+      (tester) async {
+    tester.view.physicalSize = const Size(720, 1280);
+    tester.view.devicePixelRatio = 3;
+
+    try {
+      final repository = _SequencedMarketplaceRepository();
+      final harness = await _host(repository);
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final stats = List.generate(
+        4,
+        (index) => find.byKey(ValueKey('home-pulse-stat-$index')),
+      );
+      final tops = stats
+          .map((finder) => tester.getTopLeft(finder).dy)
+          .toList(growable: false);
+
+      expect(
+        tops.every((top) => (top - tops.first).abs() < 1.0),
+        isTrue,
+      );
+    } finally {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    }
+  });
+
   testWidgets('home money labels use the canonical Toman copy helper',
       (tester) async {
     final harness = await _host(_SequencedMarketplaceRepository());
@@ -226,27 +257,27 @@ testWidgets('settings changes reload home opportunities',
     );
   });
 
-
   testWidgets(
     'home prioritizes matched work before intelligence follow-up',
     (tester) async {
-    final repository = _SequencedMarketplaceRepository();
-    final harness = await _host(repository, authenticated: true);
-    await tester.pumpWidget(harness.widget);
-    await tester.pumpAndSettle();
+      final repository = _SequencedMarketplaceRepository();
+      final harness = await _host(repository, authenticated: true);
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
 
-    final bestMatch = find.text('Best match for you');
-    final intelligence = find.byKey(
-      const ValueKey('opportunity-agent-panel'),
-    );
+      final bestMatch = find.text('Best match for you');
+      final intelligence = find.byKey(
+        const ValueKey('opportunity-agent-panel'),
+      );
 
-    expect(bestMatch, findsOneWidget);
-    expect(intelligence, findsOneWidget);
-    expect(
-      tester.getTopLeft(bestMatch).dy,
-      lessThan(tester.getTopLeft(intelligence).dy),
-    );
-  });
+      expect(bestMatch, findsOneWidget);
+      expect(intelligence, findsOneWidget);
+      expect(
+        tester.getTopLeft(bestMatch).dy,
+        lessThan(tester.getTopLeft(intelligence).dy),
+      );
+    },
+  );
 
   testWidgets('latest home refresh wins over an older failed refresh',
       (tester) async {
@@ -255,7 +286,11 @@ testWidgets('settings changes reload home opportunities',
     await tester.pumpWidget(harness.widget);
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Initial opportunity'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('Initial opportunity'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Initial opportunity'), findsOneWidget);
 
     final refreshIndicator =
