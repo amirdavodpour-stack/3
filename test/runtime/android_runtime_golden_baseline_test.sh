@@ -79,3 +79,5 @@ echo "PASS: Android runtime screenshot baseline contract is locked."
 # [runtime-capture-fa] validate Vulkan-disabled emulator capture after native surface-conversion failure.
 
 # [runtime-capture-fa] re-trigger exact-head Vulkan-disabled transport validation.
+
+# [runtime-capture-fa] current-head rerun after debug transport forensics.
