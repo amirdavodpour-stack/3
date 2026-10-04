@@ -659,20 +659,14 @@ typedef _Runtime = ({
   ApplicationRegistry registry,
 });
 
-var _runtimeScreenshotSurfacePrepared = false;
-
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
-  if (_runtimeScreenshotSurfacePrepared) {
-    return;
-  }
-
-  // Android integration_test screenshots need the Flutter surface converted
-  // before the first capture so the image comes from the Flutter render surface.
+  // Convert the surface only after the target page is mounted and settled.
+  // Auth pages contain EditableText/TextField trees; keeping conversion at the
+  // host-level boundary can leave the Android image surface stale for that tree.
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
   await binding.convertFlutterSurfaceToImage();
   await tester.pump();
-  _runtimeScreenshotSurfacePrepared = true;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
@@ -739,6 +733,7 @@ Future<void> _captureRuntimeScreen(
       child is PasswordResetPage) {
     await tester.pump(const Duration(milliseconds: 1200));
     print('HOPE_RUNTIME_AUTH_FAST_SETTLE_DONE:$marker');
+    await _prepareRuntimeScreenshotSurface(tester);
     await _captureRuntimeScreenshot(marker);
     return;
   }
@@ -755,6 +750,7 @@ Future<void> _captureRuntimeScreen(
       await Future<void>.delayed(const Duration(milliseconds: 120));
     }
     print('HOPE_RUNTIME_TRANSACTION_FAST_SETTLE_DONE:$marker');
+    await _prepareRuntimeScreenshotSurface(tester);
     await _captureRuntimeScreenshot(marker);
     return;
   }
@@ -767,6 +763,7 @@ Future<void> _captureRuntimeScreen(
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
 
+  await _prepareRuntimeScreenshotSurface(tester);
   await _captureRuntimeScreenshot(marker);
 }
 
@@ -889,9 +886,8 @@ void main() {
       ),
     );
     print('HOPE_RUNTIME_HOST_PUMP_DONE');
-    // Avoid endOfFrame in the headless driver path. A fixed pump is sufficient
-    // to progress the Flutter tree without blocking VMService request_data.
-    await _prepareRuntimeScreenshotSurface(tester);
+    // Surface conversion is deliberately deferred to each rendered target page.
+    // This avoids capturing an image surface created before a TextField/EditableText tree is mounted.
     if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
