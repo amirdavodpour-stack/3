@@ -95,46 +95,67 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: HopeV2Spacing.md),
-          PremiumPanel(
-            key: const ValueKey('profile-account-summary'),
-            glass: true,
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            child: Row(
-              children: [
-                const HopeIconTile(HopeV2Icons.secure, filled: true, size: 40),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        HopeCopy.of(context).copy_active_account_bef80da,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
+          FutureBuilder<HopeProviderProfile>(
+            future: profile,
+            builder: (context, snapshot) {
+              final data = snapshot.data;
+              final providerType = data?.providerType.trim();
+              final verification = data?.verificationStatus.trim().toUpperCase();
+              return PremiumPanel(
+                key: const ValueKey('profile-account-summary'),
+                glass: true,
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
+                  children: [
+                    const HopeIconTile(
+                      HopeV2Icons.secure,
+                      filled: true,
+                      size: 40,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            HopeCopy.of(context).copy_active_account_bef80da,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                          PremiumTag(
+                            icon: HopeV2Icons.completed,
+                            label: _t(context, 'حساب فعال', 'Active account'),
+                            color: HopeV2Colors.secondaryStrong,
+                          ),
+                          if (providerType?.isNotEmpty == true)
+                            PremiumTag(
+                              icon: HopeV2Icons.job,
+                              label: _providerTypeLabel(context, providerType!),
+                              color: Theme.of(context).colorScheme.primary,
                             ),
+                          if (verification == 'VERIFIED')
+                            PremiumTag(
+                              icon: HopeV2Icons.verified,
+                              label: _t(context, 'تأییدشده', 'Verified'),
+                              color: HopeV2Colors.success,
+                            )
+                          else if (verification != null &&
+                              verification.isNotEmpty)
+                            PremiumTag(
+                              icon: HopeV2Icons.pending,
+                              label: _verificationStatusLabel(context, verification),
+                              color: AppColors.warning,
+                            ),
+                        ],
                       ),
-                      PremiumTag(
-                        icon: HopeV2Icons.completed,
-                        label: _t(context, 'حساب فعال', 'Active account'),
-                        color: HopeV2Colors.secondaryStrong,
-                      ),
-                      PremiumTag(
-                        icon: HopeV2Icons.job,
-                        label: _providerTypeLabel(context, 'INDIVIDUAL'),
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      PremiumTag(
-                        icon: HopeV2Icons.verified,
-                        label: _t(context, 'تأییدشده', 'Verified'),
-                        color: HopeV2Colors.success,
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
           const SizedBox(height: 20),
           PremiumSectionHeader(
