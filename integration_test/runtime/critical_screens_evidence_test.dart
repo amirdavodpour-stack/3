@@ -751,6 +751,20 @@ Future<void> _captureRuntimeScreen(
     await _captureRuntimeScreenshot(marker);
     return;
   }
+  // WalletPage can hit the same headless VM-service boundary as the
+  // TransactionsPage: a zero-duration pump immediately after the page build
+  // can dispose the driver before the Flutter screenshot request. Keep the
+  // settle path deterministic and avoid that boundary for this surface.
+  if (child is WalletPage) {
+    await tester.pump(const Duration(milliseconds: 1800));
+    for (var frame = 0; frame < 6; frame++) {
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+    }
+    print('HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE:$marker');
+    await _captureRuntimeScreenshot(marker);
+    return;
+  }
   // TransactionsPage is the heaviest current Work Center surface. A second
   // zero-duration pump can block the headless driver before the screenshot
   // request; give this page one deterministic 1.2s frame window instead.
