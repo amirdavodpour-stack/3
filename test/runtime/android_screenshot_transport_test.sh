@@ -53,6 +53,13 @@ grep -Fq 'IntegrationTestWidgetsFlutterBinding.ensureInitialized();' "$test_file
 grep -Fq -- '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"' "$script_file"
 grep -Fq -- '--dart-define=HOPE_CAPTURE_MODE="${launch_mode}"' "$script_file"
 grep -Fq -- '--dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"' "$script_file"
+grep -Fq 'SCREEN_INDEX="${HOPE_SCREEN_INDEX:--1}"' "$script_file"
+grep -Fq -- '--dart-define=HOPE_SCREEN_INDEX="${SCREEN_INDEX}"' "$script_file"
+grep -Fq 'const _screenIndex = int.fromEnvironment' "$test_file"
+grep -Fq '_screenIndex >= 0' "$test_file"
+grep -Fq 'responsive-single' "$script_file"
+grep -Fq 'baseline-single' "$script_file"
+grep -Fq 'github.run_attempt' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 
 grep -Fq 'run_host_batch_session responsive-a' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b' "$script_file"
