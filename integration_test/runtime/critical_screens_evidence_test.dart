@@ -719,6 +719,10 @@ Future<void> _captureRuntimeScreen(
       child: child,
     ),
   );
+  // Prepare the Android image surface only after the first target page is mounted.
+  // Preparing it on the initial Home host and then rebuilding Login before the
+  // first capture can leave the native image surface without a committed frame.
+  await _prepareRuntimeScreenshotSurface(tester);
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
   if (child is LoginPage) {
     // Login can keep scheduled frames alive during its initial auth/hero build.
@@ -928,9 +932,7 @@ void main() {
       ),
     );
     print('HOPE_RUNTIME_HOST_PUMP_DONE');
-    // Avoid endOfFrame in the headless driver path. A fixed pump is sufficient
-    // to progress the Flutter tree without blocking VMService request_data.
-    await _prepareRuntimeScreenshotSurface(tester);
+    // Surface preparation is deferred until the first target screen is mounted.
     if (_responsiveOnly) {
       if (_captureLocale != 'en') {
         await _captureResponsiveLocale(
