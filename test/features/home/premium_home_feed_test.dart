@@ -167,6 +167,17 @@ Future<_HomeHarness> _host(
 void _noop() {}
 
 void main() {
+  testWidgets('single recommendation does not reserve an empty matches section',
+      (tester) async {
+    final repository = _SequencedMarketplaceRepository();
+    final harness = await _host(repository);
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Best match for you'), findsOneWidget);
+    expect(find.text('Matches'), findsNothing);
+  });
+
   testWidgets('settings changes reload home opportunities',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();

@@ -656,13 +656,16 @@ padding: const EdgeInsets.all(12),
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: HopeV2Type.metric(context).copyWith(
-                  fontSize: compact ? 13 : (value.length > 7 ? 12 : 15),
-                  color: Colors.white,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: HopeV2Type.metric(context).copyWith(
+                    fontSize: compact ? 13 : (value.length > 7 ? 12 : 15),
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(height: 3),
@@ -717,7 +720,9 @@ padding: const EdgeInsets.all(12),
   Widget _opportunitySections(BuildContext context, List<HopeJob> jobs, HopeSettingsController settings) {
     final recommended = jobs.where((j) => j.isRecommended).toList();
     final nearby = jobs
-        .where((j) => j.distanceKm != null || j.city == settings.city)
+        .where((j) =>
+            (j.distanceKm != null || j.city == settings.city) &&
+            !recommended.contains(j))
         .toList();
     final used = {...recommended, ...nearby};
     final remaining = jobs.where((j) => !used.contains(j)).toList();
@@ -766,12 +771,13 @@ child: Column(
             variant: OpportunityCardVariant.featured,
           ),
           const SizedBox(height: HopeV2Spacing.lg),
-          _section(
-            context,
-            _t(context, 'تطابق‌ها', 'Matches'),
-            recommended.skip(1).take(3).toList(),
-            widget.onOpenExplore,
-          ),
+          if (recommended.length > 1)
+            _section(
+              context,
+              _t(context, 'تطابق‌ها', 'Matches'),
+              recommended.skip(1).take(3).toList(),
+              widget.onOpenExplore,
+            ),
         ] else ...[
           PremiumSectionHeader(
             domain: HopeProductDomain.discovery,
@@ -784,12 +790,13 @@ child: Column(
           ),
         ],
         const SizedBox(height: HopeV2Spacing.lg),
-        _section(
-          context,
-          _t(context, 'نزدیک شما', 'Near you'),
-          nearby.take(3).toList(),
-          widget.onOpenExplore,
-        ),
+        if (nearby.isNotEmpty)
+          _section(
+            context,
+            _t(context, 'نزدیک شما', 'Near you'),
+            nearby.take(3).toList(),
+            widget.onOpenExplore,
+          ),
         if (remaining.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.lg),
           _section(
@@ -799,9 +806,68 @@ child: Column(
             widget.onOpenExplore,
           ),
         ],
+        if (recommended.length == 1 && nearby.isEmpty && remaining.isEmpty)
+          ...[
+            const SizedBox(height: HopeV2Spacing.md),
+            _discoveryContinuation(context),
+          ],
       ],
     );
   }
+
+  Widget _discoveryContinuation(BuildContext context) {
+    return PremiumPanel(
+      glass: false,
+      highlight: true,
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const PremiumDomainMarker(
+            domain: HopeProductDomain.discovery,
+            compact: true,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _t(context, 'فرصت‌های بیشتری پیدا کنید', 'Keep exploring'),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _t(
+                    context,
+                    'برای دیدن گزینه‌های بیشتر، کاوش را باز کنید.',
+                    'Open Explore to see more matched opportunities.',
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          FilledButton.icon(
+            onPressed: widget.onOpenExplore,
+            icon: HugeIcon(
+              icon: Directionality.of(context) == TextDirection.rtl
+                  ? HopeV2Icons.arrowLeft
+                  : HopeV2Icons.arrowRight,
+              size: 17,
+            ),
+            label: Text(_t(context, 'کاوش', 'Explore')),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _section(BuildContext context, String title, List<HopeJob> jobs, VoidCallback action) {
     if (jobs.isEmpty) return const SizedBox.shrink();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

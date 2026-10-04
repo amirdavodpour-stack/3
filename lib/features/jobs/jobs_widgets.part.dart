@@ -105,7 +105,10 @@ class _JobsResultsSliver extends StatelessWidget {
                         delay: Duration(
                           milliseconds: 35 * (i + 1).clamp(0, 10),
                         ),
-                        child: OpportunityCard(job: remaining[i]),
+                        child: OpportunityCard(
+                          job: remaining[i],
+                          variant: OpportunityCardVariant.compact,
+                        ),
                       ),
                     ),
                 ],
