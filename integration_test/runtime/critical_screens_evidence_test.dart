@@ -756,19 +756,11 @@ Future<void> _captureRuntimeScreen(
   // can dispose the driver before the Flutter screenshot request. Keep the
   // settle path deterministic and avoid that boundary for this surface.
   if (child is WalletPage) {
-    // Do not repeatedly drive 300ms engine frames on the Wallet surface.
-    // In flutter drive/integration_test, pump(Duration) advances the test clock
-    // and also executes a full build/layout/paint/semantics frame. Wallet's
-    // finance tree crosses the headless raster/VM-service boundary where that
-    // repeated frame loop has previously stalled request_data.
-    //
-    // Let the live engine settle naturally, then issue only one explicit frame
-    // to flush the completed async repository state before the screenshot.
-    await tester.pump();
-    await Future<void>.delayed(const Duration(milliseconds: 1200));
-    await tester.pump();
-    print('HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE:$marker');
-    print('HOPE_RUNTIME_WALLET_LIVE_SETTLE_DONE:$marker');
+    // pumpWidget above already completed the first build/layout pass. Wallet
+    // has synchronous evidence repositories, so driving another timed frame
+    // here is unnecessary and has repeatedly crossed the headless
+    // VM-service/raster boundary in isolated Driver sessions.
+    print('HOPE_RUNTIME_WALLET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
