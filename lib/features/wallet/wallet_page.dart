@@ -654,7 +654,7 @@ class _WalletPageState extends State<WalletPage> {
     Widget balanceHero() {
       final scheme = Theme.of(context).colorScheme;
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -692,7 +692,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 5),
             Text(
               _t('کل موجودی', 'Total balance'),
               style: const TextStyle(
@@ -700,7 +700,7 @@ class _WalletPageState extends State<WalletPage> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 3),
             FittedBox(
               alignment: AlignmentDirectional.centerStart,
               fit: BoxFit.scaleDown,
@@ -708,14 +708,14 @@ class _WalletPageState extends State<WalletPage> {
                 _money(wallet.totalBalance),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 25,
+                  fontSize: 23,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -.7,
                 ),
               ),
             ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 5),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -727,7 +727,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 5),
             LayoutBuilder(
               builder: (context, constraints) {
                 final columns = constraints.maxWidth < 360 ? 2 : 4;
@@ -874,22 +874,49 @@ class _WalletPageState extends State<WalletPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            PremiumHeader(
-              page: HopePageId.wallet,
-              domain: HopeProductDomain.finance,
-              eyebrow: _t('کیف پول', 'WALLET'),
-              title: _t('کیف پول داخلی HOPE', 'HOPE internal wallet'),
-              subtitle: _t(
-                'موجودی، وجه محافظت‌شده، انتقال داخلی و وضعیت برداشت را در یک سطح مالی مستقل مدیریت کنید.',
-                'Manage balance, protected funds, internal transfers, and withdrawals in one dedicated finance surface.',
-              ),
-              trailing: PremiumIconButton(
-                icon: HopeV2Icons.insights,
-                tooltip: _t('تحلیل مالی', 'Financial insights'),
-                onPressed: () => Navigator.push(
-                  context,
-                  HopeRoutes.financialInsights(),
-                ),
+            Container(
+              key: const ValueKey('wallet-finance-header'),
+              constraints: const BoxConstraints(minHeight: 64),
+              padding: const EdgeInsetsDirectional.fromSTEB(4, 2, 4, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _t('کیف پول', 'WALLET'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: .7,
+                              ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _t('کیف پول داخلی HOPE', 'HOPE internal wallet'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  PremiumIconButton(
+                    icon: HopeV2Icons.insights,
+                    tooltip: _t('تحلیل مالی', 'Financial insights'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      HopeRoutes.financialInsights(),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: HopeV2Spacing.md),
