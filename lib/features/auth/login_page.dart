@@ -114,8 +114,8 @@ class _LoginPageState extends State<LoginPage> {
         body: SafeArea(
           child: PremiumPageFrame(
             page: HopePageId.login,
-            maxWidth: 760,
-            padding: const EdgeInsets.fromLTRB(20, 15, 20, 30),
+            maxWidth: 640,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
@@ -135,7 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                   const HopeMark(size: 38),
                 ],
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 12),
               PremiumHero(
                 page: HopePageId.login,
                 domain: HopeProductDomain.account,
@@ -143,15 +143,15 @@ class _LoginPageState extends State<LoginPage> {
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
-                height: 250,
+                height: 196,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               AnimatedEntrance(
                 child: PremiumPanel(
                   // Auth is a dense primary surface; avoid a nested GPU blur
                   // here so the first Android frame remains deterministic.
                   glass: false,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
