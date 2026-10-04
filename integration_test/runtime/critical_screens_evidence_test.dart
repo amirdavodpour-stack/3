@@ -756,12 +756,15 @@ Future<void> _captureRuntimeScreen(
   // can dispose the driver before the Flutter screenshot request. Keep the
   // settle path deterministic and avoid that boundary for this surface.
   if (child is WalletPage) {
-    await tester.pump(const Duration(milliseconds: 1800));
+    // Keep the same 1.8s total settle window, but split it into bounded
+    // frame windows. A single long pump is disproportionately sensitive to
+    // the headless VM-service/raster boundary seen in Wallet evidence runs.
     for (var frame = 0; frame < 6; frame++) {
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await Future<void>.delayed(const Duration(milliseconds: 120));
     }
     print('HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE:$marker');
+    print('HOPE_RUNTIME_WALLET_CHUNKED_SETTLE_DONE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
