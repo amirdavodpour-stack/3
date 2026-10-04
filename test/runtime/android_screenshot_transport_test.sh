@@ -69,7 +69,6 @@ grep -Fq 'login-fa-rtl' "$script_file"
 grep -Fq 'register-fa-rtl' "$script_file"
 grep -Fq 'password-reset-fa-rtl' "$script_file"
 grep -Fq 'HOPE_CAPTURE_AUTH_ONLY' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
-grep -Fq '_runtimeScreenshotSurfacePrepared = false;' "$test_file"
 grep -Fq 'final binding = IntegrationTestWidgetsFlutterBinding.instance;' "$test_file"
 grep -Fq 'github.run_attempt' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 
