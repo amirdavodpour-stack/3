@@ -26,10 +26,15 @@ RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-10}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
+CAPTURE_AUTH_ONLY="${HOPE_CAPTURE_AUTH_ONLY:-0}"
 SCREEN_INDEX="${HOPE_SCREEN_INDEX:--1}"
 # bool.fromEnvironment only treats the string "true" as true. The workflow
 # contract uses 1/0 for shell semantics, so normalize before passing it to Dart.
 DART_CAPTURE_HOME_ONLY="false"
+DART_CAPTURE_AUTH_ONLY="false"
+if [ "$CAPTURE_AUTH_ONLY" = "1" ]; then
+  DART_CAPTURE_AUTH_ONLY="true"
+fi
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   DART_CAPTURE_HOME_ONLY="true"
 fi
@@ -264,6 +269,7 @@ run_host_batch_session() {
   case "$mode" in
     baseline-a) baseline_batch="a" ;;
     baseline-b) baseline_batch="b" ;;
+    auth-only) launch_mode="auth-only" ;;
   esac
   if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ] || [ "$mode" = "responsive-single" ]; then
     responsive_only="true"
@@ -296,6 +302,7 @@ run_host_batch_session() {
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
+    --dart-define=HOPE_CAPTURE_AUTH_ONLY="${DART_CAPTURE_AUTH_ONLY}" \
     --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
     --dart-define=HOPE_BASELINE_BATCH="${baseline_batch}" \
     --dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}" \
@@ -416,7 +423,7 @@ else
   for SCREEN_INDEX in "${!baseline_screens[@]}"; do
     marker="${baseline_screens[$SCREEN_INDEX]}"
     session_status=0
-    run_host_batch_session baseline-single "$marker" || session_status=$?
+    run_host_batch_session "$([ "$CAPTURE_AUTH_ONLY" = "1" ] && echo auth-only || echo baseline-single)" "$marker" || session_status=$?
     if [ "$session_status" -eq 0 ] &&
        ! validate_capture_set "baseline-$CAPTURE_LOCALE-$SCREEN_INDEX" "$runner_temp/hope-baseline-single-runtime.log" "$marker"; then
       session_status=1
@@ -435,7 +442,7 @@ else
   test_status=0
 fi
 
-if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
+if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$CAPTURE_AUTH_ONLY" != "1" ]; then
   adb shell wm size 720x1280
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
