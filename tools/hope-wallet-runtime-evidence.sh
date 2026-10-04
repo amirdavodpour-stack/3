@@ -355,10 +355,6 @@ run_host_batch_session() {
         echo "HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE:$mode"
         break
       fi
-      if ! kill -0 "$process_pid" 2>/dev/null; then
-        screenshot_flush_status=1
-        break
-      fi
       sleep 0.2
     done
     if [ "$screenshot_flush_status" -ne 0 ]; then
