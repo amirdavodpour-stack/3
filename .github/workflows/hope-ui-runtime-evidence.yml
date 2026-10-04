@@ -159,3 +159,5 @@ jobs:
 # [runtime-capture-fa] exact-head validation for Home first-fold composition wave.
 
 # [runtime-capture-fa] validate wallet finance hierarchy wave at exact current HEAD.
+
+# [runtime-capture-fa] retry exact-head wallet finance hierarchy capture after harness transport failure.
