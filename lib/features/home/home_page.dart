@@ -169,17 +169,6 @@ class _HomePageState extends State<HomePage> {
               onDestinationSelected: _selectTab,
               destinations: destinations,
             ),
-      floatingActionButton: tab == 0
-          ? FloatingActionButton.small(
-              onPressed: () => _openCreate(context),
-              tooltip: _t(
-                context,
-                'ثبت فرصت جدید',
-                'Post new opportunity',
-              ),
-              child: const HugeIcon(icon: HopeV2Icons.add, size: 21),
-            )
-          : null,
       drawer: Drawer(
         child: SafeArea(
           child: ListView(
@@ -202,6 +191,16 @@ class _HomePageState extends State<HomePage> {
                     () {
                       Navigator.pop(context);
                       _selectTab(1);
+                    },
+                  ),
+                  const Divider(height: 1, indent: 72),
+                  _drawerTile(
+                    context,
+                    HopeV2Icons.add,
+                    _t(context, 'ثبت فرصت جدید', 'Post new opportunity'),
+                    () {
+                      Navigator.pop(context);
+                      _openCreate(context);
                     },
                   ),
                   const Divider(height: 1, indent: 72),

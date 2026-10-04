@@ -181,7 +181,9 @@ class OpportunityCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
-        height: featured ? 122 : 104,
+        height: featured
+            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 84 : 122)
+            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 78 : 104),
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -571,9 +573,11 @@ class OpportunityCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  job.isMission
-                      ? copy.copy_view_and_act_on_mission
-                      : copy.copy_view_details_and_act,
+                  MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium
+                      ? _t(context, 'مشاهده جزئیات', 'View details')
+                      : (job.isMission
+                          ? copy.copy_view_and_act_on_mission
+                          : copy.copy_view_details_and_act),
                   style: TextStyle(
                     color: primary,
                     fontWeight: FontWeight.w900,

@@ -203,8 +203,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   children: [
                     ClipOval(
                       child: Container(
-                        width: 42,
-                        height: 42,
+                        width: 36,
+                        height: 36,
                         color: HopeV2Colors.primary.withValues(alpha: .12),
                         child: avatarUrl != null
                             ? Image.network(
@@ -283,14 +283,14 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           ),
           const SizedBox(height: 4),
           Text(
-            isEn ? 'Opportunities that fit your next move.' : 'فرصت‌های بهتر برای مسیر بعدی شما',
-            maxLines: 2,
+            isEn ? 'Find your next opportunity.' : 'فرصت مناسب برای قدم بعدی',
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 18,
-                  height: 1.12,
+                  fontSize: 16,
+                  height: 1.08,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -.35,
+                  letterSpacing: -.25,
                 ),
           ),
         ],
@@ -423,8 +423,8 @@ padding: const EdgeInsets.all(12),
                       Row(
                         children: [
                           Container(
-                            width: 30,
-                            height: 30,
+                            width: 26,
+                            height: 26,
                             decoration: BoxDecoration(
                               color: HopeV2Colors.primary.withValues(alpha: .14),
                               shape: BoxShape.circle,
@@ -637,10 +637,10 @@ padding: const EdgeInsets.all(12),
     required Color accent,
   }) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 48),
+      constraints: const BoxConstraints(minHeight: 42),
       padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 7,
+        horizontal: 6,
+        vertical: 6,
       ),
       decoration: BoxDecoration(
         color: HopeV2Colors.panelSoftDark,
@@ -651,7 +651,7 @@ padding: const EdgeInsets.all(12),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 112;
+          final compact = constraints.maxWidth < 72;
           final metric = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -671,7 +671,7 @@ padding: const EdgeInsets.all(12),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 9,
+                      fontSize: compact ? 8 : 9,
                       color: HopeV2Colors.darkMuted,
                     ),
               ),
@@ -700,7 +700,7 @@ padding: const EdgeInsets.all(12),
               ExcludeSemantics(
                 child: HopeIcon(
                   icon,
-                  size: 17,
+                  size: 15,
                   color: accent,
                   strokeWidth: 1.9,
                 ),
