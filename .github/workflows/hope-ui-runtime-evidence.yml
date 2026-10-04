@@ -160,3 +160,5 @@ jobs:
 # [runtime-capture-fa] exact-head validation for Home first-fold composition wave.
 
 # [runtime-capture-fa] validate compact Profile account/trust summary wave at exact current HEAD.
+
+# [runtime-capture-fa] validate isolated auth baseline driver session.
