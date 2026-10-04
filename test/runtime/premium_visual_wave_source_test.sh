@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
 # Grouped visual-wave source guard for the runtime-certified discovery surfaces.
+# The restored #1560 baseline does not require a runtime media fixture; editorial media activation remains a separate visual wave.
 set -eu
 
 opportunity="lib/core/ui/opportunity_card.dart"
