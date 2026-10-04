@@ -216,6 +216,33 @@ void main() {
   });
 
   testWidgets(
+      'home pulse stays compact enough to keep the first match in the first fold',
+      (tester) async {
+    tester.view.physicalSize = const Size(720, 1280);
+    tester.view.devicePixelRatio = 3;
+
+    try {
+      final repository = _SequencedMarketplaceRepository();
+      final harness = await _host(repository);
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final pulse = find.ancestor(
+        of: find.text('HOPE Pulse'),
+        matching: find.byType(PremiumPanel),
+      ).first;
+      expect(tester.getSize(pulse).height, lessThanOrEqualTo(105));
+
+      final bestMatch = find.text('Best match for you');
+      expect(bestMatch, findsOneWidget);
+      expect(tester.getTopLeft(bestMatch).dy, lessThan(230));
+    } finally {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    }
+  });
+
+  testWidgets(
       'home pulse stays in one visual row at the 720x1280 responsive viewport',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);

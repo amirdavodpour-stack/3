@@ -103,20 +103,22 @@ void main() {
       find.byKey(const ValueKey('hope-nav-explore')),
     );
     expect(unselectedExplore.selected, isFalse);
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
     expect(find.text('کاوش'), findsOneWidget);
+    expect(find.text('ثبت فرصت جدید'), findsNothing);
   });
 
   testWidgets(
-      'guest cannot open posting flow directly and is prompted to sign in',
+      'guest posting remains available from the drawer and is guarded by sign-in',
       (tester) async {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
-    final fab = find.byType(FloatingActionButton);
-    expect(fab, findsOneWidget);
-    expect(tester.getSize(fab).width, lessThanOrEqualTo(64));
-    expect(find.text('ثبت فرصت جدید'), findsNothing);
-    await tester.tap(fab);
+
+    await tester.tap(find.byKey(const ValueKey('hope-menu-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ثبت فرصت جدید'), findsOneWidget);
+    await tester.tap(find.text('ثبت فرصت جدید'));
     await tester.pumpAndSettle();
     expect(find.text('ورود'), findsOneWidget);
     expect(find.text('ساخت حساب'), findsOneWidget);
@@ -151,12 +153,14 @@ void main() {
     tester.view.resetDevicePixelRatio();
   });
 
-  testWidgets('guest hero posting action is guarded by sign-in',
+  testWidgets('guest menu posting action is guarded by sign-in',
       (tester) async {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const ValueKey('hope-menu-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ثبت فرصت جدید'));
     await tester.pumpAndSettle();
 
     expect(find.text('ورود'), findsOneWidget);
