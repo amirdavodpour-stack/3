@@ -164,3 +164,5 @@ jobs:
 # [runtime-capture-fa] validate isolated auth baseline driver session.
 
 # [runtime-capture-fa] validate grouped Auth surface visual calibration.
+
+# [runtime-capture-fa] rerun Auth visual evidence after ADB-offline failure and Login CTA fix.
