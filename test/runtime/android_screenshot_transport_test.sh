@@ -71,6 +71,11 @@ grep -Fq 'HOPE_RUNTIME_WALLET_FAST_SETTLE_DONE' "$test_file"
 grep -Fq 'HOPE_RUNTIME_WALLET_CHUNKED_SETTLE_DONE' "$test_file"
 grep -Fq 'const Duration(milliseconds: 300)' "$test_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
+grep -Fq 'await Future<void>.delayed(const Duration(milliseconds: 1200));' "$test_file"
+if grep -Fq 'await tester.pump(const Duration(milliseconds: 300));' "$test_file"; then
+  echo "FAIL: Wallet runtime settle must not repeatedly drive 300ms engine frames" >&2
+  exit 1
+fi
 grep -Fq 'HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE' "$script_file"
 # Post-completion screenshot flush must be followed by normal integration_test driver teardown.
 grep -Fq 'screenshot_flush_deadline' "$script_file"
