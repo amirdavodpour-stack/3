@@ -15,6 +15,8 @@ test -f "$premium"
 test -f "$home"
 test -f "$runtime_driver"
 
+sh test/runtime/editorial_media_fixture_source_test.sh
+
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
