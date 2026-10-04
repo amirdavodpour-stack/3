@@ -38,7 +38,7 @@ on:
 concurrency:
   # Capture commits are intentionally serialized. Non-capture feature pushes
   # use an isolated group so they cannot cancel an active runtime evidence run.
-  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]') || contains(github.event.head_commit.message, '[runtime-capture-fa-auth]')) && 'capture' || github.run_id }}
+  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'capture' || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -46,7 +46,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]') || contains(github.event.head_commit.message, '[runtime-capture-fa-auth]'))) || (github.event_name == 'pull_request' && github.head_ref == 'feat/google-sign-in-2026-09-20' && contains(github.event.pull_request.title, '[runtime-capture-fa]')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]'))) || (github.event_name == 'pull_request' && github.head_ref == 'feat/google-sign-in-2026-09-20' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
     name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -124,10 +124,9 @@ jobs:
         env:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
-          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa]') && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]') || contains(github.event.head_commit.message, '[runtime-capture-fa-auth]')) && 'fa' || 'en') }}
+          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]') && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
           HOPE_RUNTIME_STRICT_VALIDATION: '0'
           HOPE_CAPTURE_HOME_ONLY: ${{ ((github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture-fa-home]'))) && '1' || '0' }}
-          HOPE_CAPTURE_AUTH_ONLY: ${{ ((github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-auth]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture-fa-auth]'))) && '1' || '0' }}
         with:
           api-level: 35
           arch: x86_64
@@ -148,7 +147,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
         with:
-          name: hope-critical-screens-runtime-evidence-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: hope-critical-screens-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
           path: |
             docs/audit/evidence/android-runtime/**
             ${{ runner.temp }}/hope-*-runtime.log
@@ -158,13 +157,3 @@ jobs:
 # [runtime-capture-fa] navigation active-state calibration — exact-head capture.
 
 # [runtime-capture-fa] exact-head validation for Home first-fold composition wave.
-
-# [runtime-capture-fa] validate wallet finance hierarchy wave at exact current HEAD.
-
-# [runtime-capture-fa] retry exact-head wallet finance hierarchy capture after harness transport failure.
-
-# [runtime-capture-fa] split baseline capture into bounded Flutter Driver sessions.
-
-# [runtime-capture-fa] certify isolated one-screenshot Flutter Driver sessions at exact HEAD.
-
-# [runtime-capture-fa] certify one-screenshot-per-driver-session evidence on current exact head.
