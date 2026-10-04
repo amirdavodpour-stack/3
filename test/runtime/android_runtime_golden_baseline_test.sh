@@ -22,7 +22,7 @@ require_line() {
 require_line "$workflow" "repository: soloturn/android-emulator-runner"
 require_line "$workflow" "ref: ab495a9b42f2af30f5222bd978136f9b0a85b68a"
 require_line "$workflow" "uses: ./.ci/android-emulator-runner"
-require_line "$workflow" "ram-size: 6144M"
+require_line "$workflow" "ram-size: 8192M"
 require_line "$workflow" "force-avd-creation: false"
 if grep -Fq 'uses: ReactiveCircus/android-emulator-runner@' "$workflow"; then
   printf 'FAIL: runtime golden baseline regressed to the non-certified ReactiveCircus runner.\n' >&2
