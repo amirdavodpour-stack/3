@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
 import 'package:hope_mobile/features/marketplace/job_detail_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/transactions/transaction_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -274,6 +275,14 @@ void main() {
     expect(find.textContaining('2026-09-30'), findsOneWidget);
     expect(find.textContaining('reviewed by an admin'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
+  });
+
+  testWidgets('opportunity hero preserves a stronger editorial focal height',
+      (tester) async {
+    await _pump(tester, job: _job());
+    final hero = find.byType(PremiumHero);
+    expect(hero, findsOneWidget);
+    expect(tester.getSize(hero).height, greaterThanOrEqualTo(240));
   });
 
   testWidgets('long opportunity titles stay contained in the hero',
