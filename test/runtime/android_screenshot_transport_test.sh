@@ -106,4 +106,10 @@ if [ "$first_baseline_page" != "    'login': () => const LoginPage()," ]; then
   exit 1
 fi
 
+login_capture_block="$(awk '/if \(child is LoginPage\)/,/return;/{print}' "$test_file")"
+if printf '%s\n' "$login_capture_block" | grep -q 'pumpAndSettle'; then
+  echo "FAIL: Login runtime capture must not use unbounded pumpAndSettle" >&2
+  exit 1
+fi
+
 echo "PASS: Flutter rendered-screenshot transport contract"
