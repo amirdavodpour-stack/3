@@ -720,6 +720,19 @@ Future<void> _captureRuntimeScreen(
     await _captureRuntimeScreenshot(marker);
     return;
   }
+  // Register can legitimately keep an indeterminate auth-state indicator alive
+  // in the isolated evidence host. Do not make screenshot capture depend on that
+  // indicator disappearing; the proven #1498 capture used a bounded settle path.
+  if (child is RegisterPage) {
+    await tester.pump(const Duration(milliseconds: 1200));
+    print('HOPE_RUNTIME_REGISTER_FAST_SETTLE_DONE:$marker');
+    for (var frame = 0; frame < 2; frame++) {
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    await _captureRuntimeScreenshot(marker);
+    return;
+  }
   // TransactionsPage is the heaviest current Work Center surface. A second
   // zero-duration pump can block the headless driver before the screenshot
   // request; give this page one deterministic 1.2s frame window instead.
