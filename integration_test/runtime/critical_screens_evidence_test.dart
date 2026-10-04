@@ -615,6 +615,24 @@ const _responsiveBatch =
     String.fromEnvironment('HOPE_RESPONSIVE_BATCH', defaultValue: 'all');
 const _baselineBatch =
     String.fromEnvironment('HOPE_BASELINE_BATCH', defaultValue: 'all');
+const _screenIndex =
+    int.fromEnvironment('HOPE_SCREEN_INDEX', defaultValue: -1);
+
+Map<String, Widget Function()> _selectScreen(
+  Map<String, Widget Function()> pages, {
+  required int index,
+}) {
+  if (index < 0) {
+    return pages;
+  }
+  final entries = pages.entries.toList(growable: false);
+  if (index >= entries.length) {
+    throw RangeError.range(index, 0, entries.length - 1, 'HOPE_SCREEN_INDEX');
+  }
+  final entry = entries[index];
+  return <String, Widget Function()>{entry.key: entry.value};
+}
+
 class _EvidenceUploadQueue implements UploadQueue {
   @override
   late final ApiClient api;
@@ -716,9 +734,11 @@ Future<void> _captureRuntimeScreen(
     ),
   );
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
-  if (child is LoginPage) {
+  if (child is LoginPage ||
+      child is RegisterPage ||
+      child is PasswordResetPage) {
     await tester.pump(const Duration(milliseconds: 1200));
-    print('HOPE_RUNTIME_LOGIN_FAST_SETTLE_DONE:$marker');
+    print('HOPE_RUNTIME_AUTH_FAST_SETTLE_DONE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
@@ -780,23 +800,25 @@ Future<void> _captureBaselineLocale(
   };
   final capturePages = _captureHomeOnly
       ? <String, Widget Function()>{'home': () => const HomePage()}
-      : _responsiveBatch == '1'
-          ? Map<String, Widget Function()>.fromEntries(
-              pages.entries.take(3),
-            )
-          : _responsiveBatch == '2'
+      : _screenIndex >= 0
+          ? _selectScreen(pages, index: _screenIndex)
+          : _responsiveBatch == '1'
               ? Map<String, Widget Function()>.fromEntries(
-                  pages.entries.skip(3).take(3),
+                  pages.entries.take(3),
                 )
-              : _baselineBatch == 'a'
+              : _responsiveBatch == '2'
                   ? Map<String, Widget Function()>.fromEntries(
-                      pages.entries.take(8),
+                      pages.entries.skip(3).take(3),
                     )
-                  : _baselineBatch == 'b'
+                  : _baselineBatch == 'a'
                       ? Map<String, Widget Function()>.fromEntries(
-                          pages.entries.skip(8).take(7),
+                          pages.entries.take(8),
                         )
-                      : pages;
+                      : _baselineBatch == 'b'
+                          ? Map<String, Widget Function()>.fromEntries(
+                              pages.entries.skip(8).take(7),
+                            )
+                          : pages;
   for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
@@ -827,11 +849,15 @@ Future<void> _captureResponsiveLocale(
   };
   final capturePages = _captureHomeOnly
       ? <String, Widget Function()>{'home': () => const HomePage()}
-      : _responsiveBatch == '1'
-          ? Map<String, Widget Function()>.fromEntries(pages.entries.take(3))
-          : _responsiveBatch == '2'
-              ? Map<String, Widget Function()>.fromEntries(pages.entries.skip(3).take(3))
-              : pages;
+      : _screenIndex >= 0
+          ? _selectScreen(pages, index: _screenIndex)
+          : _responsiveBatch == '1'
+              ? Map<String, Widget Function()>.fromEntries(pages.entries.take(3))
+              : _responsiveBatch == '2'
+                  ? Map<String, Widget Function()>.fromEntries(
+                      pages.entries.skip(3).take(3),
+                    )
+                  : pages;
   for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:responsive-${entry.key}-$suffix');
     await _captureRuntimeScreen(
