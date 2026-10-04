@@ -21,7 +21,8 @@ require_line "$workflow" "target: default"
 require_line "$workflow" "profile: pixel_2"
 require_line "$workflow" "cores: 4"
 require_line "$workflow" "ram-size: 4096M"
-require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
+require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
+require_line "$workflow" "-feature -Vulkan"
 if grep -Fq -- '-gpu software' "$workflow"; then
   printf 'FAIL: runtime golden baseline still uses generic software GPU mode; use the runner-stable swiftshader_indirect mode.\n' >&2
   exit 1
