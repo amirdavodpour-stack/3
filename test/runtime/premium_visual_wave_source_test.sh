@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# [runtime-capture-fa] exact-head discovery density validation.
 # Grouped visual-wave source guard for the runtime-certified discovery surfaces.
 set -eu
 
