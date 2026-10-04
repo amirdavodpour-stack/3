@@ -445,7 +445,6 @@ else
     baseline_status="$baseline_second_status"
   elif [ "$baseline_third_status" -ne 0 ]; then
     baseline_status="$baseline_third_status"
-    baseline_status="$baseline_second_status"
   fi
 fi
 
