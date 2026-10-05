@@ -415,7 +415,6 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
      ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
     baseline_status=1
   fi
-fi
 else
   baseline_status=0
   # Keep the complete locale baseline inside one Driver/VM-service session.
@@ -426,6 +425,7 @@ else
      ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
     baseline_status=1
   fi
+fi
 if [ "$baseline_status" -ne 0 ]; then
   test_status="$baseline_status"
 else
