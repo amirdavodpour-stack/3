@@ -75,7 +75,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                         tooltip: HopeCopy.of(context).copy_back_6e09f79,
                       ),
                       const Spacer(),
-                      const HopeMark(size: 38),
+                      const HopeMark(size: 34),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -86,11 +86,11 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     title: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     message: HopeCopy.of(context).copy_enter_your_account_email_and_we_will_start_16caa6e,
                     icon: HopeV2Icons.mail,
-                    height: 196,
+                    height: 164,
                   ),
                   const SizedBox(height: 12),
                   PremiumPanel(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       children: [
                         TextField(

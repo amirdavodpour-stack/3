@@ -75,6 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
           PremiumHeader(
             page: HopePageId.profile,
             domain: HopeProductDomain.account,
+            dense: true,
             eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
             title: name,
             subtitle: user['email']?.toString().trim().isEmpty == true
@@ -94,7 +95,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
           ),
-          const SizedBox(height: HopeV2Spacing.md),
+          const SizedBox(height: HopeV2Spacing.sm),
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
@@ -214,7 +215,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               return PremiumPanel(
                 glass: true,
-padding: const EdgeInsets.all(16),
+padding: const EdgeInsets.all(14),
                 child: Column(
                   children: [
                     ListTile(

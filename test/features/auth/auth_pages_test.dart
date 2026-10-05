@@ -129,7 +129,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester.getSize(find.byType(PremiumHero)).height,
-        lessThanOrEqualTo(210),
+        lessThanOrEqualTo(180),
       );
     }
   });

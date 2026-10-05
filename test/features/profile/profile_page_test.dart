@@ -258,6 +258,11 @@ testWidgets('withdrawing an application disables the action until completion',
       (tester) async {
     await _pump(tester, authenticated: true, width: 390);
 
+    final header = tester.widget<PremiumHeader>(
+      find.byType(PremiumHeader).first,
+    );
+    expect(header.dense, isTrue);
+
     final summary = find.byKey(const ValueKey('profile-account-summary'));
     expect(summary, findsOneWidget);
     expect(tester.getSize(summary).height, lessThan(112));

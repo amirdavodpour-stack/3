@@ -132,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
                     tooltip: l10n.backButtonTooltip,
                   ),
                   const Spacer(),
-                  const HopeMark(size: 38),
+                  const HopeMark(size: 34),
                 ],
               ),
               const SizedBox(height: 12),
@@ -143,15 +143,15 @@ class _LoginPageState extends State<LoginPage> {
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
-                height: 196,
+                height: 164,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               AnimatedEntrance(
                 child: PremiumPanel(
                   // Auth is a dense primary surface; avoid a nested GPU blur
                   // here so the first Android frame remains deterministic.
                   glass: false,
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
