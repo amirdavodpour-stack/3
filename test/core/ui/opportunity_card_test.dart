@@ -58,6 +58,7 @@ void main() {
     expect(find.text('91% تطابق'), findsOneWidget);
     expect(find.text('دورکاری'), findsOneWidget);
     expect(find.text('تهران'), findsOneWidget);
+    expect(find.text('1.5 km'), findsOneWidget);
     expect(find.text('1,000,000 – 1,500,000 تومان'), findsOneWidget);
     expect(find.text('طراحی محصول'), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);

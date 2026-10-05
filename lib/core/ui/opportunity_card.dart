@@ -741,7 +741,7 @@ class OpportunityCard extends StatelessWidget {
         if (job.distanceKm != null)
           PremiumTag(
             icon: HopeV2Icons.distance,
-            label: '\${job.distanceKm!.toStringAsFixed(1)} km',
+            label: '${job.distanceKm!.toStringAsFixed(1)} km',
             color: secondaryAccent(context),
           ),
       ],
@@ -759,7 +759,7 @@ class OpportunityCard extends StatelessWidget {
         _metaText(
           context,
           HopeV2Icons.payments,
-          '\${_formatAmount(amount)} \${copy.copy_toman}',
+          '${_formatAmount(amount)} ${copy.copy_toman}',
           primary,
           emphasize: true,
         ),
