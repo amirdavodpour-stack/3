@@ -354,6 +354,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 child: ListView(
                   children: [
                     PremiumHeader(
+              dense: true,
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
@@ -437,7 +438,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 48),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
@@ -454,7 +455,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         filled: true,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
                         kind: HopeStateKind.error,
@@ -510,7 +511,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     if (activeItems.isNotEmpty || settledItems.isNotEmpty) ...[
                       PremiumSectionHeader(
                         page: HopePageId.workCenter,
@@ -521,7 +522,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           'Track current work separately from financially settled collaborations.',
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                     ],
                     if (activeItems.isNotEmpty) ...[
                       PremiumSectionHeader(
