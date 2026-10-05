@@ -88,8 +88,10 @@ fi
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
 wallet_block="$(sed -n '/if (child is WalletPage)/,/^[[:space:]]*}/p' "$test_file")"
-grep -Fq 'await tester.pump(const Duration(milliseconds: 300));' <<<"$wallet_block"
-grep -Fq "print('HOPE_RUNTIME_WALLET_BOUNDED_SETTLE_DONE:\$marker');" "$test_file"
+grep -Fq 'await tester.pump(const Duration(milliseconds: 800));' <<<"$wallet_block"
+grep -Fq "print('HOPE_RUNTIME_WALLET_LOADED_STATE_ASSERTED:\$marker');" "$test_file"
+grep -Fq 'Available balance' "$test_file"
+grep -Fq 'موجودی قابل‌استفاده' "$test_file"
 login_block="$(sed -n '/if (child is LoginPage)/,/^[[:space:]]*}/p' "$test_file")"
 # Login uses a bounded timed settle; only an unbounded pumpAndSettle invocation is prohibited.
 grep -Fq "print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:\$marker');" "$test_file"
