@@ -567,4 +567,6 @@ void main() {
     // page renders the funded payment.
     expect(find.byType(TransactionPage), findsOneWidget);
   });
+
+  // Runtime certification trigger: Wave G-3A compact Match Intelligence.
 }
