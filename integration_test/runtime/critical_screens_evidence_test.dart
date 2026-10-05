@@ -786,8 +786,8 @@ Future<void> _captureRuntimeScreen(
     // product behavior.
     await _waitForRuntimeRenderToSettle(tester);
     final loadedLabel = locale.languageCode == 'fa'
-        ? 'موجودی قابل‌استفاده'
-        : 'Available balance';
+        ? 'قابل استفاده'
+        : 'Available';
     if (find.text(loadedLabel).evaluate().isEmpty) {
       throw StateError(
         'Runtime Wallet capture reached screenshot boundary before the loaded financial state.',
