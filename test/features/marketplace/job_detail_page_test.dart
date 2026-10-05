@@ -206,8 +206,10 @@ Future<void> _pump(
   required HopeJob job,
   _FakeDetail? detail,
   String userId = 'u9',
+  double width = 900,
+  double height = 3400,
 }) async {
-  tester.view.physicalSize = const Size(900, 3400);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -279,12 +281,7 @@ void main() {
 
   testWidgets('match breakdown compresses into a two-column decision grid on compact mobile',
       (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await _pump(tester, job: _job());
+    await _pump(tester, job: _job(), width: 390, height: 844);
 
     final skills = find.byKey(const ValueKey('match-breakdown-skills'));
     final category = find.byKey(const ValueKey('match-breakdown-category'));
@@ -309,7 +306,22 @@ void main() {
     await _pump(tester, job: _job());
     final hero = find.byType(PremiumHero);
     expect(hero, findsOneWidget);
-    expect(tester.getSize(hero).height, greaterThanOrEqualTo(240));
+    expect(tester.getSize(hero).height, greaterThanOrEqualTo(180));
+  });
+
+  testWidgets(
+      'compact opportunity detail keeps match intelligence inside the first viewport',
+      (tester) async {
+    await _pump(tester, job: _job(), width: 390, height: 844);
+
+    final match = find.byKey(
+      const ValueKey('opportunity-match-intelligence'),
+    );
+    final hero = find.byType(PremiumHero);
+    expect(match, findsOneWidget);
+    expect(tester.getSize(hero).height, lessThanOrEqualTo(160));
+    expect(tester.getTopLeft(match).dy, lessThan(720));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('long opportunity titles stay contained in the hero',
