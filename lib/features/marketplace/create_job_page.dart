@@ -171,6 +171,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
           child: Column(
             children: [
               PremiumHeader(
+                dense: true,
                 page: HopePageId.createOpportunity,
                 domain: HopeProductDomain.work,
                 eyebrow: HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
@@ -198,7 +199,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: HopeV2Spacing.lg),
+              const SizedBox(height: HopeV2Spacing.sm),
               Expanded(
                 child: _CreateJobForm(
                   title: title,
