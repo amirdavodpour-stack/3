@@ -351,6 +351,7 @@ class _JobsPageState extends State<JobsPage> {
               slivers: [
                 SliverToBoxAdapter(
                   child: PremiumHeader(
+                    dense: true,
                     page: HopePageId.explore,
                     domain: HopeProductDomain.discovery,
                     eyebrow: _t(context, 'کاوش', 'EXPLORE'),
@@ -365,7 +366,7 @@ class _JobsPageState extends State<JobsPage> {
                   ),
                 ),
                 const SliverToBoxAdapter(
-                  child: SizedBox(height: 12),
+                  child: SizedBox(height: 8),
                 ),
                 SliverToBoxAdapter(
                   child: _JobsFilterHeader(
