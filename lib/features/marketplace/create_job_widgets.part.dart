@@ -14,12 +14,25 @@ class _TypeHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            HopeCopy.of(context)
-                .copy_first_choose_what_kind_of_opportunity_you__f035ca9,
-            style: Theme.of(context).textTheme.titleLarge,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  HopeCopy.of(context)
+                      .copy_first_choose_what_kind_of_opportunity_you__f035ca9,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              PremiumTag(
+                icon: HopeV2Icons.route,
+                label: Localizations.localeOf(context).languageCode == 'en'
+                    ? 'Step 1 of 5'
+                    : 'مرحله ۱ از ۵',
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
               final tiles = [
@@ -41,7 +54,7 @@ class _TypeHero extends StatelessWidget {
                 ),
               ];
 
-              if (constraints.maxWidth < 500) {
+              if (constraints.maxWidth < 380) {
                 return Column(
                   children: [
                     tiles[0],
@@ -78,9 +91,9 @@ class _TypeHero extends StatelessWidget {
       onTap: () => onChanged(value),
       semanticLabel: '$title. $sub',
       child: Container(
-        padding: const EdgeInsets.all(13),
+        padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           gradient: selected
               ? LinearGradient(
                   begin: AlignmentDirectional.topStart,
