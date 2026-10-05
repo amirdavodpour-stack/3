@@ -619,6 +619,7 @@ class PremiumHeader extends StatelessWidget {
     this.trailing,
     this.domain,
     this.page,
+    this.dense = false,
   });
 
   final String eyebrow;
@@ -627,6 +628,7 @@ class PremiumHeader extends StatelessWidget {
   final Widget? trailing;
   final HopeProductDomain? domain;
   final HopePageId? page;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -664,7 +666,7 @@ class PremiumHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: dense ? 4 : 6),
               Text(
                 title,
                 maxLines: compact ? 2 : 3,
@@ -680,10 +682,10 @@ class PremiumHeader extends StatelessWidget {
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: dense ? 3 : 4),
                 Text(
                   subtitle!,
-                  maxLines: compact ? 3 : 4,
+                  maxLines: compact ? (dense ? 2 : 3) : 4,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     height: 1.42,
