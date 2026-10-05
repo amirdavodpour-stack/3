@@ -103,7 +103,7 @@ class _OffersPageState extends State<OffersPage> {
       body: RefreshIndicator(
         onRefresh: _reload,
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 72),
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
