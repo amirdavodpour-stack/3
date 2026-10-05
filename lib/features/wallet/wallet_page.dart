@@ -808,7 +808,7 @@ class _WalletPageState extends State<WalletPage> {
             : HopeV2Colors.secondary;
         return Expanded(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: compact ? 50 : 56),
+            constraints: BoxConstraints(minHeight: compact ? 50 : 56),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
