@@ -770,10 +770,16 @@ Future<void> _captureRuntimeScreen(
   // can dispose the driver before the Flutter screenshot request. Keep the
   // settle path deterministic and avoid that boundary for this surface.
   if (child is WalletPage) {
-    // WalletPage starts its repository load from initState. The existing
-    // Wallet runtime benchmark proves an 800ms bounded frame budget is the
-    // first deterministic window that exposes the loaded finance surface.
-    await tester.pump(const Duration(milliseconds: 800));
+    // WalletPage starts its repository load from initState. A prior runtime
+    // benchmark used 800ms, but the real evidence host proved that baseline
+    // capture can still be on the loading surface at that boundary. Use the
+    // previously proven 1800ms bounded settle and commit several frame turns
+    // before requesting the screenshot; this does not change product behavior.
+    await tester.pump(const Duration(milliseconds: 1800));
+    for (var frame = 0; frame < 6; frame++) {
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+    }
     final loadedLabel = locale.languageCode == 'fa'
         ? 'موجودی قابل‌استفاده'
         : 'Available balance';
