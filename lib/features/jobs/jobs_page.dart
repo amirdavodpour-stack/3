@@ -342,7 +342,7 @@ class _JobsPageState extends State<JobsPage> {
             page: HopePageId.explore,
             padding: EdgeInsets.fromLTRB(
               compact ? 16 : 20,
-              compact ? 10 : 20,
+              compact ? 8 : 14,
               compact ? 16 : 20,
               72,
             ),
