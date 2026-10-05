@@ -28,6 +28,7 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/testing/runtime_render_settle.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/ui/components.dart';
+import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/vazirmatn_loader.dart';
@@ -676,6 +677,8 @@ Future<void> _signalRuntimeTestBodyComplete() async {
 Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
   // WidgetTester frame completion does not always mean the Android raster thread
   // has committed the new surface. Give the engine several real frame turns.
+  // HopeAsyncState can intentionally render a static loading surface when
+  // animations are disabled, so it must participate in the same bounded wait.
   for (var frame = 0; frame < 6; frame++) {
     await tester.pump();
     await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -686,7 +689,10 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
         find.byWidgetPredicate(isBlockingRuntimeProgressIndicator).evaluate().isNotEmpty;
     final hasSkeleton =
         find.byType(SkeletonBox).evaluate().isNotEmpty;
-    if (!hasSpinner && !hasSkeleton) {
+    final hasAsyncLoading = find.byWidgetPredicate(
+      (widget) => widget is HopeAsyncState && widget.kind == HopeStateKind.loading,
+    ).evaluate().isNotEmpty;
+    if (!hasSpinner && !hasSkeleton && !hasAsyncLoading) {
       return;
     }
     await tester.pump(const Duration(milliseconds: 100));
@@ -696,7 +702,10 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
       find.byWidgetPredicate(isBlockingRuntimeProgressIndicator).evaluate().isNotEmpty;
   final hasSkeleton =
       find.byType(SkeletonBox).evaluate().isNotEmpty;
-  if (hasSpinner || hasSkeleton) {
+  final hasAsyncLoading = find.byWidgetPredicate(
+    (widget) => widget is HopeAsyncState && widget.kind == HopeStateKind.loading,
+  ).evaluate().isNotEmpty;
+  if (hasSpinner || hasSkeleton || hasAsyncLoading) {
     throw StateError(
       'Runtime render remained in loading/skeleton state after bounded settle',
     );
@@ -770,16 +779,12 @@ Future<void> _captureRuntimeScreen(
   // can dispose the driver before the Flutter screenshot request. Keep the
   // settle path deterministic and avoid that boundary for this surface.
   if (child is WalletPage) {
-    // WalletPage starts its repository load from initState. A prior runtime
-    // benchmark used 800ms, but the real evidence host proved that baseline
-    // capture can still be on the loading surface at that boundary. Use the
-    // previously proven 1800ms bounded settle and commit several frame turns
-    // before requesting the screenshot; this does not change product behavior.
-    await tester.pump(const Duration(milliseconds: 1800));
-    for (var frame = 0; frame < 6; frame++) {
-      await tester.pump();
-      await Future<void>.delayed(const Duration(milliseconds: 120));
-    }
+    // WalletPage starts its repository load from initState. The runtime host
+    // disables animations, which makes HopeAsyncState render a static loading
+    // surface instead of a spinner; use the canonical bounded settle so the
+    // evidence boundary waits on the actual loading state without changing
+    // product behavior.
+    await _waitForRuntimeRenderToSettle(tester);
     final loadedLabel = locale.languageCode == 'fa'
         ? 'موجودی قابل‌استفاده'
         : 'Available balance';
