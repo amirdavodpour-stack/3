@@ -253,7 +253,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
     return Scaffold(
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 72),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
@@ -262,6 +262,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
             PremiumHeader(
               page: HopePageId.myApplications,
               domain: HopeProductDomain.work,
+              dense: true,
               eyebrow: _t('درخواست‌ها', 'APPLICATIONS'),
               title: _t('درخواست‌های من', 'My applications'),
               subtitle: _t(
@@ -286,7 +287,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             if (!_loading)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -303,7 +304,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   ],
                 ),
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             if (_loading)
               HopeAsyncState(
                 kind: HopeStateKind.loading,
@@ -373,9 +374,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   Widget _applicationCard(HopeApplication item) {
     final color = _statusColor(context, item.status);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(13),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -388,7 +389,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                       : HopeV2Icons.mission,
                   filled: true,
                 ),
-                const SizedBox(width: 11),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,11 +411,11 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 9),
             _timeline(item),
             if (item.status.toUpperCase() == 'ACCEPTED' &&
                 item.jobId.trim().isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -427,7 +428,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ),
               ),
             ],
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
