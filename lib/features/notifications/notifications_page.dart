@@ -309,7 +309,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return Scaffold(
       body: SafeArea(
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 48),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
           child: Column(
             children: [
               PremiumHeader(
