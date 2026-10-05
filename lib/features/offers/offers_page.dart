@@ -103,7 +103,7 @@ class _OffersPageState extends State<OffersPage> {
       body: RefreshIndicator(
         onRefresh: _reload,
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 72),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 56),
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -136,7 +136,7 @@ class _OffersPageState extends State<OffersPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               if (_loading && _items.isEmpty)
                 HopeAsyncState(
                   kind: HopeStateKind.loading,
@@ -204,7 +204,8 @@ class _OffersPageState extends State<OffersPage> {
   Widget _card(HopeOffer o) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
     child: PremiumPanel(
-      padding: const EdgeInsets.all(15),
+      key: ValueKey('offer-card-${o.id}'),
+      padding: const EdgeInsets.all(13),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

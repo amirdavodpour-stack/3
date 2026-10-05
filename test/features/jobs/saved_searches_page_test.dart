@@ -84,6 +84,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Localized search'), findsOneWidget);
+    expect(find.byKey(const ValueKey('saved-search-list')), findsOneWidget);
     expect(find.textContaining('Missions'), findsOneWidget);
     expect(find.textContaining('Specialized'), findsOneWidget);
     expect(find.text('MISSION'), findsNothing);

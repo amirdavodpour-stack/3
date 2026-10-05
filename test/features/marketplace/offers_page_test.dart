@@ -75,6 +75,7 @@ void main() {
         .toList();
 
     expect(texts, contains('مبلغ: 1,234,567 تومان'));
+    expect(find.byKey(const ValueKey('offer-card-o1')), findsOneWidget);
   });
 
   testWidgets('offer cards expose grouped financial semantics',

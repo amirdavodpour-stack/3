@@ -222,7 +222,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(16),
+        key: ValueKey('notification-card-${n.id}'),
+        padding: const EdgeInsets.all(14),
         highlight: unread,
         semanticLabel: n.title,
         child: InkWell(
@@ -309,7 +310,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return Scaffold(
       body: SafeArea(
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           child: Column(
             children: [
               PremiumHeader(
@@ -357,7 +358,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: HopeV2Spacing.lg),
+              const SizedBox(height: HopeV2Spacing.md),
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _load,
@@ -424,7 +425,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               : ListView(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.only(bottom: 32),
+                                  padding: const EdgeInsets.only(bottom: 24),
                                   children: [
                                     ...items.map(_notificationCard),
                                   ],

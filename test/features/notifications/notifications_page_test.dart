@@ -249,6 +249,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('عنوان اعلان'), findsOneWidget);
     expect(find.text('متن اعلان'), findsOneWidget);
+    expect(find.byKey(const ValueKey('notification-card-n1')), findsOneWidget);
     expect(find.text('جدید'), findsOneWidget);
   });
 

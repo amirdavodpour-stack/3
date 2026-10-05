@@ -229,7 +229,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
         label: Text(_t('جست‌وجوی جدید', 'New search')),
       ),
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 104),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
@@ -263,7 +263,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             if (!_loading && _error == null && _items.isNotEmpty)
               PremiumStatCard(
                 label: _t('جست‌وجوهای فعال', 'Saved searches'),
@@ -325,12 +325,13 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
               )
             else
               PremiumPanel(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                key: const ValueKey('saved-search-list'),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   children: _items.map((item) {
                     final busy = _busyId == item.id;
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                       leading: const HopeIconTile(HopeV2Icons.savedSearches, filled: true),
                       title: Text(item.name,
                           style: const TextStyle(fontWeight: FontWeight.w800)),
