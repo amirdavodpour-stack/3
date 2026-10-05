@@ -798,8 +798,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           child: PremiumTag(
                             icon: HopeV2Icons.featured,
                             label: _t(
-                              '\${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% تطبیق',
-                              '\${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% Match',
+                              '${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% تطبیق',
+                              '${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% Match',
                             ),
                             color: Theme.of(context).colorScheme.primary,
                           ),
