@@ -251,6 +251,27 @@ void main() {
     expect(find.text('Stage 2 of 6'), findsOneWidget);
   });
 
+  testWidgets(
+    'compact payment lifecycle remains decision-dense',
+    (tester) async {
+      final repo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'p1',
+          'status': 'HELD',
+          'amount': 1000000,
+          'providerRef': 'ref-1',
+          'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        }));
+      await _pump(tester, repo, ownerId: 'u1', width: 360);
+
+      final flow =
+          find.byKey(const ValueKey('transaction-payment-lifecycle'));
+      expect(flow, findsOneWidget);
+      expect(tester.getSize(flow).height, lessThan(360));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('loading then funded payload shows status, amount and start work',
       (tester) async {
     final repo = _FakeTx()
