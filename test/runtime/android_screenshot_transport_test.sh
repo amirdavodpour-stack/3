@@ -91,8 +91,8 @@ wallet_block="$(sed -n '/if (child is WalletPage)/,/^[[:space:]]*}/p' "$test_fil
 grep -Fq 'await _waitForRuntimeRenderToSettle(tester);' <<<"$wallet_block"
 grep -Fq 'widget is HopeAsyncState && widget.kind == HopeStateKind.loading' "$test_file"
 grep -Fq "print('HOPE_RUNTIME_WALLET_LOADED_STATE_ASSERTED:\$marker');" "$test_file"
-grep -Fq 'Available balance' "$test_file"
-grep -Fq 'موجودی قابل‌استفاده' "$test_file"
+grep -Fq "'Available';" "$test_file"
+grep -Fq "'قابل استفاده';" "$test_file"
 login_block="$(sed -n '/if (child is LoginPage)/,/^[[:space:]]*}/p' "$test_file")"
 # Login uses a bounded timed settle; only an unbounded pumpAndSettle invocation is prohibited.
 grep -Fq "print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:\$marker');" "$test_file"
