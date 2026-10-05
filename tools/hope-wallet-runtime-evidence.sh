@@ -416,61 +416,15 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
     baseline_status=1
   fi
 else
-  baseline_first_status=0
-  baseline_second_status=0
-  baseline_third_status=0
-  baseline_fourth_status=0
-
-  # Wallet is index 7 after the risk-first Login + core discovery pages; isolate it in a fresh Driver/VM-service session.
-  baseline_first_screens=("${baseline_screens[@]:0:7}")
-  baseline_second_screens=("${baseline_screens[@]:7:1}")
-  baseline_third_screens=("${baseline_screens[@]:8:4}")
-  baseline_fourth_screens=("${baseline_screens[@]:12:3}")
-
-  run_host_batch_session baseline-a "${baseline_first_screens[@]}" || baseline_first_status=$?
-  if [ "$baseline_first_status" -eq 0 ] &&
-     ! validate_capture_set "baseline-$CAPTURE_LOCALE-a" "$runner_temp/hope-baseline-a-runtime.log" "${baseline_first_screens[@]}"; then
-    baseline_first_status=1
+  baseline_status=0
+  # Keep the complete locale baseline inside one Driver/VM-service session.
+  # The proven green certification run used this lifecycle; repeated Driver
+  # teardown/startup cycles on the same emulator were followed by ADB offline.
+  run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
+  if [ "$baseline_status" -eq 0 ] &&
+     ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
+    baseline_status=1
   fi
-
-  if [ "$baseline_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL"
-    run_host_batch_session baseline-b "${baseline_second_screens[@]}" || baseline_second_status=$?
-    if [ "$baseline_second_status" -eq 0 ] &&
-       ! validate_capture_set "baseline-$CAPTURE_LOCALE-b" "$runner_temp/hope-baseline-b-runtime.log" "${baseline_second_screens[@]}"; then
-      baseline_second_status=1
-    fi
-  fi
-
-  if [ "$baseline_second_status" -eq 0 ] && [ "$baseline_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL"
-    run_host_batch_session baseline-c "${baseline_third_screens[@]}" || baseline_third_status=$?
-    if [ "$baseline_third_status" -eq 0 ] &&
-       ! validate_capture_set "baseline-$CAPTURE_LOCALE-c" "$runner_temp/hope-baseline-c-runtime.log" "${baseline_third_screens[@]}"; then
-      baseline_third_status=1
-    fi
-  fi
-
-  if [ "$baseline_third_status" -eq 0 ] && [ "$baseline_second_status" -eq 0 ] && [ "$baseline_first_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL"
-    run_host_batch_session baseline-d "${baseline_fourth_screens[@]}" || baseline_fourth_status=$?
-    if [ "$baseline_fourth_status" -eq 0 ] &&
-       ! validate_capture_set "baseline-$CAPTURE_LOCALE-d" "$runner_temp/hope-baseline-d-runtime.log" "${baseline_fourth_screens[@]}"; then
-      baseline_fourth_status=1
-    fi
-  fi
-
-  if [ "$baseline_first_status" -ne 0 ]; then
-    baseline_status="$baseline_first_status"
-  elif [ "$baseline_second_status" -ne 0 ]; then
-    baseline_status="$baseline_second_status"
-  elif [ "$baseline_third_status" -ne 0 ]; then
-    baseline_status="$baseline_third_status"
-  elif [ "$baseline_fourth_status" -ne 0 ]; then
-    baseline_status="$baseline_fourth_status"
-  fi
-fi
-
 if [ "$baseline_status" -ne 0 ]; then
   test_status="$baseline_status"
 else

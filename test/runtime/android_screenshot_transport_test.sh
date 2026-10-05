@@ -74,15 +74,17 @@ grep -Fq 'run_host_batch_session responsive-a' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b' "$script_file"
 grep -Fq 'run_host_batch_session responsive-c' "$script_file"
 grep -Fq 'responsive-c) responsive_batch="3"' "$script_file"
-# Baseline capture is partitioned into four sessions; Wallet is isolated in baseline-b.
-# Wallet evidence uses direct capture immediately after the completed pumpWidget; no timed settle is required.
-grep -Fq 'baseline-c) baseline_batch="c"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-d' "$script_file"
-grep -Fq 'baseline-d) baseline_batch="d"' "$script_file"
-grep -Fq 'baseline_first_screens=("${baseline_screens[@]:0:7}")' "$script_file"
-grep -Fq 'baseline_second_screens=("${baseline_screens[@]:7:1}")' "$script_file"
-grep -Fq 'baseline_third_screens=("${baseline_screens[@]:8:4}")' "$script_file"
-grep -Fq 'baseline_fourth_screens=("${baseline_screens[@]:12:3}")' "$script_file"
+# Baseline capture must remain one Driver/VM-service session; the proven green
+# certification run captured the complete locale baseline without repeated
+# emulator-side teardown/startup cycles.
+grep -Fq 'run_host_batch_session baseline "${baseline_screens[@]}"' "$script_file"
+if grep -Fq 'baseline_first_screens=' "$script_file" ||
+   grep -Fq 'baseline_second_screens=' "$script_file" ||
+   grep -Fq 'baseline_third_screens=' "$script_file" ||
+   grep -Fq 'baseline_fourth_screens=' "$script_file"; then
+  echo "FAIL: baseline evidence must not churn multiple Driver sessions" >&2
+  exit 1
+fi
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
 wallet_block="$(sed -n '/if (child is WalletPage)/,/^[[:space:]]*}/p' "$test_file")"
