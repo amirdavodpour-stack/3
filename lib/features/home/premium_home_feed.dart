@@ -364,7 +364,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               avatarUrl: avatarUrl,
               onOpenMenu: widget.onOpenMenu,
             ),
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.sm),
 
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
