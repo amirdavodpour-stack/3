@@ -986,4 +986,5 @@ void main() {
   );
 
 
+  // Runtime certification trigger: grouped Wave G-2 after compile-scope repair.
 }
