@@ -557,6 +557,8 @@ class _WalletPageState extends State<WalletPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
       return Center(
@@ -619,8 +621,10 @@ class _WalletPageState extends State<WalletPage> {
     }) =>
         Container(
           key: keyName == null ? null : ValueKey(keyName),
-          constraints: BoxConstraints(minHeight: emphasized ? 46 : 44),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          constraints: BoxConstraints(
+          minHeight: emphasized ? (compact ? 42 : 46) : (compact ? 40 : 44),
+        ),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 6 : 7),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: .14),
             borderRadius: BorderRadius.circular(HopeV2Radii.sm),
@@ -640,14 +644,17 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
+              FittedBox(
+                alignment: AlignmentDirectional.centerStart,
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -658,7 +665,7 @@ class _WalletPageState extends State<WalletPage> {
       final scheme = Theme.of(context).colorScheme;
       return Container(
         key: const ValueKey('wallet-balance-hero'),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        padding: EdgeInsets.fromLTRB(10, compact ? 7 : 10, 10, compact ? 8 : 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -683,7 +690,7 @@ class _WalletPageState extends State<WalletPage> {
               children: [
                 const HopeIconTile(
                   HopeV2Icons.wallet,
-                  size: 36,
+                  size: compact ? 32 : 36,
                   filled: true,
                 ),
                 const Spacer(),
@@ -703,7 +710,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 5),
+            SizedBox(height: compact ? 4 : 5),
             Text(
               _t('کل موجودی', 'Total balance'),
               style: const TextStyle(
@@ -711,7 +718,7 @@ class _WalletPageState extends State<WalletPage> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 3),
+            SizedBox(height: compact ? 2 : 3),
             FittedBox(
               alignment: AlignmentDirectional.centerStart,
               fit: BoxFit.scaleDown,
@@ -719,14 +726,14 @@ class _WalletPageState extends State<WalletPage> {
                 _money(wallet.totalBalance),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 26,
+                  fontSize: compact ? 22 : 26,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -.7,
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: compact ? 5 : 6),
             LayoutBuilder(
               builder: (context, constraints) {
                 final columns = constraints.maxWidth < 360 ? 2 : 4;
@@ -801,14 +808,14 @@ class _WalletPageState extends State<WalletPage> {
             : HopeV2Colors.secondary;
         return Expanded(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
+            constraints: const BoxConstraints(minHeight: compact ? 50 : 56),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: onPressed,
                 borderRadius: BorderRadius.circular(HopeV2Radii.md),
                 child: Ink(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 7 : 10),
                   decoration: BoxDecoration(
                     color: color.withValues(
                       alpha: onPressed == null ? .05 : .09,
@@ -823,8 +830,8 @@ class _WalletPageState extends State<WalletPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      HopeIcon(icon, color: color, size: 22, strokeWidth: 1.9),
-                      const SizedBox(height: 6),
+                      HopeIcon(icon, color: color, size: compact ? 20 : 22, strokeWidth: 1.9),
+                      SizedBox(height: compact ? 5 : 6),
                       Text(
                         _t(fa, en),
                         maxLines: 2,
@@ -847,8 +854,9 @@ class _WalletPageState extends State<WalletPage> {
 
       // Runtime certification: mobile-first focal balance + compact financial controls.
       return PremiumPanel(
+        key: const ValueKey('wallet-actions-panel'),
         glass: false,
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(compact ? 8 : 10),
         child: Row(
           children: [
             if (_internalTopUpEnabled)
@@ -884,13 +892,18 @@ class _WalletPageState extends State<WalletPage> {
       child: PremiumPageFrame(
         page: HopePageId.wallet,
         maxWidth: 1020,
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        padding: EdgeInsets.fromLTRB(
+            compact ? 14 : 20,
+            compact ? 12 : 20,
+            compact ? 14 : 20,
+            compact ? 60 : 72,
+          ),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             Container(
               key: const ValueKey('wallet-finance-header'),
-              constraints: const BoxConstraints(minHeight: 64),
+              constraints: BoxConstraints(minHeight: compact ? 52 : 64),
               padding: const EdgeInsetsDirectional.fromSTEB(4, 2, 4, 4),
               child: Row(
                 children: [
@@ -933,7 +946,7 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
             ),
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.sm),
             if (_error != null) ...[
               HopeAsyncState(
                 kind: hopeStateKindForError(_error!),
@@ -961,7 +974,7 @@ class _WalletPageState extends State<WalletPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       hero,
-                      const SizedBox(height: 12),
+                      SizedBox(height: compact ? 8 : 12),
                       actions,
                     ],
                   );
