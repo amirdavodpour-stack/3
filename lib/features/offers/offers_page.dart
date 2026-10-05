@@ -110,6 +110,7 @@ class _OffersPageState extends State<OffersPage> {
               PremiumHeader(
                 page: HopePageId.offers,
                 domain: HopeProductDomain.work,
+                dense: true,
                 eyebrow: _t('پیشنهادها', 'OFFERS'),
                 title: _t('پیشنهادهای کاری', 'Job offers'),
                 subtitle: _t(
