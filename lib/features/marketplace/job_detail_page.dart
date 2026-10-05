@@ -849,7 +849,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       (j.recommendationScore != null ||
                           j.recommendationReasons.isNotEmpty)) ...[
                     const SizedBox(height: 12),
-                    _MatchIntelligence(job: j),
+                    _MatchIntelligence(job: j, compact: compactViewport),
                   ],
                   const SizedBox(height: 12),
                   Text(
@@ -1448,8 +1448,9 @@ class _JobLifecycleCard extends StatelessWidget {
 }
 
 class _MatchIntelligence extends StatelessWidget {
-  const _MatchIntelligence({required this.job});
+  const _MatchIntelligence({required this.job, this.compact = false});
   final HopeJob job;
+  final bool compact;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -1509,6 +1510,7 @@ class _MatchIntelligence extends StatelessWidget {
     const breakdownKeys = ['skills', 'category', 'location', 'salary'];
     final confidence = job.aiRecommendationConfidence;
     final hasComponents = breakdownKeys.any((key) => job.recommendationComponents.containsKey(key));
+    final showSignals = !compact && job.recommendationReasons.isNotEmpty;
 
     return Semantics(
       button: true,
@@ -1520,7 +1522,9 @@ class _MatchIntelligence extends StatelessWidget {
           onTap: () => _showDetails(context),
           child: PremiumPanel(
             key: const ValueKey('opportunity-match-intelligence'),
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            padding: compact
+                ? const EdgeInsets.fromLTRB(8, 8, 8, 7)
+                : const EdgeInsets.fromLTRB(10, 10, 10, 8),
             highlight: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1530,21 +1534,22 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: 56, height: 56,
+                        width: compact ? 50 : 56,
+                        height: compact ? 50 : 56,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            SizedBox.square(dimension: 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.5, color: primary.withValues(alpha: .10))),
-                            SizedBox.square(dimension: 64, child: CircularProgressIndicator(value: value, strokeWidth: 5.5, strokeCap: StrokeCap.round, color: primary)),
+                            SizedBox.square(dimension: compact ? 50 : 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.0, color: primary.withValues(alpha: .10))),
+                            SizedBox.square(dimension: compact ? 58 : 64, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: primary)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
-                              Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 16, height: 1, fontWeight: FontWeight.w900)),
+                              Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
                               Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: primary, letterSpacing: .6)),
                             ]),
                           ],
                         ),
                       ),
-                    if (score != null) const SizedBox(width: 8),
+                    if (score != null) SizedBox(width: compact ? 6 : 8),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
@@ -1552,16 +1557,16 @@ class _MatchIntelligence extends StatelessWidget {
                           const SizedBox(width: 7),
                           Expanded(child: Text(_t(context, 'هوش تطبیق', 'Match intelligence'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
                         ]),
-                        if (fit != null) ...[const SizedBox(height: 4), Text(fit, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: primary, fontWeight: FontWeight.w800))],
-                        if (confidence != null) ...[const SizedBox(height: 4), Text('${(confidence.clamp(0, 1) * 100).round()}% ${_t(context, 'اطمینان', 'confidence')}', key: const ValueKey('match-confidence-note'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: HopeV2Colors.muted))],
+                        if (fit != null) ...[SizedBox(height: compact ? 2 : 4), Text(fit, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: primary, fontWeight: FontWeight.w800))],
+                        if (confidence != null) ...[SizedBox(height: compact ? 2 : 4), Text('${(confidence.clamp(0, 1) * 100).round()}% ${_t(context, 'اطمینان', 'confidence')}', key: const ValueKey('match-confidence-note'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: HopeV2Colors.muted))],
                       ]),
                     ),
                   ],
                 ),
                 if (hasComponents) ...[
-                  const SizedBox(height: 9),
+                  SizedBox(height: compact ? 7 : 9),
                   Text(_t(context, 'تجزیه تطبیق', 'Match breakdown'), style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 8),
+                  SizedBox(height: compact ? 6 : 8),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final columns = constraints.maxWidth >= 320 ? 2 : 1;
@@ -1571,17 +1576,19 @@ class _MatchIntelligence extends StatelessWidget {
                     },
                   ),
                 ],
-                if (job.recommendationReasons.isNotEmpty) ...[
+                if (showSignals) ...[
                   const SizedBox(height: 8),
                   Text(_t(context, 'سیگنال‌های تطبیق', 'Match signals'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w900, color: HopeV2Colors.muted)),
                   const SizedBox(height: 6),
                   Wrap(spacing: 6, runSpacing: 6, children: job.recommendationReasons.take(4).map((r) => StatusPill(_reason(context, r), color: primary, icon: HopeV2Icons.completed)).toList(growable: false)),
                 ],
-                const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(child: Text(_t(context, 'سیگنال‌های واقعی پیشنهاد برای همین فرصت', 'Live recommendation signals for this opportunity'), style: Theme.of(context).textTheme.bodySmall)),
-                  Text(_t(context, 'جزئیات', 'Details'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: primary, fontWeight: FontWeight.w900)),
-                ]),
+                if (!compact) ...[
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: Text(_t(context, 'سیگنال‌های واقعی پیشنهاد برای همین فرصت', 'Live recommendation signals for this opportunity'), style: Theme.of(context).textTheme.bodySmall)),
+                    Text(_t(context, 'جزئیات', 'Details'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: primary, fontWeight: FontWeight.w900)),
+                  ]),
+                ],
               ],
             ),
           ),
@@ -1595,7 +1602,7 @@ class _MatchIntelligence extends StatelessWidget {
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
       key: ValueKey('match-breakdown-${key}'),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 4 : 5),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),
