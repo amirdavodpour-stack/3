@@ -688,7 +688,7 @@ class _WalletPageState extends State<WalletPage> {
             Row(
               key: const ValueKey('wallet-provider-status'),
               children: [
-                const HopeIconTile(
+                HopeIconTile(
                   HopeV2Icons.wallet,
                   size: compact ? 32 : 36,
                   filled: true,
@@ -724,7 +724,7 @@ class _WalletPageState extends State<WalletPage> {
               fit: BoxFit.scaleDown,
               child: Text(
                 _money(wallet.totalBalance),
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: compact ? 22 : 26,
                   height: 1.0,
