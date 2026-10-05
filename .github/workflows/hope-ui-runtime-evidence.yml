@@ -201,3 +201,4 @@ jobs:
 # [runtime-capture-fa] 8GiB emulator RAM transport validation at exact HEAD.
 
 # [runtime-capture-fa] validate 8GiB runner after stale golden contract correction.
+# [runtime-capture-fa] validate monolithic baseline lifecycle after 8GiB runner stabilization.
