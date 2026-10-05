@@ -16,7 +16,7 @@ extension on _TransactionPageState {
 
     return PremiumPanel(
       key: const ValueKey('transaction-payment-lifecycle'),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
       highlight: paymentStatus == 'HELD' ||
           paymentStatus == 'RELEASED' ||
           paymentStatus == 'HOLD_PENDING' ||
@@ -40,13 +40,13 @@ extension on _TransactionPageState {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           _lifecycleProgress(
             context,
             current: current,
             total: en.length,
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 5),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
               context,
@@ -159,15 +159,15 @@ extension on _TransactionPageState {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: 30,
+            width: 28,
             child: Column(
               children: [
                 AnimatedContainer(
                   duration: MediaQuery.disableAnimationsOf(context)
                       ? Duration.zero
                       : HopeV2Motion.fast,
-                  width: 22,
-                  height: 22,
+                  width: 20,
+                  height: 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: fill,
@@ -199,13 +199,13 @@ extension on _TransactionPageState {
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: 4),
               child: Container(
-                constraints: const BoxConstraints(minHeight: 34),
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                constraints: const BoxConstraints(minHeight: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: active
                       ? scheme.primary.withValues(alpha: .07)
