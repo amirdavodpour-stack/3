@@ -77,7 +77,7 @@ class _JobsResultsSliver extends StatelessWidget {
 
             final recommendedLabel = Text(
               _t(context, 'پیشنهادشده برای شما', 'Recommended for you'),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
             );
@@ -125,7 +125,7 @@ class _JobsResultsSliver extends StatelessWidget {
                   variant: OpportunityCardVariant.featuredScan,
                 ),
                 if (remaining.isNotEmpty)
-                  const SizedBox(height: HopeV2Spacing.xl),
+                  const SizedBox(height: HopeV2Spacing.lg),
                 if (remaining.isNotEmpty)
                   Text(
                     _t(context, 'فرصت‌های بیشتر', 'More opportunities'),
