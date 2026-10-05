@@ -676,7 +676,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final canViewFinance = isOwner || isProvider;
     final collaborationChatOpen = (isOwner || isProvider) && ['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].contains(j.status?.toUpperCase());
 
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final compactViewport =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final heroBudgetRaw = isJob ? (j.monthlySalary ?? j.budgetMin) : j.budgetMin;
     final heroBudget = heroBudgetRaw == null
         ? null
@@ -691,7 +692,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
       extendBodyBehindAppBar: true,
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Center(
             heightFactor: 1,
             child: ConstrainedBox(
@@ -770,7 +771,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
-                  height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 160 : 216,
+                  height: compactViewport ? 148 : 188,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
@@ -797,8 +798,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           child: PremiumTag(
                             icon: HopeV2Icons.featured,
                             label: _t(
-                              '${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% تطبیق',
-                              '${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% Match',
+                              '\${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% تطبیق',
+                              '\${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% Match',
                             ),
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -812,28 +813,30 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             color: HopeV2Colors.secondary,
                           ),
                         ),
-                      PremiumTag(
-                        label: isJob
-                            ? HopeCopy.of(context).copy_job_ce2feba
-                            : HopeCopy.of(context).copy_mission_fb4c5e1,
-                        color: isJob
-                            ? secondaryAccent(context)
-                            : AppColors.primary,
-                        icon: isJob
-                            ? HopeV2Icons.job
-                            : HopeV2Icons.mission,
-                      ),
-                      PremiumTag(
-                        label: visibility == 'SPECIALIZED'
-                            ? HopeCopy.of(context).copy_specialized_5d1ca04
-                            : HopeCopy.of(context).copy_public_21e97be,
-                        color: visibility == 'SPECIALIZED'
-                            ? AppColors.warning
-                            : secondaryAccent(context),
-                        icon: visibility == 'SPECIALIZED'
-                            ? HopeV2Icons.secure
-                            : HopeV2Icons.insights,
-                      ),
+                      if (!compactViewport)
+                        PremiumTag(
+                          label: isJob
+                              ? HopeCopy.of(context).copy_job_ce2feba
+                              : HopeCopy.of(context).copy_mission_fb4c5e1,
+                          color: isJob
+                              ? secondaryAccent(context)
+                              : AppColors.primary,
+                          icon: isJob
+                              ? HopeV2Icons.job
+                              : HopeV2Icons.mission,
+                        ),
+                      if (!compactViewport)
+                        PremiumTag(
+                          label: visibility == 'SPECIALIZED'
+                              ? HopeCopy.of(context).copy_specialized_5d1ca04
+                              : HopeCopy.of(context).copy_public_21e97be,
+                          color: visibility == 'SPECIALIZED'
+                              ? AppColors.warning
+                              : secondaryAccent(context),
+                          icon: visibility == 'SPECIALIZED'
+                              ? HopeV2Icons.secure
+                              : HopeV2Icons.insights,
+                        ),
                       if (j.city != null)
                         PremiumTag(
                           label: j.city!,
@@ -1516,7 +1519,8 @@ class _MatchIntelligence extends StatelessWidget {
           borderRadius: BorderRadius.circular(HopeV2Radii.lg),
           onTap: () => _showDetails(context),
           child: PremiumPanel(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+            key: const ValueKey('opportunity-match-intelligence'),
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
             highlight: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1526,21 +1530,21 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: 64, height: 64,
+                        width: 56, height: 56,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            SizedBox.square(dimension: 64, child: CircularProgressIndicator(value: 1, strokeWidth: 5.5, color: primary.withValues(alpha: .10))),
+                            SizedBox.square(dimension: 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.5, color: primary.withValues(alpha: .10))),
                             SizedBox.square(dimension: 64, child: CircularProgressIndicator(value: value, strokeWidth: 5.5, strokeCap: StrokeCap.round, color: primary)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
-                              Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 17, height: 1, fontWeight: FontWeight.w900)),
+                              Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 16, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
                               Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: primary, letterSpacing: .6)),
                             ]),
                           ],
                         ),
                       ),
-                    if (score != null) const SizedBox(width: 11),
+                    if (score != null) const SizedBox(width: 8),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
@@ -1555,7 +1559,7 @@ class _MatchIntelligence extends StatelessWidget {
                   ],
                 ),
                 if (hasComponents) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 9),
                   Text(_t(context, 'تجزیه تطبیق', 'Match breakdown'), style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
                   const SizedBox(height: 8),
                   LayoutBuilder(
@@ -1568,7 +1572,7 @@ class _MatchIntelligence extends StatelessWidget {
                   ),
                 ],
                 if (job.recommendationReasons.isNotEmpty) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(_t(context, 'سیگنال‌های تطبیق', 'Match signals'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w900, color: HopeV2Colors.muted)),
                   const SizedBox(height: 6),
                   Wrap(spacing: 6, runSpacing: 6, children: job.recommendationReasons.take(4).map((r) => StatusPill(_reason(context, r), color: primary, icon: HopeV2Icons.completed)).toList(growable: false)),
@@ -1591,7 +1595,7 @@ class _MatchIntelligence extends StatelessWidget {
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
       key: ValueKey('match-breakdown-${key}'),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),
