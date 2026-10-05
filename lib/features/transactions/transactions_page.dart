@@ -400,6 +400,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 child: ListView(
                   children: [
                     PremiumHeader(
+              dense: true,
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
