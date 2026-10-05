@@ -320,6 +320,7 @@ void main() {
     final hero = find.byType(PremiumHero);
     expect(match, findsOneWidget);
     expect(tester.getSize(hero).height, lessThanOrEqualTo(160));
+    expect(find.text('94% Match'), findsOneWidget);
     expect(tester.getTopLeft(match).dy, lessThan(720));
     expect(tester.takeException(), isNull);
   });
