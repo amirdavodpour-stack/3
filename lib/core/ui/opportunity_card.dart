@@ -751,7 +751,7 @@ class OpportunityCard extends StatelessWidget {
       if (mode != null)
         _metaText(
           context,
-          HopeV2Icons.work,
+          HopeV2Icons.workshop,
           mode,
           secondaryAccent(context),
         ),
