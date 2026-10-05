@@ -233,6 +233,25 @@ void main() {
     expect(repo.calls, isEmpty);
   });
 
+  testWidgets(
+      'create opportunity type choices stay side by side at usable mobile width',
+      (tester) async {
+    final repo = _FakeMarket();
+    await _pump(tester, repo, width: 390);
+    await _open(tester);
+
+    final mission = find.text('Mission');
+    final job = find.text('Job');
+    expect(mission, findsOneWidget);
+    expect(job, findsOneWidget);
+    expect(
+      (tester.getTopLeft(job).dy - tester.getTopLeft(mission).dy).abs(),
+      lessThan(50),
+    );
+    expect(find.text('Step 1 of 5'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('mission budget fields stack on narrow screens',
       (tester) async {
     final repo = _FakeMarket();
