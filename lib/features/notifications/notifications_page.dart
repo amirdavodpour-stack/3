@@ -315,6 +315,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               PremiumHeader(
                 page: HopePageId.notifications,
                 domain: HopeProductDomain.communication,
+                dense: true,
                 eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
                 title: _t('اعلان‌ها', 'Notifications'),
                 subtitle: unreadCount > 0
