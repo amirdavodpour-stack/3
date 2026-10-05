@@ -436,7 +436,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
