@@ -7,21 +7,25 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets(
-      'standard opportunity cards stay scan-dense and avoid repeated detail panels',
+      'standard opportunity cards expose the Wave F 2.0 decision anatomy',
       (tester) async {
     final job = HopeJob.fromMap({
-      'id': 'job-standard-dense',
-      'title': 'طراحی اپ',
-      'description': 'این توضیح باید در کارت اسکن استاندارد پنهان بماند.',
+      'id': 'job-standard-v2',
+      'title': 'طراحی اپ محصول',
+      'description': 'این توضیح در کارت اسکن نمایش داده نمی‌شود.',
       'categoryId': 'design',
-      'category': 'طراحی',
+      'category': 'طراحی محصول',
       'jobType': 'FIXED',
       'budgetMin': '1000000',
       'budgetMax': '1500000',
       'kind': 'MISSION',
       'visibility': 'PUBLIC',
       'status': 'OPEN',
+      'city': 'تهران',
       'recommendationScore': 0.91,
+      'companyName': 'استودیو هُپ',
+      'workMode': 'REMOTE',
+      'imageUrl': 'https://example.com/opportunity.jpg',
       'recommendationReasons': ['SKILL_MATCH', 'CATEGORY_MATCH'],
     });
 
@@ -35,26 +39,35 @@ void main() {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
+        theme: ThemeData(brightness: Brightness.dark),
         home: Scaffold(
-          body: OpportunityCard(
-            job: job,
-            variant: OpportunityCardVariant.standard,
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.standard,
+            ),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('طراحی اپ'), findsOneWidget);
-    expect(find.text('دلایل تطابق'), findsNothing);
-    expect(find.text('بودجه ماموریت'), findsNothing);
+    expect(find.text('طراحی اپ محصول'), findsOneWidget);
+    expect(find.text('استودیو هُپ'), findsOneWidget);
+    expect(find.text('91% تطابق'), findsOneWidget);
+    expect(find.text('دورکاری'), findsOneWidget);
+    expect(find.text('تهران'), findsOneWidget);
     expect(find.text('1,000,000 – 1,500,000 تومان'), findsOneWidget);
+    expect(find.text('طراحی محصول'), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
+    expect(find.text('دلایل تطابق'), findsNothing);
+    expect(find.text('این توضیح در کارت اسکن نمایش داده نمی‌شود.'), findsNothing);
     expect(
       tester.getSize(find.byType(OpportunityCard)).height,
-      lessThan(180),
+      lessThan(280),
     );
   });
-
 
   testWidgets('featured opportunity media header gets an editorial focal height on mobile',
       (tester) async {
@@ -209,7 +222,7 @@ void main() {
       expect(find.text('94% تطابق'), findsOneWidget);
       expect(
         tester.getSize(find.byType(OpportunityCard)).height,
-        lessThan(180),
+        lessThan(280),
       );
     },
   );
