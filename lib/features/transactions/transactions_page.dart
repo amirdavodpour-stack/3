@@ -248,6 +248,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             ),
             const SizedBox(height: 10),
             PremiumLifecycle(
+              compact: true,
               steps: _stepsForStatus(status),
               title: _t('مسیر همکاری', 'Work flow'),
               subtitle: _t(
