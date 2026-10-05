@@ -322,6 +322,8 @@ void main() {
     expect(tester.getSize(hero).height, lessThanOrEqualTo(160));
     expect(find.text('94% Match'), findsOneWidget);
     expect(tester.getTopLeft(match).dy, lessThan(720));
+    expect(tester.getSize(match).height, lessThan(300));
+    expect(find.text('Match signals'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
