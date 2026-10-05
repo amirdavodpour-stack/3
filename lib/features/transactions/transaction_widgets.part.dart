@@ -15,7 +15,8 @@ extension on _TransactionPageState {
     ];
 
     return PremiumPanel(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 9),
+      key: const ValueKey('transaction-payment-lifecycle'),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       highlight: paymentStatus == 'HELD' ||
           paymentStatus == 'RELEASED' ||
           paymentStatus == 'HOLD_PENDING' ||
@@ -39,13 +40,13 @@ extension on _TransactionPageState {
               ),
             ],
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 6),
           _lifecycleProgress(
             context,
             current: current,
             total: en.length,
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: 7),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
               context,
@@ -125,7 +126,7 @@ extension on _TransactionPageState {
         ClipRRect(
           borderRadius: BorderRadius.circular(HopeV2Radii.sm),
           child: LinearProgressIndicator(
-            minHeight: 5,
+            minHeight: 4,
             value: progress,
             backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .55),
             valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
@@ -158,15 +159,15 @@ extension on _TransactionPageState {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: 34,
+            width: 30,
             child: Column(
               children: [
                 AnimatedContainer(
                   duration: MediaQuery.disableAnimationsOf(context)
                       ? Duration.zero
                       : HopeV2Motion.fast,
-                  width: 25,
-                  height: 25,
+                  width: 22,
+                  height: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: fill,
@@ -178,7 +179,7 @@ extension on _TransactionPageState {
                   ),
                   child: HopeIcon(
                     completed ? HopeV2Icons.completed : icon,
-                    size: 14,
+                    size: 13,
                     color: completed ? scheme.onPrimary : color,
                     strokeWidth: 1.9,
                   ),
@@ -399,6 +400,7 @@ extension on _TransactionPageState {
                   'وضعیت پرداخت، مسیر انجام کار و اقدام بعدی را در یک نما ببینید.',
                   'Review payment state, the work lifecycle, and the next allowed action in one view.',
                 ),
+                dense: true,
                 trailing: PremiumIconButton(
                   icon: Localizations.localeOf(context).languageCode == 'en'
                       ? HopeV2Icons.arrowLeft
@@ -407,7 +409,7 @@ extension on _TransactionPageState {
                   onPressed: () => Navigator.maybePop(context),
                 ),
               ),
-              const SizedBox(height: HopeV2Spacing.md),
+              const SizedBox(height: HopeV2Spacing.sm),
               Expanded(
                 child: RefreshIndicator(
             onRefresh: refresh,
@@ -480,7 +482,7 @@ extension on _TransactionPageState {
               ],
               const SizedBox(height: 12),
               PremiumPanel(
-                padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                 highlight: status == 'HELD' ||
                     status == 'RELEASED' ||
                     status == 'HOLD_PENDING' ||
@@ -517,7 +519,7 @@ extension on _TransactionPageState {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
                       HopeCopy.of(context).copy_amount_6400812,
                       style: Theme.of(context).textTheme.bodySmall,

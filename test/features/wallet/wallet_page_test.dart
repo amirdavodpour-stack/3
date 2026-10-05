@@ -933,6 +933,14 @@ void main() {
     final header = find.byKey(const ValueKey('wallet-finance-header'));
     expect(header, findsOneWidget);
     expect(tester.getSize(header).height, lessThan(76));
+
+    expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wallet-provider-status')), findsOneWidget);
+    final availableMetric =
+        find.byKey(const ValueKey('wallet-balance-metric-available'));
+    expect(availableMetric, findsOneWidget);
+    expect(tester.getSize(availableMetric).height, greaterThanOrEqualTo(46));
+
     expect(tester.takeException(), isNull);
   });
 

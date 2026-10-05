@@ -13,6 +13,7 @@ import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
 import 'package:hope_mobile/features/transactions/transaction_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -238,6 +239,11 @@ void main() {
     await _pump(tester, repo, ownerId: 'u1');
 
     expect(find.text('Financial summary'), findsOneWidget);
+    final header = tester.widget<PremiumHeader>(
+      find.byType(PremiumHeader).first,
+    );
+    expect(header.dense, isTrue);
+    expect(find.byKey(const ValueKey('transaction-payment-lifecycle')), findsOneWidget);
     expect(find.text('Payment status'), findsOneWidget);
     expect(find.text('Payment & job flow'), findsOneWidget);
     expect(find.text('Protected by HOPE'), findsOneWidget);

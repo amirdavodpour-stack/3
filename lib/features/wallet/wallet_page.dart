@@ -613,11 +613,14 @@ class _WalletPageState extends State<WalletPage> {
     Widget walletHeroMetric(
       BuildContext context,
       String label,
-      String value,
-    ) =>
+      String value, {
+      String? keyName,
+      bool emphasized = false,
+    }) =>
         Container(
-          constraints: const BoxConstraints(minHeight: 50),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          key: keyName == null ? null : ValueKey(keyName),
+          constraints: BoxConstraints(minHeight: emphasized ? 46 : 44),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: .14),
             borderRadius: BorderRadius.circular(HopeV2Radii.sm),
@@ -654,6 +657,7 @@ class _WalletPageState extends State<WalletPage> {
     Widget balanceHero() {
       final scheme = Theme.of(context).colorScheme;
       return Container(
+        key: const ValueKey('wallet-balance-hero'),
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
@@ -661,9 +665,9 @@ class _WalletPageState extends State<WalletPage> {
             begin: AlignmentDirectional.topStart,
             end: AlignmentDirectional.bottomEnd,
             colors: [
-              Color(0xFF15182D),
-              Color(0xFF25215F),
-              Color(0xFF0F1421),
+              Color(0xFF121726),
+              Color(0xFF1B2748),
+              Color(0xFF0E131E),
             ],
             stops: [0, .58, 1],
           ),
@@ -675,13 +679,20 @@ class _WalletPageState extends State<WalletPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              key: const ValueKey('wallet-provider-status'),
               children: [
                 const HopeIconTile(
                   HopeV2Icons.wallet,
-                  size: 40,
+                  size: 36,
                   filled: true,
                 ),
                 const Spacer(),
+                PremiumTag(
+                  icon: HopeV2Icons.secure,
+                  label: _providerLabel('INTERNAL'),
+                  color: scheme.tertiary,
+                ),
+                const SizedBox(width: 6),
                 PremiumTag(
                   icon: wallet.isActive
                       ? HopeV2Icons.verified
@@ -708,48 +719,49 @@ class _WalletPageState extends State<WalletPage> {
                 _money(wallet.totalBalance),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 23,
+                  fontSize: 26,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -.7,
                 ),
               ),
             ),
-            const SizedBox(height: 5),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                PremiumTag(
-                  icon: HopeV2Icons.secure,
-                  label: _providerLabel('INTERNAL'),
-                  color: scheme.tertiary,
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 6),
             LayoutBuilder(
               builder: (context, constraints) {
                 final columns = constraints.maxWidth < 360 ? 2 : 4;
                 const gap = 8.0;
                 final width =
                     (constraints.maxWidth - gap * (columns - 1)) / columns;
-                final metrics = <({String label, String value})>[
+                final metrics = <({
+                  String key,
+                  String label,
+                  String value,
+                  bool emphasized,
+                })>[
                   (
+                    key: 'wallet-balance-metric-available',
                     label: _t('قابل استفاده', 'Available'),
                     value: _money(wallet.availableBalance),
+                    emphasized: true,
                   ),
                   (
+                    key: 'wallet-balance-metric-protected',
                     label: _t('محافظت‌شده', 'Protected'),
                     value: _money(wallet.lockedBalance),
+                    emphasized: false,
                   ),
                   (
+                    key: 'wallet-balance-metric-pending',
                     label: _t('برداشت در انتظار', 'Pending withdrawal'),
                     value: _money(_pendingPayoutAmount),
+                    emphasized: false,
                   ),
                   (
+                    key: 'wallet-balance-metric-requests',
                     label: _t('درخواست‌های برداشت', 'Withdrawal requests'),
                     value: '$_pendingPayoutCount',
+                    emphasized: false,
                   ),
                 ];
                 return Wrap(
@@ -763,6 +775,8 @@ class _WalletPageState extends State<WalletPage> {
                           context,
                           metric.label,
                           metric.value,
+                          keyName: metric.key,
+                          emphasized: metric.emphasized,
                         ),
                       ),
                   ],
@@ -787,7 +801,7 @@ class _WalletPageState extends State<WalletPage> {
             : HopeV2Colors.secondary;
         return Expanded(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 60),
+            constraints: const BoxConstraints(minHeight: 56),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
@@ -834,7 +848,7 @@ class _WalletPageState extends State<WalletPage> {
       // Runtime certification: mobile-first focal balance + compact financial controls.
       return PremiumPanel(
         glass: false,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Row(
           children: [
             if (_internalTopUpEnabled)
