@@ -277,6 +277,33 @@ void main() {
     expect(find.text('View financial flow'), findsNothing);
   });
 
+  testWidgets('match breakdown compresses into a two-column decision grid on compact mobile',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await _pump(tester, job: _job());
+
+    final skills = find.byKey(const ValueKey('match-breakdown-skills'));
+    final category = find.byKey(const ValueKey('match-breakdown-category'));
+    final location = find.byKey(const ValueKey('match-breakdown-location'));
+    final salary = find.byKey(const ValueKey('match-breakdown-salary'));
+    expect(skills, findsOneWidget);
+    expect(category, findsOneWidget);
+    expect(location, findsOneWidget);
+    expect(salary, findsOneWidget);
+    expect(
+      (tester.getTopLeft(category).dy - tester.getTopLeft(skills).dy).abs(),
+      lessThan(90),
+    );
+    expect(
+      (tester.getTopLeft(salary).dy - tester.getTopLeft(location).dy).abs(),
+      lessThan(90),
+    );
+  });
+
   testWidgets('opportunity hero preserves a stronger editorial focal height',
       (tester) async {
     await _pump(tester, job: _job());
