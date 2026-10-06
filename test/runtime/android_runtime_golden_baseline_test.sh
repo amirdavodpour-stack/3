@@ -93,6 +93,18 @@ if grep -Fq '&& test -s "$evidence_dir/create-job-fa-rtl.png"' "$runtime"; then
 fi
 require_line "$runtime" 'duplicate-png-hash'
 
+# Wave I regression guard: the work/finance focus strip must consume counts
+# from the surrounding build scope, not a nested LayoutBuilder, and its panel
+# padding must remain EdgeInsets-compatible with PremiumPanel.
+transactions_file="lib/features/transactions/transactions_page.dart"
+layout_line="$(grep -n '^[[:space:]]*LayoutBuilder(' "$transactions_file" | head -n1 | cut -d: -f1)"
+active_count_line="$(grep -n 'final activeCount = _countWorkCenterActive(items);' "$transactions_file" | head -n1 | cut -d: -f1)"
+if [[ -z "$layout_line" || -z "$active_count_line" || "$active_count_line" -ge "$layout_line" ]]; then
+  printf 'FAIL: transactions visual-wave counts are scoped inside LayoutBuilder; they must be available to the focus strip.\\n' >&2
+  exit 1
+fi
+require_line "$transactions_file" 'padding: EdgeInsets.fromLTRB(12, 10, 12, 10),'
+
 echo "PASS: Android runtime screenshot baseline contract is locked."
 
 # [runtime-capture-fa] validate Vulkan-disabled emulator capture after native surface-conversion failure.
