@@ -28,7 +28,13 @@ part 'jobs_filter_bar.part.dart';
 ApplicationRegistry _applicationRegistry(BuildContext context) => applicationRegistryOf(context);
 
 class JobsPage extends StatefulWidget {
-  const JobsPage({super.key});
+  const JobsPage({
+    super.key,
+    this.showPrimaryNavigation = true,
+  });
+
+  final bool showPrimaryNavigation;
+
   @override
   State<JobsPage> createState() => _JobsPageState();
 }
@@ -331,11 +337,15 @@ class _JobsPageState extends State<JobsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => PremiumPrimaryNavigationScaffold(
-        selectedIndex: 1,
-        onDestinationSelected: (index) => _navigatePrimary(context, index),
-        child: _buildContent(context),
-      );
+  Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    if (!widget.showPrimaryNavigation) return content;
+    return PremiumPrimaryNavigationScaffold(
+      selectedIndex: 1,
+      onDestinationSelected: (index) => _navigatePrimary(context, index),
+      child: content,
+    );
+  }
 
   void _navigatePrimary(BuildContext context, int index) {
     if (index == 1) return;
