@@ -38,9 +38,9 @@ class HopeV2Colors {
   static const danger = Color(0xFFEF4444);
   static const dangerDark = Color(0xFFF87171);
   static const softPrimary = Color(0xFFE0E7FF);
-  static const darkBackground = Color(0xFF0B0F18);
+  static const darkBackground = Color(0xFF070A12);
   static const darkSurface = Color(0xFF0F111A);
-  static const darkCard = Color(0xFF131A2B);
+  static const darkCard = Color(0xFF111827);
   static const darkText = Color(0xFFF8FAFC);
   static const darkMuted = Color(0xFFA5ADBD);
 
