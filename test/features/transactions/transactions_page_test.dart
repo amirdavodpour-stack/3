@@ -272,4 +272,6 @@ void main() {
     await _pump(tester, repo);
     expect(find.text('پروژه payment-unavailable'), findsOneWidget);
   });
+
+  // Runtime certification trigger: grouped Wave G-3B Create + Work Center.
 }
