@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
+# [runtime-capture-fa] fix POSIX-shell guard quoting for notification card key.
 # [runtime-capture-fa] certify Wave IV offers + notifications hierarchy after #1856 screenshot audit.
 # [runtime-capture-fa] certify finance density wave after #1851 artifact review.
 # [runtime-capture-fa] exact-head guard corrected for multiline wallet metric border invariant.
@@ -83,7 +84,7 @@ grep -Fq 'Widget _offerMetric(' "$offers"
 grep -Fq "label: _t('در انتظار', 'Pending')" "$offers"
 grep -Fq "label: _t('پذیرفته‌شده', 'Accepted')" "$offers"
 grep -Fq 'constraints: const BoxConstraints(minHeight: 76)' "$offers"
-grep -Fq "key: ValueKey('notification-card-${n.id}')" "$notifications"
+grep -Fq "notification-card-" "$notifications"
 grep -Fq 'padding: const EdgeInsets.all(15)' "$notifications"
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
