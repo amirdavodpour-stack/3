@@ -223,7 +223,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
       padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
         key: ValueKey('notification-card-${n.id}'),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
+        quiet: !unread,
         highlight: unread,
         semanticLabel: n.title,
         child: InkWell(
