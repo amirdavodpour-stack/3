@@ -1059,7 +1059,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
             SizedBox(height: compact ? 8 : 12),
-            if (_visibleTransactions().isEmpty
+            if (_visibleTransactions().isEmpty)
               HopeAsyncState(
                 kind: HopeStateKind.empty,
                 title: _t('تراکنشی پیدا نشد', 'No transactions found'),

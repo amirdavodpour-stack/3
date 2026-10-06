@@ -848,7 +848,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (j.isRecommended &&
                       (j.recommendationScore != null ||
                           j.recommendationReasons.isNotEmpty)) ...[
-                    const SizedBox(height: compactViewport ? 8 : 12),
+                    SizedBox(height: compactViewport ? 8 : 12),
                     if (compactViewport)
                       ConstrainedBox(
                         key: const ValueKey(
