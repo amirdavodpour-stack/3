@@ -203,7 +203,7 @@ class _OffersPageState extends State<OffersPage> {
                       context,
                       label: _t('همه پیشنهادها', 'All offers'),
                       value: '${all.length}',
-                      icon: HopeV2Icons.briefcase,
+                      icon: HopeV2Icons.workshop,
                     ),
                     const SizedBox(width: 8),
                     _offerMetric(
@@ -211,7 +211,7 @@ class _OffersPageState extends State<OffersPage> {
                       label: _t('در انتظار', 'Pending'),
                       value: '$pendingCount',
                       valueColor: pendingCount > 0 ? AppColors.warning : null,
-                      icon: HopeV2Icons.clock,
+                      icon: HopeV2Icons.pending,
                     ),
                     const SizedBox(width: 8),
                     _offerMetric(
