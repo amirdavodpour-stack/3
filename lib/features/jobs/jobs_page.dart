@@ -1,4 +1,4 @@
-import '../../core/router/app_router.dart';
+import '../../core/router/app_routes.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
