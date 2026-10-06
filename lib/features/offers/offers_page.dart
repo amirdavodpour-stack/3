@@ -205,7 +205,8 @@ class _OffersPageState extends State<OffersPage> {
     padding: const EdgeInsets.only(bottom: 10),
     child: PremiumPanel(
       key: ValueKey('offer-card-${o.id}'),
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(12),
+      quiet: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
