@@ -139,6 +139,25 @@ void main() {
     expect(actionTop, greaterThan(titleTop));
   });
 
+  testWidgets("quiet premium panel preserves accessible content without card dependency",
+      (tester) async {
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: PremiumPanel(
+            quiet: true,
+            semanticLabel: "secondary surface",
+            child: Text("Secondary content"),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("Secondary content"), findsOneWidget);
+    expect(find.bySemanticsLabel("secondary surface"), findsOneWidget);
+  });
+
   testWidgets("pressable scale exposes button semantics", (tester) async {
     var tapped = false;
 
