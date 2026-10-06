@@ -56,6 +56,20 @@ grep -Fq 'system-images/android-35/default/x86_64' ".github/workflows/hope-ui-ru
 grep -Fq 'hope-android-sdk-api35-cmake3.22.1-default' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'hope-android-avd-api35-default-pixel2' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'api-level: 35' ".github/workflows/hope-ui-runtime-evidence.yml"
+
+# Wave III finance-density guard: compact work-center metrics and lighter wallet secondary metrics.
+transactions="lib/features/transactions/transactions_page.dart"
+wallet="lib/features/wallet/wallet_page.dart"
+test -f "$transactions"
+test -f "$wallet"
+grep -Fq 'Widget _workCenterMetric(' "$transactions"
+if grep -Fq 'PremiumStatCard(' "$transactions"; then
+  echo "FAIL: Work & finance center still uses heavyweight stat cards in the runtime-certified surface" >&2
+  exit 1
+fi
+grep -Fq 'final metricWidth = constraints.maxWidth < 420 ? 106.0 : 132.0;' "$transactions"
+grep -Fq 'fontSize: emphasized ? 14 : 11.5' "$wallet"
+grep -Fq 'border: emphasized ? Border.all(' "$wallet"
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
