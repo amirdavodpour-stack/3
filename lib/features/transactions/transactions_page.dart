@@ -444,6 +444,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   padding: EdgeInsets.zero,
                   children: [
                     PremiumHeader(
+              dense: true,
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
