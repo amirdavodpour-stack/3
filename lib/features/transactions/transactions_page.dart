@@ -1,3 +1,4 @@
+import '../../core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
@@ -299,7 +300,34 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PremiumPrimaryNavigationScaffold(
+        selectedIndex: 2,
+        onDestinationSelected: (index) => _navigatePrimary(context, index),
+        child: _buildContent(context),
+      );
+
+  void _navigatePrimary(BuildContext context, int index) {
+    if (index == 2) return;
+    if (index == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AppRouter()),
+        (_) => false,
+      );
+      return;
+    }
+    final route = switch (index) {
+      1 => HopeRoutes.jobs(),
+      2 => HopeRoutes.transactions(),
+      3 => HopeRoutes.walletFromContext(context),
+      4 => HopeRoutes.profile(),
+      _ => null,
+    };
+    if (route != null) {
+      Navigator.of(context).pushReplacement(route);
+    }
+  }
+
+  Widget _buildContent(BuildContext context) {
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
       return PremiumPageFrame(
