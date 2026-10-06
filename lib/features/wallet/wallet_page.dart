@@ -665,9 +665,17 @@ class _WalletPageState extends State<WalletPage> {
         ),
           padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 6 : 7),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: .14),
-            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
-            border: Border.all(color: Colors.white.withValues(alpha: .10)),
+            color: emphasized
+                ? HopeV2Colors.primary.withValues(alpha: .18)
+                : Colors.white.withValues(alpha: .035),
+            borderRadius: BorderRadius.circular(
+              emphasized ? HopeV2Radii.md : HopeV2Radii.sm,
+            ),
+            border: Border.all(
+              color: emphasized
+                  ? HopeV2Colors.primary.withValues(alpha: .30)
+                  : Colors.white.withValues(alpha: .07),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -676,10 +684,10 @@ class _WalletPageState extends State<WalletPage> {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                style: TextStyle(
+                  color: emphasized ? Colors.white : Colors.white70,
+                  fontSize: emphasized ? 10.5 : 10,
+                  fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 2),
@@ -689,9 +697,9 @@ class _WalletPageState extends State<WalletPage> {
                 child: Text(
                   value,
                   maxLines: 1,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 13,
+                    fontSize: emphasized ? 14 : 12.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
