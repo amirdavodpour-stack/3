@@ -353,8 +353,8 @@ class _JobsFilterHeader extends StatelessWidget {
     );
     final resultLabel = Container(
       key: const ValueKey('hope-explore-result-count'),
-      constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-      padding: const EdgeInsetsDirectional.fromSTEB(11, 7, 11, 7),
+      constraints: const BoxConstraints(minHeight: 38),
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
@@ -376,8 +376,8 @@ class _JobsFilterHeader extends StatelessWidget {
     final activeState = filterCount == 0
         ? null
         : Container(
-            constraints: const BoxConstraints(minHeight: 32),
-            padding: const EdgeInsetsDirectional.fromSTEB(9, 5, 9, 5),
+            constraints: const BoxConstraints(minHeight: 36),
+            padding: const EdgeInsetsDirectional.fromSTEB(10, 6, 10, 6),
             decoration: BoxDecoration(
               color: HopeV2Colors.secondary.withValues(alpha: .07),
               borderRadius: BorderRadius.circular(HopeV2Radii.pill),
@@ -410,7 +410,7 @@ class _JobsFilterHeader extends StatelessWidget {
       children: [
         if (compact) ...[
           searchField,
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Row(
             children: [
               resultLabel,
