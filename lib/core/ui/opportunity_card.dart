@@ -875,8 +875,8 @@ class OpportunityCard extends StatelessWidget {
             ),
           ],
         ],
-        if (tags.children.isNotEmpty) ...[
-          SizedBox(height: compactViewport ? 6 : HopeV2Spacing.sm),
+        if (tags.children.isNotEmpty && !compactViewport) ...[
+          SizedBox(height: HopeV2Spacing.sm),
           tags,
         ],
         SizedBox(height: compactViewport ? 6 : HopeV2Spacing.sm),
