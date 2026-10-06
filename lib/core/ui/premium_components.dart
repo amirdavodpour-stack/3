@@ -1026,7 +1026,7 @@ class PremiumHero extends StatelessWidget {
     final heroHeight = compact
         // Compact mobile hero stays editorial while returning more first-fold
         // space to match, metadata, and the primary action.
-        ? height.clamp(152.0, 300.0).toDouble()
+        ? height.clamp(176.0, 300.0).toDouble()
         : (height < 280 ? 280.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 

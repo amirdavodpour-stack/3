@@ -166,7 +166,7 @@ testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
                 message: 'Software • تهران',
                 icon: Icons.work_outline,
                 domain: HopeProductDomain.discovery,
-                height: 204,
+                height: 146,
               ),
             ),
           ),
@@ -175,5 +175,6 @@ testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
     ),
   );
   await tester.pump();
+  expect(tester.getSize(find.byType(PremiumHero)).height, 176);
   expect(tester.takeException(), isNull);
 });
