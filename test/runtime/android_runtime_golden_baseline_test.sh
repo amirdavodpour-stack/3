@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [runtime-capture-fa] certify partitioned baseline guard after #1842 guard-only failure.
+# [runtime-capture-fa] exact-head rerun after #1844 guard-only drift.
 # [runtime-capture-fa] certify Wave II grouped visual convergence: dark foundation + opportunity hierarchy + finance/profile composition.
 set -euo pipefail
 
