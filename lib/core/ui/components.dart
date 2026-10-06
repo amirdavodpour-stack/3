@@ -328,23 +328,23 @@ class HopeIconTile extends StatelessWidget {
     final radius =
         BorderRadius.circular((size * .26).clamp(10.0, 16.0).toDouble());
     final fill = filled
-        ? color.withValues(alpha: dark ? .88 : .96)
-        : color.withValues(alpha: dark ? .13 : .09);
+        ? color.withValues(alpha: dark ? .76 : .93)
+        : color.withValues(alpha: dark ? .09 : .08);
     final iconColor = filled ? Colors.white : color;
     final decoration = BoxDecoration(
       color: fill,
       borderRadius: radius,
       border: Border.all(
         color: filled
-            ? Colors.white.withValues(alpha: dark ? .12 : .20)
-            : color.withValues(alpha: dark ? .22 : .16),
+            ? Colors.white.withValues(alpha: dark ? .08 : .16)
+            : color.withValues(alpha: dark ? .15 : .14),
       ),
       boxShadow: filled
           ? [
               BoxShadow(
-                color: color.withValues(alpha: dark ? .08 : .07),
-                blurRadius: size * .16,
-                offset: Offset(0, size * .07),
+                color: color.withValues(alpha: dark ? .035 : .05),
+                blurRadius: size * .12,
+                offset: Offset(0, size * .05),
               ),
             ]
           : const [],
