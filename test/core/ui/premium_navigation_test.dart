@@ -241,4 +241,57 @@ void main() {
   });
 
 
+  testWidgets('primary navigation shell uses one shared dock on compact screens',
+      (tester) async {
+    final taps = <int>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        home: PremiumPrimaryNavigationScaffold(
+          selectedIndex: 2,
+          onDestinationSelected: taps.add,
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+    expect(find.text('خانه'), findsOneWidget);
+    expect(find.text('کاوش'), findsOneWidget);
+    expect(find.text('کار'), findsOneWidget);
+    expect(find.text('کیف پول'), findsOneWidget);
+    expect(find.text('پروفایل'), findsOneWidget);
+
+    await tester.tap(find.text('کیف پول'));
+    await tester.pump();
+    expect(taps, [3]);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('primary navigation shell switches to rail on wide screens',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        locale: const Locale('fa'),
+        home: PremiumPrimaryNavigationScaffold(
+          selectedIndex: 1,
+          onDestinationSelected: (_) {},
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+
+    expect(find.byType(PremiumNavigationRail), findsOneWidget);
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
 }
