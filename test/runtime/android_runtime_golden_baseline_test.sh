@@ -90,7 +90,13 @@ require_line "$test_file" "_baselineBatch == 'g'"
 require_line "$runtime" 'run_host_batch_session baseline-g "create-job-fa-rtl"'
 require_line "$runtime" 'run_host_batch_session baseline-e "register-fa-rtl"'
 require_line "$runtime" 'run_host_batch_session baseline-f "password-reset-fa-rtl"'
-require_line "$runtime" 'HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail'
+require_line "$runtime" 'HOPE_HOST_RUNTIME_PARTITIONED_BASELINE_START:fa'
+require_line "$runtime" 'run_host_batch_session baseline-a "${baseline_screens[@]:0:7}"'
+require_line "$runtime" 'run_host_batch_session baseline-b "${baseline_screens[@]:7:1}"'
+require_line "$runtime" 'run_host_batch_session baseline-c "${baseline_screens[@]:8:4}"'
+require_line "$runtime" 'run_host_batch_session baseline-g "create-job-fa-rtl"'
+require_line "$runtime" 'run_host_batch_session baseline-e "register-fa-rtl"'
+require_line "$runtime" 'run_host_batch_session baseline-f "password-reset-fa-rtl"'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:create-job'
 if grep -Fq '&& test -s "$evidence_dir/create-job-fa-rtl.png"' "$runtime"; then
   printf 'FAIL: auth-tail recovery is gated on a screenshot that cannot exist when the long session dies before onScreenshot flush.\n' >&2
