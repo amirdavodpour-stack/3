@@ -92,6 +92,63 @@ class _OffersPageState extends State<OffersPage> {
     }
   }
 
+  Widget _offerMetric(
+    BuildContext context, {
+    required String label,
+    required String value,
+    Color? valueColor,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 76),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .34),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: .28),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 15, color: valueColor ?? theme.colorScheme.primary),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                height: 1,
+                color: valueColor ?? theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final all = _items;
@@ -140,32 +197,31 @@ class _OffersPageState extends State<OffersPage> {
               ),
               const SizedBox(height: 14),
               if (!_loading && _loadError == null && all.isNotEmpty) ...[
-                PremiumPanel(
-                  quiet: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Row(
-                    children: [
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(_t('همه پیشنهادها', 'All offers'), style: Theme.of(context).textTheme.labelSmall),
-                        const SizedBox(height: 3),
-                        Text('${all.length}', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-                      ])),
-                      Container(width: 1, height: 32, color: Theme.of(context).dividerColor.withValues(alpha: .45)),
-                      const SizedBox(width: 10),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(_t('در انتظار', 'Pending'), style: Theme.of(context).textTheme.labelSmall),
-                        const SizedBox(height: 3),
-                        Text('$pendingCount', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: pendingCount > 0 ? AppColors.warning : null)),
-                      ])),
-                      Container(width: 1, height: 32, color: Theme.of(context).dividerColor.withValues(alpha: .45)),
-                      const SizedBox(width: 10),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(_t('پذیرفته‌شده', 'Accepted'), style: Theme.of(context).textTheme.labelSmall),
-                        const SizedBox(height: 3),
-                        Text('$acceptedCount', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: acceptedCount > 0 ? AppColors.success : null)),
-                      ])),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    _offerMetric(
+                      context,
+                      label: _t('همه پیشنهادها', 'All offers'),
+                      value: '${all.length}',
+                      icon: HopeV2Icons.briefcase,
+                    ),
+                    const SizedBox(width: 8),
+                    _offerMetric(
+                      context,
+                      label: _t('در انتظار', 'Pending'),
+                      value: '$pendingCount',
+                      valueColor: pendingCount > 0 ? AppColors.warning : null,
+                      icon: HopeV2Icons.clock,
+                    ),
+                    const SizedBox(width: 8),
+                    _offerMetric(
+                      context,
+                      label: _t('پذیرفته‌شده', 'Accepted'),
+                      value: '$acceptedCount',
+                      valueColor: acceptedCount > 0 ? AppColors.success : null,
+                      icon: HopeV2Icons.completed,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
               ],
