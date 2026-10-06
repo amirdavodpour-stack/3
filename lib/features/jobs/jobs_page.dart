@@ -1,3 +1,4 @@
+import '../../core/router/app_router.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -329,7 +330,34 @@ class _JobsPageState extends State<JobsPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PremiumPrimaryNavigationScaffold(
+        selectedIndex: 1,
+        onDestinationSelected: (index) => _navigatePrimary(context, index),
+        child: _buildContent(context),
+      );
+
+  void _navigatePrimary(BuildContext context, int index) {
+    if (index == 1) return;
+    if (index == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AppRouter()),
+        (_) => false,
+      );
+      return;
+    }
+    final route = switch (index) {
+      1 => HopeRoutes.jobs(),
+      2 => HopeRoutes.transactions(),
+      3 => HopeRoutes.walletFromContext(context),
+      4 => HopeRoutes.profile(),
+      _ => null,
+    };
+    if (route != null) {
+      Navigator.of(context).pushReplacement(route);
+    }
+  }
+
+  Widget _buildContent(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     return RefreshIndicator(
       onRefresh: _refresh,
