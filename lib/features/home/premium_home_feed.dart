@@ -187,6 +187,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     required VoidCallback onOpenMenu,
   }) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final greeting = isEn
         ? 'HOPE'
         : 'HOPE';
@@ -245,7 +246,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                   fontSize: 15,
                                 ),
                           ),
-                          if (settings.city.trim().isNotEmpty)
+                          if (!compact && settings.city.trim().isNotEmpty)
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [

@@ -648,18 +648,25 @@ class PremiumHeader extends StatelessWidget {
                   ],
                   Flexible(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: (resolvedDomain?.spec.accent ?? Theme.of(context).colorScheme.primary)
-                            .withValues(alpha: .09),
-                        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-                      ),
+                      padding: dense && compact
+                          ? EdgeInsets.zero
+                          : const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      decoration: dense && compact
+                          ? const BoxDecoration()
+                          : BoxDecoration(
+                              color: (resolvedDomain?.spec.accent ??
+                                      Theme.of(context).colorScheme.primary)
+                                  .withValues(alpha: .09),
+                              borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                            ),
                       child: Text(
                         eyebrow.toUpperCase(),
                         overflow: TextOverflow.ellipsis,
                         style: HopeV2Type.eyebrow(context).copyWith(
                           color: resolvedDomain?.spec.accent ??
                               Theme.of(context).colorScheme.primary,
+                          fontSize: dense && compact ? 10 : null,
+                          letterSpacing: dense && compact ? .55 : null,
                         ),
                       ),
                     ),

@@ -57,8 +57,9 @@ extension on _TransactionPageState {
               last: i == en.length - 1,
             ),
           const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          if (!compact)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .42),
               borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -202,10 +203,10 @@ extension on _TransactionPageState {
           const SizedBox(width: 8),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: EdgeInsets.only(bottom: compact ? 2 : 4),
               child: Container(
-                constraints: const BoxConstraints(minHeight: 28),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                constraints: BoxConstraints(minHeight: compact ? 25 : 28),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 2 : 3),
                 decoration: BoxDecoration(
                   color: active
                       ? scheme.primary.withValues(alpha: .07)
@@ -381,6 +382,7 @@ extension on _TransactionPageState {
     }
     final status = payment?.status ?? 'NO_TRANSACTION';
     final job = payment?.job;
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     return Directionality(
       textDirection: Localizations.localeOf(context).languageCode == 'en'
           ? TextDirection.ltr
@@ -388,7 +390,12 @@ extension on _TransactionPageState {
       child: Scaffold(
         body: PremiumPageFrame(
           maxWidth: 980,
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
+          padding: EdgeInsets.fromLTRB(
+            compact ? 14 : 20,
+            compact ? 4 : 16,
+            compact ? 14 : 20,
+            compact ? 60 : 72,
+          ),
           child: Column(
             children: [
               PremiumHeader(
@@ -396,10 +403,12 @@ extension on _TransactionPageState {
                 domain: HopeProductDomain.finance,
                 eyebrow: _t('مالی', 'FINANCE'),
                 title: HopeCopy.of(context).copy_transaction_7e0ea3b,
-                subtitle: _t(
-                  'وضعیت پرداخت، مسیر انجام کار و اقدام بعدی را در یک نما ببینید.',
-                  'Review payment state, the work lifecycle, and the next allowed action in one view.',
-                ),
+                subtitle: compact
+                    ? null
+                    : _t(
+                        'وضعیت پرداخت، مسیر انجام کار و اقدام بعدی را در یک نما ببینید.',
+                        'Review payment state, the work lifecycle, and the next allowed action in one view.',
+                      ),
                 dense: true,
                 trailing: PremiumIconButton(
                   icon: Localizations.localeOf(context).languageCode == 'en'
@@ -532,6 +541,7 @@ extension on _TransactionPageState {
                         moneyLabel(context, payment?.amount ?? '—'),
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.w900,
+                              fontSize: compact ? 25 : null,
                               letterSpacing: -.8,
                             ),
                       ),
@@ -548,7 +558,7 @@ extension on _TransactionPageState {
                         ),
                       ),
                     ],
-                    if (payment?.providerRef?.trim().isNotEmpty ?? false) ...[
+                    if (!compact && (payment?.providerRef?.trim().isNotEmpty ?? false)) ...[
                       const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -577,13 +587,15 @@ extension on _TransactionPageState {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 12),
-                    Text(
-                      _statusHint(status),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            height: 1.35,
-                          ),
-                    ),
+                    if (!compact) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        _statusHint(status),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
                     if (status == 'NO_TRANSACTION') ...[
                       const SizedBox(height: 8),
                       Align(

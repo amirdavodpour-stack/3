@@ -929,6 +929,8 @@ class _WalletPageState extends State<WalletPage> {
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w900,
+                                fontSize: compact ? 17 : null,
+                                letterSpacing: compact ? -.3 : null,
                               ),
                         ),
                       ],
@@ -989,6 +991,7 @@ class _WalletPageState extends State<WalletPage> {
                 );
               },
             ),
+            if (!compact) ...[
             Padding(
               padding: const EdgeInsetsDirectional.only(
                 start: 4,
@@ -1028,6 +1031,7 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
             ),
+            ],
             SizedBox(height: compact ? 12 : 18),
             PremiumSectionHeader(
               domain: HopeProductDomain.finance,
