@@ -748,8 +748,10 @@ Future<void> _captureRuntimeScreen(
   // bounded settle: the headless VM-service path reproduced a hang at that
   // exact boundary in runtime run #1557.
   if (child is RegisterPage) {
-    await tester.pump(const Duration(milliseconds: 1200));
-    print('HOPE_RUNTIME_REGISTER_FAST_SETTLE_DONE:$marker');
+    // The surface conversion already commits the first rendered frame.
+    // Capture immediately to avoid a CPU-heavy timed pump on the SwiftShader
+    // Android image surface. This mirrors the proven Login capture boundary.
+    print('HOPE_RUNTIME_REGISTER_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
