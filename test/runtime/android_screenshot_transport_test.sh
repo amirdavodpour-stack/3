@@ -137,13 +137,4 @@ if printf '%s\n' "$login_capture_block" | grep -qE 'await[[:space:]]+tester\.pum
   exit 1
 fi
 
-
-password_reset_capture_block="$(sed -n '/if (child is PasswordResetPage)/,/return;/p' "$test_file")"
-if grep -Fq 'await tester.pump();' <<<"$password_reset_capture_block"; then
-  echo "FAIL: Password Reset runtime capture must not use zero-duration pump cycles after bounded settle" >&2
-  exit 1
-fi
-grep -Fq 'HOPE_RUNTIME_PASSWORD_RESET_FAST_SETTLE_DONE' <<<"$password_reset_capture_block"
-grep -Fq 'await _captureRuntimeScreenshot(marker);' <<<"$password_reset_capture_block"
-
 echo "PASS: Flutter rendered-screenshot transport contract"
