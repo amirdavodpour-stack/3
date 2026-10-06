@@ -327,51 +327,64 @@ class _JobsFilterHeader extends StatelessWidget {
         1,
     ].length;
 
+    final searchField = PremiumSearchBar(
+      onChanged: onQueryChanged,
+      hint: compact
+          ? _t(context, 'جستجو', 'Search')
+          : copy.copy_title_city_or_skill_bccb024,
+    );
+    final refinement = HopeOpportunityRefinementLauncher(
+      activeCount: filterCount,
+      kind: kind,
+      visibility: visibility,
+      cityLabel: cityLabel,
+      cityIsExplicit: cityIsExplicit,
+      categoryLabel: categoryLabel,
+      categoryError: categoryError,
+      onKindChanged: onKindChanged,
+      onVisibilityChanged: onVisibilityChanged,
+      onPickCity: onPickCity,
+      onPickCategory: onPickCategory,
+      onRetryCategories: onRetryCategories,
+      savedSearchCount: savedSearchCount,
+      onSaveSearch: onSaveSearch,
+      onOpenSavedSearches: onOpenSavedSearches,
+    );
+    final resultLabel = Text(
+      '$resultCount ${copy.copy_results_2d120a3}',
+      key: const ValueKey('hope-explore-result-count'),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: HopeV2Colors.muted,
+            fontWeight: FontWeight.w800,
+          ),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: PremiumSearchBar(
-                onChanged: onQueryChanged,
-                hint: compact
-                    ? _t(context, 'جستجو', 'Search')
-                    : copy.copy_title_city_or_skill_bccb024,
-              ),
-            ),
-            const SizedBox(width: HopeV2Spacing.sm),
-            Text(
-              '$resultCount ${copy.copy_results_2d120a3}',
-              key: const ValueKey('hope-explore-result-count'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: HopeV2Colors.muted,
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(width: HopeV2Spacing.sm),
-            HopeOpportunityRefinementLauncher(
-              activeCount: filterCount,
-              kind: kind,
-              visibility: visibility,
-              cityLabel: cityLabel,
-              cityIsExplicit: cityIsExplicit,
-              categoryLabel: categoryLabel,
-              categoryError: categoryError,
-              onKindChanged: onKindChanged,
-              onVisibilityChanged: onVisibilityChanged,
-              onPickCity: onPickCity,
-              onPickCategory: onPickCategory,
-              onRetryCategories: onRetryCategories,
-              savedSearchCount: savedSearchCount,
-              onSaveSearch: onSaveSearch,
-              onOpenSavedSearches: onOpenSavedSearches,
-            ),
-          ],
-        ),
+        if (compact) ...[
+          searchField,
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              resultLabel,
+              const Spacer(),
+              refinement,
+            ],
+          ),
+        ] else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: searchField),
+              const SizedBox(width: HopeV2Spacing.sm),
+              resultLabel,
+              const SizedBox(width: HopeV2Spacing.sm),
+              refinement,
+            ],
+          ),
         if (categoryError != null)
           Padding(
             padding: const EdgeInsets.only(top: HopeV2Spacing.xs),
