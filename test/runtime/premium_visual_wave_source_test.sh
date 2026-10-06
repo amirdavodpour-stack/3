@@ -105,7 +105,7 @@ grep -Fq "HopeWalletFlowSignature(wallet: wallet)" "lib/features/wallet/wallet_p
 grep -Fq "class HopeOpportunityDnaSignature" "$signature"
 grep -Fq "HopeOpportunityDnaSignature(job: j)" "lib/features/marketplace/job_detail_page.dart"
 grep -Fq "_formatAmount(amount)" "$signature"
-if grep -Fq "\\${" "$signature"; then
+if grep -Fq '\${' "$signature"; then
   echo "FAIL: signature file contains escaped Dart interpolation" >&2
   exit 1
 fi
