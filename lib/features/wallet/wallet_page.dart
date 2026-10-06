@@ -1,3 +1,4 @@
+import '../../core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
@@ -190,8 +191,10 @@ class _WalletPageState extends State<WalletPage> {
       _referenceTypeLabel(item.referenceType);
 
   Color _directionColor(BuildContext context, bool credit) {
-    final colors = Theme.of(context).colorScheme;
-    return credit ? colors.tertiary : colors.error;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return credit
+        ? (dark ? HopeV2Colors.successDark : HopeV2Colors.success)
+        : (dark ? HopeV2Colors.dangerDark : HopeV2Colors.danger);
   }
 
   Object _directionIcon(bool credit) => credit ? HopeV2Icons.transferIn : HopeV2Icons.transferOut;
@@ -516,9 +519,9 @@ class _WalletPageState extends State<WalletPage> {
   Color _payoutColor(BuildContext context, String status) {
     final colors = Theme.of(context).colorScheme;
     switch (status.toUpperCase()) {
-      case 'SUCCEEDED': return AppColors.success;
+      case 'SUCCEEDED': return HopeV2Colors.success;
       case 'FAILED': return colors.error;
-      case 'UNKNOWN': return AppColors.warning;
+      case 'UNKNOWN': return HopeV2Colors.warning;
       default: return colors.primary;
     }
   }
@@ -556,7 +559,34 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PremiumPrimaryNavigationScaffold(
+        selectedIndex: 3,
+        onDestinationSelected: (index) => _navigatePrimary(context, index),
+        child: _buildContent(context),
+      );
+
+  void _navigatePrimary(BuildContext context, int index) {
+    if (index == 3) return;
+    if (index == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AppRouter()),
+        (_) => false,
+      );
+      return;
+    }
+    final route = switch (index) {
+      1 => HopeRoutes.jobs(),
+      2 => HopeRoutes.transactions(),
+      3 => HopeRoutes.walletFromContext(context),
+      4 => HopeRoutes.profile(),
+      _ => null,
+    };
+    if (route != null) {
+      Navigator.of(context).pushReplacement(route);
+    }
+  }
+
+  Widget _buildContent(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final auth = context.watch<AuthController>();
