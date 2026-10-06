@@ -817,6 +817,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       _MatchIntelligence(job: j),
                   ],
                   const SizedBox(height: 10),
+                  HopeOpportunityDnaSignature(job: j),
+                  const SizedBox(height: 12),
                   PremiumSectionHeader(
                     domain: HopeProductDomain.discovery,
                     title: _t('شرح فرصت', 'Job description'),
