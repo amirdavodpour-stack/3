@@ -50,7 +50,11 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
-    expect(find.byType(NavigationDestination), findsNWidgets(5));
+    expect(find.text('خانه'), findsOneWidget);
+    expect(find.text('کاوش'), findsOneWidget);
+    expect(find.text('فعالیت'), findsOneWidget);
+    expect(find.text('کیف پول'), findsOneWidget);
+    expect(find.text('پروفایل'), findsOneWidget);
     expect(tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
         greaterThanOrEqualTo(64));
   });
