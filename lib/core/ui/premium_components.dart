@@ -169,6 +169,81 @@ class _PremiumNavigationItem extends StatelessWidget {
   }
 }
 
+class PremiumPrimaryNavigationScaffold extends StatelessWidget {
+  const PremiumPrimaryNavigationScaffold({
+    super.key,
+    required this.child,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+  });
+
+  final Widget child;
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+
+  static List<NavigationDestination> _destinations(BuildContext context) {
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    String label(String fa, String en) => isEn ? en : fa;
+    return [
+      NavigationDestination(
+        icon: const HopeNavigationGlyph(icon: HopeV2Icons.home, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.home, selected: true),
+        label: label('خانه', 'Home'),
+      ),
+      NavigationDestination(
+        icon: const HopeNavigationGlyph(icon: HopeV2Icons.search, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.search, selected: true),
+        label: label('کاوش', 'Explore'),
+      ),
+      NavigationDestination(
+        icon: const HopeNavigationGlyph(icon: HopeV2Icons.workshop, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.workshop, selected: true),
+        label: label('کار', 'Work'),
+      ),
+      NavigationDestination(
+        icon: const HopeNavigationGlyph(icon: HopeV2Icons.wallet, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.wallet, selected: true),
+        label: label('کیف پول', 'Wallet'),
+      ),
+      NavigationDestination(
+        icon: const HopeNavigationGlyph(icon: HopeV2Icons.profile, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.profile, selected: true),
+        label: label('پروفایل', 'Profile'),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final destinations = _destinations(context);
+    final isDesktop = size.width >= HopeV2Breakpoints.medium;
+    return Scaffold(
+      backgroundColor: HopeV2Surfaces.page(context),
+      body: isDesktop
+          ? Row(
+              children: [
+                PremiumNavigationRail(
+                  selectedIndex: selectedIndex,
+                  onDestinationSelected: onDestinationSelected,
+                  destinations: destinations,
+                  extended: size.width >= HopeV2Breakpoints.expanded,
+                ),
+                Expanded(child: child),
+              ],
+            )
+          : child,
+      bottomNavigationBar: isDesktop
+          ? null
+          : PremiumNavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: onDestinationSelected,
+              destinations: destinations,
+            ),
+    );
+  }
+}
+
 class PremiumNavigationRail extends StatelessWidget {
   const PremiumNavigationRail({
     super.key,
