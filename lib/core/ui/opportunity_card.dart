@@ -129,7 +129,7 @@ class OpportunityCard extends StatelessWidget {
                 : HopeV2Shadows.card,
           ),
           padding: EdgeInsets.all(
-            featured ? 10 : (featuredScan ? 10 : (compact ? 10 : 12)),
+            featured ? 11 : (featuredScan ? 11 : (compact ? 11 : 13)),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
@@ -185,8 +185,8 @@ class OpportunityCard extends StatelessWidget {
       child: SizedBox(
         key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 136 : 154)
-            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 96 : 120),
+            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 148 : 166)
+            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 88 : 104),
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -407,8 +407,8 @@ class OpportunityCard extends StatelessWidget {
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 62,
-        height: 62,
+        width: 70,
+        height: 70,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
@@ -454,7 +454,7 @@ class OpportunityCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w900,
                 color: primary,
               ),
@@ -726,7 +726,7 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 64.0 : 76.0;
+    final mediaSize = compactViewport ? 72.0 : 88.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
