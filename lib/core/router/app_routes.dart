@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'auth_return_intent.dart';
 
@@ -26,6 +27,7 @@ import '../../features/applications/my_applications_page.dart';
 import '../../features/jobs/saved_searches_page.dart';
 import '../../features/jobs/jobs_page.dart';
 import '../../features/transactions/transaction_page.dart';
+import '../../features/transactions/transactions_page.dart';
 import '../../features/wallet/wallet_page.dart';
 import '../transactions/transaction_repository.dart';
 import '../admin/admin_access_guard.dart';
@@ -56,6 +58,9 @@ abstract final class HopeRoutes {
   static Route<void> myApplications() => _page(const MyApplicationsPage());
   static Route<void> savedSearches() => _page(const SavedSearchesPage());
   static Route<void> jobs() => _page(const JobsPage());
+  static Route<void> transactions() => _page(const TransactionsPage());
+  static Route<WalletPage> walletFromContext(BuildContext context) =>
+      _page(WalletPage(repository: context.read<WalletRepository>()));
   static Route<void> offers({String? jobId}) => _page(OffersPage(jobId: jobId));
   static Route<void> adminAccess() => _adminPage(const AdminAccessPage());
   static Route<void> admin() => _adminPage(const AdminPage());
