@@ -36,13 +36,16 @@ grep -Fq 'if (recommended.length > 1)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$jobs_widgets"
 
 register_block="$(sed -n '/if (child is RegisterPage)/,/if (child is PasswordResetPage)/p' "$runtime_driver")"
-register_post_settle="$(printf '%s\n' "$register_block" | sed -n '/HOPE_RUNTIME_REGISTER_FAST_SETTLE_DONE/,$p')"
-register_capture_tail="$(printf '%s\n' "$register_post_settle" | sed '/await _captureRuntimeScreenshot(marker)/q')"
-printf '%s\n' "$register_post_settle" | grep -Fq 'await _captureRuntimeScreenshot(marker)'
-if printf '%s\n' "$register_capture_tail" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
-  echo "FAIL: Register runtime capture performs an extra pump/delay after bounded settle" >&2
+printf '%s\n' "$register_block" | grep -Fq 'HOPE_RUNTIME_REGISTER_DIRECT_CAPTURE'
+printf '%s\n' "$register_block" | grep -Fq 'await _captureRuntimeScreenshot(marker)'
+if printf '%s\n' "$register_block" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
+  echo "FAIL: Register runtime capture performs an extra pump/delay after surface preparation" >&2
   exit 1
 fi
+grep -Fq 'system-images/android-34/default/x86_64' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'hope-android-sdk-api34-cmake3.22.1-default' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'hope-android-avd-api34-default-pixel2' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'api-level: 34' ".github/workflows/hope-ui-runtime-evidence.yml"
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register runtime capture uses direct screenshot after bounded settle"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
