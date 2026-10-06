@@ -47,99 +47,15 @@ extension on _TransactionPageState {
             total: en.length,
           ),
           const SizedBox(height: 4),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact =
-                  constraints.maxWidth < HopeV2Breakpoints.compact;
-              if (!compact) {
-                return Column(
-                  children: [
-                    for (var i = 0; i < en.length; i++)
-                      _lifecycleStep(
-                        context,
-                        index: i,
-                        current: current,
-                        label: _t(fa[i], en[i]),
-                        icon: icons[i],
-                        last: i == en.length - 1,
-                      ),
-                  ],
-                );
-              }
-
-              const gap = 6.0;
-              final width = (constraints.maxWidth - gap * 2) / 3;
-              return Wrap(
-                key: const ValueKey('transaction-payment-lifecycle-grid'),
-                spacing: gap,
-                runSpacing: gap,
-                children: [
-                  for (var i = 0; i < en.length; i++)
-                    SizedBox(
-                      width: width,
-                      height: 48,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: i == current
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withValues(alpha: .08)
-                              : i < current
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withValues(alpha: .035)
-                                  : Colors.transparent,
-                          borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                          border: Border.all(
-                            color: i <= current
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: .18)
-                                : HopeV2Surfaces.border(context),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            HopeIcon(
-                              i < current ? HopeV2Icons.completed : icons[i],
-                              size: 16,
-                              color: i <= current
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 5),
-                            Expanded(
-                              child: Text(
-                                _t(fa[i], en[i]),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      fontWeight: i <= current
-                                          ? FontWeight.w800
-                                          : FontWeight.w600,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
+          for (var i = 0; i < en.length; i++)
+            _lifecycleStep(
+              context,
+              index: i,
+              current: current,
+              label: _t(fa[i], en[i]),
+              icon: icons[i],
+              last: i == en.length - 1,
+            ),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),

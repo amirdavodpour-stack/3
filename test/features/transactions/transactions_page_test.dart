@@ -273,21 +273,5 @@ void main() {
     expect(find.text('پروژه payment-unavailable'), findsOneWidget);
   });
 
-  testWidgets('compact work item workflow is reduced to a bounded decision grid',
-      (tester) async {
-    final repo = _Transactions()
-      ..jobs = [_job('compact-flow', status: 'IN_PROGRESS')];
-    await _pump(tester, repo, width: 360);
-
-    final flow = find.byKey(
-      const ValueKey('work-item-compact-flow'),
-    );
-    expect(flow, findsOneWidget);
-    expect(tester.getSize(flow).height, lessThan(180));
-    expect(find.text('منتشر شده'), findsOneWidget);
-    expect(find.text('در حال انجام'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  // Runtime certification trigger: Wave H2 trust + workflow density.
+  // Runtime certification trigger: grouped Wave G-3B Create + Work Center.
 }

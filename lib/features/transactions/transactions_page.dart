@@ -249,118 +249,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
               ],
             ),
             const SizedBox(height: 8),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final compact =
-                    constraints.maxWidth < HopeV2Breakpoints.compact;
-                if (!compact) {
-                  return PremiumLifecycle(
-                    compact: true,
-                    steps: _stepsForStatus(status),
-                    title: _t('مسیر همکاری', 'Work flow'),
-                    subtitle: _t(
-                      'وضعیت فعلی همکاری را در یک نگاه دنبال کنید.',
-                      'Follow the current collaboration state at a glance.',
-                    ),
-                  );
-                }
-
-                final steps = _stepsForStatus(status);
-                return PremiumPanel(
-                  key: const ValueKey('work-item-compact-flow'),
-                  padding: const EdgeInsets.fromLTRB(9, 8, 9, 7),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _t('مسیر همکاری', 'Work flow'),
-                              style: HopeV2Type.section(context).copyWith(
-                                fontSize: 15.5,
-                              ),
-                            ),
-                          ),
-                          PremiumTag(
-                            icon: HopeV2Icons.activity,
-                            label: _jobStatusLabel(context, status),
-                            color: settled
-                                ? AppColors.success
-                                : AppColors.primary,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 7),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (final step in steps)
-                            SizedBox(
-                              width: (constraints.maxWidth - 18) / 3,
-                              height: 46,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: step.active
-                                      ? Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withValues(alpha: .08)
-                                      : Colors.transparent,
-                                  borderRadius:
-                                      BorderRadius.circular(HopeV2Radii.md),
-                                  border: Border.all(
-                                    color: step.active
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            .withValues(alpha: .18)
-                                        : HopeV2Surfaces.border(context),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    HopeIcon(
-                                      step.icon,
-                                      size: 16,
-                                      color: step.active || step.complete
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Expanded(
-                                      child: Text(
-                                        step.label,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              fontWeight:
-                                                  step.active || step.complete
-                                                      ? FontWeight.w800
-                                                      : FontWeight.w600,
-                                            ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
+            PremiumLifecycle(
+              compact: true,
+              steps: _stepsForStatus(status),
+              title: _t('مسیر همکاری', 'Work flow'),
+              subtitle: _t(
+                'وضعیت فعلی همکاری را در یک نگاه دنبال کنید.',
+                'Follow the current collaboration state at a glance.',
+              ),
             ),
             FutureBuilder<HopePayment?>(
               future: _tryGetPayment(job.id),

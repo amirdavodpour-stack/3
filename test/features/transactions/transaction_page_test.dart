@@ -267,14 +267,7 @@ void main() {
       final flow =
           find.byKey(const ValueKey('transaction-payment-lifecycle'));
       expect(flow, findsOneWidget);
-      expect(tester.getSize(flow).height, lessThan(250));
-      expect(
-        find.byKey(
-          const ValueKey('transaction-payment-lifecycle-grid'),
-        ),
-        findsOneWidget,
-      );
-      expect(tester.getSize(flow).height, greaterThan(150));
+      expect(tester.getSize(flow).height, lessThan(340));
       expect(tester.takeException(), isNull);
     },
   );
