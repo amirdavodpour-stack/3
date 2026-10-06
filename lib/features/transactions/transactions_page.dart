@@ -431,6 +431,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   !_isWorkCenterActive(job.status ?? '') &&
                   !_isWorkCenterSettled(job.status ?? ''))
               .toList();
+          final activeCount = _countWorkCenterActive(items);
+          final settledCount = _countWorkCenterSettled(items);
           if (items.isEmpty) {
             return RefreshIndicator(
               onRefresh: reload,
@@ -509,8 +511,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ],
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final activeCount = _countWorkCenterActive(items);
-                        final settledCount = _countWorkCenterSettled(items);
                         final metrics = [
                           PremiumStatCard(
                             label: _t('همکاری‌ها', 'Collaborations'),
@@ -554,7 +554,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       key: const ValueKey('work-center-focus-strip'),
                       glass: false,
                       quiet: true,
-                      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                       child: Row(
                         children: [
                           HopeIconTile(
