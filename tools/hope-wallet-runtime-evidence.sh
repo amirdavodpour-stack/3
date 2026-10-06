@@ -417,12 +417,33 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   fi
 else
   baseline_status=0
-  # Keep the complete locale baseline inside one Driver/VM-service session.
-  # The proven green certification run used this lifecycle; repeated Driver
-  # teardown/startup cycles on the same emulator were followed by ADB offline.
+  # Preserve the proven single-session baseline first. If the long-lived
+  # VM-service dies only at the final auth tail, recover just that missing
+  # tail in a fresh Driver session instead of mutating product/UI code.
   run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
-  if [ "$baseline_status" -eq 0 ] &&
-     ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
+
+  if [ "$baseline_status" -ne 0 ] && [ "$CAPTURE_LOCALE" = "fa" ]; then
+    auth_tail_screens=(
+      "offers-fa-rtl"
+      "create-job-fa-rtl"
+      "register-fa-rtl"
+      "password-reset-fa-rtl"
+    )
+    auth_tail_complete=0
+    for marker in "${auth_tail_screens[@]}"; do
+      if ! test -s "$evidence_dir/$marker.png"; then
+        auth_tail_complete=1
+        break
+      fi
+    done
+    if [ "$auth_tail_complete" -eq 1 ] && test -s "$evidence_dir/create-job-fa-rtl.png"; then
+      echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
+      hope_android_device_ready "$RUNTIME_SERIAL"
+      run_host_batch_session baseline-d "${auth_tail_screens[@]}" || true
+    fi
+  fi
+
+  if ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
     baseline_status=1
   fi
 fi
