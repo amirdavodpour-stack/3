@@ -210,3 +210,4 @@ jobs:
 # [runtime-capture-fa] Wave I re-certify after green baseline
 
 # [runtime-capture-fa] certify current HEAD after isolated auth-tail recovery fix.
+# [runtime-capture-fa] exact-head certification after resilient auth-tail recovery fix.
