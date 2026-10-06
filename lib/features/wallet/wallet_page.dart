@@ -661,21 +661,24 @@ class _WalletPageState extends State<WalletPage> {
         Container(
           key: keyName == null ? null : ValueKey(keyName),
           constraints: BoxConstraints(
-          minHeight: emphasized ? (compact ? 42 : 46) : (compact ? 40 : 44),
-        ),
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 6 : 7),
+            minHeight: emphasized ? (compact ? 42 : 46) : (compact ? 36 : 40),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: emphasized ? 10 : 6,
+            vertical: compact ? 5 : 6,
+          ),
           decoration: BoxDecoration(
             color: emphasized
                 ? HopeV2Colors.primary.withValues(alpha: .18)
-                : Colors.white.withValues(alpha: .035),
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(
               emphasized ? HopeV2Radii.md : HopeV2Radii.sm,
             ),
-            border: Border.all(
-              color: emphasized
-                  ? HopeV2Colors.primary.withValues(alpha: .30)
-                  : Colors.white.withValues(alpha: .07),
-            ),
+            border: emphasized
+                ? Border.all(
+                    color: HopeV2Colors.primary.withValues(alpha: .30),
+                  )
+                : Border.all(color: Colors.transparent),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -686,7 +689,7 @@ class _WalletPageState extends State<WalletPage> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: emphasized ? Colors.white : Colors.white70,
-                  fontSize: emphasized ? 10.5 : 10,
+                  fontSize: emphasized ? 10.5 : 9.5,
                   fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
                 ),
               ),
@@ -699,7 +702,7 @@ class _WalletPageState extends State<WalletPage> {
                   maxLines: 1,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: emphasized ? 14 : 12.5,
+                    fontSize: emphasized ? 14 : 11.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
