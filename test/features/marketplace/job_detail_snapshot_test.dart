@@ -125,7 +125,10 @@ void main() {
 
     expect(find.text('Opportunity snapshot'), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-detail-hero-match')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-detail-hero-budget')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('opportunity-detail-hero-budget')),
+      findsNothing,
+    );
     expect(find.text('Budget'), findsOneWidget);
     expect(find.text('Field'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);

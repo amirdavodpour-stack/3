@@ -1702,7 +1702,7 @@ class PremiumSearchBar extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(HopeV2Radii.lg),
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
               boxShadow: Theme.of(context).brightness == Brightness.dark
                   ? const []
                   : const [

@@ -113,7 +113,9 @@ class OpportunityCard extends StatelessWidget {
                           ? (featuredScan ? .18 : .21)
                           : .18,
                     )
-                  : HopeV2Surfaces.border(context),
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: .055)
+                      : HopeV2Surfaces.border(context).withValues(alpha: .60)),
             ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
                 ? [
@@ -565,11 +567,9 @@ class OpportunityCard extends StatelessWidget {
           width: double.infinity,
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
           padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 10, 8),
-          decoration: BoxDecoration(
-            color: primary.withValues(alpha: .14),
-            borderRadius: BorderRadius.circular(HopeV2Radii.button),
-            border: Border.all(color: primary.withValues(alpha: .28)),
-          ),
+          // The whole opportunity card is already the interaction surface.
+          // Keep the CTA as a low-chrome text affordance instead of a card-inside-card.
+          decoration: null,
           child: Row(
             children: [
               Expanded(

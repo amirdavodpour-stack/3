@@ -678,16 +678,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
 
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final heroBudgetRaw = isJob ? (j.monthlySalary ?? j.budgetMin) : j.budgetMin;
-    final heroBudget = heroBudgetRaw == null
-        ? null
-        : moneyLabel(
-            context,
-            isJob
-                ? heroBudgetRaw
-                : '${j.budgetMin ?? '—'} تا ${j.budgetMax ?? '—'}',
-          );
-
     return Scaffold(
       extendBodyBehindAppBar: true,
       bottomNavigationBar: SafeArea(
@@ -804,45 +794,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                      if (heroBudget != null)
-                        KeyedSubtree(
-                          key: const ValueKey('opportunity-detail-hero-budget'),
-                          child: PremiumTag(
-                            icon: HopeV2Icons.payments,
-                            label: heroBudget,
-                            color: HopeV2Colors.secondary,
-                          ),
-                        ),
-                      if (!compactViewport)
-                        PremiumTag(
-                          label: isJob
-                              ? HopeCopy.of(context).copy_job_ce2feba
-                              : HopeCopy.of(context).copy_mission_fb4c5e1,
-                          color: isJob
-                              ? secondaryAccent(context)
-                              : AppColors.primary,
-                          icon: isJob
-                              ? HopeV2Icons.job
-                              : HopeV2Icons.mission,
-                        ),
-                      if (!compactViewport)
-                        PremiumTag(
-                          label: visibility == 'SPECIALIZED'
-                              ? HopeCopy.of(context).copy_specialized_5d1ca04
-                              : HopeCopy.of(context).copy_public_21e97be,
-                          color: visibility == 'SPECIALIZED'
-                              ? AppColors.warning
-                              : secondaryAccent(context),
-                          icon: visibility == 'SPECIALIZED'
-                              ? HopeV2Icons.secure
-                              : HopeV2Icons.insights,
-                        ),
-                      if (j.city != null)
-                        PremiumTag(
-                          label: j.city!,
-                          color: AppColors.muted,
-                          icon: HopeV2Icons.location,
-                        ),
+
                     ],
                   ),
                   if (j.isRecommended &&

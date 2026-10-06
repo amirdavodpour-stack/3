@@ -61,7 +61,10 @@ void main() {
     expect(find.text('1.5 km'), findsOneWidget);
     expect(find.text('1,000,000 – 1,500,000 تومان'), findsOneWidget);
     expect(find.text('طراحی محصول'), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
+    final cta = tester.widget<Container>(
+      find.byKey(const ValueKey('opportunity-card-cta')),
+    );
+    expect(cta.decoration, isNull);
     expect(find.text('دلایل تطابق'), findsNothing);
     expect(find.text('این توضیح در کارت اسکن نمایش داده نمی‌شود.'), findsNothing);
     expect(
