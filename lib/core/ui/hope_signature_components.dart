@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../transactions/wallet.dart';
+import '../marketplace/job.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
 import 'premium_components.dart';
@@ -232,7 +233,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
   String _money(BuildContext context, int value) {
-    return "\${NumberFormat.decimalPattern('en_US').format(value)} \${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'Toman') : wallet.currency}";
+    return "${NumberFormat.decimalPattern('en_US').format(value)} ${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'Toman') : wallet.currency}";
   }
 
   @override
@@ -396,5 +397,168 @@ class _FlowNode extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Target-aligned opportunity DNA signature. It only surfaces attributes
+/// that are already present in the real opportunity model.
+class HopeOpportunityDnaSignature extends StatelessWidget {
+  const HopeOpportunityDnaSignature({
+    super.key,
+    required this.job,
+  });
+
+  final HopeJob job;
+
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final secondary = HopeV2Colors.secondary;
+    final dimensions = <({String label, String value, Color color})>[
+      (
+        label: _t(context, 'نوع همکاری', 'Work mode'),
+        value: _workMode(context),
+        color: primary,
+      ),
+      (
+        label: _t(context, 'دسته‌بندی', 'Category'),
+        value: job.category?.trim().isNotEmpty == true
+            ? job.category!.trim()
+            : (job.categoryId ?? '—'),
+        color: secondary,
+      ),
+      (
+        label: _t(context, 'مکان', 'Location'),
+        value: job.city?.trim().isNotEmpty == true
+            ? job.city!.trim()
+            : _t(context, 'دورکاری', 'Remote'),
+        color: HopeV2Colors.secondary,
+      ),
+      (
+        label: _t(context, 'تطبیق', 'Match'),
+        value: job.recommendationScore == null
+            ? _t(context, 'ثبت نشده', 'Not scored')
+            : '${job.recommendationScore!.clamp(0, 100).round()}%',
+        color: primary,
+      ),
+      (
+        label: _t(context, 'بودجه', 'Budget'),
+        value: job.isMission
+            ? [job.budgetMin, job.budgetMax]
+                .where((v) => v?.trim().isNotEmpty == true)
+                .join(' – ')
+            : (job.monthlySalary ?? job.budgetMin ?? '—'),
+        color: HopeV2Colors.warning,
+      ),
+    ];
+
+    return PremiumPanel(
+      key: const ValueKey('opportunity-dna-signature'),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+      quiet: true,
+      glass: false,
+      semanticLabel: _t(
+        context,
+        'DNA فرصت بر اساس اطلاعات واقعی',
+        'Opportunity DNA from real opportunity data',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const HopeIcon(
+                HopeV2Icons.insights,
+                size: 19,
+                color: HopeV2Colors.primary,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  _t(context, 'Opportunity DNA', 'Opportunity DNA'),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              PremiumTag(
+                icon: HopeV2Icons.secure,
+                label: _t(context, 'داده‌محور', 'Data-led'),
+                color: HopeV2Colors.secondary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 560 ? 5 : 2;
+              const gap = 7.0;
+              final width = columns == 5
+                  ? (constraints.maxWidth - gap * 4) / 5
+                  : (constraints.maxWidth - gap) / 2;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final dimension in dimensions)
+                    SizedBox(
+                      width: width,
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 58),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: dimension.color.withValues(alpha: .055),
+                          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                          border: Border.all(color: dimension.color.withValues(alpha: .13)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dimension.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: HopeV2Colors.muted,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              dimension.value.isEmpty ? '—' : dimension.value,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _workMode(BuildContext context) {
+    final raw = job.raw['workMode'] ??
+        job.raw['mode'] ??
+        job.raw['locationType'] ??
+        job.raw['work_mode'];
+    final value = raw?.toString().trim().toUpperCase();
+    return switch (value) {
+      'REMOTE' => _t(context, 'دورکاری', 'Remote'),
+      'HYBRID' => _t(context, 'هیبریدی', 'Hybrid'),
+      'ONSITE' || 'ON_SITE' => _t(context, 'حضوری', 'On-site'),
+      _ => value == null || value.isEmpty ? '—' : raw.toString().trim(),
+    };
   }
 }
