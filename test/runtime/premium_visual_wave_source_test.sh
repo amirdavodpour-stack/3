@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
+# [runtime-capture-fa] certify Wave IV offers + notifications hierarchy after #1856 screenshot audit.
 # [runtime-capture-fa] certify finance density wave after #1851 artifact review.
 # [runtime-capture-fa] exact-head guard corrected for multiline wallet metric border invariant.
 # Grouped visual-wave source guard for the runtime-certified discovery surfaces.
