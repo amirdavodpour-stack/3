@@ -1,3 +1,4 @@
+import '../../core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +12,6 @@ import '../../core/settings/settings_controller.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'profile_controller.dart';
@@ -53,7 +53,34 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PremiumPrimaryNavigationScaffold(
+        selectedIndex: 4,
+        onDestinationSelected: (index) => _navigatePrimary(context, index),
+        child: _buildContent(context),
+      );
+
+  void _navigatePrimary(BuildContext context, int index) {
+    if (index == 4) return;
+    if (index == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AppRouter()),
+        (_) => false,
+      );
+      return;
+    }
+    final route = switch (index) {
+      1 => HopeRoutes.jobs(),
+      2 => HopeRoutes.transactions(),
+      3 => HopeRoutes.walletFromContext(context),
+      4 => HopeRoutes.profile(),
+      _ => null,
+    };
+    if (route != null) {
+      Navigator.of(context).pushReplacement(route);
+    }
+  }
+
+  Widget _buildContent(BuildContext context) {
     final auth = context.watch<AuthController>();
     final settings = context.watch<HopeSettingsController>();
     final theme = context.watch<ThemeController>();
@@ -148,7 +175,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             PremiumTag(
                               icon: HopeV2Icons.pending,
                               label: _verificationStatusLabel(context, verification),
-                              color: AppColors.warning,
+                              color: HopeV2Colors.warning,
                             ),
                         ],
                       ),
@@ -238,7 +265,7 @@ padding: const EdgeInsets.all(14),
                           spacing: 10,
                           runSpacing: 10,
                           children: [
-                            _trustMetric(context, HopeV2Icons.verified, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : AppColors.muted),
+                            _trustMetric(context, HopeV2Icons.verified, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : HopeV2Colors.muted),
                             if (data.providerType.isNotEmpty)
                               _trustMetric(
                                 context,
@@ -251,9 +278,9 @@ padding: const EdgeInsets.all(14),
                                 context,
                                 HopeV2Icons.pending,
                                 _capacityLabel(context, data.capacity),
-                                AppColors.warning,
+                                HopeV2Colors.warning,
                               ),
-                            if (data.completedJobs > 0) _trustMetric(context, HopeV2Icons.completed, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', AppColors.success),
+                            if (data.completedJobs > 0) _trustMetric(context, HopeV2Icons.completed, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', HopeV2Colors.success),
                             if (data.activeJobs > 0) _trustMetric(context, HopeV2Icons.activity, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
                           ],
                         ),
@@ -392,14 +419,14 @@ padding: const EdgeInsets.symmetric(vertical: 6),
           ListTile(
             leading: const HopeIconTile(
               HopeV2Icons.transferOut,
-              color: AppColors.danger,
+              color: HopeV2Colors.danger,
             ),
             title: Text(
               HopeCopy.of(context).copy_log_out_04a94c7,
               style: TextStyle(
                 color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.dangerDark
-                    : AppColors.danger,
+                    ? HopeV2Colors.dangerDark
+                    : HopeV2Colors.danger,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -512,7 +539,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
                         Navigator.push(context, HopeRoutes.register()),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primary,
+                      foregroundColor: HopeV2Colors.primary,
                     ),
                     child: Text(
                       HopeCopy.of(context).copy_create_account_bfa3517,
