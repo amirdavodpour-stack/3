@@ -92,3 +92,4 @@ echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
 # [runtime-capture] full EN/LTR editorial media certification after FA/RTL proof.
+# [runtime-capture-fa] certify current HEAD after Offers icon type-contract fix.
