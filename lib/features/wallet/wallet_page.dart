@@ -19,9 +19,14 @@ import '../../core/theme/hope_v2_design.dart';
 import '../../core/router/app_routes.dart';
 
 class WalletPage extends StatefulWidget {
-  const WalletPage({super.key, required this.repository});
+  const WalletPage({
+    super.key,
+    required this.repository,
+    this.showPrimaryNavigation = true,
+  });
 
   final WalletRepository repository;
+  final bool showPrimaryNavigation;
 
   @override
   State<WalletPage> createState() => _WalletPageState();
@@ -559,11 +564,15 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   @override
-  Widget build(BuildContext context) => PremiumPrimaryNavigationScaffold(
-        selectedIndex: 3,
-        onDestinationSelected: (index) => _navigatePrimary(context, index),
-        child: _buildContent(context),
-      );
+  Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    if (!widget.showPrimaryNavigation) return content;
+    return PremiumPrimaryNavigationScaffold(
+      selectedIndex: 3,
+      onDestinationSelected: (index) => _navigatePrimary(context, index),
+      child: content,
+    );
+  }
 
   void _navigatePrimary(BuildContext context, int index) {
     if (index == 3) return;
