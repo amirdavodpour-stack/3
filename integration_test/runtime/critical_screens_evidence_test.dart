@@ -734,17 +734,10 @@ Future<void> _captureRuntimeScreen(
   await _prepareRuntimeScreenshotSurface(tester);
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
   if (child is LoginPage) {
-    // Login can keep scheduled frames alive during its initial auth/hero build.
-    // Do not use pumpAndSettle here: the unbounded settle path can stall the
-    // headless VM-service driver before the screenshot request.
-    // One short raster turn is enough to commit the Login surface. The prior
-    // 1200ms pump kept the test body inside the frame boundary long enough for
-    // the headless VM-service driver to stall before the next statement.
-    await tester.pump(const Duration(milliseconds: 100));
-    // Do not add another zero-duration pump or real-time delay here: the
-    // integration_test VM-service request remains outstanding until the test
-    // body completes, and that post-settle boundary has reproduced driver
-    // disposal in headless Android runtime evidence.
+    // _prepareRuntimeScreenshotSurface already commits one frame after the
+    // Android surface conversion. A second timed pump at this boundary has
+    // repeatedly stalled the headless VM-service driver before takeScreenshot.
+    // Capture immediately after the proven surface-commit boundary.
     print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;

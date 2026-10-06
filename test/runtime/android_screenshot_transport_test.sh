@@ -136,5 +136,9 @@ if printf '%s\n' "$login_capture_block" | grep -qE 'await[[:space:]]+tester\.pum
   echo "FAIL: Login runtime capture must not use unbounded pumpAndSettle" >&2
   exit 1
 fi
+if printf '%s\n' "$login_capture_block" | grep -Fq 'await tester.pump('; then
+  echo "FAIL: Login runtime capture must not issue a second tester.pump after surface preparation" >&2
+  exit 1
+fi
 
 echo "PASS: Flutter rendered-screenshot transport contract"
