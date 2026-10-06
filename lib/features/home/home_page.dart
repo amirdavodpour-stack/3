@@ -41,13 +41,23 @@ class _HomePageState extends State<HomePage> {
             () => _scaffoldKey.currentState?.openDrawer(),
             () => _openCreate(context),
           ),
-        1 => const JobsPage(key: ValueKey('explore')),
+        1 => const JobsPage(
+            key: ValueKey('explore'),
+            showPrimaryNavigation: false,
+          ),
         2 => TransactionsPage(
             key: const ValueKey('transactions'),
             repository: context.read<TransactionRepository>(),
+            showPrimaryNavigation: false,
           ),
-        3 => WalletPage(repository: context.read<WalletRepository>()),
-        4 => const ProfilePage(key: ValueKey('profile')),
+        3 => WalletPage(
+            repository: context.read<WalletRepository>(),
+            showPrimaryNavigation: false,
+          ),
+        4 => const ProfilePage(
+            key: ValueKey('profile'),
+            showPrimaryNavigation: false,
+          ),
         _ => const SizedBox.shrink(),
       };
 
