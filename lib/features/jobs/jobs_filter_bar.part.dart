@@ -366,12 +366,70 @@ class _JobsFilterHeader extends StatelessWidget {
       children: [
         if (compact) ...[
           searchField,
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              resultLabel,
-              const Spacer(),
-              refinement,
+              Expanded(
+                child: Row(
+                  children: [
+                    resultLabel,
+                    if (filterCount > 0) ...[
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _t(
+                            context,
+                            'فیلتر فعال',
+                            'active filters',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: filterCount > 0
+                      ? Theme.of(context).colorScheme.primary.withValues(alpha: .10)
+                      : HopeV2Surfaces.panel(context),
+                  borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                  border: Border.all(
+                    color: filterCount > 0
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: .24)
+                        : HopeV2Surfaces.border(context),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      refinement,
+                      const SizedBox(width: 2),
+                      Text(
+                        filterCount == 0
+                            ? _t(context, 'فیلترها', 'Filters')
+                            : '$filterCount ${_t(context, 'فیلتر', 'filters')}',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: filterCount > 0
+                                  ? Theme.of(context).colorScheme.primary
+                                  : HopeV2Colors.muted,
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ] else
