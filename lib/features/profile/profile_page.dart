@@ -140,8 +140,8 @@ class _ProfilePageState extends State<ProfilePage> {
               final verification = data?.verificationStatus.trim().toUpperCase();
               return PremiumPanel(
                 key: const ValueKey('profile-account-summary'),
-                glass: true,
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                quiet: true,
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: Row(
                   children: [
                     const HopeIconTile(
@@ -250,8 +250,8 @@ class _ProfilePageState extends State<ProfilePage> {
               final data = snapshot.data;
 
               return PremiumPanel(
-                glass: true,
-padding: const EdgeInsets.all(14),
+                quiet: true,
+padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Column(
                   children: [
                     ListTile(
@@ -328,6 +328,7 @@ padding: const EdgeInsets.all(14),
           const SizedBox(height: 10),
           PremiumQuickActionStrip(
             domain: HopeProductDomain.work,
+            quiet: true,
             title: _t(context, 'درخواست‌های کاری', 'Work destinations'),
             actions: [
               PremiumQuickAction(
