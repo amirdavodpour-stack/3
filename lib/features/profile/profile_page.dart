@@ -118,7 +118,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ? null
                 : user['email']?.toString(),
             trailing: CircleAvatar(
-              radius: 25,
+              radius: 29,
               backgroundColor:
                   HopeV2Colors.primary.withValues(alpha: .14),
               child: Text(
@@ -141,7 +141,7 @@ class _ProfilePageState extends State<ProfilePage> {
               return PremiumPanel(
                 key: const ValueKey('profile-account-summary'),
                 quiet: true,
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
                 child: Row(
                   children: [
                     const HopeIconTile(
@@ -194,7 +194,7 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: MediaQuery.sizeOf(context).width < 500
