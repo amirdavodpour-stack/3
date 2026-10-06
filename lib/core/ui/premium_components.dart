@@ -507,6 +507,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
     this.domain,
     this.page,
     this.glass = true,
+    this.quiet = false,
   });
 
   final String title;
@@ -515,6 +516,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
   final HopeProductDomain? domain;
   final HopePageId? page;
   final bool glass;
+  final bool quiet;
 
   @override
   Widget build(BuildContext context) {
@@ -525,6 +527,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
         Theme.of(context).colorScheme.primary;
     return PremiumPanel(
       glass: glass,
+      quiet: quiet,
       padding: const EdgeInsets.all(HopeV2Spacing.md),
       semanticLabel: title,
       child: Column(
@@ -828,6 +831,7 @@ class PremiumPanel extends StatelessWidget {
     this.radius = HopeV2Radii.lg,
     this.highlight = false,
     this.glass = false,
+    this.quiet = false,
     this.semanticLabel,
   });
 
@@ -836,6 +840,9 @@ class PremiumPanel extends StatelessWidget {
   final double radius;
   final bool highlight;
   final bool glass;
+
+  /// Secondary surface with reduced containment/chrome.
+  final bool quiet;
   final String? semanticLabel;
 
   @override
@@ -850,8 +857,16 @@ class PremiumPanel extends StatelessWidget {
             ? const EdgeInsets.all(14)
             : padding;
     final panelFill = dark
-        ? (glass ? HopeV2Colors.panelSoftDark : Colors.transparent)
-        : (glass ? HopeV2Colors.panelSoftLight : Colors.transparent);
+        ? (glass
+            ? HopeV2Colors.panelSoftDark
+            : (quiet
+                ? HopeV2Colors.panelSoftDark.withValues(alpha: .34)
+                : Colors.transparent))
+        : (glass
+            ? HopeV2Colors.panelSoftLight
+            : (quiet
+                ? HopeV2Colors.panelSoftLight.withValues(alpha: .72)
+                : Colors.transparent));
     final gradient = highlight
         ? LinearGradient(
             begin: AlignmentDirectional.topStart,
@@ -876,17 +891,23 @@ class PremiumPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: highlight ? null : (glass ? panelFill : HopeV2Surfaces.panel(context)),
         gradient: gradient,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(quiet ? HopeV2Radii.md : radius),
         border: Border.all(
-          color: highlight
-              ? scheme.primary.withValues(alpha: dark ? .17 : .16)
-              : (dark
-                  ? Colors.white.withValues(alpha: glass ? .065 : .04)
-                  : HopeV2Surfaces.border(context)),
+          color: quiet
+              ? (dark
+                  ? Colors.white.withValues(alpha: .025)
+                  : HopeV2Surfaces.border(context).withValues(alpha: .42))
+              : highlight
+                  ? scheme.primary.withValues(alpha: dark ? .17 : .16)
+                  : (dark
+                      ? Colors.white.withValues(alpha: glass ? .065 : .04)
+                      : HopeV2Surfaces.border(context)),
           width: 1,
         ),
-        boxShadow: dark
-            ? [
+        boxShadow: quiet
+            ? const []
+            : dark
+                ? [
                 if (highlight)
                   BoxShadow(
                     color: scheme.primary.withValues(alpha: glass ? .05 : .035),
@@ -1725,13 +1746,13 @@ class PremiumFilterChip extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: selected
-                  ? base.withValues(alpha: interactive ? .11 : .05)
+                  ? base.withValues(alpha: interactive ? .08 : .04)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(HopeV2Radii.chip),
               border: Border.all(
                 color: selected
-                    ? base.withValues(alpha: interactive ? .28 : .12)
-                    : HopeV2Surfaces.border(context).withValues(alpha: .65),
+                    ? base.withValues(alpha: interactive ? .22 : .10)
+                    : HopeV2Surfaces.border(context).withValues(alpha: .30),
               ),
             ),
             child: Row(
