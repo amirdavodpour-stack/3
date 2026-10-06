@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
+# [runtime-capture-fa] certify finance density wave after #1851 artifact review.
 # Grouped visual-wave source guard for the runtime-certified discovery surfaces.
 # [runtime-capture-fa-home] isolate editorial media to the Home discovery capture.
 # Final verification capture after adding the scoped fixture contract.
@@ -67,7 +68,7 @@ if grep -Fq 'PremiumStatCard(' "$transactions"; then
   echo "FAIL: Work & finance center still uses heavyweight stat cards in the runtime-certified surface" >&2
   exit 1
 fi
-grep -Fq 'final metricWidth = constraints.maxWidth < 420 ? 106.0 : 132.0;' "$transactions"
+grep -Fq 'final metricWidth = (constraints.maxWidth - 16) / 3;' "$transactions"
 grep -Fq 'fontSize: emphasized ? 14 : 11.5' "$wallet"
 grep -Fq 'border: emphasized ? Border.all(' "$wallet"
 echo "PASS: premium visual composition wave source integrity"
