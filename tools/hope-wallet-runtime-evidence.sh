@@ -265,6 +265,7 @@ run_host_batch_session() {
     baseline-b) baseline_batch="b" ;;
     baseline-c) baseline_batch="c" ;;
     baseline-d) baseline_batch="d" ;;
+    baseline-g) baseline_batch="g" ;;
   esac
   if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ] || [ "$mode" = "responsive-c" ]; then
     responsive_only="true"
@@ -423,37 +424,29 @@ else
   run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
 
   if [ "$baseline_status" -ne 0 ] && [ "$CAPTURE_LOCALE" = "fa" ]; then
-    # baseline-d is the existing certified tail batch: create-job, register,
-    # password-reset. Keep the already-captured offers screenshot untouched.
-    auth_tail_screens=(
-      "create-job-fa-rtl"
-      "register-fa-rtl"
-      "password-reset-fa-rtl"
-    )
-    auth_tail_complete=0
-    for marker in "${auth_tail_screens[@]}"; do
-      if ! test -s "$evidence_dir/$marker.png"; then
-        auth_tail_complete=1
-        break
-      fi
-    done
-    if [ "$auth_tail_complete" -eq 1 ] && test -s "$evidence_dir/create-job-fa-rtl.png"; then
-      echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
+    # A failed monolithic session can die before integration_test returns the
+    # screenshot payload to onScreenshot. In that case none of the preceding
+    # PNGs are durable yet, so recovery must not depend on create-job.png.
+    # Re-capture each vulnerable auth-tail screen in its own fresh Driver
+    # session; this isolates the late-session VM-service failure boundary.
+    echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
+    hope_android_device_ready "$RUNTIME_SERIAL"
+
+    if ! test -s "$evidence_dir/create-job-fa-rtl.png"; then
+      echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:create-job"
+      run_host_batch_session baseline-g "create-job-fa-rtl" || true
+    fi
+
+    if ! test -s "$evidence_dir/register-fa-rtl.png"; then
+      echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:register"
       hope_android_device_ready "$RUNTIME_SERIAL"
+      run_host_batch_session baseline-e "register-fa-rtl" || true
+    fi
 
-      # Late-session VM-service screenshot hangs are isolated to one auth page
-      # per fresh Driver session. The screenshot transport itself remains the
-      # proven flutter integration_test onScreenshot path.
-      if ! test -s "$evidence_dir/register-fa-rtl.png"; then
-        echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:register"
-        run_host_batch_session baseline-e "register-fa-rtl" || true
-      fi
-
-      if ! test -s "$evidence_dir/password-reset-fa-rtl.png"; then
-        echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:password-reset"
-        hope_android_device_ready "$RUNTIME_SERIAL"
-        run_host_batch_session baseline-f "password-reset-fa-rtl" || true
-      fi
+    if ! test -s "$evidence_dir/password-reset-fa-rtl.png"; then
+      echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:password-reset"
+      hope_android_device_ready "$RUNTIME_SERIAL"
+      run_host_batch_session baseline-f "password-reset-fa-rtl" || true
     fi
   fi
 
