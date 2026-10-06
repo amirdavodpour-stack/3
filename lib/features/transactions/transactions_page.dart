@@ -488,15 +488,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
-                      title: _t('مرکز کار', 'Work center'),
-                      subtitle: HopeCopy.of(context)
-                          .copy_projects_progress_and_payments_at_a_glance_a0178c8,
-                      trailing: const HopeIconTile(
-                        HopeV2Icons.activity,
-                        size: 42,
-                        filled: true,
-                      ),
-                    ),
+                      title: _t('مرکز مالی و همکاری‌ها', 'Work & finance center'),
+                      subtitle: _t(
+                        'همکاری‌های فعال، وضعیت اجرا و تسویه مالی را در یک نگاه دنبال کنید.',
+                        'Track active work, execution state, and financial settlement in one view.',
+                      ),                    ),
                     const SizedBox(height: 6),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
@@ -553,7 +549,68 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         );
                       },
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
+                    PremiumPanel(
+                      key: const ValueKey('work-center-focus-strip'),
+                      glass: false,
+                      quiet: true,
+                      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+                      child: Row(
+                        children: [
+                          HopeIconTile(
+                            activeItems.isNotEmpty
+                                ? HopeV2Icons.activity
+                                : HopeV2Icons.completed,
+                            size: 38,
+                            filled: true,
+                            color: activeItems.isNotEmpty
+                                ? Theme.of(context).colorScheme.primary
+                                : HopeV2Colors.success,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  activeItems.isNotEmpty
+                                      ? _t('تمرکز فعلی', 'Current focus')
+                                      : _t('وضعیت مالی', 'Financial status'),
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: HopeV2Colors.muted,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  activeItems.isNotEmpty
+                                      ? _t(
+                                          '$activeCount همکاری در جریان است',
+                                          '$activeCount active collaborations',
+                                        )
+                                      : _t(
+                                          '$settledCount همکاری تسویه شده است',
+                                          '$settledCount collaborations settled',
+                                        ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (settledItems.isNotEmpty)
+                            PremiumTag(
+                              icon: HopeV2Icons.completed,
+                              label: '$settledCount ${_t('تسویه', 'settled')}',
+                              color: HopeV2Colors.success,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     if (activeItems.isNotEmpty || settledItems.isNotEmpty) ...[
                       PremiumSectionHeader(
                         page: HopePageId.workCenter,
