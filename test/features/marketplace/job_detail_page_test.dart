@@ -323,7 +323,8 @@ void main() {
     expect(find.text('94% Match'), findsOneWidget);
     expect(find.text('Match intelligence'), findsOneWidget);
     expect(tester.getTopLeft(match).dy, lessThan(280));
-    expect(tester.getSize(match).height, lessThan(200));
+    expect(tester.getSize(match).height, greaterThanOrEqualTo(160));
+    expect(tester.getSize(match).width, greaterThan(240));
     expect(find.text('Match signals'), findsNothing);
     expect(tester.takeException(), isNull);
   });

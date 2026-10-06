@@ -1519,6 +1519,7 @@ class _MatchIntelligence extends StatelessWidget {
       child: GestureDetector(
         onTap: () => _showDetails(context),
         child: Container(
+          constraints: const BoxConstraints(minHeight: 172),
           key: const ValueKey('opportunity-match-intelligence-compact-surface'),
           padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
           decoration: BoxDecoration(
