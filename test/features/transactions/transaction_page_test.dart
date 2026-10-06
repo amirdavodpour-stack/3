@@ -521,4 +521,25 @@ void main() {
     expect(find.text('Employer charge'), findsOneWidget);
     expect(find.text('Worker payout'), findsOneWidget);
   });
+
+
+  testWidgets('compact transaction summary prioritizes amount over technical reference copy',
+      (tester) async {
+    final repo = _FakeTx()
+      ..payment = Future.value(HopePayment.fromMap({
+        'id': 'p-compact',
+        'status': 'HELD',
+        'amount': 1650000,
+        'providerRef': 'internal-ledger-reference-compact',
+        'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+      }));
+
+    await _pump(tester, repo, ownerId: 'u1', width: 360);
+
+    expect(find.text('Financial summary'), findsOneWidget);
+    expect(find.text('Reference'), findsNothing);
+    expect(find.text('1,650,000 TOMAN'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }
