@@ -850,16 +850,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           j.recommendationReasons.isNotEmpty)) ...[
                     SizedBox(height: compactViewport ? 8 : 12),
                     if (compactViewport)
-                      ConstrainedBox(
-                        key: const ValueKey(
-                          'opportunity-match-intelligence-compact-boundary',
-                        ),
-                        constraints: const BoxConstraints(minHeight: 166),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: _MatchIntelligence(job: j, compact: true),
-                        ),
-                      )
+                      _CompactMatchSummary(job: j)
                     else
                       _MatchIntelligence(job: j),
                   ],
@@ -1453,6 +1444,218 @@ class _JobLifecycleCard extends StatelessWidget {
               ),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactMatchSummary extends StatelessWidget {
+  const _CompactMatchSummary({required this.job});
+
+  final HopeJob job;
+
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _componentLabel(BuildContext context, String key) => switch (key) {
+    'skills' => _t(context, 'مهارت', 'Skills'),
+    'category' => _t(context, 'دسته‌بندی', 'Category'),
+    'location' => _t(context, 'مکان', 'Location'),
+    'salary' => _t(context, 'درآمد', 'Salary'),
+    _ => key,
+  };
+
+  double _componentValue(String key) {
+    final raw = job.recommendationComponents[key];
+    if (raw == null) return 0;
+    return raw <= 1 ? raw : raw / 100;
+  }
+
+  Widget _metric(BuildContext context, String key) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final percent = (_componentValue(key).clamp(0, 1) * 100).round();
+    return Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .48),
+        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        border: Border.all(
+          color: HopeV2Surfaces.border(context).withValues(alpha: .72),
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              _componentLabel(context, key),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            '${percent}%',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: primary,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final score = job.recommendationScore;
+    final primary = Theme.of(context).colorScheme.primary;
+    final fit = score == null
+        ? null
+        : score >= 90
+            ? _t(context, 'تناسب بسیار قوی', 'Very strong fit')
+            : score >= 75
+                ? _t(context, 'تناسب قوی', 'Strong fit')
+                : score >= 60
+                    ? _t(context, 'تناسب خوب', 'Good fit')
+                    : _t(context, 'تناسب اولیه', 'Early fit');
+    final confidence = job.aiRecommendationConfidence;
+    final hasComponents = const <String>[
+      'skills',
+      'category',
+      'location',
+      'salary',
+    ].any(job.recommendationComponents.containsKey);
+
+    return PremiumPanel(
+      key: const ValueKey('opportunity-match-intelligence-compact-surface'),
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+      highlight: true,
+      semanticLabel: _t(
+        context,
+        'جزئیات تطبیق این فرصت',
+        'Match details for this opportunity',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 46,
+            child: Row(
+              children: [
+                if (score != null) ...[
+                  SizedBox(
+                    width: 46,
+                    height: 46,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox.square(
+                          dimension: 46,
+                          child: CircularProgressIndicator(
+                            value: 1,
+                            strokeWidth: 4,
+                            color: primary.withValues(alpha: .12),
+                          ),
+                        ),
+                        SizedBox.square(
+                          dimension: 46,
+                          child: CircularProgressIndicator(
+                            value: (score / 100).clamp(0.0, 1.0),
+                            strokeWidth: 4,
+                            strokeCap: StrokeCap.round,
+                            color: primary,
+                          ),
+                        ),
+                        Text(
+                          '${score.clamp(0, 100).toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const HopeIcon(
+                            HopeV2Icons.featured,
+                            color: HopeV2Colors.primaryDark,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _t(context, 'هوش تطبیق', 'Match intelligence'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (fit != null)
+                        Text(
+                          fit,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: primary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      if (confidence != null)
+                        Text(
+                          '${(confidence.clamp(0, 1) * 100).round()}% ${_t(context, 'اطمینان', 'confidence')}',
+                          key: const ValueKey('match-confidence-note'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: HopeV2Colors.muted,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (hasComponents) ...[
+            const SizedBox(height: 7),
+            Row(
+              children: [
+                Expanded(child: _metric(context, 'skills')),
+                const SizedBox(width: 6),
+                Expanded(child: _metric(context, 'category')),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                Expanded(child: _metric(context, 'location')),
+                const SizedBox(width: 6),
+                Expanded(child: _metric(context, 'salary')),
+              ],
+            ),
+          ],
         ],
       ),
     );
