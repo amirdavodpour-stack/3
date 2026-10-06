@@ -18,7 +18,12 @@ import 'profile_controller.dart';
 
 import '../../core/ui/premium_components.dart';
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({
+    super.key,
+    this.showPrimaryNavigation = true,
+  });
+
+  final bool showPrimaryNavigation;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -53,11 +58,15 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
-  Widget build(BuildContext context) => PremiumPrimaryNavigationScaffold(
-        selectedIndex: 4,
-        onDestinationSelected: (index) => _navigatePrimary(context, index),
-        child: _buildContent(context),
-      );
+  Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    if (!widget.showPrimaryNavigation) return content;
+    return PremiumPrimaryNavigationScaffold(
+      selectedIndex: 4,
+      onDestinationSelected: (index) => _navigatePrimary(context, index),
+      child: content,
+    );
+  }
 
   void _navigatePrimary(BuildContext context, int index) {
     if (index == 4) return;
