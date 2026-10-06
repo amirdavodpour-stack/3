@@ -36,10 +36,11 @@ grep -Fq 'if (recommended.length > 1)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$jobs_widgets"
 
 register_block="$(sed -n '/if (child is RegisterPage)/,/if (child is PasswordResetPage)/p' "$runtime_driver")"
-printf '%s\n' "$register_block" | grep -Fq 'HOPE_RUNTIME_REGISTER_DIRECT_CAPTURE'
-printf '%s\n' "$register_block" | grep -Fq 'await _captureRuntimeScreenshot(marker)'
-if printf '%s\n' "$register_block" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
-  echo "FAIL: Register runtime capture performs an extra pump/delay after surface preparation" >&2
+register_post_settle="$(printf '%s\n' "$register_block" | sed -n '/HOPE_RUNTIME_REGISTER_FAST_SETTLE_DONE/,$p')"
+register_capture_tail="$(printf '%s\n' "$register_post_settle" | sed '/await _captureRuntimeScreenshot(marker)/q')"
+printf '%s\n' "$register_post_settle" | grep -Fq 'await _captureRuntimeScreenshot(marker)'
+if printf '%s\n' "$register_capture_tail" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
+  echo "FAIL: Register runtime capture performs an extra pump/delay after bounded settle" >&2
   exit 1
 fi
 grep -Fq 'system-images/android-35/default/x86_64' ".github/workflows/hope-ui-runtime-evidence.yml"
