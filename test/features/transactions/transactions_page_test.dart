@@ -186,6 +186,16 @@ void main() {
     expect(find.byType(BackdropFilter), findsNothing);
   });
 
+  testWidgets('loaded work center uses dense header hierarchy', (tester) async {
+    final repo = _Transactions()
+      ..jobs = [_job('dense-header', status: 'IN_PROGRESS')];
+    await _pump(tester, repo);
+
+    final header = tester.widget<PremiumHeader>(find.byType(PremiumHeader));
+    expect(header.dense, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('authenticated transactions render active and completed jobs',
       (tester) async {
     final repo = _Transactions()
