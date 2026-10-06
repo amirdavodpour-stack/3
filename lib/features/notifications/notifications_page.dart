@@ -360,6 +360,40 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
               ),
               const SizedBox(height: HopeV2Spacing.md),
+              if (!loading && error == null && items.isNotEmpty) ...[
+                PremiumPanel(
+                  quiet: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_t('اعلان جدید', 'Unread'), style: Theme.of(context).textTheme.labelMedium),
+                            const SizedBox(height: 3),
+                            Text('$unreadCount', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: unreadCount > 0 ? HopeV2Colors.primary : null)),
+                          ],
+                        ),
+                      ),
+                      Container(width: 1, height: 34, color: Theme.of(context).dividerColor.withValues(alpha: .45)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_t('کل اعلان‌ها', 'Total notifications'), style: Theme.of(context).textTheme.labelMedium),
+                            const SizedBox(height: 3),
+                            Text('${items.length}', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                          ],
+                        ),
+                      ),
+                      const HopeIcon(HopeV2Icons.notifications, size: 22),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _load,
