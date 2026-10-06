@@ -529,4 +529,62 @@ void main() {
 
     }
   });
+  testWidgets(
+    'featured scan card compresses secondary metadata into one compact row on phone widths',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'job-featured-scan-compact-density',
+        'title': 'طراحی رابط موبایل حرفه‌ای',
+        'description': 'Compact discovery density contract.',
+        'categoryId': 'design',
+        'category': 'Software',
+        'jobType': 'FIXED',
+        'budgetMin': '1500000',
+        'budgetMax': '2500000',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+        'recommendationScore': 0.94,
+        'workMode': 'REMOTE',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featuredScan,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('1,500,000 – 2,500,000 تومان'), findsOneWidget);
+      expect(find.text('تهران'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(OpportunityCard)).height,
+        lessThan(235),
+      );
+    },
+  );
+
 }
