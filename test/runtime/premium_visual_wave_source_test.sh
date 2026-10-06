@@ -57,6 +57,6 @@ grep -Fq 'hope-android-sdk-api35-cmake3.22.1-default' ".github/workflows/hope-ui
 grep -Fq 'hope-android-avd-api35-default-pixel2' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'api-level: 35' ".github/workflows/hope-ui-runtime-evidence.yml"
 echo "PASS: premium visual composition wave source integrity"
-echo "PASS: Register runtime capture uses direct screenshot after bounded settle"
+echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after bounded settle"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
 # [runtime-capture] full EN/LTR editorial media certification after FA/RTL proof.
