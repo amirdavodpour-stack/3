@@ -56,6 +56,7 @@ extension on _TransactionPageState {
               label: _t(fa[i], en[i]),
               icon: icons[i],
               last: i == en.length - 1,
+              compact: compact,
             ),
           const SizedBox(height: 4),
           if (!compact)
@@ -145,6 +146,7 @@ extension on _TransactionPageState {
     required String label,
     required Object icon,
     required bool last,
+    required bool compact,
   }) {
     final scheme = Theme.of(context).colorScheme;
     final completed = index < current;
