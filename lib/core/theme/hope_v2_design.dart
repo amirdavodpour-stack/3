@@ -150,17 +150,17 @@ class HopeV2Spacing {
 
 class HopeV2Radii {
   const HopeV2Radii._();
-  static const sm = 12.0;
-  static const md = 16.0;
-  static const lg = 18.0;
-  static const xl = 24.0;
-  static const hero = 28.0;
-  static const input = 14.0;
-  static const button = 14.0;
-  static const navigation = 14.0;
-  static const chip = 12.0;
-  static const iconTile = 18.0;
-  static const fab = 19.0;
+  static const sm = 10.0;
+  static const md = 14.0;
+  static const lg = 16.0;
+  static const xl = 20.0;
+  static const hero = 24.0;
+  static const input = 12.0;
+  static const button = 12.0;
+  static const navigation = 12.0;
+  static const chip = 10.0;
+  static const iconTile = 14.0;
+  static const fab = 16.0;
   static const pill = 999.0;
 }
 
@@ -197,11 +197,11 @@ class HopeV2Touch {
 class HopeV2Navigation {
   const HopeV2Navigation._();
 
-  static const barHeight = 72.0;
-  static const dockRadius = 20.0;
-  static const itemRadius = 13.0;
+  static const barHeight = 64.0;
+  static const dockRadius = 16.0;
+  static const itemRadius = 10.0;
   static const itemWidth = 42.0;
-  static const itemHeight = 32.0;
+  static const itemHeight = 28.0;
   static const railMinWidth = 88.0;
   static const railExtendedWidth = 210.0;
 }
@@ -369,12 +369,12 @@ class HopeV2Shadows {
   // Runtime visual certification target: no cyan spill on dark hero edges.
   static const heroDark = [
     BoxShadow(
-      color: Color(0x552E2A72),
-      blurRadius: 34,
-      offset: Offset(0, 18),
+      color: Color(0x3A2E2A72),
+      blurRadius: 30,
+      offset: Offset(0, 14),
     ),
     BoxShadow(
-      color: Color(0x263F3AA0),
+      color: Color(0x173F3AA0),
       blurRadius: 42,
       offset: Offset(-8, 18),
     ),
@@ -382,9 +382,9 @@ class HopeV2Shadows {
 
   static const gradientHero = [
     BoxShadow(
-      color: Color(0x4A6366F1),
-      blurRadius: 34,
-      offset: Offset(0, 16),
+      color: Color(0x2E6366F1),
+      blurRadius: 28,
+      offset: Offset(0, 12),
     ),
   ];
 }
@@ -405,18 +405,18 @@ class HopeV2Type {
   static TextStyle display(BuildContext context) => Theme.of(context)
       .textTheme
       .displaySmall!
-      .copyWith(fontSize: 34, letterSpacing: -.85, height: 1.06);
+      .copyWith(fontSize: 32, letterSpacing: -.75, height: 1.06);
 
   static TextStyle hero(BuildContext context) => Theme.of(context)
       .textTheme
       .headlineMedium!
-      .copyWith(fontSize: 31, letterSpacing: -.75, height: 1.05);
+      .copyWith(fontSize: 29, letterSpacing: -.65, height: 1.05);
 
   static TextStyle metric(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
       .copyWith(
-        fontSize: 21,
+        fontSize: 20,
         fontWeight: FontWeight.w900,
         letterSpacing: -.45,
         height: 1.0,

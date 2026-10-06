@@ -113,8 +113,8 @@ class PremiumNavigationBar extends StatelessWidget {
           boxShadow: dark
               ? [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: .10),
-                    blurRadius: 28,
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: .05),
+                    blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
                 ]
@@ -291,7 +291,7 @@ class PremiumPageFrame extends StatelessWidget {
                 ? null
                 : BorderDirectional(
                     start: BorderSide(
-                      color: domainAccent.withValues(alpha: .24),
+                      color: domainAccent.withValues(alpha: .12),
                       width: 1,
                     ),
                   ),
@@ -352,7 +352,7 @@ class PremiumIconButton extends StatelessWidget {
         : Theme.of(context).colorScheme.onSurfaceVariant;
     final background = selected
         ? base.withValues(
-            alpha: dark ? .18 : .10,
+            alpha: dark ? .14 : .10,
           )
         : HopeV2Surfaces.panel(context);
 
@@ -375,7 +375,7 @@ class PremiumIconButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(HopeV2Radii.button),
               border: Border.all(
                 color: selected
-                    ? base.withValues(alpha: dark ? .34 : .18)
+                    ? base.withValues(alpha: dark ? .26 : .18)
                     : HopeV2Surfaces.border(context),
               ),
             ),
@@ -650,14 +650,18 @@ class PremiumHeader extends StatelessWidget {
                     child: Container(
                       padding: dense && compact
                           ? EdgeInsets.zero
-                          : const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          : const EdgeInsetsDirectional.only(start: 8),
                       decoration: dense && compact
                           ? const BoxDecoration()
                           : BoxDecoration(
-                              color: (resolvedDomain?.spec.accent ??
-                                      Theme.of(context).colorScheme.primary)
-                                  .withValues(alpha: .09),
-                              borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                              border: BorderDirectional(
+                                start: BorderSide(
+                                  color: (resolvedDomain?.spec.accent ??
+                                          Theme.of(context).colorScheme.primary)
+                                      .withValues(alpha: .52),
+                                  width: 2,
+                                ),
+                              ),
                             ),
                       child: Text(
                         eyebrow.toUpperCase(),
@@ -753,9 +757,9 @@ class PremiumPanel extends StatelessWidget {
             end: AlignmentDirectional.bottomEnd,
             colors: dark
                 ? [
-                    scheme.primary.withValues(alpha: glass ? .16 : .105),
-                    HopeV2Colors.secondary.withValues(alpha: glass ? .035 : .018),
-                    HopeV2Surfaces.panel(context).withValues(alpha: glass ? .72 : 1),
+                    scheme.primary.withValues(alpha: glass ? .13 : .075),
+                    HopeV2Colors.secondary.withValues(alpha: glass ? .022 : .012),
+                    HopeV2Surfaces.panel(context).withValues(alpha: glass ? .74 : 1),
                   ]
                 : [
                     scheme.primary.withValues(alpha: glass ? .10 : .07),
@@ -774,9 +778,9 @@ class PremiumPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? scheme.primary.withValues(alpha: dark ? .24 : .18)
+              ? scheme.primary.withValues(alpha: dark ? .17 : .16)
               : (dark
-                  ? Colors.white.withValues(alpha: glass ? .10 : .075)
+                  ? Colors.white.withValues(alpha: glass ? .065 : .04)
                   : HopeV2Surfaces.border(context)),
           width: 1,
         ),
@@ -784,13 +788,13 @@ class PremiumPanel extends StatelessWidget {
             ? [
                 if (highlight)
                   BoxShadow(
-                    color: scheme.primary.withValues(alpha: glass ? .085 : .065),
-                    blurRadius: glass ? 26 : 24,
+                    color: scheme.primary.withValues(alpha: glass ? .05 : .035),
+                    blurRadius: glass ? 22 : 18,
                     offset: const Offset(0, 9),
                   ),
                 if (glass)
                   BoxShadow(
-                    color: HopeV2Colors.secondary.withValues(alpha: .018),
+                    color: HopeV2Colors.secondary.withValues(alpha: .012),
                     blurRadius: 26,
                     offset: const Offset(-7, 12),
                   ),
@@ -1022,8 +1026,8 @@ class PremiumHero extends StatelessWidget {
     final heroHeight = compact
         // Compact mobile hero stays editorial while returning more first-fold
         // space to match, metadata, and the primary action.
-        ? height.clamp(168.0, 320.0).toDouble()
-        : (height < 320 ? 320.0 : height);
+        ? height.clamp(152.0, 300.0).toDouble()
+        : (height < 280 ? 280.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
     return Semantics(
@@ -1526,11 +1530,11 @@ class PremiumTag extends StatelessWidget {
       label: label,
       container: true,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 24),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+        constraints: const BoxConstraints(minHeight: 22),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(
           color: background,
-          borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+          borderRadius: BorderRadius.circular(HopeV2Radii.chip),
           border: Border.all(
             color: inverse
                 ? Colors.white24
@@ -1562,8 +1566,8 @@ class PremiumTag extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -1613,20 +1617,20 @@ class PremiumFilterChip extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: interactive ? onTap : null,
-          borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+          borderRadius: BorderRadius.circular(HopeV2Radii.chip),
           child: AnimatedContainer(
             duration: reduceMotion ? Duration.zero : HopeV2Motion.fast,
             constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: selected
                   ? base.withValues(alpha: interactive ? .11 : .05)
-                  : HopeV2Surfaces.panel(context),
-              borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(HopeV2Radii.chip),
               border: Border.all(
                 color: selected
                     ? base.withValues(alpha: interactive ? .28 : .12)
-                    : HopeV2Surfaces.border(context),
+                    : HopeV2Surfaces.border(context).withValues(alpha: .65),
               ),
             ),
             child: Row(

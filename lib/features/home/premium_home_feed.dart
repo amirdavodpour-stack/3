@@ -641,14 +641,11 @@ padding: const EdgeInsets.all(12),
       constraints: const BoxConstraints(minHeight: 42),
       padding: const EdgeInsets.symmetric(
         horizontal: 6,
-        vertical: 6,
+        vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: HopeV2Colors.panelSoftDark,
-        borderRadius: BorderRadius.circular(HopeV2Radii.md),
-        border: Border.all(
-          color: accent.withValues(alpha: .14),
-        ),
+        color: HopeV2Colors.panelSoftDark.withValues(alpha: .42),
+        borderRadius: BorderRadius.circular(HopeV2Radii.sm),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -664,7 +661,7 @@ padding: const EdgeInsets.all(12),
                   value,
                   maxLines: 1,
                   style: HopeV2Type.metric(context).copyWith(
-                    fontSize: compact ? 13 : (value.length > 7 ? 12 : 15),
+                    fontSize: compact ? 13 : (value.length > 7 ? 11.5 : 14),
                     color: Colors.white,
                   ),
                 ),

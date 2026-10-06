@@ -771,7 +771,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
-                  height: compactViewport ? 148 : 188,
+                  height: compactViewport ? 146 : 176,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
@@ -864,9 +864,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       _MatchIntelligence(job: j),
                   ],
                   const SizedBox(height: 10),
-                  Text(
-                    _t('شرح فرصت', 'Job description'),
-                    style: HopeV2Type.section(context),
+                  PremiumSectionHeader(
+                    domain: HopeProductDomain.discovery,
+                    title: _t('شرح فرصت', 'Job description'),
                   ),
                   const SizedBox(height: 6),
                   Text(

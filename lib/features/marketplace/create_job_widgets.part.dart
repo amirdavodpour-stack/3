@@ -91,20 +91,29 @@ class _TypeHero extends StatelessWidget {
       onTap: () => onChanged(value),
       semanticLabel: '$title. $sub',
       child: Container(
-        padding: const EdgeInsets.all(11),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: selected
-              ? LinearGradient(
-                  begin: AlignmentDirectional.topStart,
-                  end: AlignmentDirectional.bottomEnd,
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    HopeV2Colors.secondary,
-                  ],
-                )
-              : null,
-          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          color: selected
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: .12)
+              : HopeV2Surfaces.panel(context),
+          border: BorderDirectional(
+            start: BorderSide(
+              color: selected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).dividerColor,
+              width: selected ? 2 : 1,
+            ),
+            top: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: .75),
+            ),
+            end: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: .75),
+            ),
+            bottom: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: .75),
+            ),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
