@@ -19,8 +19,14 @@ import '../../core/ui/premium_payment_summary.dart';
 import '../../core/ui/hope_async_state.dart';
 
 class TransactionsPage extends StatefulWidget {
-  const TransactionsPage({super.key, this.repository});
+  const TransactionsPage({
+    super.key,
+    this.repository,
+    this.showPrimaryNavigation = true,
+  });
+
   final TransactionRepository? repository;
+  final bool showPrimaryNavigation;
   @override
   State<TransactionsPage> createState() => _TransactionsPageState();
 }
@@ -300,11 +306,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => PremiumPrimaryNavigationScaffold(
-        selectedIndex: 2,
-        onDestinationSelected: (index) => _navigatePrimary(context, index),
-        child: _buildContent(context),
-      );
+  Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    if (!widget.showPrimaryNavigation) return content;
+    return PremiumPrimaryNavigationScaffold(
+      selectedIndex: 2,
+      onDestinationSelected: (index) => _navigatePrimary(context, index),
+      child: content,
+    );
+  }
 
   void _navigatePrimary(BuildContext context, int index) {
     if (index == 2) return;
