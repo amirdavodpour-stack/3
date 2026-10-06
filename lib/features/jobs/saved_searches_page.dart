@@ -270,6 +270,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 value: _items.length.toString(),
                 icon: HopeV2Icons.savedSearches,
                 accent: Theme.of(context).colorScheme.primary,
+                compact: true,
                 caption: _t(
                   'فیلترهای ذخیره‌شده حساب شما',
                   'Saved filters on your account',
@@ -326,7 +327,8 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
             else
               PremiumPanel(
                 key: const ValueKey('saved-search-list'),
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                quiet: true,
+                padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Column(
                   children: _items.map((item) {
                     final busy = _busyId == item.id;
