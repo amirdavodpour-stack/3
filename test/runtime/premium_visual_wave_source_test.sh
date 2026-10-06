@@ -43,6 +43,15 @@ if printf '%s\n' "$register_capture_tail" | grep -Eq 'await tester\.pump|Future<
   echo "FAIL: Register runtime capture performs an extra pump/delay after bounded settle" >&2
   exit 1
 fi
+
+password_reset_block="$(sed -n '/if (child is PasswordResetPage)/,/if (child is WalletPage)/p' "$runtime_driver")"
+password_reset_post_settle="$(printf '%s\n' "$password_reset_block" | sed -n '/HOPE_RUNTIME_PASSWORD_RESET_FAST_SETTLE_DONE/,$p')"
+password_reset_capture_tail="$(printf '%s\n' "$password_reset_post_settle" | sed '/await _captureRuntimeScreenshot(marker)/q')"
+printf '%s\n' "$password_reset_post_settle" | grep -Fq 'await _captureRuntimeScreenshot(marker)'
+if printf '%s\n' "$password_reset_capture_tail" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
+  echo "FAIL: PasswordReset runtime capture performs an extra pump/delay after bounded settle" >&2
+  exit 1
+fi
 grep -Fq 'system-images/android-35/default/x86_64' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'hope-android-sdk-api35-cmake3.22.1-default' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'hope-android-avd-api35-default-pixel2' ".github/workflows/hope-ui-runtime-evidence.yml"
