@@ -84,6 +84,13 @@ if grep -Fq 'adb exec-out screencap -p' "$runtime"; then
 fi
 
 # Runtime evidence must reject byte-identical PNGs under different screen names.
+require_line "$runtime" 'baseline-g) baseline_batch="g"'
+require_line "$runtime" 'HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail'
+require_line "$runtime" 'HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:create-job'
+if grep -Fq '&& test -s "$evidence_dir/create-job-fa-rtl.png"' "$runtime"; then
+  printf 'FAIL: auth-tail recovery is gated on a screenshot that cannot exist when the long session dies before onScreenshot flush.\n' >&2
+  exit 1
+fi
 require_line "$runtime" 'duplicate-png-hash'
 
 echo "PASS: Android runtime screenshot baseline contract is locked."
