@@ -350,16 +350,59 @@ class _JobsFilterHeader extends StatelessWidget {
       onSaveSearch: onSaveSearch,
       onOpenSavedSearches: onOpenSavedSearches,
     );
-    final resultLabel = Text(
-      '$resultCount ${copy.copy_results_2d120a3}',
+    final resultLabel = Container(
       key: const ValueKey('hope-explore-result-count'),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: HopeV2Colors.muted,
-            fontWeight: FontWeight.w800,
-          ),
+      constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+      padding: const EdgeInsetsDirectional.fromSTEB(11, 7, 11, 7),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: .16),
+        ),
+      ),
+      child: Text(
+        '$resultCount ${copy.copy_results_2d120a3}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w900,
+            ),
+      ),
     );
+
+    final activeState = filterCount == 0
+        ? null
+        : Container(
+            constraints: const BoxConstraints(minHeight: 32),
+            padding: const EdgeInsetsDirectional.fromSTEB(9, 5, 9, 5),
+            decoration: BoxDecoration(
+              color: HopeV2Colors.secondary.withValues(alpha: .07),
+              borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+              border: Border.all(
+                color: HopeV2Colors.secondary.withValues(alpha: .16),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HopeIcon(
+                  HopeV2Icons.filter,
+                  size: 15,
+                  color: HopeV2Colors.secondaryStrong,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '$filterCount ${_t(context, 'فیلتر فعال', 'active filters')}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: HopeV2Colors.secondaryStrong,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ],
+            ),
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,68 +411,12 @@ class _JobsFilterHeader extends StatelessWidget {
           searchField,
           const SizedBox(height: 8),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    resultLabel,
-                    if (filterCount > 0) ...[
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          _t(
-                            context,
-                            'فیلتر فعال',
-                            'active filters',
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w800,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: filterCount > 0
-                      ? Theme.of(context).colorScheme.primary.withValues(alpha: .10)
-                      : HopeV2Surfaces.panel(context),
-                  borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-                  border: Border.all(
-                    color: filterCount > 0
-                        ? Theme.of(context).colorScheme.primary.withValues(alpha: .24)
-                        : HopeV2Surfaces.border(context),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      refinement,
-                      const SizedBox(width: 2),
-                      Text(
-                        filterCount == 0
-                            ? _t(context, 'فیلترها', 'Filters')
-                            : '$filterCount ${_t(context, 'فیلتر', 'filters')}',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: filterCount > 0
-                                  ? Theme.of(context).colorScheme.primary
-                                  : HopeV2Colors.muted,
-                              fontWeight: FontWeight.w900,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              resultLabel,
+              const SizedBox(width: 7),
+              if (activeState != null) activeState,
+              const Spacer(),
+              refinement,
             ],
           ),
         ] else
@@ -439,6 +426,10 @@ class _JobsFilterHeader extends StatelessWidget {
               Expanded(child: searchField),
               const SizedBox(width: HopeV2Spacing.sm),
               resultLabel,
+              if (activeState != null) ...[
+                const SizedBox(width: 7),
+                activeState,
+              ],
               const SizedBox(width: HopeV2Spacing.sm),
               refinement,
             ],
