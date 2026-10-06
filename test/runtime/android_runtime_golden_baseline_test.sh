@@ -29,7 +29,7 @@ if grep -Fq 'uses: ReactiveCircus/android-emulator-runner@' "$workflow"; then
   exit 1
 fi
 
-require_line "$workflow" "api-level: 35"
+require_line "$workflow" "api-level: 34"
 require_line "$workflow" "target: default"
 require_line "$workflow" "profile: pixel_2"
 require_line "$workflow" "cores: 4"
