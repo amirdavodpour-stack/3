@@ -712,7 +712,7 @@ class _WalletPageState extends State<WalletPage> {
       final scheme = Theme.of(context).colorScheme;
       return Container(
         key: const ValueKey('wallet-balance-hero'),
-        padding: EdgeInsets.fromLTRB(10, compact ? 7 : 10, 10, compact ? 8 : 10),
+        padding: EdgeInsets.fromLTRB(12, compact ? 9 : 12, 12, compact ? 10 : 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -773,7 +773,7 @@ class _WalletPageState extends State<WalletPage> {
                 _money(wallet.totalBalance),
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: compact ? 22 : 26,
+                  fontSize: compact ? 24 : 30,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -.7,
@@ -977,9 +977,15 @@ class _WalletPageState extends State<WalletPage> {
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w900,
-                                fontSize: compact ? 17 : null,
+                                fontSize: compact ? 18 : null,
                                 letterSpacing: compact ? -.3 : null,
                               ),
+                        ),
+                        const SizedBox(height: 5),
+                        PremiumTag(
+                          icon: HopeV2Icons.secure,
+                          label: _t('دفترکل داخلی • تومان', 'Internal ledger • Toman'),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ],
                     ),
@@ -1135,7 +1141,7 @@ class _WalletPageState extends State<WalletPage> {
                     child: ExcludeSemantics(
                       child: PremiumPanel(
                         glass: false,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           onTap: () => _showTransaction(item),
