@@ -342,7 +342,7 @@ class _JobsPageState extends State<JobsPage> {
             page: HopePageId.explore,
             padding: EdgeInsets.fromLTRB(
               compact ? 16 : 20,
-              compact ? 8 : 14,
+              compact ? 6 : 14,
               compact ? 16 : 20,
               72,
             ),
@@ -366,7 +366,7 @@ class _JobsPageState extends State<JobsPage> {
                   ),
                 ),
                 const SliverToBoxAdapter(
-                  child: SizedBox(height: 8),
+                  child: SizedBox(height: 6),
                 ),
                 SliverToBoxAdapter(
                   child: _JobsFilterHeader(

@@ -16,7 +16,7 @@ extension on _TransactionPageState {
 
     return PremiumPanel(
       key: const ValueKey('transaction-payment-lifecycle'),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+      padding: const EdgeInsets.fromLTRB(10, 7, 10, 5),
       highlight: paymentStatus == 'HELD' ||
           paymentStatus == 'RELEASED' ||
           paymentStatus == 'HOLD_PENDING' ||
@@ -46,7 +46,7 @@ extension on _TransactionPageState {
             current: current,
             total: en.length,
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
               context,
@@ -58,7 +58,7 @@ extension on _TransactionPageState {
             ),
           const SizedBox(height: 4),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .42),
               borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -204,8 +204,8 @@ extension on _TransactionPageState {
             child: Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Container(
-                constraints: const BoxConstraints(minHeight: 30),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                constraints: const BoxConstraints(minHeight: 28),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: active
                       ? scheme.primary.withValues(alpha: .07)

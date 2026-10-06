@@ -903,8 +903,8 @@ class _WalletPageState extends State<WalletPage> {
           children: [
             Container(
               key: const ValueKey('wallet-finance-header'),
-              constraints: BoxConstraints(minHeight: compact ? 52 : 64),
-              padding: const EdgeInsetsDirectional.fromSTEB(4, 2, 4, 4),
+              constraints: BoxConstraints(minHeight: compact ? 48 : 64),
+              padding: const EdgeInsetsDirectional.fromSTEB(4, 1, 4, 3),
               child: Row(
                 children: [
                   Expanded(
@@ -946,7 +946,7 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
             ),
-            const SizedBox(height: HopeV2Spacing.sm),
+            SizedBox(height: compact ? 4 : HopeV2Spacing.sm),
             if (_error != null) ...[
               HopeAsyncState(
                 kind: hopeStateKindForError(_error!),
@@ -961,9 +961,9 @@ class _WalletPageState extends State<WalletPage> {
                   label: Text(_t('تلاش دوباره', 'Try again')),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
             ],
-            const SizedBox(height: HopeV2Spacing.sm),
+            SizedBox(height: compact ? 4 : HopeV2Spacing.sm),
             LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 760;
@@ -1028,7 +1028,7 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: compact ? 12 : 18),
             PremiumSectionHeader(
               domain: HopeProductDomain.finance,
               title: _t('تاریخچه کیف پول', 'Wallet history'),
@@ -1037,7 +1037,7 @@ class _WalletPageState extends State<WalletPage> {
                 'Financial entries in chronological order, loaded in pages.',
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: compact ? 8 : 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -1058,8 +1058,8 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            if (_visibleTransactions().isEmpty)
+            SizedBox(height: compact ? 8 : 12),
+            if (_visibleTransactions().isEmpty
               HopeAsyncState(
                 kind: HopeStateKind.empty,
                 title: _t('تراکنشی پیدا نشد', 'No transactions found'),
@@ -1121,7 +1121,7 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                 ),
               ),
-            const SizedBox(height: 18),
+            SizedBox(height: compact ? 12 : 18),
             PremiumSectionHeader(
               domain: HopeProductDomain.finance,
               title: _t('برداشت‌ها', 'Withdrawals'),

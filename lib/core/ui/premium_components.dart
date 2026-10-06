@@ -676,8 +676,8 @@ class PremiumHeader extends StatelessWidget {
                   // the entire first viewport.
                   // Keep compact page headers subordinate to the focal content,
                   // matching the reference's dense editorial hierarchy.
-                  fontSize: compact ? 20 : 30,
-                  height: compact ? 1.08 : 1.06,
+                  fontSize: compact ? 19 : 30,
+                  height: compact ? 1.06 : 1.06,
                   letterSpacing: compact ? -.45 : -.75,
                 ),
               ),
@@ -685,10 +685,10 @@ class PremiumHeader extends StatelessWidget {
                 SizedBox(height: dense ? 3 : 4),
                 Text(
                   subtitle!,
-                  maxLines: compact ? (dense ? 2 : 3) : 4,
+                  maxLines: compact ? 2 : 4,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    height: 1.42,
+                    height: compact ? 1.34 : 1.42,
                   ),
                 ),
               ],
@@ -730,6 +730,13 @@ class PremiumPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    // Only default 16px panels tighten on compact mobile. Explicit page-specific
+    // padding remains untouched so feature-level composition stays intentional.
+    final effectivePadding =
+        compact && padding == const EdgeInsets.all(HopeV2Spacing.lg)
+            ? const EdgeInsets.all(14)
+            : padding;
     final panelFill = dark
         ? (glass ? HopeV2Colors.panelSoftDark : Colors.transparent)
         : (glass ? HopeV2Colors.panelSoftLight : Colors.transparent);
@@ -753,7 +760,7 @@ class PremiumPanel extends StatelessWidget {
         : null;
 
     final panel = Container(
-      padding: padding,
+      padding: effectivePadding,
       decoration: BoxDecoration(
         color: highlight ? null : (glass ? panelFill : HopeV2Surfaces.panel(context)),
         gradient: gradient,
@@ -1006,8 +1013,9 @@ class PremiumHero extends StatelessWidget {
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final resolvedDomain = domain ?? page?.spec.domain;
     final heroHeight = compact
-        // Compact mobile hero stays editorial and leaves room for actionable data.
-        ? height.clamp(180.0, 320.0).toDouble()
+        // Compact mobile hero stays editorial while returning more first-fold
+        // space to match, metadata, and the primary action.
+        ? height.clamp(168.0, 320.0).toDouble()
         : (height < 320 ? 320.0 : height);
     final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
 
@@ -1447,7 +1455,9 @@ class PremiumSectionHeader extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: HopeV2Type.section(context),
+                      style: HopeV2Type.section(context).copyWith(
+                        fontSize: compact ? 17.5 : null,
+                      ),
                     ),
                   ),
                 ],
