@@ -69,7 +69,7 @@ class _OpportunitySnapshot extends StatelessWidget {
     ];
 
     return PremiumPanel(
-      padding: const EdgeInsets.fromLTRB(13, 12, 13, 11),
+      padding: const EdgeInsets.fromLTRB(15, 14, 15, 13),
       semanticLabel: _t(context, 'خلاصه سریع فرصت', 'Opportunity snapshot'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -820,12 +820,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     domain: HopeProductDomain.discovery,
                     title: _t('شرح فرصت', 'Job description'),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
                     j.description,
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.55),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
                   _OpportunitySnapshot(job: j),
                   const SizedBox(height: 14),
                   PremiumPanel(
