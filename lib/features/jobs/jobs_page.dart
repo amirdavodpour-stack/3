@@ -340,7 +340,7 @@ class _JobsPageState extends State<JobsPage> {
     if (index == 1) return;
     if (index == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AppRouter()),
+        MaterialPageRoute(builder: (_) => AppRouter()),
         (_) => false,
       );
       return;
