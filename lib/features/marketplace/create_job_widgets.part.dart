@@ -91,56 +91,66 @@ class _TypeHero extends StatelessWidget {
       onTap: () => onChanged(value),
       semanticLabel: '$title. $sub',
       child: Container(
-        padding: const EdgeInsets.all(12),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.md),
           color: selected
               ? Theme.of(context).colorScheme.primary.withValues(alpha: .12)
               : HopeV2Surfaces.panel(context),
-          border: BorderDirectional(
-            start: BorderSide(
-              color: selected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).dividerColor,
-              width: selected ? 2 : 1,
-            ),
-            top: BorderSide(
-              color: Theme.of(context).dividerColor.withValues(alpha: .75),
-            ),
-            end: BorderSide(
-              color: Theme.of(context).dividerColor.withValues(alpha: .75),
-            ),
-            bottom: BorderSide(
-              color: Theme.of(context).dividerColor.withValues(alpha: .75),
-            ),
+          border: Border.all(
+            color: selected
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: .35)
+                : Theme.of(context).dividerColor.withValues(alpha: .75),
+            width: selected ? 1.2 : 1,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            HopeIcon(
-              icon,
-              color: selected ? Colors.white : AppColors.primary,
-              size: 25,
-              strokeWidth: 2.0,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                color: selected ? Colors.white : null,
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HopeIcon(
+                    icon,
+                    color: selected ? Colors.white : AppColors.primary,
+                    size: 25,
+                    strokeWidth: 2.0,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: selected ? Colors.white : null,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    sub,
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.35,
+                      color: selected ? Colors.white70 : null,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 3),
-            Text(
-              sub,
-              style: TextStyle(
-                fontSize: 11,
-                height: 1.35,
-                color: selected ? Colors.white70 : null,
+            if (selected)
+              PositionedDirectional(
+                start: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  width: 2,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),

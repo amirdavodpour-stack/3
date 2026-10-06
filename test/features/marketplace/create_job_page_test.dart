@@ -97,6 +97,8 @@ Future<void> _pump(
   _FakeMarket repo, {
   HopeSettingsController? settings,
   double width = 900,
+  ThemeData? theme,
+  Locale locale = const Locale('en'),
 }) async {
   tester.view.physicalSize = Size(width, 3400);
   tester.view.devicePixelRatio = 1.0;
@@ -113,8 +115,8 @@ Future<void> _pump(
       Provider<MarketplaceRepository>.value(value: repo),
     ],
     child: MaterialApp(
-      theme: ThemeData.light(),
-      locale: const Locale('en'),
+      theme: theme ?? ThemeData.light(),
+      locale: locale,
       supportedLocales: const [Locale('en'), Locale('fa')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -174,6 +176,22 @@ Future<void> _fillMissionForm(WidgetTester tester, {String? category}) async {
 }
 
 void main() {
+  testWidgets(
+      'selected type tile stays paint-safe in dark RTL runtime styling',
+      (tester) async {
+    final repo = _FakeMarket();
+    await _pump(
+      tester,
+      repo,
+      width: 390,
+      theme: ThemeData.dark(),
+      locale: const Locale('fa'),
+    );
+    await _open(tester);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
       'create job stays render-safe with keyboard inset and landscape orientation',
       (tester) async {
