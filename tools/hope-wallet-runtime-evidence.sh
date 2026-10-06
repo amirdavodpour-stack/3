@@ -423,8 +423,9 @@ else
   run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
 
   if [ "$baseline_status" -ne 0 ] && [ "$CAPTURE_LOCALE" = "fa" ]; then
+    # baseline-d is the existing certified tail batch: create-job, register,
+    # password-reset. Keep the already-captured offers screenshot untouched.
     auth_tail_screens=(
-      "offers-fa-rtl"
       "create-job-fa-rtl"
       "register-fa-rtl"
       "password-reset-fa-rtl"
