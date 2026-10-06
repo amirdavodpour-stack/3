@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# [runtime-capture-fa] certify isolated auth-tail Driver sessions after Run #1838 screenshot transport hang.
 set -euo pipefail
 
 evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
