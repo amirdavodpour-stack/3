@@ -252,15 +252,18 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('mission budget fields stack on narrow screens',
+  testWidgets(
+      'compact create keeps type choices side by side while budget fields stack',
       (tester) async {
     final repo = _FakeMarket();
     await _pump(tester, repo, width: 360);
     await _open(tester);
 
     expect(
-      tester.getTopLeft(find.text('Job')).dy,
-      greaterThan(tester.getBottomRight(find.text('Mission')).dy),
+      (tester.getTopLeft(find.text('Job')).dy -
+              tester.getTopLeft(find.text('Mission')).dy)
+          .abs(),
+      lessThan(50),
     );
     expect(
       tester.getTopLeft(find.text('Specialized')).dy,
