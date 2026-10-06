@@ -157,7 +157,7 @@ class _PremiumNavigationItem extends StatelessWidget {
                     color: labelColor,
                     fontSize: 10,
                     height: 1.05,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w650,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ],
