@@ -760,10 +760,6 @@ Future<void> _captureRuntimeScreen(
   if (child is PasswordResetPage) {
     await tester.pump(const Duration(milliseconds: 1200));
     print('HOPE_RUNTIME_PASSWORD_RESET_FAST_SETTLE_DONE:$marker');
-    for (var frame = 0; frame < 2; frame++) {
-      await tester.pump();
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    }
     await _captureRuntimeScreenshot(marker);
     return;
   }
