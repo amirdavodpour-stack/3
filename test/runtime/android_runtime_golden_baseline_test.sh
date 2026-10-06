@@ -86,6 +86,10 @@ fi
 
 # Runtime evidence must reject byte-identical PNGs under different screen names.
 require_line "$runtime" 'baseline-g) baseline_batch="g"'
+require_line "$test_file" "_baselineBatch == 'g'"
+require_line "$runtime" 'run_host_batch_session baseline-g "create-job-fa-rtl"'
+require_line "$runtime" 'run_host_batch_session baseline-e "register-fa-rtl"'
+require_line "$runtime" 'run_host_batch_session baseline-f "password-reset-fa-rtl"'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:create-job'
 if grep -Fq '&& test -s "$evidence_dir/create-job-fa-rtl.png"' "$runtime"; then
