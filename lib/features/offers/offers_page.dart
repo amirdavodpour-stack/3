@@ -97,7 +97,7 @@ class _OffersPageState extends State<OffersPage> {
     required String label,
     required String value,
     Color? valueColor,
-    required IconData icon,
+    required Object icon,
   }) {
     final theme = Theme.of(context);
     return Expanded(
@@ -117,7 +117,7 @@ class _OffersPageState extends State<OffersPage> {
           children: [
             Row(
               children: [
-                Icon(icon, size: 15, color: valueColor ?? theme.colorScheme.primary),
+                HopeIcon(icon, size: 15, color: valueColor ?? theme.colorScheme.primary),
                 const SizedBox(width: 5),
                 Expanded(
                   child: Text(
