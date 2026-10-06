@@ -481,7 +481,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 48),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
@@ -495,7 +495,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         'همکاری‌های فعال، وضعیت اجرا و تسویه مالی را در یک نگاه دنبال کنید.',
                         'Track active work, execution state, and financial settlement in one view.',
                       ),                    ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 10),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
                         kind: HopeStateKind.error,
@@ -543,7 +543,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             for (var index = 0; index < metrics.length; index++) ...[
                               Expanded(child: metrics[index]),
                               if (index != metrics.length - 1)
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                             ],
                           ],
                         );
@@ -554,7 +554,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       key: const ValueKey('work-center-focus-strip'),
                       glass: false,
                       quiet: true,
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                       child: Row(
                         children: [
                           HopeIconTile(
