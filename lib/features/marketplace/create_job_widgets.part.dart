@@ -54,7 +54,7 @@ class _TypeHero extends StatelessWidget {
                 ),
               ];
 
-              if (constraints.maxWidth < 380) {
+              if (constraints.maxWidth < 320) {
                 return Column(
                   children: [
                     tiles[0],
