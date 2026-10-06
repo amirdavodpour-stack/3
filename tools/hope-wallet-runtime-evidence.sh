@@ -440,7 +440,20 @@ else
     if [ "$auth_tail_complete" -eq 1 ] && test -s "$evidence_dir/create-job-fa-rtl.png"; then
       echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
       hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-d "${auth_tail_screens[@]}" || true
+
+      # Late-session VM-service screenshot hangs are isolated to one auth page
+      # per fresh Driver session. The screenshot transport itself remains the
+      # proven flutter integration_test onScreenshot path.
+      if ! test -s "$evidence_dir/register-fa-rtl.png"; then
+        echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:register"
+        run_host_batch_session baseline-e "register-fa-rtl" || true
+      fi
+
+      if ! test -s "$evidence_dir/password-reset-fa-rtl.png"; then
+        echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:password-reset"
+        hope_android_device_ready "$RUNTIME_SERIAL"
+        run_host_batch_session baseline-f "password-reset-fa-rtl" || true
+      fi
     fi
   fi
 
