@@ -103,7 +103,7 @@ if [[ -z "$layout_line" || -z "$active_count_line" || "$active_count_line" -ge "
   printf 'FAIL: transactions visual-wave counts are scoped inside LayoutBuilder; they must be available to the focus strip.\\n' >&2
   exit 1
 fi
-require_line "$transactions_file" 'padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),'
+require_line "$transactions_file" 'padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),'
 
 echo "PASS: Android runtime screenshot baseline contract is locked."
 
