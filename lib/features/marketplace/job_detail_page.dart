@@ -1495,8 +1495,167 @@ class _MatchIntelligence extends StatelessWidget {
     return raw <= 1 ? raw : raw / 100;
   }
 
+  Widget _compactSurface(BuildContext context) {
+    final score = job.recommendationScore;
+    final primary = Theme.of(context).colorScheme.primary;
+    final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
+    final fit = score == null
+        ? null
+        : score >= 90
+            ? _t(context, 'تناسب بسیار قوی', 'Very strong fit')
+            : score >= 75
+                ? _t(context, 'تناسب قوی', 'Strong fit')
+                : score >= 60
+                    ? _t(context, 'تناسب خوب', 'Good fit')
+                    : _t(context, 'تناسب اولیه', 'Early fit');
+    const breakdownKeys = ['skills', 'category', 'location', 'salary'];
+    final confidence = job.aiRecommendationConfidence;
+    final hasComponents =
+        breakdownKeys.any((key) => job.recommendationComponents.containsKey(key));
+
+    return Semantics(
+      button: true,
+      label: _t(context, 'جزئیات تطبیق این فرصت', 'Match details for this opportunity'),
+      child: GestureDetector(
+        onTap: () => _showDetails(context),
+        child: Container(
+          key: const ValueKey('opportunity-match-intelligence-compact-surface'),
+          padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [primary.withValues(alpha: .13), HopeV2Surfaces.panel(context)],
+            ),
+            borderRadius: BorderRadius.circular(HopeV2Radii.lg),
+            border: Border.all(color: primary.withValues(alpha: .26)),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withValues(alpha: .07),
+                blurRadius: 20,
+                offset: const Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (score != null)
+                    SizedBox(
+                      width: 52,
+                      height: 52,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox.square(
+                            dimension: 52,
+                            child: CircularProgressIndicator(
+                              value: 1,
+                              strokeWidth: 4.5,
+                              color: primary.withValues(alpha: .12),
+                            ),
+                          ),
+                          SizedBox.square(
+                            dimension: 52,
+                            child: CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 4.5,
+                              strokeCap: StrokeCap.round,
+                              color: primary,
+                            ),
+                          ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${score.clamp(0, 100).toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  fontSize: 14, height: 1, fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _t(context, 'تطبیق', 'MATCH'),
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  fontSize: 7,
+                                  fontWeight: FontWeight.w900,
+                                  color: primary,
+                                  letterSpacing: .4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (score != null) const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _t(context, 'هوش تطبیق', 'Match intelligence'),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                        if (fit != null)
+                          Text(
+                            fit,
+                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: primary, fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        if (confidence != null)
+                          Text(
+                            '${(confidence.clamp(0, 1) * 100).round()} ${_t(context, 'درصد اطمینان', '% confidence')}',
+                            key: const ValueKey('match-confidence-note'),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w800, color: HopeV2Colors.muted,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (hasComponents) ...[
+                const SizedBox(height: 7),
+                Text(
+                  _t(context, 'تجزیه تطبیق', 'Match breakdown'),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 6),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const gap = 6.0;
+                    final columns = constraints.maxWidth >= 250 ? 2 : 1;
+                    final width = columns == 2 ? (constraints.maxWidth - gap) / 2 : constraints.maxWidth;
+                    return Wrap(
+                      spacing: gap, runSpacing: 6,
+                      children: [
+                        for (final key in breakdownKeys)
+                          SizedBox(
+                            width: width,
+                            child: _breakdownBar(context, key: key, value: _componentValue(key)),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
+    if (compact) {
+      return _compactSurface(context);
+    }
     final score = job.recommendationScore;
     final primary = Theme.of(context).colorScheme.primary;
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);

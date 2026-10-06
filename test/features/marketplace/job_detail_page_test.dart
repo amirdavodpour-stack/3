@@ -310,19 +310,20 @@ void main() {
   });
 
   testWidgets(
-      'compact opportunity detail keeps match intelligence inside the first viewport',
+      'compact opportunity detail keeps a painted match surface in the tight runtime viewport',
       (tester) async {
-    await _pump(tester, job: _job(), width: 390, height: 844);
+    await _pump(tester, job: _job(), width: 274, height: 457);
 
     final match = find.byKey(
-      const ValueKey('opportunity-match-intelligence'),
+      const ValueKey('opportunity-match-intelligence-compact-surface'),
     );
     final hero = find.byType(PremiumHero);
     expect(match, findsOneWidget);
     expect(tester.getSize(hero).height, lessThanOrEqualTo(160));
     expect(find.text('94% Match'), findsOneWidget);
-    expect(tester.getTopLeft(match).dy, lessThan(720));
-    expect(tester.getSize(match).height, lessThan(300));
+    expect(find.text('Match intelligence'), findsOneWidget);
+    expect(tester.getTopLeft(match).dy, lessThan(280));
+    expect(tester.getSize(match).height, lessThan(200));
     expect(find.text('Match signals'), findsNothing);
     expect(tester.takeException(), isNull);
   });
