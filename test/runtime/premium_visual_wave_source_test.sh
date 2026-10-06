@@ -31,7 +31,7 @@ grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 8, 16, 28)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
-grep -Fq 'vertical: 6' "$home"
+grep -Fq 'vertical: 4' "$home"
 grep -Fq 'if (recommended.length > 1)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$jobs_widgets"
 
