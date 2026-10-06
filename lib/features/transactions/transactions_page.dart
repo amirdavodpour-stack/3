@@ -199,6 +199,60 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
+  Widget _workCenterMetric({
+    required String label,
+    required String value,
+    required Object icon,
+    required Color accent,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 76),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: .055),
+        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        border: Border.all(color: accent.withValues(alpha: .13)),
+      ),
+      child: Row(
+        children: [
+          HopeIconTile(
+            icon,
+            size: 30,
+            filled: true,
+            color: accent,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: HopeV2Colors.muted,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _workItemCard(HopeJob job) {
     final status = job.status ?? '—';
     final settled = _isWorkCenterSettled(status);
@@ -511,29 +565,25 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ],
                     LayoutBuilder(
                       builder: (context, constraints) {
+                        final metricWidth = (constraints.maxWidth - 16) / 3;
                         final metrics = [
-                          PremiumStatCard(
+                          _workCenterMetric(
                             label: _t('همکاری‌ها', 'Collaborations'),
                             value: '${items.length}',
                             icon: HopeV2Icons.job,
-                            caption: _t('تمام همکاری‌های ثبت‌شده', 'All recorded collaborations'),
-                            compact: constraints.maxWidth < 500,
+                            accent: Theme.of(context).colorScheme.primary,
                           ),
-                          PremiumStatCard(
+                          _workCenterMetric(
                             label: _t('در حال اجرا', 'Active work'),
                             value: '$activeCount',
                             icon: HopeV2Icons.mission,
                             accent: secondaryAccent(context),
-                            caption: _t('در مسیر انجام یا بررسی', 'In progress or under review'),
-                            compact: constraints.maxWidth < 500,
                           ),
-                          PremiumStatCard(
+                          _workCenterMetric(
                             label: _t('تسویه‌شده', 'Settled'),
                             value: '$settledCount',
                             icon: HopeV2Icons.completed,
                             accent: HopeV2Colors.success,
-                            caption: _t('پایان‌یافته مالی', 'Financially settled'),
-                            compact: constraints.maxWidth < 500,
                           ),
                         ];
 
@@ -541,7 +591,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           key: const ValueKey('work-center-metrics'),
                           children: [
                             for (var index = 0; index < metrics.length; index++) ...[
-                              Expanded(child: metrics[index]),
+                              SizedBox(width: metricWidth, child: metrics[index]),
                               if (index != metrics.length - 1)
                                 const SizedBox(width: 8),
                             ],
