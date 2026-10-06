@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
 # [runtime-capture-fa] certify finance density wave after #1851 artifact review.
+# [runtime-capture-fa] exact-head guard corrected for multiline wallet metric border invariant.
 # Grouped visual-wave source guard for the runtime-certified discovery surfaces.
 # [runtime-capture-fa-home] isolate editorial media to the Home discovery capture.
 # Final verification capture after adding the scoped fixture contract.
@@ -70,7 +71,8 @@ if grep -Fq 'PremiumStatCard(' "$transactions"; then
 fi
 grep -Fq 'final metricWidth = (constraints.maxWidth - 16) / 3;' "$transactions"
 grep -Fq 'fontSize: emphasized ? 14 : 11.5' "$wallet"
-grep -Fq 'border: emphasized ? Border.all(' "$wallet"
+grep -Fq 'border: emphasized' "$wallet"
+grep -Fq 'HopeV2Colors.primary.withValues(alpha: .30)' "$wallet"
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
