@@ -7,7 +7,6 @@ import '../../core/transactions/payment.dart';
 import '../../core/marketplace/job.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/ui/components.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/uploads/upload_queue.dart';
 import '../../core/router/app_routes.dart';
@@ -209,7 +208,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               children: [
                 HopeIconTile(
                   settled ? HopeV2Icons.completed : HopeV2Icons.pending,
-                  color: settled ? AppColors.success : AppColors.primary,
+                  color: settled ? HopeV2Colors.success : HopeV2Colors.primary,
                   filled: true,
                 ),
                 const SizedBox(width: 10),
@@ -232,8 +231,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             icon: HopeV2Icons.activity,
                             label: _jobStatusLabel(context, status),
                             color: settled
-                                ? AppColors.success
-                                : AppColors.primary,
+                                ? HopeV2Colors.success
+                                : HopeV2Colors.primary,
                           ),
                           if (job.city?.isNotEmpty == true)
                             PremiumTag(

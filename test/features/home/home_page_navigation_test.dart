@@ -281,10 +281,10 @@ void main() {
     // The settings controller switched languages and the app rebuilds with
     // the Persian locale; navigation bar still present.
     final settings = tester
-        .element(find.byType(NavigationBar))
+        .element(find.byType(PremiumNavigationBar))
         .read<HopeSettingsController>();
     expect(settings.language, 'fa');
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(PremiumNavigationBar), findsOneWidget);
   });
 
   testWidgets('authenticated drawer does not duplicate primary Wallet',
@@ -379,7 +379,7 @@ void main() {
 
     await tester.tap(
       find.descendant(
-        of: find.byType(NavigationBar),
+        of: find.byType(PremiumNavigationBar),
         matching: find.text('Activity'),
       ),
     );
@@ -396,11 +396,11 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Profile')));
+    await tester.tap(find.descendant(of: find.byType(PremiumNavigationBar), matching: find.text('Profile')));
     await tester.pumpAndSettle();
     expect(find.text('Profile'), findsWidgets);
-    await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Home')));
+    await tester.tap(find.descendant(of: find.byType(PremiumNavigationBar), matching: find.text('Home')));
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(PremiumNavigationBar), findsOneWidget);
   });
 }

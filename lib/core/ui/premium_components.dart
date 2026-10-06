@@ -27,47 +27,26 @@ class HopeNavigationGlyph extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     final color = selected
-        ? Colors.white
+        ? (dark ? HopeV2Colors.primaryDark : primary)
         : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted);
 
-    return SizedBox(
-      width: HopeV2Touch.minimum,
-      height: HopeV2Touch.minimum,
-      child: Center(
-        child: AnimatedContainer(
-          duration: HopeV2Motion.fast,
-          curve: Curves.easeOutCubic,
-          width: selected ? HopeV2Navigation.itemWidth : 34,
-          height: HopeV2Navigation.itemHeight,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected
-                ? primary.withValues(alpha: dark ? .92 : .96)
-                : Colors.transparent,
-            borderRadius:
-                BorderRadius.circular(HopeV2Navigation.itemRadius),
-            border: Border.all(
-              color: selected
-                  ? Colors.white.withValues(alpha: dark ? .12 : .22)
-                  : Colors.transparent,
-            ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: primary.withValues(alpha: dark ? .10 : .06),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : const [],
-          ),
-          child: HopeIcon(
-            icon,
-            size: selected ? 20 : 19,
-            color: color,
-            strokeWidth: selected ? 2.2 : 1.9,
-          ),
-        ),
+    return AnimatedContainer(
+      duration: HopeV2Motion.fast,
+      curve: Curves.easeOutCubic,
+      width: HopeV2Navigation.itemWidth,
+      height: HopeV2Navigation.itemHeight,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: selected
+            ? primary.withValues(alpha: dark ? .13 : .10)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
+      ),
+      child: HopeIcon(
+        icon,
+        size: selected ? 21 : 20,
+        color: color,
+        strokeWidth: 1.9,
       ),
     );
   }
@@ -88,67 +67,101 @@ class PremiumNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
     final surface = HopeV2Surfaces.navigation(context);
+
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(
-        14,
-        0,
-        14,
-        10,
-      ),
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       child: Container(
         key: const ValueKey('hope-navigation-dock'),
-        clipBehavior: Clip.antiAlias,
+        height: HopeV2Navigation.barHeight,
+        padding: const EdgeInsets.fromLTRB(6, 5, 6, 4),
         decoration: BoxDecoration(
           color: dark
-              ? HopeV2Colors.navigationDark.withValues(alpha: .98)
-              : surface.withValues(alpha: .96),
+              ? HopeV2Colors.navigationDark.withValues(alpha: .985)
+              : surface.withValues(alpha: .98),
           borderRadius: BorderRadius.circular(HopeV2Navigation.dockRadius),
           border: Border.all(
             color: dark
-                ? Colors.white.withValues(alpha: .10)
-                : HopeV2Surfaces.border(context),
+                ? Colors.white.withValues(alpha: .065)
+                : HopeV2Surfaces.border(context).withValues(alpha: .75),
           ),
-          boxShadow: dark
-              ? [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: .05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ]
-              : HopeV2Shadows.card,
         ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            height: HopeV2Navigation.barHeight,
-            backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            indicatorColor: Colors.transparent,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            labelTextStyle:
-                WidgetStateProperty.resolveWith<TextStyle?>(
-              (states) => TextStyle(
-                fontSize: 10,
-                height: 1.05,
-                fontWeight: states.contains(WidgetState.selected)
-                    ? FontWeight.w900
-                    : FontWeight.w700,
-                color: states.contains(WidgetState.selected)
-                    ? (dark
-                        ? HopeV2Colors.primaryDark
-                        : Theme.of(context).colorScheme.primary)
-                    : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var index = 0; index < destinations.length; index++)
+              Expanded(
+                child: _PremiumNavigationItem(
+                  destination: destinations[index],
+                  selected: index == selectedIndex,
+                  onPressed: () => onDestinationSelected(index),
+                  accent: primary,
+                ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumNavigationItem extends StatelessWidget {
+  const _PremiumNavigationItem({
+    required this.destination,
+    required this.selected,
+    required this.onPressed,
+    required this.accent,
+  });
+
+  final NavigationDestination destination;
+  final bool selected;
+  final VoidCallback onPressed;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final icon = selected ? destination.selectedIcon : destination.icon;
+    final labelColor = selected
+        ? (dark ? HopeV2Colors.primaryDark : accent)
+        : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted);
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: destination.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: HopeV2Touch.minimum,
+                  height: 34,
+                  child: Center(child: icon),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  destination.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: labelColor,
+                    fontSize: 10,
+                    height: 1.05,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w650,
+                  ),
+                ),
+              ],
             ),
-          ),
-          child: NavigationBar(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: onDestinationSelected,
-            destinations: destinations,
-            height: HopeV2Navigation.barHeight,
           ),
         ),
       ),
@@ -707,6 +720,19 @@ class PremiumHeader extends StatelessWidget {
           );
 
           if (trailing == null) return content;
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                content,
+                const SizedBox(height: HopeV2Spacing.sm),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: trailing!,
+                ),
+              ],
+            );
+          }
           return Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [

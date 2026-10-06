@@ -186,7 +186,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   _drawerTile(
                     context,
-                    HopeV2Icons.workshopSelected,
+                    HopeV2Icons.workshop,
                     _t(context, 'کاوش فرصت‌ها', 'Explore opportunities'),
                     () {
                       Navigator.pop(context);

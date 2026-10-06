@@ -49,10 +49,10 @@ void main() {
       ),
     );
 
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.byType(NavigationDestination), findsNWidgets(5));
-    expect(tester.getSize(find.byType(NavigationBar)).height,
-        greaterThanOrEqualTo(80));
+    expect(tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
+        greaterThanOrEqualTo(64));
   });
 
   testWidgets('premium mobile navigation is a floating rounded surface',
@@ -70,15 +70,11 @@ void main() {
       ),
     );
 
-    final clip = tester.widget<ClipRRect>(
-      find
-          .descendant(
-            of: find.byType(PremiumNavigationBar),
-            matching: find.byType(ClipRRect),
-          )
-          .first,
+    final dock = tester.widget<Container>(
+      find.byKey(const ValueKey('hope-navigation-dock')),
     );
-    expect(clip.borderRadius, BorderRadius.circular(HopeV2Radii.lg));
+    final decoration = dock.decoration! as BoxDecoration;
+    expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
   });
 
   testWidgets('highlighted premium panels expose a restrained gradient layer',
