@@ -220,10 +220,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget _notificationCard(HopeNotification n) {
     final unread = n.isUnread;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
         key: ValueKey('notification-card-${n.id}'),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(15),
         quiet: !unread,
         highlight: unread,
         semanticLabel: n.title,
