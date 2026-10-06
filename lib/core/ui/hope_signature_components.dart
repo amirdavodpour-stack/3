@@ -165,7 +165,7 @@ class HopeOpportunityLivePreview extends StatelessWidget {
                     PremiumTag(
                       icon: HopeV2Icons.payments,
                       label:
-                          '\${_formatAmount(amount)} \${_t(context, 'تومان', 'Toman')}',
+                          "\${_formatAmount(amount)} \${_t(context, 'تومان', 'Toman')}",
                       color: HopeV2Colors.primary,
                     ),
                   if (cityText.isNotEmpty)
@@ -232,7 +232,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
   String _money(BuildContext context, int value) {
-    return '\${NumberFormat.decimalPattern('en_US').format(value)} \${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'Toman') : wallet.currency}';
+    return "\${NumberFormat.decimalPattern('en_US').format(value)} \${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'Toman') : wallet.currency}";
   }
 
   @override
