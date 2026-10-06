@@ -706,11 +706,14 @@ class OpportunityCard extends StatelessWidget {
     final company = _companyName();
     final mode = _workMode(context);
     final match = _matchLabel(context);
+    final compactViewport =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final mediaSize = compactViewport ? 64.0 : 76.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 76,
-        height: 76,
+        width: mediaSize,
+        height: mediaSize,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
@@ -779,7 +782,7 @@ class OpportunityCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             media,
-            const SizedBox(width: HopeV2Spacing.sm),
+            SizedBox(width: compactViewport ? 8 : HopeV2Spacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -832,18 +835,51 @@ class OpportunityCard extends StatelessWidget {
           ],
         ),
         if (meta.isNotEmpty) ...[
-          const SizedBox(height: 7),
-          Wrap(
-            spacing: HopeV2Spacing.sm,
-            runSpacing: HopeV2Spacing.xs,
-            children: meta,
-          ),
+          SizedBox(height: compactViewport ? 5 : 7),
+          if (compactViewport && amount.isNotEmpty && city.trim().isNotEmpty)
+            Row(
+              children: [
+                Expanded(
+                  child: _metaText(
+                    context,
+                    HopeV2Icons.payments,
+                    '${_formatAmount(amount)} ${copy.copy_toman}',
+                    primary,
+                    emphasize: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _metaText(
+                    context,
+                    HopeV2Icons.location,
+                    city,
+                    secondaryAccent(context),
+                  ),
+                ),
+              ],
+            )
+          else
+            Wrap(
+              spacing: HopeV2Spacing.sm,
+              runSpacing: HopeV2Spacing.xs,
+              children: meta,
+            ),
+          if (compactViewport && mode != null) ...[
+            const SizedBox(height: 4),
+            _metaText(
+              context,
+              HopeV2Icons.workshop,
+              mode,
+              secondaryAccent(context),
+            ),
+          ],
         ],
         if (tags.children.isNotEmpty) ...[
-          const SizedBox(height: HopeV2Spacing.sm),
+          SizedBox(height: compactViewport ? 6 : HopeV2Spacing.sm),
           tags,
         ],
-        const SizedBox(height: HopeV2Spacing.sm),
+        SizedBox(height: compactViewport ? 6 : HopeV2Spacing.sm),
         Container(
           key: const ValueKey('opportunity-card-cta'),
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
@@ -857,9 +893,11 @@ class OpportunityCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  job.isMission
-                      ? copy.copy_view_and_act_on_mission
-                      : copy.copy_view_details_and_act,
+                  compactViewport
+                      ? _t(context, 'مشاهده جزئیات', 'View details')
+                      : (job.isMission
+                          ? copy.copy_view_and_act_on_mission
+                          : copy.copy_view_details_and_act),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
