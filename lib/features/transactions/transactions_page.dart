@@ -198,7 +198,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(17),
+        padding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 14 : 17,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -210,7 +212,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   color: settled ? AppColors.success : AppColors.primary,
                   filled: true,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +248,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             PremiumLifecycle(
               compact: true,
               steps: _stepsForStatus(status),
@@ -439,7 +441,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 48),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 48),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
@@ -457,7 +459,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         filled: true,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
                         kind: HopeStateKind.error,
@@ -507,7 +509,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             for (var index = 0; index < metrics.length; index++) ...[
                               Expanded(child: metrics[index]),
                               if (index != metrics.length - 1)
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                             ],
                           ],
                         );

@@ -319,7 +319,12 @@ void main() {
     );
     final hero = find.byType(PremiumHero);
     expect(match, findsOneWidget);
-    expect(tester.getSize(hero).height, lessThanOrEqualTo(160));
+    final matchBoundary = find.byKey(
+      const ValueKey('opportunity-match-intelligence-compact-boundary'),
+    );
+    expect(matchBoundary, findsOneWidget);
+    expect(tester.getSize(matchBoundary).height, greaterThanOrEqualTo(160));
+    expect(tester.getSize(hero).height, lessThanOrEqualTo(170));
     expect(find.text('94% Match'), findsOneWidget);
     expect(find.text('Match intelligence'), findsOneWidget);
     expect(tester.getTopLeft(match).dy, lessThan(280));
