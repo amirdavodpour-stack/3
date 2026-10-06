@@ -138,8 +138,8 @@ if printf '%s\n' "$login_capture_block" | grep -qE 'await[[:space:]]+tester\.pum
 fi
 
 
-password_reset_capture_block="$(awk '/if \\(child is PasswordResetPage\\)/,/return;/{print}' "$test_file")"
-if printf '%s\n' "$password_reset_capture_block" | grep -qE 'await[[:space:]]+tester\.pump\(\);'; then
+password_reset_capture_block="$(sed -n '/if (child is PasswordResetPage)/,/return;/p' "$test_file")"
+if grep -Fq 'await tester.pump();' <<<"$password_reset_capture_block"; then
   echo "FAIL: Password Reset runtime capture must not use zero-duration pump cycles after bounded settle" >&2
   exit 1
 fi
