@@ -802,7 +802,7 @@ class PremiumHeader extends StatelessWidget {
                 content,
                 const SizedBox(height: HopeV2Spacing.sm),
                 Align(
-                  alignment: AlignmentDirectional.centerEnd,
+                  alignment: AlignmentDirectional.centerStart,
                   child: trailing!,
                 ),
               ],
