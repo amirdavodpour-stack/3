@@ -14,6 +14,7 @@ import '../../core/network/api_client.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/copy.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_signature_components.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/router/app_routes.dart';
@@ -1048,7 +1049,10 @@ class _WalletPageState extends State<WalletPage> {
                 );
               },
             ),
+            const SizedBox(height: 10),
+            HopeWalletFlowSignature(wallet: wallet),
             if (!compact) ...[
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsetsDirectional.only(
                 start: 4,

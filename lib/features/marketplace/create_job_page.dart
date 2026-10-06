@@ -11,6 +11,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_signature_components.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/hope_feedback.dart';

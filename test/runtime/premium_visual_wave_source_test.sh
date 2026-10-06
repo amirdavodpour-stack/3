@@ -93,3 +93,15 @@ echo "PASS: Register + PasswordReset runtime capture uses direct screenshot afte
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
 # [runtime-capture] full EN/LTR editorial media certification after FA/RTL proof.
 # [runtime-capture-fa] certify current HEAD after Offers icon type-contract fix.
+
+
+# Signature surface wave: visual primitives for creation and internal finance.
+signature="lib/core/ui/hope_signature_components.dart"
+test -f "$signature"
+grep -Fq 'class HopeOpportunityLivePreview' "$signature"
+grep -Fq 'class HopeWalletFlowSignature' "$signature"
+grep -Fq "HopeOpportunityLivePreview(" "lib/features/marketplace/create_job_widgets.part.dart"
+grep -Fq "HopeWalletFlowSignature(wallet: wallet)" "lib/features/wallet/wallet_page.dart"
+grep -Fq "color: primary.withValues(alpha: .14)" "lib/features/marketplace/job_detail_page.dart"
+grep -Fq "border: Border.all(color: primary.withValues(alpha: .12))" "$opportunity"
+echo "PASS: signature surface visual wave source integrity"

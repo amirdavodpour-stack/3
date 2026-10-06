@@ -14,6 +14,7 @@ import '../../core/marketplace/employer_candidate_matching_repository.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_signature_components.dart';
 import '../../core/ui/hope_async_state.dart';
 import 'employer_candidate_matches_page.dart';
 import '../../core/ui/copy.dart';
@@ -1751,7 +1752,7 @@ class _MatchIntelligence extends StatelessWidget {
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),
-        border: Border.all(color: HopeV2Surfaces.border(context).withValues(alpha: .72)),
+        border: Border.all(color: primary.withValues(alpha: .14)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
@@ -1761,7 +1762,7 @@ class _MatchIntelligence extends StatelessWidget {
         const SizedBox(height: 5),
         ClipRRect(
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-          child: LinearProgressIndicator(minHeight: 5, value: value, backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .5), valueColor: AlwaysStoppedAnimation<Color>(primary)),
+          child: LinearProgressIndicator(minHeight: 5, value: value, backgroundColor: primary.withValues(alpha: .08), valueColor: AlwaysStoppedAnimation<Color>(primary)),
         ),
       ]),
     );

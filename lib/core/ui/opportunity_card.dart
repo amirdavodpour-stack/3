@@ -901,11 +901,11 @@ class OpportunityCard extends StatelessWidget {
         Container(
           key: const ValueKey('opportunity-card-cta'),
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 10, 8),
+          padding: const EdgeInsetsDirectional.fromSTEB(10, 7, 8, 7),
           decoration: BoxDecoration(
-            color: primary.withValues(alpha: .14),
+            color: primary.withValues(alpha: .055),
             borderRadius: BorderRadius.circular(HopeV2Radii.button),
-            border: Border.all(color: primary.withValues(alpha: .28)),
+            border: Border.all(color: primary.withValues(alpha: .12)),
           ),
           child: Row(
             children: [
