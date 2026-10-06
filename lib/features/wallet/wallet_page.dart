@@ -1124,8 +1124,8 @@ class _WalletPageState extends State<WalletPage> {
                           leading: HopeIconTile(
                             _directionIcon(item.isCredit),
                             color: _directionColor(context, item.isCredit),
-                            filled: true,
-                            size: 44,
+                            filled: false,
+                            size: 38,
                           ),
                           title: Semantics(
                             container: true,
