@@ -1,3 +1,4 @@
+// [runtime-capture-fa] certify grouped visual wave: filters + finance + profile hierarchy.
 part of 'jobs_page.dart';
 
 class HopeOpportunityRefinementGroup extends StatelessWidget {
