@@ -98,6 +98,8 @@ class _OffersPageState extends State<OffersPage> {
     final rows = _filter == 'ALL'
         ? all
         : all.where((x) => x.status.toUpperCase() == _filter).toList();
+    final pendingCount = all.where((x) => x.status.toUpperCase() == 'PENDING').length;
+    final acceptedCount = all.where((x) => x.status.toUpperCase() == 'ACCEPTED').length;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -137,6 +139,36 @@ class _OffersPageState extends State<OffersPage> {
                 ),
               ),
               const SizedBox(height: 14),
+              if (!_loading && _loadError == null && all.isNotEmpty) ...[
+                PremiumPanel(
+                  quiet: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    children: [
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(_t('همه پیشنهادها', 'All offers'), style: Theme.of(context).textTheme.labelSmall),
+                        const SizedBox(height: 3),
+                        Text('${all.length}', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                      ])),
+                      Container(width: 1, height: 32, color: Theme.of(context).dividerColor.withValues(alpha: .45)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(_t('در انتظار', 'Pending'), style: Theme.of(context).textTheme.labelSmall),
+                        const SizedBox(height: 3),
+                        Text('$pendingCount', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: pendingCount > 0 ? AppColors.warning : null)),
+                      ])),
+                      Container(width: 1, height: 32, color: Theme.of(context).dividerColor.withValues(alpha: .45)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(_t('پذیرفته‌شده', 'Accepted'), style: Theme.of(context).textTheme.labelSmall),
+                        const SizedBox(height: 3),
+                        Text('$acceptedCount', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: acceptedCount > 0 ? AppColors.success : null)),
+                      ])),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               if (_loading && _items.isEmpty)
                 HopeAsyncState(
                   kind: HopeStateKind.loading,
