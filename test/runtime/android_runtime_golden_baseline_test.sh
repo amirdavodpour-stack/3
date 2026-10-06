@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# [runtime-capture-fa] certify Wave II grouped visual convergence: dark foundation + opportunity hierarchy + finance/profile composition.
 set -euo pipefail
 
 workflow=".github/workflows/hope-ui-runtime-evidence.yml"
