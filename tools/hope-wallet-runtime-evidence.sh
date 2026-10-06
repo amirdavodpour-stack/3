@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # [runtime-capture-fa] certify isolated auth-tail Driver sessions after Run #1838 screenshot transport hang.
+# Runtime evidence uses Skia on Flutter 3.47.2 to avoid the known Impeller-GLES snapshot crash path.
 set -euo pipefail
 
 evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
@@ -295,7 +296,7 @@ run_host_batch_session() {
   export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
   HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s" \
-  flutter drive --no-pub --no-dds \
+  flutter drive --no-enable-impeller --no-pub --no-dds \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
