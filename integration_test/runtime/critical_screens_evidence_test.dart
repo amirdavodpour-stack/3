@@ -743,23 +743,20 @@ Future<void> _captureRuntimeScreen(
     return;
   }
   // Register can legitimately keep an indeterminate auth-state indicator alive
-  // in the isolated evidence host. Do not make screenshot capture depend on that
-  // indicator disappearing. Avoid any additional zero-duration pump after the
-  // bounded settle: the headless VM-service path reproduced a hang at that
-  // exact boundary in runtime run #1557.
+  // in the isolated evidence host. The Android surface preparation above already
+  // commits the first target frame; an additional timed/async settle can stall the
+  // headless VM-service boundary (seen on current-head runtime evidence).
+  // Capture immediately after the proven surface-commit boundary, like Login.
   if (child is RegisterPage) {
-    await tester.pump(const Duration(milliseconds: 1200));
-    print('HOPE_RUNTIME_REGISTER_FAST_SETTLE_DONE:$marker');
+    print('HOPE_RUNTIME_REGISTER_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
-  // PasswordResetPage is a static auth surface, but its compact visual wave can
-  // make the generic render-settle pump stall before the screenshot request.
-  // Keep capture deterministic like Login/Register while still allowing the
-  // initial route/layout work to commit.
+  // PasswordResetPage is a static auth surface. Surface preparation above
+  // already commits the initial target frame, so keep the capture boundary
+  // deterministic and avoid an extra timed/async pump.
   if (child is PasswordResetPage) {
-    await tester.pump(const Duration(milliseconds: 1200));
-    print('HOPE_RUNTIME_PASSWORD_RESET_FAST_SETTLE_DONE:$marker');
+    print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
