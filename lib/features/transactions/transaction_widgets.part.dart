@@ -2,6 +2,7 @@ part of 'transaction_page.dart';
 
 extension on _TransactionPageState {
   Widget _flow(BuildContext context, HopeJob? job, String paymentStatus) {
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final current = _stepFor(job, paymentStatus).clamp(0, 5);
     const en = ['Fund', 'Hold', 'Work', 'Deliver', 'Approve', 'Payout'];
     const fa = ['تأمین وجه', 'در امانت', 'در حال انجام', 'تحویل', 'تأیید', 'تسویه'];
