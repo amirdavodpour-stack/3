@@ -712,7 +712,7 @@ class _WalletPageState extends State<WalletPage> {
       final scheme = Theme.of(context).colorScheme;
       return Container(
         key: const ValueKey('wallet-balance-hero'),
-        padding: EdgeInsets.fromLTRB(12, compact ? 9 : 12, 12, compact ? 10 : 12),
+        padding: EdgeInsets.fromLTRB(14, compact ? 11 : 14, 14, compact ? 12 : 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -773,7 +773,7 @@ class _WalletPageState extends State<WalletPage> {
                 _money(wallet.totalBalance),
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: compact ? 24 : 30,
+                  fontSize: compact ? 27 : 34,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -.7,
@@ -855,7 +855,7 @@ class _WalletPageState extends State<WalletPage> {
             : HopeV2Colors.secondary;
         return Expanded(
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: compact ? 50 : 56),
+            constraints: BoxConstraints(minHeight: compact ? 54 : 60),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
@@ -886,7 +886,7 @@ class _WalletPageState extends State<WalletPage> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: color,
-                          fontSize: 11,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -904,7 +904,7 @@ class _WalletPageState extends State<WalletPage> {
         key: const ValueKey('wallet-actions-panel'),
         glass: false,
         quiet: true,
-        padding: EdgeInsets.all(compact ? 6 : 8),
+        padding: EdgeInsets.all(compact ? 8 : 10),
         child: Row(
           children: [
             if (_internalTopUpEnabled)
