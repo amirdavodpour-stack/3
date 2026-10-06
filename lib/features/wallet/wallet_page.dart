@@ -895,7 +895,8 @@ class _WalletPageState extends State<WalletPage> {
       return PremiumPanel(
         key: const ValueKey('wallet-actions-panel'),
         glass: false,
-        padding: EdgeInsets.all(compact ? 8 : 10),
+        quiet: true,
+        padding: EdgeInsets.all(compact ? 6 : 8),
         child: Row(
           children: [
             if (_internalTopUpEnabled)
