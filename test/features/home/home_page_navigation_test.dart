@@ -397,11 +397,37 @@ void main() {
     _setView(tester);
     await tester.pumpWidget(await _app(authenticated: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.descendant(of: find.byType(PremiumNavigationBar), matching: find.text('Profile')));
+    final homeDock = find.byKey(const ValueKey('hope-navigation-dock')).first;
+    await tester.tap(find.descendant(of: homeDock, matching: find.text('Profile')));
     await tester.pumpAndSettle();
     expect(find.text('Profile'), findsWidgets);
-    await tester.tap(find.descendant(of: find.byType(PremiumNavigationBar), matching: find.text('Home')));
+    await tester.tap(find.descendant(of: find.byKey(const ValueKey('hope-navigation-dock')).first, matching: find.text('Home')));
     await tester.pumpAndSettle();
-    expect(find.byType(PremiumNavigationBar), findsOneWidget);
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+  });
+
+  testWidgets('switching Home tabs never renders a duplicate primary navigation dock',
+      (tester) async {
+    _setView(tester);
+    await tester.pumpWidget(await _app(authenticated: true));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hope-navigation-dock')),
+      findsOneWidget,
+    );
+
+    final homeDock = find.byKey(const ValueKey('hope-navigation-dock')).first;
+    await tester.tap(
+      find.descendant(of: homeDock, matching: find.text('Profile')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hope-navigation-dock')),
+      findsOneWidget,
+      reason: 'embedded primary pages must reuse the Home shell, not add a second dock',
+    );
+    expect(tester.takeException(), isNull);
   });
 }
