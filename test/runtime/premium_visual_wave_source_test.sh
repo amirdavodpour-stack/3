@@ -1,3 +1,4 @@
+# [runtime-capture-fa] exact-head visual evidence requested after completed visual wave.
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
 # [runtime-capture-fa] fix POSIX-shell guard quoting for notification card key.
