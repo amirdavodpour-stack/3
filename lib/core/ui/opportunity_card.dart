@@ -185,7 +185,7 @@ class OpportunityCard extends StatelessWidget {
       child: SizedBox(
         key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 104 : 120)
+            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 136 : 154)
             : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 80 : 104),
         width: double.infinity,
         child: Stack(
@@ -484,6 +484,8 @@ class OpportunityCard extends StatelessWidget {
     required String? mediaUrl,
     required HopeCopy copy,
   }) {
+    final company = _companyName();
+    final mode = _workMode(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -510,6 +512,18 @@ class OpportunityCard extends StatelessWidget {
                       : copy.copy_job_ce2feba,
                   color: primary,
                 ),
+                if (company != null)
+                  PremiumTag(
+                    icon: HopeV2Icons.profile,
+                    label: company,
+                    color: HopeV2Colors.muted,
+                  ),
+                if (mode != null)
+                  PremiumTag(
+                    icon: HopeV2Icons.workshop,
+                    label: mode,
+                    color: secondaryAccent(context),
+                  ),
                 PremiumTag(
                   icon: HopeV2Icons.location,
                   label: city,
@@ -568,8 +582,12 @@ class OpportunityCard extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
           padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 10, 8),
           // The whole opportunity card is already the interaction surface.
-          // Keep the CTA as a low-chrome text affordance instead of a card-inside-card.
-          decoration: null,
+          // Featured opportunity gets one intentional action emphasis; list cards stay de-boxed.
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: .14),
+            borderRadius: BorderRadius.circular(HopeV2Radii.button),
+            border: Border.all(color: primary.withValues(alpha: .24)),
+          ),
           child: Row(
             children: [
               Expanded(
