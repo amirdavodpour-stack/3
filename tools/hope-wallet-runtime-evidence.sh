@@ -418,36 +418,37 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   fi
 else
   baseline_status=0
-  # Preserve the proven single-session baseline first. If the long-lived
-  # VM-service dies only at the final auth tail, recover just that missing
-  # tail in a fresh Driver session instead of mutating product/UI code.
-  run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
-
-  if [ "$baseline_status" -ne 0 ] && [ "$CAPTURE_LOCALE" = "fa" ]; then
-    # A failed monolithic session can die before integration_test returns the
-    # screenshot payload to onScreenshot. In that case none of the preceding
-    # PNGs are durable yet, so recovery must not depend on create-job.png.
-    # Re-capture each vulnerable auth-tail screen in its own fresh Driver
-    # session; this isolates the late-session VM-service failure boundary.
-    echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
-    hope_android_device_ready "$RUNTIME_SERIAL"
-
-    if ! test -s "$evidence_dir/create-job-fa-rtl.png"; then
-      echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:create-job"
-      run_host_batch_session baseline-g "create-job-fa-rtl" || true
-    fi
-
-    if ! test -s "$evidence_dir/register-fa-rtl.png"; then
-      echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:register"
+  if [ "$CAPTURE_LOCALE" = "fa" ]; then
+    # Isolate the auth tail proactively. The exact #1838 failure occurred
+    # inside integration_test.takeScreenshot(register) after 14 prior captures;
+    # upstream integration_test has known Android takeScreenshot hang modes.
+    # Fresh Driver sessions keep a late screenshot transport stall from
+    # invalidating the entire baseline or taking the emulator offline during
+    # recovery.
+    echo "HOPE_HOST_RUNTIME_PARTITIONED_BASELINE_START:fa"
+    run_host_batch_session baseline-a "${baseline_screens[@]:0:7}" || baseline_status=$?
+    if [ "$baseline_status" -eq 0 ]; then
       hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-e "register-fa-rtl" || true
+      run_host_batch_session baseline-b "${baseline_screens[@]:7:1}" || baseline_status=$?
     fi
-
-    if ! test -s "$evidence_dir/password-reset-fa-rtl.png"; then
-      echo "HOPE_HOST_RUNTIME_AUTH_SINGLE_SCREEN_RECOVERY:password-reset"
+    if [ "$baseline_status" -eq 0 ]; then
       hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-f "password-reset-fa-rtl" || true
+      run_host_batch_session baseline-c "${baseline_screens[@]:8:4}" || baseline_status=$?
     fi
+    if [ "$baseline_status" -eq 0 ]; then
+      hope_android_device_ready "$RUNTIME_SERIAL"
+      run_host_batch_session baseline-g "create-job-fa-rtl" || baseline_status=$?
+    fi
+    if [ "$baseline_status" -eq 0 ]; then
+      hope_android_device_ready "$RUNTIME_SERIAL"
+      run_host_batch_session baseline-e "register-fa-rtl" || baseline_status=$?
+    fi
+    if [ "$baseline_status" -eq 0 ]; then
+      hope_android_device_ready "$RUNTIME_SERIAL"
+      run_host_batch_session baseline-f "password-reset-fa-rtl" || baseline_status=$?
+    fi
+  else
+    run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
   fi
 
   if ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
