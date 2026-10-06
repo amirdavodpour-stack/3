@@ -163,6 +163,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return PremiumQuickActionStrip(
       domain: HopeProductDomain.work,
       glass: false,
+      quiet: true,
       title: _t('دسترسی سریع', 'Quick access'),
       subtitle: _t(
         'درخواست‌ها، پیشنهادها و اعلان‌ها را بدون باز کردن منوی کناری در دسترس داشته باشید.',
