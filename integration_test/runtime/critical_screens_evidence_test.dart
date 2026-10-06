@@ -872,7 +872,15 @@ Future<void> _captureBaselineLocale(
                               ? Map<String, Widget Function()>.fromEntries(
                                   pages.entries.skip(12).take(3),
                                 )
-                              : pages;
+                              : _baselineBatch == 'e'
+                                  ? Map<String, Widget Function()>.fromEntries(
+                                      pages.entries.skip(13).take(1),
+                                    )
+                                  : _baselineBatch == 'f'
+                                      ? Map<String, Widget Function()>.fromEntries(
+                                          pages.entries.skip(14).take(1),
+                                        )
+                                      : pages;
   for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
