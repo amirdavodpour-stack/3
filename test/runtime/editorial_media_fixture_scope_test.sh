@@ -15,7 +15,7 @@ if grep -Fq "HOPE Runtime" "$runtime_driver" || grep -Fq "runtime@example.invali
 fi
 
 # The fixture must still provide a complete job object for all evidence screens.
-grep -Fq "HopeJob _jobFixture()" "$runtime_driver"
+grep -Fq "HopeJob _jobFixture({bool editorialMedia = false})" "$runtime_driver"
 grep -Fq "'title': 'طراحی رابط موبایل حرفه‌ای'" "$runtime_driver"
 grep -Fq "'category': 'طراحی'" "$runtime_driver"
 
