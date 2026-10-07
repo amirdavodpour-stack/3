@@ -113,8 +113,8 @@ void main() {
         ],
         child: MaterialApp(
           locale: const Locale('en'),
-          supportedLocales: [Locale('fa'), Locale('en')],
-          localizationsDelegates: [
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -174,8 +174,8 @@ void main() {
       data: MediaQueryData(size: Size(240, 640)),
       child: MaterialApp(
         locale: Locale('fa'),
-        supportedLocales: const [Locale('fa'), Locale('en')],
-        localizationsDelegates: const [
+        supportedLocales: [Locale('fa'), Locale('en')],
+        localizationsDelegates: [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
