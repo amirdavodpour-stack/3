@@ -6,14 +6,14 @@ void main() {
     test('formats exact Toman integers in Persian digits', () {
       expect(
         HopeDisplayFormatter.money('1500000', locale: 'fa'),
-        '1,500,000 تومان',
+        '۱٬۵۰۰٬۰۰۰ تومان',
       );
     });
 
     test('orders reversed ranges from minimum to maximum', () {
       expect(
         HopeDisplayFormatter.amount('2500000 – 1500000', locale: 'fa'),
-        '1,500,000 تومان تا 2,500,000 تومان',
+        '۱٬۵۰۰٬۰۰۰ تومان تا ۲٬۵۰۰٬۰۰۰ تومان',
       );
     });
 
