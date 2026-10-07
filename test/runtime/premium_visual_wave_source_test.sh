@@ -172,3 +172,9 @@ if grep -Fq 'HopeV2Icons.userAdd' "$login" || grep -Fq 'HopeV2Icons.userAdd' "$r
   echo "FAIL: Google sign-in is represented by a generic person icon" >&2
   exit 1
 fi
+# Opportunity listing cards use deterministic category cover art, not a shared remote stock image.
+opportunity_card="lib/core/ui/opportunity_card.dart"
+grep -Fq 'String? _mediaUrl(HopeJob job) => null;' "$opportunity_card"
+grep -Fq "'software-development'" "$opportunity_card"
+grep -Fq "'finance-accounting'" "$opportunity_card"
+grep -Fq "'data-ai'" "$opportunity_card"
