@@ -86,7 +86,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     title: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     message: HopeCopy.of(context).copy_enter_your_account_email_and_we_will_start_16caa6e,
                     icon: HopeV2Icons.mail,
-                    height: 164,
+                    height: 128,
                   ),
                   const SizedBox(height: 12),
                   PremiumPanel(
