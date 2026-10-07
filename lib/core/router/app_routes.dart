@@ -89,7 +89,7 @@ abstract final class HopeRoutes {
     required Future<HopeEmployerCandidateMatchList> future,
     required String jobTitle,
   }) =>
-      _page(EmployerCandidateMatchesRoutePage(
+      _page(EmployerCandidateMatchesLoader(
         future: future,
         jobTitle: jobTitle,
       ));
