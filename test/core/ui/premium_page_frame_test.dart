@@ -8,6 +8,10 @@ void main() {
   testWidgets(
     'premium app canvas fills the available viewport and exposes an opaque base',
     (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.dark(),
