@@ -416,7 +416,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   ),
                   (
                     value: protected,
-                    label: _t(context, 'محافظت‌شده', 'protected'),
+                    label: _t(context, 'در امانت', 'Held in escrow'),
                     icon: HopeV2Icons.protectedFunds,
                     accent: HopeV2Colors.success,
                   ),
@@ -469,7 +469,7 @@ padding: const EdgeInsets.all(12),
                           // Keep the pulse in the same compact, four-signal row as the
                           // reference composition on normal phone widths; only extremely
                           // narrow embedded surfaces fall back to a 2x2 grid.
-                          final columns = constraints.maxWidth < 144 ? 2 : 4;
+                          final columns = constraints.maxWidth < 420 ? 2 : 4;
                           const gap = HopeV2Spacing.sm;
                           final width =
                               (constraints.maxWidth - gap * (columns - 1)) /
@@ -675,8 +675,8 @@ padding: const EdgeInsets.all(12),
               const SizedBox(height: 3),
               Text(
                 label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 3,
+                softWrap: true,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 12,
                       height: 1.08,
