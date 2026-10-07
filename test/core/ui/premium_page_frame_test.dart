@@ -18,9 +18,9 @@ void main() {
           home: const SizedBox(
             width: 360,
             height: 640,
-            child: const RepaintBoundary(
-              child: const PremiumAppCanvas(
-                child: const SizedBox.expand(),
+            child: RepaintBoundary(
+              child: PremiumAppCanvas(
+                child: SizedBox.expand(),
               ),
             ),
           ),
@@ -105,8 +105,8 @@ void main() {
           home: const SizedBox(
             width: 360,
             height: 640,
-            child: const RepaintBoundary(
-              child: const PremiumPageFrame(
+            child: RepaintBoundary(
+              child: PremiumPageFrame(
                 child: const SizedBox.expand(),
               ),
             ),
