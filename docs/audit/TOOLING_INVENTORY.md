@@ -13,6 +13,16 @@ Wave branch: `feat/ui-v2-wave-1-execution-2026-10-07` (created from `d9eb4143c26
 - Backend fast suite baseline is historically 267/267, but this was not re-run in this environment. The latest runtime workflow only proves its listed source-contract checks and screenshot capture passed.
 - Recommended to connect/enable if needed: an online Remote Desktop Commander device with repo checkout + Flutter 3.47.2 + Maestro CLI for fast local static/test iterations; a device-farm/TalkBack-capable Android target for accessibility captures. Do not add a new payment provider, paid image service, or external data service merely for this wave.
 
+## Tool-specific results and limits (2026-10-07)
+
+- **Figma:** `whoami` confirms Starter plan, View seat. File creation/editing was not attempted because this seat is read-only. Repository spec: `docs/design/HOPE-DS-2.0-spec.md` and `docs/design/hope-ds-2-token-sheet.svg`.
+- **Mobbin:** screen search returned a paid-plan requirement. No subscription was started; no Mobbin results were used as evidence.
+- **Picsart:** preflight for one 1K abstract cover is valid but requires 3 credits while the connected balance is 1; `sufficient=false`. No generation was started. Category cards use deterministic procedural gradient/icon art as the explicit fallback. No credits were spent.
+- **Google G:** official standard-colour asset sourced from the Google-maintained FirebaseUI Web repository and rasterized without recolouring; source/branding references are documented in `assets/branding/README.md`.
+- **Maestro:** local executable is absent, but the repository has a Maestro workflow and flow. The wave branch will be added to the existing workflow only after source changes are batched; CI is the execution path.
+- **NVIDIA BioNeMo:** the installed toolkit is for life-science/protein-model workflows, not Flutter UI implementation; no unrelated BioNeMo call or dependency was introduced.
+- **FLOWSTACK UI / Swift Concurrency:** not the current Flutter/Dart stack; not applied to the product source.
+
 ## Wave routing
 
 - Wave 0: GitHub connector, Files/tool tree inspection, Python image inspection, Exa + Firecrawl research, Notion checkpoint updates.
