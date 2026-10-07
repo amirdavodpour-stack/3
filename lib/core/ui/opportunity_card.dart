@@ -60,7 +60,11 @@ class OpportunityCard extends StatelessWidget {
     final city = job.city?.trim().isNotEmpty == true ? job.city! : copy.copy_remote_dcbb625;
     final amount = job.isMission
         ? [job.budgetMin, job.budgetMax].where((v) => v?.isNotEmpty == true).join(' – ')
-        : (job.monthlySalary ?? job.budgetMin ?? '');
+        : (job.monthlySalary?.isNotEmpty == true
+            ? job.monthlySalary!
+            : [job.budgetMin, job.budgetMax]
+                .where((v) => v?.isNotEmpty == true)
+                .join(' – '));
     final title = job.title.trim().isEmpty ? copy.copy_untitled_d89410e : job.title;
     final primary = featured
         ? HopeV2Colors.primary
@@ -84,7 +88,7 @@ class OpportunityCard extends StatelessWidget {
                     end: AlignmentDirectional.bottomEnd,
                     colors: Theme.of(context).brightness == Brightness.dark
                         ? [
-                            primary.withValues(alpha: .10),
+                            primary.withValues(alpha: .18),
                             const Color(0xFF101522),
                             Theme.of(context).colorScheme.surface,
                           ]
@@ -158,6 +162,7 @@ class OpportunityCard extends StatelessWidget {
     required String? mediaUrl,
     required double? score,
     required bool featured,
+    bool showTitle = true,
   }) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final percent = score == null ? null : (score <= 1 ? score * 100 : score);
@@ -208,28 +213,29 @@ class OpportunityCard extends StatelessWidget {
                 inverse: true,
               ),
             ),
-            PositionedDirectional(
-              start: 14,
-              end: 14,
-              bottom: 9,
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.5,
-                  height: 1.08,
-                  fontWeight: FontWeight.w900,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black54,
-                      blurRadius: 8,
-                    ),
-                  ],
+            if (showTitle)
+              PositionedDirectional(
+                start: 14,
+                end: 14,
+                bottom: 9,
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16.5,
+                    height: 1.08,
+                    fontWeight: FontWeight.w900,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -445,6 +451,7 @@ class OpportunityCard extends StatelessWidget {
     final company = _companyName();
     final mode = _workMode(context);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _mediaHeader(
@@ -755,6 +762,7 @@ class OpportunityCard extends StatelessWidget {
     ];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -952,6 +960,7 @@ class OpportunityCard extends StatelessWidget {
           mediaUrl: mediaUrl,
           score: job.recommendationScore,
           featured: false,
+          showTitle: false,
         ),
         const SizedBox(height: HopeV2Spacing.md),
         Row(

@@ -57,10 +57,10 @@ class HopeDisplayFormatter {
         final whole = abs ~/ 1000000;
         final decimal = (abs % 1000000) ~/ 100000;
         final compact = decimal == 0 ? whole.toString() : whole.toString() + '.' + decimal.toString();
-        return localizeDigits(sign + compact, locale: locale) + ' ' + (fa ? 'میلیون تومان' : 'million Toman');
+        return localizeDigits(sign + compact, locale: locale) + ' ' + (fa ? 'میلیون تومان' : 'million TOMAN');
       }
     }
-    return integer(parsed, locale: locale) + ' ' + (fa ? 'تومان' : 'Toman');
+    return integer(parsed, locale: locale) + ' ' + (fa ? 'تومان' : 'TOMAN');
   }
 
   static String amount(Object? value, {required String locale, bool short = false}) {

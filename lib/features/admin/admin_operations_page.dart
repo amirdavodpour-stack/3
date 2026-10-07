@@ -35,6 +35,12 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 5, vsync: this);
+    _finance = Future.value(const <String, dynamic>{});
+    _reports = Future.value(const <Map<String, dynamic>>[]);
+    _unknownPayouts = Future.value(const <Map<String, dynamic>>[]);
+    _analytics = Future.value(const <String, dynamic>{});
+    _funnel = Future.value(const <String, dynamic>{});
+    _crashes = Future.value(const <String, dynamic>{});
     _reload();
   }
 
