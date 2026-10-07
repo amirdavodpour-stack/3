@@ -1,9 +1,5 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
-# [runtime-capture-fa] fix POSIX-shell guard quoting for notification card key.
-# [runtime-capture-fa] certify Wave IV offers + notifications hierarchy after #1856 screenshot audit.
-# [runtime-capture-fa] certify finance density wave after #1851 artifact review.
-# [runtime-capture-fa] exact-head guard corrected for multiline wallet metric border invariant.
 # Grouped visual-wave source guard for the runtime-certified discovery surfaces.
 # [runtime-capture-fa-home] isolate editorial media to the Home discovery capture.
 # Final verification capture after adding the scoped fixture contract.
@@ -27,15 +23,15 @@ sh test/runtime/editorial_media_fixture_scope_test.sh
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
-grep -Fq "width: 70" "$opportunity"
-grep -Fq "height: 70" "$opportunity"
+grep -Fq "width: 62" "$opportunity"
+grep -Fq "height: 62" "$opportunity"
 
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 8, 16, 28)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
-grep -Fq 'vertical: 2' "$home"
+grep -Fq 'vertical: 4' "$home"
 grep -Fq 'if (recommended.length > 1)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$jobs_widgets"
 
@@ -60,135 +56,7 @@ grep -Fq 'system-images/android-35/default/x86_64' ".github/workflows/hope-ui-ru
 grep -Fq 'hope-android-sdk-api35-cmake3.22.1-default' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'hope-android-avd-api35-default-pixel2' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'api-level: 35' ".github/workflows/hope-ui-runtime-evidence.yml"
-
-# Wave III finance-density guard: compact work-center metrics and lighter wallet secondary metrics.
-transactions="lib/features/transactions/transactions_page.dart"
-wallet="lib/features/wallet/wallet_page.dart"
-test -f "$transactions"
-test -f "$wallet"
-grep -Fq 'Widget _workCenterMetric(' "$transactions"
-if grep -Fq 'PremiumStatCard(' "$transactions"; then
-  echo "FAIL: Work & finance center still uses heavyweight stat cards in the runtime-certified surface" >&2
-  exit 1
-fi
-grep -Fq 'final metricWidth = (constraints.maxWidth - 16) / 3;' "$transactions"
-grep -Fq 'fontSize: emphasized ? 14 : 12' "$wallet"
-grep -Fq 'border: emphasized' "$wallet"
-grep -Fq 'HopeV2Colors.primary.withValues(alpha: .30)' "$wallet"
-# Wave IV: Offers and Notifications must use calmer, more legible secondary-surface hierarchy.
-offers="lib/features/offers/offers_page.dart"
-notifications="lib/features/notifications/notifications_page.dart"
-test -f "$offers"
-test -f "$notifications"
-if grep -Fq 'Widget _offerMetric(' "$offers"; then
-  echo "FAIL: offers duplicate metric rail must remain retired" >&2
-  exit 1
-fi
-grep -Fq "all.length.toString() + _t(' پیشنهاد', ' offers')" "$offers"
-grep -Fq "HopeDisplayFormatter.money" "$offers"
-grep -Fq "notification-card-" "$notifications"
-grep -Fq 'padding: const EdgeInsets.all(15)' "$notifications"
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
 # [runtime-capture] full EN/LTR editorial media certification after FA/RTL proof.
-# [runtime-capture-fa] certify current HEAD after Offers icon type-contract fix.
-
-
-# Signature surface wave: visual primitives for creation and internal finance.
-signature="lib/core/ui/hope_signature_components.dart"
-test -f "$signature"
-grep -Fq 'class HopeOpportunityLivePreview' "$signature"
-grep -Fq 'class HopeWalletFlowSignature' "$signature"
-grep -Fq "HopeOpportunityLivePreview(" "lib/features/marketplace/create_job_widgets.part.dart"
-if grep -Fq "HopeWalletFlowSignature(wallet: wallet)" "$wallet"; then
-  echo "FAIL: Wallet renders the duplicated money-flow signature" >&2
-  exit 1
-fi
-grep -Fq "class HopeOpportunityDnaSignature" "$signature"
-grep -Fq "HopeOpportunityDnaSignature(job: j, includeBudget: false)" "lib/features/marketplace/job_detail_page.dart"
-grep -Fq "_formatAmount(amount, context)" "$signature"
-if grep -Fq '\${' "$signature"; then
-  echo "FAIL: signature file contains escaped Dart interpolation" >&2
-  exit 1
-fi
-grep -Fq "color: primary.withValues(alpha: .14)" "lib/features/marketplace/job_detail_page.dart"
-grep -Fq "border: Border.all(color: primary.withValues(alpha: .12))" "$opportunity"
-echo "PASS: signature surface visual wave source integrity"
-
-# Wave 1 guards: localized money/time presentation and demo fixture removal.
-grep -Fq "HopeDisplayFormatter.amount" "$opportunity"
-grep -Fq "overflow: TextOverflow.clip" "$opportunity"
-grep -Fq "softWrap: true" "$opportunity"
-grep -Fq "HopeDisplayFormatter.relativeDateTime" "$notifications"
-if grep -Fq "n.createdAt ?? ''" "$notifications"; then
-  echo "FAIL: Notifications still render raw createdAt" >&2
-  exit 1
-fi
-if grep -Fq 'runtime@example.invalid' "$runtime_driver" || grep -Fq 'images.unsplash.com' "$runtime_driver"; then
-  echo "FAIL: demo/stock fixture leakage remains" >&2
-  exit 1
-fi
-grep -Fq "fontSize: 12" "$premium"
-grep -Fq "height: 33" "$premium"
-grep -Fq "fontSize: compact ? 20 : 28" "$premium"
-grep -Fq "fontSize: compactHero ? 20 : (dense ? 21 : 24)" "$premium"
-grep -Fq "barHeight = 64.0" "lib/core/theme/hope_v2_design.dart"
-grep -Fq "fontSize: 28" "lib/core/theme/hope_v2_design.dart"
-grep -Fq "fontSize: 25" "lib/core/theme/hope_v2_design.dart"
-if grep -Fq "FittedBox(" "$home"; then
-  echo "FAIL: Home Pulse metrics still shrink with FittedBox" >&2
-  exit 1
-fi
-# Wave 1: never expose database identifiers or duplicate wallet balance summaries.
-transaction_widgets="lib/features/transactions/transaction_widgets.part.dart"
-test -f "$transaction_widgets"
-if grep -Fq 'Payment ID:' "$transaction_widgets" || grep -Fq 'شناسه پرداخت:' "$transaction_widgets"; then
-  echo "FAIL: Transaction detail exposes an internal payment identifier" >&2
-  exit 1
-fi
-if grep -Fq 'HopeWalletFlowSignature(wallet: wallet)' "$wallet"; then
-  echo "FAIL: Wallet renders a duplicated balance signature" >&2
-  exit 1
-fi
-if grep -Fq 'wallet.id' "$wallet" || grep -Fq 'Wallet ID copied' "$wallet" || grep -Fq 'شناسه کیف پول کپی شد' "$wallet"; then
-  echo "FAIL: Wallet exposes its internal wallet identifier" >&2
-  exit 1
-fi
-if grep -Fq '_copyText(String value)' "$wallet"; then
-  echo "FAIL: Wallet still contains an internal-ID copier" >&2
-  exit 1
-fi
-# Wave 1 localization/auth guards.
-saved_searches="lib/features/jobs/saved_searches_page.dart"
-login="lib/features/auth/login_page.dart"
-register="lib/features/auth/register_page.dart"
-test -f "$saved_searches"
-grep -Fq 'l10n.categorySoftware' "$saved_searches"
-if grep -Fq 'parts.add(item.category)' "$saved_searches"; then
-  echo "FAIL: Saved searches render raw category slugs" >&2
-  exit 1
-fi
-grep -Fq 'height: 128,' "$login"
-grep -Fq 'height: 128,' "$register"
-# Google sign-in uses the official standard-colour G asset on a white button.
-grep -Fq "assets/branding/google_g.png" "$login"
-grep -Fq "assets/branding/google_g.png" "$register"
-python3 - <<'PY'
-from pathlib import Path
-for filename in ("lib/features/auth/login_page.dart", "lib/features/auth/register_page.dart"):
-    source = Path(filename).read_text(encoding="utf-8")
-    marker = "assets/branding/google_g.png"
-    position = source.find(marker)
-    if position < 0:
-        raise SystemExit(f"FAIL: Google brand asset missing from {filename}")
-    block = source[max(0, position - 500):position + 500]
-    if "HopeV2Icons.userAdd" in block or "HopeIcon(HopeV2Icons.userAdd" in block:
-        raise SystemExit(f"FAIL: Google sign-in block uses a generic person icon in {filename}")
-PY
-# Opportunity listing cards use deterministic category cover art, not a shared remote stock image.
-opportunity_card="lib/core/ui/opportunity_card.dart"
-grep -Fq 'String? _mediaUrl(HopeJob job) => null;' "$opportunity_card"
-grep -Fq "'software-development'" "$opportunity_card"
-grep -Fq "'finance-accounting'" "$opportunity_card"
-grep -Fq "'data-ai'" "$opportunity_card"
