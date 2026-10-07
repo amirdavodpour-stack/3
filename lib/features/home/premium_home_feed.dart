@@ -177,6 +177,13 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  bool _isNewOpportunity(HopeJob job) {
+    final rawCreatedAt = job.raw['createdAt'] ?? job.raw['created_at'] ?? job.raw['postedAt'];
+    final createdAt = DateTime.tryParse(rawCreatedAt?.toString() ?? '');
+    if (createdAt == null) return false;
+    final age = DateTime.now().difference(createdAt.toLocal());
+    return !age.isNegative && age < const Duration(hours: 24);
+  }
   // Premium reference batch: four-signal compact pulse + concise brand header.
   Widget _homeHero(
     BuildContext context, {
@@ -378,9 +385,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 final jobs = pulseSnapshot.data ?? const <HopeJob>[];
                 final matchCount =
                     jobs.where((j) => j.isRecommended).length;
-                final nearbyCount = jobs
-                    .where((j) => j.distanceKm != null || j.city == settings.city)
-                    .length;
+                final newCount = jobs.where(_isNewOpportunity).length;
                 final activeCount = auth.isGuest
                     ? '—'
                     : _activeJobCount?.toString() ?? '—';
@@ -402,10 +407,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   ),
                   (
                     value: pulseSnapshot.connectionState == ConnectionState.done
-                        ? '$nearbyCount'
+                        ? '$newCount'
                         : '—',
-                    label: _t(context, 'نزدیک', 'near you'),
-                    icon: HopeV2Icons.distance,
+                    label: _t(context, 'جدید', 'new'),
+                    icon: HopeV2Icons.job,
                     accent: HopeV2Colors.secondary,
                   ),
                   (
