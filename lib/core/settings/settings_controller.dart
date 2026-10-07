@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum HopeRoleMode { worker, employer }
+
 enum LocationFailureReason {
   serviceDisabled,
   permissionDenied,
@@ -18,6 +20,7 @@ class HopeSettingsController extends ChangeNotifier {
   static const _recommendationsKey = 'personalizedRecommendations';
   static const _quietKey = 'quietHours';
   static const _compactKey = 'compactCards';
+  static const _roleModeKey = 'roleMode';
   static const _latitudeKey = 'locationLatitude';
   static const _longitudeKey = 'locationLongitude';
 
@@ -30,6 +33,7 @@ class HopeSettingsController extends ChangeNotifier {
   bool _personalizedRecommendations = true;
   bool _quietHours = false;
   bool _compactCards = false;
+  HopeRoleMode _roleMode = HopeRoleMode.worker;
   double? _latitude;
   double? _longitude;
   bool _loading = true;
@@ -49,6 +53,7 @@ class HopeSettingsController extends ChangeNotifier {
   bool get personalizedRecommendations => _personalizedRecommendations;
   bool get quietHours => _quietHours;
   bool get compactCards => _compactCards;
+  HopeRoleMode get roleMode => _roleMode;
   bool get locationBusy => _locationBusy;
   double? get latitude => _latitude;
   double? get longitude => _longitude;
@@ -64,6 +69,10 @@ class HopeSettingsController extends ChangeNotifier {
     _personalizedRecommendations = _prefs!.getBool(_recommendationsKey) ?? true;
     _quietHours = _prefs!.getBool(_quietKey) ?? false;
     _compactCards = _prefs!.getBool(_compactKey) ?? false;
+    _roleMode = switch (_prefs!.getString(_roleModeKey)) {
+      'employer' => HopeRoleMode.employer,
+      _ => HopeRoleMode.worker,
+    };
     _latitude = _prefs!.getDouble(_latitudeKey);
     _longitude = _prefs!.getDouble(_longitudeKey);
     _loading = false;
@@ -228,6 +237,15 @@ class HopeSettingsController extends ChangeNotifier {
   Future<void> setQuietHours(bool value) async {
     _quietHours = value;
     await _prefs?.setBool(_quietKey, value);
+    notifyListeners();
+  }
+
+  Future<void> setRoleMode(HopeRoleMode value) async {
+    _roleMode = value;
+    await _prefs?.setString(
+      _roleModeKey,
+      value == HopeRoleMode.employer ? 'employer' : 'worker',
+    );
     notifyListeners();
   }
 
