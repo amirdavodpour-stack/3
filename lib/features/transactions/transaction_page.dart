@@ -105,18 +105,6 @@ class _TransactionPageState extends State<TransactionPage> {
   bool _isOwner(HopeJob? job) =>
       context.read<AuthController>().user?['id']?.toString() == job?.ownerId?.toString();
 
-  String _jobStatusLabel(String? raw) => switch (raw?.toUpperCase()) {
-        'DRAFT' => _t('پیش‌نویس', 'Draft'),
-        'PUBLISHED' => _t('منتشر شده', 'Published'),
-        'FUNDED' => _t('تأمین وجه شده', 'Funded'),
-        'IN_PROGRESS' => _t('در حال انجام', 'In progress'),
-        'DELIVERED' => _t('تحویل شده', 'Delivered'),
-        'UNDER_REVIEW' => _t('در حال بررسی', 'Under review'),
-        'COMPLETED' => _t('تکمیل شده', 'Completed'),
-        'CANCELLED' => _t('لغو شده', 'Cancelled'),
-        _ => _t('نیازمند بررسی', 'Needs review'),
-      };
-
   bool _isProvider(HopeJob? job) =>
       context.read<AuthController>().user?['id']?.toString() == job?.providerId?.toString();
 
