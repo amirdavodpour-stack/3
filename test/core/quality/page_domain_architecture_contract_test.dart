@@ -7,7 +7,6 @@ String _read(String path) => File(path).readAsStringSync();
 void main() {
   test('HOPE operational screens declare an explicit product domain', () {
     const expectations = <String, String>{
-      'lib/features/home/premium_home_feed.dart': 'HopeProductDomain.overview',
       'lib/features/jobs/jobs_page.dart': 'HopeProductDomain.discovery',
       'lib/features/applications/my_applications_page.dart': 'HopeProductDomain.work',
       'lib/features/offers/offers_page.dart': 'HopeProductDomain.work',
@@ -37,6 +36,11 @@ void main() {
       final source = _read(entry.key);
       expect(source, contains(entry.value), reason: entry.key);
     }
+    final home = _read('lib/features/home/premium_home_feed.dart');
+    expect(home, contains('HopePageId.home'));
+    final architecture = _read('lib/core/ui/hope_product_architecture.dart');
+    expect(architecture, contains('HopePageId.home'));
+    expect(architecture, contains('HopeProductDomain.overview'));
   });
 
   test('chat page distinguishes collaboration and control identities', () {
