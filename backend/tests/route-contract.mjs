@@ -83,6 +83,7 @@ test('capability configuration exposes safe feature flags without secrets', asyn
   const appSource = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
   const source = await readFile(new URL('../src/routes/config_routes.js', import.meta.url), 'utf8');
   assert.match(appSource, /createConfigRoutes/);
+  assert.match(appSource, /parts\[0\] === 'config'/);
   assert.match(source, /capabilities:/);
   for (const marker of [
     "createConfigRoutes",
