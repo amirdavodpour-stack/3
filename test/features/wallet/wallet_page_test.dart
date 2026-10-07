@@ -41,6 +41,8 @@ class _FakeWallet implements WalletRepository {
         'currency': currency,
         'availableBalance': 2500000,
         'lockedBalance': 1000000,
+        'escrowBalance': 1000000,
+        'totalBalance': 3500000,
         'status': 'ACTIVE',
       });
   }
