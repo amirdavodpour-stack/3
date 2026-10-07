@@ -14,7 +14,6 @@ import '../../core/network/api_client.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/copy.dart';
 import '../../core/ui/premium_components.dart';
-import '../../core/ui/hope_signature_components.dart';
 import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/theme/hope_v2_design.dart';
@@ -1076,49 +1075,6 @@ class _WalletPageState extends State<WalletPage> {
               },
             ),
             const SizedBox(height: 10),
-            HopeWalletFlowSignature(wallet: wallet),
-            if (!compact) ...[
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsetsDirectional.only(
-                start: 4,
-                top: 2,
-                bottom: 2,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _t('شناسه کیف پول', 'Wallet ID'),
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
-                  ),
-                  Flexible(
-                    child: SelectableText(
-                      wallet.id,
-                      maxLines: 1,
-                      textAlign: TextAlign.end,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    constraints: const BoxConstraints(
-                      minWidth: HopeV2Touch.minimum,
-                      minHeight: HopeV2Touch.minimum,
-                    ),
-                    tooltip: _t('کپی شناسه', 'Copy wallet ID'),
-                    onPressed:
-                        wallet.id.isEmpty ? null : () => _copyText(wallet.id),
-                    icon: const HugeIcon(icon: HopeV2Icons.copy, size: 17),
-                  ),
-                ],
-              ),
-            ),
-            ],
             SizedBox(height: compact ? 12 : 18),
             Container(
               key: _historyKey,
