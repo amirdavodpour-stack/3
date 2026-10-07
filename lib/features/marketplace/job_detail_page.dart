@@ -206,11 +206,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
     if (repository == null) return;
 
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _EmployerCandidateMatchesLoader(
-          future: repository.listForJob(job.id),
-          jobTitle: job.title,
-        ),
+      HopeRoutes.candidateMatches(
+        future: repository.listForJob(job.id),
+        jobTitle: job.title,
       ),
     );
   }
@@ -1832,8 +1830,8 @@ class _MatchIntelligence extends StatelessWidget {
 
 
 
-class _EmployerCandidateMatchesLoader extends StatelessWidget {
-  const _EmployerCandidateMatchesLoader({
+class EmployerCandidateMatchesLoader extends StatelessWidget {
+  const EmployerCandidateMatchesLoader({
     required this.future,
     required this.jobTitle,
   });
