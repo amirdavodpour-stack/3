@@ -436,7 +436,7 @@ class _EvidenceNotificationRepository implements NotificationRepository {
   Future<void> disableDevice(String id) async {}
 }
 
-HopeJob _jobFixture() => HopeJob.fromMap({
+HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
       'id': 'job-runtime-1',
       'title': 'طراحی رابط موبایل حرفه‌ای',
       'description':
@@ -472,6 +472,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
         'salary': 82,
       },
       'aiRecommendationConfidence': 0.92,
+      'editorialMedia': editorialMedia,
     });
 
 HopeApplication _applicationFixture() => HopeApplication.fromMap({
