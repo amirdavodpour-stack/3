@@ -28,13 +28,18 @@ class HopeDisplayFormatter {
     final raw = value?.toString().trim();
     if (raw == null || raw.isEmpty) return null;
     final normalized = raw.startsWith('#') ? raw.substring(1) : raw;
-    if (!RegExp(r'^HP-\d{4,}
+    if (!RegExp(r'^HP-\d{4,}$', caseSensitive: false).hasMatch(normalized)) {
+      return null;
+    }
+    return '#${localizeDigits(normalized.toUpperCase(), locale: locale)}';
+  }
+
+  static int? parseInteger(Object? value) {
     if (value == null) return null;
     final normalized = _asciiDigits(value.toString()).trim().replaceAll(',', '').replaceAll('٬', '');
     if (!RegExp(r'^[+-]?\d+$').hasMatch(normalized)) return null;
     return int.tryParse(normalized);
   }
-
   static String integer(Object? value, {required String locale}) {
     final parsed = parseInteger(value);
     if (parsed == null) return '—';
@@ -43,7 +48,7 @@ class HopeDisplayFormatter {
 
   static String money(Object? value, {required String locale, bool short = false}) {
     final parsed = parseInteger(value);
-    if (parsed == null) return value.toString();
+    if (parsed == null) return '—';
     final fa = locale.toLowerCase().startsWith('fa');
     if (short) {
       final abs = parsed.abs();
