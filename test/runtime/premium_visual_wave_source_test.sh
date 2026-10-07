@@ -153,3 +153,15 @@ if grep -Fq 'شناسه کیف پول' "$wallet"; then
   echo "FAIL: Wallet exposes an internal wallet ID" >&2
   exit 1
 fi
+# Wave 1 localization/auth guards.
+saved_searches="lib/features/jobs/saved_searches_page.dart"
+login="lib/features/auth/login_page.dart"
+register="lib/features/auth/register_page.dart"
+test -f "$saved_searches"
+grep -Fq 'l10n.categorySoftware' "$saved_searches"
+if grep -Fq 'parts.add(item.category)' "$saved_searches"; then
+  echo "FAIL: Saved searches render raw category slugs" >&2
+  exit 1
+fi
+grep -Fq 'height: 128,' "$login"
+grep -Fq 'height: 128,' "$register"
