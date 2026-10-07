@@ -211,6 +211,19 @@ validate_capture_set() {
   return 0
 }
 
+extended_screens_fa=(
+  "financial-insights-fa-rtl"
+  "job-satisfaction-fa-rtl"
+  "candidate-matches-fa-rtl"
+  "chat-fa-rtl"
+)
+extended_screens_en=(
+  "financial-insights-en-ltr"
+  "job-satisfaction-en-ltr"
+  "candidate-matches-en-ltr"
+  "chat-en-ltr"
+)
+
 screens=(
   "login-fa-rtl"
   "home-fa-rtl"
@@ -246,9 +259,9 @@ baseline_screens=("${screens[@]}")
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   baseline_screens=("home-${CAPTURE_LOCALE}-rtl")
 elif [ "$CAPTURE_LOCALE" = "fa" ]; then
-  baseline_screens=("${screens[@]:0:15}")
+  baseline_screens=("${screens[@]:0:15}" "${extended_screens_fa[@]}")
 elif [ "$CAPTURE_LOCALE" = "en" ]; then
-  baseline_screens=("${screens[@]:15:15}")
+  baseline_screens=("${screens[@]:15:15}" "${extended_screens_en[@]}")
 fi
 
 run_host_batch_session() {
@@ -568,11 +581,11 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   CAPTURED_RESPONSIVE_SCREENS=0
   CAPTURED_LOCALE_LABEL="fa-RTL home-only"
 elif [ "$CAPTURE_LOCALE" = "fa" ]; then
-  CAPTURED_BASELINE_SCREENS=15
+  CAPTURED_BASELINE_SCREENS=19
   CAPTURED_RESPONSIVE_SCREENS=6
   CAPTURED_LOCALE_LABEL="fa-RTL"
 elif [ "$CAPTURE_LOCALE" = "en" ]; then
-  CAPTURED_BASELINE_SCREENS=15
+  CAPTURED_BASELINE_SCREENS=19
   CAPTURED_RESPONSIVE_SCREENS=6
   CAPTURED_LOCALE_LABEL="en-LTR"
 else
@@ -613,8 +626,13 @@ cat > "$evidence_dir/metadata.json" <<EOF
     "CreateJobPage",
     "LoginPage",
     "RegisterPage",
-    "PasswordResetPage"
-  ]
+    "PasswordResetPage",
+    "FinancialInsightsPage",
+    "JobSatisfactionPage",
+    "EmployerCandidateMatchesPage",
+    "ChatPage"
+  ],
+  "target_extension_screens": 4
 }
 EOF
 
