@@ -35,7 +35,7 @@ grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 8, 16, 28)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
-grep -Fq 'vertical: 4' "$home"
+grep -Fq 'vertical: 2' "$home"
 grep -Fq 'if (recommended.length > 1)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$jobs_widgets"
 
@@ -106,7 +106,7 @@ if grep -Fq "HopeWalletFlowSignature(wallet: wallet)" "$wallet"; then
   exit 1
 fi
 grep -Fq "class HopeOpportunityDnaSignature" "$signature"
-grep -Fq "HopeOpportunityDnaSignature(job: j)" "lib/features/marketplace/job_detail_page.dart"
+grep -Fq "HopeOpportunityDnaSignature(job: j, includeBudget: false)" "lib/features/marketplace/job_detail_page.dart"
 grep -Fq "_formatAmount(amount, context)" "$signature"
 if grep -Fq '\${' "$signature"; then
   echo "FAIL: signature file contains escaped Dart interpolation" >&2
