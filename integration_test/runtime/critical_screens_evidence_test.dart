@@ -63,7 +63,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
+        user: {'id': 'runtime-user', 'displayName': 'علی رضایی'},
       );
 
   @override
@@ -382,7 +382,7 @@ class _EvidenceNotificationRepository implements NotificationRepository {
           HopeNotification(
             id: 'notification-1',
             type: 'PAYMENT_UPDATE',
-            title: 'پرداخت پروژه به‌روزرسانی شد',
+            title: 'پرداخت فرصت به‌روزرسانی شد',
             body: 'پرداخت در وضعیت قفل‌شده قرار گرفت.',
             createdAt: '2026-09-21T06:00:00Z',
             readAt: null,
@@ -442,7 +442,7 @@ HopeJob _jobFixture() => HopeJob.fromMap({
       'description':
           'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',
       'categoryId': 'cat-1',
-      'category': 'Software',
+      'category': 'طراحی',
       'jobType': 'FIXED',
       'budgetType': 'FIXED',
       'budgetMin': '1500000',
@@ -481,7 +481,7 @@ HopeApplication _applicationFixture() => HopeApplication.fromMap({
       'jobCity': 'تهران',
       'jobKind': 'JOB',
       'resumeText': 'Mobile engineer',
-      'skills': 'Flutter, Dart, UX',
+      'skills': 'طراحی رابط کاربری، تجربه کاربری، دسترس‌پذیری',
       'status': 'SHORTLISTED',
       'createdAt': '2026-09-20T06:00:00Z',
       'updatedAt': '2026-09-21T06:00:00Z',
