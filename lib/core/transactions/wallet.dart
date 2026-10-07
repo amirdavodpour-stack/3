@@ -8,9 +8,9 @@ class HopeWallet {
     required this.status,
     this.createdAt,
     this.updatedAt,
-    this.escrowBalance,
-    this.pendingWithdrawalBalance,
-    this.otherLockedBalance,
+    this.escrowBalance = 0,
+    this.pendingWithdrawalBalance = 0,
+    this.otherLockedBalance = 0,
     this.totalBalanceFromServer,
   });
 
