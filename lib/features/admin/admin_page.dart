@@ -72,6 +72,11 @@ class _AdminPageState extends State<AdminPage>
       final applications = repository.listApplications();
       final users = repository.listUsers();
       final audit = repository.listAudit();
+      _observeFuture(summary);
+      _observeFuture(jobs);
+      _observeFuture(applications);
+      _observeFuture(users);
+      _observeFuture(audit);
       setState(() {
         _panelVerified = true;
         _isPrimaryAdmin = access['primaryAdmin'] == true;
@@ -93,6 +98,10 @@ class _AdminPageState extends State<AdminPage>
     }
   }
 
+  void _observeFuture<T>(Future<T> future) {
+    future.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+  }
+
   void _reload() {
     final repository = context.read<AdminRepository>();
     _summary = repository.getSummary();
@@ -100,6 +109,11 @@ class _AdminPageState extends State<AdminPage>
     _applications = repository.listApplications();
     _users = repository.listUsers();
     _audit = repository.listAudit();
+    _observeFuture(_summary);
+    _observeFuture(_jobs);
+    _observeFuture(_applications);
+    _observeFuture(_users);
+    _observeFuture(_audit);
     if (mounted) setState(() {});
   }
 
