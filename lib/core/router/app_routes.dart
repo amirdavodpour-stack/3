@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'app_router.dart';
 import 'package:provider/provider.dart';
 
 import 'auth_return_intent.dart';
