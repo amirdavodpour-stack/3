@@ -236,6 +236,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   ),
                 ],
               ),
+            ),
           ],
         ),
       );

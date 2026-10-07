@@ -540,9 +540,10 @@ class _PremiumQuickActionButton extends StatelessWidget {
         child: InkWell(
           onTap: enabled ? action.onPressed : null,
           borderRadius: BorderRadius.circular(HopeV2Radii.md),
-          child: Ink(
+          child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+            child: Ink(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -579,6 +580,7 @@ class _PremiumQuickActionButton extends StatelessWidget {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

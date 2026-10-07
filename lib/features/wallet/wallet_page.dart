@@ -895,11 +895,12 @@ class _WalletPageState extends State<WalletPage> {
               child: InkWell(
                 onTap: onPressed,
                 borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                child: Ink(
+                child: ConstrainedBox(
                   constraints: const BoxConstraints(
                     minHeight: HopeV2Touch.minimum,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  child: Ink(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   decoration: BoxDecoration(
                     color: primary
                         ? color.withValues(alpha: .15)
