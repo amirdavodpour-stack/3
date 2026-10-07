@@ -456,18 +456,18 @@ extension on _TransactionPageState {
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          payment?.id == null
-                              ? _t(
-                                  'پرداخت هنوز ساخته نشده',
-                                  'Payment has not been created yet',
-                                )
-                              : _t('شناسه پرداخت: ${payment?.id ?? ""}', 'Payment ID: ${payment?.id ?? ""}'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                        if (payment?.id == null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _t(
+                              'پرداخت هنوز ساخته نشده',
+                              'Payment has not been created yet',
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ],
                     ),
                   ),
