@@ -445,6 +445,7 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
         findsOneWidget);
   });
 
+  // A rejected jobs future must stay owned by the page FutureBuilder so the retry path can render it.
   testWidgets('admin load failure shows retry and recovers', (tester) async {
     final repo = _FakeAdmin(failJobs: true)
       ..jobs = [_job('j1', kind: 'MISSION', status: 'PUBLISHED')];
