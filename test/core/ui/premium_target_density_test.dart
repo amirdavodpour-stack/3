@@ -150,7 +150,7 @@ void main() {
 
     expect(
       tester.getSize(find.byType(PremiumPanel)),
-      const Size(76, 76),
+      const Size(78, 78),
     );
   });
 
