@@ -57,6 +57,7 @@ import { createJobSatisfactionRoutes } from './routes/job_satisfaction_routes.js
 import { createFinancialInsightsRoutes } from './routes/financial_insights_routes.js';
 import { createJobDisputeRoutes } from './routes/job_dispute_routes.js';
 import { createHumanChatRoutes } from './routes/human_chat_routes.js';
+import { createConfigRoutes } from './routes/config_routes.js';
 import { buildOpportunityAgentState, parseOpportunityAgentState } from './services/opportunity_agent.js';
 import { askAI } from './services/ai.js';
 import { enrichRecommendationProfile, buildRecommendationInterviewPrompt, parseInterviewResponse } from './services/recommendation_profile.js';
@@ -147,6 +148,7 @@ const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, re
 const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
 const financialInsightsRoutes = createFinancialInsightsRoutes({ authUser, sendJson, HttpError, repo });
 const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo });
+const configRoutes = createConfigRoutes({ sendJson, config });
 const jobSatisfactionRoutes = createJobSatisfactionRoutes({ authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases, askAI, processPaymentReleaseNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
 const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
 const recommendationProfileRoutes = createRecommendationProfileRoutes({
@@ -282,6 +284,7 @@ export async function handle(req, res) {
       const ready = database.status === 'ok';
       return sendJson(res, ready ? 200 : 503, { ready, service: 'hope-api', database, time: now() });
     }
+    if (parts[0] === 'config') return await configRoutes(req, res, parts.slice(1));
     if (parts[0] === 'chat') return await aiRoutes(req, res, parts);
     if (parts[0] === 'messaging') return await humanChatRoutes(req, res, parts);
     if (parts[0] === 'recommendation-profile') return await recommendationProfileRoutes(req, res, parts);
