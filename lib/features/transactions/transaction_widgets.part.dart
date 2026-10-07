@@ -525,16 +525,14 @@ extension on _TransactionPageState {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 4),
-                    FittedBox(
-                      alignment: AlignmentDirectional.centerStart,
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        moneyLabel(context, payment?.amount ?? '—'),
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: compact ? 25 : null,
-                              letterSpacing: -.8,
-                            ),
+                    Text(
+                      moneyLabel(context, payment?.amount ?? '—'),
+                      softWrap: true,
+                      maxLines: 2,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: compact ? 25 : null,
+                        letterSpacing: -.8,
                       ),
                     ),
                     if (status == 'HELD' ||
