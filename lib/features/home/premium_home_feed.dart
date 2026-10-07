@@ -17,6 +17,7 @@ import '../../core/ui/copy.dart';
 import '../../core/ui/opportunity_card.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import 'opportunity_agent_panel.dart';
 
 class PremiumHomeFeed extends StatefulWidget {
@@ -1042,4 +1043,3 @@ class _PulseSkeleton extends StatelessWidget {
     OpportunitySkeletonCard(),
   ]);
 }
-
