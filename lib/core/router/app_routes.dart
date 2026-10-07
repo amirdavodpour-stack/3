@@ -21,7 +21,6 @@ import '../../features/marketplace/create_job_page.dart';
 import '../marketplace/job.dart';
 import '../../features/marketplace/job_detail_page.dart';
 import '../marketplace/employer_candidate_matching_repository.dart';
-import '../marketplace/employer_candidate_matching_repository.dart';
 import '../../features/offers/offers_page.dart';
 import '../../features/notifications/notifications_page.dart';
 import '../../features/notifications/notification_devices_page.dart';
@@ -47,9 +46,6 @@ import '../uploads/upload_queue.dart';
 /// routing intent instead of concrete page wiring — the same reason
 /// repositories already live behind abstractions in `lib/core`.
 abstract final class HopeRoutes {
-  /// Root browse-first destination.
-  static Route<void> home() => _page(const AppRouter());
-
   /// Auth flows.
   static Route<AuthReturnIntent?> login({AuthReturnIntent? returnIntent}) =>
       _page(LoginPage(returnIntent: returnIntent));
@@ -94,13 +90,6 @@ abstract final class HopeRoutes {
     required String jobTitle,
   }) =>
       _page(EmployerCandidateMatchesRoutePage(
-        future: future,
-        jobTitle: jobTitle,
-      ));
-  static Route<void> candidateMatches({
-    required Future<HopeEmployerCandidateMatchList> future,
-    required String jobTitle,
-  }) => _page(EmployerCandidateMatchesLoader(
         future: future,
         jobTitle: jobTitle,
       ));
