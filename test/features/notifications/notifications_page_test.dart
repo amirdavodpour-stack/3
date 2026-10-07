@@ -240,6 +240,7 @@ void main() {
       ],
       unreadCount: 1,
     ));
+    await firstRefresh;
     await tester.pumpAndSettle();
 
     expect(find.text('Fresh notification'), findsOneWidget);
