@@ -687,11 +687,12 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Text(
                 label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+                softWrap: true,
                 style: TextStyle(
                   color: emphasized ? Colors.white : Colors.white70,
-                  fontSize: emphasized ? 10.5 : 9.5,
+                  fontSize: 12,
+                  height: 1.12,
                   fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
                 ),
               ),
@@ -887,7 +888,7 @@ class _WalletPageState extends State<WalletPage> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: color,
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
