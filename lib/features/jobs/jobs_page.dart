@@ -1,5 +1,4 @@
 import '../../core/router/app_routes.dart';
-import '../../core/router/app_router.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -351,7 +350,7 @@ class _JobsPageState extends State<JobsPage> {
     if (index == 1) return;
     if (index == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => AppRouter()),
+        HopeRoutes.home(),
         (_) => false,
       );
       return;
