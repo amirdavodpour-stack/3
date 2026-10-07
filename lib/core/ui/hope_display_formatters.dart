@@ -119,9 +119,8 @@ class HopeDisplayFormatter {
   }
 }
 , caseSensitive: false).hasMatch(normalized)) return null;
-    return '#${localizeDigits(normalized.toUpperCase(), locale: locale)}';
+    return '#' + localizeDigits(normalized.toUpperCase(), locale: locale);
   }
-
   static int? parseInteger(Object? value) {
     if (value == null) return null;
     final normalized = _asciiDigits(value.toString()).trim().replaceAll(',', '').replaceAll('٬', '');

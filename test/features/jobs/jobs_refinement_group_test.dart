@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
 
@@ -84,6 +85,7 @@ void main() {
                         kind: 'MISSION',
                         visibility: 'PUBLIC',
                         cityLabel: 'Tehran',
+                        cityIsExplicit: false,
                         categoryLabel: 'Design',
                         categoryError: null,
                         onKindChanged: (_) {},
@@ -153,6 +155,7 @@ void main() {
                     kind: 'MISSION',
                     visibility: 'PUBLIC',
                     cityLabel: 'Tehran',
+                        cityIsExplicit: false,
                     categoryLabel: 'Design',
                     categoryError: null,
                     onKindChanged: (_) {},

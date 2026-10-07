@@ -57,7 +57,7 @@ void main() {
     final repository = ApiChatRepository(FakeApiClient({'data': {}}));
 
     await expectLater(
-      repository.sendMessage('hello'),
+      repository.sendMessage('conversation-1', 'hello'),
       throwsA(isA<FormatException>()),
     );
   });

@@ -209,7 +209,7 @@ void main() {
     expect(filterRect.bottom, lessThanOrEqualTo(searchRect.bottom + 2));
     expect(featuredRect.top - searchRect.bottom, lessThan(40));
     expect(tester.takeException(), isNull);
-  }
+  });
 
   testWidgets('compact explore uses a short search hint so the control band stays overflow-free',
       (tester) async {
@@ -225,7 +225,7 @@ void main() {
     expect(find.bySemanticsLabel('جستجو'), findsOneWidget);
     expect(find.bySemanticsLabel('عنوان، شهر یا مهارت...'), findsNothing);
     expect(tester.takeException(), isNull);
-  }
+  });
 
   testWidgets(
       'automatic city context does not count as an active filter, but an explicit city does',
@@ -249,7 +249,7 @@ void main() {
     );
     expect(activeCount, findsOneWidget);
     expect(find.text('1', skipOffstage: false), findsWidgets);
-  }
+  });
 
   testWidgets('search narrows the rendered opportunity list', (tester) async {
     final repo = _Repo();
