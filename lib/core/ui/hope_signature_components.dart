@@ -450,7 +450,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final secondary = HopeV2Colors.secondary;
+    const secondary = HopeV2Colors.secondary;
     final dimensions = <({String label, String value, Color color})>[
       (
         label: _t(context, 'نوع همکاری', 'Work mode'),

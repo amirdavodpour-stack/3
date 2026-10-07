@@ -78,10 +78,10 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
     final id='${d['id']??''}';
     final reasonController=TextEditingController();
     try {
+      final repository = context.read<AdminRepository>();
       final ok=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(title:Text(_t('تأیید اقدام','Confirm action')),content:Column(mainAxisSize:MainAxisSize.min,children:[Text(_t('اقدام انتخابی: $label. دلیل ادمین را ثبت کنید.','Selected action: $label. Record the admin reason.')),const SizedBox(height:10),TextField(controller:reasonController,maxLines:4,decoration:InputDecoration(labelText:_t('دلیل','Reason')))]),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:Text(_t('انصراف','Cancel'))),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(_t('اجرا','Execute')))]));
       if(ok!=true) return;
       setState(()=>_busy=true);
-      final repository = context.read<AdminRepository>();
       await repository.resolveDispute(id,resolution:resolution,reason:reasonController.text);
       if(mounted) { Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(_t('اقدام ثبت شد.','Action recorded.')))); _load(); }
     } catch(e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(apiErrorMessage(e)))); } finally { reasonController.dispose(); if(mounted) setState(()=>_busy=false); }

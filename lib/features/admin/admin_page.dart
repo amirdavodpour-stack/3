@@ -240,12 +240,10 @@ class _AdminPageState extends State<AdminPage>
                               ? null
                               : () async {
                                   final repository = context.read<AdminRepository>();
+                                  final navigator = Navigator.of(context);
                                   await repository.lockPanel();
                                   if (!mounted) return;
-                                  Navigator.pushReplacement(
-                                      context,
-                                      HopeRoutes.adminAccess(),
-                                    );
+                                  navigator.pushReplacement(HopeRoutes.adminAccess());
                                   }
                                 },
                         ),
@@ -416,7 +414,7 @@ class _AdminPageState extends State<AdminPage>
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(_t('لغو نقش مدیر؟', 'Revoke administrator role?')),
-        content: Text(_t('دسترسی مدیریتی '+"${user.displayName.isEmpty ? user.email : user.displayName}"+' قطع می‌شود.', 'Administrator access for '+"${user.displayName.isEmpty ? user.email : user.displayName}"+' will be removed.')),
+        content: Text(_t('دسترسی مدیریتی ${user.displayName.isEmpty ? user.email : user.displayName} قطع می‌شود.', 'Administrator access for ${user.displayName.isEmpty ? user.email : user.displayName} will be removed.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_t('انصراف', 'Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(_t('لغو نقش', 'Revoke role'))),

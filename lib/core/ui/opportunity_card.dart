@@ -748,7 +748,7 @@ class OpportunityCard extends StatelessWidget {
         _metaText(
           context,
           HopeV2Icons.payments,
-          '${_formatAmount(amount, context)}',
+          _formatAmount(amount, context),
           primary,
           emphasize: true,
         ),
@@ -830,7 +830,7 @@ class OpportunityCard extends StatelessWidget {
                   child: _metaText(
                     context,
                     HopeV2Icons.payments,
-                    '${_formatAmount(amount, context)}',
+                    _formatAmount(amount, context),
                     primary,
                     emphasize: true,
                   ),
@@ -863,7 +863,7 @@ class OpportunityCard extends StatelessWidget {
           ],
         ],
         if (tags.children.isNotEmpty && !compactViewport) ...[
-          SizedBox(height: HopeV2Spacing.sm),
+          const SizedBox(height: HopeV2Spacing.sm),
           tags,
         ],
         SizedBox(height: compactViewport ? 6 : HopeV2Spacing.sm),

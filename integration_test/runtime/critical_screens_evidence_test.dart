@@ -609,8 +609,6 @@ class _EvidenceHost extends StatelessWidget {
   }
 }
 
-const _captureMode =
-    String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: 'baseline');
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =

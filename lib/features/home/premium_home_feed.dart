@@ -308,6 +308,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       ),
     );
   }
+  @override
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();
