@@ -56,6 +56,12 @@ grep -Fq 'system-images/android-35/default/x86_64' ".github/workflows/hope-ui-ru
 grep -Fq 'hope-android-sdk-api35-cmake3.22.1-default' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'hope-android-avd-api35-default-pixel2' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'api-level: 35' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq "contains(github.event.pull_request.title, '[runtime-capture-fa]')" ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'test "${png_count}" -ge 25' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq "'candidate-matches': () => EmployerCandidateMatchesPage(" "$runtime_driver"
+grep -Fq "'chat': () => ChatPage(" "$runtime_driver"
+grep -Fq "'job-satisfaction': () => const JobSatisfactionPage(" "$runtime_driver"
+grep -Fq "'financial-insights': () => const FinancialInsightsPage()" "$runtime_driver"
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.

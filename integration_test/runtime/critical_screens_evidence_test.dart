@@ -9,6 +9,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:hope_mobile/core/application/application_registry.dart';
+import 'package:hope_mobile/core/chat/chat_repository.dart';
+import 'package:hope_mobile/core/financial/financial_insights_repository.dart';
+import 'package:hope_mobile/core/jobs/job_satisfaction_repository.dart';
+import 'package:hope_mobile/core/marketplace/employer_candidate_matching_repository.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
@@ -38,13 +42,17 @@ import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/transactions/wallet_repository.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
 import 'package:hope_mobile/features/applications/my_applications_page.dart';
+import 'package:hope_mobile/features/chat/chat_page.dart';
+import 'package:hope_mobile/features/financial/financial_insights_page.dart';
 import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/auth/password_reset_page.dart';
 import 'package:hope_mobile/features/auth/register_page.dart';
 import 'package:hope_mobile/features/home/home_page.dart';
+import 'package:hope_mobile/features/jobs/job_satisfaction_page.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
 import 'package:hope_mobile/features/jobs/saved_searches_page.dart';
 import 'package:hope_mobile/features/marketplace/create_job_page.dart';
+import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
 import 'package:hope_mobile/features/marketplace/job_detail_page.dart';
 import 'package:hope_mobile/features/notifications/notifications_page.dart';
 import 'package:hope_mobile/features/offers/offers_page.dart';
@@ -436,6 +444,165 @@ class _EvidenceNotificationRepository implements NotificationRepository {
   Future<void> disableDevice(String id) async {}
 }
 
+class _EvidenceFinancialInsightsRepository implements FinancialInsightsRepository {
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      HopeFinancialInsights.fromMap({
+        'currency': 'TOMAN',
+        'range': {'months': months},
+        'summary': {
+          'availableBalance': 2500000,
+          'lockedBalance': 1000000,
+          'totalInflow': 4200000,
+          'totalOutflow': 1700000,
+          'totalReserved': 1000000,
+          'netCashFlow': 2500000,
+        },
+        'monthlyCashFlow': [
+          {'month': '2026-04', 'label': 'فروردین', 'inflow': 600000, 'outflow': 240000, 'reserved': 200000, 'net': 360000},
+          {'month': '2026-05', 'label': 'اردیبهشت', 'inflow': 900000, 'outflow': 380000, 'reserved': 250000, 'net': 520000},
+          {'month': '2026-06', 'label': 'خرداد', 'inflow': 750000, 'outflow': 310000, 'reserved': 180000, 'net': 440000},
+          {'month': '2026-07', 'label': 'تیر', 'inflow': 1100000, 'outflow': 420000, 'reserved': 220000, 'net': 680000},
+          {'month': '2026-08', 'label': 'مرداد', 'inflow': 500000, 'outflow': 210000, 'reserved': 100000, 'net': 290000},
+          {'month': '2026-09', 'label': 'شهریور', 'inflow': 350000, 'outflow': 140000, 'reserved': 50000, 'net': 210000},
+        ],
+        'balanceTrend': [
+          {'date': '2026-04-01', 'balance': 1100000},
+          {'date': '2026-05-01', 'balance': 1550000},
+          {'date': '2026-06-01', 'balance': 1780000},
+          {'date': '2026-07-01', 'balance': 2200000},
+          {'date': '2026-08-01', 'balance': 2380000},
+          {'date': '2026-09-01', 'balance': 2500000},
+        ],
+        'bySource': [
+          {'source': 'JOB', 'credit': 3000000, 'debit': 1500000, 'amount': 1500000},
+          {'source': 'MISSION', 'credit': 1200000, 'debit': 200000, 'amount': 1000000},
+        ],
+      });
+}
+
+class _EvidenceJobSatisfactionRepository implements JobSatisfactionRepository {
+  @override
+  Future<JobSatisfactionState> getState(String jobId) async =>
+      JobSatisfactionState.fromMap({
+        'jobId': jobId,
+        'role': 'WORKER',
+        'submitted': false,
+        'questions': const [],
+        'progress': {'submittedCount': 0, 'requiredCount': 2},
+      });
+
+  @override
+  Future<Map<String, dynamic>> submit({
+    required String jobId,
+    required int overallRating,
+    required bool completedAsAgreed,
+    required int communicationRating,
+    required String report,
+  }) async =>
+      const {};
+
+  @override
+  Future<List<HopeJobSatisfaction>> history() async => const [];
+}
+
+class _EvidenceChatRepository implements ChatRepository {
+  final _conversation = const HopeChatConversation(
+    id: 'chat-runtime-1',
+    kind: 'JOB',
+    jobId: 'job-runtime-1',
+    status: 'OPEN',
+    title: 'همکاری طراحی رابط موبایل',
+    otherUserName: 'استودیو هُپ',
+  );
+
+  @override
+  Future<List<HopeChatConversation>> listConversations() async =>
+      [_conversation];
+
+  @override
+  Future<HopeChatThread> getMessages(String conversationId) async =>
+      HopeChatThread(
+        conversation: _conversation,
+        messages: [
+          HopeChatMessage(
+            id: 'message-runtime-1',
+            conversationId: conversationId,
+            senderId: 'runtime-owner',
+            senderName: 'استودیو هُپ',
+            body: 'فایل‌های طراحی برای بازبینی آماده شد.',
+            createdAt: DateTime.utc(2026, 9, 21, 6),
+          ),
+          HopeChatMessage(
+            id: 'message-runtime-2',
+            conversationId: conversationId,
+            senderId: 'runtime-user',
+            senderName: 'HOPE Runtime',
+            body: 'دریافت شد؛ نسخه نهایی را بررسی می‌کنم.',
+            createdAt: DateTime.utc(2026, 9, 21, 6, 4),
+          ),
+        ],
+      );
+
+  @override
+  Future<HopeChatMessage> sendMessage(
+    String conversationId,
+    String message,
+  ) async =>
+      HopeChatMessage(
+        id: 'message-runtime-3',
+        conversationId: conversationId,
+        senderId: 'runtime-user',
+        senderName: 'HOPE Runtime',
+        body: message,
+        createdAt: DateTime.utc(2026, 9, 21, 6, 5),
+      );
+}
+
+HopeEmployerCandidateMatchList _candidateMatchFixture() =>
+    HopeEmployerCandidateMatchList.fromMap({
+      'jobId': 'job-runtime-1',
+      'kind': 'JOB',
+      'candidates': [
+        {
+          'rank': 1,
+          'userId': 'candidate-user-1',
+          'displayName': 'دانا رضایی',
+          'score': 92,
+          'matchReasons': ['SKILL_MATCH', 'EXPERIENCE_MATCH', 'WORK_MODE_MATCH'],
+          'matchComponents': {
+            'skills': 96,
+            'experience': 90,
+            'location': 88,
+            'salary': 94,
+          },
+          'application': {
+            'id': 'application-runtime-1',
+            'status': 'SHORTLISTED',
+            'resumeHighlights': 'Flutter, Dart, accessibility',
+            'skills': 'Flutter, Dart, UX',
+          },
+        },
+        {
+          'rank': 2,
+          'userId': 'candidate-user-2',
+          'displayName': 'نیما احمدی',
+          'score': 87,
+          'matchReasons': ['CATEGORY_MATCH', 'LOCATION_MATCH'],
+          'matchComponents': {
+            'skills': 88,
+            'experience': 86,
+            'location': 93,
+          },
+          'application': {
+            'id': 'application-runtime-2',
+            'status': 'PENDING',
+            'skills': 'Flutter, UI',
+          },
+        },
+      ],
+    });
+
 HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
       'id': 'job-runtime-1',
       'title': 'طراحی رابط موبایل حرفه‌ای',
@@ -574,6 +741,8 @@ class _EvidenceHost extends StatelessWidget {
         Provider<ProfileRepository>.value(value: runtime.registry.profile!),
         Provider<NotificationRepository>.value(value: runtime.registry.notifications!),
         Provider<OfferRepository>.value(value: _EvidenceOfferRepository()),
+        Provider<FinancialInsightsRepository>.value(value: _EvidenceFinancialInsightsRepository()),
+        Provider<JobSatisfactionRepository>.value(value: _EvidenceJobSatisfactionRepository()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -841,6 +1010,17 @@ Future<void> _captureBaselineLocale(
     'create-job': () => const CreateJobPage(),
     'register': () => const RegisterPage(),
     'password-reset': () => const PasswordResetPage(),
+    // Extended visual-wave targets captured in addition to the 15 core baseline pages.
+    'financial-insights': () => const FinancialInsightsPage(),
+    'job-satisfaction': () => const JobSatisfactionPage(jobId: 'job-runtime-1'),
+    'candidate-matches': () => EmployerCandidateMatchesPage(
+          data: _candidateMatchFixture(),
+          onRetry: () {},
+        ),
+    'chat': () => ChatPage(
+          repository: _EvidenceChatRepository(),
+          jobId: 'job-runtime-1',
+        ),
   };
   final capturePages = _captureHomeOnly
       ? <String, Widget Function()>{'home': () => const HomePage()}
