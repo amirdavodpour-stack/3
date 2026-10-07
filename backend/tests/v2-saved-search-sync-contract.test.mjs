@@ -23,7 +23,7 @@ test('saved-search sync endpoint is authenticated, bounded and user-isolated', a
     assert.equal(r.status, 200);
     assert.equal(r.body.data.name, 'Flutter');
     const savedSearchId = r.body.data.id;
-    assert.match(savedSearchId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    assert.equal(savedSearchId, 'search-alice-1');
 
     r = await api.json('/saved-searches', { headers: auth(bob.accessToken) });
     assert.equal(r.status, 200);
