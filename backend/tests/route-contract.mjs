@@ -98,4 +98,5 @@ test('capability configuration exposes safe feature flags without secrets', asyn
   ]) assert.ok(source.includes(marker), `Missing capability marker: ${marker}`);
   assert.ok(!source.includes('accessSecret'));
   assert.ok(!source.includes('paymentWebhookSecret'));
+  assert.match(appSource, /parts\[0\] === 'config'/);
 });
