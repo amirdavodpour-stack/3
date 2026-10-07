@@ -89,6 +89,8 @@ class HopeOffer {
     required this.status,
     this.createdAt,
     this.updatedAt,
+    this.jobTitle,
+    this.counterpartyName,
   });
 
   final String id;
@@ -99,6 +101,8 @@ class HopeOffer {
   final String status;
   final String? createdAt;
   final String? updatedAt;
+  final String? jobTitle;
+  final String? counterpartyName;
 
   factory HopeOffer.fromMap(Map<String, dynamic> map) => HopeOffer(
     id: '${map['id'] ?? ''}',
@@ -109,6 +113,8 @@ class HopeOffer {
     status: '${map['status'] ?? 'PENDING'}'.toUpperCase(),
     createdAt: map['createdAt'] == null ? null : '${map['createdAt']}',
     updatedAt: map['updatedAt'] == null ? null : '${map['updatedAt']}',
+    jobTitle: map['jobTitle'] == null ? null : '${map['jobTitle']}',
+    counterpartyName: map['counterpartyName'] == null ? null : '${map['counterpartyName']}',
   );
 
   bool get isPending => status == 'PENDING';
