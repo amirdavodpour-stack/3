@@ -31,10 +31,9 @@ on:
 # [runtime-capture-fa] validate compile-fix before next visual evidence wave.
 # [runtime-capture-fa] validate explicit page-canvas surface after shared frame hardening.
 
-  push:
-    branches:
-      - feat/google-sign-in-2026-09-20
-      - feat/ui-v2-wave-1-execution-2026-10-07
+  # Runtime capture is intentionally NOT push-triggered. A capture request is
+  # represented by the PR title marker (or explicit workflow_dispatch) so a
+  # single HEAD cannot launch duplicate runtime captures through push + PR.
 
   # Temporary observable PR trigger: title marker is toggled only for a
   # one-shot capture run because the GitHub connector exposes no dispatch mutation.
@@ -42,9 +41,9 @@ on:
     types: [edited, synchronize]
 
 concurrency:
-  # Capture commits are intentionally serialized. Non-capture feature pushes
-  # use an isolated group so they cannot cancel an active runtime evidence run.
-  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'capture' || github.run_id }}
+  # Serialize by the actual requested HEAD, independent of PR event shape.
+  # This prevents duplicate captures for the same HEAD.
+  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 permissions:
@@ -52,7 +51,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]'))) || (github.event_name == 'pull_request' && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07') && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07') && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
     name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -168,6 +167,13 @@ jobs:
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
 
+      - name: Validate runtime evidence artifact contents
+        if: ${{ success() }}
+        run: |
+          test -d docs/audit/evidence/android-runtime
+          png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
+          test "${png_count}" -ge 1
+
       - name: Upload critical-screen runtime evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
@@ -176,7 +182,7 @@ jobs:
           path: |
             docs/audit/evidence/android-runtime/**
             ${{ runner.temp }}/hope-*-runtime.log
-          if-no-files-found: warn
+          if-no-files-found: error
 # [runtime-capture-fa] Compact mobile density visual wave — exact-head capture.
 # [runtime-capture-fa] iconography + navigation dock + shared shape-language wave — exact-head capture.
 # [runtime-capture-fa] navigation active-state calibration — exact-head capture.
