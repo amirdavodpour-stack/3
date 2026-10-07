@@ -33,9 +33,6 @@ class _AuthRepo implements AuthRepository {
 }
 
 class _ProfileRepo implements ProfileRepository {
-  _ProfileRepo({this.applications = const []});
-
-  final List<HopeApplication> applications;
   final Completer<HopeApplication> withdrawResult =
       Completer<HopeApplication>();
   int withdrawCalls = 0;
@@ -56,7 +53,7 @@ class _ProfileRepo implements ProfileRepository {
     if (failApplicationReload) {
       throw StateError('applications unavailable');
     }
-    return applications;
+    return const <HopeApplication>[];
   }
 
   @override

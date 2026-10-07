@@ -1741,7 +1741,7 @@ class _MatchIntelligence extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
-      key: ValueKey('match-breakdown-${key}'),
+      key: ValueKey('match-breakdown-$key'),
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 4 : 5),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),

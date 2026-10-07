@@ -8,7 +8,7 @@ import 'package:hope_mobile/features/home/opportunity_agent_panel.dart';
 
 void main() {
   testWidgets('shows the highest-priority action and approval boundary', (tester) async {
-    final state = HopeOpportunityAgentState(
+    final state = const HopeOpportunityAgentState(
       profileCompleteness: const HopeOpportunityAgentProfileCompleteness(
         score: 1,
         onboardingCompleted: true,

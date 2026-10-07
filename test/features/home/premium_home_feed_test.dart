@@ -23,8 +23,8 @@ import 'package:provider/provider.dart';
 class _FakeOpportunityAgent implements OpportunityAgentRepository {
   @override
   Future<HopeOpportunityAgentState> getState() async =>
-      HopeOpportunityAgentState(
-        profileCompleteness: HopeOpportunityAgentProfileCompleteness(score: 1),
+      const HopeOpportunityAgentState(
+        profileCompleteness: const HopeOpportunityAgentProfileCompleteness(score: 1),
         activity: const HopeOpportunityAgentActivity(),
         actions: const [
           HopeOpportunityAgentAction(

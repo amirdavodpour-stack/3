@@ -213,8 +213,8 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        home: Scaffold(
-          body: PremiumQuickActionStrip(
+        home: const Scaffold(
+          body: const PremiumQuickActionStrip(
             title: 'Quick access',
             actions: const [
               PremiumQuickAction(

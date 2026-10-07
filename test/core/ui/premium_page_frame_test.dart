@@ -15,11 +15,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.dark(),
-          home: SizedBox(
+          home: const SizedBox(
             width: 360,
             height: 640,
-            child: RepaintBoundary(
-              child: PremiumAppCanvas(
+            child: const RepaintBoundary(
+              child: const PremiumAppCanvas(
                 child: const SizedBox.expand(),
               ),
             ),
@@ -48,7 +48,7 @@ void main() {
       expect(decoration, isA<BoxDecoration>());
       final boxDecoration = decoration as BoxDecoration;
       expect(boxDecoration.color, isNotNull);
-      expect(boxDecoration.color!.alpha, 255);
+      expect((boxDecoration.color!.a * 255.0).round().clamp(0, 255), 255);
       expect(boxDecoration.gradient, isNotNull);
     },
     timeout: const Timeout(Duration(seconds: 30)),
@@ -102,11 +102,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.dark(),
-          home: SizedBox(
+          home: const SizedBox(
             width: 360,
             height: 640,
-            child: RepaintBoundary(
-              child: PremiumPageFrame(
+            child: const RepaintBoundary(
+              child: const PremiumPageFrame(
                 child: const SizedBox.expand(),
               ),
             ),
