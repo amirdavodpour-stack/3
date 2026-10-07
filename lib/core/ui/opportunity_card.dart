@@ -145,21 +145,8 @@ class OpportunityCard extends StatelessWidget {
     );
   }
 
-  String? _mediaUrl(HopeJob job) {
-    const keys = <String>[
-      'imageUrl',
-      'coverUrl',
-      'thumbnailUrl',
-      'image',
-      'coverImage',
-      'mediaUrl',
-    ];
-    for (final key in keys) {
-      final value = job.raw[key];
-      if (value is String && value.trim().isNotEmpty) return value.trim();
-    }
-    return null;
-  }
+  // Listing cards use category illustration art; real media belongs on detail pages.
+  String? _mediaUrl(HopeJob job) => null;
 
   // Premium runtime certification: featured opportunity bloom is restrained.
   // Runtime certification: featured card glow is intentionally restrained.
@@ -250,51 +237,61 @@ class OpportunityCard extends StatelessWidget {
   }
 
   Widget _fallbackMedia(BuildContext context, Color primary) {
+    final categoryKey = (job.category ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', '-')
+        .replaceAll('  ', ' ');
+    final (accent, icon, secondary) = switch (categoryKey) {
+      'software' || 'software-development' || 'development' || 'نرم‌افزار' || 'نرم افزار' =>
+        (HopeV2Colors.primary, HopeV2Icons.web, HopeV2Colors.secondaryDark),
+      'design' || 'graphic-design' || 'طراحی' =>
+        (const Color(0xFF8B5CF6), HopeV2Icons.featured, HopeV2Colors.accent),
+      'marketing' || 'بازاریابی' =>
+        (HopeV2Colors.accent, HopeV2Icons.insights, HopeV2Colors.primary),
+      'content' || 'translation' || 'content-translation' || 'محتوا و ترجمه' =>
+        (const Color(0xFF0EA5E9), HopeV2Icons.description, HopeV2Colors.primary),
+      'finance' || 'accounting' || 'finance-accounting' || 'مالی و حسابداری' =>
+        (HopeV2Colors.successDark, HopeV2Icons.payments, HopeV2Colors.primary),
+      'education' || 'آموزش' =>
+        (const Color(0xFF38BDF8), HopeV2Icons.skills, HopeV2Colors.primary),
+      'support' || 'پشتیبانی' =>
+        (HopeV2Colors.secondaryDark, HopeV2Icons.message, HopeV2Colors.primary),
+      'construction' || 'technical' || 'construction-technical' || 'ساخت‌وساز و فنی' =>
+        (const Color(0xFFF97316), HopeV2Icons.workshop, HopeV2Colors.accent),
+      'video' || 'audio' || 'video-audio' || 'video-production' || 'تولید ویدیو و صدا' =>
+        (const Color(0xFFEC4899), HopeV2Icons.featured, HopeV2Colors.primary),
+      'data' || 'ai' || 'data-ai' || 'artificial-intelligence' || 'داده و هوش مصنوعی' =>
+        (const Color(0xFF06B6D4), HopeV2Icons.insights, HopeV2Colors.primary),
+      'sales' || 'فروش' =>
+        (const Color(0xFF22C55E), HopeV2Icons.workshop, HopeV2Colors.primary),
+      _ => (primary, HopeV2Icons.category, HopeV2Colors.secondary),
+    };
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: AlignmentDirectional.topEnd,
           end: AlignmentDirectional.bottomStart,
           colors: [
-            primary.withValues(alpha: .34),
-            const Color(0xFF151A31),
-            const Color(0xFF090C14),
+            accent.withValues(alpha: .46),
+            secondary.withValues(alpha: .24),
+            HopeV2Colors.darkBackground,
           ],
-          stops: const [0, .44, 1],
+          stops: const [0, .46, 1],
         ),
       ),
       child: Stack(
         fit: StackFit.expand,
         children: [
           PositionedDirectional(
-            end: -28,
-            top: -36,
+            end: -30,
+            top: -38,
             child: Container(
               width: 150,
-              height: 110,
+              height: 112,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: .11),
-                ),
-              ),
-              child: Row(
-                children: [
-                  for (var i = 0; i < 3; i++)
-                    Expanded(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: BorderDirectional(
-                            start: i == 0
-                                ? BorderSide.none
-                                : BorderSide(
-                                    color: Colors.white.withValues(alpha: .06),
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                border: Border.all(color: Colors.white.withValues(alpha: .14)),
               ),
             ),
           ),
@@ -302,68 +299,34 @@ class OpportunityCard extends StatelessWidget {
             start: -22,
             bottom: -30,
             child: Container(
-              width: 105,
-              height: 70,
+              width: 108,
+              height: 72,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
-                color: HopeV2Colors.secondary.withValues(alpha: .08),
-                border: Border.all(
-                  color: HopeV2Colors.secondary.withValues(alpha: .12),
-                ),
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            start: 16,
-            bottom: 16,
-            child: Container(
-              width: 82,
-              height: 28,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .055),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: .07),
-                ),
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            start: 24,
-            bottom: 24,
-            child: Container(
-              width: 44,
-              height: 8,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .11),
-                borderRadius: BorderRadius.circular(8),
+                color: accent.withValues(alpha: .13),
+                border: Border.all(color: Colors.white.withValues(alpha: .10)),
               ),
             ),
           ),
           Align(
             alignment: AlignmentDirectional.center,
             child: Container(
-              width: 36,
-              height: 36,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primary.withValues(alpha: .20),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: .13),
-                ),
+                color: accent.withValues(alpha: .20),
+                border: Border.all(color: Colors.white.withValues(alpha: .18)),
                 boxShadow: [
-                  BoxShadow(
-                    color: primary.withValues(alpha: .18),
-                    blurRadius: 18,
-                  ),
+                  BoxShadow(color: accent.withValues(alpha: .18), blurRadius: 18),
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: HopeIcon(
-                  HopeV2Icons.featured,
+                  icon,
                   color: Colors.white,
-                  size: 18,
-                  strokeWidth: 1.6,
+                  size: 22,
+                  strokeWidth: 1.8,
                 ),
               ),
             ),
@@ -375,11 +338,11 @@ class OpportunityCard extends StatelessWidget {
                   begin: AlignmentDirectional.topCenter,
                   end: AlignmentDirectional.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: .02),
-                    Colors.black.withValues(alpha: .20),
-                    Colors.black.withValues(alpha: .52),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: .16),
+                    Colors.black.withValues(alpha: .42),
                   ],
-                  stops: const [0, .55, 1],
+                  stops: const [0, .62, 1],
                 ),
               ),
             ),
