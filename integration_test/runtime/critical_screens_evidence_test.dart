@@ -63,7 +63,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'علی رضایی'},
+        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
       );
 
   @override
@@ -75,7 +75,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'علی رضایی'},
+        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
       );
 
   @override
@@ -92,10 +92,6 @@ class _EvidenceWalletRepository implements WalletRepository {
     'currency': 'TOMAN',
     'availableBalance': 2500000,
     'lockedBalance': 1000000,
-    'escrowBalance': 1000000,
-    'pendingWithdrawalBalance': 0,
-    'otherLockedBalance': 0,
-    'totalBalance': 3500000,
     'status': 'ACTIVE',
   });
 
@@ -215,7 +211,7 @@ class _EvidenceTransactionRepository implements TransactionRepository {
 
 class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   final _jobs = <HopeJob>[
-    _jobFixture(),
+    _jobFixture(editorialMedia: true),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-2', 'title': 'توسعه Flutter برای محصول جدید', 'kind': 'JOB', 'recommendationScore': 87, 'recommendationReasons': ['SKILL_MATCH']}),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-3', 'title': 'طراحی هویت بصری استارتاپ', 'kind': 'MISSION', 'recommendationScore': 76, 'recommendationReasons': ['CATEGORY_MATCH']}),
   ];
@@ -386,7 +382,7 @@ class _EvidenceNotificationRepository implements NotificationRepository {
           HopeNotification(
             id: 'notification-1',
             type: 'PAYMENT_UPDATE',
-            title: 'پرداخت فرصت به‌روزرسانی شد',
+            title: 'پرداخت پروژه به‌روزرسانی شد',
             body: 'پرداخت در وضعیت قفل‌شده قرار گرفت.',
             createdAt: '2026-09-21T06:00:00Z',
             readAt: null,
@@ -446,7 +442,7 @@ HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
       'description':
           'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',
       'categoryId': 'cat-1',
-      'category': 'طراحی',
+      'category': 'Software',
       'jobType': 'FIXED',
       'budgetType': 'FIXED',
       'budgetMin': '1500000',
@@ -476,7 +472,10 @@ HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
         'salary': 82,
       },
       'aiRecommendationConfidence': 0.92,
-      'editorialMedia': editorialMedia,
+      // Runtime-only editorial media fixture: exercises the existing real media branch.
+      if (editorialMedia)
+        'imageUrl':
+          'https://images.unsplash.com/photo-1758876022836-70b89d3e6944?auto=format&fit=crop&fm=jpg&q=60&w=1600',
     });
 
 HopeApplication _applicationFixture() => HopeApplication.fromMap({
@@ -486,7 +485,7 @@ HopeApplication _applicationFixture() => HopeApplication.fromMap({
       'jobCity': 'تهران',
       'jobKind': 'JOB',
       'resumeText': 'Mobile engineer',
-      'skills': 'طراحی رابط کاربری، تجربه کاربری، دسترس‌پذیری',
+      'skills': 'Flutter, Dart, UX',
       'status': 'SHORTLISTED',
       'createdAt': '2026-09-20T06:00:00Z',
       'updatedAt': '2026-09-21T06:00:00Z',
@@ -526,8 +525,8 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
     'id': 'runtime-user',
-    'displayName': 'علی رضایی',
-    'email': 'ali.test@hope.local',
+    'displayName': 'HOPE Runtime',
+    'email': 'runtime@example.invalid',
   });
   print('HOPE_RUNTIME_PREPARE:google-start');
   await _runtimeGoogleSignIn.initialize();
@@ -609,6 +608,8 @@ class _EvidenceHost extends StatelessWidget {
   }
 }
 
+const _captureMode =
+    String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: 'baseline');
 const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
@@ -871,19 +872,7 @@ Future<void> _captureBaselineLocale(
                               ? Map<String, Widget Function()>.fromEntries(
                                   pages.entries.skip(12).take(3),
                                 )
-                              : _baselineBatch == 'g'
-                                  ? Map<String, Widget Function()>.fromEntries(
-                                      pages.entries.skip(12).take(1),
-                                    )
-                              : _baselineBatch == 'e'
-                                  ? Map<String, Widget Function()>.fromEntries(
-                                      pages.entries.skip(13).take(1),
-                                    )
-                                  : _baselineBatch == 'f'
-                                      ? Map<String, Widget Function()>.fromEntries(
-                                          pages.entries.skip(14).take(1),
-                                        )
-                                      : pages;
+                              : pages;
   for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
