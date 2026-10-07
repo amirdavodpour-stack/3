@@ -27,9 +27,15 @@ Single source currently lives in `lib/core/theme/hope_v2_design.dart`; `lib/core
 - Dark/light/system theme controller exists; full screenshot parity and Profile appearance selector are not yet verified.
 - Surface elevation should be communicated through restrained tint and borders rather than heavy shadows.
 
+## Contrast-safe semantic variants
+
+- Brand accent `primary=#6366F1` remains the visual identity token. Interactive actions use `primaryAction=#4F46E5` in light theme and `primaryDark=#818CF8` with dark ink on dark theme so button-label contrast is not assumed from the brand accent alone.
+- Light semantic foregrounds: `primaryOnLight=#4F46E5`, `successOnLight=#047857`, `warningOnLight=#92400E`, `dangerOnLight=#B91C1C`, `secondaryAction=#0F766E`.
+- The shared theme chooses foreground/background pairs by brightness; use these variants instead of white-on-amber or white-on-teal combinations.
+
 ## Contrast verification
 
-The baseline has no executed `tool/contrast_check.py` report. Required thresholds: normal body text 4.5:1; large text and essential icon/border controls 3:1. Run a script across dark/light surfaces and fail CI on violation before claiming compliance.
+`tool/contrast_check.py` now runs from `tools/verify-design-quality.sh` and checks the canonical light/dark text, semantic icon/border and action-label token pairs. A passing CI result is still required before claiming compliance. Required thresholds: normal body text 4.5:1; large text and essential icon/border controls 3:1. Run a script across dark/light surfaces and fail CI on violation before claiming compliance.
 
 ## Known debt
 
