@@ -1107,6 +1107,7 @@ class PremiumHero extends StatelessWidget {
     this.icon,
     this.mediaUrl,
     this.height = 264,
+    this.compactHero = false,
     this.semanticLabel,
     this.domain,
     this.page,
@@ -1120,6 +1121,7 @@ class PremiumHero extends StatelessWidget {
   /// When absent, the canonical HOPE gradient remains the fallback.
   final String? mediaUrl;
   final double height;
+  final bool compactHero;
   final String? semanticLabel;
   final HopeProductDomain? domain;
   final HopePageId? page;
@@ -1129,12 +1131,18 @@ class PremiumHero extends StatelessWidget {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final resolvedDomain = domain ?? page?.spec.domain;
-    final heroHeight = compact
-        // Compact mobile hero stays editorial while returning more first-fold
-        // space to match, metadata, and the primary action.
-        ? height.clamp(176.0, 300.0).toDouble()
-        : (height < 280 ? 280.0 : height);
-    final horizontal = compact ? HopeV2Spacing.lg : HopeV2Spacing.xxl;
+    final heroHeight = compactHero
+        ? height.clamp(112.0, 300.0).toDouble()
+        : compact
+            // Standard mobile hero stays editorial while returning more first-fold
+            // space to match, metadata, and the primary action.
+            ? height.clamp(176.0, 300.0).toDouble()
+            : (height < 280 ? 280.0 : height);
+    final horizontal = compactHero
+        ? HopeV2Spacing.md
+        : compact
+            ? HopeV2Spacing.lg
+            : HopeV2Spacing.xxl;
 
     return Semantics(
       container: true,
@@ -1233,7 +1241,7 @@ class PremiumHero extends StatelessWidget {
                   ),
                 ),
               ),
-            if (icon != null)
+            if (icon != null && !compactHero)
               PositionedDirectional(
                 end: horizontal,
                 top: horizontal,
@@ -1287,7 +1295,7 @@ class PremiumHero extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (resolvedDomain != null)
+                          if (resolvedDomain != null && !compactHero)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 7),
                               child: Row(
@@ -1326,7 +1334,8 @@ class PremiumHero extends StatelessWidget {
                                 ],
                               ),
                             ),
-                          Text(
+                          if (!compactHero)
+                            Text(
                             eyebrow.toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1342,11 +1351,11 @@ class PremiumHero extends StatelessWidget {
                           ),
                           Text(
                             title,
-                            maxLines: dense ? 2 : 3,
+                            maxLines: compactHero ? 2 : (dense ? 2 : 3),
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: dense ? 21 : 24,
+                              fontSize: compactHero ? 20 : (dense ? 21 : 24),
                               height: 1.03,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -.9,
@@ -1357,7 +1366,7 @@ class PremiumHero extends StatelessWidget {
                           ),
                           Text(
                             message,
-                            maxLines: dense ? 2 : 3,
+                            maxLines: compactHero ? 2 : (dense ? 2 : 3),
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white70,
