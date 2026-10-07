@@ -321,12 +321,19 @@ class _OffersPageState extends State<OffersPage> {
                     ),
                   const SizedBox(height: 10),
                   Text(
+                    _money(o.price),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                     HopeDisplayFormatter.relativeDateTime(
                           o.createdAt,
                           locale: Localizations.localeOf(context).languageCode,
                         ) ?? '',
                     style: Theme.of(context).textTheme.labelMedium,
-                  ),
                   ),
                 ],
               ),
