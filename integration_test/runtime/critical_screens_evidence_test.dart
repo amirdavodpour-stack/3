@@ -92,6 +92,10 @@ class _EvidenceWalletRepository implements WalletRepository {
     'currency': 'TOMAN',
     'availableBalance': 2500000,
     'lockedBalance': 1000000,
+    'escrowBalance': 1000000,
+    'pendingWithdrawalBalance': 0,
+    'otherLockedBalance': 0,
+    'totalBalance': 3500000,
     'status': 'ACTIVE',
   });
 
