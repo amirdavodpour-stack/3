@@ -101,7 +101,10 @@ test -f "$signature"
 grep -Fq 'class HopeOpportunityLivePreview' "$signature"
 grep -Fq 'class HopeWalletFlowSignature' "$signature"
 grep -Fq "HopeOpportunityLivePreview(" "lib/features/marketplace/create_job_widgets.part.dart"
-grep -Fq "HopeWalletFlowSignature(wallet: wallet)" "lib/features/wallet/wallet_page.dart"
+if grep -Fq "HopeWalletFlowSignature(wallet: wallet)" "$wallet"; then
+  echo "FAIL: Wallet renders the duplicated money-flow signature" >&2
+  exit 1
+fi
 grep -Fq "class HopeOpportunityDnaSignature" "$signature"
 grep -Fq "HopeOpportunityDnaSignature(job: j)" "lib/features/marketplace/job_detail_page.dart"
 grep -Fq "_formatAmount(amount, context)" "$signature"
@@ -126,11 +129,11 @@ if grep -Fq 'runtime@example.invalid' "$runtime_driver" || grep -Fq 'images.unsp
   echo "FAIL: demo/stock fixture leakage remains" >&2
   exit 1
 fi
-grep -Fq "fontSize: 11.5" "$premium"
+grep -Fq "fontSize: 12" "$premium"
 grep -Fq "height: 33" "$premium"
 grep -Fq "fontSize: compact ? 20 : 28" "$premium"
-grep -Fq "fontSize: dense ? 21 : 24" "$premium"
-grep -Fq "barHeight = 61.0" "lib/core/theme/hope_v2_design.dart"
+grep -Fq "fontSize: compactHero ? 20 : (dense ? 21 : 24)" "$premium"
+grep -Fq "barHeight = 64.0" "lib/core/theme/hope_v2_design.dart"
 grep -Fq "fontSize: 28" "lib/core/theme/hope_v2_design.dart"
 grep -Fq "fontSize: 25" "lib/core/theme/hope_v2_design.dart"
 if grep -Fq "FittedBox(" "$home"; then
