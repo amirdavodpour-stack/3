@@ -563,7 +563,6 @@ padding: const EdgeInsets.all(12),
             _quickActions(context, auth),
             const SizedBox(height: HopeV2Spacing.md),
             if (!auth.isGuest) ...[
-              _financialSnapshot(context),
             ],
           ],
         ),
@@ -940,103 +939,7 @@ child: Column(
     );
   }
 
-  Widget _financialSnapshot(BuildContext context) {
-    return FutureBuilder<HopeWallet>(
-      future: _wallet,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-        final wallet = snapshot.data!;
-        String money(int v) => moneyLabel(context, v);
 
-        return PremiumPanel(
-          glass: false,
-highlight: true,
-          padding: const EdgeInsets.all(HopeV2Spacing.lg),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 560;
-              final balance = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      PremiumDomainMarker(
-                        domain: HopeProductDomain.finance,
-                        compact: true,
-                      ),
-                      const SizedBox(width: HopeV2Spacing.sm),
-                      Expanded(
-                        child: Text(
-                          _t(context, 'وضعیت مالی', 'Financial snapshot'),
-                          style: HopeV2Type.eyebrow(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    money(wallet.availableBalance),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.displaySmall,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    _t(context, 'موجودی قابل استفاده', 'Available balance'),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              );
-
-              final details = Row(
-                mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: PremiumTag(
-                      icon: HopeV2Icons.secure,
-                      label:
-                          '${_t(context, 'قفل‌شده', 'Locked')}: ${money(wallet.lockedBalance)}',
-                      color: AppColors.warning,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filledTonal(
-                    onPressed: () {
-                      final repository =
-                          applicationRegistryOf(context).walletsOrThrow;
-                      Navigator.push(
-                        context,
-                        HopeRoutes.wallet(repository: repository),
-                      );
-                    },
-                    tooltip: _t(context, 'باز کردن کیف پول', 'Open wallet'),
-                    icon: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
-                  ),
-                ],
-              );
-
-              return compact
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        balance,
-                        const SizedBox(height: 14),
-                        details,
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(child: balance),
-                        details,
-                      ],
-                    );
-            },
-          ),
-        );
-      },
-    );
-  }
 }
 
 class _PulseSkeleton extends StatelessWidget {
