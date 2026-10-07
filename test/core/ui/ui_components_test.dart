@@ -262,7 +262,6 @@ void main() {
       findsNothing,
     );
   });
-}
 
 testWidgets('opportunity skeleton stays overflow-safe in narrow cards',
     (tester) async {
@@ -282,6 +281,8 @@ testWidgets('opportunity skeleton stays overflow-safe in narrow cards',
   await tester.pump();
   expect(tester.takeException(), isNull);
 });
+}
+
 
 void _noop(String _) {}
 void _noopAction() {}
