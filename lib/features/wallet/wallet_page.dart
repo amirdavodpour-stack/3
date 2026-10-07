@@ -949,6 +949,7 @@ class _WalletPageState extends State<WalletPage> {
           padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
+              key: const ValueKey('wallet-finance-header'),
               dense: true,
               page: HopePageId.wallet,
               domain: HopeProductDomain.finance,

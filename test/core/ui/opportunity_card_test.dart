@@ -23,6 +23,7 @@ void main() {
       'status': 'OPEN',
       'city': 'تهران',
       'recommendationScore': 0.91,
+      'distanceKm': 1.5,
       'companyName': 'استودیو هُپ',
       'workMode': 'REMOTE',
       'imageUrl': 'https://example.com/opportunity.jpg',

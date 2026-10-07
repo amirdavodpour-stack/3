@@ -762,6 +762,7 @@ class PremiumHeader extends StatelessWidget {
                 if (eyebrow.trim().isNotEmpty)
                   Container(
                     padding: EdgeInsets.zero,
+                    decoration: const BoxDecoration(),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
