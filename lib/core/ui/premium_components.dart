@@ -1810,29 +1810,25 @@ class PremiumSearchBar extends StatelessWidget {
   final VoidCallback? onFilter;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-        textField: true,
-        label: hint,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(HopeV2Radii.md),
-              boxShadow: Theme.of(context).brightness == Brightness.dark
-                  ? const []
-                  : const [
-                      BoxShadow(
-                        color: Color(0x081B1638),
-                        blurRadius: 18,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
-            ),
-            child: SearchField(
-              onChanged: onChanged,
-              onFilter: onFilter,
-              hint: hint,
-            ),
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+            boxShadow: Theme.of(context).brightness == Brightness.dark
+                ? const []
+                : const [
+                    BoxShadow(
+                      color: Color(0x081B1638),
+                      blurRadius: 18,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+          ),
+          child: SearchField(
+            onChanged: onChanged,
+            onFilter: onFilter,
+            hint: hint,
           ),
         ),
       );
