@@ -113,8 +113,8 @@ void main() {
         ],
         child: MaterialApp(
           locale: const Locale('en'),
-          supportedLocales: const [Locale('fa'), Locale('en')],
-          localizationsDelegates: const [
+          supportedLocales: [Locale('fa'), Locale('en')],
+          localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -152,17 +152,17 @@ void main() {
 
     final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
     final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
+    final heroSize = tester.getSize(find.byType(PremiumHero).first);
+    expect(heroSize.height, lessThanOrEqualTo(180));
+
+    expect(descriptionTop, lessThan(snapshotTop));
+
     await tester.scrollUntilVisible(
       find.text('Duration'),
       450,
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Duration'), findsOneWidget);
-
-    final heroSize = tester.getSize(find.byType(PremiumHero).first);
-    expect(heroSize.height, lessThanOrEqualTo(180));
-
-    expect(descriptionTop, lessThan(snapshotTop));
   });
 
   testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
@@ -170,7 +170,7 @@ void main() {
   await tester.pumpWidget(
     const MediaQuery(
       data: MediaQueryData(size: Size(240, 640)),
-      child: const MaterialApp(
+      child: MaterialApp(
         locale: Locale('fa'),
         supportedLocales: const [Locale('fa'), Locale('en')],
         localizationsDelegates: const [
@@ -179,7 +179,7 @@ void main() {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: const Directionality(
+        home: Directionality(
           textDirection: TextDirection.rtl,
           child: Scaffold(
             body: Padding(
