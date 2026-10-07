@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# [runtime-capture-fa] certify isolated auth-tail Driver sessions after Run #1838 screenshot transport hang.
-# Runtime evidence uses Skia on Flutter 3.47.2 to avoid the known Impeller-GLES snapshot crash path.
 set -euo pipefail
 
 evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
@@ -267,7 +265,6 @@ run_host_batch_session() {
     baseline-b) baseline_batch="b" ;;
     baseline-c) baseline_batch="c" ;;
     baseline-d) baseline_batch="d" ;;
-    baseline-g) baseline_batch="g" ;;
   esac
   if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ] || [ "$mode" = "responsive-c" ]; then
     responsive_only="true"
@@ -296,7 +293,7 @@ run_host_batch_session() {
   export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
   HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s" \
-  flutter drive --no-enable-impeller --no-pub --no-dds \
+  flutter drive --no-pub --no-dds \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
@@ -420,37 +417,31 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   fi
 else
   baseline_status=0
-  if [ "$CAPTURE_LOCALE" = "fa" ]; then
-    # Isolate the auth tail proactively. The exact #1838 failure occurred
-    # inside integration_test.takeScreenshot(register) after 14 prior captures;
-    # upstream integration_test has known Android takeScreenshot hang modes.
-    # Fresh Driver sessions keep a late screenshot transport stall from
-    # invalidating the entire baseline or taking the emulator offline during
-    # recovery.
-    echo "HOPE_HOST_RUNTIME_PARTITIONED_BASELINE_START:fa"
-    run_host_batch_session baseline-a "${baseline_screens[@]:0:7}" || baseline_status=$?
-    if [ "$baseline_status" -eq 0 ]; then
+  # Preserve the proven single-session baseline first. If the long-lived
+  # VM-service dies only at the final auth tail, recover just that missing
+  # tail in a fresh Driver session instead of mutating product/UI code.
+  run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
+
+  if [ "$baseline_status" -ne 0 ] && [ "$CAPTURE_LOCALE" = "fa" ]; then
+    # baseline-d is the existing certified tail batch: create-job, register,
+    # password-reset. Keep the already-captured offers screenshot untouched.
+    auth_tail_screens=(
+      "create-job-fa-rtl"
+      "register-fa-rtl"
+      "password-reset-fa-rtl"
+    )
+    auth_tail_complete=0
+    for marker in "${auth_tail_screens[@]}"; do
+      if ! test -s "$evidence_dir/$marker.png"; then
+        auth_tail_complete=1
+        break
+      fi
+    done
+    if [ "$auth_tail_complete" -eq 1 ] && test -s "$evidence_dir/create-job-fa-rtl.png"; then
+      echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
       hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-b "${baseline_screens[@]:7:1}" || baseline_status=$?
+      run_host_batch_session baseline-d "${auth_tail_screens[@]}" || true
     fi
-    if [ "$baseline_status" -eq 0 ]; then
-      hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-c "${baseline_screens[@]:8:4}" || baseline_status=$?
-    fi
-    if [ "$baseline_status" -eq 0 ]; then
-      hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-g "create-job-fa-rtl" || baseline_status=$?
-    fi
-    if [ "$baseline_status" -eq 0 ]; then
-      hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-e "register-fa-rtl" || baseline_status=$?
-    fi
-    if [ "$baseline_status" -eq 0 ]; then
-      hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-f "password-reset-fa-rtl" || baseline_status=$?
-    fi
-  else
-    run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
   fi
 
   if ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
