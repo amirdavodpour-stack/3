@@ -168,10 +168,10 @@ void main() {
   testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
     (tester) async {
   await tester.pumpWidget(
-    MediaQuery(
-      data: const MediaQueryData(size: Size(240, 640)),
-      child: MaterialApp(
-        locale: const Locale('fa'),
+    const MediaQuery(
+      data: MediaQueryData(size: Size(240, 640)),
+      child: const MaterialApp(
+        locale: Locale('fa'),
         supportedLocales: const [Locale('fa'), Locale('en')],
         localizationsDelegates: const [
           AppLocalizations.delegate,
