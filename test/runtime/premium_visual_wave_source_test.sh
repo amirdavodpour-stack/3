@@ -138,3 +138,18 @@ if grep -Fq "FittedBox(" "$home"; then
   echo "FAIL: Home Pulse metrics still shrink with FittedBox" >&2
   exit 1
 fi
+# Wave 1: never expose database identifiers or duplicate wallet balance summaries.
+transaction_widgets="lib/features/transactions/transaction_widgets.part.dart"
+test -f "$transaction_widgets"
+if grep -Fq 'Payment ID:' "$transaction_widgets" || grep -Fq 'شناسه پرداخت:' "$transaction_widgets"; then
+  echo "FAIL: Transaction detail exposes an internal payment identifier" >&2
+  exit 1
+fi
+if grep -Fq 'HopeWalletFlowSignature(wallet: wallet)' "$wallet"; then
+  echo "FAIL: Wallet renders a duplicated balance signature" >&2
+  exit 1
+fi
+if grep -Fq 'شناسه کیف پول' "$wallet"; then
+  echo "FAIL: Wallet exposes an internal wallet ID" >&2
+  exit 1
+fi
