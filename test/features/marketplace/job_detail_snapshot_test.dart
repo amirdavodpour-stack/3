@@ -126,6 +126,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final snapshotFacts =
+        find.byKey(const ValueKey('opportunity-snapshot-facts'));
+    await tester.ensureVisible(snapshotFacts);
+    await tester.pumpAndSettle();
     expect(find.text('Opportunity snapshot'), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-detail-hero-match')), findsOneWidget);
     expect(

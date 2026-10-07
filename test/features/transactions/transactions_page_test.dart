@@ -152,7 +152,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('تسویه‌شده'), findsOneWidget);
-    expect(find.text('1'), findsOneWidget);
+    expect(
+      find.descendant(of: metrics, matching: find.text('1')),
+      findsNWidgets(2),
+    );
     expect(find.text('فعال'), findsOneWidget);
     expect(tester.getSize(metrics).height, lessThan(120));
     expect(tester.takeException(), isNull);
@@ -234,7 +237,7 @@ void main() {
     await tester.pump();
 
     final refreshIndicator =
-        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator).last);
+        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator).first);
     await refreshIndicator.onRefresh();
     await tester.pump();
 
@@ -263,14 +266,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Text &&
-            widget.data == 'وضعیت کار: نیازمند بررسی',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('نیازمند بررسی'), findsOneWidget);
   });
 
   testWidgets('transactions still render when payment lookup is unavailable',

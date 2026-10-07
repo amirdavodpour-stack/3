@@ -384,11 +384,6 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('برداشت‌ها'),
-        500,
-        scrollable: find.byType(Scrollable).first,
-      );
 
       expect(find.textContaining('3,500,000 تومان'), findsOneWidget);
       expect(find.textContaining('2,500,000 تومان'), findsOneWidget);
@@ -396,6 +391,12 @@ void main() {
       expect(find.text('در امانت HOPE'), findsOneWidget);
       expect(find.text('محافظت‌شده'), findsNothing);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('برداشت‌ها'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('برداشت‌ها'), findsOneWidget);
     },
   );
@@ -427,18 +428,19 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
+      expect(find.text('کل موجودی'), findsOneWidget);
+      expect(find.text('قفل‌شده'), findsWidgets);
+      expect(find.text('برداشت در انتظار'), findsOneWidget);
+      expect(find.text('موجودی مادام‌العمر'), findsNothing);
+
       await tester.scrollUntilVisible(
         find.text('برداشت‌ها'),
         500,
         scrollable: find.byType(Scrollable).first,
       );
-
-      expect(find.text('کل موجودی'), findsOneWidget);
-      expect(find.text('قفل‌شده'), findsWidgets);
-      expect(find.text('برداشت در انتظار'), findsOneWidget);
       expect(find.text('برداشت‌ها'), findsOneWidget);
-      expect(find.text('برداشت در انتظار'), findsOneWidget);
-      expect(find.text('موجودی مادام‌العمر'), findsNothing);
     },
   );
 

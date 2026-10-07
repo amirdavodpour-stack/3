@@ -142,23 +142,20 @@ Future<void> _tapFilter(
   WidgetTester tester,
   String label,
 ) async {
-  var all = find.text(label, skipOffstage: false);
-  if (all.evaluate().isEmpty) {
+  var tile = find.widgetWithText(ListTile, label);
+  if (tile.evaluate().isEmpty) {
     final launcher = find.byKey(
       const ValueKey('hope-opportunity-refinement-launcher'),
     );
     expect(launcher, findsOneWidget);
     await tester.tap(launcher);
     await tester.pumpAndSettle();
-    all = find.text(label, skipOffstage: false);
+    tile = find.widgetWithText(ListTile, label);
   }
-  expect(all, findsWidgets);
-  final tile = find.widgetWithText(ListTile, label);
-  final target = tile.evaluate().isNotEmpty ? tile.first : all.first;
-  await tester.ensureVisible(target);
-  await tester.tap(target);
+  expect(tile, findsOneWidget);
+  await tester.ensureVisible(tile.first);
+  await tester.tap(tile.first);
 }
-
 void main() {
   testWidgets('jobs page requests categories and opportunities',
       (tester) async {
@@ -217,7 +214,8 @@ void main() {
 
     expect(filterRect.top, closeTo(searchRect.top, 2));
     expect(filterRect.bottom, lessThanOrEqualTo(searchRect.bottom + 2));
-    expect(featuredRect.top - searchRect.bottom, lessThan(40));
+    // The refinement launcher is on the bottom row of the compact control band.
+    expect(featuredRect.top - filterRect.bottom, lessThan(40));
     expect(tester.takeException(), isNull);
   });
 

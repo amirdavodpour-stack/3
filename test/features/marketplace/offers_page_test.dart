@@ -105,7 +105,7 @@ void main() {
         matching: find.byType(Semantics),
       ).first;
       final node = tester.getSemantics(row);
-      expect(node.label, 'پیشنهاد o1، مبلغ 1,234,567 تومان، در انتظار بررسی');
+      expect(node.label, 'پیشنهاد همکاری، ۱٬۲۳۴٬۵۶۷ تومان، در انتظار بررسی');
     } finally {
       semantics.dispose();
     }

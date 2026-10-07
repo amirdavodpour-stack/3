@@ -68,7 +68,11 @@ class _AdminPageState extends State<AdminPage>
         _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
         _checkingPanel = false;
       });
-      _reload();
+      // Mount the verified shell before starting secondary tab futures so
+      // FutureBuilder instances can observe failures deterministically.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _panelVerified) _reload();
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() => _checkingPanel = false);

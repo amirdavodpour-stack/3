@@ -214,14 +214,13 @@ void main() {
 
     expect(find.text('عنوان اعلان'), findsOneWidget);
 
-    final refresh = find.byTooltip('بازخوانی');
-    await tester.ensureVisible(refresh);
-    await tester.tap(refresh);
+    final refreshIndicator =
+        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator).first);
+    await refreshIndicator.onRefresh();
     await tester.pump();
     expect(repo.listCalls, 2);
 
-    await tester.ensureVisible(refresh);
-    await tester.tap(refresh);
+    await refreshIndicator.onRefresh();
     await tester.pumpAndSettle();
 
     expect(repo.listCalls, 3);

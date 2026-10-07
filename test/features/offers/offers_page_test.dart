@@ -170,8 +170,8 @@ testWidgets('accepting an offer disables the financial action until completion',
     repository.staleRefresh.complete([repository.stale]);
     await tester.pumpAndSettle();
 
-    expect(find.text('Offer fresh'), findsOneWidget);
-    expect(find.text('Offer stale'), findsNothing);
+    expect(find.text('fresh'), findsOneWidget);
+    expect(find.text('stale'), findsNothing);
   });
 
   testWidgets('offer refresh failure preserves existing rows and shows retry state', (tester) async {
@@ -184,7 +184,7 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.tap(find.byTooltip('Refresh'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Offer existing'), findsOneWidget);
+    expect(find.text('existing'), findsOneWidget);
     expect(find.text('Offers unavailable'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });

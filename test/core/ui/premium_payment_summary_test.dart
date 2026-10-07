@@ -131,6 +131,8 @@ void main() {
 
   testWidgets('PremiumPaymentSummary exposes one financial summary semantics boundary',
       (tester) async {
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
@@ -148,21 +150,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final semantics = tester.ensureSemantics();
     await tester.pump();
-    try {
-      expect(
-        find.bySemanticsLabel(
-          'Payment status: Funds held, amount 1,000,000 Toman',
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.bySemanticsLabel('Payment details, Funds held'),
-        findsNothing,
-      );
-    } finally {
-      semantics.dispose();
-    }
+    expect(
+      find.bySemanticsLabel(
+        'Payment status: Funds held, amount 1,000,000 Toman',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Payment details, Funds held'),
+      findsNothing,
+    );
   });
 }

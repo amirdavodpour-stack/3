@@ -526,7 +526,8 @@ void main() {
     expect(find.byKey(const ValueKey('opportunity-snapshot-fact-budget')), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-snapshot-fact-field')), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-snapshot-fact-location')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-deadline')), findsOneWidget);
+    // Deadline is rendered once in working details; keep the compact snapshot free of duplicate core facts.
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-deadline')), findsNothing);
   });
 
   testWidgets('unknown job lifecycle status is presented safely', (tester) async {
