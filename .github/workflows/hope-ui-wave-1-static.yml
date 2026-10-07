@@ -10,7 +10,8 @@ on:
       - feat/google-sign-in-2026-09-20
 
 concurrency:
-  group: hope-ui-wave-1-static-${{ github.ref }}
+  # Isolate verification by exact commit so a wedged older runner cannot starve the current head.
+  group: hope-ui-wave-1-static-${{ github.sha }}
   cancel-in-progress: true
 
 permissions:
