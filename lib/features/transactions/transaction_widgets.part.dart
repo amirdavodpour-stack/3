@@ -102,7 +102,7 @@ extension on _TransactionPageState {
   }) {
     final scheme = Theme.of(context).colorScheme;
     final safeCurrent = current.clamp(0, total - 1);
-    final progress = total <= 1 ? 1.0 : safeCurrent / (total - 1);
+    final progress = total <= 1 ? 1.0 : (safeCurrent + 1) / total;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -484,14 +484,7 @@ extension on _TransactionPageState {
                   ),
                 ],
               ),
-              if (job != null) ...[
-                const SizedBox(height: 7),
-                StatusPill(
-                  _jobStatusLabel(job.status),
-                  color: AppColors.muted,
-                  icon: HopeV2Icons.job,
-                ),
-              ],
+
               const SizedBox(height: 12),
               PremiumPanel(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -523,12 +516,7 @@ extension on _TransactionPageState {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        PremiumTag(
-                          icon: _statusIcon(status),
-                          label: _statusLabel(status),
-                          color: _statusColor(status),
-                        ),
+
                       ],
                     ),
                     const SizedBox(height: 12),
