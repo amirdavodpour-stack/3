@@ -1,7 +1,6 @@
 import '../../core/router/app_routes.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/copy.dart';
 import 'package:provider/provider.dart';

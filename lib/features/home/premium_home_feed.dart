@@ -9,11 +9,8 @@ import '../../core/opportunity/opportunity_agent_repository.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/theme/hope_v2_design.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/transactions/wallet.dart';
 import '../../core/ui/components.dart';
-import '../../core/ui/brand.dart';
-import '../../core/ui/copy.dart';
 import '../../core/ui/opportunity_card.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/premium_components.dart';
@@ -200,8 +197,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         : displayName.trim();
     final greeting = _t(
       context,
-      'عصر بخیر، ' + safeName,
-      'Good evening, ' + safeName,
+      'عصر بخیر، $safeName',
+      'Good evening, $safeName',
     );
 
     return Padding(
@@ -311,39 +308,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       ),
     );
   }
-  Widget _heroCapability({
-    required Object icon,
-    required String label,
-    required Color accent,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: .07),
-        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-        border: Border.all(
-          color: accent.withValues(alpha: .14),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HopeIcon(icon, size: 12, color: accent, strokeWidth: 1.8),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              color: accent,
-              fontSize: 9.5,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();

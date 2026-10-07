@@ -190,7 +190,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                         )),
                         const SizedBox(height: 3),
                         Text(
-                          feedback.aiSatisfactionScore.toString() + '%',
+                          '${feedback.aiSatisfactionScore}%',
                           style: Theme.of(context)
                               .textTheme
                               .displaySmall
@@ -226,7 +226,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                           )),
                           if ('${dispute['aiDecision'] ?? ''}'.isNotEmpty) ...[
                             const SizedBox(height: 8),
-                            Text(_t('تصمیم پیشنهادی AI: ', 'AI suggested action: ') + '${dispute['aiDecision'] ?? 'HOLD'}'),
+                            Text('${_t('تصمیم پیشنهادی AI: ', 'AI suggested action: ')}${dispute['aiDecision'] ?? 'HOLD'}'),
                           ],
                         ],
                       ),

@@ -243,7 +243,7 @@ class _ChatPageState extends State<ChatPage> {
                       message: _error!,
                       action: FilledButton.icon(
                         onPressed: _busy ? null : _load,
-                        icon: HopeIcon(
+                        icon: const HopeIcon(
                           HopeV2Icons.refresh,
                           size: 19,
                         ),
@@ -263,8 +263,8 @@ class _ChatPageState extends State<ChatPage> {
                               message: _error!,
                               action: FilledButton.icon(
                                 onPressed: _busy ? null : _load,
-                                icon: HopeIcon(
-                                  HopeV2Icons.refresh,
+                                icon: const HopeIcon(
+                          HopeV2Icons.refresh,
                                   size: 19,
                                 ),
                                 label: Text(_t('تلاش دوباره', 'Retry')),
@@ -290,7 +290,7 @@ class _ChatPageState extends State<ChatPage> {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      HopeIcon(
+                                      const HopeIcon(
                                         HopeV2Icons.message,
                                         size: 38,
                                       ),
@@ -414,8 +414,8 @@ class _ChatPageState extends State<ChatPage> {
                                 'پیام خود را بنویسید',
                                 'Write a message',
                               ),
-                              prefixIcon: HopeIcon(
-                                HopeV2Icons.message,
+                              prefixIcon: const HopeIcon(
+                                        HopeV2Icons.message,
                                 size: 20,
                               ),
                             ),
@@ -437,7 +437,7 @@ class _ChatPageState extends State<ChatPage> {
                     glass: true,
                     child: Row(
                       children: [
-                        HopeIcon(HopeV2Icons.secure, size: 20),
+                        const HopeIcon(HopeV2Icons.secure, size: 20),
                         const SizedBox(width: 9),
                         Expanded(
                           child: Text(

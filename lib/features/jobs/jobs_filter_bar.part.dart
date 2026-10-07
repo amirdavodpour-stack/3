@@ -388,7 +388,7 @@ class _JobsFilterHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                HopeIcon(
+                const HopeIcon(
                   HopeV2Icons.filter,
                   size: 15,
                   color: HopeV2Colors.secondaryStrong,
@@ -451,20 +451,5 @@ class _JobsFilterHeader extends StatelessWidget {
     );
   }
 
-  Widget _chip(
-    BuildContext context,
-    String text,
-    bool selected,
-    VoidCallback onTap, {
-    Object? icon,
-  }) =>
-      Padding(
-        padding: const EdgeInsetsDirectional.only(end: HopeV2Spacing.sm),
-        child: PremiumFilterChip(
-          label: text,
-          selected: selected,
-          onTap: onTap,
-          icon: icon,
-        ),
-      );
+
 }

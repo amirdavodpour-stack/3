@@ -239,9 +239,10 @@ class _AdminPageState extends State<AdminPage>
                           onPressed: _actionBusy
                               ? null
                               : () async {
-                                  await context.read<AdminRepository>().lockPanel();
-                                  if (mounted) {
-                                    Navigator.pushReplacement(
+                                  final repository = context.read<AdminRepository>();
+                                  await repository.lockPanel();
+                                  if (!mounted) return;
+                                  Navigator.pushReplacement(
                                       context,
                                       HopeRoutes.adminAccess(),
                                     );
