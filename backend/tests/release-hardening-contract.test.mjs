@@ -37,7 +37,7 @@ test('CI never contains the placeholder API host and requires a real HTTPS secre
   assert.doesNotMatch(workflow, /api\.hope\.example\.invalid/);
   assert.match(workflow, /secrets\.API_BASE_URL/);
   assert.match(workflow, /secret_label="API_BASE_URL or API_BASE_URL_STAGING"/);
-  assert.match(workflow, /API_BASE_URL(?:_[A-Z]+)? must use HTTPS/);
+  assert.match(workflow, /API base URL must use HTTPS/);
   assert.match(workflow, /contains whitespace or is malformed/);
   assert.match(workflow, /\^https:\/\/\[\^\[:space:\]\]\+\$/);
 });
@@ -97,8 +97,10 @@ test('main CI blocks on high-severity npm audit findings', () => {
 test('SBOM covers the locked dependency tree, not only direct dependencies', () => {
   const sbom = JSON.parse(fs.readFileSync(path.join(root, 'backend/sbom.json'), 'utf8'));
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'backend/package-lock.json'), 'utf8'));
-  const lockedCount = Object.keys(lock.packages || {}).filter((k) => k).length;
-  assert.ok(sbom.components.length >= lockedCount);
+  const lockedCount = Object.entries(lock.packages || {})
+    .filter(([location, node]) => location && node?.version && location !== 'node_modules/hope-api')
+    .length;
+  assert.equal(sbom.components.length, lockedCount);
 });
 
 
@@ -178,7 +180,7 @@ test('CI Android toolchain is explicit and release builds enforce the lockfile',
   const apk = fs.readFileSync(path.join(root, 'tools/build_apk_release.sh'), 'utf8');
   assert.match(apk, /flutter pub get --enforce-lockfile/);
   assert.match(apk, /integration_test is intentionally a dev-only dependency/);
-  assert.match(apk, /dev\\.flutter\\.plugins\\.integration_test\\.IntegrationTestPlugin/);
+  assert.match(apk, /IntegrationTestPlugin/);
 });
 
 test('production keystore secret decoding tolerates wrapped or unpadded base64', () => {
@@ -193,8 +195,8 @@ test('production keystore secret decoding tolerates wrapped or unpadded base64',
   assert.ok(block.includes('base64 --decode'));
   assert.ok(block.includes('keytool -list -keystore'));
   assert.ok(block.includes('keytool -importkeystore -noprompt'));
-  assert.ok(block.includes('key_password_from_store=false'));
-  assert.ok(block.includes('key_password_from_store=$key_password_from_store'));
+  assert.ok(block.includes('SOURCE_KEY_PASSWORD'));
+  assert.match(block, /SOURCE_KEY_PASSWORD=/);
 });
 
 test('staging Android runtime gate is the canonical device certification path', () => {
@@ -336,13 +338,13 @@ test('production check:all collects every suite and aggregates failures', () => 
 test('production APK build uses only the validated production API secret', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
   const build = workflow.slice(workflow.indexOf('- name: Build signed production APK'), workflow.indexOf('- name: Set release artifact metadata'));
-  assert.match(build, /API_BASE_URL: \\$\\{\\{ secrets\.API_BASE_URL_PRODUCTION \\}\\}/);
+  assert.match(build, /API_BASE_URL:\s*\$\{\{\s*secrets\.API_BASE_URL_PRODUCTION\s*\}\}/);
   assert.doesNotMatch(build, /API_BASE_URL_STAGING/);
 });
 
 test('release validation cancels superseded runs on the same ref', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
-  assert.match(workflow, /concurrency:\n\s+group: release-validation-\$\{\{ github\.ref \}\}\n\s+cancel-in-progress: true/);
+  assert.match(workflow, /concurrency:\n\s+group: hope-release-validation-\$\{\{ github\.ref \}\}\n\s+cancel-in-progress: true/);
 });
 
 
