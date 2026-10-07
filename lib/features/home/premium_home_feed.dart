@@ -470,7 +470,7 @@ padding: const EdgeInsets.all(10),
                           ),
                         ],
                       ),
-                      const SizedBox(height: HopeV2Spacing.md),
+                      const SizedBox(height: HopeV2Spacing.sm),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           // Keep the pulse in the same compact, four-signal row as the

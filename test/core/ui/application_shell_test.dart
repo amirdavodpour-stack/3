@@ -106,7 +106,7 @@ void main() {
       'language can be changed from the drawer without replacing MaterialApp',
       (tester) async {
     await _pump(tester);
-    final menu = find.bySemanticsLabel('App menu');
+    final menu = find.byKey(const ValueKey('hope-menu-button'));
     await tester.tap(menu);
     await tester.pumpAndSettle();
     expect(find.byType(Drawer), findsOneWidget);

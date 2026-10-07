@@ -50,7 +50,19 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
     } catch (error) {
       if (!mounted) return;
       setState(() => _loading = false);
-      HopeFeedback.show(context, apiErrorMessage(error, fallback: 'مصاحبه هوشمند موقتاً در دسترس نیست.'), tone: HopeFeedbackTone.error);
+      final message = apiErrorMessage(
+        error,
+        fallback: 'مصاحبه هوشمند موقتاً در دسترس نیست.',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          HopeFeedback.show(
+            context,
+            message,
+            tone: HopeFeedbackTone.error,
+          );
+        }
+      });
     }
   }
 
