@@ -62,6 +62,7 @@ jobs:
       - name: Flutter analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
       # Bound the wave lane: a failing widget test must never consume 10-minute defaults.
+      # Grouped wave checkpoint: trigger verification from the current immutable HEAD.
       # Wave 1 contract reconciliation follows a single verification run.
       # Wave 1 verification trigger: execute the bounded suite against the latest branch head.
 
