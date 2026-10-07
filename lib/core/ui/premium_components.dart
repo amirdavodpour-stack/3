@@ -155,8 +155,8 @@ class _PremiumNavigationItem extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: labelColor,
-                    fontSize: 12,
-                    height: 1.08,
+                    fontSize: 11.5,
+                    height: 1.1,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -734,7 +734,7 @@ class PremiumHeader extends StatelessWidget {
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 22 : 30,
+                  fontSize: compact ? 20 : 28,
                   height: 1.08,
                   letterSpacing: compact ? -.5 : -.75,
                 ),
@@ -1346,7 +1346,7 @@ class PremiumHero extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: dense ? 23 : 27,
+                              fontSize: dense ? 21 : 24,
                               height: 1.03,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -.9,
