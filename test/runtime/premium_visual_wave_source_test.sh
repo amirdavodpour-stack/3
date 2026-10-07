@@ -127,7 +127,12 @@ if grep -Fq 'runtime@example.invalid' "$runtime_driver" || grep -Fq 'images.unsp
   echo "FAIL: demo/stock fixture leakage remains" >&2
   exit 1
 fi
-grep -Fq "fontSize: 12" "$premium"
+grep -Fq "fontSize: 11.5" "$premium"
+grep -Fq "fontSize: compact ? 20 : 28" "$premium"
+grep -Fq "fontSize: dense ? 21 : 24" "$premium"
+grep -Fq "barHeight = 60.0" "lib/core/theme/hope_v2_design.dart"
+grep -Fq "fontSize: 28" "lib/core/theme/hope_v2_design.dart"
+grep -Fq "fontSize: 25" "lib/core/theme/hope_v2_design.dart"
 if grep -Fq "FittedBox(" "$home"; then
   echo "FAIL: Home Pulse metrics still shrink with FittedBox" >&2
   exit 1
