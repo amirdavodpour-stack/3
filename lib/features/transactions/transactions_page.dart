@@ -204,11 +204,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
     required Object icon,
     required Color accent,
   }) {
-    return Expanded(
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 58),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        child: Row(
+    return Container(
+      constraints: const BoxConstraints(minHeight: 58),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      child: Row(
           children: [
             HopeIcon(icon, size: 18, color: accent, strokeWidth: 1.9),
             const SizedBox(width: 7),
@@ -237,11 +236,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   ),
                 ],
               ),
-            ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _workItemCard(HopeJob job) {

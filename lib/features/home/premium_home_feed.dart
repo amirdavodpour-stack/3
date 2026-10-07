@@ -383,8 +383,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 
             _homePulse(context, auth),
             const SizedBox(height: HopeV2Spacing.md),
-
-            const SizedBox(height: HopeV2Spacing.md),
             if (!auth.isGuest && _agentState != null)
               FutureBuilder<HopeOpportunityAgentState>(
                 future: _agentState,

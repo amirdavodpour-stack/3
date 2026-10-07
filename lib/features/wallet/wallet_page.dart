@@ -799,8 +799,7 @@ class _WalletPageState extends State<WalletPage> {
                   String value,
                   bool emphasized,
                 }) item) {
-                  return Expanded(
-                    child: Container(
+                  return Container(
                       key: ValueKey(item.key),
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                       decoration: BoxDecoration(
@@ -835,7 +834,6 @@ class _WalletPageState extends State<WalletPage> {
                           ),
                         ],
                       ),
-                    ),
                   );
                 }
 
@@ -856,7 +854,7 @@ class _WalletPageState extends State<WalletPage> {
                 return Row(
                   children: [
                     for (var index = 0; index < items.length; index++) ...[
-                      cell(items[index]),
+                      Expanded(child: cell(items[index])),
                       if (index != items.length - 1)
                         Container(
                           width: 1,

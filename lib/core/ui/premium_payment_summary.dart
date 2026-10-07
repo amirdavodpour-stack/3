@@ -90,11 +90,6 @@ class PremiumPaymentSummary extends StatelessWidget {
         quiet: true,
         padding: const EdgeInsets.fromLTRB(0, 6, 0, 4),
         highlight: false,
-          'HELD',
-          'RELEASED',
-          'HOLD_PENDING',
-          'RELEASE_PENDING',
-        }.contains(payment.status),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
