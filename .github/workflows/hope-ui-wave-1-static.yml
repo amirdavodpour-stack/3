@@ -2,9 +2,7 @@
 name: HOPE UI Wave 1 Static Verification
 
 on:
-  push:
-    branches:
-      - feat/ui-v2-wave-1-execution-2026-10-07
+  # Verification is PR-scoped so one commit produces one authoritative static record.
   pull_request:
     branches:
       - feat/google-sign-in-2026-09-20

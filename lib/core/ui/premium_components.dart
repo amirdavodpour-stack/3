@@ -34,12 +34,7 @@ class HopeNavigationGlyph extends StatelessWidget {
       width: HopeV2Navigation.itemWidth,
       height: HopeV2Navigation.itemHeight,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: selected
-            ? primary.withValues(alpha: dark ? .13 : .10)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
-      ),
+      decoration: const BoxDecoration(),
       child: HopeIcon(
         icon,
         size: selected ? 21 : 20,
@@ -135,30 +130,41 @@ class _PremiumNavigationItem extends StatelessWidget {
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: HopeV2Touch.minimum,
-                  height: 33,
-                  child: Center(child: icon),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  destination.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: labelColor,
-                    fontSize: 12,
-                    height: 1.1,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: selected ? accent.withValues(alpha: dark ? .16 : .10) : Colors.transparent,
+              borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
+              border: selected
+                  ? Border.all(
+                      color: accent.withValues(alpha: dark ? .22 : .16),
+                    )
+                  : null,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: HopeV2Touch.minimum,
+                    height: 28,
+                    child: Center(child: icon),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    destination.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: labelColor,
+                      fontSize: 12,
+                      height: 1.05,
+                      fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -619,7 +625,7 @@ class PremiumDomainMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     final spec = domain.spec;
     final accent = spec.accent;
-    final size = compact ? 28.0 : 36.0;
+    final size = compact ? 26.0 : 36.0;
     return Semantics(
       container: true,
       label: spec.label(context),
@@ -634,8 +640,10 @@ class PremiumDomainMarker extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: accent.withValues(alpha: .10),
-          borderRadius: BorderRadius.circular(compact ? 10 : HopeV2Radii.button),
-          border: Border.all(color: accent.withValues(alpha: .18)),
+          borderRadius: BorderRadius.circular(compact ? 8 : HopeV2Radii.button),
+          border: Border.all(
+            color: accent.withValues(alpha: compact ? .13 : .18),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -738,7 +746,7 @@ class PremiumHeader extends StatelessWidget {
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 19 : 28,
+                  fontSize: compact ? 21 : 28,
                   height: 1.08,
                   letterSpacing: compact ? -.5 : -.75,
                 ),
@@ -844,7 +852,7 @@ class PremiumPanel extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
-    this.radius = HopeV2Radii.lg,
+    this.radius = HopeV2Radii.xl,
     this.highlight = false,
     this.glass = false,
     this.quiet = false,
@@ -876,8 +884,8 @@ class PremiumPanel extends StatelessWidget {
         ? (glass
             ? HopeV2Colors.panelSoftDark
             : (quiet
-                ? HopeV2Colors.panelSoftDark.withValues(alpha: .34)
-                : Colors.transparent))
+                ? HopeV2Colors.panelSoftDark.withValues(alpha: .22)
+                : HopeV2Colors.panelDark))
         : (glass
             ? HopeV2Colors.panelSoftLight
             : (quiet
@@ -1682,8 +1690,8 @@ class PremiumTag extends StatelessWidget {
       label: label,
       container: true,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 22),
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        constraints: const BoxConstraints(minHeight: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
@@ -1718,7 +1726,8 @@ class PremiumTag extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
-                  fontSize: 10,
+                  fontSize: 11,
+                  height: 1.0,
                   fontWeight: FontWeight.w800,
                 ),
               ),

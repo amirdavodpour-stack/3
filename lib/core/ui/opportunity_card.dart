@@ -280,116 +280,66 @@ class OpportunityCard extends StatelessWidget {
         .toLowerCase()
         .replaceAll('_', '-')
         .replaceAll('  ', ' ');
-    final (accent, icon, secondary) = switch (categoryKey) {
+    final (accent, icon) = switch (categoryKey) {
       'software' || 'software-development' || 'development' || 'نرم‌افزار' || 'نرم افزار' =>
-        (HopeV2Colors.primary, HopeV2Icons.web, HopeV2Colors.secondaryDark),
+        (HopeV2Colors.primary, HopeV2Icons.web),
       'design' || 'graphic-design' || 'طراحی' =>
-        (const Color(0xFF8B5CF6), HopeV2Icons.featured, HopeV2Colors.accent),
+        (const Color(0xFF8B5CF6), HopeV2Icons.featured),
       'marketing' || 'بازاریابی' =>
-        (HopeV2Colors.accent, HopeV2Icons.insights, HopeV2Colors.primary),
+        (HopeV2Colors.accent, HopeV2Icons.insights),
       'content' || 'translation' || 'content-translation' || 'محتوا و ترجمه' =>
-        (const Color(0xFF0EA5E9), HopeV2Icons.description, HopeV2Colors.primary),
+        (const Color(0xFF0EA5E9), HopeV2Icons.description),
       'finance' || 'accounting' || 'finance-accounting' || 'مالی و حسابداری' =>
-        (HopeV2Colors.successDark, HopeV2Icons.payments, HopeV2Colors.primary),
+        (HopeV2Colors.successDark, HopeV2Icons.payments),
       'education' || 'آموزش' =>
-        (const Color(0xFF38BDF8), HopeV2Icons.skills, HopeV2Colors.primary),
+        (const Color(0xFF38BDF8), HopeV2Icons.skills),
       'support' || 'پشتیبانی' =>
-        (HopeV2Colors.secondaryDark, HopeV2Icons.message, HopeV2Colors.primary),
+        (HopeV2Colors.secondaryDark, HopeV2Icons.message),
       'construction' || 'technical' || 'construction-technical' || 'ساخت‌وساز و فنی' =>
-        (const Color(0xFFF97316), HopeV2Icons.workshop, HopeV2Colors.accent),
+        (const Color(0xFFF97316), HopeV2Icons.workshop),
       'video' || 'audio' || 'video-audio' || 'video-production' || 'تولید ویدیو و صدا' =>
-        (const Color(0xFFEC4899), HopeV2Icons.featured, HopeV2Colors.primary),
+        (const Color(0xFFEC4899), HopeV2Icons.featured),
       'data' || 'ai' || 'data-ai' || 'artificial-intelligence' || 'داده و هوش مصنوعی' =>
-        (const Color(0xFF06B6D4), HopeV2Icons.insights, HopeV2Colors.primary),
+        (const Color(0xFF06B6D4), HopeV2Icons.insights),
       'sales' || 'فروش' =>
-        (const Color(0xFF22C55E), HopeV2Icons.workshop, HopeV2Colors.primary),
-      _ => (primary, HopeV2Icons.category, HopeV2Colors.secondary),
+        (const Color(0xFF22C55E), HopeV2Icons.workshop),
+      _ => (primary, HopeV2Icons.category),
     };
+
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: AlignmentDirectional.topEnd,
           end: AlignmentDirectional.bottomStart,
           colors: [
-            accent.withValues(alpha: .46),
-            secondary.withValues(alpha: .24),
-            HopeV2Colors.darkBackground,
+            accent.withValues(alpha: .24),
+            HopeV2Colors.darkCard,
           ],
-          stops: const [0, .46, 1],
         ),
       ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          PositionedDirectional(
-            end: -30,
-            top: -38,
-            child: Container(
-              width: 150,
-              height: 112,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white.withValues(alpha: .14)),
-              ),
+      child: Center(
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: .16),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: accent.withValues(alpha: .24),
             ),
           ),
-          PositionedDirectional(
-            start: -22,
-            bottom: -30,
-            child: Container(
-              width: 108,
-              height: 72,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                color: accent.withValues(alpha: .13),
-                border: Border.all(color: Colors.white.withValues(alpha: .10)),
-              ),
+          child: Center(
+            child: HopeIcon(
+              icon,
+              color: Colors.white,
+              size: 22,
+              strokeWidth: 1.8,
             ),
           ),
-          Align(
-            alignment: AlignmentDirectional.center,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accent.withValues(alpha: .20),
-                border: Border.all(color: Colors.white.withValues(alpha: .18)),
-                boxShadow: [
-                  BoxShadow(color: accent.withValues(alpha: .18), blurRadius: 18),
-                ],
-              ),
-              child: Center(
-                child: HopeIcon(
-                  icon,
-                  color: Colors.white,
-                  size: 22,
-                  strokeWidth: 1.8,
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: AlignmentDirectional.topCenter,
-                  end: AlignmentDirectional.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: .16),
-                    Colors.black.withValues(alpha: .42),
-                  ],
-                  stops: const [0, .62, 1],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
-
   Widget _compact(
     BuildContext context,
     String title,
@@ -726,7 +676,7 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 68.0 : 80.0;
+    final mediaSize = compactViewport ? 72.0 : 84.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(

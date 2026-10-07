@@ -82,6 +82,28 @@ void main() {
     expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
   });
 
+  testWidgets('default dark premium panels use the canonical opaque surface', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: PremiumPanel(child: SizedBox(width: 48, height: 48)),
+        ),
+      ),
+    );
+
+    final panel = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(PremiumPanel),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = panel.decoration as BoxDecoration;
+    expect(decoration.color, HopeV2Colors.panelDark);
+  });
+
   testWidgets('highlighted premium panels expose a restrained gradient layer',
       (tester) async {
     await tester.pumpWidget(

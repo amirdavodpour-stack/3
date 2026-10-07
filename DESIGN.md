@@ -121,6 +121,10 @@ The premium reconstruction borrows principles, not assets or copied screens:
 - Expressive glow is concentrated in hero/opportunity surfaces rather than applied across every card or the whole page.
 
 
+## Visual Wave 2 — 2026-10-08
+
+The next grouped visual wave is driven by Run #1971 / exact-head screenshot review. The dominant drift is systemic: too many similarly-weighted containers, low-salience navigation selection, tiny metadata/tag typography, and decorative fallback media competing with real opportunity imagery. Wave 2 therefore updates the shared visual system rather than patching one screen: opaque layered panels with quieter shadows, a clearer floating mobile dock with a contained active state, stronger compact editorial header scale, more legible tags, disciplined domain markers, and restrained category fallback media. Home Pulse is intentionally demoted to a quiet support rail so the featured opportunity remains the primary work decision. Real media remains preferred whenever payload data supplies it.
+
 ## Runtime visual acceptance observations — 2026-10-03
 
 Run #1339 at exact feature HEAD `966e7c0356ccfbc140ae6cd17d86d61e51322fb1` completed successfully and its rendered Android artifact was inspected. The remaining visual work is compositional rather than runtime plumbing: Home was competing across intelligence/finance/quick-access surfaces; Explore spent too much first-viewport height on filter controls; featured opportunities needed a stronger image-led anchor.

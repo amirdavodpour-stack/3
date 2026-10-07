@@ -391,9 +391,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 ];
 
                 return PremiumPanel(
-                  glass: false,
-padding: const EdgeInsets.all(10),
-                  highlight: true,
+                  glass: true,
+                  quiet: true,
+                  padding: const EdgeInsets.all(10),
+                  highlight: false,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
