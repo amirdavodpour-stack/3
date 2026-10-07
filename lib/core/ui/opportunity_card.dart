@@ -670,7 +670,7 @@ class OpportunityCard extends StatelessWidget {
     final score = job.recommendationScore;
     if (score == null) return null;
     final percent = score <= 1 ? score * 100 : score;
-    return "${percent.round()} ${_t(context, 'تطابق', 'match')}";
+    return "${percent.round()}% ${_t(context, 'تطابق', 'match')}";
   }
 
   Widget _scanStandard(
