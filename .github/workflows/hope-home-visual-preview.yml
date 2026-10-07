@@ -1,9 +1,7 @@
 name: HOPE Home Visual Preview
 
 on:
-  pull_request:
-    branches:
-      - feat/google-sign-in-2026-09-20
+  workflow_dispatch:
 
 permissions:
   contents: read
