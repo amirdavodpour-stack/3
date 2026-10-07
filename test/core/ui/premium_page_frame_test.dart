@@ -107,7 +107,7 @@ void main() {
             height: 640,
             child: RepaintBoundary(
               child: PremiumPageFrame(
-                child: const SizedBox.expand(),
+                child: SizedBox.expand(),
               ),
             ),
           ),
