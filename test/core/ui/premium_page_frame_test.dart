@@ -42,7 +42,7 @@ void main() {
 
       final boundary =
           boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 1);
+      final image = boundary.toImageSync(pixelRatio: 1);
       final bytes =
           (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
 
@@ -62,7 +62,7 @@ void main() {
             height: 640,
             child: RepaintBoundary(
               key: boundaryKey,
-              child: RefreshIndicator(
+              child: RefreshIndicator.noSpinner(
                 onRefresh: () async {},
                 child: PremiumPageFrame(
                   child: ListView(
