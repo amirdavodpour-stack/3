@@ -186,7 +186,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     required String? avatarUrl,
     required VoidCallback onOpenMenu,
   }) {
-    final isEn = Localizations.localeOf(context).languageCode == 'en';
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final safeName = displayName.trim().isEmpty
         ? _t(context, 'شما', 'you')
