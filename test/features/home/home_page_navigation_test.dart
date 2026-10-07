@@ -243,7 +243,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('App menu'), findsOneWidget);
     // A non-admin member sees notifications but no admin panel.
-    expect(find.text('Notifications'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(Drawer), matching: find.text('Notifications')),
+      findsOneWidget,
+    );
     expect(find.text('Control center'), findsNothing);
     expect(find.text('Current location'), findsOneWidget);
   });
@@ -265,7 +268,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsLabel('App menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Notifications'));
+    await tester.tap(
+      find.descendant(of: find.byType(Drawer), matching: find.text('Notifications')).first,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(NotificationsPage), findsOneWidget);
   });
@@ -313,7 +318,10 @@ void main() {
     await tester.pumpWidget(await _app(allowLogin: true));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const ValueKey('hope-menu-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Post new opportunity'));
+    await tester.pumpAndSettle();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Log in'));
     await tester.pumpAndSettle();
@@ -336,7 +344,10 @@ void main() {
     await tester.pumpWidget(await _app(allowRegister: true));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const ValueKey('hope-menu-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Post new opportunity'));
+    await tester.pumpAndSettle();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Create account'));
     await tester.pumpAndSettle();
@@ -358,7 +369,10 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const ValueKey('hope-menu-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Post new opportunity'));
+    await tester.pumpAndSettle();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Log in'));
     await tester.pumpAndSettle();

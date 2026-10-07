@@ -135,8 +135,6 @@ class _ProfilePageState extends State<ProfilePage> {
             future: profile,
             builder: (context, snapshot) {
               final data = snapshot.data;
-              final providerType = data?.providerType.trim();
-              final verification = data?.verificationStatus.trim().toUpperCase();
               return PremiumPanel(
                 key: const ValueKey('profile-account-summary'),
                 quiet: true,
@@ -272,21 +270,7 @@ padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                       ),
                       const Divider(height: 1),
                     ],
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const HopeIconTile(
-                        HopeV2Icons.secure,
-                      ),
-                      title: Text(
-                        HopeCopy.of(context).copy_verification_c45fea9,
-                      ),
-                      subtitle: Text(
-                        data?.verificationStatus.isNotEmpty == true
-                            ? _verificationStatusLabel(
-                                context, data!.verificationStatus)
-                            : HopeCopy.of(context).copy_not_completed_f8a6746,
-                      ),
-                    ),
+
                   ],
                 ),
               );

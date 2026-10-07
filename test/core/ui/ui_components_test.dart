@@ -22,6 +22,8 @@ MaterialApp _app(Widget home) => MaterialApp(
 void main() {
   testWidgets("premium components render with accessible semantics",
       (tester) async {
+    final semanticsHandle = tester.ensureSemantics();
+    addTearDown(semanticsHandle.dispose);
     await tester.pumpWidget(
       _app(
         const Scaffold(

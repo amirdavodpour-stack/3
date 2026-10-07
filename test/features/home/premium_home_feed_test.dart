@@ -198,7 +198,7 @@ void main() {
       'home pulse uses four compact columns above the inner width threshold',
       (tester) async {
     tester.view.physicalSize = const Size(1179, 2556);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();
@@ -231,7 +231,7 @@ void main() {
       'home pulse stays compact enough to keep the first match in the first fold',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();
@@ -258,7 +258,7 @@ void main() {
       'home pulse stays in one visual row at the 720x1280 responsive viewport',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();

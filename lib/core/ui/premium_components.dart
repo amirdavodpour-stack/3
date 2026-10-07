@@ -956,7 +956,12 @@ class PremiumPanel extends StatelessWidget {
 
     return semanticLabel == null
         ? content
-        : Semantics(container: true, label: semanticLabel, child: content);
+        : Semantics(
+            container: true,
+            explicitChildNodes: true,
+            label: semanticLabel,
+            child: content,
+          );
   }
 }
 

@@ -27,6 +27,8 @@ void main() {
     var tapped = false;
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
         home: Scaffold(
           body: OpportunityAgentPanel(
             state: state,

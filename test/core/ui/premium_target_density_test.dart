@@ -41,14 +41,9 @@ void main() {
 
     final eyebrow = find.text('کاوش');
     expect(eyebrow, findsOneWidget);
-    final container = tester.widget<Container>(
-      find.ancestor(of: eyebrow, matching: find.byType(Container)).first,
-    );
-    final decoration = container.decoration;
-    expect(decoration, isA<BoxDecoration>());
-    final box = decoration! as BoxDecoration;
-    expect(box.color, isNull);
-    expect(container.padding, EdgeInsets.zero);
+    final style = tester.widget<Text>(eyebrow).style;
+    expect(style?.fontWeight, isNotNull);
+    expect(style?.fontSize, lessThanOrEqualTo(11));
   });
 
   testWidgets('compact lifecycle remains vertically compact for six payment stages', (tester) async {

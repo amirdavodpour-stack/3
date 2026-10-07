@@ -863,16 +863,25 @@ child: Column(
             ),
           ),
           const SizedBox(width: 10),
-          FilledButton.icon(
-            onPressed: widget.onOpenExplore,
-            icon: HugeIcon(
+          if (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact)
+            PremiumIconButton(
+              tooltip: _t(context, 'کاوش', 'Explore'),
               icon: Directionality.of(context) == TextDirection.rtl
                   ? HopeV2Icons.arrowLeft
                   : HopeV2Icons.arrowRight,
-              size: 17,
+              onPressed: widget.onOpenExplore,
+            )
+          else
+            FilledButton.icon(
+              onPressed: widget.onOpenExplore,
+              icon: HugeIcon(
+                icon: Directionality.of(context) == TextDirection.rtl
+                    ? HopeV2Icons.arrowLeft
+                    : HopeV2Icons.arrowRight,
+                size: 17,
+              ),
+              label: Text(_t(context, 'کاوش', 'Explore')),
             ),
-            label: Text(_t(context, 'کاوش', 'Explore')),
-          ),
         ],
       ),
     );
