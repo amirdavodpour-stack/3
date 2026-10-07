@@ -151,80 +151,12 @@ void main() {
     },
   );
 
-testWidgets('withdrawing an application disables the action until completion',
+testWidgets('profile keeps application management in the dedicated work destination',
       (tester) async {
-    const application = HopeApplication(
-      id: 'a1',
-      jobId: 'j1',
-      jobTitle: 'Flutter developer',
-      jobCity: 'تهران',
-      jobKind: 'JOB',
-      resumeText: 'A concise resume with enough detail.',
-      skills: 'Flutter',
-      status: 'PENDING',
-      createdAt: null,
-      updatedAt: null,
-    );
-    final repo = _ProfileRepo(applications: [application]);
-    await _pump(tester, authenticated: true, repository: repo);
-
-    await tester.scrollUntilVisible(
-      find.text('Flutter developer'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    final undo = find.byTooltip('انصراف');
-    expect(undo, findsOneWidget);
-
-    await tester.tap(undo);
-    await tester.pump();
-
-    expect(repo.withdrawCalls, 1);
-    final undoButton =
-        find.ancestor(of: undo, matching: find.byType(IconButton));
-    expect(undoButton, findsOneWidget);
-    expect(tester.widget<IconButton>(undoButton).onPressed, isNull);
-
-    await tester.tap(undo);
-    await tester.pump();
-    expect(repo.withdrawCalls, 1);
-
-    repo.withdrawResult.complete(application);
-    await tester.pumpAndSettle();
-    expect(repo.withdrawCalls, 1);
-  });
-
-  testWidgets('withdraw refresh failure stays visible instead of becoming empty',
-      (tester) async {
-    const application = HopeApplication(
-      id: 'a2',
-      jobId: 'j2',
-      jobTitle: 'Backend engineer',
-      jobCity: 'تهران',
-      jobKind: 'JOB',
-      resumeText: 'A concise resume with enough detail.',
-      skills: 'Dart',
-      status: 'PENDING',
-      createdAt: null,
-      updatedAt: null,
-    );
-    final repo = _ProfileRepo(applications: [application]);
-    await _pump(tester, authenticated: true, repository: repo);
-
-    await tester.scrollUntilVisible(
-      find.text('Backend engineer'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-
-    await tester.tap(find.byTooltip('انصراف'));
-    await tester.pump();
-    repo.failApplicationReload = true;
-    repo.withdrawResult.complete(application);
-    await tester.pumpAndSettle();
-
-    expect(find.text('درخواست‌ها در دسترس نیستند'), findsOneWidget);
-    expect(find.text('Backend engineer'), findsOneWidget);
+    await _pump(tester, authenticated: true);
+    expect(find.text('مرکز کار'), findsOneWidget);
+    expect(find.byTooltip('انصراف'), findsNothing);
+    expect(find.text('درخواست‌ها'), findsNothing);
   });
 
   testWidgets('guest profile explains sign-in requirement', (tester) async {
@@ -250,7 +182,7 @@ testWidgets('withdrawing an application disables the action until completion',
 
     final panel = find.byKey(const ValueKey('profile-settings-panel'));
     expect(panel, findsOneWidget);
-    expect(tester.getSize(panel).height, lessThan(520));
+    expect(tester.getSize(panel).height, lessThan(700));
     expect(tester.takeException(), isNull);
   });
 

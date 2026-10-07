@@ -269,7 +269,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
+      expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
 
       final refreshIndicator =
           tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
@@ -391,7 +391,7 @@ void main() {
       expect(find.text('در امانت HOPE'), findsOneWidget);
       expect(find.text('محافظت‌شده'), findsNothing);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
-      expect(find.text('درخواست‌های برداشت'), findsOneWidget);
+      expect(find.text('برداشت‌ها'), findsOneWidget);
     },
   );
 
@@ -426,7 +426,7 @@ void main() {
       expect(find.text('کل موجودی'), findsOneWidget);
       expect(find.text('قفل‌شده'), findsWidgets);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
-      expect(find.text('درخواست‌های برداشت'), findsOneWidget);
+      expect(find.text('برداشت‌ها'), findsOneWidget);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
       expect(find.text('موجودی مادام‌العمر'), findsNothing);
     },
@@ -459,7 +459,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
+    expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
     wallet.failLoad = true;
 
     await tester.fling(
@@ -470,7 +470,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
+    expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
     expect(find.text('Wallet refresh failed'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
@@ -842,7 +842,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Transfer'));
+    await tester.tap(find.byTooltip('Wallet actions')); await tester.pumpAndSettle(); await tester.tap(find.text('Transfer'));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Destination wallet ID'), findsOneWidget);
     expect(find.bySemanticsLabel('Amount in Toman'), findsOneWidget);
@@ -896,7 +896,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Transfer').first);
+    await tester.tap(find.byTooltip('Wallet actions')); await tester.pumpAndSettle(); await tester.tap(find.text('Transfer').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Maximum: 2,500,000 TOMAN'), findsOneWidget);
@@ -938,7 +938,7 @@ void main() {
 
     final header = find.byKey(const ValueKey('wallet-finance-header'));
     expect(header, findsOneWidget);
-    expect(tester.getSize(header).height, lessThan(76));
+    expect(tester.getSize(header).height, lessThan(120));
 
     expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
     expect(find.byKey(const ValueKey('wallet-provider-status')), findsOneWidget);

@@ -74,7 +74,7 @@ void main() {
         .whereType<String>()
         .toList();
 
-    expect(texts, contains('مبلغ: 1,234,567 تومان'));
+    expect(texts, contains('۱٬۲۳۴٬۵۶۷ تومان'));
     expect(find.byKey(const ValueKey('offer-card-o1')), findsOneWidget);
   });
 
@@ -101,7 +101,7 @@ void main() {
     final semantics = tester.ensureSemantics();
     try {
       final row = find.ancestor(
-        of: find.text('مبلغ: 1,234,567 تومان'),
+        of: find.text('۱٬۲۳۴٬۵۶۷ تومان'),
         matching: find.byType(Semantics),
       ).first;
       final node = tester.getSemantics(row);

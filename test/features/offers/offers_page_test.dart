@@ -162,13 +162,13 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpAndSettle();
 
     expect(repository.calls, 3);
-    expect(find.bySemanticsLabel(RegExp('Offer fresh')), findsOneWidget);
+    expect(find.text('Offer fresh'), findsOneWidget);
 
     repository.staleRefresh.complete([repository.stale]);
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer fresh')), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('Offer stale')), findsNothing);
+    expect(find.text('Offer fresh'), findsOneWidget);
+    expect(find.text('Offer stale'), findsNothing);
   });
 
   testWidgets('offer refresh failure preserves existing rows and shows retry state', (tester) async {
@@ -176,12 +176,12 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer existing')), findsOneWidget);
+    expect(find.text('Offer existing'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Refresh'));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer existing')), findsOneWidget);
+    expect(find.text('Offer existing'), findsOneWidget);
     expect(find.text('Offers unavailable'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });

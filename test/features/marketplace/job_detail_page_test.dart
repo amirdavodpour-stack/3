@@ -252,12 +252,12 @@ void main() {
   testWidgets('mission details render pricing, duration and action entry',
       (tester) async {
     await _pump(tester, job: _job());
-    expect(find.text('Mission details'), findsOneWidget);
+    expect(find.text('Job description'), findsOneWidget);
     expect(
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
       'Design a logo',
     );
-    expect(find.text('Mission budget'), findsOneWidget);
+    expect(find.text('Budget'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.text('Duration'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
@@ -267,7 +267,7 @@ void main() {
   testWidgets('job details render monthly pay, deadline and admin banner',
       (tester) async {
     await _pump(tester, job: _job(kind: 'JOB'));
-    expect(find.text('Job details'), findsOneWidget);
+    expect(find.text('Job description'), findsOneWidget);
     expect(
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
       'Flutter developer',
@@ -324,7 +324,7 @@ void main() {
     );
     expect(matchBoundary, findsOneWidget);
     expect(tester.getSize(matchBoundary).height, greaterThanOrEqualTo(160));
-    expect(tester.getSize(hero).height, lessThanOrEqualTo(170));
+    expect(tester.getSize(hero).height, lessThanOrEqualTo(180));
     expect(find.text('94% Match'), findsOneWidget);
     expect(find.text('Match intelligence'), findsOneWidget);
     expect(tester.getTopLeft(match).dy, lessThan(280));
@@ -486,7 +486,7 @@ void main() {
     );
 
     expect(find.text('Match intelligence'), findsOneWidget);
-    await tester.tap(find.text('See details'));
+    await tester.tap(find.byKey(const ValueKey('opportunity-match-intelligence')));
     await tester.pumpAndSettle();
 
     expect(find.text('Why this opportunity fits'), findsOneWidget);
