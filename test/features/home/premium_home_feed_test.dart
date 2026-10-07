@@ -24,9 +24,9 @@ class _FakeOpportunityAgent implements OpportunityAgentRepository {
   @override
   Future<HopeOpportunityAgentState> getState() async =>
       const HopeOpportunityAgentState(
-        profileCompleteness: const HopeOpportunityAgentProfileCompleteness(score: 1),
-        activity: const HopeOpportunityAgentActivity(),
-        actions: const [
+        profileCompleteness: HopeOpportunityAgentProfileCompleteness(score: 1),
+        activity: HopeOpportunityAgentActivity(),
+        actions: [
           HopeOpportunityAgentAction(
             type: 'FOLLOW_UP_APPLICATION',
             title: 'Review your next opportunity',
