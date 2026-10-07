@@ -21,6 +21,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   int _days = 30;
+  // Wave 1: admin control data starts from safe empty futures before access resolves.
   late Future<Map<String, dynamic>> _finance;
   late Future<List<Map<String, dynamic>>> _reports;
   late Future<List<Map<String, dynamic>>> _unknownPayouts;
