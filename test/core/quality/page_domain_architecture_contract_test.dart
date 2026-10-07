@@ -84,7 +84,8 @@ void main() {
 
   test('page frame carries the canonical domain rail', () {
     final source = _read('lib/core/ui/premium_components.dart');
-    expect(source, contains('page?.spec.domain.spec.accent'));
+    expect(source, contains('final resolvedDomain = domain ?? page?.spec.domain'));
+    expect(source, contains('final domainAccent = resolvedDomain?.spec.accent'));
     expect(source, contains('BorderDirectional'));
   });
 
@@ -175,8 +176,9 @@ void main() {
 
   test('home places active work before discovery feed', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
-    final active = source.indexOf('_activeWork(context)');
-    final discovery = source.indexOf('_opportunitySections(context, jobs, settings)');
+    final build = source.indexOf('Widget build(BuildContext context)');
+    final active = source.indexOf('_activeWork(context)', build);
+    final discovery = source.indexOf('_opportunitySections(context, jobs, settings)', build);
     expect(active, greaterThanOrEqualTo(0));
     expect(discovery, greaterThan(active));
   });
