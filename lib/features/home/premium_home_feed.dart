@@ -186,11 +186,15 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     required String? avatarUrl,
     required VoidCallback onOpenMenu,
   }) {
-    final isEn = Localizations.localeOf(context).languageCode == 'en';
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final greeting = isEn
-        ? 'HOPE'
-        : 'HOPE';
+    final safeName = displayName.trim().isEmpty
+        ? _t(context, 'شما', 'you')
+        : displayName.trim();
+    final greeting = _t(
+      context,
+      'عصر بخیر، ' + safeName,
+      'Good evening, ' + safeName,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
@@ -260,7 +264,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                   settings.city,
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: HopeV2Colors.darkMuted,
-                                        fontSize: 10,
+                                        fontSize: 12,
                                       ),
                                 ),
                               ],
@@ -273,10 +277,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               ),
               Semantics(
                 button: true,
-                label: isEn ? 'App menu' : 'منوی برنامه',
+                label: _t(context, 'منوی برنامه', 'App menu'),
                 child: PremiumIconButton(
                   icon: HopeV2Icons.menu,
-                  tooltip: isEn ? 'App menu' : 'منوی برنامه',
+                  tooltip: _t(context, 'منوی برنامه', 'App menu'),
                   onPressed: onOpenMenu,
                 ),
               ),
@@ -284,7 +288,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           ),
           const SizedBox(height: 4),
           Text(
-            isEn ? 'Find your next opportunity.' : 'فرصت مناسب برای قدم بعدی',
+            _t(context, 'فرصت‌های متناسب با مسیر کاری شما', 'Opportunities matched to your path'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -380,7 +384,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     ? '—'
                     : _activeJobCount?.toString() ?? '—';
                 final protected = !auth.isGuest && _walletData != null
-                    ? moneyLabel(context, _walletData!.lockedBalance)
+                    ? HopeDisplayFormatter.money(
+                        _walletData!.lockedBalance,
+                        locale: Localizations.localeOf(context).languageCode,
+                      )
                     : '—';
 
                 final stats = <({String value, String label, Object icon, Color accent})>[
@@ -410,7 +417,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     value: protected,
                     label: _t(context, 'محافظت‌شده', 'protected'),
                     icon: HopeV2Icons.protectedFunds,
-                    accent: HopeV2Colors.warningDark,
+                    accent: HopeV2Colors.success,
                   ),
                 ];
 
@@ -654,16 +661,14 @@ padding: const EdgeInsets.all(12),
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  style: HopeV2Type.metric(context).copyWith(
-                    fontSize: compact ? 13 : (value.length > 7 ? 11.5 : 14),
-                    color: Colors.white,
-                  ),
+              Text(
+                value,
+                maxLines: 2,
+                softWrap: true,
+                style: HopeV2Type.metric(context).copyWith(
+                  fontSize: 15,
+                  height: 1.05,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 3),
@@ -672,7 +677,8 @@ padding: const EdgeInsets.all(12),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: compact ? 8 : 9,
+                      fontSize: 12,
+                      height: 1.08,
                       color: HopeV2Colors.darkMuted,
                     ),
               ),

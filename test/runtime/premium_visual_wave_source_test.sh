@@ -73,7 +73,7 @@ if grep -Fq 'PremiumStatCard(' "$transactions"; then
   exit 1
 fi
 grep -Fq 'final metricWidth = (constraints.maxWidth - 16) / 3;' "$transactions"
-grep -Fq 'fontSize: emphasized ? 14 : 11.5' "$wallet"
+grep -Fq 'fontSize: emphasized ? 14 : 12' "$wallet"
 grep -Fq 'border: emphasized' "$wallet"
 grep -Fq 'HopeV2Colors.primary.withValues(alpha: .30)' "$wallet"
 # Wave IV: Offers and Notifications must use calmer, more legible secondary-surface hierarchy.
@@ -81,12 +81,12 @@ offers="lib/features/offers/offers_page.dart"
 notifications="lib/features/notifications/notifications_page.dart"
 test -f "$offers"
 test -f "$notifications"
-grep -Fq 'Widget _offerMetric(' "$offers"
-grep -Fq "label: _t('در انتظار', 'Pending')" "$offers"
-grep -Fq "label: _t('پذیرفته‌شده', 'Accepted')" "$offers"
-grep -Fq 'constraints: const BoxConstraints(minHeight: 76)' "$offers"
-grep -Fq 'required Object icon,' "$offers"
-grep -Fq 'HopeIcon(icon, size: 15' "$offers"
+if grep -Fq 'Widget _offerMetric(' "$offers"; then
+  echo "FAIL: offers duplicate metric rail must remain retired" >&2
+  exit 1
+fi
+grep -Fq "all.length.toString() + _t(' پیشنهاد', ' offers')" "$offers"
+grep -Fq "HopeDisplayFormatter.money" "$offers"
 grep -Fq "notification-card-" "$notifications"
 grep -Fq 'padding: const EdgeInsets.all(15)' "$notifications"
 echo "PASS: premium visual composition wave source integrity"
@@ -110,7 +110,25 @@ if grep -Fq '\${' "$signature"; then
   echo "FAIL: signature file contains escaped Dart interpolation" >&2
   exit 1
 fi
-grep -Fq "NumberFormat.decimalPattern" "$signature"
 grep -Fq "color: primary.withValues(alpha: .14)" "lib/features/marketplace/job_detail_page.dart"
 grep -Fq "border: Border.all(color: primary.withValues(alpha: .12))" "$opportunity"
 echo "PASS: signature surface visual wave source integrity"
+
+# Wave 1 guards: localized money/time presentation and demo fixture removal.
+grep -Fq "HopeDisplayFormatter.amount" "$opportunity"
+grep -Fq "overflow: TextOverflow.clip" "$opportunity"
+grep -Fq "softWrap: true" "$opportunity"
+grep -Fq "HopeDisplayFormatter.relativeDateTime" "$notifications"
+if grep -Fq "n.createdAt ?? ''" "$notifications"; then
+  echo "FAIL: Notifications still render raw createdAt" >&2
+  exit 1
+fi
+if grep -Fq 'runtime@example.invalid' "$runtime_driver" || grep -Fq 'images.unsplash.com' "$runtime_driver"; then
+  echo "FAIL: demo/stock fixture leakage remains" >&2
+  exit 1
+fi
+grep -Fq "fontSize: 12" "$premium"
+if grep -Fq "FittedBox(" "$home"; then
+  echo "FAIL: Home Pulse metrics still shrink with FittedBox" >&2
+  exit 1
+fi

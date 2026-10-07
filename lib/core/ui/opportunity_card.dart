@@ -2,12 +2,12 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:intl/intl.dart';
 
 import '../marketplace/job.dart';
 import '../router/app_routes.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
+import 'hope_display_formatters.dart';
 import 'hope_l10n.dart';
 import 'premium_components.dart';
 
@@ -26,17 +26,11 @@ class OpportunityCard extends StatelessWidget {
   final OpportunityCardVariant variant;
   final VoidCallback? onTap;
 
-  String _formatAmount(String value) {
-    final formatter = NumberFormat.decimalPattern('en_US');
-    return value
-        .split(' – ')
-        .map((part) {
-          final trimmed = part.trim();
-          final parsed = int.tryParse(trimmed);
-          return parsed == null ? part : formatter.format(parsed);
-        })
-        .join(' – ');
-  }
+  String _formatAmount(String value, BuildContext context) =>
+      HopeDisplayFormatter.amount(
+        value,
+        locale: Localizations.localeOf(context).languageCode,
+      );
   String _reason(BuildContext context, String value) {
     final copy = HopeCopy.of(context);
     return switch (value) {
@@ -449,9 +443,10 @@ class OpportunityCard extends StatelessWidget {
           const SizedBox(width: 10),
           Flexible(
             child: Text(
-              '${_formatAmount(amount)} ${copy.copy_toman}',
+              '${_formatAmount(amount, context)} ${copy.copy_toman}',
               maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              overflow: TextOverflow.clip,
+              softWrap: true,
               textAlign: TextAlign.end,
               style: TextStyle(
                 fontSize: 13,
@@ -535,9 +530,10 @@ class OpportunityCard extends StatelessWidget {
             final amountText = amount.isEmpty
                 ? null
                 : Text(
-                    '${_formatAmount(amount)} ${copy.copy_toman}',
+                    '${_formatAmount(amount, context)} ${copy.copy_toman}',
                     maxLines: narrowMeta ? 1 : 2,
-                    overflow: TextOverflow.ellipsis,
+                    overflow: TextOverflow.clip,
+                    softWrap: true,
                     textAlign: TextAlign.end,
                     style: HopeV2Type.metric(context).copyWith(
                       fontSize: narrowMeta ? 14 : 15,
@@ -577,41 +573,43 @@ class OpportunityCard extends StatelessWidget {
           },
         ),
         const SizedBox(height: HopeV2Spacing.sm),
-        Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 10, 8),
-          // The whole opportunity card is already the interaction surface.
-          // Featured opportunity gets one intentional action emphasis; list cards stay de-boxed.
-          decoration: BoxDecoration(
-            color: primary.withValues(alpha: .14),
-            borderRadius: BorderRadius.circular(HopeV2Radii.button),
-            border: Border.all(color: primary.withValues(alpha: .24)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium
-                      ? _t(context, 'مشاهده جزئیات', 'View details')
-                      : (job.isMission
-                          ? copy.copy_view_and_act_on_mission
-                          : copy.copy_view_details_and_act),
-                  style: TextStyle(
-                    color: primary,
-                    fontWeight: FontWeight.w900,
+        Semantics(
+          container: true,
+          label: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium
+              ? _t(context, 'مشاهده جزئیات فرصت', 'View opportunity details')
+              : (job.isMission
+                  ? copy.copy_view_and_act_on_mission
+                  : copy.copy_view_details_and_act),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+            child: Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 2, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium
+                          ? _t(context, 'مشاهده جزئیات', 'View details')
+                          : (job.isMission
+                              ? copy.copy_view_and_act_on_mission
+                              : copy.copy_view_details_and_act),
+                      style: TextStyle(
+                        color: primary,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
-                ),
+                  HugeIcon(
+                    icon: Directionality.of(context) == ui.TextDirection.rtl
+                        ? HopeV2Icons.arrowLeft
+                        : HopeV2Icons.arrowRight,
+                    size: 20,
+                    color: primary,
+                    strokeWidth: 1.9,
+                  ),
+                ],
               ),
-              HugeIcon(
-                icon: Directionality.of(context) == ui.TextDirection.rtl
-                    ? HopeV2Icons.arrowLeft
-                    : HopeV2Icons.arrowRight,
-                size: 20,
-                color: primary,
-                strokeWidth: 1.9,
-              ),
-            ],
+            ),
           ),
         ),
       ],
@@ -780,7 +778,7 @@ class OpportunityCard extends StatelessWidget {
         _metaText(
           context,
           HopeV2Icons.payments,
-          '${_formatAmount(amount)} ${copy.copy_toman}',
+          '${_formatAmount(amount, context)} ${copy.copy_toman}',
           primary,
           emphasize: true,
         ),
@@ -861,7 +859,7 @@ class OpportunityCard extends StatelessWidget {
                   child: _metaText(
                     context,
                     HopeV2Icons.payments,
-                    '${_formatAmount(amount)} ${copy.copy_toman}',
+                    '${_formatAmount(amount, context)} ${copy.copy_toman}',
                     primary,
                     emphasize: true,
                   ),
@@ -1129,7 +1127,7 @@ class OpportunityCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${_formatAmount(amount)} ${copy.copy_toman}',
+                        '${_formatAmount(amount, context)} ${copy.copy_toman}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: HopeV2Type.metric(context).copyWith(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/notifications/notification.dart';
@@ -290,7 +291,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       ],
                       const SizedBox(height: 7),
                       Text(
-                        n.createdAt ?? '',
+                        HopeDisplayFormatter.relativeDateTime(
+                              n.createdAt,
+                              locale: Localizations.localeOf(context).languageCode,
+                            ) ?? '',
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                     ],
@@ -329,71 +333,60 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند',
                         'Updates for applications, work, and payments • All caught up',
                       ),
-                trailing: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    PremiumIconButton(
-                      icon: Localizations.localeOf(context).languageCode == 'en'
-                          ? HopeV2Icons.arrowLeft
-                          : HopeV2Icons.arrowRight,
-                      tooltip: _t('بازگشت', 'Back'),
-                      onPressed: () => Navigator.maybePop(context),
-                    ),
-                    PremiumIconButton(
-                      icon: HopeV2Icons.secure,
-                      tooltip: _t('دستگاه‌های اعلان', 'Notification devices'),
-                      onPressed: () =>
-                          Navigator.push(context, HopeRoutes.notificationDevices()),
-                    ),
-                    PremiumIconButton(
-                      icon: HopeV2Icons.insights,
-                      tooltip: _t('تنظیمات اعلان‌ها', 'Notification settings'),
-                      onPressed: _openPreferences,
-                    ),
-                    PremiumIconButton(
-                      icon: HopeV2Icons.completed,
-                      tooltip: HopeCopy.of(context).copy_mark_all_read_500a31c,
-                      onPressed: unreadCount == 0 ? null : _readAll,
+                    PopupMenuButton<String>(
+                      tooltip: _t('اقدامات اعلان', 'Notification actions'),
+                      icon: const HopeIcon(HopeV2Icons.menu),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'settings':
+                            _openPreferences();
+                            break;
+                          case 'devices':
+                            Navigator.push(
+                              context,
+                              HopeRoutes.notificationDevices(),
+                            );
+                            break;
+                          case 'read':
+                            if (unreadCount > 0) _readAll();
+                            break;
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'settings',
+                          child: Text(
+                            _t(
+                              'تنظیمات اعلان‌ها',
+                              'Notification settings',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'devices',
+                          child: Text(
+                            _t(
+                              'دستگاه‌های اعلان',
+                              'Notification devices',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'read',
+                          enabled: unreadCount > 0,
+                          child: Text(
+                            HopeCopy.of(context).copy_mark_all_read_500a31c,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: HopeV2Spacing.md),
-              if (!loading && error == null && items.isNotEmpty) ...[
-                PremiumPanel(
-                  quiet: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_t('اعلان جدید', 'Unread'), style: Theme.of(context).textTheme.labelMedium),
-                            const SizedBox(height: 3),
-                            Text('$unreadCount', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: unreadCount > 0 ? HopeV2Colors.primary : null)),
-                          ],
-                        ),
-                      ),
-                      Container(width: 1, height: 34, color: Theme.of(context).dividerColor.withValues(alpha: .45)),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_t('کل اعلان‌ها', 'Total notifications'), style: Theme.of(context).textTheme.labelMedium),
-                            const SizedBox(height: 3),
-                            Text('${items.length}', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-                          ],
-                        ),
-                      ),
-                      const HopeIcon(HopeV2Icons.notifications, size: 22),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _load,

@@ -129,7 +129,7 @@ class _TypeHero extends StatelessWidget {
                   Text(
                     sub,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       height: 1.35,
                       color: selected ? Colors.white70 : null,
                     ),
@@ -278,18 +278,50 @@ class _CreateJobForm extends StatelessWidget {
             onChanged: onKindChanged,
           ),
           const SizedBox(height: 10),
-          HopeOpportunityLivePreview(
-            kind: kind,
-            visibility: visibility,
-            schedule: schedule,
-            city: city,
-            titleController: title,
-            descriptionController: description,
-            minBudgetController: minBudget,
-            maxBudgetController: maxBudget,
-            salaryController: salary,
+          Theme(
+            data: Theme.of(context).copyWith(
+              dividerColor: Colors.transparent,
+            ),
+            child: ExpansionTile(
+              key: const ValueKey('opportunity-live-preview-peek'),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 2),
+              childrenPadding: EdgeInsets.zero,
+              initiallyExpanded: false,
+              leading: const HopeIconTile(
+                HopeV2Icons.insights,
+                size: 38,
+                filled: true,
+              ),
+              title: Text(
+                translate('پیش‌نمایش زنده', 'Live preview'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              subtitle: Text(
+                translate(
+                  'برای بررسی خلاصه فرصت باز کنید.',
+                  'Open to review the opportunity summary.',
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              children: [
+                HopeOpportunityLivePreview(
+                  kind: kind,
+                  visibility: visibility,
+                  schedule: schedule,
+                  city: city,
+                  titleController: title,
+                  descriptionController: description,
+                  minBudgetController: minBudget,
+                  maxBudgetController: maxBudget,
+                  salaryController: salary,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           PremiumSectionHeader(
             domain: HopeProductDomain.work,
             title: HopeCopy.of(context).copy_audience_visibility_5a0ddcb,

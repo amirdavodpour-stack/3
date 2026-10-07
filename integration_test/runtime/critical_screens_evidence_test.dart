@@ -63,7 +63,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
+        user: {'id': 'runtime-user', 'displayName': 'علی رضایی'},
       );
 
   @override
@@ -75,7 +75,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
+        user: {'id': 'runtime-user', 'displayName': 'علی رضایی'},
       );
 
   @override
@@ -211,7 +211,7 @@ class _EvidenceTransactionRepository implements TransactionRepository {
 
 class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   final _jobs = <HopeJob>[
-    _jobFixture(editorialMedia: true),
+    _jobFixture(),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-2', 'title': 'توسعه Flutter برای محصول جدید', 'kind': 'JOB', 'recommendationScore': 87, 'recommendationReasons': ['SKILL_MATCH']}),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-3', 'title': 'طراحی هویت بصری استارتاپ', 'kind': 'MISSION', 'recommendationScore': 76, 'recommendationReasons': ['CATEGORY_MATCH']}),
   ];
@@ -382,7 +382,7 @@ class _EvidenceNotificationRepository implements NotificationRepository {
           HopeNotification(
             id: 'notification-1',
             type: 'PAYMENT_UPDATE',
-            title: 'پرداخت پروژه به‌روزرسانی شد',
+            title: 'پرداخت فرصت به‌روزرسانی شد',
             body: 'پرداخت در وضعیت قفل‌شده قرار گرفت.',
             createdAt: '2026-09-21T06:00:00Z',
             readAt: null,
@@ -436,13 +436,13 @@ class _EvidenceNotificationRepository implements NotificationRepository {
   Future<void> disableDevice(String id) async {}
 }
 
-HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
+HopeJob _jobFixture() => HopeJob.fromMap({
       'id': 'job-runtime-1',
       'title': 'طراحی رابط موبایل حرفه‌ای',
       'description':
           'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',
       'categoryId': 'cat-1',
-      'category': 'Software',
+      'category': 'طراحی',
       'jobType': 'FIXED',
       'budgetType': 'FIXED',
       'budgetMin': '1500000',
@@ -472,10 +472,6 @@ HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
         'salary': 82,
       },
       'aiRecommendationConfidence': 0.92,
-      // Runtime-only editorial media fixture: exercises the existing real media branch.
-      if (editorialMedia)
-        'imageUrl':
-          'https://images.unsplash.com/photo-1758876022836-70b89d3e6944?auto=format&fit=crop&fm=jpg&q=60&w=1600',
     });
 
 HopeApplication _applicationFixture() => HopeApplication.fromMap({
@@ -485,7 +481,7 @@ HopeApplication _applicationFixture() => HopeApplication.fromMap({
       'jobCity': 'تهران',
       'jobKind': 'JOB',
       'resumeText': 'Mobile engineer',
-      'skills': 'Flutter, Dart, UX',
+      'skills': 'طراحی رابط کاربری، تجربه کاربری، دسترس‌پذیری',
       'status': 'SHORTLISTED',
       'createdAt': '2026-09-20T06:00:00Z',
       'updatedAt': '2026-09-21T06:00:00Z',
@@ -525,8 +521,8 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
     'id': 'runtime-user',
-    'displayName': 'HOPE Runtime',
-    'email': 'runtime@example.invalid',
+    'displayName': 'علی رضایی',
+    'email': 'ali.test@hope.local',
   });
   print('HOPE_RUNTIME_PREPARE:google-start');
   await _runtimeGoogleSignIn.initialize();

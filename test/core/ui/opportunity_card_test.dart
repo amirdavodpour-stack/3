@@ -59,12 +59,9 @@ void main() {
     expect(find.text('دورکاری'), findsOneWidget);
     expect(find.text('تهران'), findsOneWidget);
     expect(find.text('1.5 km'), findsOneWidget);
-    expect(find.text('1,000,000 – 1,500,000 تومان'), findsOneWidget);
+    expect(find.text('۱٬۰۰۰٬۰۰۰ تومان تا ۱٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
     expect(find.text('طراحی محصول'), findsOneWidget);
-    final cta = tester.widget<Container>(
-      find.byKey(const ValueKey('opportunity-card-cta')),
-    );
-    expect(cta.decoration, isNull);
+    expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
     expect(find.text('دلایل تطابق'), findsNothing);
     expect(find.text('این توضیح در کارت اسکن نمایش داده نمی‌شود.'), findsNothing);
     expect(
@@ -403,7 +400,7 @@ void main() {
         .map((element) => (element.widget as Text).data)
         .whereType<String>()
         .toList();
-    expect(amountTexts, contains('1,000,000 – 1,500,000 تومان'));
+    expect(amountTexts, contains('۱٬۰۰۰٬۰۰۰ تومان تا ۱٬۵۰۰٬۰۰۰ تومان'));
   });
 
   testWidgets('opportunity card labels mission budget in Toman',
