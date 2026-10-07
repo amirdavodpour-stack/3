@@ -385,9 +385,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('3,500,000 تومان'), findsOneWidget);
-      expect(find.textContaining('2,500,000 تومان'), findsWidgets);
+      expect(find.textContaining('2,500,000 تومان'), findsOneWidget);
       expect(find.text('قابل استفاده'), findsOneWidget);
-      expect(find.text('محافظت‌شده'), findsOneWidget);
+      expect(find.text('در امانت HOPE'), findsOneWidget);
+      expect(find.text('محافظت‌شده'), findsNothing);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
       expect(find.text('درخواست‌های برداشت'), findsOneWidget);
     },
