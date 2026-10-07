@@ -362,6 +362,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 
     return PremiumPageFrame(
       page: HopePageId.home,
+      domain: HopeProductDomain.overview,
       maxWidth: 1180,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       child: RefreshIndicator(
