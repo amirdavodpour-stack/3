@@ -138,7 +138,7 @@ class _PremiumNavigationItem extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
