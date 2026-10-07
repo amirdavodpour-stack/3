@@ -759,27 +759,33 @@ class PremiumHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (resolvedDomain != null && eyebrow.trim().isNotEmpty)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      PremiumDomainMarker(
-                        domain: resolvedDomain,
-                        compact: true,
-                      ),
-                      const SizedBox(width: HopeV2Spacing.sm),
-                      Flexible(
-                        child: Text(
-                          eyebrow.toUpperCase(),
-                          overflow: TextOverflow.ellipsis,
-                          style: HopeV2Type.eyebrow(context).copyWith(
-                            color: resolvedDomain.spec.accent,
+                if (eyebrow.trim().isNotEmpty)
+                  Container(
+                    padding: EdgeInsets.zero,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (resolvedDomain != null) ...[
+                          PremiumDomainMarker(
+                            domain: resolvedDomain,
+                            compact: true,
+                          ),
+                          const SizedBox(width: HopeV2Spacing.sm),
+                        ],
+                        Flexible(
+                          child: Text(
+                            eyebrow.toUpperCase(),
+                            overflow: TextOverflow.ellipsis,
+                            style: HopeV2Type.eyebrow(context).copyWith(
+                              color: resolvedDomain?.spec.accent ??
+                                  Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                if (resolvedDomain != null && eyebrow.trim().isNotEmpty)
+                if (eyebrow.trim().isNotEmpty)
                   SizedBox(height: dense ? 4 : 6),
                 if (trailing != null)
                   Align(

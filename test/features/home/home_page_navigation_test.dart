@@ -244,7 +244,7 @@ void main() {
     expect(find.text('App menu'), findsOneWidget);
     // A non-admin member sees notifications but no admin panel.
     expect(find.text('Notifications'), findsOneWidget);
-    expect(find.text('Admin panel'), findsNothing);
+    expect(find.text('Control center'), findsNothing);
     expect(find.text('Current location'), findsOneWidget);
   });
 
@@ -255,7 +255,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsLabel('App menu'));
     await tester.pumpAndSettle();
-    expect(find.text('Admin panel'), findsOneWidget);
+    expect(find.text('Control center'), findsOneWidget);
   });
 
   testWidgets('notifications drawer entry opens the notifications page',
@@ -381,7 +381,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(PremiumNavigationBar),
-        matching: find.text('Activity'),
+        matching: find.text('Work'),
       ),
     );
     await tester.pumpAndSettle();

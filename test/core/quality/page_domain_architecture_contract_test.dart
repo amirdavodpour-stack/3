@@ -36,6 +36,9 @@ void main() {
       final source = _read(entry.key);
       expect(source, contains(entry.value), reason: entry.key);
     }
+    final chat = _read('lib/features/chat/chat_page.dart');
+    expect(chat, contains('HopePageId.jobChat'));
+    expect(chat, contains('HopePageId.adminChat'));
     final home = _read('lib/features/home/premium_home_feed.dart');
     expect(home, contains('HopePageId.home'));
     final architecture = _read('lib/core/ui/hope_product_architecture.dart');
@@ -210,7 +213,6 @@ void main() {
       'lib/features/wallet/wallet_page.dart': 'HopePageId.wallet',
       'lib/features/profile/profile_page.dart': 'HopePageId.profile',
       'lib/features/notifications/notifications_page.dart': 'HopePageId.notifications',
-      'lib/features/chat/chat_page.dart': 'HopePageId.chat',
       'lib/features/jobs/job_satisfaction_page.dart': 'HopePageId.satisfaction',
       'lib/features/financial/financial_insights_page.dart': 'HopePageId.financialInsights',
       'lib/features/admin/admin_page.dart': 'HopePageId.admin',
@@ -323,10 +325,11 @@ void main() {
 
   test('explore uses the shared discovery header', () {
     final source = _read('lib/features/jobs/jobs_page.dart');
+    final filterSource = _read('lib/features/jobs/jobs_filter_bar.part.dart');
     expect(source, contains('PremiumHeader('));
     expect(source, contains('page: HopePageId.explore'));
     expect(source, contains('domain: HopeProductDomain.discovery'));
-    expect(source, contains('PremiumSearchBar'));
+    expect(filterSource, contains('PremiumSearchBar'));
   });
 
   test('wallet has an explicit finance page header', () {

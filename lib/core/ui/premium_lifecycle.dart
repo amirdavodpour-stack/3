@@ -88,8 +88,8 @@ class _StepRow extends StatelessWidget {
               Semantics(
                 label: step.label,
                 child: Container(
-                  width: compact ? 28 : 34,
-                  height: compact ? 28 : 34,
+                  width: compact ? 24 : 34,
+                  height: compact ? 24 : 34,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: highlighted
@@ -103,7 +103,7 @@ class _StepRow extends StatelessWidget {
                   ),
                   child: HopeIcon(
                     step.complete ? Icons.check_rounded : step.icon,
-                    size: compact ? 15 : 18,
+                    size: compact ? 14 : 18,
                     color: iconColor,
                   ),
                 ),
@@ -111,8 +111,8 @@ class _StepRow extends StatelessWidget {
               if (!last)
                 Container(
                   width: 2,
-                  height: compact ? 18 : 34,
-                  margin: EdgeInsets.symmetric(vertical: compact ? 2 : 4),
+                  height: compact ? 4 : 34,
+                  margin: EdgeInsets.symmetric(vertical: compact ? 1 : 4),
                   color: Theme.of(context).dividerColor,
                 ),
             ],
@@ -121,7 +121,7 @@ class _StepRow extends StatelessWidget {
         SizedBox(width: compact ? HopeV2Spacing.sm : HopeV2Spacing.md),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(bottom: compact ? 6 : HopeV2Spacing.lg),
+            padding: EdgeInsets.only(bottom: compact ? 4 : HopeV2Spacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
