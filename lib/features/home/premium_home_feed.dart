@@ -386,7 +386,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     : _activeJobCount?.toString() ?? '—';
                 final protected = !auth.isGuest && _walletData != null
                     ? HopeDisplayFormatter.money(
-                        _walletData!.lockedBalance,
+                        _walletData!.escrowBalance,
                         locale: Localizations.localeOf(context).languageCode,
                       )
                     : '—';
