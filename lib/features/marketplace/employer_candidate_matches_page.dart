@@ -33,9 +33,13 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return PremiumPageFrame(
+      page: HopePageId.candidateMatches,
+      domain: HopeProductDomain.intelligence,
+      maxWidth: 920,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-      children: [
+      child: ListView(
+        children: [
         PremiumSectionHeader(
           page: HopePageId.candidateMatches,
           domain: HopeProductDomain.intelligence,
@@ -186,7 +190,8 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
