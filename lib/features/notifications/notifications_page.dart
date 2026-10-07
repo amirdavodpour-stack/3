@@ -283,7 +283,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       ),
                       if (n.hasAction) ...[
                         const SizedBox(height: 10),
-                        FilledButton.tonalIcon(
+                        FilledButton.icon(
                           onPressed: () => _openNotification(n),
                           icon: const HopeIcon(HopeV2Icons.arrowRight, size: 18),
                           label: Text(n.actionLabel),
