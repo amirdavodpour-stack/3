@@ -152,6 +152,19 @@ abstract class AppLocalizations {
   /// **'ورود به HOPE'**
   String get loginButton;
 
+  String get categorySoftware;
+  String get categoryDesign;
+  String get categoryMarketing;
+  String get categoryContentTranslation;
+  String get categoryFinanceAccounting;
+  String get categoryEducation;
+  String get categorySupport;
+  String get categoryConstructionTechnical;
+  String get categoryVideoAudio;
+  String get categoryDataAI;
+  String get categorySales;
+  String get categoryOther;
+
   String get signInWithGoogle;
 
   /// Button to skip login and browse as a guest.
