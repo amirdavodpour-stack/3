@@ -10,7 +10,7 @@ grep -Fq 'await binding.takeScreenshot(marker);' "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:flutter-driver' "$test_file"
 grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
-grep -Fq 'flutter drive --no-enable-impeller --no-pub --no-dds' "$script_file"
+grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
 grep -Fq 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build' "$script_file"
 # Self-build includes Flutter/Gradle compilation before VM-service connection.
 grep -Fq 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"' "$script_file"
@@ -74,15 +74,17 @@ grep -Fq 'run_host_batch_session responsive-a' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b' "$script_file"
 grep -Fq 'run_host_batch_session responsive-c' "$script_file"
 grep -Fq 'responsive-c) responsive_batch="3"' "$script_file"
-# Baseline capture is partitioned to isolate the previously reproducible auth-tail
-# screenshot transport hang. Each partition owns a fresh Driver/VM-service boundary.
-grep -Fq 'HOPE_HOST_RUNTIME_PARTITIONED_BASELINE_START:fa' "$script_file"
-grep -Fq 'run_host_batch_session baseline-a "${baseline_screens[@]:0:7}"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-b "${baseline_screens[@]:7:1}"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-c "${baseline_screens[@]:8:4}"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-g "create-job-fa-rtl"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-e "register-fa-rtl"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-f "password-reset-fa-rtl"' "$script_file"
+# Baseline capture must remain one Driver/VM-service session; the proven green
+# certification run captured the complete locale baseline without repeated
+# emulator-side teardown/startup cycles.
+grep -Fq 'run_host_batch_session baseline "${baseline_screens[@]}"' "$script_file"
+if grep -Fq 'baseline_first_screens=' "$script_file" ||
+   grep -Fq 'baseline_second_screens=' "$script_file" ||
+   grep -Fq 'baseline_third_screens=' "$script_file" ||
+   grep -Fq 'baseline_fourth_screens=' "$script_file"; then
+  echo "FAIL: baseline evidence must not churn multiple Driver sessions" >&2
+  exit 1
+fi
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
 grep -Fq 'await _waitForRuntimeRenderToSettle(tester);' "$test_file"
