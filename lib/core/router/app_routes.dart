@@ -56,6 +56,9 @@ abstract final class HopeRoutes {
       _page(RegisterPage(returnIntent: returnIntent));
   static Route<void> passwordReset() => _page(const PasswordResetPage());
 
+  /// Root/home destination.
+  static Route<void> home() => _page(const AppRouter());
+
   /// Account & content destinations.
   static Route<void> notifications() => _page(const NotificationsPage());
   static Route<void> notificationDevices() => _page(const NotificationDevicesPage());
