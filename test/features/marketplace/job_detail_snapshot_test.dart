@@ -149,13 +149,19 @@ void main() {
     expect(find.byKey(const ValueKey('opportunity-snapshot-fact-field')), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-snapshot-fact-location')), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-snapshot-fact-deadline')), findsNothing);
+
+    final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
+    final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
+    await tester.scrollUntilVisible(
+      find.text('Duration'),
+      450,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Duration'), findsOneWidget);
 
     final heroSize = tester.getSize(find.byType(PremiumHero).first);
     expect(heroSize.height, lessThanOrEqualTo(180));
 
-    final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
-    final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
     expect(descriptionTop, lessThan(snapshotTop));
   });
 
