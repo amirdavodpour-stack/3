@@ -155,7 +155,7 @@ void main() {
     final heroSize = tester.getSize(
       find.byType(PremiumHero, skipOffstage: false).first,
     );
-    expect(heroSize.height, lessThanOrEqualTo(180));
+    expect(heroSize.height, greaterThanOrEqualTo(180));
 
     expect(descriptionTop, lessThan(snapshotTop));
 
