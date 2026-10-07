@@ -343,6 +343,7 @@ class PremiumPageFrame extends StatelessWidget {
     this.padding = const EdgeInsets.fromLTRB(20, 20, 20, 96),
     this.safeBottom = true,
     this.page,
+    this.domain,
   });
 
   final Widget child;
@@ -350,12 +351,14 @@ class PremiumPageFrame extends StatelessWidget {
   final EdgeInsets padding;
   final bool safeBottom;
   final HopePageId? page;
+  final HopeProductDomain? domain;
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
-    final domainAccent = page?.spec.domain.spec.accent;
+    final resolvedDomain = domain ?? page?.spec.domain;
+    final domainAccent = resolvedDomain?.spec.accent;
     final showDomainRail = size.width >= HopeV2Breakpoints.medium;
     final pageColor = HopeV2Surfaces.page(context);
 
