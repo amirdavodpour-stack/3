@@ -32,3 +32,11 @@
 - 48dp touch targets; no important labels below 12sp.
 - Static/test suite before one runtime capture; inspect every screenshot; batch one fix pass; hard cap two evidence runs for this wave.
 - Wave report includes actual run IDs, screenshots, defect status, parity delta and NOT VERIFIED/NOT DONE list.
+
+## Static verification remediation — 2026-10-07
+
+Run #3 / 37602704497 exposed source-contract drift after the current shared-component extraction. The corrective pass preserves the stronger Wave 1 behavior and updates tests to the authoritative layer rather than restoring deleted strings.
+
+Remediated categories: shared RTL icon assertions; centralized AI user/system policy assertions; hidden internal payment IDs; current wallet pending-withdrawal terminology; expanded Opportunity Agent imports; saved-search manager deletion location; server-owned idempotency validation; capabilities secret isolation; release workflow naming and SBOM semantics; shell executable modes and shebang ordering; stable saved-search IDs.
+
+The next push intentionally triggers the Wave 1 static workflow on this exact branch.
