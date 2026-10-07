@@ -23,8 +23,8 @@ sh test/runtime/editorial_media_fixture_scope_test.sh
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
-grep -Fq "width: 70" "$opportunity"
-grep -Fq "height: 70" "$opportunity"
+grep -Fq "width: 64" "$opportunity"
+grep -Fq "height: 64" "$opportunity"
 
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq '_HeroEditorialFallback(' "$premium"
