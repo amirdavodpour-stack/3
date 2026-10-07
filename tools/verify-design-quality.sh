@@ -9,6 +9,8 @@ need_file() { [[ -f "$1" ]] || fail "missing required file: $1"; }
 
 required_files=(
   pubspec.yaml
+  tool/contrast_check.py
+  assets/branding/google_g.png
   lib/core/theme/hope_v2_design.dart
   lib/core/theme/app_theme.dart
   lib/core/ui/components.dart
