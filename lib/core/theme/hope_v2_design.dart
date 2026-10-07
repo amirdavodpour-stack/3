@@ -52,11 +52,11 @@ class HopeV2Colors {
   static const darkMuted = Color(0xFFA5ADBD);
 
   static const pageLight = Color(0xFFF1EDF8);
-  static const pageDark = Color(0xFF0B0F18);
+  static const pageDark = Color(0xFF070A12);
   static const panelLight = Color(0xFFFFFFFF);
   static const panelDark = Color(0xFF101522);
   static const panelSoftLight = Color(0xFFFBF9FE);
-  static const panelSoftDark = Color(0xFF151B2A);
+  static const panelSoftDark = Color(0xFF121726);
   static const chipLight = Color(0xFFEFEBF8);
   static const chipDark = Color(0x20FFFFFF);
   static const chipSelectedDark = Color(0x356366F1);
@@ -161,7 +161,7 @@ class HopeV2Radii {
   static const md = 14.0;
   static const lg = 16.0;
   static const xl = 20.0;
-  static const hero = 24.0;
+  static const hero = 28.0;
   static const input = 12.0;
   static const button = 12.0;
   static const navigation = 12.0;
@@ -243,10 +243,11 @@ class HopeV2Surfaces {
       begin: AlignmentDirectional.topEnd,
       end: AlignmentDirectional.bottomStart,
       colors: [
-        HopeV2Colors.warmHalo,
+        Color(0x0DC2A487),
+        Colors.transparent,
         Colors.transparent,
       ],
-      stops: [0.0, 0.42],
+      stops: [0.0, 0.42, 1.0],
     );
   }
 
