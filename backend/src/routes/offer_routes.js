@@ -1,6 +1,22 @@
 // Offer lifecycle routes.
 
-export function createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy, id, getJob, enforceJobState, createAudit, now, jobView, ensureJobChat }) {
+export function createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy, id, getJob, getUserById, enforceJobState, createAudit, now, jobView, ensureJobChat }) {
+  const enrichOffer = async (offer, me, job = null) => {
+    if (!offer) return offer;
+    const resolvedJob = job || await getJob(offer.jobId);
+    const counterpartyId = String(offer.providerId) === String(me.id)
+      ? resolvedJob?.ownerId
+      : offer.providerId;
+    const counterparty = counterpartyId && typeof getUserById === 'function'
+      ? await getUserById(counterpartyId)
+      : null;
+    return {
+      ...offer,
+      jobTitle: resolvedJob?.title || null,
+      counterpartyName: counterparty?.displayName || null,
+    };
+  };
+
   return async function routeHandler(req, res, parts) {
     // Read-only offer views are deliberately scoped to the authenticated viewer:
     // job owners can see all offers on their jobs; providers can only see their own.
@@ -14,18 +30,20 @@ export function createOfferRoutes({ authUser, readBody, sendJson, HttpError, req
         const own = process.env.DATABASE_URL
           ? await repo.findPendingOffer(job.id, me.id)
           : legacy.findPending(job.id, me.id);
-        return sendJson(res, 200, { items: own ? [own] : [] });
+        return sendJson(res, 200, { items: own ? [await enrichOffer(own, me, job)] : [] });
       }
       const items = process.env.DATABASE_URL
         ? await repo.findOffers(job.id)
         : legacy.listForJob(job.id);
-      return sendJson(res, 200, { items });
+      const enriched = await Promise.all(items.map((offer) => enrichOffer(offer, me, job)));
+      return sendJson(res, 200, { items: enriched });
     }
     if (req.method === 'GET' && parts.length === 2 && parts[1] === 'mine') {
       const me = await authUser(req);
       if (process.env.DATABASE_URL) {
         const items = await repo.listOffersForProvider(me.id);
-        return sendJson(res, 200, { items });
+        const enriched = await Promise.all(items.map((offer) => enrichOffer(offer, me)));
+        return sendJson(res, 200, { items: enriched });
       }
       return sendJson(res, 200, { items: legacy.listForProvider(me.id) });
     }
@@ -37,7 +55,7 @@ export function createOfferRoutes({ authUser, readBody, sendJson, HttpError, req
       if (!job || (job.ownerId !== me.id && offer.providerId !== me.id)) {
         throw new HttpError(404, 'OFFER_NOT_FOUND', 'Offer not found');
       }
-      return sendJson(res, 200, offer);
+      return sendJson(res, 200, await enrichOffer(offer, me, job));
     }
     if (req.method === 'POST' && parts.length === 1) {
       const me = await authUser(req); const body = await readBody(req); requireFields(body, ['jobId', 'price']);
@@ -52,7 +70,8 @@ export function createOfferRoutes({ authUser, readBody, sendJson, HttpError, req
       let offer;
       try { offer = process.env.DATABASE_URL ? await repo.insertOffer(offerDraft) : legacy.create(offerDraft); }
       catch (error) { if (error?.code === 'OFFER_EXISTS') throw new HttpError(409, 'OFFER_EXISTS', 'You already have a pending offer for this job'); throw error; }
-      await createAudit('OFFER_CREATE', me.id, 'offer', offer.id, { jobId: job.id }); return sendJson(res, 201, offer);
+      await createAudit('OFFER_CREATE', me.id, 'offer', offer.id, { jobId: job.id });
+      return sendJson(res, 201, await enrichOffer(offer, me, job));
     }
     if (req.method === 'POST' && parts[2] === 'accept') {
       const me = await authUser(req); const offer = process.env.DATABASE_URL ? await repo.findOfferById(parts[1]) : legacy.findById(parts[1]); if (!offer) throw new HttpError(404, 'OFFER_NOT_FOUND', 'Offer not found');
