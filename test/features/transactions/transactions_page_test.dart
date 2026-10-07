@@ -235,9 +235,6 @@ void main() {
     expect(find.text('پروژه refresh-stale'), findsOneWidget);
     repo.failList = true;
 
-    tester.view.physicalSize = const Size(390, 900);
-    await tester.pump();
-
     final refreshIndicator =
         tester.widget<RefreshIndicator>(find.byType(RefreshIndicator).first);
     await refreshIndicator.onRefresh();
