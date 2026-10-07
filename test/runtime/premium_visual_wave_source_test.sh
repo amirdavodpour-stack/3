@@ -111,7 +111,11 @@ if grep -Fq '\${' "$signature"; then
   exit 1
 fi
 grep -Fq "color: primary.withValues(alpha: .14)" "lib/features/marketplace/job_detail_page.dart"
-grep -Fq "border: Border.all(color: primary.withValues(alpha: .12))" "$opportunity"
+grep -Fq "key: const ValueKey('opportunity-card-cta')" "$opportunity"
+if grep -Fq "border: Border.all(color: primary.withValues(alpha: .12))" "$opportunity"; then
+  echo "FAIL: discovery card CTA is still boxed" >&2
+  exit 1
+fi
 echo "PASS: signature surface visual wave source integrity"
 
 # Wave 1 guards: localized money/time presentation and demo fixture removal.
