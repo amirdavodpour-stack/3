@@ -118,7 +118,7 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   String _money(int amount) =>
-      '${HopeDisplayFormatter.integer(amount, locale: 'en')} ${_t('تومان', 'Toman')}';
+      '${HopeDisplayFormatter.integer(amount, locale: 'en')} ${_t('تومان', 'TOMAN')}';
 
   String _date(String? raw) => HopeDisplayFormatter.relativeDateTime(
         raw,

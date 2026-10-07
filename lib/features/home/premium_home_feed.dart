@@ -287,6 +287,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 button: true,
                 label: _t(context, 'منوی برنامه', 'App menu'),
                 child: PremiumIconButton(
+                  key: const ValueKey('hope-menu-button'),
                   icon: HopeV2Icons.menu,
                   tooltip: _t(context, 'منوی برنامه', 'App menu'),
                   onPressed: onOpenMenu,

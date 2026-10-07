@@ -444,13 +444,15 @@ class PremiumIconButton extends StatelessWidget {
           )
         : HopeV2Surfaces.panel(context);
 
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: tooltip,
-      selected: selected,
-      identifier: semanticsIdentifier,
-      child: Material(
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: tooltip,
+        selected: selected,
+        identifier: semanticsIdentifier,
+        child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
@@ -478,6 +480,7 @@ class PremiumIconButton extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

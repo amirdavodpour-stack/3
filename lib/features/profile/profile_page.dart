@@ -163,28 +163,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           PremiumTag(
                             icon: HopeV2Icons.completed,
-                            label: _t(context, 'حساب فعال', 'Active account'),
+                            label: HopeCopy.of(context).copy_active_account_bef80da,
                             color: HopeV2Colors.secondaryStrong,
                           ),
-                          if (providerType?.isNotEmpty == true)
-                            PremiumTag(
-                              icon: HopeV2Icons.job,
-                              label: _providerTypeLabel(context, providerType!),
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          if (verification == 'VERIFIED')
-                            PremiumTag(
-                              icon: HopeV2Icons.verified,
-                              label: _t(context, 'تأییدشده', 'Verified'),
-                              color: HopeV2Colors.success,
-                            )
-                          else if (verification != null &&
-                              verification.isNotEmpty)
-                            PremiumTag(
-                              icon: HopeV2Icons.pending,
-                              label: _verificationStatusLabel(context, verification),
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
                         ],
                       ),
                     ),
