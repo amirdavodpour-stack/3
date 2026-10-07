@@ -1,13 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/features/marketplace/job_detail_page.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
-import 'package:hope_mobile/core/application/application.dart';
+import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/job_detail_repository.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
+import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
@@ -143,10 +144,8 @@ void main() {
     final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
     expect(descriptionTop, lessThan(snapshotTop));
   });
-}
 
-
-testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
+  testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
     (tester) async {
   await tester.pumpWidget(
     MediaQuery(
@@ -183,3 +182,5 @@ testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
   expect(tester.getSize(find.byType(PremiumHero)).height, 176);
   expect(tester.takeException(), isNull);
 });
+
+}
