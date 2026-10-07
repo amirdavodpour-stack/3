@@ -264,7 +264,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                   settings.city,
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: HopeV2Colors.darkMuted,
-                                        fontSize: 10,
+                                        fontSize: 12,
                                       ),
                                 ),
                               ],
@@ -277,10 +277,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               ),
               Semantics(
                 button: true,
-                label: isEn ? 'App menu' : 'منوی برنامه',
+                label: _t(context, 'منوی برنامه', 'App menu'),
                 child: PremiumIconButton(
                   icon: HopeV2Icons.menu,
-                  tooltip: isEn ? 'App menu' : 'منوی برنامه',
+                  tooltip: _t(context, 'منوی برنامه', 'App menu'),
                   onPressed: onOpenMenu,
                 ),
               ),
@@ -384,7 +384,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     ? '—'
                     : _activeJobCount?.toString() ?? '—';
                 final protected = !auth.isGuest && _walletData != null
-                    ? moneyLabel(context, _walletData!.lockedBalance)
+                    ? HopeDisplayFormatter.money(
+                        _walletData!.lockedBalance,
+                        locale: Localizations.localeOf(context).languageCode,
+                      )
                     : '—';
 
                 final stats = <({String value, String label, Object icon, Color accent})>[
@@ -414,7 +417,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     value: protected,
                     label: _t(context, 'محافظت‌شده', 'protected'),
                     icon: HopeV2Icons.protectedFunds,
-                    accent: HopeV2Colors.warningDark,
+                    accent: HopeV2Colors.success,
                   ),
                 ];
 
