@@ -244,7 +244,6 @@ class _AdminPageState extends State<AdminPage>
                                   await repository.lockPanel();
                                   if (!mounted) return;
                                   navigator.pushReplacement(HopeRoutes.adminAccess());
-                                  }
                                 },
                         ),
                       ],
