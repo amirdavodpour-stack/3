@@ -158,7 +158,8 @@ void main() {
       find.descendant(of: metrics, matching: find.text('1')),
       findsNWidgets(2),
     );
-    expect(find.text('فعال'), findsOneWidget);
+    // Active work is already asserted by the localized 'در حال اجرا' metric above.
+    expect(find.text('در حال اجرا'), findsOneWidget);
     expect(tester.getSize(metrics).height, lessThan(120));
     expect(tester.takeException(), isNull);
   });
