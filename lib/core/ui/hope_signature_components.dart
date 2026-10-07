@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../transactions/wallet.dart';
 import '../marketplace/job.dart';
 import '../theme/hope_v2_design.dart';
 import 'components.dart';
 import 'premium_components.dart';
+import 'hope_display_formatters.dart';
 
 /// Shared visual signature for the creation flow. It mirrors only values that
 /// the user has already entered; it never invents marketplace data.
@@ -36,17 +36,10 @@ class HopeOpportunityLivePreview extends StatelessWidget {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _formatAmount(String value) {
-    final formatter = NumberFormat.decimalPattern('en_US');
-    return value
-        .split(' – ')
-        .map((part) {
-          final trimmed = part.trim();
-          final parsed = int.tryParse(trimmed);
-          return parsed == null ? part : formatter.format(parsed);
-        })
-        .join(' – ');
-  }
+  String _formatAmount(String value, BuildContext context) => HopeDisplayFormatter.amount(
+        value,
+        locale: Localizations.localeOf(context).languageCode,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +159,7 @@ class HopeOpportunityLivePreview extends StatelessWidget {
                     PremiumTag(
                       icon: HopeV2Icons.payments,
                       label:
-                          "${_formatAmount(amount)} ${_t(context, 'تومان', 'Toman')}",
+                          "${_formatAmount(amount, context)} ${_t(context, 'تومان', 'Toman')}",
                       color: HopeV2Colors.primary,
                     ),
                   if (cityText.isNotEmpty)
@@ -413,6 +406,44 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  String _categoryLabel(BuildContext context, String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return '—';
+    const fa = <String, String>{
+      'software': 'نرم‌افزار',
+      'design': 'طراحی',
+      'marketing': 'بازاریابی',
+      'content': 'محتوا و ترجمه',
+      'finance': 'مالی و حسابداری',
+      'education': 'آموزش',
+      'support': 'پشتیبانی',
+      'construction': 'ساخت‌وساز و فنی',
+      'video': 'تولید ویدیو و صدا',
+      'ai': 'داده و هوش مصنوعی',
+      'data': 'داده و هوش مصنوعی',
+      'sales': 'فروش',
+      'other': 'سایر',
+    };
+    const en = <String, String>{
+      'نرم‌افزار': 'Software',
+      'طراحی': 'Design',
+      'بازاریابی': 'Marketing',
+      'محتوا و ترجمه': 'Content & Translation',
+      'مالی و حسابداری': 'Finance & Accounting',
+      'آموزش': 'Education',
+      'پشتیبانی': 'Support',
+      'ساخت‌وساز و فنی': 'Construction & Technical',
+      'تولید ویدیو و صدا': 'Video & Audio',
+      'داده و هوش مصنوعی': 'Data & AI',
+      'فروش': 'Sales',
+      'سایر': 'Other',
+    };
+    final faValue = fa[value.toLowerCase()] ?? value;
+    return Localizations.localeOf(context).languageCode == 'en'
+        ? (en[faValue] ?? faValue)
+        : faValue;
+  }
+
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
@@ -425,9 +456,9 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
       ),
       (
         label: _t(context, 'دسته‌بندی', 'Category'),
-        value: job.category?.trim().isNotEmpty == true
-            ? job.category!.trim()
-            : (job.categoryId ?? '—'),
+        value: _categoryLabel(context, job.category?.trim().isNotEmpty == true
+            ? job.category
+            : job.categoryId),
         color: secondary,
       ),
       (
@@ -478,7 +509,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
               const SizedBox(width: 7),
               Expanded(
                 child: Text(
-                  _t(context, 'Opportunity DNA', 'Opportunity DNA'),
+                  _t(context, 'ویژگی‌های فرصت', 'Opportunity traits'),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
