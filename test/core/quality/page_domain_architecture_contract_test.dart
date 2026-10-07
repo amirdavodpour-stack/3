@@ -77,7 +77,7 @@ void main() {
 
   test('page frame carries the canonical domain rail', () {
     final source = _read('lib/core/ui/premium_components.dart');
-    expect(source, contains('page?.spec.domain.accent'));
+    expect(source, contains('page?.spec.domain.spec.accent'));
     expect(source, contains('BorderDirectional'));
   });
 
