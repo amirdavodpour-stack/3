@@ -98,8 +98,6 @@ class _OffersPageState extends State<OffersPage> {
     final rows = _filter == 'ALL'
         ? all
         : all.where((x) => x.status.toUpperCase() == _filter).toList();
-    final pendingCount = all.where((x) => x.status.toUpperCase() == 'PENDING').length;
-    final acceptedCount = all.where((x) => x.status.toUpperCase() == 'ACCEPTED').length;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -185,10 +183,8 @@ class _OffersPageState extends State<OffersPage> {
                         child: PremiumFilterChip(
                           selected: _filter == x,
                           label: x == 'ALL'
-                              ? _t('همه', 'All') + ' (' + all.length.toString() + ')'
-                              : _statusLabel(x) + ' (' +
-                                  all.where((o) => o.status.toUpperCase() == x).length.toString() +
-                                  ')',
+                              ? '${_t('همه', 'All')} (${all.length})'
+                              : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
                           color: x == 'ALL'
                               ? Theme.of(context).colorScheme.primary
                               : _statusColor(context, x),
@@ -230,7 +226,7 @@ class _OffersPageState extends State<OffersPage> {
             container: true,
             button: true,
             excludeSemantics: true,
-            label: (o.jobTitle?.trim().isNotEmpty == true ? o.jobTitle!.trim() : _t('پیشنهاد همکاری', 'Work offer')) + '، ' + _money(o.price) + '، ' + _statusLabel(o.status),
+            label: '${o.jobTitle?.trim().isNotEmpty == true ? o.jobTitle!.trim() : _t('پیشنهاد همکاری', 'Work offer')}، ${_money(o.price)}، ${_statusLabel(o.status)}',
             onTap: () => _showDetails(o),
             child: InkWell(
               borderRadius: BorderRadius.circular(18),

@@ -4,14 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
-import '../../core/theme/app_theme.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/transactions/wallet.dart';
 import '../../core/transactions/wallet_repository.dart';
 import '../../core/network/api_client.dart';
 import '../../core/ui/components.dart';
-import '../../core/ui/copy.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/hope_async_state.dart';
@@ -532,16 +530,6 @@ class _WalletPageState extends State<WalletPage> {
         return _transactions;
     }
   }
-
-  int get _pendingPayoutCount => _payouts.where((p) => const {
-        'REQUESTED', 'RESERVED', 'PROCESSING', 'UNKNOWN'
-      }.contains(p.status.toUpperCase())).length;
-
-  int get _pendingPayoutAmount => _payouts
-      .where((p) => const {
-            'REQUESTED', 'RESERVED', 'PROCESSING', 'UNKNOWN'
-          }.contains(p.status.toUpperCase()))
-      .fold<int>(0, (sum, payout) => sum + payout.amount);
 
   Object _payoutIcon(String status) {
     switch (status.toUpperCase()) {

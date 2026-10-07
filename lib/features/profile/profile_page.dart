@@ -5,7 +5,6 @@ import '../../core/ui/hope_async_state.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/profile/profile_repository.dart';
-import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/theme/theme_controller.dart';
@@ -134,7 +133,6 @@ class _ProfilePageState extends State<ProfilePage> {
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
-              final data = snapshot.data;
               return PremiumPanel(
                 key: const ValueKey('profile-account-summary'),
                 quiet: true,
@@ -458,18 +456,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
     }
   }
 
-  String _verificationStatusLabel(BuildContext context, String value) {
-    switch (value.trim().toUpperCase()) {
-      case 'VERIFIED':
-        return _t(context, 'تأییدشده', 'Verified');
-      case 'UNVERIFIED':
-        return _t(context, 'تأیید نشده', 'Not verified');
-      case 'PENDING':
-        return _t(context, 'در انتظار بررسی', 'Pending review');
-      default:
-        return _t(context, 'نیازمند بررسی', 'Needs review');
-    }
-  }
+
 
   Widget _guest(
     BuildContext context,

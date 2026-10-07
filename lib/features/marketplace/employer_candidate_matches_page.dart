@@ -175,8 +175,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                     if (candidate.offerPrice != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        _t(context, 'پیشنهاد مالی: ', 'Offer: ') +
-                            '${candidate.offerPrice} تومان',
+                        '${_t(context, 'پیشنهاد مالی: ', 'Offer: ')}${candidate.offerPrice} تومان',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),

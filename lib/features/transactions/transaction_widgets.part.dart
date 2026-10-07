@@ -111,8 +111,8 @@ extension on _TransactionPageState {
             Expanded(
               child: Text(
                 _t(
-                  'مرحله ${safeCurrent + 1} از ${total}',
-                  'Stage ${safeCurrent + 1} of ${total}',
+                  'مرحله ${safeCurrent + 1} از $total',
+                  'Stage ${safeCurrent + 1} of $total',
                 ),
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w800,

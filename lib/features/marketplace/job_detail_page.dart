@@ -655,7 +655,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
   Widget build(BuildContext context) {
     final j = widget.job;
     final isJob = j.isJob;
-    final visibility = j.visibility;
     final currentUserId =
         context.read<AuthController?>()?.user?['id']?.toString();
     final isOwner =
@@ -1752,7 +1751,7 @@ class _MatchIntelligence extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
           Expanded(child: Text(_componentLabel(context, key), style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800))),
-          Text('${percent}%', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: primary, fontWeight: FontWeight.w900)),
+          Text('$percent%', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: primary, fontWeight: FontWeight.w900)),
         ]),
         const SizedBox(height: 5),
         ClipRRect(
@@ -1827,6 +1826,7 @@ class _MatchIntelligence extends StatelessWidget {
 
 class EmployerCandidateMatchesLoader extends StatelessWidget {
   const EmployerCandidateMatchesLoader({
+    super.key,
     required this.future,
     required this.jobTitle,
   });
