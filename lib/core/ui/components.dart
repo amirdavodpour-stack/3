@@ -737,7 +737,7 @@ class OpportunitySkeletonCard extends StatelessWidget {
                   final subtitleWidth = width < 180 ? width : 180.0;
                   final detailWidth = width < 150 ? width : 150.0;
                   final stack = width < 240;
-                  final items = const [
+                  const items = [
                     SkeletonBox(height: 28, width: 100),
                     SkeletonBox(height: 28, width: 118),
                   ];

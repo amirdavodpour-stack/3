@@ -57,11 +57,11 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
     _kv(_t('مبلغ','Amount'),'${d['paymentAmount']??d['context']?['payment']?['amount']??'—'} تومان'),
     _section(_t('گزارش','Report'), '${d['aiReport']?['summary']??''}'),
     _section(_t('مبنای پرداخت','Payment rationale'), '${d['aiReport']?['paymentRationale']??''}'),
-    _section(_t('یافته‌های واقعی','Factual findings'), '${(d['aiReport']?['factualFindings'] as List? ?? const []).join('\n• ')}'),
-    _section(_t('مدارک ناقص','Missing evidence'), '${(d['aiReport']?['missingEvidence'] as List? ?? const []).join('\n• ')}'),
-    _section(_t('مبنای حقوقی','Legal basis'), '${(d['aiReport']?['legalBasis'] as List? ?? const []).map((x)=>'${x['source']} ماده ${x['article']}: ${x['principle']}').join('\n')}'),
-    _section(_t('اقدامات پیشنهادی سیستم','System-suggested admin actions'), '${(d['aiReport']?['adminActions'] as List? ?? const []).join('\n• ')}'),
-    _section(_t('شواهد ثبت‌شده','Recorded evidence'), '${(d['context']?['evidence'] as List? ?? const []).map((x)=>'${x['action'] ?? '—'} • ${x['createdAt'] ?? '—'}').join('\n')}'),
+    _section(_t('یافته‌های واقعی','Factual findings'), (d['aiReport']?['factualFindings'] as List? ?? const []).join('\n• ')),
+    _section(_t('مدارک ناقص','Missing evidence'), (d['aiReport']?['missingEvidence'] as List? ?? const []).join('\n• ')),
+    _section(_t('مبنای حقوقی','Legal basis'), (d['aiReport']?['legalBasis'] as List? ?? const []).map((x)=>'${x['source']} ماده ${x['article']}: ${x['principle']}').join('\n')),
+    _section(_t('اقدامات پیشنهادی سیستم','System-suggested admin actions'), (d['aiReport']?['adminActions'] as List? ?? const []).join('\n• ')),
+    _section(_t('شواهد ثبت‌شده','Recorded evidence'), (d['context']?['evidence'] as List? ?? const []).map((x)=>'${x['action'] ?? '—'} • ${x['createdAt'] ?? '—'}').join('\n')),
     const SizedBox(height:10),
     Wrap(spacing:8, runSpacing:8, children:[
       _action(d,'RELEASE',_t('پرداخت','Release'),Icons.payments),
@@ -81,7 +81,8 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
       final ok=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(title:Text(_t('تأیید اقدام','Confirm action')),content:Column(mainAxisSize:MainAxisSize.min,children:[Text(_t('اقدام انتخابی: $label. دلیل ادمین را ثبت کنید.','Selected action: $label. Record the admin reason.')),const SizedBox(height:10),TextField(controller:reasonController,maxLines:4,decoration:InputDecoration(labelText:_t('دلیل','Reason')))]),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:Text(_t('انصراف','Cancel'))),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(_t('اجرا','Execute')))]));
       if(ok!=true) return;
       setState(()=>_busy=true);
-      await context.read<AdminRepository>().resolveDispute(id,resolution:resolution,reason:reasonController.text);
+      final repository = context.read<AdminRepository>();
+      await repository.resolveDispute(id,resolution:resolution,reason:reasonController.text);
       if(mounted) { Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(_t('اقدام ثبت شد.','Action recorded.')))); _load(); }
     } catch(e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(apiErrorMessage(e)))); } finally { reasonController.dispose(); if(mounted) setState(()=>_busy=false); }
   }
@@ -159,7 +160,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                             tooltip: _t('بازخوانی', 'Refresh'),
                             onPressed: _busy ? null : _load,
                           ),
-                          HopeIconTile(
+                          const HopeIconTile(
                             HopeV2Icons.secure,
                             size: 50,
                             filled: true,

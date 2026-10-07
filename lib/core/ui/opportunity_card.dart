@@ -77,7 +77,7 @@ class OpportunityCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: '$title, $city' + (amount.isEmpty ? '' : ', ' + _formatAmount(amount, context)),
+      label: '$title, $city${amount.isEmpty ? '' : ', ${_formatAmount(amount, context)}'}',
       child: PressableScale(
         onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
         child: Container(
@@ -412,7 +412,7 @@ class OpportunityCard extends StatelessWidget {
           const SizedBox(width: 10),
           Flexible(
             child: Text(
-              '${_formatAmount(amount, context)}',
+              _formatAmount(amount, context),
               maxLines: 2,
               overflow: TextOverflow.clip,
               softWrap: true,
@@ -500,7 +500,7 @@ class OpportunityCard extends StatelessWidget {
             final amountText = amount.isEmpty
                 ? null
                 : Text(
-                    '${_formatAmount(amount, context)}',
+                    _formatAmount(amount, context),
                     maxLines: narrowMeta ? 1 : 2,
                     overflow: TextOverflow.clip,
                     softWrap: true,
@@ -1096,7 +1096,7 @@ class OpportunityCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${_formatAmount(amount, context)}',
+                        _formatAmount(amount, context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: HopeV2Type.metric(context).copyWith(

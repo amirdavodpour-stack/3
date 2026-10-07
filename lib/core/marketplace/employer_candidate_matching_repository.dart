@@ -46,7 +46,7 @@ class HopeEmployerCandidateMatch {
         : const <String, dynamic>{};
     final components = <String, double>{};
     rawComponents.forEach((key, value) {
-      final parsed = value is num ? value.toDouble() : double.tryParse('${value}');
+      final parsed = value is num ? value.toDouble() : double.tryParse('$value');
       if (parsed != null) components[key] = parsed;
     });
     final rawReasons = map['matchReasons'];
