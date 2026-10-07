@@ -80,11 +80,10 @@ test('offer read APIs are authenticated and viewer-scoped', async () => {
 
 
 test('capability configuration exposes safe feature flags without secrets', async () => {
-  const source = (await Promise.all([
-    'app.js',
-    'routes/config_routes.js',
-    'config.js',
-  ].map((file) => readFile(new URL(`../src/${file}`, import.meta.url), 'utf8')))).join('\n');
+  const appSource = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../src/routes/config_routes.js', import.meta.url), 'utf8');
+  assert.match(appSource, /createConfigRoutes/);
+  assert.match(source, /capabilities:/);
   for (const marker of [
     "createConfigRoutes",
     "parts[0] === 'config'",
