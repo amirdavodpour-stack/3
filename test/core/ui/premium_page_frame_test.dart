@@ -29,7 +29,12 @@ void main() {
       await tester.pump();
 
       expect(
-        tester.getSize(find.byType(PremiumAppCanvas)),
+        tester.getSize(
+          find.descendant(
+            of: find.byType(PremiumAppCanvas),
+            matching: find.byType(SizedBox),
+          ),
+        ),
         const Size(360, 640),
       );
 
