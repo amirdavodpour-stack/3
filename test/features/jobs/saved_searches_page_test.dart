@@ -99,7 +99,7 @@ void main() {
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
     expect(find.textContaining('SOFTWARE'), findsNothing);
-    expect(find.textContaining('Software'), findsOneWidget);
+    expect(find.text('Software'), findsOneWidget);
   });
   testWidgets('unknown saved-search enums use safe localized fallback', (tester) async {
     final repository = _SequencedSavedSearchRepository();
