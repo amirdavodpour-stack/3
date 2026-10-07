@@ -336,14 +336,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    PremiumIconButton(
-                      icon: Localizations.localeOf(context).languageCode == 'en'
-                          ? HopeV2Icons.arrowLeft
-                          : HopeV2Icons.arrowRight,
-                      tooltip: _t('بازگشت', 'Back'),
-                      onPressed: () => Navigator.maybePop(context),
-                    ),
-                    const SizedBox(width: 8),
                     PopupMenuButton<String>(
                       tooltip: _t('اقدامات اعلان', 'Notification actions'),
                       icon: const HopeIcon(HopeV2Icons.menu),
@@ -353,7 +345,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             _openPreferences();
                             break;
                           case 'devices':
-                            Navigator.push(context, HopeRoutes.notificationDevices());
+                            Navigator.push(
+                              context,
+                              HopeRoutes.notificationDevices(),
+                            );
                             break;
                           case 'read':
                             if (unreadCount > 0) _readAll();
@@ -363,21 +358,34 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       itemBuilder: (_) => [
                         PopupMenuItem(
                           value: 'settings',
-                          child: Text(_t('تنظیمات اعلان‌ها', 'Notification settings')),
+                          child: Text(
+                            _t(
+                              'تنظیمات اعلان‌ها',
+                              'Notification settings',
+                            ),
+                          ),
                         ),
                         PopupMenuItem(
                           value: 'devices',
-                          child: Text(_t('دستگاه‌های اعلان', 'Notification devices')),
+                          child: Text(
+                            _t(
+                              'دستگاه‌های اعلان',
+                              'Notification devices',
+                            ),
+                          ),
                         ),
                         PopupMenuItem(
                           value: 'read',
                           enabled: unreadCount > 0,
-                          child: Text(HopeCopy.of(context).copy_mark_all_read_500a31c),
+                          child: Text(
+                            HopeCopy.of(context).copy_mark_all_read_500a31c,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
+              ),
               const SizedBox(height: HopeV2Spacing.md),
               Expanded(
                         child: Column(
