@@ -64,21 +64,24 @@ class HopeDisplayFormatter {
 
   static String amount(Object? value, {required String locale, bool short = false}) {
     final raw = value?.toString().trim() ?? '';
-    if (raw.isEmpty || RegExp(r'[A-Za-z]').hasMatch(raw) || RegExp(r'[:/T]').hasMatch(raw)) return '—';
-    final parts = raw.split(RegExp(r'\s*[–-]\s*')).map(parseInteger).whereType<int>().toList();
+    final normalized = _asciiDigits(raw).replaceAll('٬', ',');
+    if (!RegExp(
+      r'^\s*[+-]?\d[\d,]*(?:\s*[–-]\s*[+-]?\d[\d,]*)?\s*$',
+    ).hasMatch(normalized)) {
+      return '—';
+    }
+    final parts = normalized
+        .split(RegExp(r'\s*[–-]\s*'))
+        .map(parseInteger)
+        .whereType<int>()
+        .toList();
     if (parts.length == 2) {
       parts.sort();
       final separator = locale.toLowerCase().startsWith('fa') ? 'تا' : '–';
-      final max = money(parts.last, locale: locale, short: short);
-      final unit = locale.toLowerCase().startsWith('fa') ? 'تومان' : 'Toman';
-      final suffix = ' ' + unit;
-      final maxWithoutUnit = max.endsWith(suffix)
-          ? max.substring(0, max.length - suffix.length)
-          : max;
-      return money(parts.first, locale: locale, short: short) + ' ' +
-          separator + ' ' + maxWithoutUnit + suffix;
+      return money(parts.first, locale: locale, short: short) + ' ' + separator + ' ' +
+          money(parts.last, locale: locale, short: short);
     }
-    final single = parseInteger(raw);
+    final single = parseInteger(normalized);
     return single == null ? '—' : money(single, locale: locale, short: short);
   }
 
