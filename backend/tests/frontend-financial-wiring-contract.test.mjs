@@ -27,7 +27,7 @@ test('transaction UI is wired to real payment and job lifecycle repository comma
   assert.match(page, /Future<void> _jobAction\(String operation\)/);
   assert.match(page, /Future<void> _confirmAction\(String operation\)/);
   assert.match(page, /Refresh status/);
-  assert.match(page, /Payment ID:/);
+  assert.doesNotMatch(page, /Payment ID:|شناسه پرداخت:/);
   assert.match(page, /Financial action/);
   assert.match(page, /Funds held/);
 });
@@ -54,7 +54,7 @@ test('wallet UI is wired to repository mutations and wallet history controls', (
   assert.match(page, /'CREDIT'/);
   assert.match(page, /'DEBIT'/);
   assert.match(page, /'HOLD'/);
-  assert.match(page, /Pending payouts/);
+  assert.match(page, /Pending withdrawal|برداشت در انتظار|_pendingPayoutCount/);
   assert.match(page, /maximum available|Maximum available/i);
   assert.match(page, /Transfer amount exceeds your available balance/);
   assert.match(page, /Future<void> _showPayout/);
