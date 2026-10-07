@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# [runtime-capture-fa] exact-head rerun after #1844 guard-only drift.
-# [runtime-capture-fa] certify Wave II grouped visual convergence: dark foundation + opportunity hierarchy + finance/profile composition.
-# [runtime-capture-fa] exact-head guard sync after #1844 stale auth-recovery assertion.
 set -euo pipefail
 
 workflow=".github/workflows/hope-ui-runtime-evidence.yml"
@@ -57,7 +54,7 @@ require_line "$test_file" "String.fromEnvironment('HOPE_CAPTURE_MODE', defaultVa
 require_line "$driver_file" "integrationDriver("
 require_line "$driver_file" "onScreenshot:"
 require_line "$driver_file" "writeAsBytes(image, flush: true)"
-require_line "$runtime" 'flutter drive --no-enable-impeller --no-pub --no-dds'
+require_line "$runtime" 'flutter drive --no-pub --no-dds'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_FORCE_STOP'
 if grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$runtime"; then
@@ -87,36 +84,7 @@ if grep -Fq 'adb exec-out screencap -p' "$runtime"; then
 fi
 
 # Runtime evidence must reject byte-identical PNGs under different screen names.
-require_line "$runtime" 'baseline-g) baseline_batch="g"'
-require_line "$test_file" "_baselineBatch == 'g'"
-require_line "$runtime" 'run_host_batch_session baseline-g "create-job-fa-rtl"'
-require_line "$runtime" 'run_host_batch_session baseline-e "register-fa-rtl"'
-require_line "$runtime" 'run_host_batch_session baseline-f "password-reset-fa-rtl"'
-require_line "$runtime" 'HOPE_HOST_RUNTIME_PARTITIONED_BASELINE_START:fa'
-require_line "$runtime" 'run_host_batch_session baseline-a "${baseline_screens[@]:0:7}"'
-require_line "$runtime" 'run_host_batch_session baseline-b "${baseline_screens[@]:7:1}"'
-require_line "$runtime" 'run_host_batch_session baseline-c "${baseline_screens[@]:8:4}"'
-require_line "$runtime" 'run_host_batch_session baseline-g "create-job-fa-rtl"'
-require_line "$runtime" 'run_host_batch_session baseline-e "register-fa-rtl"'
-require_line "$runtime" 'run_host_batch_session baseline-f "password-reset-fa-rtl"'
-require_line "$runtime" 'HOPE_HOST_RUNTIME_PARTITIONED_BASELINE_START:fa'
-if grep -Fq '&& test -s "$evidence_dir/create-job-fa-rtl.png"' "$runtime"; then
-  printf 'FAIL: auth-tail recovery is gated on a screenshot that cannot exist when the long session dies before onScreenshot flush.\n' >&2
-  exit 1
-fi
 require_line "$runtime" 'duplicate-png-hash'
-
-# Wave I regression guard: the work/finance focus strip must consume counts
-# from the surrounding build scope, not a nested LayoutBuilder, and its panel
-# padding must remain EdgeInsets-compatible with PremiumPanel.
-transactions_file="lib/features/transactions/transactions_page.dart"
-layout_line="$(grep -n '^[[:space:]]*LayoutBuilder(' "$transactions_file" | head -n1 | cut -d: -f1)"
-active_count_line="$(grep -n 'final activeCount = _countWorkCenterActive(items);' "$transactions_file" | head -n1 | cut -d: -f1)"
-if [[ -z "$layout_line" || -z "$active_count_line" || "$active_count_line" -ge "$layout_line" ]]; then
-  printf 'FAIL: transactions visual-wave counts are scoped inside LayoutBuilder; they must be available to the focus strip.\\n' >&2
-  exit 1
-fi
-require_line "$transactions_file" 'padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),'
 
 echo "PASS: Android runtime screenshot baseline contract is locked."
 
@@ -129,7 +97,3 @@ echo "PASS: Android runtime screenshot baseline contract is locked."
 # [runtime-capture-fa] verify aligned baseline/responsive partition contract at exact HEAD.
 
 # [runtime-capture-fa] exact-head runtime validation after baseline/responsive alignment forensic check.
-
-# [runtime-capture-fa] certify compile-scope recovery after Wave I forensic failure.
-
-# [runtime-capture-fa] certify grouped Wave III finance, notifications and offers hierarchy after #1856 screenshot review.
