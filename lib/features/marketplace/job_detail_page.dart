@@ -61,7 +61,7 @@ class _OpportunitySnapshot extends StatelessWidget {
     ];
 
     return PremiumPanel(
-      padding: const EdgeInsets.fromLTRB(15, 14, 15, 13),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       semanticLabel: _t(context, 'خلاصه سریع فرصت', 'Opportunity snapshot'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,7 +82,7 @@ class _OpportunitySnapshot extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth >= 720 ? 4 : constraints.maxWidth >= 360 ? 2 : 1;
-              const gap = 10.0;
+              const gap = 8.0;
               final width = columns == 1 ? constraints.maxWidth : (constraints.maxWidth - gap * (columns - 1)) / columns;
               return Wrap(
                 key: const ValueKey('opportunity-snapshot-facts'),
@@ -1674,13 +1674,13 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: compact ? 50 : 56,
-                        height: compact ? 50 : 56,
+                        width: compact ? 50 : 52,
+                        height: compact ? 50 : 52,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
                             SizedBox.square(dimension: compact ? 50 : 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.0, color: primary.withValues(alpha: .10))),
-                            SizedBox.square(dimension: compact ? 58 : 64, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: primary)),
+                            SizedBox.square(dimension: compact ? 50 : 52, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: primary)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
                               Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
@@ -1704,15 +1704,15 @@ class _MatchIntelligence extends StatelessWidget {
                   ],
                 ),
                 if (hasComponents) ...[
-                  SizedBox(height: compact ? 7 : 9),
+                  SizedBox(height: compact ? 6 : 7),
                   Text(_t(context, 'تجزیه تطبیق', 'Match breakdown'), style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
-                  SizedBox(height: compact ? 6 : 8),
+                  SizedBox(height: compact ? 5 : 6),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final columns = constraints.maxWidth >= 320 ? 2 : 1;
-                      const gap = 8.0;
+                      const gap = 6.0;
                       final width = columns == 2 ? (constraints.maxWidth - gap) / 2 : constraints.maxWidth;
-                      return Wrap(spacing: gap, runSpacing: 8, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
+                      return Wrap(spacing: gap, runSpacing: 6, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
                     },
                   ),
                 ],

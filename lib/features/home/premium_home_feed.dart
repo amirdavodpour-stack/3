@@ -722,7 +722,7 @@ child: Column(
               ),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: HopeV2Spacing.lg),
+            const SizedBox(height: HopeV2Spacing.md),
             OutlinedButton.icon(
               onPressed: widget.onOpenExplore,
               icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 18),
@@ -741,12 +741,12 @@ child: Column(
             domain: HopeProductDomain.discovery,
             title: _t(context, 'بهترین تطابق برای شما', 'Best match for you'),
           ),
-          const SizedBox(height: HopeV2Spacing.md),
+          const SizedBox(height: HopeV2Spacing.sm),
           OpportunityCard(
             job: recommended.first,
             variant: OpportunityCardVariant.featured,
           ),
-          const SizedBox(height: HopeV2Spacing.lg),
+          const SizedBox(height: HopeV2Spacing.md),
           if (recommended.length > 1)
             _section(
               context,
@@ -765,7 +765,7 @@ child: Column(
             ),
           ),
         ],
-        const SizedBox(height: HopeV2Spacing.lg),
+        const SizedBox(height: HopeV2Spacing.md),
         if (nearby.isNotEmpty)
           _section(
             context,
@@ -774,7 +774,7 @@ child: Column(
             widget.onOpenExplore,
           ),
         if (remaining.isNotEmpty) ...[
-          const SizedBox(height: HopeV2Spacing.lg),
+          const SizedBox(height: HopeV2Spacing.md),
           _section(
             context,
             _t(context, 'سایر فرصت‌ها', 'Other opportunities'),
@@ -784,7 +784,7 @@ child: Column(
         ],
         if (recommended.length == 1 && nearby.isEmpty && remaining.isEmpty)
           ...[
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.sm),
             _discoveryContinuation(context),
           ],
       ],
@@ -893,16 +893,16 @@ child: Column(
         return PremiumPanel(
           glass: false,
           highlight: true,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             PremiumSectionHeader(
               domain: HopeProductDomain.work,
               title: _t(context, 'اقدام بعدی شما', 'Your next action'),
               subtitle: _t(context, 'اولویت با کاری است که همین حالا فعال است.', 'Active work takes priority over discovery.'),
             ),
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.sm),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.sm),
             Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: HugeIcon(
                               icon: Directionality.of(context) == TextDirection.rtl
                                   ? HopeV2Icons.arrowLeft

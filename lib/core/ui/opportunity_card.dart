@@ -127,7 +127,7 @@ class OpportunityCard extends StatelessWidget {
                 : HopeV2Shadows.card,
           ),
           padding: EdgeInsets.all(
-            featured ? 11 : (featuredScan ? 11 : (compact ? 11 : 13)),
+            featured ? 10 : (featuredScan ? 10 : (compact ? 10 : 12)),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
@@ -171,8 +171,8 @@ class OpportunityCard extends StatelessWidget {
       child: SizedBox(
         key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 136 : 150)
-            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 76 : 92),
+            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 128 : 144)
+            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 72 : 88),
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -202,8 +202,8 @@ class OpportunityCard extends StatelessWidget {
               ),
             ),
             PositionedDirectional(
-              start: 10,
-              top: 10,
+              start: 8,
+              top: 8,
               child: PremiumTag(
                 icon: HopeV2Icons.featured,
                 label: percent == null
@@ -215,9 +215,9 @@ class OpportunityCard extends StatelessWidget {
             ),
             if (showTitle)
               PositionedDirectional(
-                start: 14,
-                end: 14,
-                bottom: 9,
+                start: 12,
+                end: 12,
+                bottom: 8,
                 child: Text(
                   title,
                   maxLines: 2,
@@ -370,8 +370,8 @@ class OpportunityCard extends StatelessWidget {
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 70,
-        height: 70,
+        width: 64,
+        height: 64,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
@@ -384,7 +384,7 @@ class OpportunityCard extends StatelessWidget {
     return Row(
       children: [
         media,
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,7 +409,7 @@ class OpportunityCard extends StatelessWidget {
           ),
         ),
         if (amount.isNotEmpty) ...[
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Flexible(
             child: Text(
               _formatAmount(amount, context),
@@ -462,7 +462,7 @@ class OpportunityCard extends StatelessWidget {
           score: score,
           featured: true,
         ),
-        const SizedBox(height: HopeV2Spacing.sm),
+        const SizedBox(height: 6),
         LayoutBuilder(
           builder: (context, constraints) {
             final narrowMeta = constraints.maxWidth < 280;
@@ -542,7 +542,7 @@ class OpportunityCard extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(height: HopeV2Spacing.sm),
+        const SizedBox(height: 6),
         Semantics(
           container: true,
           label: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium
@@ -694,7 +694,7 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 72.0 : 88.0;
+    final mediaSize = compactViewport ? 68.0 : 80.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
@@ -866,12 +866,12 @@ class OpportunityCard extends StatelessWidget {
           const SizedBox(height: HopeV2Spacing.sm),
           tags,
         ],
-        SizedBox(height: compactViewport ? 6 : HopeV2Spacing.sm),
+        SizedBox(height: compactViewport ? 4 : HopeV2Spacing.sm),
         ConstrainedBox(
           key: const ValueKey('opportunity-card-cta'),
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
           child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 2, 6),
+            padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 2, 4),
             child: Row(
               children: [
                 Expanded(

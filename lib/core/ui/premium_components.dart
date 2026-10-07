@@ -619,7 +619,7 @@ class PremiumDomainMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     final spec = domain.spec;
     final accent = spec.accent;
-    final size = compact ? 30.0 : 36.0;
+    final size = compact ? 28.0 : 36.0;
     return Semantics(
       container: true,
       label: spec.label(context),
@@ -738,7 +738,7 @@ class PremiumHeader extends StatelessWidget {
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 20 : 28,
+                  fontSize: compact ? 19 : 28,
                   height: 1.08,
                   letterSpacing: compact ? -.5 : -.75,
                 ),
@@ -786,7 +786,7 @@ class PremiumHeader extends StatelessWidget {
                       ),
                     ],
                   ),
-                if (eyebrow.trim().isNotEmpty) SizedBox(height: dense ? 4 : 6),
+                if (eyebrow.trim().isNotEmpty) SizedBox(height: dense ? 3 : 5),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1619,7 +1619,7 @@ class PremiumSectionHeader extends StatelessWidget {
                     child: Text(
                       title,
                       style: HopeV2Type.section(context).copyWith(
-                        fontSize: compact ? 17.5 : null,
+                        fontSize: compact ? 17 : null,
                       ),
                     ),
                   ),

@@ -129,8 +129,13 @@ void main() {
     expect(tester.widget<Text>(title).style?.fontSize, 19);
   });
 
-  testWidgets('premium panel default padding stays at the compact baseline',
+  testWidgets('compact PremiumPanel default padding stays at the density baseline',
       (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(brightness: Brightness.dark),
