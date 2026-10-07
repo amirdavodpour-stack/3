@@ -31,6 +31,18 @@ void main() {
       );
     });
 
+    test('rejects fractional TOMAN values and malformed money text', () {
+      expect(HopeDisplayFormatter.money(12.5, locale: 'fa'), '—');
+      expect(HopeDisplayFormatter.integer(12.5, locale: 'en'), '—');
+      expect(HopeDisplayFormatter.amount('2026-09-21T06:00:00Z', locale: 'fa'), '—');
+    });
+
+    test('formats only server-issued public references', () {
+      expect(HopeDisplayFormatter.humanRef('HP-1042', locale: 'fa'), '#HP-۱۰۴۲');
+      expect(HopeDisplayFormatter.humanRef('#hp-1042', locale: 'en'), '#HP-1042');
+      expect(HopeDisplayFormatter.humanRef('payment-runtime-1', locale: 'fa'), isNull);
+      expect(HopeDisplayFormatter.humanRef('550e8400-e29b-41d4-a716-446655440000', locale: 'en'), isNull);
+    });
     test('formats relative dates and uses Jalali for older Persian dates', () {
       final now = DateTime.parse('2026-10-07T12:00:00Z');
       expect(
