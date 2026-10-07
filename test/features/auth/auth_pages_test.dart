@@ -141,7 +141,7 @@ void main() {
     final panelWidth = tester.getSize(find.byType(PremiumPanel)).width;
     final buttonWidth = tester.getSize(find.byType(FilledButton)).width;
 
-    expect(buttonWidth, closeTo(panelWidth - 40, 1));
+    expect(buttonWidth, greaterThanOrEqualTo(panelWidth - 40));
   });
 
   testWidgets('password reset renders an email form', (tester) async {

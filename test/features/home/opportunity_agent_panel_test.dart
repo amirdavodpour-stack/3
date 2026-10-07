@@ -40,9 +40,9 @@ void main() {
 
     expect(find.text('Flutter developer'), findsOneWidget);
     expect(find.text('نیاز به تأیید شما'), findsOneWidget);
-    expect(find.text('بررسی فرصت'), findsOneWidget);
+    expect(find.text('آماده‌سازی درخواست'), findsOneWidget);
 
-    await tester.tap(find.text('بررسی فرصت'));
+    await tester.tap(find.text('آماده‌سازی درخواست'));
     expect(tapped, isTrue);
   });
 

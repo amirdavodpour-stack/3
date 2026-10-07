@@ -131,7 +131,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(HopeAsyncState), findsOneWidget);
-      expect(find.text('در حال بارگذاری درخواست‌ها'), findsOneWidget);
+      expect(find.text('Loading applications'), findsOneWidget);
 
       profile.initialLoad.complete(const []);
       await tester.pumpAndSettle();

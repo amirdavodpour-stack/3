@@ -739,7 +739,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
       body: PremiumPageFrame(
         page: HopePageId.opportunityDetail,
         maxWidth: 1180,
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 102),
+        padding: EdgeInsets.fromLTRB(
+          compactViewport ? 14 : 18,
+          8,
+          compactViewport ? 14 : 18,
+          102,
+        ),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [

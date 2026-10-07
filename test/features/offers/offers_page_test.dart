@@ -18,6 +18,7 @@ HopeOffer _offer({required String id, required String status}) => HopeOffer(
   status: status,
   createdAt: null,
   updatedAt: null,
+  jobTitle: id,
 );
 
 class _SequencedOfferRepository implements OfferRepository {

@@ -91,7 +91,7 @@ void main() {
 
   testWidgets('drawer opens for the guest shell', (tester) async {
     await _pump(tester);
-    final menu = find.bySemanticsLabel('App menu');
+    final menu = find.byKey(const ValueKey('hope-menu-button'));
     if (menu.evaluate().isNotEmpty) {
       await tester.tap(menu);
     } else {

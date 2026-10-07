@@ -132,7 +132,7 @@ void main() {
       (tester) async {
     final repo = _Transactions()..jobs = [];
     await _pump(tester, repo);
-    expect(find.textContaining('فعالیتی'), findsWidgets);
+    expect(find.text('هنوز کاری ثبت نشده است'), findsOneWidget);
   });
 
   testWidgets('activity metrics fit three compact cells on one narrow row',
@@ -143,13 +143,9 @@ void main() {
 
     final metrics = find.byKey(const ValueKey('work-center-metrics'));
     expect(metrics, findsOneWidget);
-    expect(
-      find.descendant(
-        of: metrics,
-        matching: find.byType(PremiumStatCard),
-      ),
-      findsNWidgets(3),
-    );
+    expect(find.text('همکاری‌ها'), findsOneWidget);
+    expect(find.text('در حال اجرا'), findsOneWidget);
+    expect(find.text('تسویه‌شده'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
     expect(find.text('فعال'), findsOneWidget);
     expect(tester.getSize(metrics).height, lessThan(120));

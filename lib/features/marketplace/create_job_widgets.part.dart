@@ -350,7 +350,7 @@ class _CreateJobForm extends StatelessWidget {
                 ),
               ];
 
-              if (constraints.maxWidth < 500) {
+              if (constraints.maxWidth < 360) {
                 return Column(
                   children: [
                     cards[0],

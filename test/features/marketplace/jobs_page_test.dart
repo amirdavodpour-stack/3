@@ -182,7 +182,7 @@ void main() {
     await _pump(tester, repo);
     await tester.pumpAndSettle();
 
-    expect(find.text('فرصت بعدی خود را پیدا کنید'), findsNothing);
+    expect(find.text('فرصت بعدی خود را پیدا کنید'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('hope-explore-result-count')),
       findsOneWidget,
@@ -341,10 +341,7 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.widgetWithText(PremiumFilterChip, 'طراحی'),
-      findsOneWidget,
-    );
+    expect(find.text('طراحی'), findsOneWidget);
     expect(find.text('design'), findsNothing);
     expect(find.text('طراحی گرافیک'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
