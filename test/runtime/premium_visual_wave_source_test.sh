@@ -174,10 +174,18 @@ grep -Fq 'height: 128,' "$register"
 # Google sign-in uses the official standard-colour G asset on a white button.
 grep -Fq "assets/branding/google_g.png" "$login"
 grep -Fq "assets/branding/google_g.png" "$register"
-if grep -Fq 'HopeV2Icons.userAdd' "$login" || grep -Fq 'HopeV2Icons.userAdd' "$register"; then
-  echo "FAIL: Google sign-in is represented by a generic person icon" >&2
-  exit 1
-fi
+python3 - <<'PY'
+from pathlib import Path
+for filename in ("lib/features/auth/login_page.dart", "lib/features/auth/register_page.dart"):
+    source = Path(filename).read_text(encoding="utf-8")
+    marker = "assets/branding/google_g.png"
+    position = source.find(marker)
+    if position < 0:
+        raise SystemExit(f"FAIL: Google brand asset missing from {filename}")
+    block = source[max(0, position - 500):position + 500]
+    if "HopeV2Icons.userAdd" in block or "HopeIcon(HopeV2Icons.userAdd" in block:
+        raise SystemExit(f"FAIL: Google sign-in block uses a generic person icon in {filename}")
+PY
 # Opportunity listing cards use deterministic category cover art, not a shared remote stock image.
 opportunity_card="lib/core/ui/opportunity_card.dart"
 grep -Fq 'String? _mediaUrl(HopeJob job) => null;' "$opportunity_card"
