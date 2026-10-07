@@ -355,7 +355,7 @@ class PremiumPageFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
-    final domainAccent = page?.spec.domain.spec.accent;
+    final domainAccent = page?.spec.domain.accent;
     final showDomainRail = size.width >= HopeV2Breakpoints.medium;
     final pageColor = HopeV2Surfaces.page(context);
 
