@@ -156,8 +156,22 @@ class _RegisterPageState extends State<RegisterPage> {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF1F1F1F),
+                                side: const BorderSide(color: Color(0xFFDADCE0)),
+                                minimumSize: const Size.fromHeight(48),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                               onPressed: loading ? null : submitGoogle,
-                              icon: const HopeIcon(HopeV2Icons.userAdd, size: 19),
+                              icon: Image.asset(
+                                'assets/branding/google_g.png',
+                                width: 20,
+                                height: 20,
+                                excludeFromSemantics: true,
+                              ),
                               label: Text(
                                 AppLocalizations.of(context).signInWithGoogle,
                               ),
