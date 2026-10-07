@@ -578,7 +578,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('1,500,000 – 2,500,000 تومان'), findsOneWidget);
+      expect(find.textContaining('۱٬۵۰۰٬۰۰۰ تومان تا ۲٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
       expect(find.text('تهران'), findsOneWidget);
       expect(
         tester.getSize(find.byType(OpportunityCard)).height,
