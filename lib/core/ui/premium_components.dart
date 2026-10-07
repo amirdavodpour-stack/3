@@ -527,7 +527,7 @@ class _PremiumQuickActionButton extends StatelessWidget {
             : Theme.of(context).colorScheme.onSurface)
         : Theme.of(context).colorScheme.onSurfaceVariant;
     final background = action.primary
-        ? accent.withValues(alpha: dark ? .80 : .12)
+        ? accent.withValues(alpha: dark ? .84 : .96)
         : (dark ? HopeV2Colors.panelSoftDark : HopeV2Colors.panelSoftLight)
             .withValues(alpha: dark ? .48 : .86);
 
