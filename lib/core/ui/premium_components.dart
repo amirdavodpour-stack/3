@@ -144,7 +144,7 @@ class _PremiumNavigationItem extends StatelessWidget {
               children: [
                 SizedBox(
                   width: HopeV2Touch.minimum,
-                  height: 34,
+                  height: 33,
                   child: Center(child: icon),
                 ),
                 const SizedBox(height: 1),
