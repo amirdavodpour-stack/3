@@ -165,3 +165,10 @@ if grep -Fq 'parts.add(item.category)' "$saved_searches"; then
 fi
 grep -Fq 'height: 128,' "$login"
 grep -Fq 'height: 128,' "$register"
+# Google sign-in uses the official standard-colour G asset on a white button.
+grep -Fq "assets/branding/google_g.png" "$login"
+grep -Fq "assets/branding/google_g.png" "$register"
+if grep -Fq 'HopeV2Icons.userAdd' "$login" || grep -Fq 'HopeV2Icons.userAdd' "$register"; then
+  echo "FAIL: Google sign-in is represented by a generic person icon" >&2
+  exit 1
+fi
