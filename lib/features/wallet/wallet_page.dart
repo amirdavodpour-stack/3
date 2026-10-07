@@ -435,9 +435,7 @@ class _WalletPageState extends State<WalletPage> {
               _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: _entryTypeLabel(item.entryType)),
               _DetailRow(label: _t('جهت', 'Direction'), value: _directionLabel(item.direction)),
               _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: _referenceTypeLabel(item.referenceType)),
-              if (item.referenceId != null && item.referenceId!.isNotEmpty)
-                _DetailRow(label: _t('شناسه مرجع', 'Reference ID'), value: item.referenceId!),
-              _DetailRow(label: _t('عملیات مالی', 'Financial operation'), value: item.financialOperationId),
+
               if (item.balanceAfter != null)
                 _DetailRow(label: _t('موجودی پس از تراکنش', 'Balance after'), value: _money(item.balanceAfter!)),
               _DetailRow(label: _t('زمان', 'Timestamp'), value: _date(item.createdAt)),
@@ -445,14 +443,6 @@ class _WalletPageState extends State<WalletPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _copyText(String value) async {
-    await Clipboard.setData(ClipboardData(text: value));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_t('شناسه کیف پول کپی شد.', 'Wallet ID copied.'))),
     );
   }
 
