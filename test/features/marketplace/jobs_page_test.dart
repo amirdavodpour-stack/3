@@ -218,7 +218,6 @@ void main() {
     final featuredRect = tester.getRect(featuredFinder);
 
     expect(filterRect.top, closeTo(searchRect.bottom + 10, 2));
-    expect(filterRect.bottom, lessThanOrEqualTo(searchRect.bottom + 2));
     // The refinement launcher is on the bottom row of the compact control band.
     expect(featuredRect.top - filterRect.bottom, lessThan(40));
     expect(tester.takeException(), isNull);
