@@ -1,3 +1,4 @@
+# Wave 1 static gate intentionally runs on every working-branch push so each visual batch has a fresh verification record.
 name: HOPE UI Wave 1 Static Verification
 
 on:
