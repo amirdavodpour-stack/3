@@ -43,6 +43,11 @@ class _AdminPageState extends State<AdminPage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 4, vsync: this);
+    _summary = Future.value(const HopeAdminSummary(values: {}));
+    _jobs = Future.value(const <HopeJob>[]);
+    _applications = Future.value(const <HopeApplication>[]);
+    _users = Future.value(const <HopeAdminUser>[]);
+    _audit = Future.value(const <HopeAdminAuditEvent>[]);
     _checkPanelAccess();
   }
 

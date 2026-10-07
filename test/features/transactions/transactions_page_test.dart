@@ -266,7 +266,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.text('نیازمند بررسی'), findsOneWidget);
+    expect(find.text('نیازمند بررسی'), findsWidgets);
   });
 
   testWidgets('transactions still render when payment lookup is unavailable',

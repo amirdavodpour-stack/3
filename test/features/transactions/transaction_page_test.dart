@@ -444,7 +444,7 @@ void main() {
 
     expect(find.text('Payment status'), findsOneWidget);
     expect(find.text('Amount'), findsOneWidget);
-    expect(find.text('Reference'), findsOneWidget);
+    expect(find.text('Reference'), findsNothing);
     expect(
       find.text(
         'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',

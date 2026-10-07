@@ -80,6 +80,7 @@ class PremiumPaymentSummary extends StatelessWidget {
     final status = _statusLabel(context);
     return Semantics(
       container: true,
+      excludeSemantics: true,
       label: _label(
         context,
         'وضعیت پرداخت: $status، مبلغ ${_money(context, amount)}',

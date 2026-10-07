@@ -142,19 +142,25 @@ Future<void> _tapFilter(
   WidgetTester tester,
   String label,
 ) async {
-  var tile = find.widgetWithText(ListTile, label);
-  if (tile.evaluate().isEmpty) {
+  var target = find.descendant(
+    of: find.byType(BottomSheet),
+    matching: find.text(label),
+  );
+  if (target.evaluate().isEmpty) {
     final launcher = find.byKey(
       const ValueKey('hope-opportunity-refinement-launcher'),
     );
     expect(launcher, findsOneWidget);
     await tester.tap(launcher);
     await tester.pumpAndSettle();
-    tile = find.widgetWithText(ListTile, label);
+    target = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.text(label),
+    );
   }
-  expect(tile, findsOneWidget);
-  await tester.ensureVisible(tile.first);
-  await tester.tap(tile.first);
+  expect(target, findsOneWidget);
+  await tester.ensureVisible(target);
+  await tester.tap(target);
 }
 void main() {
   testWidgets('jobs page requests categories and opportunities',

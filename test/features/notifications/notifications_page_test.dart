@@ -216,12 +216,13 @@ void main() {
 
     final refreshIndicator =
         tester.widget<RefreshIndicator>(find.byType(RefreshIndicator).first);
-    await refreshIndicator.onRefresh();
+    final firstRefresh = refreshIndicator.onRefresh();
     await tester.pump();
     expect(repo.listCalls, 2);
 
-    await refreshIndicator.onRefresh();
+    final secondRefresh = refreshIndicator.onRefresh();
     await tester.pumpAndSettle();
+    await secondRefresh;
 
     expect(repo.listCalls, 3);
     expect(find.text('Fresh notification'), findsOneWidget);
