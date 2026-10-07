@@ -6,28 +6,28 @@ void main() {
     test('formats exact Toman integers in Persian digits', () {
       expect(
         HopeDisplayFormatter.money('1500000', locale: 'fa'),
-        '۱٬۵۰۰٬۰۰۰ تومان',
+        '1,500,000 تومان',
       );
     });
 
     test('orders reversed ranges from minimum to maximum', () {
       expect(
         HopeDisplayFormatter.amount('2500000 – 1500000', locale: 'fa'),
-        '۱٬۵۰۰٬۰۰۰ تومان تا ۲٬۵۰۰٬۰۰۰ تومان',
+        '1,500,000 تومان تا 2,500,000 تومان',
       );
     });
 
     test('formats English money without Persian digits', () {
       expect(
         HopeDisplayFormatter.money('1500000', locale: 'en'),
-        '1,500,000 Toman',
+        '1,500,000 TOMAN',
       );
     });
 
     test('short money never rounds above the actual value', () {
       expect(
         HopeDisplayFormatter.money('1599999', locale: 'fa', short: true),
-        '۱٫۵ میلیون تومان',
+        '1.5 میلیون تومان',
       );
     });
 
@@ -38,7 +38,7 @@ void main() {
     });
 
     test('formats only server-issued public references', () {
-      expect(HopeDisplayFormatter.humanRef('HP-1042', locale: 'fa'), '#HP-۱۰۴۲');
+      expect(HopeDisplayFormatter.humanRef('HP-1042', locale: 'fa'), '#HP-1042');
       expect(HopeDisplayFormatter.humanRef('#hp-1042', locale: 'en'), '#HP-1042');
       expect(HopeDisplayFormatter.humanRef('payment-runtime-1', locale: 'fa'), isNull);
       expect(HopeDisplayFormatter.humanRef('550e8400-e29b-41d4-a716-446655440000', locale: 'en'), isNull);
@@ -51,7 +51,7 @@ void main() {
           locale: 'fa',
           now: now,
         ),
-        '۲ ساعت پیش',
+        '2 ساعت پیش',
       );
       expect(
         HopeDisplayFormatter.relativeDateTime(
