@@ -21,6 +21,7 @@ import '../../features/marketplace/create_job_page.dart';
 import '../marketplace/job.dart';
 import '../../features/marketplace/job_detail_page.dart';
 import '../marketplace/employer_candidate_matching_repository.dart';
+import '../marketplace/employer_candidate_matching_repository.dart';
 import '../../features/offers/offers_page.dart';
 import '../../features/notifications/notifications_page.dart';
 import '../../features/notifications/notification_devices_page.dart';
@@ -88,6 +89,14 @@ abstract final class HopeRoutes {
   /// Marketplace.
   static Route<JobDetailPage> jobDetail(HopeJob job) =>
       _page(JobDetailPage(job: job));
+  static Route<void> candidateMatches({
+    required Future<HopeEmployerCandidateMatchList> future,
+    required String jobTitle,
+  }) =>
+      _page(EmployerCandidateMatchesRoutePage(
+        future: future,
+        jobTitle: jobTitle,
+      ));
   static Route<void> candidateMatches({
     required Future<HopeEmployerCandidateMatchList> future,
     required String jobTitle,
