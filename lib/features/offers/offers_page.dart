@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import 'package:provider/provider.dart';
 import '../../core/marketplace/application.dart';
 import '../../core/marketplace/offer_repository.dart';
@@ -61,11 +61,10 @@ class _OffersPageState extends State<OffersPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _money(String value) {
-    final parsed = int.tryParse(value.trim());
-    if (parsed == null) return value;
-    return '${NumberFormat.decimalPattern('en_US').format(parsed)} ${_t('تومان', 'Toman')}';
-  }
+  String _money(String value) => HopeDisplayFormatter.money(
+        value,
+        locale: Localizations.localeOf(context).languageCode,
+      );
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
@@ -82,7 +81,7 @@ class _OffersPageState extends State<OffersPage> {
   Color _statusColor(BuildContext context, String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return AppColors.warning;
+        return Theme.of(context).colorScheme.primary;
       case 'ACCEPTED':
         return AppColors.success;
       case 'REJECTED':
@@ -197,33 +196,14 @@ class _OffersPageState extends State<OffersPage> {
               ),
               const SizedBox(height: 14),
               if (!_loading && _loadError == null && all.isNotEmpty) ...[
-                Row(
-                  children: [
-                    _offerMetric(
-                      context,
-                      label: _t('همه پیشنهادها', 'All offers'),
-                      value: '${all.length}',
-                      icon: HopeV2Icons.workshop,
-                    ),
-                    const SizedBox(width: 8),
-                    _offerMetric(
-                      context,
-                      label: _t('در انتظار', 'Pending'),
-                      value: '$pendingCount',
-                      valueColor: pendingCount > 0 ? AppColors.warning : null,
-                      icon: HopeV2Icons.pending,
-                    ),
-                    const SizedBox(width: 8),
-                    _offerMetric(
-                      context,
-                      label: _t('پذیرفته‌شده', 'Accepted'),
-                      value: '$acceptedCount',
-                      valueColor: acceptedCount > 0 ? AppColors.success : null,
-                      icon: HopeV2Icons.completed,
-                    ),
-                  ],
+                Text(
+                  all.length.toString() + _t(' پیشنهاد', ' offers'),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
               ],
               if (_loading && _items.isEmpty)
                 HopeAsyncState(
@@ -260,7 +240,11 @@ class _OffersPageState extends State<OffersPage> {
                         padding: const EdgeInsetsDirectional.only(end: 8),
                         child: PremiumFilterChip(
                           selected: _filter == x,
-                          label: x == 'ALL' ? _t('همه', 'All') : _statusLabel(x),
+                          label: x == 'ALL'
+                              ? _t('همه', 'All') + ' (' + all.length.toString() + ')'
+                              : _statusLabel(x) + ' (' +
+                                  all.where((o) => o.status.toUpperCase() == x).length.toString() +
+                                  ')',
                           color: x == 'ALL'
                               ? Theme.of(context).colorScheme.primary
                               : _statusColor(context, x),
@@ -302,10 +286,7 @@ class _OffersPageState extends State<OffersPage> {
             container: true,
             button: true,
             excludeSemantics: true,
-            label: _t(
-              'پیشنهاد ${o.id}، مبلغ ${_money(o.price)}، ${_statusLabel(o.status)}',
-              'Offer ${o.id}, amount ${_money(o.price)}, ${_statusLabel(o.status)}',
-            ),
+            label: _t('پیشنهاد همکاری', 'Work offer') + '، ' + _money(o.price) + '، ' + _statusLabel(o.status),
             onTap: () => _showDetails(o),
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
@@ -319,8 +300,8 @@ class _OffersPageState extends State<OffersPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          '${_t('مبلغ', 'Amount')}: ${_money(o.price)}',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          _t('پیشنهاد همکاری', 'Work offer'),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                         ),
                       ),
                       StatusPill(
@@ -338,23 +319,14 @@ class _OffersPageState extends State<OffersPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Text(
-                    '${_t('شناسه فرصت', 'Job')}: ${o.jobId}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    HopeDisplayFormatter.relativeDateTime(
+                          o.createdAt,
+                          locale: Localizations.localeOf(context).languageCode,
+                        ) ?? '',
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
-                  if (o.createdAt != null)
-                    Text(
-                      '${_t('ایجاد', 'Created')}: ${o.createdAt}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: Text(
-                      _t('برای جزئیات لمس کنید', 'Tap for details'),
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
                   ),
                 ],
               ),
