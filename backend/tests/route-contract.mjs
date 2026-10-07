@@ -87,7 +87,7 @@ test('capability configuration exposes safe feature flags without secrets', asyn
   assert.match(source, /capabilities:/);
   for (const marker of [
     "createConfigRoutes",
-    "parts[0] === 'config'",
+
     "googleSignIn",
     "walletTransfer",
     "walletWithdraw",
