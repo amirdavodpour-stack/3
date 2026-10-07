@@ -7,6 +7,10 @@ function walletFromRow(r) {
     id: r.id, userId: r.user_id, currency: r.currency,
     availableBalance: String(r.currency || INTERNAL_CURRENCY).toUpperCase() === 'TOMAN' ? String(r.available_balance ?? '0') : Number(r.available_balance),
     lockedBalance: String(r.currency || INTERNAL_CURRENCY).toUpperCase() === 'TOMAN' ? String(r.locked_balance ?? '0') : Number(r.locked_balance),
+    escrowBalance: String(r.escrow_balance ?? '0'),
+    pendingWithdrawalBalance: String(r.pending_withdrawal_balance ?? '0'),
+    otherLockedBalance: String(r.other_locked_balance ?? '0'),
+    totalBalance: String(r.total_balance ?? '0'),
     status: r.status, createdAt: r.created_at?.toISOString?.() ?? r.created_at, updatedAt: r.updated_at?.toISOString?.() ?? r.updated_at,
   };
 }
@@ -21,12 +25,37 @@ export async function getWalletById(walletId, currency = INTERNAL_CURRENCY) {
 }
 
 export async function getWalletForUser(userId) {
-  let { rows } = await requirePool().query(`SELECT id,user_id,currency,available_balance,locked_balance,status,created_at,updated_at FROM wallet_accounts WHERE user_id=$1 AND currency='TOMAN'`, [userId]);
+  let { rows } = await requirePool().query(`
+    SELECT id,user_id,currency,available_balance,locked_balance,status,created_at,updated_at
+      FROM wallet_accounts
+     WHERE user_id=$1 AND currency='TOMAN'
+  `, [userId]);
   if (!rows[0]) {
     await ensureWalletForUserPublic(userId);
-    ({ rows } = await requirePool().query(`SELECT id,user_id,currency,available_balance,locked_balance,status,created_at,updated_at FROM wallet_accounts WHERE user_id=$1 AND currency='TOMAN'`, [userId]));
+    ({ rows } = await requirePool().query(`
+      SELECT id,user_id,currency,available_balance,locked_balance,status,created_at,updated_at
+        FROM wallet_accounts
+       WHERE user_id=$1 AND currency='TOMAN'
+    `, [userId]));
   }
-  return walletFromRow(rows[0]);
+  const wallet = rows[0];
+  if (!wallet) return null;
+  const { rows: holds } = await requirePool().query(`
+    SELECT
+      COALESCE(SUM(amount) FILTER (WHERE hold_type='JOB_PAYMENT'),0) AS escrow_balance,
+      COALESCE(SUM(amount) FILTER (WHERE hold_type='PAYOUT_RESERVATION'),0) AS pending_withdrawal_balance,
+      COALESCE(SUM(amount) FILTER (WHERE hold_type NOT IN ('JOB_PAYMENT','PAYOUT_RESERVATION')),0) AS other_locked_balance
+    FROM wallet_holds
+    WHERE wallet_id=$1 AND status='ACTIVE'
+  `, [wallet.id]);
+  const hold = holds[0] || {};
+  return walletFromRow({
+    ...wallet,
+    escrow_balance: String(hold.escrow_balance ?? '0'),
+    pending_withdrawal_balance: String(hold.pending_withdrawal_balance ?? '0'),
+    other_locked_balance: String(hold.other_locked_balance ?? '0'),
+    total_balance: (BigInt(String(wallet.available_balance ?? '0')) + BigInt(String(wallet.locked_balance ?? '0'))).toString(),
+  });
 }
 
 export async function listWalletTransactions(userId, _currency = INTERNAL_CURRENCY, options = {}) {
