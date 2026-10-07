@@ -12,6 +12,7 @@ class FakeApiClient extends ApiClient {
   String? path;
   Object? body;
   bool? auth;
+  Map<String, String>? headers;
 
   @override
   Future<dynamic> request(
@@ -19,11 +20,13 @@ class FakeApiClient extends ApiClient {
     String path, {
     Object? body,
     bool auth = false,
+    Map<String, String>? headers,
   }) async {
     this.method = method;
     this.path = path;
     this.body = body;
     this.auth = auth;
+    this.headers = headers;
     return response;
   }
 }
@@ -31,16 +34,22 @@ class FakeApiClient extends ApiClient {
 void main() {
   test('ApiChatRepository sends an authenticated message and returns answer', () async {
     final api = FakeApiClient({
-      'data': {'answer': 'سلام'},
+      'id': 'message-1',
+      'conversationId': 'conversation-1',
+      'senderId': 'u1',
+      'senderName': 'Ali',
+      'body': 'سلام',
+      'createdAt': '2026-10-07T10:00:00Z',
     });
     final repository = ApiChatRepository(api);
 
-    final answer = await repository.sendMessage('hello');
+    final answer = await repository.sendMessage('conversation-1', 'hello');
 
-    expect(answer, 'سلام');
+    expect(answer.body, 'سلام');
     expect(api.method, 'POST');
-    expect(api.path, '/chat');
+    expect(api.path, '/messaging/conversations/conversation-1');
     expect(api.body, {'message': 'hello'});
+    expect(api.headers, isNull);
     expect(api.auth, isTrue);
   });
 

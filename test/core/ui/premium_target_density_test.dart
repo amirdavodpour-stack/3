@@ -59,11 +59,11 @@ void main() {
 
     const steps = [
       PremiumLifecycleStep(label: 'تأمین وجه', icon: Icons.account_balance_wallet, active: true),
-      PremiumLifecycleStep(label: 'در امانت', icon: Icons.lock_outline),
-      PremiumLifecycleStep(label: 'در حال انجام', icon: Icons.work_outline),
-      PremiumLifecycleStep(label: 'تحویل', icon: Icons.upload_outlined),
-      PremiumLifecycleStep(label: 'تأیید', icon: Icons.verified_outlined),
-      PremiumLifecycleStep(label: 'تسویه', icon: Icons.payments_outlined),
+      PremiumLifecycleStep(label: 'در امانت', icon: Icons.lock_outline, active: false),
+      PremiumLifecycleStep(label: 'در حال انجام', icon: Icons.work_outline, active: false),
+      PremiumLifecycleStep(label: 'تحویل', icon: Icons.upload_outlined, active: false),
+      PremiumLifecycleStep(label: 'تأیید', icon: Icons.verified_outlined, active: false),
+      PremiumLifecycleStep(label: 'تسویه', icon: Icons.payments_outlined, active: false),
     ];
 
     await tester.pumpWidget(

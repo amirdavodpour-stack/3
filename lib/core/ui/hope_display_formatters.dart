@@ -28,18 +28,13 @@ class HopeDisplayFormatter {
     final raw = value?.toString().trim();
     if (raw == null || raw.isEmpty) return null;
     final normalized = raw.startsWith('#') ? raw.substring(1) : raw;
-    if (!RegExp(r'^HP-\d{4,}$', caseSensitive: false).hasMatch(normalized)) {
-      return null;
-    }
-    return '#${localizeDigits(normalized.toUpperCase(), locale: locale)}';
-  }
-
-  static int? parseInteger(Object? value) {
+    if (!RegExp(r'^HP-\d{4,}
     if (value == null) return null;
     final normalized = _asciiDigits(value.toString()).trim().replaceAll(',', '').replaceAll('٬', '');
     if (!RegExp(r'^[+-]?\d+$').hasMatch(normalized)) return null;
     return int.tryParse(normalized);
   }
+
   static String integer(Object? value, {required String locale}) {
     final parsed = parseInteger(value);
     if (parsed == null) return '—';
@@ -48,7 +43,7 @@ class HopeDisplayFormatter {
 
   static String money(Object? value, {required String locale, bool short = false}) {
     final parsed = parseInteger(value);
-    if (parsed == null) return '—';
+    if (parsed == null) return value.toString();
     final fa = locale.toLowerCase().startsWith('fa');
     if (short) {
       final abs = parsed.abs();
@@ -123,11 +118,10 @@ class HopeDisplayFormatter {
     return (year: jy, month: jm, day: jd);
   }
 }
-, caseSensitive: false).hasMatch(normalized)) {
-      return null;
-    }
+, caseSensitive: false).hasMatch(normalized)) return null;
     return '#${localizeDigits(normalized.toUpperCase(), locale: locale)}';
   }
+
   static int? parseInteger(Object? value) {
     if (value == null) return null;
     final normalized = _asciiDigits(value.toString()).trim().replaceAll(',', '').replaceAll('٬', '');
@@ -137,7 +131,7 @@ class HopeDisplayFormatter {
 
   static String integer(Object? value, {required String locale}) {
     final parsed = parseInteger(value);
-    if (parsed == null) return '—';
+    if (parsed == null) return value.toString();
     return localizeDigits(NumberFormat.decimalPattern('en_US').format(parsed), locale: locale);
   }
 
@@ -168,7 +162,7 @@ class HopeDisplayFormatter {
           money(parts.last, locale: locale, short: short);
     }
     final single = parseInteger(raw);
-    return single == null ? '—' : money(single, locale: locale, short: short);
+    return single == null ? raw : money(single, locale: locale, short: short);
   }
 
   static String? relativeDateTime(String? raw, {required String locale, DateTime? now}) {
