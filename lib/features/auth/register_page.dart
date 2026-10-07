@@ -146,6 +146,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
                     icon: HopeV2Icons.userAdd,
                     height: 128,
+                    compactHero: true,
                   ),
                   const SizedBox(height: 12),
                   PremiumPanel(
