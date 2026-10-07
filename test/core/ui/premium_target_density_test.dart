@@ -92,4 +92,61 @@ void main() {
       lessThan(285),
     );
   });
+
+
+  testWidgets('dense header title uses the premium compact type scale',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: const Scaffold(
+          body: PremiumHeader(
+            dense: true,
+            eyebrow: 'کاوش',
+            title: 'فرصت بعدی خود را پیدا کنید',
+            subtitle: 'کار و مأموریت‌های متناسب با مسیر کاری شما.',
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final title = find.text('فرصت بعدی خود را پیدا کنید');
+    expect(title, findsOneWidget);
+    expect(tester.widget<Text>(title).style?.fontSize, 19);
+  });
+
+  testWidgets('premium panel default padding stays at the compact baseline',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: const Scaffold(
+          body: PremiumPanel(
+            child: SizedBox(width: 48, height: 48),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.getSize(find.byType(PremiumPanel)),
+      const Size(76, 76),
+    );
+  });
+
 }
