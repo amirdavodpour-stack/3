@@ -804,19 +804,19 @@ class _WalletPageState extends State<WalletPage> {
                   (
                     key: 'wallet-balance-metric-protected',
                     label: _t('در امانت HOPE', 'Held in HOPE escrow'),
-                    value: _money(wallet.lockedBalance),
+                    value: _money(wallet.escrowBalance),
                     emphasized: false,
                   ),
                   (
                     key: 'wallet-balance-metric-pending',
                     label: _t('برداشت در انتظار', 'Pending withdrawal'),
-                    value: _money(_pendingPayoutAmount),
+                    value: _money(wallet.pendingWithdrawalBalance),
                     emphasized: false,
                   ),
                   (
-                    key: 'wallet-balance-metric-requests',
-                    label: _t('درخواست‌های برداشت', 'Withdrawal requests'),
-                    value: '$_pendingPayoutCount',
+                    key: 'wallet-balance-metric-locked-other',
+                    label: _t('سایر مبالغ قفل‌شده', 'Other locked funds'),
+                    value: _money(wallet.otherLockedBalance),
                     emphasized: false,
                   ),
                 ];
@@ -909,15 +909,6 @@ class _WalletPageState extends State<WalletPage> {
         padding: EdgeInsets.all(compact ? 8 : 10),
         child: Row(
           children: [
-            if (_internalTopUpEnabled)
-              action(
-                icon: HopeV2Icons.add,
-                fa: 'شارژ',
-                en: 'Top up',
-                onPressed: canAct ? _openTopUp : null,
-                primary: false,
-              ),
-            if (_internalTopUpEnabled) const SizedBox(width: 8),
             if (_internalTopUpEnabled)
               action(
                 icon: HopeV2Icons.transferIn,
