@@ -179,8 +179,8 @@ class OpportunityCard extends StatelessWidget {
       child: SizedBox(
         key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 148 : 166)
-            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 88 : 104),
+            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 136 : 150)
+            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 76 : 92),
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -343,8 +343,8 @@ class OpportunityCard extends StatelessWidget {
           Align(
             alignment: AlignmentDirectional.center,
             child: Container(
-              width: 42,
-              height: 42,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: primary.withValues(alpha: .20),
@@ -362,7 +362,7 @@ class OpportunityCard extends StatelessWidget {
                 child: HopeIcon(
                   HopeV2Icons.featured,
                   color: Colors.white,
-                  size: 20,
+                  size: 18,
                   strokeWidth: 1.6,
                 ),
               ),
