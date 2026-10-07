@@ -1,0 +1,25 @@
+# HOPE Design System 2.0 — Decisions
+
+## DEC-001 — GitHub current-head truth supersedes stale checkpoint SHAs
+**Context:** Prior Notion checkpoints reference several candidate SHAs and branches. Live GitHub now reports `feat/google-sign-in-2026-09-20` at `d9eb4143c2622f85d33772aebf9bc351146e265e`, with runtime run #1901 green on that exact SHA. **Options:** continue from the old `e2e4fa1` checkpoint; use the divergent old wave branch; or branch from current feature HEAD. **Decision:** create an isolated Wave 1 execution branch from `d9eb4143...`. **Reason:** preserve current implementation truth and avoid mixing a divergent `feat/ui-v2-wave-1` branch (41 commits behind and diverged) into the execution.
+
+## DEC-002 — Main and Google Sign-In PR remain untouched
+**Context:** PR #20 is OPEN/UNMERGED against Main; Main is a protected project boundary. **Options:** stack the visual wave into PR #20; merge to Main; or open a separate wave PR against the current feature branch. **Decision:** preserve PR #20 and Main; make Wave 1 work on `feat/ui-v2-wave-1-execution-2026-10-07`, with its PR stacked against `feat/google-sign-in-2026-09-20`. **Reason:** isolate visual changes and preserve the user's explicit branch policy.
+
+## DEC-003 — Wallet balance semantics follow the ledger, not the mockup
+**Context:** `backend/src/repository/wallet.js` derives `totalBalance = available_balance + locked_balance`; active hold subcategories (`escrowBalance`, `pendingWithdrawalBalance`, `otherLockedBalance`) are breakdowns of locked funds, not additional total components. **Options:** add every row to the total (double-counts holds); show a ledger-style second total; or show total once and explain subcategories. **Decision:** use `total = available + locked`; render hold categories as subsets of locked, never sum them into total a second time. **Reason:** wallet holds are funded by moving amounts out of available and into locked; pending payout reservations are already deducted from available.
+
+## DEC-004 — Do not fabricate a human-readable reference
+**Context:** transaction detail currently renders the internal `payment.id`; the capability endpoint reports `humanReferences: false`. **Options:** display UUID/internal ID; derive a short suffix from a UUID without collision guarantees; or hide the identifier until the backend returns a stable human reference. **Decision:** hide internal IDs now; add a backend-backed stable reference in a later additive migration/endpoint. **Reason:** a display ref must be stable and collision-safe, not a UI-generated guess.
+
+## DEC-005 — Deposit stays hidden when the server capability is false
+**Context:** `GET /config/capabilities` computes `walletDeposit` from the internal top-up flag and environment; production disables user top-up by default. **Options:** expose a fake deposit flow; expose the internal sandbox operation as normal top-up; or hide it when the capability is false. **Decision:** hide Deposit unless the capability says it is enabled. **Reason:** no external payment provider exists in this phase, and no fake money movement is acceptable.
+
+## DEC-006 — Test fixtures must be explicit and visually realistic
+**Context:** runtime screenshot evidence uses fixture-backed Persian names and sample jobs, and Profile currently exposes `ali.test@hope.local`. **Options:** treat screenshots as production state; keep unmarked demo identities in shared UI code; or isolate fixtures to test-only builders and make their provenance explicit. **Decision:** keep all seeded records behind test/runtime fixture code and remove fixture identity from any production code path. **Reason:** test data is necessary for deterministic evidence but must never leak into real user state.
+
+## DEC-007 — Evidence scope is not equivalent to certification
+**Context:** run #1901 is green but contains only fa-RTL/dark screenshots and reports accessibility disabled. **Options:** call it certified because the workflow is green; or report a green runtime capture with incomplete acceptance coverage. **Decision:** record PASS only for the gates actually executed; visual/accessibility certification remains FAIL/NOT DONE until the full matrix is captured and reviewed. **Reason:** screenshot presence alone does not prove accessibility, responsiveness, theme/language parity, or absence of below-fold defects.
+
+## DEC-008 — Keep current manual Jalali formatter until package/API migration is tested
+**Context:** `HopeDisplayFormatter` already includes Jalali conversion and relative-time formatting, with a small existing test suite. Exa research found `shamsi_date` BSD-3-Clause, but current source/lockfile compatibility and maintenance activity still need a version-pinned check. **Options:** replace the conversion immediately; or first extend boundary/leap tests and verify the package against the locked SDK. **Decision:** do not swap the implementation during the initial defect pass; add coverage first, then decide based on verified package metadata and tests. **Reason:** avoid introducing date regressions while fixing visible formatting defects.
