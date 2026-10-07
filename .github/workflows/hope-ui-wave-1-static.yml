@@ -9,7 +9,7 @@ on:
       - feat/google-sign-in-2026-09-20
 
 concurrency:
-  group: hope-ui-wave-1-static-\${{ github.ref }}
+  group: hope-ui-wave-1-static-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
