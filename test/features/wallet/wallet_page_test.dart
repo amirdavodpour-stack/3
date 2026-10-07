@@ -61,6 +61,7 @@ class _FakeWallet implements WalletRepository {
             'amount': 500000,
             'currency': transactionCurrency,
             'referenceType': 'TRANSFER',
+            'referenceId': 'ref-1',
             'financialOperationId': 'op-1',
             'createdAt': '2026-09-21T00:00:00Z',
           }),
@@ -677,6 +678,8 @@ void main() {
     expect(find.text('CREDIT'), findsNothing);
     expect(find.text('Entry type'), findsOneWidget);
     expect(find.text('Reference type'), findsOneWidget);
+    expect(find.text('ref-1'), findsNothing);
+    expect(find.text('op-1'), findsNothing);
   });
 
   testWidgets('wallet does not expose raw unknown ledger entry types',
