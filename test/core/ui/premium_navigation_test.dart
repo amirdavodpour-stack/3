@@ -214,9 +214,9 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         home: const Scaffold(
-          body: const PremiumQuickActionStrip(
+          body: PremiumQuickActionStrip(
             title: 'Quick access',
-            actions: const [
+            actions: [
               PremiumQuickAction(
                 label: 'Applications',
                 icon: HopeV2Icons.mission,
