@@ -73,7 +73,7 @@ if grep -Fq 'PremiumStatCard(' "$transactions"; then
   exit 1
 fi
 grep -Fq 'final metricWidth = (constraints.maxWidth - 16) / 3;' "$transactions"
-grep -Fq 'fontSize: emphasized ? 14 : 11.5' "$wallet"
+grep -Fq 'fontSize: emphasized ? 14 : 12' "$wallet"
 grep -Fq 'border: emphasized' "$wallet"
 grep -Fq 'HopeV2Colors.primary.withValues(alpha: .30)' "$wallet"
 # Wave IV: Offers and Notifications must use calmer, more legible secondary-surface hierarchy.
