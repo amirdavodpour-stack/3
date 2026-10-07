@@ -8,14 +8,14 @@ import 'package:hope_mobile/features/home/opportunity_agent_panel.dart';
 
 void main() {
   testWidgets('shows the highest-priority action and approval boundary', (tester) async {
-    final state = const HopeOpportunityAgentState(
-      profileCompleteness: const HopeOpportunityAgentProfileCompleteness(
+    const state = HopeOpportunityAgentState(
+      profileCompleteness: HopeOpportunityAgentProfileCompleteness(
         score: 1,
         onboardingCompleted: true,
       ),
-      activity: const HopeOpportunityAgentActivity(),
-      approvalRequired: const ['PREPARE_APPLICATION'],
-      actions: const [
+      activity: HopeOpportunityAgentActivity(),
+      approvalRequired: ['PREPARE_APPLICATION'],
+      actions: [
         HopeOpportunityAgentAction(
           type: 'PREPARE_APPLICATION',
           title: 'Flutter developer',
