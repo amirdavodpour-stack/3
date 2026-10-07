@@ -15,6 +15,7 @@ import '../../core/ui/components.dart';
 import '../../core/ui/copy.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_signature_components.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/router/app_routes.dart';
@@ -51,6 +52,7 @@ class _WalletPageState extends State<WalletPage> {
   int _loadRequestId = 0;
   bool _actionBusy = false;
   String _historyFilter = 'ALL';
+  final _historyKey = GlobalKey();
 
   bool get _isEnglish => Localizations.localeOf(context).languageCode == 'en';
 
@@ -117,15 +119,15 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  String _money(int amount) => moneyLabel(context, amount);
+  String _money(int amount) => HopeDisplayFormatter.money(
+        amount,
+        locale: Localizations.localeOf(context).languageCode,
+      );
 
-
-  String _date(String? raw) {
-    if (raw == null || raw.isEmpty) return '';
-    final parsed = DateTime.tryParse(raw)?.toLocal();
-    if (parsed == null) return raw;
-    return '${parsed.year}/${parsed.month.toString().padLeft(2, '0')}/${parsed.day.toString().padLeft(2, '0')} · ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
-  }
+  String _date(String? raw) => HopeDisplayFormatter.relativeDateTime(
+        raw,
+        locale: Localizations.localeOf(context).languageCode,
+      ) ?? '';
 
   String _walletStatusLabel(String status) {
     switch (status.toUpperCase()) {
@@ -695,17 +697,15 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ),
               const SizedBox(height: 2),
-              FittedBox(
-                alignment: AlignmentDirectional.centerStart,
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: emphasized ? 14 : 11.5,
-                    fontWeight: FontWeight.w900,
-                  ),
+              Text(
+                value,
+                maxLines: 2,
+                softWrap: true,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: emphasized ? 14 : 12,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ],
@@ -770,18 +770,16 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
             SizedBox(height: compact ? 2 : 3),
-            FittedBox(
-              alignment: AlignmentDirectional.centerStart,
-              fit: BoxFit.scaleDown,
-              child: Text(
-                _money(wallet.totalBalance),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: compact ? 27 : 34,
-                  height: 1.0,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -.7,
-                ),
+            Text(
+              _money(wallet.totalBalance),
+              maxLines: 2,
+              softWrap: true,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: compact ? 26 : 34,
+                height: 1.02,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -.7,
               ),
             ),
             SizedBox(height: compact ? 5 : 6),
@@ -805,7 +803,7 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                   (
                     key: 'wallet-balance-metric-protected',
-                    label: _t('محافظت‌شده', 'Protected'),
+                    label: _t('در امانت HOPE', 'Held in HOPE escrow'),
                     value: _money(wallet.lockedBalance),
                     emphasized: false,
                   ),
@@ -920,19 +918,36 @@ class _WalletPageState extends State<WalletPage> {
                 primary: false,
               ),
             if (_internalTopUpEnabled) const SizedBox(width: 8),
-            action(
-              icon: HopeV2Icons.transferOut,
-              fa: 'انتقال',
-              en: 'Transfer',
-              onPressed: canAct ? _openTransfer : null,
-              primary: true,
-            ),
-            const SizedBox(width: 8),
+            if (_internalTopUpEnabled)
+              action(
+                icon: HopeV2Icons.transferIn,
+                fa: 'واریز',
+                en: 'Deposit',
+                onPressed: canAct ? _openTopUp : null,
+              ),
+            if (_internalTopUpEnabled) const SizedBox(width: 8),
             action(
               icon: HopeV2Icons.transferOut,
               fa: 'برداشت',
               en: 'Withdraw',
               onPressed: canAct ? _openWithdraw : null,
+              primary: true,
+            ),
+            const SizedBox(width: 8),
+            action(
+              icon: HopeV2Icons.completed,
+              fa: 'تاریخچه',
+              en: 'History',
+              onPressed: () {
+                final target = _historyKey.currentContext;
+                if (target != null) {
+                  Scrollable.ensureVisible(
+                    target,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                  );
+                }
+              },
             ),
           ],
         ),
@@ -988,20 +1003,40 @@ class _WalletPageState extends State<WalletPage> {
                         const SizedBox(height: 5),
                         PremiumTag(
                           icon: HopeV2Icons.secure,
-                          label: _t('دفترکل داخلی • تومان', 'Internal ledger • Toman'),
+                          label: _t('موجودی و تراکنش‌های تومانی', 'Toman balance and transactions'),
                           color: Theme.of(context).colorScheme.primary,
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 10),
-                  PremiumIconButton(
-                    icon: HopeV2Icons.insights,
-                    tooltip: _t('تحلیل مالی', 'Financial insights'),
-                    onPressed: () => Navigator.push(
-                      context,
-                      HopeRoutes.financialInsights(),
-                    ),
+                  PopupMenuButton<String>(
+                    tooltip: _t('اقدامات کیف پول', 'Wallet actions'),
+                    icon: const HopeIcon(HopeV2Icons.menu),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'transfer':
+                          if (canAct) _openTransfer();
+                          break;
+                        case 'insights':
+                          Navigator.push(
+                            context,
+                            HopeRoutes.financialInsights(),
+                          );
+                          break;
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'transfer',
+                        enabled: canAct,
+                        child: Text(_t('انتقال داخلی', 'Transfer')),
+                      ),
+                      PopupMenuItem(
+                        value: 'insights',
+                        child: Text(_t('تحلیل مالی', 'Financial insights')),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1094,12 +1129,15 @@ class _WalletPageState extends State<WalletPage> {
             ),
             ],
             SizedBox(height: compact ? 12 : 18),
-            PremiumSectionHeader(
-              domain: HopeProductDomain.finance,
-              title: _t('تاریخچه کیف پول', 'Wallet history'),
-              subtitle: _t(
-                'ثبت‌های مالی به ترتیب زمانی، با بارگذاری مرحله‌ای.',
-                'Financial entries in chronological order, loaded in pages.',
+            Container(
+              key: _historyKey,
+              child: PremiumSectionHeader(
+                domain: HopeProductDomain.finance,
+                title: _t('تاریخچه کیف پول', 'Wallet history'),
+                subtitle: _t(
+                  'ثبت‌های مالی به ترتیب زمانی، با بارگذاری مرحله‌ای.',
+                  'Financial entries in chronological order, loaded in pages.',
+                ),
               ),
             ),
             SizedBox(height: compact ? 8 : 12),
