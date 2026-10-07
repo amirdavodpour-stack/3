@@ -38,7 +38,7 @@
     <text x="34" y="244" fill="#A5ADBD" font-size="11" font-family="Inter">BUDGET · NO ELLIPSIS</text><text x="34" y="263" fill="#F8FAFC" font-size="16" font-weight="700" font-family="Inter">۱٬۵۰۰٬۰۰۰ تا ۲٬۵۰۰٬۰۰۰ تومان</text>
     <rect x="18" y="290" width="90" height="28" rx="14" fill="#6366F1" fill-opacity=".18" stroke="#818CF8"/><text x="63" y="308" text-anchor="middle" fill="#C7D2FE" font-size="11" font-family="Inter">Match 94%</text>
     <rect x="116" y="290" width="82" height="28" rx="14" fill="#FFFFFF" fill-opacity=".06" stroke="#FFFFFF" stroke-opacity=".1"/><text x="157" y="308" text-anchor="middle" fill="#F8FAFC" font-size="11" font-family="Inter">Remote</text>
-    <rect x="206" y="290" width="96" height="28" rx="14" fill="#FFFFFF" fill-opacity=".06" stroke="#FFFFFF" stroke-opacity=".1"/><text x="254" y="308" text-anchor="middle" fill="#F8FAFC" font-size="11" font-family="Inter">Verified only</text>
+    <rect x="206" y="290" width="96" height="28" rx="14" fill="#FFFFFF" fill-opacity=".06" stroke="#FFFFFF" stroke-opacity=".1"/><text x="254" y="308" text-anchor="middle" fill="#F8FAFC" font-size="11" font-family="Inter">Skills</text>
     <text x="20" y="356" fill="#A5ADBD" font-family="Inter" font-size="12">One tap target · max 3 chips</text>
     <rect x="18" y="374" width="304" height="54" rx="14" fill="#4F46E5"/><text x="170" y="407" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700" font-family="Inter">View opportunity</text>
   </g>
