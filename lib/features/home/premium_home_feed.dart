@@ -195,11 +195,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     final safeName = displayName.trim().isEmpty
         ? _t(context, 'شما', 'you')
         : displayName.trim();
-    final greeting = _t(
-      context,
-      'عصر بخیر، $safeName',
-      'Good evening, $safeName',
-    );
+    final identityLabel = safeName;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
@@ -247,7 +243,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            greeting,
+                            identityLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(

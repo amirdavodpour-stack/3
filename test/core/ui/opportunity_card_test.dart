@@ -71,6 +71,51 @@ void main() {
     );
   });
 
+  testWidgets('featured opportunity renders real media from the opportunity payload',
+      (tester) async {
+    const imageUrl = 'https://example.com/editorial-real.jpg';
+    final job = HopeJob.fromMap({
+      'id': 'job-real-media',
+      'title': 'فرصت با تصویر واقعی',
+      'description': 'Real media contract.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'kind': 'MISSION',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'recommendationScore': 0.94,
+      'imageUrl': imageUrl,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(body: OpportunityCard(
+          job: job,
+          variant: OpportunityCardVariant.featured,
+        )),
+      ),
+    );
+    await tester.pump();
+
+    final image = tester.widget<Image>(
+      find.byKey(const ValueKey('opportunity-media-image')),
+    );
+    expect(image.image, isA<NetworkImage>());
+    expect((image.image as NetworkImage).url, imageUrl);
+  });
+
   testWidgets('featured opportunity media header gets an editorial focal height on mobile',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);

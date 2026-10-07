@@ -168,6 +168,16 @@ Future<_HomeHarness> _host(
 void _noop() {}
 
 void main() {
+  testWidgets('home identity header is neutral rather than time-based',
+      (tester) async {
+    final harness = await _host(_SequencedMarketplaceRepository(), authenticated: true);
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('Good evening, Ali'), findsNothing);
+  });
+
   testWidgets('single recommendation does not reserve an empty matches section',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();

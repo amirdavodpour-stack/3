@@ -149,8 +149,39 @@ class OpportunityCard extends StatelessWidget {
     );
   }
 
-  // Listing cards use category illustration art; real media belongs on detail pages.
-  String? _mediaUrl(HopeJob job) => null;
+  // Listing cards should use real opportunity media when the payload provides it.
+  // The deterministic category illustration remains the fallback when no usable media exists.
+  String? _mediaUrl(HopeJob job) {
+    final candidates = <dynamic>[
+      job.raw['imageUrl'],
+      job.raw['image_url'],
+      job.raw['coverImageUrl'],
+      job.raw['heroImageUrl'],
+      job.raw['thumbnailUrl'],
+      job.raw['mediaUrl'],
+      job.raw['media_url'],
+    ];
+    for (final candidate in candidates) {
+      if (candidate is String && candidate.trim().isNotEmpty) {
+        final value = candidate.trim();
+        if (Uri.tryParse(value)?.hasScheme == true) return value;
+      }
+    }
+    final media = job.raw['media'];
+    if (media is List) {
+      for (final item in media) {
+        if (item is! Map) continue;
+        for (final key in const ['url', 'src', 'imageUrl', 'image_url']) {
+          final candidate = item[key];
+          if (candidate is String && candidate.trim().isNotEmpty) {
+            final value = candidate.trim();
+            if (Uri.tryParse(value)?.hasScheme == true) return value;
+          }
+        }
+      }
+    }
+    return null;
+  }
 
   // Premium runtime certification: featured opportunity bloom is restrained.
   // Runtime certification: featured card glow is intentionally restrained.
@@ -180,6 +211,7 @@ class OpportunityCard extends StatelessWidget {
             if (mediaUrl != null)
               Image.network(
                 mediaUrl,
+                key: const ValueKey('opportunity-media-image'),
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
               )
