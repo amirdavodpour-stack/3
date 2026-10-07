@@ -1,5 +1,6 @@
 fi
 grep -Fq "fontSize: 11.5" "$premium"
+grep -Fq "height: 33" "$premium"
 grep -Fq "fontSize: compact ? 20 : 28" "$premium"
 grep -Fq "fontSize: dense ? 21 : 24" "$premium"
 grep -Fq "barHeight = 61.0" "lib/core/theme/hope_v2_design.dart"
