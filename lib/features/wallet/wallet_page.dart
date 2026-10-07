@@ -117,10 +117,8 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  String _money(int amount) => HopeDisplayFormatter.money(
-        amount,
-        locale: Localizations.localeOf(context).languageCode,
-      );
+  String _money(int amount) =>
+      '${HopeDisplayFormatter.integer(amount, locale: 'en')} ${_t('تومان', 'Toman')}';
 
   String _date(String? raw) => HopeDisplayFormatter.relativeDateTime(
         raw,
@@ -804,7 +802,7 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                   (
                     key: 'wallet-balance-metric-locked-other',
-                    label: _t('سایر مبالغ قفل‌شده', 'Other locked funds'),
+                    label: _t('قفل‌شده', 'Locked funds'),
                     value: _money(wallet.otherLockedBalance),
                     emphasized: false,
                   ),
