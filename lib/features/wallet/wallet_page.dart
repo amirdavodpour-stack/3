@@ -948,75 +948,41 @@ class _WalletPageState extends State<WalletPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            Container(
-              key: const ValueKey('wallet-finance-header'),
-              constraints: BoxConstraints(minHeight: compact ? 48 : 64),
-              padding: const EdgeInsetsDirectional.fromSTEB(4, 1, 4, 3),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _t('کیف پول', 'WALLET'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: .7,
-                              ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _t('کیف پول داخلی HOPE', 'HOPE internal wallet'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                fontSize: compact ? 18 : null,
-                                letterSpacing: compact ? -.3 : null,
-                              ),
-                        ),
-                        const SizedBox(height: 5),
-                        PremiumTag(
-                          icon: HopeV2Icons.secure,
-                          label: _t('موجودی و تراکنش‌های تومانی', 'Toman balance and transactions'),
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ],
-                    ),
+            PremiumHeader(
+              dense: true,
+              page: HopePageId.wallet,
+              domain: HopeProductDomain.finance,
+              eyebrow: _t('کیف پول', 'WALLET'),
+              title: _t('کیف پول داخلی HOPE', 'HOPE internal wallet'),
+              subtitle: _t(
+                'موجودی و تراکنش‌های تومانی',
+                'Toman balance and transactions',
+              ),
+              trailing: PopupMenuButton<String>(
+                tooltip: _t('اقدامات کیف پول', 'Wallet actions'),
+                icon: const HopeIcon(HopeV2Icons.menu),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'transfer':
+                      if (canAct) _openTransfer();
+                      break;
+                    case 'insights':
+                      Navigator.push(
+                        context,
+                        HopeRoutes.financialInsights(),
+                      );
+                      break;
+                  }
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'transfer',
+                    enabled: canAct,
+                    child: Text(_t('انتقال داخلی', 'Transfer')),
                   ),
-                  const SizedBox(width: 10),
-                  PopupMenuButton<String>(
-                    tooltip: _t('اقدامات کیف پول', 'Wallet actions'),
-                    icon: const HopeIcon(HopeV2Icons.menu),
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'transfer':
-                          if (canAct) _openTransfer();
-                          break;
-                        case 'insights':
-                          Navigator.push(
-                            context,
-                            HopeRoutes.financialInsights(),
-                          );
-                          break;
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      PopupMenuItem(
-                        value: 'transfer',
-                        enabled: canAct,
-                        child: Text(_t('انتقال داخلی', 'Transfer')),
-                      ),
-                      PopupMenuItem(
-                        value: 'insights',
-                        child: Text(_t('تحلیل مالی', 'Financial insights')),
-                      ),
-                    ],
+                  PopupMenuItem(
+                    value: 'insights',
+                    child: Text(_t('تحلیل مالی', 'Financial insights')),
                   ),
                 ],
               ),

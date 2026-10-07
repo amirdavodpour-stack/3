@@ -41,6 +41,7 @@ class PremiumLifecycle extends StatelessWidget {
       semanticLabel: title,
       padding: EdgeInsets.all(compact ? HopeV2Spacing.md : HopeV2Spacing.lg),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (title != null) ...[

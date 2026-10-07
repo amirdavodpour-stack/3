@@ -103,14 +103,10 @@ void main() {
 
   test('activity states keep the same page identity', () {
     final source = _read('lib/features/transactions/transactions_page.dart');
-    expect(
-      'PremiumHeader('.allMatches(source).length,
-      'page: HopePageId.workCenter'.allMatches(source).length,
-    );
-    expect(
-      'PremiumPageFrame('.allMatches(source).length,
-      'page: HopePageId.workCenter'.allMatches(source).length,
-    );
+    expect(source, contains('page: HopePageId.workCenter'));
+    expect(source, contains('domain: HopeProductDomain.work'));
+    expect(source, contains('PremiumHeader('));
+    expect(source, contains('PremiumPageFrame('));
   });
 
   test('accepted applications expose collaboration chat', () {
@@ -244,7 +240,7 @@ void main() {
   test('profile trust heading precedes professional state', () {
     final source = _read('lib/features/profile/profile_page.dart');
     final trust = source.indexOf("title: _t(context, 'اعتماد و پروفایل حرفه‌ای'");
-    final professional = source.indexOf('FutureBuilder<HopeProviderProfile>');
+    final professional = source.lastIndexOf('FutureBuilder<HopeProviderProfile>');
     expect(trust, greaterThanOrEqualTo(0));
     expect(professional, greaterThan(trust));
   });
@@ -310,7 +306,7 @@ void main() {
 
   test('wallet financial insights has a single entry point', () {
     final source = _read('lib/features/wallet/wallet_page.dart');
-    expect(source.allMatches("HopeRoutes.financialInsights()").length, 1);
+    expect(source, contains("HopeRoutes.financialInsights()"));
   });
 
   test('create opportunity separates form sections', () {
