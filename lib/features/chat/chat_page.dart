@@ -167,6 +167,11 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     final conversation = _thread?.conversation;
     final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final pageId = widget.adminRoom
+        ? HopePageId.adminChat
+        : (widget.jobId?.trim().isNotEmpty == true
+            ? HopePageId.jobChat
+            : HopePageId.chat);
     final currentUserId =
         context.read<AuthController?>()?.user?['id']?.toString();
 
@@ -191,9 +196,7 @@ class _ChatPageState extends State<ChatPage> {
             child: Column(
               children: [
                 PremiumHeader(
-                  page: widget.adminRoom
-                      ? HopePageId.adminChat
-                      : HopePageId.jobChat,
+                  page: pageId,
                   domain: widget.adminRoom
                       ? HopeProductDomain.control
                       : HopeProductDomain.collaboration,
