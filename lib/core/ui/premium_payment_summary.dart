@@ -93,7 +93,6 @@ class PremiumPaymentSummary extends StatelessWidget {
           'HOLD_PENDING',
           'RELEASE_PENDING',
         }.contains(payment.status),
-        semanticLabel: _label(context, 'جزئیات پرداخت، $status', 'Payment details, $status'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
