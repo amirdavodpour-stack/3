@@ -896,41 +896,38 @@ class OpportunityCard extends StatelessWidget {
           tags,
         ],
         SizedBox(height: compactViewport ? 6 : HopeV2Spacing.sm),
-        Container(
+        ConstrainedBox(
           key: const ValueKey('opportunity-card-cta'),
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-          padding: const EdgeInsetsDirectional.fromSTEB(10, 7, 8, 7),
-          decoration: BoxDecoration(
-            color: primary.withValues(alpha: .055),
-            borderRadius: BorderRadius.circular(HopeV2Radii.button),
-            border: Border.all(color: primary.withValues(alpha: .12)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  compactViewport
-                      ? _t(context, 'مشاهده جزئیات', 'View details')
-                      : (job.isMission
-                          ? copy.copy_view_and_act_on_mission
-                          : copy.copy_view_details_and_act),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: primary,
-                    fontWeight: FontWeight.w900,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 2, 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    compactViewport
+                        ? _t(context, 'مشاهده جزئیات', 'View details')
+                        : (job.isMission
+                            ? copy.copy_view_and_act_on_mission
+                            : copy.copy_view_details_and_act),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: primary,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-              HugeIcon(
-                icon: Directionality.of(context) == ui.TextDirection.rtl
-                    ? HopeV2Icons.arrowLeft
-                    : HopeV2Icons.arrowRight,
-                size: 19,
-                color: primary,
-                strokeWidth: 1.9,
-              ),
-            ],
+                HugeIcon(
+                  icon: Directionality.of(context) == ui.TextDirection.rtl
+                      ? HopeV2Icons.arrowLeft
+                      : HopeV2Icons.arrowRight,
+                  size: 19,
+                  color: primary,
+                  strokeWidth: 1.9,
+                ),
+              ],
+            ),
           ),
         ),
       ],
