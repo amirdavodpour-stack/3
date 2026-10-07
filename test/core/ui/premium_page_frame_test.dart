@@ -91,7 +91,7 @@ void main() {
         ),
       );
       expect(canvasMaterial.color, isNotNull);
-      expect(canvasMaterial.color!.alpha, 255);
+      expect((canvasMaterial.color!.a * 255.0).round().clamp(0, 255), 255);
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
@@ -125,7 +125,7 @@ void main() {
         ),
       );
       expect(canvasMaterial.color, isNotNull);
-      expect(canvasMaterial.color!.alpha, 255);
+      expect((canvasMaterial.color!.a * 255.0).round().clamp(0, 255), 255);
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
