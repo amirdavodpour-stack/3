@@ -144,6 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
                 height: 128,
+                    compactHero: true,
               ),
               const SizedBox(height: 10),
               AnimatedEntrance(
