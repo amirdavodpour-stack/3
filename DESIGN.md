@@ -121,6 +121,14 @@ The premium reconstruction borrows principles, not assets or copied screens:
 - Expressive glow is concentrated in hero/opportunity surfaces rather than applied across every card or the whole page.
 
 
+## Visual Wave 3 — 2026-10-08
+
+Wave 3 is the larger composition and hierarchy convergence pass. It is informed by the exact-head rendered evidence from Run #1971 plus current marketplace/fintech UX research: marketplace cards benefit from high-signal information hierarchy with fewer containers, while financial interfaces should make balance, recent activity, amount, status, and recovery legible without hiding critical state behind navigation. The implementation therefore changes shared primitives and several flagship surfaces together rather than adding isolated screen chrome.
+
+Scope: flat command-style quick actions; genuinely quiet secondary panels; product-owned search field chrome; ledger-style wallet submetrics with a single focal balance; compact wallet command rail; flat work-center metrics; lifecycle/payment summaries treated as sub-sections rather than cards-within-cards; and Home ordering of opportunity → active work → lightweight pulse → secondary destinations.
+
+The design objective is **density without dashboard sameness**: fewer competing rectangles, stronger primary decisions, clearer state/value hierarchy, and reusable system behavior across marketplace, work, and finance surfaces.
+
 ## Visual Wave 2 — 2026-10-08
 
 The next grouped visual wave is driven by Run #1971 / exact-head screenshot review. The dominant drift is systemic: too many similarly-weighted containers, low-salience navigation selection, tiny metadata/tag typography, and decorative fallback media competing with real opportunity imagery. Wave 2 therefore updates the shared visual system rather than patching one screen: opaque layered panels with quieter shadows, a clearer floating mobile dock with a contained active state, stronger compact editorial header scale, more legible tags, disciplined domain markers, and restrained category fallback media. Home Pulse is intentionally demoted to a quiet support rail so the featured opportunity remains the primary work decision. Real media remains preferred whenever payload data supplies it.

@@ -104,6 +104,36 @@ void main() {
     expect(decoration.color, HopeV2Colors.panelDark);
   });
 
+  testWidgets('quick action strip uses flat command controls without a wrapper panel',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: PremiumQuickActionStrip(
+            title: 'Quick access',
+            actions: [
+              PremiumQuickAction(
+                label: 'Applications',
+                icon: HopeV2Icons.mission,
+                primary: true,
+              ),
+              PremiumQuickAction(
+                label: 'Offers',
+                icon: HopeV2Icons.featured,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(PremiumQuickActionStrip), findsOneWidget);
+    expect(find.byType(PremiumPanel), findsNothing);
+    expect(find.text('Applications'), findsOneWidget);
+    expect(find.text('Offers'), findsOneWidget);
+  });
+
   testWidgets('highlighted premium panels expose a restrained gradient layer',
       (tester) async {
     await tester.pumpWidget(

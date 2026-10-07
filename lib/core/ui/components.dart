@@ -608,7 +608,41 @@ class _SearchFieldState extends State<SearchField> {
       },
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
-        prefixIcon: const HopeIcon(HopeV2Icons.search, size: 21, color: HopeV2Colors.muted, strokeWidth: 1.9),
+        filled: true,
+        fillColor: HopeV2Surfaces.input(context),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        prefixIcon: const HopeIcon(
+          HopeV2Icons.search,
+          size: 21,
+          color: HopeV2Colors.muted,
+          strokeWidth: 1.9,
+        ),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 52,
+          minHeight: HopeV2Touch.minimum,
+        ),
+        hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: HopeV2Colors.darkMuted,
+            ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.xl),
+          borderSide: BorderSide(
+            color: HopeV2Surfaces.controlBorder(context),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.xl),
+          borderSide: BorderSide(
+            color: HopeV2Surfaces.controlBorder(context).withValues(alpha: .72),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.xl),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: .65),
+            width: 1.4,
+          ),
+        ),
         hintText: resolvedHint,
         suffixIcon: hasQuery || widget.onFilter != null
             ? Row(

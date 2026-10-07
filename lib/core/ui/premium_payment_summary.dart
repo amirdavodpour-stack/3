@@ -87,8 +87,9 @@ class PremiumPaymentSummary extends StatelessWidget {
         'Payment status: $status, amount ${_money(context, amount)}',
       ),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(HopeV2Spacing.lg),
-        highlight: const {
+        quiet: true,
+        padding: const EdgeInsets.fromLTRB(0, 6, 0, 4),
+        highlight: false,
           'HELD',
           'RELEASED',
           'HOLD_PENDING',

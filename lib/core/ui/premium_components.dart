@@ -508,6 +508,83 @@ class PremiumQuickAction {
   final String? semanticLabel;
 }
 
+class _PremiumQuickActionButton extends StatelessWidget {
+  const _PremiumQuickActionButton({
+    required this.action,
+    required this.accent,
+  });
+
+  final PremiumQuickAction action;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final enabled = action.onPressed != null;
+    final foreground = enabled
+        ? (action.primary
+            ? Colors.white
+            : Theme.of(context).colorScheme.onSurface)
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    final background = action.primary
+        ? accent.withValues(alpha: dark ? .80 : .12)
+        : (dark ? HopeV2Colors.panelSoftDark : HopeV2Colors.panelSoftLight)
+            .withValues(alpha: dark ? .48 : .86);
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: action.semanticLabel ?? action.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? action.onPressed : null,
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          child: Ink(
+            constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
+              border: Border.all(
+                color: action.primary
+                    ? accent.withValues(alpha: dark ? .28 : .20)
+                    : HopeV2Surfaces.border(context).withValues(alpha: .55),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HopeIcon(
+                  action.icon,
+                  size: 18,
+                  color: action.primary ? foreground : accent,
+                  strokeWidth: 1.9,
+                ),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    action.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: 12,
+                      height: 1.05,
+                      fontWeight:
+                          action.primary ? FontWeight.w900 : FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumQuickActionStrip extends StatelessWidget {
   const PremiumQuickActionStrip({
     super.key,
@@ -531,15 +608,13 @@ class PremiumQuickActionStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (actions.isEmpty) return const SizedBox.shrink();
-    final resolvedDomain =
-        domain ?? page?.spec.domain;
-    final accent = resolvedDomain?.spec.accent ??
-        Theme.of(context).colorScheme.primary;
-    return PremiumPanel(
-      glass: glass,
-      quiet: quiet,
-      padding: const EdgeInsets.all(HopeV2Spacing.md),
-      semanticLabel: title,
+    final resolvedDomain = domain ?? page?.spec.domain;
+    final accent =
+        resolvedDomain?.spec.accent ?? Theme.of(context).colorScheme.primary;
+
+    return Semantics(
+      container: true,
+      label: title,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -560,50 +635,26 @@ class PremiumQuickActionStrip extends StatelessWidget {
               ),
             ],
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
+          if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+            const SizedBox(height: 3),
             Text(
               subtitle!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
           const SizedBox(height: HopeV2Spacing.sm),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final twoColumns = constraints.maxWidth >= 360;
-              final width = twoColumns
-                  ? (constraints.maxWidth - HopeV2Spacing.sm) / 2
-                  : constraints.maxWidth;
-              return Wrap(
-                spacing: HopeV2Spacing.sm,
-                runSpacing: HopeV2Spacing.sm,
-                children: [
-                  for (final action in actions)
-                    SizedBox(
-                      width: width,
-                      child: action.primary
-                          ? FilledButton.icon(
-                              onPressed: action.onPressed,
-                              icon: HopeIcon(action.icon, size: 18),
-                              label: Text(
-                                action.label,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            )
-                          : OutlinedButton.icon(
-                              onPressed: action.onPressed,
-                              icon: HopeIcon(action.icon, size: 18),
-                              label: Text(
-                                action.label,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                    ),
-                ],
-              );
-            },
+          Wrap(
+            spacing: HopeV2Spacing.sm,
+            runSpacing: HopeV2Spacing.sm,
+            children: [
+              for (final action in actions)
+                _PremiumQuickActionButton(
+                  action: action,
+                  accent: accent,
+                ),
+            ],
           ),
         ],
       ),
@@ -884,7 +935,7 @@ class PremiumPanel extends StatelessWidget {
         ? (glass
             ? HopeV2Colors.panelSoftDark
             : (quiet
-                ? HopeV2Colors.panelSoftDark.withValues(alpha: .22)
+                ? HopeV2Colors.panelSoftDark
                 : HopeV2Colors.panelDark))
         : (glass
             ? HopeV2Colors.panelSoftLight
@@ -913,14 +964,16 @@ class PremiumPanel extends StatelessWidget {
     final panel = Container(
       padding: effectivePadding,
       decoration: BoxDecoration(
-        color: highlight ? null : (glass ? panelFill : HopeV2Surfaces.panel(context)),
+        color: highlight
+            ? null
+            : quiet
+                ? Colors.transparent
+                : (glass ? panelFill : HopeV2Surfaces.panel(context)),
         gradient: gradient,
         borderRadius: BorderRadius.circular(quiet ? HopeV2Radii.md : radius),
         border: Border.all(
           color: quiet
-              ? (dark
-                  ? Colors.white.withValues(alpha: .025)
-                  : HopeV2Surfaces.border(context).withValues(alpha: .42))
+              ? Colors.transparent
               : highlight
                   ? scheme.primary.withValues(alpha: dark ? .17 : .16)
                   : (dark

@@ -342,137 +342,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             ),
             const SizedBox(height: HopeV2Spacing.sm),
 
-            FutureBuilder<List<HopeJob>>(
-              future: _opportunities,
-              builder: (context, pulseSnapshot) {
-                final jobs = pulseSnapshot.data ?? const <HopeJob>[];
-                final matchCount =
-                    jobs.where((j) => j.isRecommended).length;
-                final newCount = jobs.where(_isNewOpportunity).length;
-                final activeCount = auth.isGuest
-                    ? '—'
-                    : _activeJobCount?.toString() ?? '—';
-                final protected = !auth.isGuest && _walletData != null
-                    ? HopeDisplayFormatter.money(
-                        _walletData!.escrowBalance,
-                        locale: Localizations.localeOf(context).languageCode,
-                      )
-                    : '—';
-
-                final stats = <({String value, String label, Object icon, Color accent})>[
-                  (
-                    value: pulseSnapshot.connectionState == ConnectionState.done
-                        ? '$matchCount'
-                        : '—',
-                    label: _t(context, 'تطابق', 'matches'),
-                    icon: HopeV2Icons.match,
-                    accent: HopeV2Colors.primary,
-                  ),
-                  (
-                    value: pulseSnapshot.connectionState == ConnectionState.done
-                        ? '$newCount'
-                        : '—',
-                    label: _t(context, 'جدید', 'new'),
-                    icon: HopeV2Icons.job,
-                    accent: HopeV2Colors.secondary,
-                  ),
-                  (
-                    value: activeCount,
-                    label: _t(context, 'فعال', 'active'),
-                    icon: HopeV2Icons.mission,
-                    accent: HopeV2Colors.primary,
-                  ),
-                  (
-                    value: protected,
-                    label: _t(context, 'در امانت', 'Held in escrow'),
-                    icon: HopeV2Icons.protectedFunds,
-                    accent: HopeV2Colors.success,
-                  ),
-                ];
-
-                return PremiumPanel(
-                  glass: true,
-                  quiet: true,
-                  padding: const EdgeInsets.all(10),
-                  highlight: false,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: HopeV2Colors.primary.withValues(alpha: .14),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: HopeV2Colors.primary.withValues(alpha: .26),
-                              ),
-                            ),
-                            child: const Center(
-                              child: HopeIcon(
-                                HopeV2Icons.featured,
-                                size: 15,
-                                color: HopeV2Colors.primaryDark,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 9),
-                          Expanded(
-                            child: Text(
-                              _t(context, 'HOPE Pulse', 'HOPE Pulse'),
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                          PremiumTag(
-                            icon: HopeV2Icons.insights,
-                            label: _t(context, 'زنده', 'Live'),
-                            color: HopeV2Colors.secondary,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: HopeV2Spacing.sm),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Keep the pulse in the same compact, four-signal row as the
-                          // reference composition on normal phone widths; only extremely
-                          // narrow embedded surfaces fall back to a 2x2 grid.
-                          final columns = constraints.maxWidth < 420 ? 2 : 4;
-                          const gap = HopeV2Spacing.sm;
-                          final width =
-                              (constraints.maxWidth - gap * (columns - 1)) /
-                                  columns;
-                          return Wrap(
-                            spacing: gap,
-                            runSpacing: gap,
-                            children: [
-                              for (var index = 0; index < stats.length; index++)
-                                SizedBox(
-                                  key: ValueKey('home-pulse-stat-$index'),
-                                  width: width,
-                                  child: _homePulseStat(
-                                    context,
-                                    value: stats[index].value,
-                                    label: stats[index].label,
-                                    icon: stats[index].icon,
-                                    accent: stats[index].accent,
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
             const SizedBox(height: HopeV2Spacing.md),
-            if (!auth.isGuest) ...[
-              _activeWork(context),
-              const SizedBox(height: HopeV2Spacing.md),
-            ],
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -506,7 +376,14 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 return _opportunitySections(context, jobs, settings);
               },
             ),
-            const SizedBox(height: HopeV2Spacing.sm),
+            if (!auth.isGuest) ...[
+              _activeWork(context),
+              const SizedBox(height: HopeV2Spacing.md),
+            ],
+
+            _homePulse(context, auth),
+            const SizedBox(height: HopeV2Spacing.md),
+
             const SizedBox(height: HopeV2Spacing.md),
             if (!auth.isGuest && _agentState != null)
               FutureBuilder<HopeOpportunityAgentState>(
@@ -531,6 +408,98 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _homePulse(BuildContext context, AuthController auth) {
+    return FutureBuilder<List<HopeJob>>(
+      future: _opportunities,
+      builder: (context, snapshot) {
+        final jobs = snapshot.data ?? const <HopeJob>[];
+        final stats = <({String value, String label, Object icon, Color accent})>[
+          (
+            value: snapshot.connectionState == ConnectionState.done
+                ? '${jobs.where((j) => j.isRecommended).length}'
+                : '—',
+            label: _t(context, 'تطابق', 'matches'),
+            icon: HopeV2Icons.match,
+            accent: HopeV2Colors.primary,
+          ),
+          (
+            value: snapshot.connectionState == ConnectionState.done
+                ? '${jobs.where(_isNewOpportunity).length}'
+                : '—',
+            label: _t(context, 'جدید', 'new'),
+            icon: HopeV2Icons.job,
+            accent: HopeV2Colors.secondary,
+          ),
+          (
+            value: auth.isGuest ? '—' : _activeJobCount?.toString() ?? '—',
+            label: _t(context, 'فعال', 'active'),
+            icon: HopeV2Icons.mission,
+            accent: HopeV2Colors.primary,
+          ),
+          (
+            value: !auth.isGuest && _walletData != null
+                ? HopeDisplayFormatter.money(
+                    _walletData!.escrowBalance,
+                    locale: Localizations.localeOf(context).languageCode,
+                  )
+                : '—',
+            label: _t(context, 'در امانت', 'Held in escrow'),
+            icon: HopeV2Icons.protectedFunds,
+            accent: HopeV2Colors.success,
+          ),
+        ];
+
+        return PremiumPanel(
+          quiet: true,
+          padding: EdgeInsets.zero,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var index = 0; index < stats.length; index++) ...[
+                  if (index > 0)
+                    Container(
+                      width: 1,
+                      height: 22,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      color: HopeV2Surfaces.border(context).withValues(alpha: .28),
+                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      HopeIcon(
+                        stats[index].icon,
+                        size: 14,
+                        color: stats[index].accent,
+                        strokeWidth: 1.9,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        stats[index].value,
+                        style: HopeV2Type.metric(context).copyWith(
+                          fontSize: 14,
+                          height: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        stats[index].label,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: HopeV2Colors.darkMuted,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

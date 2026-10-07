@@ -39,6 +39,7 @@ class PremiumLifecycle extends StatelessWidget {
     if (steps.isEmpty) return const SizedBox.shrink();
     return PremiumPanel(
       semanticLabel: title,
+      quiet: true,
       padding: EdgeInsets.all(compact ? HopeV2Spacing.md : HopeV2Spacing.lg),
       child: Column(
         mainAxisSize: MainAxisSize.min,

@@ -760,11 +760,8 @@ class _WalletPageState extends State<WalletPage> {
             SizedBox(height: compact ? 5 : 6),
             LayoutBuilder(
               builder: (context, constraints) {
-                final columns = constraints.maxWidth < 360 ? 2 : 4;
-                const gap = 8.0;
-                final width =
-                    (constraints.maxWidth - gap * (columns - 1)) / columns;
-                final metrics = <({
+                final narrow = constraints.maxWidth < 360;
+                final items = <({
                   String key,
                   String label,
                   String value,
@@ -795,21 +792,79 @@ class _WalletPageState extends State<WalletPage> {
                     emphasized: false,
                   ),
                 ];
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: [
-                    for (final metric in metrics)
-                      SizedBox(
-                        width: width,
-                        child: walletHeroMetric(
-                          context,
-                          metric.label,
-                          metric.value,
-                          keyName: metric.key,
-                          emphasized: metric.emphasized,
-                        ),
+
+                Widget cell(({
+                  String key,
+                  String label,
+                  String value,
+                  bool emphasized,
+                }) item) {
+                  return Expanded(
+                    child: Container(
+                      key: ValueKey(item.key),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: item.emphasized
+                            ? HopeV2Colors.primary.withValues(alpha: .16)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(HopeV2Radii.sm),
                       ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: item.emphasized ? Colors.white : Colors.white60,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: item.emphasized ? 13 : 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                if (narrow) {
+                  return Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final item in items)
+                        SizedBox(
+                          width: (constraints.maxWidth - 6) / 2,
+                          child: cell(item),
+                        ),
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    for (var index = 0; index < items.length; index++) ...[
+                      cell(items[index]),
+                      if (index != items.length - 1)
+                        Container(
+                          width: 1,
+                          height: 28,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          color: Colors.white.withValues(alpha: .10),
+                        ),
+                    ],
                   ],
                 );
               },
@@ -829,42 +884,55 @@ class _WalletPageState extends State<WalletPage> {
       }) {
         final color = primary
             ? Theme.of(context).colorScheme.primary
-            : HopeV2Colors.secondary;
+            : HopeV2Colors.secondaryDark;
+        final enabled = onPressed != null;
+
         return Expanded(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: compact ? 54 : 60),
+          child: Semantics(
+            button: true,
+            enabled: enabled,
+            label: _t(fa, en),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: onPressed,
                 borderRadius: BorderRadius.circular(HopeV2Radii.md),
                 child: Ink(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 7 : 10),
+                  constraints: const BoxConstraints(
+                    minHeight: HopeV2Touch.minimum,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   decoration: BoxDecoration(
-                    color: color.withValues(
-                      alpha: onPressed == null ? .05 : .09,
-                    ),
+                    color: primary
+                        ? color.withValues(alpha: .15)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(HopeV2Radii.md),
                     border: Border.all(
-                      color: color.withValues(
-                        alpha: onPressed == null ? .10 : .20,
-                      ),
+                      color: enabled
+                          ? color.withValues(alpha: primary ? .22 : .12)
+                          : color.withValues(alpha: .05),
                     ),
                   ),
-                  child: Column(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      HopeIcon(icon, color: color, size: compact ? 20 : 22, strokeWidth: 1.9),
-                      SizedBox(height: compact ? 5 : 6),
-                      Text(
-                        _t(fa, en),
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
+                      HopeIcon(
+                        icon,
+                        color: enabled ? color : HopeV2Colors.darkMuted,
+                        size: 19,
+                        strokeWidth: 1.9,
+                      ),
+                      const SizedBox(width: 7),
+                      Flexible(
+                        child: Text(
+                          _t(fa, en),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: enabled ? color : HopeV2Colors.darkMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ],
@@ -876,22 +944,21 @@ class _WalletPageState extends State<WalletPage> {
         );
       }
 
-      // Runtime certification: mobile-first focal balance + compact financial controls.
       return PremiumPanel(
         key: const ValueKey('wallet-actions-panel'),
-        glass: false,
         quiet: true,
-        padding: EdgeInsets.all(compact ? 8 : 10),
+        padding: EdgeInsets.zero,
         child: Row(
           children: [
-            if (_internalTopUpEnabled)
+            if (_internalTopUpEnabled) ...[
               action(
                 icon: HopeV2Icons.transferIn,
                 fa: 'واریز',
                 en: 'Deposit',
                 onPressed: canAct ? _openTopUp : null,
               ),
-            if (_internalTopUpEnabled) const SizedBox(width: 8),
+              const SizedBox(width: 6),
+            ],
             action(
               icon: HopeV2Icons.transferOut,
               fa: 'برداشت',
@@ -899,7 +966,7 @@ class _WalletPageState extends State<WalletPage> {
               onPressed: canAct ? _openWithdraw : null,
               primary: true,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             action(
               icon: HopeV2Icons.completed,
               fa: 'تاریخچه',
