@@ -152,7 +152,9 @@ void main() {
 
     final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
     final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
-    final heroSize = tester.getSize(find.byType(PremiumHero).first);
+    final heroSize = tester.getSize(
+      find.byType(PremiumHero, skipOffstage: false).first,
+    );
     expect(heroSize.height, lessThanOrEqualTo(180));
 
     expect(descriptionTop, lessThan(snapshotTop));
