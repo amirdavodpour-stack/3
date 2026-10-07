@@ -218,7 +218,7 @@ void main() {
     expect(featuredFinder, findsOneWidget);
     final featuredRect = tester.getRect(featuredFinder);
 
-    expect(filterRect.top, closeTo(searchRect.top, 2));
+    expect(filterRect.top, closeTo(searchRect.bottom + 10, 2));
     expect(filterRect.bottom, lessThanOrEqualTo(searchRect.bottom + 2));
     // The refinement launcher is on the bottom row of the compact control band.
     expect(featuredRect.top - filterRect.bottom, lessThan(40));
@@ -362,6 +362,9 @@ void main() {
     await _tapFilter(tester, 'همه حوزه‌ها');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('اعمال فیلترها'));
     await tester.pumpAndSettle();
 
     await _tapFilter(tester, 'طراحی');

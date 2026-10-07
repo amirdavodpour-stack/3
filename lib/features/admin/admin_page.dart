@@ -66,17 +66,25 @@ class _AdminPageState extends State<AdminPage>
         Navigator.pushReplacement(context, HopeRoutes.adminAccess());
         return;
       }
+      final repository = context.read<AdminRepository>();
+      final summary = repository.getSummary();
+      final jobs = repository.listJobs();
+      final applications = repository.listApplications();
+      final users = repository.listUsers();
+      final audit = repository.listAudit();
       setState(() {
         _panelVerified = true;
         _isPrimaryAdmin = access['primaryAdmin'] == true;
         _currentAdminId = '${access['userId'] ?? ''}';
-        _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
+        _permissions = (access['permissions'] is List)
+            ? (access['permissions'] as List).whereType<String>().toSet()
+            : <String>{};
         _checkingPanel = false;
-      });
-      // Mount the verified shell before starting secondary tab futures so
-      // FutureBuilder instances can observe failures deterministically.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _panelVerified) _reload();
+        _summary = summary;
+        _jobs = jobs;
+        _applications = applications;
+        _users = users;
+        _audit = audit;
       });
     } catch (_) {
       if (!mounted) return;

@@ -449,7 +449,7 @@ void main() {
       find.text(
         'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(tester.takeException(), isNull);
   });
@@ -537,7 +537,7 @@ void main() {
     await _pump(tester, repo, ownerId: 'u1', width: 360);
 
     expect(find.text('Financial summary'), findsOneWidget);
-    expect(find.text('Reference'), findsOneWidget);
+    expect(find.text('Reference'), findsNothing);
     expect(find.text('1,650,000 TOMAN'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

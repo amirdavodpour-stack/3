@@ -137,7 +137,10 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Opportunity snapshot'), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-detail-hero-match')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('opportunity-detail-hero-match'), skipOffstage: false),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const ValueKey('opportunity-detail-hero-budget')),
       findsNothing,

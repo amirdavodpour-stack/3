@@ -132,7 +132,6 @@ void main() {
   testWidgets('PremiumPaymentSummary exposes one financial summary semantics boundary',
       (tester) async {
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
@@ -161,5 +160,6 @@ void main() {
       find.bySemanticsLabel('Payment details, Funds held'),
       findsNothing,
     );
+    semantics.dispose();
   });
 }
