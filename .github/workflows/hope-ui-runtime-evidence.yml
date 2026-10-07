@@ -17,27 +17,6 @@ on:
           - fa
           - en
 
-  # Current-head visual validation bridge: 2026-10-03 UI architecture batch.
-# [runtime-capture] validate Wallet chunked settle diagnostic at exact current HEAD.
-# [runtime-capture-fa] one-shot capture requested from GitHub connector.
-# [runtime-capture-fa] validate bounded RegisterPage screenshot settling after transient driver hang.
-# [runtime-capture-fa] fresh current-head capture requested after clearing prior run.
-# [runtime-capture-fa] current-head capture requested after compact-search fix and recommendation fixture.
-# [runtime-capture] hardened Android evidence trigger — swangle + natural driver teardown
-# [runtime-capture-fa] validate grouped discovery + wallet hierarchy wave at current feature HEAD.
-# [runtime-capture-fa] validate finance + opportunity-detail hierarchy wave at exact current feature HEAD.
-# [runtime-capture-fa] validate grouped finance + discovery-detail consolidation.
-# [runtime-capture-fa] validate compile-fix before next visual evidence wave.
-# [runtime-capture-fa] validate explicit page-canvas surface after shared frame hardening.
-
-  push:
-    branches:
-      - feat/google-sign-in-2026-09-20
-
-  # Temporary observable PR trigger: title marker is toggled only for a
-  # one-shot capture run because the GitHub connector exposes no dispatch mutation.
-  pull_request:
-    types: [edited, synchronize]
 
 concurrency:
   # Capture commits are intentionally serialized. Non-capture feature pushes
