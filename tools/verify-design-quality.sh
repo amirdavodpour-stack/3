@@ -62,6 +62,8 @@ if missing_en or missing_fa:
 print(f"Localization parity PASS ({len(fa_keys)} message keys)")
 PY
 
+python3 tool/contrast_check.py
+
 grep -q "class HopeV2Touch" lib/core/theme/hope_v2_design.dart || fail "touch-target token is missing"
 grep -q "minimum = 48.0" lib/core/theme/hope_v2_design.dart || fail "48px minimum target token is missing"
 grep -q "class PremiumPageFrame" lib/core/ui/premium_components.dart || fail "PremiumPageFrame is missing"
