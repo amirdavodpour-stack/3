@@ -33,6 +33,7 @@ on:
   push:
     branches:
       - feat/google-sign-in-2026-09-20
+      - feat/ui-v2-wave-1-execution-2026-10-07
 
   # Temporary observable PR trigger: title marker is toggled only for a
   # one-shot capture run because the GitHub connector exposes no dispatch mutation.
