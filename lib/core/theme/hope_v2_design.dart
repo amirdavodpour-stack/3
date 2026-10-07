@@ -16,6 +16,13 @@ class HopeV2Colors {
   const HopeV2Colors._();
 
   static const primary = Color(0xFF6366F1);
+  static const primaryAction = Color(0xFF4F46E5);
+  static const primaryOnLight = Color(0xFF4F46E5);
+  static const successOnLight = Color(0xFF047857);
+  static const warningOnLight = Color(0xFF92400E);
+  static const dangerOnLight = Color(0xFFB91C1C);
+  static const secondaryAction = Color(0xFF0F766E);
+
   static const primaryDark = Color(0xFF818CF8);
   static const secondary = Color(0xFF14B8A6);
   static const secondaryStrong = Color(0xFF0D9488);
