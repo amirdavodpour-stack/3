@@ -400,9 +400,11 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
   const HopeOpportunityDnaSignature({
     super.key,
     required this.job,
+    this.includeBudget = true,
   });
 
   final HopeJob job;
+  final bool includeBudget;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -486,6 +488,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
         color: HopeV2Colors.warning,
       ),
     ];
+    if (!includeBudget) dimensions.removeLast();
 
     return PremiumPanel(
       key: const ValueKey('opportunity-dna-signature'),

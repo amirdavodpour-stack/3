@@ -387,7 +387,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('برداشت‌ها'),
         500,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find.byType(Scrollable).first,
       );
 
       expect(find.textContaining('3,500,000 تومان'), findsOneWidget);
@@ -430,7 +430,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('برداشت‌ها'),
         500,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find.byType(Scrollable).first,
       );
 
       expect(find.text('کل موجودی'), findsOneWidget);

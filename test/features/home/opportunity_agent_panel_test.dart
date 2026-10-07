@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
@@ -29,6 +31,12 @@ void main() {
       MaterialApp(
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: Scaffold(
           body: OpportunityAgentPanel(
             state: state,

@@ -58,15 +58,6 @@ class _OpportunitySnapshot extends StatelessWidget {
         value: job.city?.trim().isNotEmpty == true ? job.city! : _t(context, 'از راه دور', 'Remote'),
         color: HopeV2Colors.secondary,
       ),
-      (
-        id: 'deadline',
-        icon: HopeV2Icons.pending,
-        label: isJob ? _t(context, 'مهلت درخواست', 'Application deadline') : _t(context, 'مدت', 'Duration'),
-        value: isJob
-            ? (job.applicationDeadline ?? '—')
-            : '${job.duration ?? '—'} ${HopeCopy.of(context).copy_hours_7408608}',
-        color: AppColors.warning,
-      ),
     ];
 
     return PremiumPanel(
@@ -819,7 +810,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       _MatchIntelligence(job: j),
                   ],
                   const SizedBox(height: 10),
-                  HopeOpportunityDnaSignature(job: j),
+                  HopeOpportunityDnaSignature(job: j, includeBudget: false),
                   const SizedBox(height: 12),
                   PremiumSectionHeader(
                     domain: HopeProductDomain.discovery,

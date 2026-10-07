@@ -547,7 +547,7 @@ extension on _TransactionPageState {
                         ),
                       ),
                     ],
-                    if (!compact && (payment?.providerRef?.trim().isNotEmpty ?? false)) ...[
+                    if (payment?.providerRef?.trim().isNotEmpty ?? false) ...[
                       const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,

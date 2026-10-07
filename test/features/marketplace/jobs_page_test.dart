@@ -153,7 +153,8 @@ Future<void> _tapFilter(
     all = find.text(label, skipOffstage: false);
   }
   expect(all, findsWidgets);
-  final target = all.first;
+  final tile = find.widgetWithText(ListTile, label);
+  final target = tile.evaluate().isNotEmpty ? tile.first : all.first;
   await tester.ensureVisible(target);
   await tester.tap(target);
 }
@@ -209,7 +210,7 @@ void main() {
     final featuredFinder = find.byWidgetPredicate(
       (widget) =>
           widget is OpportunityCard &&
-          widget.variant == OpportunityCardVariant.featured,
+          widget.variant == OpportunityCardVariant.featuredScan,
     );
     expect(featuredFinder, findsOneWidget);
     final featuredRect = tester.getRect(featuredFinder);

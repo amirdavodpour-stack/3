@@ -51,13 +51,18 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     super.dispose();
   }
 
-  void _reload() async {
+  Future<void> _reload() async {
     final r = context.read<AdminRepository>();
     try {
       final access = await r.getPanelAccess();
       if (!mounted) return;
-      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
-    } catch (_) {}
+      _permissions = access['permissions'] is List
+          ? (access['permissions'] as List).whereType<String>().toSet()
+          : <String>{};
+    } catch (_) {
+      if (!mounted) return;
+      _permissions = <String>{};
+    }
 
     _finance = r.getFinanceSummary();
     _reports = r.listTrustReports();
@@ -65,11 +70,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     _analytics = r.getAnalyticsSummary(days: _days);
     _funnel = r.getFunnel(days: _days);
     _crashes = r.getCrashSummary(days: _days);
-    r.getPanelAccess().then((access) {
-      if (!mounted) return;
-      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
-      setState(() {});
-    }).catchError((_) {});
     if (mounted) setState(() {});
   }
 

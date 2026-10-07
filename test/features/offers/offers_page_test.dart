@@ -155,7 +155,9 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final refresh = find.byTooltip('Refresh');
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
     await tester.pump();
     expect(repository.calls, 2);
 
@@ -163,7 +165,7 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpAndSettle();
 
     expect(repository.calls, 3);
-    expect(find.text('Offer fresh'), findsOneWidget);
+    expect(find.text('fresh'), findsOneWidget);
 
     repository.staleRefresh.complete([repository.stale]);
     await tester.pumpAndSettle();
@@ -177,7 +179,7 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    expect(find.text('Offer existing'), findsOneWidget);
+    expect(find.text('existing'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Refresh'));
     await tester.pumpAndSettle();

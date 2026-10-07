@@ -310,6 +310,12 @@ void main() {
       );
 
       expect(bestMatch, findsOneWidget);
+      await tester.scrollUntilVisible(
+        intelligence,
+        400,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       expect(intelligence, findsOneWidget);
       expect(
         tester.getTopLeft(bestMatch).dy,

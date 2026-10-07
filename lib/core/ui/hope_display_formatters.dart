@@ -40,7 +40,7 @@ class HopeDisplayFormatter {
     if (!RegExp(r'^HP-\d{4,}$', caseSensitive: false).hasMatch(normalized)) {
       return null;
     }
-    return '#${localizeDigits(normalized.toUpperCase(), locale: locale)}';
+    return '#${normalized.toUpperCase()}';
   }
 
   static int? parseInteger(Object? value) {
@@ -66,7 +66,7 @@ class HopeDisplayFormatter {
         final whole = abs ~/ 1000000;
         final decimal = (abs % 1000000) ~/ 100000;
         final compact = decimal == 0 ? whole.toString() : whole.toString() + '.' + decimal.toString();
-        return localizeDigits(sign + compact, locale: locale) + ' ' + (fa ? 'میلیون تومان' : 'million TOMAN');
+        return sign + compact + ' ' + (fa ? 'میلیون تومان' : 'million TOMAN');
       }
     }
     return integer(parsed, locale: locale) + ' ' + (fa ? 'تومان' : 'TOMAN');
@@ -105,23 +105,22 @@ class HopeDisplayFormatter {
     if (diff.inSeconds.abs() < 60) return fa ? 'همین حالا' : 'Just now';
     if (diff.isNegative) {
       final minutes = (-diff.inMinutes).clamp(1, 59);
-      return fa ? 'در ' + localizeDigits(minutes.toString(), locale: locale) + ' دقیقه' : 'in ' + minutes.toString() + ' min';
+      return fa ? 'در ' + minutes.toString() + ' دقیقه' : 'in ' + minutes.toString() + ' min';
     }
     if (diff.inMinutes < 60) {
-      return fa ? localizeDigits(diff.inMinutes.toString(), locale: locale) + ' دقیقه پیش' : diff.inMinutes.toString() + 'm ago';
+      return fa ? diff.inMinutes.toString() + ' دقیقه پیش' : diff.inMinutes.toString() + 'm ago';
     }
     if (diff.inHours < 24) {
-      return fa ? localizeDigits(diff.inHours.toString(), locale: locale) + ' ساعت پیش' : diff.inHours.toString() + 'h ago';
+      return fa ? diff.inHours.toString() + ' ساعت پیش' : diff.inHours.toString() + 'h ago';
     }
     if (diff.inHours < 48) return fa ? 'دیروز' : 'Yesterday';
     if (diff.inDays < 7) {
-      return fa ? localizeDigits(diff.inDays.toString(), locale: locale) + ' روز پیش' : diff.inDays.toString() + 'd ago';
+      return fa ? diff.inDays.toString() + ' روز پیش' : diff.inDays.toString() + ' روز پیش';
     }
     if (!fa) return DateFormat('MMM d, y', 'en').format(parsed);
     final j = _gregorianToJalali(parsed.year, parsed.month, parsed.day);
     const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-    return localizeDigits(j.year.toString(), locale: locale) + ' ' + months[j.month - 1] + ' ' +
-        localizeDigits(j.day.toString(), locale: locale);
+    return j.year.toString() + ' ' + months[j.month - 1] + ' ' + j.day.toString();
   }
 
   static ({int year, int month, int day}) _gregorianToJalali(int gy, int gm, int gd) {

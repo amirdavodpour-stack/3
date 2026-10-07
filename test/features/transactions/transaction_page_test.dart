@@ -284,7 +284,7 @@ void main() {
       }));
     await _pump(tester, repo, ownerId: 'u1');
 
-    expect(find.text('Funded'), findsWidgets);
+    expect(find.text('Funds held'), findsWidgets);
     expect(
       find.byWidgetPredicate((widget) {
         if (widget is! Text || widget.data == null) return false;

@@ -77,7 +77,7 @@ class OpportunityCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: '$title, $city${amount.isEmpty ? '' : ', $amount'}',
+      label: '$title, $city' + (amount.isEmpty ? '' : ', ' + _formatAmount(amount, context)),
       child: PressableScale(
         onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
         child: Container(

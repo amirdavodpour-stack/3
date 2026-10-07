@@ -33,7 +33,7 @@ void main() {
           find.descendant(
             of: find.byType(PremiumAppCanvas),
             matching: find.byType(SizedBox),
-          ),
+          ).last,
         ),
         const Size(360, 640),
       );

@@ -522,7 +522,7 @@ void main() {
 
       expect(
         find.textContaining(
-          locale.languageCode == 'fa' ? 'تومان' : 'Toman',
+          locale.languageCode == 'fa' ? 'تومان' : 'TOMAN',
         ),
         findsOneWidget,
         reason: 'missing ${locale.languageCode} currency label',

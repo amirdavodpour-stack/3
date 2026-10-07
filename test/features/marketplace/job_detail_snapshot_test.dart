@@ -126,7 +126,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('خلاصه فرصت'), findsOneWidget);
+    expect(find.text('Opportunity snapshot'), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-detail-hero-match')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('opportunity-detail-hero-budget')),
@@ -140,7 +140,7 @@ void main() {
     final heroSize = tester.getSize(find.byType(PremiumHero).first);
     expect(heroSize.height, lessThanOrEqualTo(180));
 
-    final snapshotTop = tester.getTopLeft(find.text('خلاصه فرصت')).dy;
+    final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
     final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
     expect(descriptionTop, lessThan(snapshotTop));
   });

@@ -93,9 +93,13 @@ class _RegisterPageState extends State<RegisterPage> {
           .read<AuthController>()
           .register(email.text.trim(), password.text, name.text.trim());
       if (mounted) {
-        await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
-        if (mounted && Navigator.of(context).canPop()) {
+        if (widget.returnIntent != null) {
           Navigator.of(context).pop(widget.returnIntent);
+        } else {
+          await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
+          if (mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(widget.returnIntent);
+          }
         }
       }
     } catch (error) {

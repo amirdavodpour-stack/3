@@ -490,8 +490,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Why this opportunity fits'), findsOneWidget);
-    expect(find.text('Match signals'), findsOneWidget);
     final sheet = find.byType(BottomSheet);
+    expect(
+      find.descendant(
+        of: sheet,
+        matching: find.text('Match signals'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.descendant(of: sheet, matching: find.text('Skill match')),
       findsOneWidget,

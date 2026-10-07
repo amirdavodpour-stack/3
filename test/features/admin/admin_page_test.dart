@@ -48,7 +48,10 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<List<HopeJob>> listJobs() async {
     calls.add('jobs');
-    if (failJobs) throw Exception('network down');
+    if (failJobs) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      throw Exception('network down');
+    }
     return jobs;
   }
 

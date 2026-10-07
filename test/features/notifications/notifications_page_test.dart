@@ -214,11 +214,14 @@ void main() {
 
     expect(find.text('عنوان اعلان'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('بازخوانی'));
+    final refresh = find.byTooltip('بازخوانی');
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
     await tester.pump();
     expect(repo.listCalls, 2);
 
-    await tester.tap(find.byTooltip('بازخوانی'));
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
     await tester.pumpAndSettle();
 
     expect(repo.listCalls, 3);
@@ -269,11 +272,18 @@ void main() {
     final repo = _Repo()..items = [];
     await tester.pumpWidget(_app(repo));
     await tester.pumpAndSettle();
-    final markAll = find.byTooltip('همه را خواندم');
+    final menu = find.byTooltip('اقدامات اعلان');
+    expect(menu, findsOneWidget);
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    final markAll = find.text('همه را خواندم');
     expect(markAll, findsOneWidget);
-    final markAllButton =
-        find.ancestor(of: markAll, matching: find.byType(IconButton));
-    expect(markAllButton, findsOneWidget);
-    expect(tester.widget<IconButton>(markAllButton).onPressed, isNull);
+    final item = tester.widget<PopupMenuItem<String>>(
+      find.ancestor(
+        of: markAll,
+        matching: find.byType(PopupMenuItem<String>),
+      ),
+    );
+    expect(item.enabled, isFalse);
   });
 }

@@ -149,6 +149,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final semantics = tester.ensureSemantics();
+    await tester.pump();
     try {
       expect(
         find.bySemanticsLabel(

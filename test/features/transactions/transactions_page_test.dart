@@ -144,7 +144,13 @@ void main() {
     final metrics = find.byKey(const ValueKey('work-center-metrics'));
     expect(metrics, findsOneWidget);
     expect(find.text('همکاری‌ها'), findsOneWidget);
-    expect(find.text('در حال اجرا'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: metrics,
+        matching: find.text('در حال اجرا'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('تسویه‌شده'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
     expect(find.text('فعال'), findsOneWidget);
@@ -228,7 +234,7 @@ void main() {
     await tester.pump();
 
     final refreshIndicator =
-        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
+        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator).last);
     await refreshIndicator.onRefresh();
     await tester.pump();
 
@@ -242,6 +248,12 @@ void main() {
     final repo = _Transactions()
       ..jobs = [_job('unknown', status: 'UNKNOWN_STATE')];
     await _pump(tester, repo);
+    await tester.scrollUntilVisible(
+      find.text('پروژه unknown'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
 
     expect(
       find.byWidgetPredicate(

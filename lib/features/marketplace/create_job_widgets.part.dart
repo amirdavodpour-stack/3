@@ -56,7 +56,7 @@ class _TypeHero extends StatelessWidget {
 
               // Keep both opportunity types side-by-side on normal phone widths.
               // Stack only for genuinely narrow embedded surfaces.
-              if (constraints.maxWidth < 280) {
+              if (constraints.maxWidth < 240) {
                 return Column(
                   children: [
                     tiles[0],
