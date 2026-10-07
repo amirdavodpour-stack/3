@@ -472,10 +472,6 @@ HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
         'salary': 82,
       },
       'aiRecommendationConfidence': 0.92,
-      // Runtime-only editorial media fixture: exercises the existing real media branch.
-      if (editorialMedia)
-        'imageUrl':
-          'https://images.unsplash.com/photo-1758876022836-70b89d3e6944?auto=format&fit=crop&fm=jpg&q=60&w=1600',
     });
 
 HopeApplication _applicationFixture() => HopeApplication.fromMap({
@@ -525,8 +521,8 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
     'id': 'runtime-user',
-    'displayName': 'HOPE Runtime',
-    'email': 'runtime@example.invalid',
+    'displayName': 'علی رضایی',
+    'email': 'ali.test@hope.local',
   });
   print('HOPE_RUNTIME_PREPARE:google-start');
   await _runtimeGoogleSignIn.initialize();
