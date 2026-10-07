@@ -230,7 +230,7 @@ class _OffersPageState extends State<OffersPage> {
             container: true,
             button: true,
             excludeSemantics: true,
-            label: _t('پیشنهاد همکاری', 'Work offer') + '، ' + _money(o.price) + '، ' + _statusLabel(o.status),
+            label: (o.jobTitle?.trim().isNotEmpty == true ? o.jobTitle!.trim() : _t('پیشنهاد همکاری', 'Work offer')) + '، ' + _money(o.price) + '، ' + _statusLabel(o.status),
             onTap: () => _showDetails(o),
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
@@ -244,7 +244,7 @@ class _OffersPageState extends State<OffersPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _t('پیشنهاد همکاری', 'Work offer'),
+                          (o.jobTitle?.trim().isNotEmpty == true ? o.jobTitle!.trim() : _t('پیشنهاد همکاری', 'Work offer')),
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                         ),
                       ),
