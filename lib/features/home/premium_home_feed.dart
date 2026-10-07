@@ -188,9 +188,14 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   }) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final greeting = isEn
-        ? 'HOPE'
-        : 'HOPE';
+    final safeName = displayName.trim().isEmpty
+        ? _t(context, 'شما', 'you')
+        : displayName.trim();
+    final greeting = _t(
+      context,
+      'عصر بخیر، ' + safeName,
+      'Good evening, ' + safeName,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
@@ -284,7 +289,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           ),
           const SizedBox(height: 4),
           Text(
-            isEn ? 'Find your next opportunity.' : 'فرصت مناسب برای قدم بعدی',
+            _t(context, 'فرصت‌های متناسب با مسیر کاری شما', 'Opportunities matched to your path'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -654,16 +659,14 @@ padding: const EdgeInsets.all(12),
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  style: HopeV2Type.metric(context).copyWith(
-                    fontSize: compact ? 13 : (value.length > 7 ? 11.5 : 14),
-                    color: Colors.white,
-                  ),
+              Text(
+                value,
+                maxLines: 2,
+                softWrap: true,
+                style: HopeV2Type.metric(context).copyWith(
+                  fontSize: 15,
+                  height: 1.05,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 3),
@@ -672,7 +675,8 @@ padding: const EdgeInsets.all(12),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: compact ? 8 : 9,
+                      fontSize: 12,
+                      height: 1.08,
                       color: HopeV2Colors.darkMuted,
                     ),
               ),
