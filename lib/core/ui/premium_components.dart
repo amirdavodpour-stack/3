@@ -155,8 +155,8 @@ class _PremiumNavigationItem extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: labelColor,
-                    fontSize: 10,
-                    height: 1.05,
+                    fontSize: 12,
+                    height: 1.08,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -724,99 +724,83 @@ class PremiumHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < HopeV2Breakpoints.compact;
+          final compact = constraints.maxWidth < HopeV2Breakpoints.medium;
           final resolvedDomain = domain ?? page?.spec.domain;
-          final content = Column(
+          final titleBlock = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (resolvedDomain != null &&
-                      !compact) ...[
-                    PremiumDomainMarker(domain: resolvedDomain, compact: true),
-                    const SizedBox(width: HopeV2Spacing.sm),
-                  ],
-                  Flexible(
-                    child: Container(
-                      padding: dense && compact
-                          ? EdgeInsets.zero
-                          : const EdgeInsetsDirectional.only(start: 8),
-                      decoration: dense && compact
-                          ? const BoxDecoration()
-                          : BoxDecoration(
-                              border: BorderDirectional(
-                                start: BorderSide(
-                                  color: (resolvedDomain?.spec.accent ??
-                                          Theme.of(context).colorScheme.primary)
-                                      .withValues(alpha: .52),
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                      child: Text(
-                        eyebrow.toUpperCase(),
-                        overflow: TextOverflow.ellipsis,
-                        style: HopeV2Type.eyebrow(context).copyWith(
-                          color: resolvedDomain?.spec.accent ??
-                              Theme.of(context).colorScheme.primary,
-                          fontSize: dense && compact ? 10 : null,
-                          letterSpacing: dense && compact ? .55 : null,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: dense ? 4 : 6),
               Text(
                 title,
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  // Mobile page titles stay editorial rather than consuming
-                  // the entire first viewport.
-                  // Keep compact page headers subordinate to the focal content,
-                  // matching the reference's dense editorial hierarchy.
-                  fontSize: compact ? 19 : 30,
-                  height: compact ? 1.06 : 1.06,
-                  letterSpacing: compact ? -.45 : -.75,
+                  fontSize: compact ? 22 : 30,
+                  height: 1.08,
+                  letterSpacing: compact ? -.5 : -.75,
                 ),
               ),
-              if (subtitle != null) ...[
-                SizedBox(height: dense ? 3 : 4),
+              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                const SizedBox(height: 3),
                 Text(
                   subtitle!,
                   maxLines: compact ? 2 : 4,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    height: compact ? 1.34 : 1.42,
-                  ),
+                        fontSize: compact ? 13 : null,
+                        height: compact ? 1.3 : 1.42,
+                      ),
                 ),
               ],
             ],
           );
 
-          if (trailing == null) return content;
           if (compact) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                content,
-                const SizedBox(height: HopeV2Spacing.sm),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: trailing!,
-                ),
+                if (trailing != null)
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: trailing!,
+                  ),
+                if (trailing != null) const SizedBox(height: 4),
+                titleBlock,
               ],
             );
           }
-          return Row(
+
+          final editorial = Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(child: content),
-              const SizedBox(width: HopeV2Spacing.lg),
-              trailing!,
+              Expanded(child: titleBlock),
+              if (trailing != null) ...[
+                const SizedBox(width: HopeV2Spacing.lg),
+                trailing!,
+              ],
+            ],
+          );
+
+          if (resolvedDomain == null || eyebrow.trim().isEmpty) return editorial;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PremiumDomainMarker(domain: resolvedDomain, compact: true),
+                  const SizedBox(width: HopeV2Spacing.sm),
+                  Text(
+                    eyebrow.toUpperCase(),
+                    overflow: TextOverflow.ellipsis,
+                    style: HopeV2Type.eyebrow(context).copyWith(
+                      color: resolvedDomain.spec.accent,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: dense ? 4 : 6),
+              editorial,
             ],
           );
         },
