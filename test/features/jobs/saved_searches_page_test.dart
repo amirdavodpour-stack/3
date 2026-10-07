@@ -14,6 +14,7 @@ HopeSavedSearch _search(
   String name, {
   String kind = 'ALL',
   String visibility = 'ALL',
+  String category = 'ALL',
 }) => HopeSavedSearch(
   id: id,
   name: name,
@@ -21,7 +22,7 @@ HopeSavedSearch _search(
   kind: kind,
   visibility: visibility,
   city: 'AUTO',
-  category: 'ALL',
+  category: category,
   updatedAt: '2026-09-22T00:00:00Z',
 );
 
@@ -89,6 +90,16 @@ void main() {
     expect(find.textContaining('Specialized'), findsOneWidget);
     expect(find.text('MISSION'), findsNothing);
     expect(find.text('SPECIALIZED'), findsNothing);
+  });
+  testWidgets('saved-search categories use localized labels, not raw slugs', (tester) async {
+    final repository = _SequencedSavedSearchRepository();
+    repository.itemsOverride = [
+      _search('software', 'Software search', category: 'SOFTWARE'),
+    ];
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('SOFTWARE'), findsNothing);
+    expect(find.textContaining('Software'), findsOneWidget);
   });
   testWidgets('unknown saved-search enums use safe localized fallback', (tester) async {
     final repository = _SequencedSavedSearchRepository();
