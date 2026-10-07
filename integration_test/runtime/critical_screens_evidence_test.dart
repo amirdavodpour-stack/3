@@ -75,7 +75,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
+        user: {'id': 'runtime-user', 'displayName': 'علی رضایی'},
       );
 
   @override
