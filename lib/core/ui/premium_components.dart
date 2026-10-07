@@ -155,7 +155,7 @@ class _PremiumNavigationItem extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: labelColor,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     height: 1.1,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
