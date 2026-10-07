@@ -142,7 +142,16 @@ Future<void> _tapFilter(
   WidgetTester tester,
   String label,
 ) async {
-  final all = find.text(label, skipOffstage: false);
+  var all = find.text(label, skipOffstage: false);
+  if (all.evaluate().isEmpty) {
+    final launcher = find.byKey(
+      const ValueKey('hope-opportunity-refinement-launcher'),
+    );
+    expect(launcher, findsOneWidget);
+    await tester.tap(launcher);
+    await tester.pumpAndSettle();
+    all = find.text(label, skipOffstage: false);
+  }
   expect(all, findsWidgets);
   final target = all.first;
   await tester.ensureVisible(target);

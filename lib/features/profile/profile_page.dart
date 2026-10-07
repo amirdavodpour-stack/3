@@ -161,11 +161,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   fontWeight: FontWeight.w900,
                                 ),
                           ),
-                          PremiumTag(
-                            icon: HopeV2Icons.completed,
-                            label: HopeCopy.of(context).copy_active_account_bef80da,
-                            color: HopeV2Colors.secondaryStrong,
-                          ),
+
                         ],
                       ),
                     ),

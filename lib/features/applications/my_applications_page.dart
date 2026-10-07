@@ -231,7 +231,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         .toList(growable: false);
     if (uncategorized.isNotEmpty) {
       addSection(
-        _t('نیازمند بررسی', 'Needs review'),
+        _t('سایر وضعیت‌ها', 'Other statuses'),
         _t(
           'وضعیتی که در چرخهٔ استاندارد درخواست تعریف نشده است.',
           'A status outside the standard application lifecycle.',

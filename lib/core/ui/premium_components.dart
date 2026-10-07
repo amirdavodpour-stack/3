@@ -763,41 +763,39 @@ class PremiumHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (eyebrow.trim().isNotEmpty)
-                  Container(
-                    padding: EdgeInsets.zero,
-                    decoration: const BoxDecoration(),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (resolvedDomain != null) ...[
-                          PremiumDomainMarker(
-                            domain: resolvedDomain,
-                            compact: true,
-                          ),
-                          const SizedBox(width: HopeV2Spacing.sm),
-                        ],
-                        Flexible(
-                          child: Text(
-                            eyebrow.toUpperCase(),
-                            overflow: TextOverflow.ellipsis,
-                            style: HopeV2Type.eyebrow(context).copyWith(
-                              color: resolvedDomain?.spec.accent ??
-                                  Theme.of(context).colorScheme.primary,
-                            ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (resolvedDomain != null) ...[
+                        PremiumDomainMarker(
+                          domain: resolvedDomain,
+                          compact: true,
+                        ),
+                        const SizedBox(width: HopeV2Spacing.sm),
+                      ],
+                      Flexible(
+                        child: Text(
+                          eyebrow.toUpperCase(),
+                          overflow: TextOverflow.ellipsis,
+                          style: HopeV2Type.eyebrow(context).copyWith(
+                            color: resolvedDomain?.spec.accent ??
+                                Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                if (eyebrow.trim().isNotEmpty)
-                  SizedBox(height: dense ? 4 : 6),
-                if (trailing != null)
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: trailing!,
-                  ),
-                if (trailing != null) const SizedBox(height: 4),
-                titleBlock,
+                if (eyebrow.trim().isNotEmpty) SizedBox(height: dense ? 4 : 6),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: titleBlock),
+                    if (trailing != null) ...[
+                      const SizedBox(width: HopeV2Spacing.sm),
+                      trailing!,
+                    ],
+                  ],
+                ),
               ],
             );
           }

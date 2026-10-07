@@ -61,6 +61,7 @@ Future<void> _pump(WidgetTester tester, {String language = 'fa'}) async {
   await settings.load();
   final auth = AuthController(_AuthRepo(), SecureStore());
   await auth.restoreSession();
+  auth.continueAsGuest();
   await tester.pumpWidget(MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: settings),
