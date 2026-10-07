@@ -120,6 +120,8 @@ HopeJob _job(String id, {String status = 'OPEN'}) => HopeJob.fromMap({
       'visibility': 'PUBLIC',
     });
 
+// Wave 1 regression harness: numeric/status assertions stay scoped to the compact work-center composition.
+
 void main() {
   testWidgets('guest transactions protect private activity', (tester) async {
     final repo = _Transactions();
