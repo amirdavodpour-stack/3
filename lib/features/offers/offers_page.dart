@@ -91,62 +91,6 @@ class _OffersPageState extends State<OffersPage> {
     }
   }
 
-  Widget _offerMetric(
-    BuildContext context, {
-    required String label,
-    required String value,
-    Color? valueColor,
-    required Object icon,
-  }) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 76),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .34),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: .28),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                HopeIcon(icon, size: 15, color: valueColor ?? theme.colorScheme.primary),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                height: 1,
-                color: valueColor ?? theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
