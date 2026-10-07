@@ -151,8 +151,12 @@ if grep -Fq 'HopeWalletFlowSignature(wallet: wallet)' "$wallet"; then
   echo "FAIL: Wallet renders a duplicated balance signature" >&2
   exit 1
 fi
-if grep -Fq 'شناسه کیف پول' "$wallet"; then
-  echo "FAIL: Wallet exposes an internal wallet ID" >&2
+if grep -Fq 'wallet.id' "$wallet" || grep -Fq 'Wallet ID copied' "$wallet" || grep -Fq 'شناسه کیف پول کپی شد' "$wallet"; then
+  echo "FAIL: Wallet exposes its internal wallet identifier" >&2
+  exit 1
+fi
+if grep -Fq '_copyText(String value)' "$wallet"; then
+  echo "FAIL: Wallet still contains an internal-ID copier" >&2
   exit 1
 fi
 # Wave 1 localization/auth guards.
