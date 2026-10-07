@@ -212,7 +212,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
       ),
     );
   }
-
   Future<void> action() async {
     final auth = context.read<AuthController?>();
 
