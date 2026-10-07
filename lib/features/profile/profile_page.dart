@@ -1,4 +1,3 @@
-import '../../core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
@@ -72,7 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (index == 4) return;
     if (index == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AppRouter()),
+        HopeRoutes.home(),
         (_) => false,
       );
       return;
