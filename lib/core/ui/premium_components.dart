@@ -344,7 +344,7 @@ class PremiumPageFrame extends StatelessWidget {
     super.key,
     required this.child,
     this.maxWidth = 1180,
-    this.padding = const EdgeInsets.fromLTRB(20, 20, 20, 96),
+    this.padding = const EdgeInsets.fromLTRB(20, 16, 20, 104),
     this.safeBottom = true,
     this.page,
     this.domain,
@@ -799,7 +799,7 @@ class PremiumHeader extends StatelessWidget {
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 21 : 28,
+                  fontSize: compact ? 23 : 28,
                   height: 1.08,
                   letterSpacing: compact ? -.5 : -.75,
                 ),
@@ -811,7 +811,7 @@ class PremiumHeader extends StatelessWidget {
                   maxLines: compact ? 2 : 4,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: compact ? 13 : null,
+                        fontSize: compact ? 13.5 : null,
                         height: compact ? 1.3 : 1.42,
                       ),
                 ),
@@ -979,7 +979,7 @@ class PremiumPanel extends StatelessWidget {
               : highlight
                   ? scheme.primary.withValues(alpha: dark ? .17 : .16)
                   : (dark
-                      ? Colors.white.withValues(alpha: glass ? .065 : .04)
+                      ? Colors.white.withValues(alpha: glass ? .09 : .075)
                       : HopeV2Surfaces.border(context)),
           width: 1,
         ),
@@ -987,19 +987,24 @@ class PremiumPanel extends StatelessWidget {
             ? const []
             : dark
                 ? [
-                if (highlight)
-                  BoxShadow(
-                    color: scheme.primary.withValues(alpha: glass ? .05 : .035),
-                    blurRadius: glass ? 22 : 18,
-                    offset: const Offset(0, 9),
-                  ),
-                if (glass)
-                  BoxShadow(
-                    color: HopeV2Colors.secondary.withValues(alpha: .012),
-                    blurRadius: 26,
-                    offset: const Offset(-7, 12),
-                  ),
-              ]
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: quiet ? 0 : .18),
+                      blurRadius: highlight ? 24 : 16,
+                      offset: Offset(0, highlight ? 10 : 6),
+                    ),
+                    if (highlight)
+                      BoxShadow(
+                        color: scheme.primary.withValues(alpha: glass ? .07 : .045),
+                        blurRadius: glass ? 24 : 18,
+                        offset: const Offset(0, 9),
+                      ),
+                    if (glass)
+                      BoxShadow(
+                        color: HopeV2Colors.secondary.withValues(alpha: .018),
+                        blurRadius: 26,
+                        offset: const Offset(-7, 12),
+                      ),
+                  ]
             : [
                 BoxShadow(
                   color: highlight
@@ -1682,7 +1687,7 @@ class PremiumSectionHeader extends StatelessWidget {
                     child: Text(
                       title,
                       style: HopeV2Type.section(context).copyWith(
-                        fontSize: compact ? 17 : null,
+                        fontSize: compact ? 18 : null,
                       ),
                     ),
                   ),

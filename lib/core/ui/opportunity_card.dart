@@ -112,22 +112,22 @@ class OpportunityCard extends StatelessWidget {
                           : .18,
                     )
                   : (Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withValues(alpha: .055)
+                      ? Colors.white.withValues(alpha: .075)
                       : HopeV2Surfaces.border(context).withValues(alpha: .60)),
             ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
                 ? [
                     if (featured || featuredScan)
                       BoxShadow(
-                        color: primary.withValues(alpha: .015),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
+                        color: primary.withValues(alpha: .035),
+                        blurRadius: 22,
+                        offset: const Offset(0, 9),
                       ),
                   ]
                 : HopeV2Shadows.card,
           ),
           padding: EdgeInsets.all(
-            featured ? 10 : (featuredScan ? 10 : (compact ? 10 : 12)),
+            featured ? 12 : (featuredScan ? 12 : (compact ? 11 : 13)),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
@@ -202,7 +202,7 @@ class OpportunityCard extends StatelessWidget {
       child: SizedBox(
         key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 128 : 144)
+            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 140 : 152)
             : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 72 : 88),
         width: double.infinity,
         child: Stack(

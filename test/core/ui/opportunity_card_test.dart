@@ -166,7 +166,7 @@ void main() {
 
     expect(
       tester.getSize(find.byKey(const ValueKey('opportunity-media-header'))).height,
-      greaterThanOrEqualTo(100),
+      greaterThanOrEqualTo(140),
     );
   });
 

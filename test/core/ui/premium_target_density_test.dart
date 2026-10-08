@@ -126,7 +126,7 @@ void main() {
 
     final title = find.text('فرصت بعدی خود را پیدا کنید');
     expect(title, findsOneWidget);
-    expect(tester.widget<Text>(title).style?.fontSize, 21);
+    expect(tester.widget<Text>(title).style?.fontSize, 23);
   });
 
   testWidgets('compact PremiumPanel default padding stays at the density baseline',

@@ -102,7 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return PremiumPageFrame(
       maxWidth: 920,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 112),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -166,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 20),
           PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: MediaQuery.sizeOf(context).width < 500
@@ -176,7 +176,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 10),
           _settingsCard(context, settings, theme),
-          const SizedBox(height: 19),
+          const SizedBox(height: 16),
           PremiumSectionHeader(
             domain: HopeProductDomain.trust,
             title: _t(context, 'اعتماد و پروفایل حرفه‌ای', 'Trust & professional profile'),
@@ -466,7 +466,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
     return Material(
       color: Colors.transparent,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 112),
         children: [
           const HopeMark(),
           const SizedBox(height: 24),

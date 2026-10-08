@@ -386,7 +386,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     if (auth.isGuest) {
       return PremiumPageFrame(
                 page: HopePageId.workCenter,
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
         child: ListView(
           children: [
             PremiumHeader(
@@ -404,7 +404,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             ),
             const SizedBox(height: 20),
             PremiumPanel(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: FilledButton.icon(
                 onPressed: () =>
                     Navigator.push(context, HopeRoutes.login()),
@@ -433,7 +433,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
                 child: ListView(
                   children: [
                     PremiumHeader(
@@ -452,7 +452,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ),
                     const SizedBox(height: 20),
                     PremiumPanel(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       child: FilledButton.icon(
                         onPressed: reload,
                         icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
@@ -481,7 +481,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
                 child: ListView(
                   children: [
                     PremiumHeader(
@@ -501,7 +501,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     const SizedBox(height: 20),
                     _activityNavigation(context),
                     PremiumPanel(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       child: FilledButton.icon(
                         onPressed: () => Navigator.push(
                           context,
@@ -524,7 +524,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 104),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
