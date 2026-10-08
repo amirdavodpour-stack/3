@@ -117,7 +117,11 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                           padding: EdgeInsets.zero,
                           children: [
                             _SummaryCard(data: data, money: _money, t: _t),
-                            const SizedBox(height: HopeV2Spacing.section),
+                            SizedBox(
+                              height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact
+                                  ? HopeV2Spacing.md
+                                  : HopeV2Spacing.section,
+                            ),
                             PremiumSectionHeader(
                               page: HopePageId.financialInsights,
                               domain: HopeProductDomain.finance,
@@ -226,13 +230,26 @@ class _Metric extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 145),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
         decoration: BoxDecoration(
+          color: HopeV2Surfaces.panelSoft(context),
           borderRadius: BorderRadius.circular(HopeV2Radii.md),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          border: Border.all(
+            color: HopeV2Surfaces.border(context).withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark ? .48 : .72,
+            ),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: Theme.of(context).textTheme.labelMedium),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? HopeV2Colors.darkMuted
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               value,

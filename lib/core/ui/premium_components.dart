@@ -821,8 +821,11 @@ class PremiumHeader extends StatelessWidget {
                   maxLines: compact ? 2 : 4,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: compact ? 12.5 : null,
-                        height: compact ? 1.3 : 1.42,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? HopeV2Colors.darkMuted
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: compact ? 13 : null,
+                        height: compact ? 1.34 : 1.42,
                       ),
                 ),
               ],
@@ -975,7 +978,7 @@ class PremiumPanel extends StatelessWidget {
         color: highlight
             ? null
             : quiet
-                ? Colors.transparent
+                ? HopeV2Surfaces.panelSoft(context)
                 : (glass ? panelFill : HopeV2Surfaces.panel(context)),
         gradient: gradient,
         borderRadius: BorderRadius.circular(quiet ? HopeV2Radii.md : radius),
@@ -985,7 +988,7 @@ class PremiumPanel extends StatelessWidget {
               : highlight
                   ? scheme.primary.withValues(alpha: dark ? .15 : .14)
                   : (dark
-                      ? Colors.white.withValues(alpha: glass ? .07 : .035)
+                      ? Colors.white.withValues(alpha: glass ? .07 : .055)
                       : HopeV2Surfaces.border(context).withValues(alpha: .72)),
           width: 1,
         ),
@@ -1248,7 +1251,7 @@ class PremiumHero extends StatelessWidget {
         : compact
             // Standard mobile hero stays editorial while returning more first-fold
             // space to match, metadata, and the primary action.
-            ? height.clamp(176.0, 300.0).toDouble()
+            ? height.clamp(164.0, 300.0).toDouble()
             : (height < 280 ? 280.0 : height);
     final horizontal = compactHero
         ? HopeV2Spacing.md
@@ -1535,6 +1538,10 @@ class PremiumStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = accent ?? Theme.of(context).colorScheme.primary;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final secondaryTextColor = dark
+        ? HopeV2Colors.darkMuted
+        : Theme.of(context).colorScheme.onSurfaceVariant;
     if (compact) {
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -1567,6 +1574,7 @@ class PremiumStatCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: secondaryTextColor,
                               fontWeight: FontWeight.w800,
                             ),
                       ),
@@ -1640,7 +1648,10 @@ class PremiumStatCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: secondaryTextColor,
+                      fontWeight: FontWeight.w700,
+                    ),
                 ),
                 const SizedBox(height: 3),
                 Text(value, style: HopeV2Type.metric(context)),
@@ -1708,7 +1719,16 @@ class PremiumSectionHeader extends StatelessWidget {
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 2),
-                Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.25)),
+                Text(
+                  subtitle!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? HopeV2Colors.darkMuted
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: compact ? 12.5 : 13,
+                    height: 1.32,
+                  ),
+                ),
               ],
             ],
           );

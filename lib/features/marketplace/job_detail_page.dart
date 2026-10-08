@@ -755,7 +755,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
-                  height: compactViewport ? 170 : 230,
+                  height: compactViewport ? 164 : 230,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
@@ -800,7 +800,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         key: const ValueKey(
                           'opportunity-match-intelligence-compact-boundary',
                         ),
-                        constraints: const BoxConstraints(minHeight: 166),
+                        constraints: const BoxConstraints(minHeight: 142),
                         child: SizedBox(
                           width: double.infinity,
                           child: _MatchIntelligence(job: j, compact: true),
@@ -809,6 +809,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     else
                       _MatchIntelligence(job: j),
                   ],
+                  const SizedBox(height: 8),
+                  _OpportunitySnapshot(job: j),
                   const SizedBox(height: 10),
                   HopeOpportunityDnaSignature(job: j, includeBudget: false),
                   const SizedBox(height: 12),
@@ -821,8 +823,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     j.description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.55),
                   ),
-                  const SizedBox(height: 10),
-                  _OpportunitySnapshot(job: j),
                   const SizedBox(height: 10),
                   PremiumPanel(
                     quiet: true,

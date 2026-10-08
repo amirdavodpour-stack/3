@@ -243,3 +243,20 @@ Wave 10 is grounded in the exact-head 25-PNG artifact from Runtime #2126 (19 pri
 
 ### Validation contract
 One focused Flutter gate for this entire grouped wave. Only if that gate passes, perform one exact-head Android runtime capture with the complete 25-PNG matrix. No parallel runtime, no second Flutter run, and no visual acceptance until the resulting PNGs are inspected. Main remains untouched.
+
+## Wave 11 — Runtime #2132 screenshot-driven composition convergence
+
+**Evidence input:** Runtime #2132 / artifact `11572094459` on exact feature HEAD `e3507ac9b3189d4454b48469e26b21ce6f760a21`; 25 Persian/RTL PNGs (19 primary + 6 responsive 720×1280). The contact sheet and screen-by-screen evidence matrix define this wave; runtime re-certification remains pending until the grouped implementation passes its single focused Flutter gate.
+
+**Confirmed visual priorities:**
+- Give secondary/quiet surfaces enough tonal separation to read as intentional groups without restoring heavy borders or shadows.
+- Make muted labels, lifecycle nodes, payment details, and section subtitles readable on dark navy surfaces.
+- Keep Opportunity Detail media editorial but rebalance the first-fold order to hero → match signal → real budget/location facts → Opportunity DNA → description → operational details.
+- Make the four wallet sub-balances legible as distinct values while preserving internal TOMAN/escrow semantics.
+- Strengthen candidate-match score as the focal comparison metric and replace default Material chips with the HOPE tag primitive.
+- Reduce the mobile gap between financial summary and the trend section without compressing chart legibility.
+- Keep sparse states sparse; do not invent jobs, reviews, messages, transactions, or profile credentials to fill canvas space.
+
+**Guardrails:** Persian-first RTL with correct LTR islands, Vazirmatn, dark navy/indigo identity, 48dp targets, real backend data/media only, no page-wide photography, no user-facing AI chat, admin access restrictions, and the internal TOMAN ledger/job lifecycle remain unchanged.
+
+**Verification:** one `flutter test --no-pub test/core/ui/premium_target_density_test.dart` command for the full wave. If green, exactly one serialized exact-HEAD Runtime capture; inspect all 25 screenshots before T10 acceptance. Do not run parallel captures or treat a green workflow as visual acceptance.

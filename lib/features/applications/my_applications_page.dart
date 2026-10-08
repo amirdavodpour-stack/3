@@ -395,8 +395,13 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
-                          style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                        ),
+                      ),
                       const SizedBox(height: 5),
                       Wrap(
                         spacing: 7,

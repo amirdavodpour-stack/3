@@ -49,7 +49,14 @@ class PremiumLifecycle extends StatelessWidget {
             Text(title!, style: HopeV2Type.section(context)),
             if (subtitle != null) ...[
               const SizedBox(height: HopeV2Spacing.xs),
-              Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                subtitle!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? HopeV2Colors.darkMuted
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ],
             SizedBox(height: compact ? 5 : HopeV2Spacing.md),
           ],
@@ -73,12 +80,13 @@ class _StepRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final highlighted = step.active || step.complete;
     final iconColor = step.complete
         ? HopeV2Colors.success
         : step.active
             ? Theme.of(context).colorScheme.primary
-            : HopeV2Colors.muted;
+            : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -95,11 +103,13 @@ class _StepRow extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: highlighted
                         ? iconColor.withValues(alpha: .12)
-                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                        : (dark ? HopeV2Colors.panelDark : Theme.of(context).colorScheme.surfaceContainerHighest),
                     border: Border.all(
                       color: highlighted
                           ? iconColor.withValues(alpha: .35)
-                          : Theme.of(context).dividerColor,
+                          : (dark
+                              ? Colors.white.withValues(alpha: .12)
+                              : Theme.of(context).dividerColor),
                     ),
                   ),
                   child: HopeIcon(
@@ -114,7 +124,7 @@ class _StepRow extends StatelessWidget {
                   width: 2,
                   height: compact ? 3 : 28,
                   margin: EdgeInsets.symmetric(vertical: compact ? 1 : 4),
-                  color: Theme.of(context).dividerColor,
+                  color: dark ? HopeV2Colors.darkDivider : Theme.of(context).dividerColor,
                 ),
             ],
           ),
@@ -134,7 +144,14 @@ class _StepRow extends StatelessWidget {
                 ),
                 if (step.caption != null) ...[
                   const SizedBox(height: HopeV2Spacing.xs),
-                  Text(step.caption!, style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    step.caption!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: dark
+                          ? HopeV2Colors.darkMuted
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ],
             ),

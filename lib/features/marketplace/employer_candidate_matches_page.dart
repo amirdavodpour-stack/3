@@ -134,16 +134,30 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 _t(context, 'میزان انطباق', 'Compatibility'),
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? HopeV2Colors.darkMuted
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        Text(
-                          '${candidate.score.toStringAsFixed(candidate.score == candidate.score.roundToDouble() ? 0 : 1)}٪',
-                          style: HopeV2Type.metric(context).copyWith(
-                            color: HopeV2Colors.primary,
-                            fontSize: 22,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: HopeV2Colors.primary.withValues(alpha: .12),
+                            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                            border: Border.all(
+                              color: HopeV2Colors.primary.withValues(alpha: .20),
+                            ),
+                          ),
+                          child: Text(
+                            '${candidate.score.toStringAsFixed(candidate.score == candidate.score.roundToDouble() ? 0 : 1)}٪',
+                            style: HopeV2Type.metric(context).copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 22,
+                            ),
                           ),
                         ),
                       ],
@@ -155,13 +169,10 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                         runSpacing: 6,
                         children: candidate.reasons
                             .map(
-                              (reason) => Chip(
-                                avatar: const HugeIcon(
-                                  icon: HopeV2Icons.match,
-                                  size: 15,
-                                ),
-                                label: Text(_reason(context, reason)),
-                                visualDensity: VisualDensity.compact,
+                              (reason) => PremiumTag(
+                                icon: HopeV2Icons.match,
+                                label: _reason(context, reason),
+                                color: HopeV2Colors.secondary,
                               ),
                             )
                             .toList(growable: false),

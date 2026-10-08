@@ -204,6 +204,11 @@ void main() {
     expect(statPanel.quiet, isTrue);
     expect(statPanel.highlight, isFalse);
 
+    final panelClip = tester.widget<ClipRRect>(find.byType(ClipRRect).first);
+    final panelSurface = panelClip.child as Container;
+    final panelDecoration = panelSurface.decoration! as BoxDecoration;
+    expect(panelDecoration.color, HopeV2Colors.panelSoftDark);
+
     final actionInks = tester.widgetList<Ink>(find.byType(Ink)).toList();
     expect(actionInks.length, greaterThanOrEqualTo(2));
     final primaryDecoration = actionInks

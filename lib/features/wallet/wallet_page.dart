@@ -805,8 +805,13 @@ class _WalletPageState extends State<WalletPage> {
                       decoration: BoxDecoration(
                         color: item.emphasized
                             ? HopeV2Colors.primary.withValues(alpha: .16)
-                            : Colors.transparent,
+                            : Colors.white.withValues(alpha: .045),
                         borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+                        border: Border.all(
+                          color: Colors.white.withValues(
+                            alpha: item.emphasized ? .24 : .06,
+                          ),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -816,7 +821,7 @@ class _WalletPageState extends State<WalletPage> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: item.emphasized ? Colors.white : Colors.white60,
+                              color: item.emphasized ? Colors.white : Colors.white70,
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                             ),
