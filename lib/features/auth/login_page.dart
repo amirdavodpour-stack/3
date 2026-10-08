@@ -143,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
-                height: 116,
+                height: 104,
                     compactHero: true,
               ),
               const SizedBox(height: 10),
@@ -152,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                   // Auth is a dense primary surface; avoid a nested GPU blur
                   // here so the first Android frame remains deterministic.
                   glass: false,
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
