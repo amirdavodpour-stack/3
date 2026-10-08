@@ -8,6 +8,7 @@ set -eu
 
 opportunity="lib/core/ui/opportunity_card.dart"
 premium="lib/core/ui/premium_components.dart"
+theme="lib/core/theme/hope_v2_design.dart"
 home="lib/features/home/premium_home_feed.dart"
 jobs_widgets="lib/features/jobs/jobs_widgets.part.dart"
 android_theme="android/app/src/main/res/values/styles.xml"
@@ -29,9 +30,9 @@ grep -Fq "width: 72" "$opportunity"
 grep -Fq "height: 72" "$opportunity"
 
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
-grep -Fq 'static const darkBorder = Color(0x1FFFFFFF);' "$premium"
-grep -Fq 'static const darkBorderStrong = Color(0x2BFFFFFF);' "$premium"
-grep -Fq 'static const darkDivider = Color(0x18FFFFFF);' "$premium"
+grep -Fq 'static const darkBorder = Color(0x1FFFFFFF);' "$theme"
+grep -Fq 'static const darkBorderStrong = Color(0x2BFFFFFF);' "$theme"
+grep -Fq 'static const darkDivider = Color(0x18FFFFFF);' "$theme"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 6, 16, 24)' "$home"
