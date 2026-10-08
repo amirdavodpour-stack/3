@@ -1707,8 +1707,8 @@ class PremiumSectionHeader extends StatelessWidget {
                 ],
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 3),
-                Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.35)),
+                const SizedBox(height: 2),
+                Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.25)),
               ],
             ],
           );
