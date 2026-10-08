@@ -225,3 +225,21 @@ Runtime #2080 is the rendered baseline for this wave: all 25 FA/RTL screenshots 
 
 ### Closure rule
 The wave is not considered complete from source inspection alone. Closure requires the focused Flutter gate to pass, the exact-head runtime to finish with the complete 25-PNG artifact, and the complete matrix to be visually inspected before opening the next visual correction wave.
+
+
+## Visual Wave 10 — 2026-10-08 — Cross-screen rhythm and quiet-surface convergence
+
+Wave 10 is grounded in the exact-head 25-PNG artifact from Runtime #2126 (19 primary FA/RTL screens plus six 720×1280 responsive views). The rendered evidence shows the strongest remaining drift is composition-level: the opportunity hero and wallet balance establish a clear focal tier, while secondary panels and inter-section gaps still compete; low-count utility lists leave too much visual chrome around sparse content; Job Detail has an uneven vertical reading path at responsive size; Profile, Saved Searches, Transactions, and Offers need a more consistent compact cadence.
+
+### Aggregated implementation
+- reduce default and highlighted panel border contrast without weakening primary focus surfaces;
+- compress the first four Home feed transitions while preserving later-section breathing room;
+- tighten Job Detail secondary panel padding and vertical section gaps around the focal opportunity and primary action;
+- reduce Profile identity/section spacing without adding synthetic profile content;
+- compact Saved Searches shell, sparse result panel, and section rhythm;
+- unify transaction page shell insets and secondary section gaps;
+- tighten Offers page shell and section transitions;
+- preserve the 68dp navigation dock, 48dp minimum targets, Persian-first RTL, real data/media, wallet/job semantics, and all auth/admin controls.
+
+### Validation contract
+One focused Flutter gate for this entire grouped wave. Only if that gate passes, perform one exact-head Android runtime capture with the complete 25-PNG matrix. No parallel runtime, no second Flutter run, and no visual acceptance until the resulting PNGs are inspected. Main remains untouched.
