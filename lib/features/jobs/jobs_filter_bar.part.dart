@@ -353,8 +353,8 @@ class _JobsFilterHeader extends StatelessWidget {
     );
     final resultLabel = Container(
       key: const ValueKey('hope-explore-result-count'),
-      constraints: const BoxConstraints(minHeight: 38),
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 8),
+      constraints: const BoxConstraints(minHeight: 36),
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 7, 10, 7),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
