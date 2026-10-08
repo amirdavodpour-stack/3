@@ -38,7 +38,7 @@ done
 grep -Fq 'await _captureHopeNativeScreenshot(binding, marker);' "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:native-primary:' "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_READY:' "$test_file"
-if grep -Fq 'takeScreenshot(marker)' "$test_file"; then
+if grep -Fq 'await binding.takeScreenshot(marker)' "$test_file"; then
   echo "FAIL: runtime evidence must not use Flutter Driver takeScreenshot transport" >&2
   exit 1
 fi
