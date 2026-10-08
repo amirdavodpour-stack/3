@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/premium_lifecycle.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
@@ -323,3 +324,4 @@ void main() {
       HopeV2Navigation.barHeight,
     );
   });
+}
