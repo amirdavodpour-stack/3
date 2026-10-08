@@ -262,8 +262,8 @@ class StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolved = _accessible(context, color);
     return Container(
-      constraints: const BoxConstraints(minHeight: 32),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      constraints: const BoxConstraints(minHeight: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: resolved.withValues(alpha: .10),
         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
@@ -610,7 +610,7 @@ class _SearchFieldState extends State<SearchField> {
       decoration: InputDecoration(
         filled: true,
         fillColor: HopeV2Surfaces.input(context),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         prefixIcon: const HopeIcon(
           HopeV2Icons.search,
           size: 21,
@@ -625,7 +625,7 @@ class _SearchFieldState extends State<SearchField> {
               color: HopeV2Colors.darkMuted,
             ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(HopeV2Radii.xl),
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
           borderSide: BorderSide(
             color: HopeV2Surfaces.controlBorder(context),
           ),
@@ -633,13 +633,13 @@ class _SearchFieldState extends State<SearchField> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.xl),
           borderSide: BorderSide(
-            color: HopeV2Surfaces.controlBorder(context).withValues(alpha: .42),
+            color: HopeV2Surfaces.controlBorder(context).withValues(alpha: .30),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.xl),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: .55),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: .48),
             width: 1.4,
           ),
         ),
