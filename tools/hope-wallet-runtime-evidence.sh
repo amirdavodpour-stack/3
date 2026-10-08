@@ -304,12 +304,12 @@ run_host_batch_session() {
   # is tied to the exact Flutter render request instead of a later framebuffer.
   set +e
   export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
-  HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
-  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s" \
   # CI runtime evidence runs on the x86_64 Linux emulator software graphics stack.
   # Flutter 3.47 enables Impeller by default on Android API 29+; current Flutter/emulator
   # evidence shows materially worse raster stability in this environment. Keep the opt-out
   # scoped to this debug evidence lane; product builds retain their normal renderer.
+  HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
+  timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s" \
   flutter drive --no-pub --no-dds --no-enable-impeller \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
