@@ -111,7 +111,7 @@ class OpportunityCard extends StatelessWidget {
                           ? (featuredScan ? .18 : .21)
                           : .18,
                     )
-                  : Colors.transparent,
+                  : HopeV2Surfaces.border(context).withValues(alpha: .08),
             ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
                 ? [
