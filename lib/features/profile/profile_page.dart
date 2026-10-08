@@ -136,7 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
               return PremiumPanel(
                 key: const ValueKey('profile-account-summary'),
                 quiet: true,
-                padding: const EdgeInsets.fromLTRB(15, 13, 15, 13),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 child: Row(
                   children: [
                     const HopeIconTile(
@@ -166,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: MediaQuery.sizeOf(context).width < 500
@@ -180,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: EdgeInsets.zero,
             child: _settingsCard(context, settings, theme),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           PremiumSectionHeader(
             domain: HopeProductDomain.trust,
             title: _t(context, 'اعتماد و پروفایل حرفه‌ای', 'Trust & professional profile'),
@@ -312,7 +312,7 @@ padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           PremiumSectionHeader(
             domain: HopeProductDomain.discovery,
             title: _t(context, 'جست‌وجو و کشف', 'Discovery'),
@@ -338,7 +338,7 @@ padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           PremiumSectionHeader(
             domain: HopeProductDomain.account,
             title: _t(context, 'مرکز کنترل حساب', 'Account control center'),
@@ -372,7 +372,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           if (auth.user?['role'] == 'ADMIN')
             FilledButton.tonalIcon(
               onPressed: () => Navigator.push(context, HopeRoutes.admin()),
@@ -381,7 +381,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
                 HopeCopy.of(context).copy_open_admin_panel_39f3cb8,
               ),
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () => Navigator.push(context, HopeRoutes.about()),
             icon: const HopeIcon(HopeV2Icons.insights, size: 19),
@@ -923,7 +923,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
             title: Text(HopeCopy.of(context).copy_dark_c5832d8),
             onTap: () => Navigator.pop(context, 'dark'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
         ],
       ),
     );
