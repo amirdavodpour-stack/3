@@ -59,7 +59,7 @@ require_line "$test_file" "String.fromEnvironment('HOPE_CAPTURE_MODE', defaultVa
 require_line "$driver_file" "integrationDriver("
 require_line "$driver_file" "onScreenshot:"
 require_line "$driver_file" "writeAsBytes(image, flush: true)"
-require_line "$runtime" 'flutter drive --no-pub --no-dds'
+require_line "$runtime" 'flutter drive --no-pub --no-dds --no-enable-impeller'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_FORCE_STOP'
 if grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$runtime"; then
