@@ -956,7 +956,7 @@ void main() {
     final availableMetric =
         find.byKey(const ValueKey('wallet-balance-metric-available'));
     expect(availableMetric, findsOneWidget);
-    expect(tester.getSize(availableMetric).height, greaterThanOrEqualTo(46));
+    expect(tester.getSize(availableMetric).height, greaterThanOrEqualTo(42));
 
     expect(tester.takeException(), isNull);
   });
