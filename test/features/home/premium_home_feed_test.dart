@@ -205,7 +205,7 @@ void main() {
   });
 
   testWidgets(
-      'home pulse uses four compact columns above the inner width threshold',
+      'home pulse uses a single horizontal scanline at wide widths',
       (tester) async {
     tester.view.physicalSize = const Size(1179, 2556);
     tester.view.devicePixelRatio = 1.0;
@@ -216,10 +216,12 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final stats = List.generate(
-        4,
-        (index) => find.byKey(ValueKey('home-pulse-stat-$index')),
-      );
+      final stats = [
+        find.text('matches'),
+        find.text('new'),
+        find.text('active'),
+        find.text('Held in escrow'),
+      ];
       for (final stat in stats) {
         expect(stat, findsOneWidget);
       }
@@ -238,7 +240,7 @@ void main() {
   });
 
   testWidgets(
-      'home pulse stays compact enough to keep the first match in the first fold',
+      'home pulse stays a quiet rail below the primary match on responsive widths',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
     tester.view.devicePixelRatio = 1.0;
@@ -250,14 +252,17 @@ void main() {
       await tester.pumpAndSettle();
 
       final pulse = find.ancestor(
-        of: find.text('HOPE Pulse'),
+        of: find.text('matches'),
         matching: find.byType(PremiumPanel),
       ).first;
-      expect(tester.getSize(pulse).height, lessThanOrEqualTo(105));
+      expect(tester.getSize(pulse).height, lessThanOrEqualTo(70));
 
       final bestMatch = find.text('Best match for you');
       expect(bestMatch, findsOneWidget);
-      expect(tester.getTopLeft(bestMatch).dy, lessThan(230));
+      expect(
+        tester.getTopLeft(bestMatch).dy,
+        lessThan(tester.getTopLeft(find.text('matches')).dy),
+      );
     } finally {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
@@ -276,10 +281,12 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final stats = List.generate(
-        4,
-        (index) => find.byKey(ValueKey('home-pulse-stat-$index')),
-      );
+      final stats = [
+        find.text('matches'),
+        find.text('new'),
+        find.text('active'),
+        find.text('Held in escrow'),
+      ];
       final tops = stats
           .map((finder) => tester.getTopLeft(finder).dy)
           .toList(growable: false);
