@@ -844,7 +844,7 @@ Future<void> _captureHopeNativeScreenshot(
 ) async {
   const integrationTestChannel =
       MethodChannel('plugins.flutter.io/integration_test');
-  await integrationTestChannel.setMethodCallHandler((call) async {
+  integrationTestChannel.setMethodCallHandler((call) async {
     if (call.method == 'scheduleFrame') {
       PlatformDispatcher.instance.scheduleFrame();
     }
