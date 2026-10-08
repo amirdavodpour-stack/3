@@ -254,7 +254,7 @@ class OpportunityCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16.5,
+                    fontSize: 16,
                     height: 1.08,
                     fontWeight: FontWeight.w900,
                     shadows: [
@@ -679,7 +679,7 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 76.0 : 96.0;
+    final mediaSize = compactViewport ? 70.0 : 88.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
