@@ -875,21 +875,10 @@ Future<void> _captureRuntimeScreenshot(
 }) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  if (useHopeNativeTransport) {
-    await _captureHopeNativeScreenshot(binding, marker);
-    print('HOPE_SCREENSHOT_SOURCE:flutter-driver:onScreenshot-custom-native:$marker');
-  } else {
-    try {
-      await binding.takeScreenshot(marker).timeout(const Duration(seconds: 12));
-      print('HOPE_SCREENSHOT_SOURCE:flutter-driver:$marker');
-    } on TimeoutException catch (error) {
-      print('HOPE_SCREENSHOT_FLUTTER_DRIVER_TIMEOUT:$marker:$error');
-      // Keep the proven Flutter-driver path as the primary transport, but do
-      // not let one stalled screenshot RPC strand the whole evidence session.
-      await _captureHopeNativeScreenshot(binding, marker);
-      print('HOPE_SCREENSHOT_SOURCE:flutter-driver:onScreenshot-native-fallback:$marker');
-    }
-  }
+  // Android CI can stall inside VM-service request_data before a Dart timeout
+  // can fire. Native capture avoids that transport entirely.
+  await _captureHopeNativeScreenshot(binding, marker);
+  print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
   print('HOPE_SCREENSHOT_READY:$marker');
 }
 
