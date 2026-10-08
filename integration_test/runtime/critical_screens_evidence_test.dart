@@ -898,8 +898,16 @@ Future<void> _captureRuntimeScreen(
     ),
   );
   // Prepare the Android image surface only after the first target page is mounted.
-  // Preparing it on the initial Home host and then rebuilding Login before the
-  // first capture can leave the native image surface without a committed frame.
+  // The current Login surface includes the real Google brand asset. Precache that
+  // raster resource before surface conversion so the native image-surface handoff
+  // is not racing asset decode on the first authentication frame.
+  if (child is LoginPage) {
+    await precacheImage(
+      const AssetImage('assets/branding/google_g.png'),
+      tester.element(find.byType(LoginPage)),
+    );
+    print('HOPE_RUNTIME_LOGIN_ASSET_PRECACHE_DONE:$marker');
+  }
   await _prepareRuntimeScreenshotSurface(tester);
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
   if (child is LoginPage) {
