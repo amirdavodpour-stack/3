@@ -155,7 +155,7 @@ jobs:
           target: default
           profile: pixel_2
           # Recreate the AVD from the cached API-35 system image to avoid stale/corrupt AVD state.
-          # Use the current SwiftShader software renderer mode; swiftshader_indirect is deprecated by modern Emulator releases.
+          # Use the current SwiftShader software renderer mode supported by modern Emulator releases.
           # Keep Vulkan explicitly disabled for deterministic GLES/PixelCopy capture on the headless lane.
           force-avd-creation: false
           cores: 4
