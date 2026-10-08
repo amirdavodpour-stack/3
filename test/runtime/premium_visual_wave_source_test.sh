@@ -34,7 +34,7 @@ grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq 'static const darkBorder = Color(0x1FFFFFFF);' "$theme"
 grep -Fq 'static const darkBorderStrong = Color(0x2BFFFFFF);' "$theme"
 grep -Fq 'static const darkDivider = Color(0x18FFFFFF);' "$theme"
-grep -Fq 'static const barHeight = 70.0;' "$theme"
+grep -Fq 'static const barHeight = 68.0;' "$theme"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 6, 16, 24)' "$home"
