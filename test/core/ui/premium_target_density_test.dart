@@ -249,7 +249,7 @@ void main() {
     expect(dock.constraints, isNull);
     expect(
       tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
-      68,
+      HopeV2Navigation.barHeight,
     );
     expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
   });
