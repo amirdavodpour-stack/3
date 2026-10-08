@@ -168,12 +168,17 @@ jobs:
           script: bash tools/hope-wallet-runtime-evidence.sh
 
       - name: Validate runtime evidence artifact contents
-        if: ${{ success() }}
+        if: ${{ success() && !(github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
         run: |
           test -d docs/audit/evidence/android-runtime
           png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
-          # A full locale capture is 19 baseline screenshots (15 core + 4 wave targets) plus 6 responsive screenshots.
+          # Full capture gate: 19 baseline + 6 responsive screenshots.
           test "${png_count}" -ge 25
+
+      - name: Validate home-only diagnostic artifact contents
+        if: ${{ success() && github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]') }}
+        run: |
+          test -s docs/audit/evidence/android-runtime/home-fa-rtl.png
 
       - name: Upload critical-screen runtime evidence
         if: ${{ always() }}
