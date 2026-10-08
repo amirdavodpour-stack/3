@@ -166,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: MediaQuery.sizeOf(context).width < 500
@@ -180,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: EdgeInsets.zero,
             child: _settingsCard(context, settings, theme),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           PremiumSectionHeader(
             domain: HopeProductDomain.trust,
             title: _t(context, 'اعتماد و پروفایل حرفه‌ای', 'Trust & professional profile'),
@@ -538,8 +538,9 @@ padding: const EdgeInsets.symmetric(vertical: 6),
   ) {
     return PremiumPanel(
       key: const ValueKey('profile-settings-panel'),
-      glass: true,
-child: Column(
+      glass: false,
+      quiet: true,
+      child: Column(
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
