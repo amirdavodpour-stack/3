@@ -608,7 +608,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "flutter_integration_test_onScreenshot",
+  "capture_transport": "native_android_pixelcopy",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
