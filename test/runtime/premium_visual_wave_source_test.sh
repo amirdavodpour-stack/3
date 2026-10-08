@@ -26,7 +26,7 @@ sh test/runtime/editorial_media_fixture_scope_test.sh
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
-grep -Fq "final mediaSize = compactViewport ? 76.0 : 96.0;" "$opportunity"
+grep -Fq "final mediaSize = compactViewport ? 70.0 : 88.0;" "$opportunity"
 grep -Fq "height: 72" "$opportunity"
 # Compact media keeps its existing footprint; standard media is the stronger editorial anchor.
 
@@ -34,18 +34,21 @@ grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq 'static const darkBorder = Color(0x1FFFFFFF);' "$theme"
 grep -Fq 'static const darkBorderStrong = Color(0x2BFFFFFF);' "$theme"
 grep -Fq 'static const darkDivider = Color(0x18FFFFFF);' "$theme"
+grep -Fq 'static const barHeight = 70.0;' "$theme"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 6, 16, 24)' "$home"
-grep -Fq 'fontSize: compact ? 23 : 28' "$premium"
+grep -Fq 'fontSize: compact ? 21.5 : 27' "$premium"
+grep -Fq 'this.radius = HopeV2Radii.lg' "$premium"
 grep -Fq 'fontSize: 11' "$premium"
 grep -Fq 'alpha: Theme.of(context).brightness == Brightness.dark ? .055 : .07' "$premium"
 grep -Fq 'color: Colors.transparent,' "$premium"
-grep -Fq 'HopeV2Surfaces.controlBorder(context).withValues(alpha: .42)' "lib/core/ui/components.dart"
+grep -Fq 'HopeV2Surfaces.controlBorder(context).withValues(alpha: .30)' "lib/core/ui/components.dart"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
 # Current Home density contract is validated by its exact layout structure; no legacy vertical-spacing literal is required.
 grep -Fq 'if (recommended.length > 1)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$jobs_widgets"
+grep -Fq 'padding: EdgeInsets.all(compact ? 10 : HopeV2Spacing.md)' "lib/core/ui/premium_lifecycle.dart"
 grep -Fq '<item name="android:navigationBarColor">#070A12</item>' "$android_theme"
 grep -Fq '<item name="android:windowLightNavigationBar">false</item>' "$android_theme_v26"
 
