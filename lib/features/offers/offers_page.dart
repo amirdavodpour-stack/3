@@ -103,7 +103,7 @@ class _OffersPageState extends State<OffersPage> {
       body: RefreshIndicator(
         onRefresh: _reload,
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 56),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -136,7 +136,7 @@ class _OffersPageState extends State<OffersPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               if (!_loading && _loadError == null && all.isNotEmpty) ...[
                 Text(
                   all.length.toString() + _t(' پیشنهاد', ' offers'),
@@ -157,7 +157,7 @@ class _OffersPageState extends State<OffersPage> {
                   ),
                 ),
               if (_loading && _items.isEmpty)
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
               if (_loadError != null) ...[
                 HopeAsyncState(
                   kind: hopeStateKindForError(_loadError!),
@@ -171,7 +171,7 @@ class _OffersPageState extends State<OffersPage> {
                     child: Text(_t('تلاش دوباره', 'Retry')),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
               ],
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -194,7 +194,7 @@ class _OffersPageState extends State<OffersPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               if (rows.isEmpty)
                 EmptyState(
                   icon: HopeV2Icons.featured,
