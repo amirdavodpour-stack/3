@@ -250,7 +250,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       child: PremiumPanel(
         quiet: true,
         padding: EdgeInsets.all(
-          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 14 : 17,
+          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 12 : 14,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
