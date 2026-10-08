@@ -681,7 +681,7 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 58.0 : 88.0;
+    final mediaSize = compactViewport ? 70.0 : 88.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
