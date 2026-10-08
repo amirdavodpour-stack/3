@@ -51,7 +51,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]'))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') && contains(github.event.pull_request.title, '[wave9-runtime]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]'))) }}
     name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -130,6 +130,10 @@ jobs:
 
       - name: Prepare Flutter dependencies
         run: flutter pub get --enforce-lockfile
+
+      # One focused Flutter gate for the full grouped visual wave; runtime begins only after it passes.
+      - name: Flutter visual wave focused gate
+        run: flutter test --no-pub test/core/ui/premium_target_density_test.dart
 
       - name: Validate runtime evidence script syntax
         run: bash -n tools/hope-wallet-runtime-evidence.sh
