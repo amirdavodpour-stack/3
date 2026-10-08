@@ -23,6 +23,7 @@ require_line "$workflow" "repository: soloturn/android-emulator-runner"
 require_line "$workflow" "ref: ab495a9b42f2af30f5222bd978136f9b0a85b68a"
 require_line "$workflow" "uses: ./.ci/android-emulator-runner"
 require_line "$workflow" "ram-size: 8192M"
+require_line "$workflow" 'group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
 require_line "$workflow" "force-avd-creation: false"
 if grep -Fq 'uses: ReactiveCircus/android-emulator-runner@' "$workflow"; then
   printf 'FAIL: runtime golden baseline regressed to the non-certified ReactiveCircus runner.\n' >&2
@@ -32,6 +33,10 @@ fi
 require_line "$workflow" "api-level: 35"
 require_line "$workflow" "target: default"
 require_line "$workflow" "profile: pixel_2"
+require_line "$workflow" "fetch-depth: 2"
+require_line "$workflow" "Align PR runtime checkout to exact feature HEAD"
+require_line "$workflow" 'exact_head="$(git rev-parse HEAD^2)"'
+require_line "$workflow" 'test "$(git rev-parse HEAD)" = "$exact_head"'
 require_line "$workflow" "cores: 4"
 require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
 require_line "$workflow" "-feature -Vulkan"
