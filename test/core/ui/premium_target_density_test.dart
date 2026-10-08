@@ -373,4 +373,50 @@ void main() {
     expect(tester.getSize(find.byType(OpportunityCard)).height, lessThan(260));
   });
 
+
+  testWidgets('wave 13 compact lifecycle rail compresses the mobile decision spine',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: const Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(12),
+            child: HopeLifecycleRail(
+              labels: ['تأمین وجه', 'در امانت', 'در حال انجام', 'تحویل', 'تأیید', 'تسویه'],
+              icons: [
+                Icons.account_balance_wallet_outlined,
+                Icons.lock_outline,
+                Icons.work_outline,
+                Icons.upload_outlined,
+                Icons.verified_outlined,
+                Icons.payments_outlined,
+              ],
+              current: 2,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(HopeLifecycleRail), findsOneWidget);
+    expect(tester.getSize(find.byType(HopeLifecycleRail)).height, lessThan(125));
+    expect(find.text('تأمین وجه'), findsOneWidget);
+    expect(find.text('تسویه'), findsOneWidget);
+  });
+
 }

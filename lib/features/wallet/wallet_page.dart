@@ -690,6 +690,7 @@ class _WalletPageState extends State<WalletPage> {
 
     Widget balanceHero() {
       final scheme = Theme.of(context).colorScheme;
+      final denseViewport = MediaQuery.sizeOf(context).width < 800;
       return Container(
         key: const ValueKey('wallet-balance-hero'),
         padding: EdgeInsets.fromLTRB(14, compact ? 8 : 12, 14, compact ? 9 : 12),
@@ -752,7 +753,7 @@ class _WalletPageState extends State<WalletPage> {
               softWrap: true,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: compact ? 24 : 36,
+                fontSize: denseViewport ? 29 : (compact ? 24 : 36),
                 height: 1.02,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -.7,
@@ -761,7 +762,7 @@ class _WalletPageState extends State<WalletPage> {
             SizedBox(height: compact ? 5 : 6),
             LayoutBuilder(
               builder: (context, constraints) {
-                final narrow = constraints.maxWidth < 360;
+                final narrow = constraints.maxWidth < 760;
                 final items = <({
                   String key,
                   String label,

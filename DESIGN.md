@@ -273,3 +273,33 @@ One focused Flutter gate for this entire grouped wave. Only if that gate passes,
 **Guardrails:** no invented content; real backend data/media only; Persian-first RTL and correct LTR islands; Vazirmatn; 48dp targets; no user-facing AI chat; admin authorization remains unchanged; internal TOMAN ledger semantics and job/payment lifecycle remain unchanged; Main untouched.
 
 **Verification contract:** one focused Flutter test command for the entire wave — `flutter test --no-pub test/core/ui/premium_target_density_test.dart`. Only after it passes, one serialized exact-head Runtime with the complete 25-PNG matrix. No parallel capture and no T10 acceptance until every PNG is inspected.
+
+
+## Wave 13 — Signature Density + First Fold Convergence — 2026-10-08
+
+Wave 13 is driven by the complete exact-head Runtime #37837703135 / artifact `11576343079`. The 25 rendered screens show strong HOPE identity but continued first-fold inefficiency: the mobile payment lifecycle is too tall, Opportunity Detail allocates too much vertical budget to hero/match blocks, responsive Wallet keeps too much type/metric height, Financial Insights repeats nested boxes, Create Opportunity burns large section gaps, Candidate Comparison over-contains supporting content, and Profile settings remain visually heavy.
+
+### Research synthesis used for this wave
+- Canva HOPE UI Audit Board: first view prioritizes opportunity discovery; image is the focal cue; price + city remain visible; one clear primary action; 48px interaction targets; responsive width-based layout and RTL validation.
+- Material 3 / Firecrawl: cards should be easy to scan and are allowed to change composition by layout width; not every grouping needs a card when dividers/spacing communicate hierarchy better.
+- Flutter adaptive guidance / Parallel Search: layout should respond to available window size and preserve touch-first interaction; avoid fixed device assumptions.
+- WCAG 2.2 / Exa: maintain readable contrast and accessible target sizing.
+- Color Designer + AI Color Picker: preserve the existing near-black/navy + indigo family; strengthen hierarchy by reducing container noise, not by inventing a new palette.
+- Figma access is available, but no canonical file/node URL is registered in Notion, so no unverified Figma file was treated as visual truth. Mobbin was attempted but requires an unavailable paid plan; Miro brand context is still staged/unavailable; MyFonts pairing search is unsupported.
+
+### Implementation scope
+- shared compact `HopeLifecycleRail`;
+- mobile transaction/payment lifecycle compression;
+- responsive Opportunity Detail hero + match cadence and compact bars;
+- responsive Wallet density at sub-800dp windows;
+- quieter Financial Insights metrics;
+- tighter Create Opportunity section cadence;
+- quieter, shorter Candidate Comparison rows;
+- flatter Profile settings container;
+- focused test coverage for the shared lifecycle primitive.
+
+### Guardrails
+Real data/media only; Persian-first RTL; correct LTR islands; Vazirmatn; 48dp targets; no user-facing AI; admin visibility and owner authorization unchanged; internal TOMAN ledger/job-payment semantics unchanged; Main untouched.
+
+### Verification
+One focused Flutter gate for the grouped wave, followed only if green by one serialized exact-head Android Runtime with the complete 25-PNG matrix. No T10 acceptance from green CI alone; every new PNG must be inspected.

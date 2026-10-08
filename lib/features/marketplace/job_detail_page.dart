@@ -755,7 +755,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
-                  height: compactViewport ? 164 : 230,
+                  height: compactViewport ? 146 : 214,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
@@ -781,11 +781,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
               location: j.city?.trim().isNotEmpty == true ? j.city!.trim() : _t('دورکاری', 'Remote'),
               accent: Theme.of(context).colorScheme.primary,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: compactViewport ? 6 : 8),
             if (j.isRecommended &&
                 (j.recommendationScore != null || j.recommendationReasons.isNotEmpty))
               _MatchIntelligence(job: j, compact: true),
-            const SizedBox(height: 10),
+            SizedBox(height: compactViewport ? 7 : 10),
                   const SizedBox(height: 10),
                   HopeOpportunityDnaSignature(job: j, includeBudget: false),
                   const SizedBox(height: 12),
@@ -1322,7 +1322,27 @@ class _JobLifecycleCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ...List.generate(stages.length, (index) {
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < HopeV2Breakpoints.compact) {
+                return HopeLifecycleRail(
+                  labels: [for (final stage in stages) _label(context, stage)],
+                  icons: const [
+                    HopeV2Icons.edit,
+                    HopeV2Icons.featured,
+                    HopeV2Icons.wallet,
+                    HopeV2Icons.activity,
+                    HopeV2Icons.activity,
+                    HopeV2Icons.pending,
+                    HopeV2Icons.completed,
+                  ],
+                  current: current,
+                );
+              }
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...List.generate(stages.length, (index) {
             final reached = current >= index;
             final active = current == index;
             return Row(
@@ -1368,7 +1388,12 @@ class _JobLifecycleCard extends StatelessWidget {
                 ),
               ],
             );
-          }),
+
+                  }),
+                ],
+              );
+            },
+          ),
           if (status == 'CANCELLED')
             Text(
               _t(
@@ -1721,7 +1746,7 @@ class _MatchIntelligence extends StatelessWidget {
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
       key: ValueKey('match-breakdown-$key'),
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 4 : 5),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 3 : 5),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -1735,7 +1760,7 @@ class _MatchIntelligence extends StatelessWidget {
         const SizedBox(height: 5),
         ClipRRect(
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-          child: LinearProgressIndicator(minHeight: 5, value: value, backgroundColor: primary.withValues(alpha: .08), valueColor: AlwaysStoppedAnimation<Color>(primary)),
+          child: LinearProgressIndicator(minHeight: compact ? 4 : 5, value: value, backgroundColor: primary.withValues(alpha: .08), valueColor: AlwaysStoppedAnimation<Color>(primary)),
         ),
       ]),
     );

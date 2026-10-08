@@ -498,6 +498,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
       key: const ValueKey('profile-settings-panel'),
       glass: false,
       quiet: true,
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           LayoutBuilder(

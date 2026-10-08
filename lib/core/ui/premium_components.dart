@@ -2307,3 +2307,110 @@ class HopeTrustSignalRail extends StatelessWidget {
     );
   }
 }
+
+    
+/// Compact lifecycle rail for mobile-first decision surfaces.
+class HopeLifecycleRail extends StatelessWidget {
+  const HopeLifecycleRail({
+    super.key,
+    required this.labels,
+    required this.icons,
+    required this.current,
+  });
+
+  final List<String> labels;
+  final List<Object> icons;
+  final int current;
+
+  @override
+  Widget build(BuildContext context) {
+    if (labels.isEmpty || icons.length != labels.length) return const SizedBox.shrink();
+    final safeCurrent = current.clamp(-1, labels.length - 1);
+    final primary = Theme.of(context).colorScheme.primary;
+    final muted = Theme.of(context).brightness == Brightness.dark
+        ? HopeV2Colors.darkMuted
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    return Semantics(
+      container: true,
+      label: Localizations.localeOf(context).languageCode == 'en'
+          ? 'Lifecycle progress'
+          : 'پیشرفت چرخه',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                for (var i = 0; i < labels.length; i++) ...[
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: i < safeCurrent
+                              ? primary
+                              : i == safeCurrent
+                                  ? primary.withValues(alpha: .14)
+                                  : HopeV2Surfaces.panelSoft(context).withValues(alpha: .38),
+                          border: Border.all(
+                            color: i <= safeCurrent
+                                ? primary.withValues(alpha: .38)
+                                : HopeV2Surfaces.border(context),
+                          ),
+                        ),
+                        child: HopeIcon(
+                          i < safeCurrent ? Icons.check_rounded : icons[i],
+                          size: i < safeCurrent ? 14 : 13,
+                          color: i < safeCurrent
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : (i == safeCurrent ? primary : muted),
+                          strokeWidth: 1.9,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (i != labels.length - 1)
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: i < safeCurrent
+                            ? primary.withValues(alpha: .52)
+                            : HopeV2Surfaces.border(context).withValues(alpha: .68),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 5),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < labels.length; i++)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Text(
+                        labels[i],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontSize: 9,
+                              height: 1.05,
+                              fontWeight: i == safeCurrent ? FontWeight.w900 : FontWeight.w700,
+                              color: i <= safeCurrent ? primary : muted,
+                            ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

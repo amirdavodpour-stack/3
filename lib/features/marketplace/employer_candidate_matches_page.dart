@@ -58,7 +58,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
             return SizedBox(
               width: width,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: .055),
                   borderRadius: BorderRadius.circular(HopeV2Radii.sm),
@@ -211,7 +211,8 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 10),
               child: PremiumPanel(
                 glass: false,
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+                quiet: true,
+                padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -301,10 +302,10 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       _componentBreakdown(context, candidate),
                     ],
                     if ((candidate.skills ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       Text(
                         candidate.skills!.trim(),
-                        maxLines: 2,
+                        maxLines: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),

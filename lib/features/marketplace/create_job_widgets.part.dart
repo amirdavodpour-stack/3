@@ -272,6 +272,8 @@ class _CreateJobForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final sectionGap = compact ? 12.0 : 20.0;
     return ListView(
         padding: const EdgeInsets.fromLTRB(20, 6, 20, 40),
         children: [
@@ -373,7 +375,7 @@ class _CreateJobForm extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: sectionGap),
           PremiumSectionHeader(
             page: HopePageId.createOpportunity,
             domain: HopeProductDomain.work,
@@ -483,7 +485,7 @@ class _CreateJobForm extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: sectionGap),
           PremiumSectionHeader(
             title: kind == 'MISSION'
                 ? HopeCopy.of(context).copy_price_time_4d31a36
@@ -609,7 +611,7 @@ class _CreateJobForm extends StatelessWidget {
                 ),
               ],
             ),
-          const SizedBox(height: 20),
+          SizedBox(height: sectionGap),
           PremiumSectionHeader(
             page: HopePageId.createOpportunity,
             domain: HopeProductDomain.finance,
@@ -641,7 +643,7 @@ class _CreateJobForm extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: sectionGap),
           PremiumSectionHeader(
             page: HopePageId.createOpportunity,
             domain: HopeProductDomain.trust,

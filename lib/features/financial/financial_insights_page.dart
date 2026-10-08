@@ -180,9 +180,10 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final summary = data.summary;
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
     return PremiumPanel(
       highlight: true,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(compact ? 12 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -202,15 +203,17 @@ class _SummaryCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _Metric(label: t('قابل استفاده', 'Available'), value: money(summary.available)),
-              _Metric(label: t('قفل‌شده', 'Locked'), value: money(summary.locked)),
+              _Metric(label: t('قابل استفاده', 'Available'), value: money(summary.available), quiet: compact),
+              _Metric(label: t('قفل‌شده', 'Locked'), value: money(summary.locked), quiet: compact),
               _Metric(
                 label: t('ورودی', 'Inflow'),
                 value: money(int.tryParse(summary.totalInflow) ?? 0),
+                quiet: compact,
               ),
               _Metric(
                 label: t('خروجی', 'Outflow'),
                 value: money(int.tryParse(summary.totalOutflow) ?? 0),
+                quiet: compact,
               ),
             ],
           ),
@@ -221,21 +224,28 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value});
+  const _Metric({
+    required this.label,
+    required this.value,
+    this.quiet = false,
+  });
   final String label;
   final String value;
+  final bool quiet;
 
   @override
   Widget build(BuildContext context) => Container(
         constraints: const BoxConstraints(minWidth: 145),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: quiet ? 8 : 13, vertical: quiet ? 8 : 12),
         decoration: BoxDecoration(
-          color: HopeV2Surfaces.panelSoft(context),
+          color: quiet ? Colors.transparent : HopeV2Surfaces.panelSoft(context),
           borderRadius: BorderRadius.circular(HopeV2Radii.md),
           border: Border.all(
-            color: HopeV2Surfaces.border(context).withValues(
-              alpha: Theme.of(context).brightness == Brightness.dark ? .48 : .72,
-            ),
+            color: quiet
+                ? Colors.transparent
+                : HopeV2Surfaces.border(context).withValues(
+                    alpha: Theme.of(context).brightness == Brightness.dark ? .48 : .72,
+                  ),
           ),
         ),
         child: Column(
