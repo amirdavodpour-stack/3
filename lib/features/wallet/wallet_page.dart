@@ -691,7 +691,7 @@ class _WalletPageState extends State<WalletPage> {
       final scheme = Theme.of(context).colorScheme;
       return Container(
         key: const ValueKey('wallet-balance-hero'),
-        padding: EdgeInsets.fromLTRB(14, compact ? 9 : 14, 14, compact ? 10 : 14),
+        padding: EdgeInsets.fromLTRB(14, compact ? 8 : 12, 14, compact ? 9 : 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -751,7 +751,7 @@ class _WalletPageState extends State<WalletPage> {
               softWrap: true,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: compact ? 26 : 34,
+                fontSize: compact ? 27 : 36,
                 height: 1.02,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -.7,
