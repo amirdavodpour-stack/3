@@ -61,7 +61,8 @@ class _OpportunitySnapshot extends StatelessWidget {
     ];
 
     return PremiumPanel(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      quiet: true,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       semanticLabel: _t(context, 'خلاصه سریع فرصت', 'Opportunity snapshot'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -824,7 +825,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   _OpportunitySnapshot(job: j),
                   const SizedBox(height: 14),
                   PremiumPanel(
-                    padding: const EdgeInsets.all(17),
+                    quiet: true,
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1320,13 +1322,14 @@ class _JobLifecycleCard extends StatelessWidget {
     final status = job.status?.toUpperCase() ?? 'UNKNOWN';
 
     return PremiumPanel(
-      padding: const EdgeInsets.all(16),
+      quiet: true,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const HopeIconTile(HopeV2Icons.route, filled: true),
+              const HopeIconTile(HopeV2Icons.route, filled: true, size: 40),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -1663,9 +1666,10 @@ class _MatchIntelligence extends StatelessWidget {
           child: PremiumPanel(
             key: const ValueKey('opportunity-match-intelligence'),
             padding: compact
-                ? const EdgeInsets.fromLTRB(8, 8, 8, 7)
-                : const EdgeInsets.fromLTRB(10, 10, 10, 8),
-            highlight: true,
+                ? const EdgeInsets.fromLTRB(8, 7, 8, 6)
+                : const EdgeInsets.fromLTRB(10, 8, 10, 7),
+            highlight: false,
+            quiet: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1746,7 +1750,7 @@ class _MatchIntelligence extends StatelessWidget {
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),
-        border: Border.all(color: primary.withValues(alpha: .14)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
