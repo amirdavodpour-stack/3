@@ -69,7 +69,11 @@ grep -Fq 'system-images/android-35/default/x86_64' ".github/workflows/hope-ui-ru
 grep -Fq 'hope-android-sdk-api35-cmake3.22.1-default' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'hope-android-avd-api35-default-pixel2' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'api-level: 35' ".github/workflows/hope-ui-runtime-evidence.yml"
-grep -Fq -- '-gpu swiftshader_indirect -feature -Vulkan' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq -- '-gpu swiftshader -feature -Vulkan' ".github/workflows/hope-ui-runtime-evidence.yml"
+if grep -Fq 'swiftshader_indirect' ".github/workflows/hope-ui-runtime-evidence.yml"; then
+  echo "FAIL: deprecated swiftshader_indirect runtime renderer remains in the capture lane" >&2
+  exit 1
+fi
 grep -Fq "contains(github.event.pull_request.title, '[runtime-capture-fa]')" ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'test "${png_count}" -ge 25' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq '"financial-insights-fa-rtl"' "tools/hope-wallet-runtime-evidence.sh"
