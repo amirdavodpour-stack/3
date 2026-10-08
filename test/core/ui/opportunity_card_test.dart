@@ -6,6 +6,38 @@ import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
+  testWidgets('compact opportunity cards give media and value a non-competing editorial stack', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final job = HopeJob.fromMap({
+      'id': 'compact-editorial-card', 'title': 'طراحی محصول برای اپلیکیشن',
+      'category': 'طراحی', 'kind': 'MISSION', 'status': 'OPEN',
+      'visibility': 'PUBLIC', 'budgetMin': '1000000', 'budgetMax': '1500000',
+      'city': 'تهران',
+    });
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('fa'),
+      supportedLocales: const [Locale('fa'), Locale('en')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate, GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+      ],
+      theme: ThemeData(brightness: Brightness.dark),
+      home: Scaffold(body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
+      )),
+    ));
+    await tester.pumpAndSettle();
+    final media = tester.getSize(find.byKey(const ValueKey('opportunity-compact-media')));
+    expect(media.width, 72);
+    expect(media.height, 72);
+    expect(find.text('طراحی محصول برای اپلیکیشن'), findsOneWidget);
+    expect(find.textContaining('تومان'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets(
       'standard opportunity cards expose the Wave F 2.0 decision anatomy',
       (tester) async {

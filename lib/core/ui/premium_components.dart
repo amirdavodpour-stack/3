@@ -132,11 +132,11 @@ class _PremiumNavigationItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
           child: Ink(
             decoration: BoxDecoration(
-              color: selected ? accent.withValues(alpha: dark ? .16 : .10) : Colors.transparent,
+              color: selected ? accent.withValues(alpha: dark ? .21 : .13) : Colors.transparent,
               borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
               border: selected
                   ? Border.all(
-                      color: accent.withValues(alpha: dark ? .22 : .16),
+                      color: accent.withValues(alpha: dark ? .30 : .22),
                     )
                   : null,
             ),
@@ -905,7 +905,7 @@ class PremiumPanel extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
-    this.radius = HopeV2Radii.lg,
+    this.radius = HopeV2Radii.xl,
     this.highlight = false,
     this.glass = false,
     this.quiet = false,
@@ -979,7 +979,7 @@ class PremiumPanel extends StatelessWidget {
               : highlight
                   ? scheme.primary.withValues(alpha: dark ? .17 : .16)
                   : (dark
-                      ? Colors.white.withValues(alpha: glass ? .09 : .05)
+                      ? Colors.white.withValues(alpha: glass ? .12 : .075)
                       : HopeV2Surfaces.border(context)),
           width: 1,
         ),

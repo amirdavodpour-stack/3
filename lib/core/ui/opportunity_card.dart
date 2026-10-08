@@ -350,10 +350,11 @@ class OpportunityCard extends StatelessWidget {
     HopeCopy copy,
   ) {
     final media = ClipRRect(
+      key: const ValueKey('opportunity-compact-media'),
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 64,
-        height: 64,
+        width: 72,
+        height: 72,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
@@ -364,49 +365,53 @@ class OpportunityCard extends StatelessWidget {
       ),
     );
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         media,
-        const SizedBox(width: 8),
+        const SizedBox(width: 11),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14.5,
+                      height: 1.22,
                     ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                city,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(height: 5),
+              Row(
+                children: [
+                  HopeIcon(HopeV2Icons.location, size: 13, color: HopeV2Colors.darkMuted, strokeWidth: 1.8),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      city,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: HopeV2Colors.darkMuted, fontSize: 11.5),
+                    ),
+                  ),
+                ],
               ),
+              if (amount.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _formatAmount(amount, context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.start,
+                  style: TextStyle(fontSize: 13, height: 1.15, fontWeight: FontWeight.w900, color: primary),
+                ),
+              ],
             ],
           ),
         ),
-        if (amount.isNotEmpty) ...[
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              _formatAmount(amount, context),
-              maxLines: 2,
-              overflow: TextOverflow.clip,
-              softWrap: true,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                color: primary,
-              ),
-            ),
-          ),
-        ],
         const SizedBox(width: 4),
         HugeIcon(
           icon: Directionality.of(context) == ui.TextDirection.rtl

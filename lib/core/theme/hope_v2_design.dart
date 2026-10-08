@@ -69,9 +69,9 @@ class HopeV2Colors {
   static const navigationIndicatorLight = Color(0xFFE5DFFF);
   static const navigationIndicatorDark = Color(0x3A6366F1);
   static const inputDark = Color(0xFF0D1320);
-  static const darkBorder = Color(0x20FFFFFF);
-  static const darkBorderStrong = Color(0x2DFFFFFF);
-  static const darkDivider = Color(0x16FFFFFF);
+  static const darkBorder = Color(0x2AFFFFFF);
+  static const darkBorderStrong = Color(0x3AFFFFFF);
+  static const darkDivider = Color(0x20FFFFFF);
   static const cardBorderLight = Color(0xFFE5E0EF);
   /// Light warm-brown accent used only as a restrained atmospheric underlay.
   static const warmHalo = Color(0xFFC2A487);
@@ -204,7 +204,7 @@ class HopeV2Touch {
 class HopeV2Navigation {
   const HopeV2Navigation._();
 
-  static const barHeight = 72.0;
+  static const barHeight = 76.0;
   static const dockRadius = 20.0;
   static const itemRadius = 14.0;
   static const itemWidth = 42.0;
@@ -413,7 +413,7 @@ class HopeV2Type {
   static TextStyle display(BuildContext context) => Theme.of(context)
       .textTheme
       .displaySmall!
-      .copyWith(fontSize: 28, letterSpacing: -.65, height: 1.08);
+      .copyWith(fontSize: 30, letterSpacing: -.7, height: 1.1);
 
   static TextStyle hero(BuildContext context) => Theme.of(context)
       .textTheme
@@ -424,7 +424,7 @@ class HopeV2Type {
       .textTheme
       .titleLarge!
       .copyWith(
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: FontWeight.w900,
         letterSpacing: -.45,
         height: 1.0,
@@ -433,10 +433,10 @@ class HopeV2Type {
   static TextStyle section(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
-      .copyWith(fontSize: 17, letterSpacing: -.15);
+      .copyWith(fontSize: 18, letterSpacing: -.2, height: 1.18);
 
   static TextStyle eyebrow(BuildContext context) => Theme.of(context)
       .textTheme
       .labelLarge!
-      .copyWith(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: .65);
+      .copyWith(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: .55);
 }

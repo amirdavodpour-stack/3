@@ -18,7 +18,7 @@ Single source currently lives in `lib/core/theme/hope_v2_design.dart`; `lib/core
 
 ## Spacing, shape, motion and typography
 
-- Spacing: 4 / 8 / 12 / 16 / 20 / 24 / 32 dp.
+- Spacing: 4 / 8 / 12 / 16 / 20 / 24 / 32 dp. Compact scan cards use a 72dp editorial media tile and stack title/location/value to prevent horizontal competition at phone widths.
 - Radii: 12 / 16 / 20 / 28 dp; expressive hero radius only for hero surfaces.
 - Motion target: 150–250 ms ease-out; respect `MediaQuery.disableAnimations`.
 - Font: Vazirmatn; Latin fallback currently Roboto.

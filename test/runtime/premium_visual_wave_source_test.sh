@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
-# Grouped visual-wave source guard for the runtime-certified discovery surfaces.
+# Grouped visual-wave source guard for the aggregated editorial hierarchy + scan-card redesign.
 # [runtime-capture-fa-home] isolate editorial media to the Home discovery capture.
 # Final verification capture after adding the scoped fixture contract.
 # The restored #1560 baseline does not require a runtime media fixture; editorial media activation remains a separate visual wave.
@@ -25,8 +25,8 @@ sh test/runtime/editorial_media_fixture_scope_test.sh
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
-grep -Fq "width: 64" "$opportunity"
-grep -Fq "height: 64" "$opportunity"
+grep -Fq "width: 72" "$opportunity"
+grep -Fq "height: 72" "$opportunity"
 
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq '_HeroEditorialFallback(' "$premium"
