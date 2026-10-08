@@ -447,8 +447,7 @@ class _WalletPageState extends State<WalletPage> {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: Padding(
+      builder: (context) => SafeArea(        child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
           child: ListView(
             shrinkWrap: true,
@@ -897,8 +896,7 @@ class _WalletPageState extends State<WalletPage> {
                 borderRadius: BorderRadius.circular(HopeV2Radii.md),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
-                    minHeight: HopeV2Touch.minimum,
-                  ),
+                    minHeight: HopeV2Touch.minimum,                  ),
                   child: Ink(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   decoration: BoxDecoration(
@@ -940,7 +938,8 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
           ),
-        );
+        ),
+      );
       }
 
       return PremiumPanel(
@@ -1198,182 +1197,3 @@ padding: const EdgeInsets.all(18),
                   _t(
                     'درخواستی برای برداشت ثبت نشده است.',
                     'No withdrawal requests yet.',
-                  ),
-                ),
-              )
-            else
-              ..._payouts.take(10).map(
-                (payout) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: PremiumPanel(
-                    glass: false,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    child: Semantics(
-                      container: true,
-                      button: true,
-                      excludeSemantics: true,
-                      label:
-                          '${_money(payout.amount)}، ${_providerLabel(payout.provider)}، ${_payoutLabel(payout.status)}',
-                      onTap: () => _showPayout(payout),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        onTap: () => _showPayout(payout),
-                        leading: HopeIconTile(
-                          _payoutIcon(payout.status),
-                          color: _payoutColor(context, payout.status),
-                          filled: true,
-                          size: 44,
-                        ),
-                        title: Text(
-                          _money(payout.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                        subtitle: Text(
-                          '${_date(payout.createdAt)}\n${_providerLabel(payout.provider)}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        isThreeLine: true,
-                        trailing: StatusPill(
-                          _payoutLabel(payout.status),
-                          color: _payoutColor(context, payout.status),
-                          icon: _payoutIcon(payout.status),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            if (_nextCursor != null && _nextCursor!.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              OutlinedButton.icon(
-                onPressed: _loadingMore ? null : _loadMore,
-                icon: _loadingMore
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const HopeIcon(HopeV2Icons.arrowRight, size: 19),
-                label: Text(_t('تراکنش‌های بیشتر', 'Load more')),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
-            const SizedBox(width: 16),
-            Flexible(
-              child: SelectableText(
-                value,
-                textAlign: TextAlign.end,
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _TransferDialog extends StatefulWidget {
-  const _TransferDialog({
-    required this.isEnglish,
-    this.maxAmount,
-    this.maxAmountLabel,
-  });
-  final bool isEnglish;
-  final int? maxAmount;
-  final String? maxAmountLabel;
-
-  @override
-  State<_TransferDialog> createState() => _TransferDialogState();
-}
-
-class _TransferDialogState extends State<_TransferDialog> {
-  final destination = TextEditingController();
-  final amount = TextEditingController();
-  String? errorText;
-
-  String t(String fa, String en) => widget.isEnglish ? en : fa;
-
-  @override
-  void dispose() {
-    destination.dispose();
-    amount.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-        title: Text(t('انتقال داخلی', 'Internal transfer')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: destination,
-              autofocus: true,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: t('شناسه کیف پول مقصد', 'Destination wallet ID')),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: amount,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],
-              onChanged: (_) { if (errorText != null) setState(() => errorText = null); },
-              decoration: InputDecoration(
-                labelText: t('مبلغ به تومان', 'Amount in Toman'),
-                suffixText: t('تومان', 'TOMAN'),
-                helperText: widget.maxAmountLabel == null
-                    ? null
-                    : t(
-                        'حداکثر: ${widget.maxAmountLabel!}',
-                        'Maximum: ${widget.maxAmountLabel!}',
-                      ),
-                errorText: errorText,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(t('انصراف', 'Cancel'))),
-          FilledButton(
-            onPressed: () {
-              final target = destination.text.trim();
-              final value = int.tryParse(amount.text.trim());
-              const maxFinancialAmount = 9000000000000000;
-              if (target.isEmpty) {
-                setState(() => errorText = t('شناسه کیف پول مقصد را وارد کنید.', 'Enter a destination wallet ID.'));
-                return;
-              }
-              if (value == null || value <= 0 || value > maxFinancialAmount) {
-                setState(() => errorText = t('مبلغ واردشده معتبر نیست.', 'Enter a valid amount within the financial limit.'));
-                return;
-              }
-              if (widget.maxAmount != null && value > widget.maxAmount!) {
-                setState(() => errorText = t('مبلغ از موجودی قابل استفاده بیشتر است.', 'Amount exceeds your available balance.'));
-                return;
-              }
-              Navigator.pop(context, (target, value));
-            },
-            child: Text(t('انتقال', 'Transfer')),
-          ),
-        ],
-      );
-}
