@@ -74,7 +74,7 @@ driver_invocation_contiguous() {
     printf 'FAIL: runtime driver invocation is not directly continued from timeout; a comment/blank line split the shell command.\n' >&2
     exit 1
   fi
-  if [ "${previous_line: -1}" != '\\' ]; then
+  if [ "${previous_line: -1}" != '' ]; then
     printf 'FAIL: timeout line no longer uses a shell continuation before flutter drive.\n' >&2
     exit 1
   fi
