@@ -450,51 +450,51 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           ),
         ];
 
-        return PremiumPanel(
-          quiet: true,
-          padding: EdgeInsets.zero,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (var index = 0; index < stats.length; index++) ...[
-                  if (index > 0)
-                    Container(
-                      width: 1,
-                      height: 22,
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: HopeV2Surfaces.border(context).withValues(alpha: .28),
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (var index = 0; index < stats.length; index++) ...[
+                if (index > 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 9),
+                    child: SizedBox(
+                      height: 20,
+                      child: VerticalDivider(
+                        width: 1,
+                        color: HopeV2Surfaces.border(context).withValues(alpha: .22),
+                      ),
                     ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      HopeIcon(
-                        stats[index].icon,
-                        size: 14,
-                        color: stats[index].accent,
-                        strokeWidth: 1.9,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        stats[index].value,
-                        style: HopeV2Type.metric(context).copyWith(
-                          fontSize: 14,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        stats[index].label,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: HopeV2Colors.darkMuted,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                    ],
                   ),
-                ],
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HopeIcon(
+                      stats[index].icon,
+                      size: 14,
+                      color: stats[index].accent,
+                      strokeWidth: 1.9,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      stats[index].value,
+                      style: HopeV2Type.metric(context).copyWith(
+                        fontSize: 13.5,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      stats[index].label,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: HopeV2Colors.darkMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                ),
               ],
-            ),
+            ],
           ),
         );
       },
