@@ -832,6 +832,15 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
+Future<void> _commitAuthScreenshotFrames(
+  WidgetTester tester,
+  String marker,
+) async {
+  await tester.pump();
+  await tester.pump();
+  print('HOPE_RUNTIME_AUTH_FRAME_COMMIT_DONE:$marker');
+}
+
 Future<void> _captureRuntimeScreenshot(String marker) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
@@ -902,28 +911,25 @@ Future<void> _captureRuntimeScreen(
   // first capture can leave the native image surface without a committed frame.
   await _prepareRuntimeScreenshotSurface(tester);
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
+
+  // Flutter 3.47.2's Android screenshot bridge acquires the latest
+  // FlutterImageView frame before waiting on Android Choreographer frames.
+  // Two explicit Flutter pumps here deterministically commit fresh frames
+  // without the unbounded/async settle that has stalled the VM-service driver.
+  if (child is LoginPage || child is RegisterPage || child is PasswordResetPage) {
+    await _commitAuthScreenshotFrames(tester, marker);
+  }
+
   if (child is LoginPage) {
-    // _prepareRuntimeScreenshotSurface already commits one frame after the
-    // Android surface conversion. A second timed pump at this boundary has
-    // repeatedly stalled the headless VM-service driver before takeScreenshot.
-    // Capture immediately after the proven surface-commit boundary.
     print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
-  // Register can legitimately keep an indeterminate auth-state indicator alive
-  // in the isolated evidence host. The Android surface preparation above already
-  // commits the first target frame; an additional timed/async settle can stall the
-  // headless VM-service boundary (seen on current-head runtime evidence).
-  // Capture immediately after the proven surface-commit boundary, like Login.
   if (child is RegisterPage) {
     print('HOPE_RUNTIME_REGISTER_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
-  // PasswordResetPage is a static auth surface. Surface preparation above
-  // already commits the initial target frame, so keep the capture boundary
-  // deterministic and avoid an extra timed/async pump.
   if (child is PasswordResetPage) {
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker);
