@@ -203,3 +203,25 @@ Wave 8 is the second large consolidation pass after Runtime #2080. The screensho
 - Profile settings become a quiet structural group; trust and work-center destinations retain explicit hierarchy.
 - Explore results tighten inter-card/list rhythm while preserving the larger standard opportunity media anchor introduced in Wave 7.
 - No business semantics, data contracts, RTL behavior, or interaction target sizes change.
+
+
+## Visual Wave 9 — 2026-10-08 — Tenfold Composition Convergence
+
+Runtime #2080 is the rendered baseline for this wave: all 25 FA/RTL screenshots completed and artifact validation passed. The cross-screen review found the same systemic issue in multiple domains—strong focal surfaces are effective, but headers, metadata, secondary panels, lifecycle blocks, and utility controls still consume too much visual attention.
+
+### Aggregated scope
+- tighter mobile editorial headers and section subtitles;
+- smaller-radius, lower-chrome default panels while highlighted surfaces retain elevation;
+- shorter and quieter mobile navigation dock;
+- compact product-owned search and filter controls;
+- annotation-grade tags and status pills;
+- compressed lifecycle cadence and connectors;
+- stronger real-media opportunity anchors with quieter standard rows;
+- Home pulse rendered as an unboxed support rail;
+- opportunity intelligence/traits/facts/lifecycle subordinated to the hero and decision;
+- flatter profile settings and shorter authentication hero surfaces;
+- finance/work surfaces inheriting the same focal → decision → quiet → utility hierarchy;
+- one focused Flutter gate for the grouped wave, followed by one exact-head 25-PNG runtime capture.
+
+### Closure rule
+The wave is not considered complete from source inspection alone. Closure requires the focused Flutter gate to pass, the exact-head runtime to finish with the complete 25-PNG artifact, and the complete matrix to be visually inspected before opening the next visual correction wave.
