@@ -1638,7 +1638,10 @@ class PremiumStatCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12.5, height: 1.25),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 3),
                 Text(value, style: HopeV2Type.metric(context)),
                 if (caption != null)
