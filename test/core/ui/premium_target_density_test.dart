@@ -419,4 +419,48 @@ void main() {
     expect(find.text('تسویه'), findsOneWidget);
   });
 
+
+  testWidgets('wave 14 decision surface keeps real match signals inside one panel',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: HopeOpportunityDecisionStrip(
+            matchScore: 94,
+            budget: '۱,۵۰۰,۰۰۰ تومان',
+            category: 'نرم‌افزار',
+            location: 'تهران',
+            kind: 'ماموریت',
+            breakdown: const {
+              'skills': .94,
+              'category': .90,
+              'location': .88,
+              'salary': .92,
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-skills')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-salary')), findsOneWidget);
+    expect(find.byType(PremiumPanel), findsOneWidget);
+  });
+
 }

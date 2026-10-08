@@ -285,20 +285,48 @@ class _ChartCard extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => PremiumPanel(
-        glass: true,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 14),
-            SizedBox(height: 190, child: child),
-          ],
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
+    final chartHeight = compact ? 148.0 : 172.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
         ),
-      );
+        const SizedBox(height: 3),
+        Text(
+          subtitle,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 7),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .32),
+            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+            border: Border.all(
+              color: HopeV2Surfaces.border(context).withValues(alpha: .52),
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              10,
+              compact ? 8 : 10,
+              10,
+              compact ? 8 : 10,
+            ),
+            child: SizedBox(
+              height: chartHeight,
+              child: child,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _BarChart extends StatelessWidget {

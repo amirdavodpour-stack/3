@@ -576,6 +576,8 @@ class _WalletPageState extends State<WalletPage> {
   Widget _buildContent(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final denseViewport = MediaQuery.sizeOf(context).width < 800;
+    final tightViewport = compact || denseViewport;
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
       return Center(
@@ -690,10 +692,143 @@ class _WalletPageState extends State<WalletPage> {
 
     Widget balanceHero() {
       final scheme = Theme.of(context).colorScheme;
-      final denseViewport = MediaQuery.sizeOf(context).width < 800;
+      final width = MediaQuery.sizeOf(context).width;
+      final denseViewport = width < 800;
+      final mediumViewport = !compact && width < 760;
+
+      Widget totalBlock() => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _t('کل موجودی', 'Total balance'),
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _money(wallet.totalBalance),
+                maxLines: 2,
+                softWrap: true,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: denseViewport ? 27 : (compact ? 24 : 36),
+                  height: 1.02,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -.7,
+                ),
+              ),
+            ],
+          );
+
+      final items = <({
+        String key,
+        String label,
+        String value,
+        bool emphasized,
+      })>[
+        (
+          key: 'wallet-balance-metric-available',
+          label: _t('قابل استفاده', 'Available'),
+          value: _money(wallet.availableBalance),
+          emphasized: true,
+        ),
+        (
+          key: 'wallet-balance-metric-protected',
+          label: _t('در امانت HOPE', 'Held in HOPE escrow'),
+          value: _money(wallet.escrowBalance),
+          emphasized: false,
+        ),
+        (
+          key: 'wallet-balance-metric-pending',
+          label: _t('برداشت در انتظار', 'Pending withdrawal'),
+          value: _money(wallet.pendingWithdrawalBalance),
+          emphasized: false,
+        ),
+        (
+          key: 'wallet-balance-metric-locked-other',
+          label: _t('قفل‌شده', 'Locked funds'),
+          value: _money(wallet.otherLockedBalance),
+          emphasized: false,
+        ),
+      ];
+
+      Widget cell(({
+        String key,
+        String label,
+        String value,
+        bool emphasized,
+      }) item) {
+        return Container(
+          key: ValueKey(item.key),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            color: item.emphasized
+                ? HopeV2Colors.primary.withValues(alpha: .16)
+                : Colors.white.withValues(alpha: .045),
+            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+            border: Border.all(
+              color: Colors.white.withValues(
+                alpha: item.emphasized ? .24 : .06,
+              ),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: item.emphasized ? Colors.white : Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                item.value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: item.emphasized ? 13 : 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      Widget metricsBlock() => LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 6.0;
+              final cellWidth = (constraints.maxWidth - gap) / 2;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final item in items)
+                    SizedBox(
+                      width: cellWidth,
+                      child: cell(item),
+                    ),
+                ],
+              );
+            },
+          );
+
       return Container(
         key: const ValueKey('wallet-balance-hero'),
-        padding: EdgeInsets.fromLTRB(14, compact ? 8 : 12, 14, compact ? 9 : 12),
+        padding: EdgeInsets.fromLTRB(
+          14,
+          compact ? 8 : 10,
+          14,
+          compact ? 9 : 10,
+        ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -718,7 +853,7 @@ class _WalletPageState extends State<WalletPage> {
               children: [
                 HopeIconTile(
                   HopeV2Icons.wallet,
-                  size: compact ? 32 : 36,
+                  size: compact ? 32 : (denseViewport ? 30 : 36),
                   filled: true,
                 ),
                 const Spacer(),
@@ -738,142 +873,21 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ],
             ),
-            SizedBox(height: compact ? 4 : 5),
-            Text(
-              _t('کل موجودی', 'Total balance'),
-              style: const TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            SizedBox(height: compact ? 2 : 3),
-            Text(
-              _money(wallet.totalBalance),
-              maxLines: 2,
-              softWrap: true,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: denseViewport ? 29 : (compact ? 24 : 36),
-                height: 1.02,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -.7,
-              ),
-            ),
-            SizedBox(height: compact ? 5 : 6),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final narrow = constraints.maxWidth < 760;
-                final items = <({
-                  String key,
-                  String label,
-                  String value,
-                  bool emphasized,
-                })>[
-                  (
-                    key: 'wallet-balance-metric-available',
-                    label: _t('قابل استفاده', 'Available'),
-                    value: _money(wallet.availableBalance),
-                    emphasized: true,
-                  ),
-                  (
-                    key: 'wallet-balance-metric-protected',
-                    label: _t('در امانت HOPE', 'Held in HOPE escrow'),
-                    value: _money(wallet.escrowBalance),
-                    emphasized: false,
-                  ),
-                  (
-                    key: 'wallet-balance-metric-pending',
-                    label: _t('برداشت در انتظار', 'Pending withdrawal'),
-                    value: _money(wallet.pendingWithdrawalBalance),
-                    emphasized: false,
-                  ),
-                  (
-                    key: 'wallet-balance-metric-locked-other',
-                    label: _t('قفل‌شده', 'Locked funds'),
-                    value: _money(wallet.otherLockedBalance),
-                    emphasized: false,
-                  ),
-                ];
-
-                Widget cell(({
-                  String key,
-                  String label,
-                  String value,
-                  bool emphasized,
-                }) item) {
-                  return Container(
-                      key: ValueKey(item.key),
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: item.emphasized
-                            ? HopeV2Colors.primary.withValues(alpha: .16)
-                            : Colors.white.withValues(alpha: .045),
-                        borderRadius: BorderRadius.circular(HopeV2Radii.sm),
-                        border: Border.all(
-                          color: Colors.white.withValues(
-                            alpha: item.emphasized ? .24 : .06,
-                          ),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: item.emphasized ? Colors.white : Colors.white70,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.value,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: item.emphasized ? 13 : 11,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
-                  );
-                }
-
-                if (narrow) {
-                  return Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final item in items)
-                        SizedBox(
-                          width: (constraints.maxWidth - 6) / 2,
-                          child: cell(item),
-                        ),
-                    ],
-                  );
-                }
-
-                return Row(
-                  children: [
-                    for (var index = 0; index < items.length; index++) ...[
-                      Expanded(child: cell(items[index])),
-                      if (index != items.length - 1)
-                        Container(
-                          width: 1,
-                          height: 28,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          color: Colors.white.withValues(alpha: .10),
-                        ),
-                    ],
-                  ],
-                );
-              },
-            ),
+            SizedBox(height: denseViewport ? 7 : 8),
+            if (mediumViewport)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 5, child: totalBlock()),
+                  const SizedBox(width: 12),
+                  Expanded(flex: 7, child: metricsBlock()),
+                ],
+              )
+            else ...[
+              totalBlock(),
+              SizedBox(height: compact ? 5 : 6),
+              metricsBlock(),
+            ],
           ],
         ),
       );
@@ -1000,10 +1014,10 @@ class _WalletPageState extends State<WalletPage> {
         page: HopePageId.wallet,
         maxWidth: 1020,
         padding: EdgeInsets.fromLTRB(
-            compact ? 14 : 20,
-            compact ? 8 : 18,
-            compact ? 14 : 20,
-            compact ? 60 : 72,
+            tightViewport ? 14 : 20,
+            tightViewport ? 8 : 18,
+            tightViewport ? 14 : 20,
+            tightViewport ? 60 : 72,
           ),
         child: ListView(
           padding: EdgeInsets.zero,
@@ -1015,10 +1029,12 @@ class _WalletPageState extends State<WalletPage> {
               domain: HopeProductDomain.finance,
               eyebrow: _t('کیف پول', 'WALLET'),
               title: _t('کیف پول داخلی HOPE', 'HOPE internal wallet'),
-              subtitle: _t(
-                'موجودی و تراکنش‌های تومانی',
-                'Toman balance and transactions',
-              ),
+              subtitle: denseViewport
+                  ? null
+                  : _t(
+                      'موجودی و تراکنش‌های تومانی',
+                      'Toman balance and transactions',
+                    ),
               trailing: PopupMenuButton<String>(
                 tooltip: _t('اقدامات کیف پول', 'Wallet actions'),
                 icon: const HopeIcon(HopeV2Icons.menu),
@@ -1048,7 +1064,7 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
             ),
-            SizedBox(height: compact ? 2 : HopeV2Spacing.sm),
+            SizedBox(height: tightViewport ? 2 : HopeV2Spacing.sm),
             if (_error != null) ...[
               HopeAsyncState(
                 kind: hopeStateKindForError(_error!),
@@ -1065,7 +1081,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
               const SizedBox(height: 8),
             ],
-            SizedBox(height: compact ? 2 : HopeV2Spacing.sm),
+            SizedBox(height: tightViewport ? 2 : HopeV2Spacing.sm),
             LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 760;
@@ -1101,7 +1117,7 @@ class _WalletPageState extends State<WalletPage> {
               },
             ),
             const SizedBox(height: 10),
-            SizedBox(height: compact ? 8 : 16),
+            SizedBox(height: tightViewport ? 8 : 16),
             Container(
               key: _historyKey,
               child: PremiumSectionHeader(
@@ -1197,7 +1213,7 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                 ),
               ),
-            SizedBox(height: compact ? 8 : 16),
+            SizedBox(height: tightViewport ? 8 : 16),
             PremiumSectionHeader(
               domain: HopeProductDomain.finance,
               title: _t('برداشت‌ها', 'Withdrawals'),

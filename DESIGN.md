@@ -1,3 +1,25 @@
+## Visual Wave 14 — Decision Surface + Responsive First Fold — 2026-10-09
+
+Wave 14 is the next large screenshot-driven convergence batch, based on the exact-head 25-PNG artifact from Runtime #2141 (37841654080) at HEAD 9a43831f0b54ee2269bb58f05b836a7a3a72b5f9. Rendered evidence showed the largest remaining deltas are composition-level: the 720px Wallet first fold exposes too little downstream financial information; Opportunity Detail duplicates decision context across two stacked surfaces; Candidate Comparison still carries repeated card chrome; Financial Insights remains dashboard-heavy; Profile settings retains avoidable framing.
+
+The wave consolidates the decision spine and rebalances responsive composition:
+- `HopeOpportunityDecisionStrip` absorbs real match-component signals so Opportunity Detail can use hero → one decision surface → content.
+- Candidate matching removes repeated PremiumPanel chrome and turns component scores into transparent signal bars.
+- Financial charts become section-level evidence with shallower chart viewports and restrained surfaces instead of stacked dashboard cards.
+- Profile removes the redundant outer settings panel while preserving real settings controls.
+- Wallet uses a width-based 600–760px split inside the hero, putting total balance beside the four real ledger categories and suppressing nonessential subtitle copy at dense widths.
+
+### Wave 14 guardrails
+- Real data/media only; no synthetic records or filler.
+- Persian-first RTL, correct LTR islands, Vazirmatn-first.
+- Tappable targets remain at least 48px.
+- Dark near-black/navy canvas, indigo-led primary, restrained trust/success accents.
+- Existing HOPE tokens/components only; no new dependency.
+- Internal TOMAN ledger, authorization/admin boundaries, job/payment lifecycle and AI policy unchanged.
+- Main untouched; PR #30 remains OPEN/DRAFT/UNMERGED.
+- No renderer/timeout/transport weakening.
+- One grouped implementation commit; focused visual gate precedes exact-head Runtime capture.
+
 # HOPE Design System — Durable Visual Context
 
 ## Product

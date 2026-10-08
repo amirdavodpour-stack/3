@@ -1977,6 +1977,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     required this.location,
     required this.kind,
     this.accent,
+    this.breakdown = const <String, double>{},
   });
 
   final double? matchScore;
@@ -1985,19 +1986,41 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
   final String location;
   final String kind;
   final Color? accent;
+  final Map<String, double> breakdown;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _label(BuildContext context, String key) => switch (key) {
+        'skills' => _t(context, 'مهارت', 'Skills'),
+        'category' => _t(context, 'دسته‌بندی', 'Category'),
+        'location' => _t(context, 'مکان', 'Location'),
+        'salary' => _t(context, 'درآمد', 'Salary'),
+        'experience' => _t(context, 'تجربه', 'Experience'),
+        _ => key,
+      };
+
+  double _normalized(String key) {
+    final raw = breakdown[key];
+    if (raw == null) return 0;
+    return (raw <= 1 ? raw : raw / 100).clamp(0.0, 1.0).toDouble();
+  }
+
+  bool get hasBreakdown =>
+      const ['skills', 'category', 'location', 'salary']
+          .any((key) => breakdown.containsKey(key));
 
   @override
   Widget build(BuildContext context) {
     final primary = accent ?? Theme.of(context).colorScheme.primary;
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final score = matchScore?.clamp(0, 100).round();
-    final scoreLabel = score == null ? '—' : score.toString() + '%';
+    final scoreLabel = score == null ? '—' : '\${score}%';
 
     Widget fact(String label, String value, Object icon, Color color) {
-      if (value.trim().isEmpty || value.trim() == '—') return const SizedBox.shrink();
+      if (value.trim().isEmpty || value.trim() == '—') {
+        return const SizedBox.shrink();
+      }
       return Container(
         constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
@@ -2040,6 +2063,64 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
             ),
           ],
         ),
+      );
+    }
+
+    Widget breakdownBar(String key) {
+      final value = _normalized(key);
+      return SizedBox(
+        key: ValueKey('opportunity-decision-breakdown-\${key}'),
+        width: compact ? double.infinity : 240,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _label(context, key),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? HopeV2Colors.darkMuted
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                Text(
+                  '\${(value * 100).round()}%',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: primary,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                minHeight: 4,
+                value: value,
+                backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .32),
+                valueColor: AlwaysStoppedAnimation<Color>(primary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget breakdownRail() {
+      if (!hasBreakdown) return const SizedBox.shrink();
+      const ordered = ['skills', 'category', 'location', 'salary'];
+      final items = ordered.where((key) => breakdown.containsKey(key));
+      return Wrap(
+        spacing: compact ? 12 : 20,
+        runSpacing: compact ? 7 : 10,
+        children: [for (final key in items) breakdownBar(key)],
       );
     }
 
@@ -2097,8 +2178,20 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(scoreLabel, style: HopeV2Type.metric(context).copyWith(color: primary, fontSize: 21)),
-                              Text(_t(context, 'تطبیق', 'match'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: primary, fontWeight: FontWeight.w800)),
+                              Text(
+                                scoreLabel,
+                                style: HopeV2Type.metric(context).copyWith(
+                                  color: primary,
+                                  fontSize: 21,
+                                ),
+                              ),
+                              Text(
+                                _t(context, 'تطبیق', 'match'),
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
                             ],
                           ),
                         ),
@@ -2114,6 +2207,18 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                       fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
                     ],
                   ),
+                  if (hasBreakdown) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _t(context, 'شاخص‌های تطبیق', 'Match signals'),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: HopeV2Colors.darkMuted,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const SizedBox(height: 5),
+                    breakdownRail(),
+                  ],
                 ],
               )
             : Row(

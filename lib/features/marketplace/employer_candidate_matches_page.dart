@@ -49,43 +49,56 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     if (values.isEmpty) return const SizedBox.shrink();
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth < 360 ? constraints.maxWidth : (constraints.maxWidth - 7) / 2;
+        final width = constraints.maxWidth < 360
+            ? constraints.maxWidth
+            : (constraints.maxWidth - 7) / 2;
         return Wrap(
           spacing: 7,
-          runSpacing: 7,
+          runSpacing: 5,
           children: values.map((entry) {
             final ratio = entry.value.clamp(0.0, 1.0);
             return SizedBox(
+              key: ValueKey('candidate-signal-\${entry.key}'),
               width: width,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: .055),
-                  borderRadius: BorderRadius.circular(HopeV2Radii.sm),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(_componentLabel(context, entry.key), maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _componentLabel(context, entry.key),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? HopeV2Colors.darkMuted
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
+                              ),
                         ),
-                        Text((ratio * 100).round().toString() + '%', style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w900)),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(99),
-                      child: LinearProgressIndicator(
-                        minHeight: 4,
-                        value: ratio,
-                        backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .45),
-                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                      ),
+                      Text(
+                        '\${(ratio * 100).round()}%',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(
+                      minHeight: 3,
+                      value: ratio,
+                      backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .35),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           }).toList(growable: false),
@@ -209,10 +222,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
           ...data.candidates.map(
             (candidate) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: PremiumPanel(
-                glass: false,
-                quiet: true,
+              child: Container(
                 padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: HopeV2Surfaces.divider(context).withValues(alpha: .70),
+                    ),
+                  ),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

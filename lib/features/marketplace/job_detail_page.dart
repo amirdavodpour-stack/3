@@ -780,12 +780,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
               category: j.category ?? j.categoryId ?? '—',
               location: j.city?.trim().isNotEmpty == true ? j.city!.trim() : _t('دورکاری', 'Remote'),
               accent: Theme.of(context).colorScheme.primary,
+              breakdown: j.recommendationComponents,
             ),
-            SizedBox(height: compactViewport ? 6 : 8),
-            if (j.isRecommended &&
-                (j.recommendationScore != null || j.recommendationReasons.isNotEmpty))
-              _MatchIntelligence(job: j, compact: true),
-            SizedBox(height: compactViewport ? 7 : 10),
+            SizedBox(height: compactViewport ? 8 : 10),
                   const SizedBox(height: 10),
                   HopeOpportunityDnaSignature(job: j, includeBudget: false),
                   const SizedBox(height: 12),

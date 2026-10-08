@@ -230,11 +230,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     .copy_controls_that_make_hope_fit_you_better_ace4c0c,
           ),
           const SizedBox(height: 10),
-          PremiumPanel(
-            quiet: true,
-            padding: EdgeInsets.zero,
-            child: _settingsCard(context, settings, theme),
-          ),
+          _settingsCard(context, settings, theme),
           const SizedBox(height: 8),
           PremiumSectionHeader(
             domain: HopeProductDomain.work,
