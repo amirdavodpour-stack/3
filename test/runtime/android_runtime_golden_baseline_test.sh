@@ -44,7 +44,7 @@ fi
 driver_file="test_driver/hope_runtime_screenshot_driver.dart"
 
 require_line "$test_file" "await binding.convertFlutterSurfaceToImage();"
-require_line "$test_file" "await binding.takeScreenshot(marker);"
+require_line "$test_file" "await binding.takeScreenshot(marker).timeout(const Duration(seconds: 12));"
 require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
 require_line "$test_file" "HOPE_SCREENSHOT_SOURCE:flutter-driver:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
