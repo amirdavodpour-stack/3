@@ -35,7 +35,7 @@ for contract in "${dart_contracts[@]}"; do
 done
 
 
-grep -Fq 'await binding.takeScreenshot(marker);' "$test_file"
+grep -Fq 'await binding.takeScreenshot(marker).timeout(const Duration(seconds: 12));' "$test_file"
 grep -Fq "import 'dart:async';" "$test_file"
 grep -Fq "takeScreenshot(marker).timeout(const Duration(seconds: 12))" "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_FLUTTER_DRIVER_TIMEOUT' "$test_file"
