@@ -209,8 +209,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   children: [
                     ClipOval(
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: 32,
+                        height: 32,
                         color: HopeV2Colors.primary.withValues(alpha: .12),
                         child: avatarUrl != null
                             ? Image.network(
@@ -237,7 +237,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                               ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Flexible(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,7 +288,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             _t(context, 'فرصت‌های متناسب با مسیر کاری شما', 'Opportunities matched to your path'),
             maxLines: 1,
@@ -325,7 +325,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       page: HopePageId.home,
       domain: HopeProductDomain.overview,
       maxWidth: 1180,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
       child: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
@@ -340,9 +340,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               avatarUrl: avatarUrl,
               onOpenMenu: widget.onOpenMenu,
             ),
-            const SizedBox(height: HopeV2Spacing.sm),
+            const SizedBox(height: HopeV2Spacing.xs),
 
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.sm),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -710,7 +710,7 @@ child: Column(
             job: recommended.first,
             variant: OpportunityCardVariant.featured,
           ),
-          const SizedBox(height: HopeV2Spacing.md),
+          const SizedBox(height: HopeV2Spacing.sm),
           if (recommended.length > 1)
             _section(
               context,

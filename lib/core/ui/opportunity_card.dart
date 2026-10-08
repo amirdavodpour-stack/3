@@ -127,7 +127,7 @@ class OpportunityCard extends StatelessWidget {
                 : HopeV2Shadows.card,
           ),
           padding: EdgeInsets.all(
-            featured ? 12 : (featuredScan ? 12 : (compact ? 11 : 13)),
+            featured ? 10 : (featuredScan ? 10 : (compact ? 10 : 12)),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)

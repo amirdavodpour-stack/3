@@ -805,7 +805,7 @@ class PremiumHeader extends StatelessWidget {
                 ),
               ),
               if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   subtitle!,
                   maxLines: compact ? 2 : 4,
@@ -847,7 +847,7 @@ class PremiumHeader extends StatelessWidget {
                       ),
                     ],
                   ),
-                if (eyebrow.trim().isNotEmpty) SizedBox(height: dense ? 3 : 5),
+                if (eyebrow.trim().isNotEmpty) SizedBox(height: dense ? 2 : 5),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1694,7 +1694,7 @@ class PremiumSectionHeader extends StatelessWidget {
                 ],
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ],
@@ -1705,7 +1705,7 @@ class PremiumSectionHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 content,
-                const SizedBox(height: HopeV2Spacing.sm),
+                const SizedBox(height: HopeV2Spacing.xs),
                 action!,
               ],
             );

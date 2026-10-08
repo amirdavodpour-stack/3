@@ -10,6 +10,8 @@ opportunity="lib/core/ui/opportunity_card.dart"
 premium="lib/core/ui/premium_components.dart"
 home="lib/features/home/premium_home_feed.dart"
 jobs_widgets="lib/features/jobs/jobs_widgets.part.dart"
+android_theme="android/app/src/main/res/values/styles.xml"
+android_theme_v26="android/app/src/main/res/values-v26/styles.xml"
 runtime_driver="integration_test/runtime/critical_screens_evidence_test.dart"
 
 test -f "$opportunity"
@@ -29,11 +31,13 @@ grep -Fq "height: 64" "$opportunity"
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
-grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 8, 16, 28)' "$home"
+grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 6, 16, 24)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
 # Current Home density contract is validated by its exact layout structure; no legacy vertical-spacing literal is required.
 grep -Fq 'if (recommended.length > 1)' "$home"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$jobs_widgets"
+grep -Fq '<item name="android:navigationBarColor">#070A12</item>' "$android_theme"
+grep -Fq '<item name="android:windowLightNavigationBar">false</item>' "$android_theme_v26"
 
 register_block="$(sed -n '/if (child is RegisterPage)/,/if (child is PasswordResetPage)/p' "$runtime_driver")"
 register_capture_block="$(printf '%s\n' "$register_block" | sed '/if (child is RegisterPage)/,/return;/p')"

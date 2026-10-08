@@ -138,3 +138,10 @@ The next grouped visual wave is driven by Run #1971 / exact-head screenshot revi
 Run #1339 at exact feature HEAD `966e7c0356ccfbc140ae6cd17d86d61e51322fb1` completed successfully and its rendered Android artifact was inspected. The remaining visual work is compositional rather than runtime plumbing: Home was competing across intelligence/finance/quick-access surfaces; Explore spent too much first-viewport height on filter controls; featured opportunities needed a stronger image-led anchor.
 
 This calibration keeps the domain contracts and moves the hierarchy toward matched opportunity first, active next action second, intelligence follow-up after the work signal; compact responsive refinement controls; stronger featured imagery/hero proportions; and opaque layered product surfaces instead of decorative glass. Backend semantics, authorization gates, and Main-branch state remain unchanged.
+
+
+## Visual Wave 5 — 2026-10-08
+
+The next grouped visual pass follows the inspected 25-screen FA/RTL runtime matrix. It tightens the first-fold rhythm on Home and shared headers, reduces unnecessary chrome around shared opportunity cards without changing the certified featured-media focal height, preserves the wallet balance as the finance focal point while tightening its surrounding rhythm, and explicitly darkens the Android system navigation area to match the near-black HOPE canvas instead of producing a pale band below the mobile dock.
+
+This wave is presentation-only: no ranking, recommendation, auth, permissions, wallet/ledger values, payment lifecycle, API contract, or AI exposure changes. The exact-head Flutter suite is the single static gate; only after it is green should one full FA/RTL runtime capture be requested and its actual PNGs inspected.

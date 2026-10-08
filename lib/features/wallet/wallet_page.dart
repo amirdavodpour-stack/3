@@ -691,7 +691,7 @@ class _WalletPageState extends State<WalletPage> {
       final scheme = Theme.of(context).colorScheme;
       return Container(
         key: const ValueKey('wallet-balance-hero'),
-        padding: EdgeInsets.fromLTRB(14, compact ? 11 : 14, 14, compact ? 12 : 14),
+        padding: EdgeInsets.fromLTRB(14, compact ? 9 : 14, 14, compact ? 10 : 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           gradient: const LinearGradient(
@@ -994,7 +994,7 @@ class _WalletPageState extends State<WalletPage> {
         maxWidth: 1020,
         padding: EdgeInsets.fromLTRB(
             compact ? 14 : 20,
-            compact ? 12 : 20,
+            compact ? 8 : 18,
             compact ? 14 : 20,
             compact ? 60 : 72,
           ),
@@ -1041,7 +1041,7 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
             ),
-            SizedBox(height: compact ? 4 : HopeV2Spacing.sm),
+            SizedBox(height: compact ? 2 : HopeV2Spacing.sm),
             if (_error != null) ...[
               HopeAsyncState(
                 kind: hopeStateKindForError(_error!),
@@ -1058,7 +1058,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
               const SizedBox(height: 8),
             ],
-            SizedBox(height: compact ? 4 : HopeV2Spacing.sm),
+            SizedBox(height: compact ? 2 : HopeV2Spacing.sm),
             LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 760;
@@ -1085,7 +1085,7 @@ class _WalletPageState extends State<WalletPage> {
               },
             ),
             const SizedBox(height: 10),
-            SizedBox(height: compact ? 12 : 18),
+            SizedBox(height: compact ? 8 : 16),
             Container(
               key: _historyKey,
               child: PremiumSectionHeader(
@@ -1181,7 +1181,7 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                 ),
               ),
-            SizedBox(height: compact ? 12 : 18),
+            SizedBox(height: compact ? 8 : 16),
             PremiumSectionHeader(
               domain: HopeProductDomain.finance,
               title: _t('برداشت‌ها', 'Withdrawals'),
