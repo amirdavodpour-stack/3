@@ -515,7 +515,13 @@ void main() {
         findsOneWidget,
       );
     }
-    expect(find.text('94%'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-signal-skills')),
+        matching: find.text('94%'),
+      ),
+      findsOneWidget,
+    );
   });
 
 }
