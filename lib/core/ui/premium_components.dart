@@ -983,9 +983,9 @@ class PremiumPanel extends StatelessWidget {
           color: quiet
               ? Colors.transparent
               : highlight
-                  ? scheme.primary.withValues(alpha: dark ? .17 : .16)
+                  ? scheme.primary.withValues(alpha: dark ? .15 : .14)
                   : (dark
-                      ? Colors.white.withValues(alpha: glass ? .08 : .045)
+                      ? Colors.white.withValues(alpha: glass ? .07 : .035)
                       : HopeV2Surfaces.border(context).withValues(alpha: .72)),
           width: 1,
         ),
