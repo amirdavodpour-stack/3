@@ -2069,7 +2069,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     Widget breakdownBar(String key) {
       final value = _normalized(key);
       return SizedBox(
-        key: ValueKey('opportunity-decision-breakdown-\${key}'),
+        key: ValueKey('opportunity-decision-breakdown-$key'),
         width: compact ? double.infinity : 240,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
