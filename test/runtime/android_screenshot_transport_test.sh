@@ -131,13 +131,16 @@ if [ "$first_baseline_page" != "    'login': () => const LoginPage()," ]; then
   exit 1
 fi
 
+auth_frame_helper_block="$(awk '/^Future<void> _commitAuthScreenshotFrames\(/,/^}/ {print}' "$test_file")"
+auth_frame_pump_count="$(printf '%s\n' "$auth_frame_helper_block" | grep -cF 'await tester.pump();')"
+if [ "$auth_frame_pump_count" -ne 2 ]; then
+  echo "FAIL: auth screenshot frame commit must use exactly two deterministic tester.pump calls" >&2
+  exit 1
+fi
+grep -Fq "print('HOPE_RUNTIME_AUTH_FRAME_COMMIT_DONE:\$marker');" "$test_file"
 login_capture_block="$(awk '/if \(child is LoginPage\)/,/return;/{print}' "$test_file")"
 if printf '%s\n' "$login_capture_block" | grep -qE 'await[[:space:]]+tester\.pumpAndSettle[[:space:]]*\('; then
   echo "FAIL: Login runtime capture must not use unbounded pumpAndSettle" >&2
-  exit 1
-fi
-if printf '%s\n' "$login_capture_block" | grep -Fq 'await tester.pump('; then
-  echo "FAIL: Login runtime capture must not issue a second tester.pump after surface preparation" >&2
   exit 1
 fi
 
