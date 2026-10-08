@@ -12,6 +12,8 @@ runtime_contracts=(
   'getCurrentImageSurface()'
   'setOnImageAvailableListener'
   'acquireLatestImageViewFrame()'
+  '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT'
+  'hopeScreenshotFrameCaptured.compareAndSet(false, true)'
   'BuildConfig.DEBUG'
 )
 for contract in "${runtime_contracts[@]}"; do
@@ -55,6 +57,17 @@ if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evi
   exit 1
 fi
 grep -Fq ': > "$log_path"' "$script_file"
+
+# Protect the second-screen native capture race: install the ImageReader listener
+# before probing an already-rendered frame.
+immediate_attempt_line="$(grep -nF '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT' "$main_activity" | head -n1 | cut -d: -f1)"
+listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | head -n1 | cut -d: -f1)"
+if [ -z "$immediate_attempt_line" ] || [ -z "$listener_line" ] || [ "$immediate_attempt_line" -le "$listener_line" ]; then
+  echo "FAIL: native screenshot immediate-frame probe must follow ImageReader listener registration" >&2
+  exit 1
+fi
+grep -A14 -F '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT' "$main_activity" | grep -Fq 'tryAcquireHopeScreenshotFrame('
+grep -Fq 'hopeScreenshotFrameCaptured.compareAndSet(false, true)' "$main_activity"
 
 if grep -Fq -- '--use-application-binary' "$script_file"; then
   echo "FAIL: runtime evidence must not use --use-application-binary" >&2

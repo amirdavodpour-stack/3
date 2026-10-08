@@ -26,6 +26,7 @@ class MainActivity : FlutterActivity() {
     private var hopeScreenshotBackgroundHandler: Handler? = null
     private var hopeScreenshotMainHandler: Handler? = null
     private val hopeScreenshotInProgress = AtomicBoolean(false)
+    private val hopeScreenshotFrameCaptured = AtomicBoolean(false)
 
     /**
      * flutter drive supplies the requested capture route via the Android Intent.
@@ -83,6 +84,8 @@ class MainActivity : FlutterActivity() {
             return
         }
 
+        hopeScreenshotFrameCaptured.set(false)
+
         val flutterView = findViewById<FlutterView>(FlutterActivity.FLUTTER_VIEW_ID)
         val imageView: FlutterImageView? = flutterView?.getCurrentImageSurface()
         val imageReader = imageView?.getImageReader()
@@ -107,44 +110,9 @@ class MainActivity : FlutterActivity() {
                     if (!hopeScreenshotInProgress.get()) {
                         return@post
                     }
-
-                    imageReader.setOnImageAvailableListener(null, null)
-                    if (!flutterView.acquireLatestImageViewFrame()) {
-                        // A concurrent frame transition may have consumed this image.
-                        // Re-arm the listener before scheduling the next frame; the
-                        // acquisition itself only runs on the UI thread once an image
-                        // is already reported by ImageReader.
-                        imageReader.setOnImageAvailableListener(
-                            {
-                                mainHandler.post {
-                                    if (!hopeScreenshotInProgress.get()) {
-                                        return@post
-                                    }
-                                    imageReader.setOnImageAvailableListener(null, null)
-                                    if (flutterView.acquireLatestImageViewFrame()) {
-                                        scheduleHopePixelCopy(
-                                            flutterView,
-                                            mainHandler,
-                                            backgroundHandler,
-                                            result,
-                                        )
-                                    } else {
-                                        failHopeScreenshot(
-                                            result,
-                                            "IMAGE_FRAME_UNAVAILABLE",
-                                            "ImageReader reported a frame but FlutterImageView did not acquire it.",
-                                        )
-                                    }
-                                }
-                            },
-                            backgroundHandler,
-                        )
-                        requestHopeFrame()
-                        return@post
-                    }
-
-                    scheduleHopePixelCopy(
+                    tryAcquireHopeScreenshotFrame(
                         flutterView,
+                        imageReader,
                         mainHandler,
                         backgroundHandler,
                         result,
@@ -154,6 +122,49 @@ class MainActivity : FlutterActivity() {
             backgroundHandler,
         )
 
+        // Register the listener first, then probe the current surface. A screen
+        // can already have a rendered ImageReader frame when capture starts (as
+        // happened on Home after Login); waiting only for a new callback blocks.
+        // HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT
+        mainHandler.post {
+            if (!hopeScreenshotInProgress.get()) {
+                return@post
+            }
+            tryAcquireHopeScreenshotFrame(
+                flutterView,
+                imageReader,
+                mainHandler,
+                backgroundHandler,
+                result,
+            )
+        }
+    }
+
+    private fun tryAcquireHopeScreenshotFrame(
+        flutterView: FlutterView,
+        imageReader: ImageReader,
+        mainHandler: Handler,
+        backgroundHandler: Handler,
+        result: MethodChannel.Result,
+    ) {
+        if (!hopeScreenshotInProgress.get() || hopeScreenshotFrameCaptured.get()) {
+            return
+        }
+        if (flutterView.acquireLatestImageViewFrame() &&
+            hopeScreenshotFrameCaptured.compareAndSet(false, true)
+        ) {
+            imageReader.setOnImageAvailableListener(null, null)
+            scheduleHopePixelCopy(
+                flutterView,
+                mainHandler,
+                backgroundHandler,
+                result,
+            )
+            return
+        }
+
+        // No queued frame yet. Keep the listener armed and ask Flutter to commit
+        // one; the listener will re-enter this method on availability.
         requestHopeFrame()
     }
 
