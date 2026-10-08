@@ -79,7 +79,7 @@ driver_invocation_contiguous() {
     exit 1
   fi
 }
-driver_invocation_contiguous()
+driver_invocation_contiguous
 require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT'
 require_line "$runtime" 'HOPE_HOST_RUNTIME_DRIVER_FORCE_STOP'
 if grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$runtime"; then
