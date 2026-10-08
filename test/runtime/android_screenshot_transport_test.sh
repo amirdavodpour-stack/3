@@ -35,12 +35,13 @@ for contract in "${dart_contracts[@]}"; do
 done
 
 
-grep -Fq 'await binding.takeScreenshot(marker).timeout(const Duration(seconds: 12));' "$test_file"
-grep -Fq "import 'dart:async';" "$test_file"
-grep -Fq "takeScreenshot(marker).timeout(const Duration(seconds: 12))" "$test_file"
-grep -Fq 'HOPE_SCREENSHOT_FLUTTER_DRIVER_TIMEOUT' "$test_file"
-grep -Fq 'onScreenshot-native-fallback' "$test_file"
-grep -Fq 'HOPE_SCREENSHOT_SOURCE:flutter-driver' "$test_file"
+grep -Fq 'await _captureHopeNativeScreenshot(binding, marker);' "$test_file"
+grep -Fq 'HOPE_SCREENSHOT_SOURCE:native-primary:' "$test_file"
+grep -Fq 'HOPE_SCREENSHOT_READY:' "$test_file"
+if grep -Fq 'takeScreenshot(marker)' "$test_file"; then
+  echo "FAIL: runtime evidence must not use Flutter Driver takeScreenshot transport" >&2
+  exit 1
+fi
 grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
 grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
