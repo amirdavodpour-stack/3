@@ -799,7 +799,7 @@ class PremiumHeader extends StatelessWidget {
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 23 : 28,
+                  fontSize: compact ? 22.5 : 28,
                   height: 1.08,
                   letterSpacing: compact ? -.5 : -.75,
                 ),
@@ -811,7 +811,7 @@ class PremiumHeader extends StatelessWidget {
                   maxLines: compact ? 2 : 4,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: compact ? 13.5 : null,
+                        fontSize: compact ? 13 : null,
                         height: compact ? 1.3 : 1.42,
                       ),
                 ),
@@ -989,8 +989,8 @@ class PremiumPanel extends StatelessWidget {
                 ? [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: quiet ? 0 : .11),
-                      blurRadius: highlight ? 24 : 13,
-                      offset: Offset(0, highlight ? 10 : 5),
+                      blurRadius: highlight ? 24 : 11,
+                      offset: Offset(0, highlight ? 10 : 4),
                     ),
                     if (highlight)
                       BoxShadow(
@@ -1744,14 +1744,14 @@ class PremiumTag extends StatelessWidget {
     final background = inverse
         ? Colors.white.withValues(alpha: .12)
         : base.withValues(
-            alpha: Theme.of(context).brightness == Brightness.dark ? .105 : .085,
+            alpha: Theme.of(context).brightness == Brightness.dark ? .078 : .085,
           );
     return Semantics(
       label: label,
       container: true,
       child: Container(
         constraints: const BoxConstraints(minHeight: 22),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
@@ -1759,7 +1759,7 @@ class PremiumTag extends StatelessWidget {
             color: inverse
                 ? Colors.white24
                 : base.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark ? .075 : .055,
+                    alpha: Theme.of(context).brightness == Brightness.dark ? .055 : .055,
                   ),
           ),
         ),
@@ -1786,7 +1786,7 @@ class PremiumTag extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
-                  fontSize: 11,
+                  fontSize: 10.5,
                   height: 1.0,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1842,7 +1842,7 @@ class PremiumFilterChip extends StatelessWidget {
           child: AnimatedContainer(
             duration: reduceMotion ? Duration.zero : HopeV2Motion.fast,
             constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: selected
                   ? base.withValues(alpha: interactive ? .08 : .04)
@@ -1851,7 +1851,7 @@ class PremiumFilterChip extends StatelessWidget {
               border: Border.all(
                 color: selected
                     ? base.withValues(alpha: interactive ? .22 : .10)
-                    : HopeV2Surfaces.border(context).withValues(alpha: .30),
+                    : HopeV2Surfaces.border(context).withValues(alpha: .18),
               ),
             ),
             child: Row(

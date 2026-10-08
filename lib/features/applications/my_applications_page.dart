@@ -376,6 +376,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
+        quiet: true,
         padding: const EdgeInsets.all(13),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

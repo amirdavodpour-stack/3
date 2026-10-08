@@ -633,13 +633,13 @@ class _SearchFieldState extends State<SearchField> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.xl),
           borderSide: BorderSide(
-            color: HopeV2Surfaces.controlBorder(context).withValues(alpha: .72),
+            color: HopeV2Surfaces.controlBorder(context).withValues(alpha: .42),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(HopeV2Radii.xl),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: .65),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: .55),
             width: 1.4,
           ),
         ),

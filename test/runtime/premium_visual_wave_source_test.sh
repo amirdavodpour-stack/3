@@ -29,9 +29,17 @@ grep -Fq "width: 72" "$opportunity"
 grep -Fq "height: 72" "$opportunity"
 
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
+grep -Fq 'static const darkBorder = Color(0x1FFFFFFF);' "$premium"
+grep -Fq 'static const darkBorderStrong = Color(0x2BFFFFFF);' "$premium"
+grep -Fq 'static const darkDivider = Color(0x18FFFFFF);' "$premium"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 6, 16, 24)' "$home"
+grep -Fq 'fontSize: compact ? 22.5 : 28' "$premium"
+grep -Fq 'fontSize: 10.5' "$premium"
+grep -Fq 'alpha: Theme.of(context).brightness == Brightness.dark ? .078 : .085' "$premium"
+grep -Fq 'HopeV2Surfaces.border(context).withValues(alpha: .18)' "$premium"
+grep -Fq 'HopeV2Surfaces.controlBorder(context).withValues(alpha: .42)' "lib/core/ui/components.dart"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
 # Current Home density contract is validated by its exact layout structure; no legacy vertical-spacing literal is required.
 grep -Fq 'if (recommended.length > 1)' "$home"

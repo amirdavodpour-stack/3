@@ -312,7 +312,7 @@ class OpportunityCard extends StatelessWidget {
           begin: AlignmentDirectional.topEnd,
           end: AlignmentDirectional.bottomStart,
           colors: [
-            accent.withValues(alpha: .24),
+            accent.withValues(alpha: .16),
             HopeV2Colors.darkCard,
           ],
         ),
@@ -322,10 +322,10 @@ class OpportunityCard extends StatelessWidget {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            color: accent.withValues(alpha: .16),
+            color: accent.withValues(alpha: .11),
             shape: BoxShape.circle,
             border: Border.all(
-              color: accent.withValues(alpha: .24),
+              color: accent.withValues(alpha: .18),
             ),
           ),
           child: Center(

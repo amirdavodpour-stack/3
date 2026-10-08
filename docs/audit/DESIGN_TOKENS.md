@@ -37,6 +37,16 @@ Single source currently lives in `lib/core/theme/hope_v2_design.dart`; `lib/core
 
 `tool/contrast_check.py` now runs from `tools/verify-design-quality.sh` and checks the canonical light/dark text, semantic icon/border and action-label token pairs. A passing CI result is still required before claiming compliance. Required thresholds: normal body text 4.5:1; large text and essential icon/border controls 3:1. Run a script across dark/light surfaces and fail CI on violation before claiming compliance.
 
+## Wave 8 — Quiet Surfaces + Decision Density
+
+Runtime #2038 on HEAD `dd27d7bafd6c34dd4b3a874f8f6c7db76695c4bc` is the accepted visual input for this wave: 25/25 FA/RTL screenshots (19×1080×1920 + 6×720×1280). The screenshots show a coherent dark/indigo identity and strong featured/detail surfaces, while repeated list cards, search/filter chrome and deterministic fallback media carry too much containment and compete with decision content.
+
+Wave 8 applies one shared composition correction: quieter dark borders/dividers and panel shadows; quieter tags and unselected filters; lower-contrast search controls; restrained deterministic fallback media; and quiet outer containers for repeated applications/work-center rows. The design grammar remains **focal surface → decision/state → quiet rows → utility**. No new brand palette was introduced.
+
+Invariants preserved: RTL/LTR semantics, 48dp touch targets, real product data, existing wallet/ledger semantics, accessibility semantics, runtime harness contract, and `MainActivity.kt` untouched.
+
+Acceptance gate: Static verification must pass once for this grouped tree, then exactly one serialized exact-HEAD Runtime capture must produce the complete 25-screen artifact. Actual PNGs must be inspected before Wave 8 is accepted or the next wave is planned.
+
 ## Known debt
 
 - Tokens are split between legacy compatibility names and `HopeV2Colors`; there is not yet a dedicated `tokens.dart`.

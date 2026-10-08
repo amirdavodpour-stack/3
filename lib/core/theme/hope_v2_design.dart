@@ -69,9 +69,9 @@ class HopeV2Colors {
   static const navigationIndicatorLight = Color(0xFFE5DFFF);
   static const navigationIndicatorDark = Color(0x3A6366F1);
   static const inputDark = Color(0xFF0D1320);
-  static const darkBorder = Color(0x2AFFFFFF);
-  static const darkBorderStrong = Color(0x3AFFFFFF);
-  static const darkDivider = Color(0x20FFFFFF);
+  static const darkBorder = Color(0x1FFFFFFF);
+  static const darkBorderStrong = Color(0x2BFFFFFF);
+  static const darkDivider = Color(0x18FFFFFF);
   static const cardBorderLight = Color(0xFFE5E0EF);
   /// Light warm-brown accent used only as a restrained atmospheric underlay.
   static const warmHalo = Color(0xFFC2A487);

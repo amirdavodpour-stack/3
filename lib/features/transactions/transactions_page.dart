@@ -248,6 +248,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: PremiumPanel(
+        quiet: true,
         padding: EdgeInsets.all(
           MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 14 : 17,
         ),
