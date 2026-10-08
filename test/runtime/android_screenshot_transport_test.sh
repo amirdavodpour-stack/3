@@ -12,7 +12,7 @@ runtime_contracts=(
   'getCurrentImageSurface()'
   'setOnImageAvailableListener'
   'acquireLatestImageViewFrame()'
-  '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT'
+  '// HOPE_SCREENSHOT_REQUEST_FRAME_AFTER_LISTENER'
   'hopeScreenshotFrameCaptured.compareAndSet(false, true)'
   'BuildConfig.DEBUG'
 )
