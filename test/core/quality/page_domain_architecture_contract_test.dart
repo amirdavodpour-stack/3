@@ -174,13 +174,13 @@ void main() {
     expect(projects, greaterThan(quick));
   });
 
-  test('home places active work before discovery feed', () {
+  test('home places the primary discovery feed before active work', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
     final build = source.indexOf('Widget build(BuildContext context)');
-    final active = source.indexOf('_activeWork(context)', build);
     final discovery = source.indexOf('_opportunitySections(context, jobs, settings)', build);
-    expect(active, greaterThanOrEqualTo(0));
-    expect(discovery, greaterThan(active));
+    final active = source.indexOf('_activeWork(context)', build);
+    expect(discovery, greaterThanOrEqualTo(0));
+    expect(active, greaterThan(discovery));
   });
 
   test('main navigation names the work center explicitly', () {
