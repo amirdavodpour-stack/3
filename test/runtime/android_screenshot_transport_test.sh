@@ -139,7 +139,7 @@ if grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"; then
   echo "FAIL: runtime evidence still force-stops the driver after screenshot flush" >&2
   exit 1
 fi
-grep -Fq '"capture_transport": "flutter_integration_test_onScreenshot"' "$script_file"
+grep -Fq '"capture_transport": "native_android_pixelcopy"' "$script_file"
 grep -Fq 'RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"' "$script_file"
 
 # Baseline host partitions must stay aligned with the Dart page-map insertion order.
