@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -832,11 +833,51 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
-Future<void> _captureRuntimeScreenshot(String marker) async {
+const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');
+
+Future<void> _captureHopeNativeScreenshot(
+  IntegrationTestWidgetsFlutterBinding binding,
+  String marker,
+) async {
+  const integrationTestChannel =
+      MethodChannel('plugins.flutter.io/integration_test');
+  await integrationTestChannel.setMethodCallHandler((call) async {
+    if (call.method == 'scheduleFrame') {
+      PlatformDispatcher.instance.scheduleFrame();
+    }
+  });
+
+  final bytes = await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(
+    'captureScreenshot',
+    <String, Object?>{'name': marker},
+  );
+  if (bytes == null || bytes.isEmpty) {
+    throw StateError('HOPE native screenshot returned no PNG bytes.');
+  }
+
+  binding.reportData ??= <String, dynamic>{};
+  final screenshots =
+      binding.reportData!['screenshots'] as List<dynamic>? ?? <dynamic>[];
+  screenshots.add(<String, dynamic>{
+    'screenshotName': marker,
+    'bytes': bytes,
+  });
+  binding.reportData!['screenshots'] = screenshots;
+}
+
+Future<void> _captureRuntimeScreenshot(
+  String marker, {
+  bool useHopeNativeTransport = false,
+}) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  await binding.takeScreenshot(marker);
-  print('HOPE_SCREENSHOT_SOURCE:flutter-driver:$marker');
+  if (useHopeNativeTransport) {
+    await _captureHopeNativeScreenshot(binding, marker);
+    print('HOPE_SCREENSHOT_SOURCE:flutter-driver:onScreenshot-custom-native:$marker');
+  } else {
+    await binding.takeScreenshot(marker);
+    print('HOPE_SCREENSHOT_SOURCE:flutter-driver:$marker');
+  }
   print('HOPE_SCREENSHOT_READY:$marker');
 }
 
