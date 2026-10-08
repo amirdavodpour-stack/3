@@ -275,7 +275,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
         label: Text(_t('جست‌وجوی جدید', 'New search')),
       ),
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 104),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
@@ -309,7 +309,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             if (!_loading && _error == null && _items.isNotEmpty)
               PremiumStatCard(
                 label: _t('جست‌وجوهای فعال', 'Saved searches'),
@@ -323,7 +323,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 ),
               ),
             if (!_loading && _error == null && _items.isNotEmpty)
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             if (_loading)
               const PremiumPanel(
                 child: SizedBox(
@@ -339,7 +339,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                     const HopeIcon(HopeV2Icons.pending, size: 36),
                     const SizedBox(height: 10),
                     Text(_error!, textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: _load,
                       icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
@@ -350,11 +350,11 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
               )
             else if (_items.isEmpty)
               PremiumPanel(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     const HopeIcon(HopeV2Icons.savedSearches, size: 40),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Text(
                       _t('هنوز جست‌وجوی ذخیره‌شده‌ای ندارید.',
                           'You have no saved searches yet.'),
