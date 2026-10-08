@@ -58,22 +58,17 @@ if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evi
 fi
 grep -Fq ': > "$log_path"' "$script_file"
 
-# Protect the ImageReader capture boundary: install the listener, then request
-# a fresh engine frame. Do not synchronously probe acquireLatestImageViewFrame()
-# on the Android main looper before a new frame is available; that probe is the
-# exact point where the current-head auth capture can stall the UI/VM-service.
-request_frame_line="$(grep -nF '// HOPE_SCREENSHOT_REQUEST_FRAME_AFTER_LISTENER' "$main_activity" | head -n1 | cut -d: -f1)"
+# Protect the ImageReader capture boundary: register the listener first, then
+# probe the current FlutterImageView surface. Home can already have a rendered
+# ImageReader frame when capture starts; waiting only for a fresh callback blocks.
+immediate_frame_line="$(grep -nF '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT' "$main_activity" | head -n1 | cut -d: -f1)"
 listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | head -n1 | cut -d: -f1)"
-if [ -z "$request_frame_line" ] || [ -z "$listener_line" ] || [ "$request_frame_line" -le "$listener_line" ]; then
-  echo "FAIL: native screenshot must register the ImageReader listener before requesting a fresh frame" >&2
+if [ -z "$immediate_frame_line" ] || [ -z "$listener_line" ] || [ "$immediate_frame_line" -le "$listener_line" ]; then
+  echo "FAIL: native screenshot must register the ImageReader listener before the immediate current-frame probe" >&2
   exit 1
 fi
-request_block="$(sed -n "$((request_frame_line - 2)),$((request_frame_line + 8))p" "$main_activity")"
-if grep -Fq 'tryAcquireHopeScreenshotFrame(' <<<"$request_block"; then
-  echo "FAIL: native screenshot request-frame boundary must not synchronously probe the ImageReader on the main looper" >&2
-  exit 1
-fi
-grep -Fq 'requestHopeFrame()' <<<"$request_block"
+immediate_block="$(sed -n "$((immediate_frame_line - 2)),$((immediate_frame_line + 12))p" "$main_activity")"
+grep -Fq 'tryAcquireHopeScreenshotFrame(' <<<"$immediate_block"
 grep -Fq 'hopeScreenshotFrameCaptured.compareAndSet(false, true)' "$main_activity"
 
 if grep -Fq -- '--use-application-binary' "$script_file"; then
