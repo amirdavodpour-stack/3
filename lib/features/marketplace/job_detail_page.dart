@@ -246,7 +246,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     .copy_add_a_concise_resume_and_relevant_skills_298a4f1,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               TextField(
                 controller: resume,
                 maxLines: 5,
@@ -372,7 +372,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   .copy_send_your_price_and_a_short_message_to_the_3961669,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             TextField(
               controller: price,
               keyboardType: TextInputType.number,
@@ -821,9 +821,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     j.description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.55),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   _OpportunitySnapshot(job: j),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   PremiumPanel(
                     quiet: true,
                     padding: const EdgeInsets.all(14),
@@ -871,7 +871,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (isJob) ...[
                     const SizedBox(height: 13),
                     PremiumPanel(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -931,7 +931,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         }
                         if (snapshot.hasError) {
                           return PremiumPanel(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -962,7 +962,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
 
                         if (list.isEmpty) {
                           return PremiumPanel(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             child: Text(
                               _t(
                                 'هنوز متقاضی‌ای برای نمایش وجود ندارد.',
@@ -974,7 +974,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         }
 
                         return PremiumPanel(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1151,7 +1151,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ),
                   if (canViewFinance)
                     PremiumPanel(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       highlight: true,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1220,7 +1220,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ),
                   if (collaborationChatOpen)
                     PremiumPanel(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
                           const HugeIcon(icon: HopeV2Icons.message, size: 21),
