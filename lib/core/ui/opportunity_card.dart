@@ -124,10 +124,10 @@ class OpportunityCard extends StatelessWidget {
                         offset: const Offset(0, 9),
                       ),
                   ]
-                : HopeV2Shadows.card,
+                : const <BoxShadow>[],
           ),
           padding: EdgeInsets.all(
-            featured ? 10 : (featuredScan ? 10 : (compact ? 10 : 12)),
+            featured ? 10 : (featuredScan ? 10 : (compact ? 9 : 10)),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
@@ -203,7 +203,7 @@ class OpportunityCard extends StatelessWidget {
         key: const ValueKey('opportunity-media-header'),
         height: featured
             ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 140 : 152)
-            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 72 : 88),
+            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 78 : 92),
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,

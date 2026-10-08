@@ -145,3 +145,27 @@ This calibration keeps the domain contracts and moves the hierarchy toward match
 The next grouped visual pass follows the inspected 25-screen FA/RTL runtime matrix. It tightens the first-fold rhythm on Home and shared headers, reduces unnecessary chrome around shared opportunity cards without changing the certified featured-media focal height, preserves the wallet balance as the finance focal point while tightening its surrounding rhythm, and explicitly darkens the Android system navigation area to match the near-black HOPE canvas instead of producing a pale band below the mobile dock.
 
 This wave is presentation-only: no ranking, recommendation, auth, permissions, wallet/ledger values, payment lifecycle, API contract, or AI exposure changes. The exact-head Flutter suite is the single static gate; only after it is green should one full FA/RTL runtime capture be requested and its actual PNGs inspected.
+
+
+## Wave 6 — Surface Hierarchy + Decision Spine (2026-10-08)
+
+Wave 6 is a composition-level visual pass driven by Runtime #2020. Default surfaces become quieter while focal opportunity media and highlighted surfaces retain visual priority. The pass preserves business logic, RTL/LTR behavior, semantics, and 48dp interaction targets.
+
+### Evidence-driven scope
+- Runtime #2020 produced the complete critical/responsive artifact set and passed artifact validation.
+- Home and featured opportunity media are strong focal anchors; repeated panels still compete with them.
+- Jobs, transactions and wallet retain too much chrome for repeated content.
+- Profile and utility states leave large quiet areas while secondary containers still carry visual weight.
+
+### Wave 6 implementation
+- Flatten default PremiumPanel chrome.
+- Quiet PremiumTag/status chips.
+- Tighten standard OpportunityCard containment and remove non-featured shadow competition.
+- Give standard opportunity media a slightly stronger focal footprint while preserving the featured mobile media contract.
+- Preserve highlighted/featured surfaces as the highest visual tier.
+
+### Composition rule
+Focal surface → decision/state strip → quiet rows → utility.
+
+### Verification
+One grouped Flutter gate, then one runtime capture if green. Actual PNGs remain the authority for the next correction wave. Main remains untouched.

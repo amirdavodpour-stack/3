@@ -905,7 +905,7 @@ class PremiumPanel extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
-    this.radius = HopeV2Radii.xl,
+    this.radius = HopeV2Radii.lg,
     this.highlight = false,
     this.glass = false,
     this.quiet = false,
@@ -979,7 +979,7 @@ class PremiumPanel extends StatelessWidget {
               : highlight
                   ? scheme.primary.withValues(alpha: dark ? .17 : .16)
                   : (dark
-                      ? Colors.white.withValues(alpha: glass ? .09 : .075)
+                      ? Colors.white.withValues(alpha: glass ? .09 : .05)
                       : HopeV2Surfaces.border(context)),
           width: 1,
         ),
@@ -988,9 +988,9 @@ class PremiumPanel extends StatelessWidget {
             : dark
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: quiet ? 0 : .18),
-                      blurRadius: highlight ? 24 : 16,
-                      offset: Offset(0, highlight ? 10 : 6),
+                      color: Colors.black.withValues(alpha: quiet ? 0 : .11),
+                      blurRadius: highlight ? 24 : 13,
+                      offset: Offset(0, highlight ? 10 : 5),
                     ),
                     if (highlight)
                       BoxShadow(
@@ -1744,14 +1744,14 @@ class PremiumTag extends StatelessWidget {
     final background = inverse
         ? Colors.white.withValues(alpha: .12)
         : base.withValues(
-            alpha: Theme.of(context).brightness == Brightness.dark ? .14 : .10,
+            alpha: Theme.of(context).brightness == Brightness.dark ? .105 : .085,
           );
     return Semantics(
       label: label,
       container: true,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 24),
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+        constraints: const BoxConstraints(minHeight: 22),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
@@ -1759,7 +1759,7 @@ class PremiumTag extends StatelessWidget {
             color: inverse
                 ? Colors.white24
                 : base.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark ? .12 : .07,
+                    alpha: Theme.of(context).brightness == Brightness.dark ? .075 : .055,
                   ),
           ),
         ),
