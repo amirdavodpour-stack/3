@@ -169,3 +169,23 @@ Focal surface → decision/state strip → quiet rows → utility.
 
 ### Verification
 One grouped Flutter gate, then one runtime capture if green. Actual PNGs remain the authority for the next correction wave. Main remains untouched.
+
+
+## Visual Wave 7 — 2026-10-08
+
+Wave 7 is the consolidated editorial-density pass after the exact-head 25-screen Runtime #2076 inspection. The artifact is green and complete; the screenshots show that the remaining drift is systemic rather than route-specific: standard opportunity rows still read as nested cards, support metrics compete with focal decisions, tags/status markers are too boxed, and secondary quick actions consume too much visual surface area.
+
+### Wave 7 implementation contract
+- **Focal tier:** featured opportunity media, primary decision CTA, wallet total, lifecycle/status decision.
+- **Decision/state tier:** compact state strips and one primary command row.
+- **Quiet tier:** standard opportunity rows, support metrics, secondary destinations, repeated metadata.
+- **Utility tier:** filters, history, secondary account/work links.
+- Standard opportunity cards are now editorial rows without an outer card shell; featured/scan variants retain their stronger containment.
+- Standard opportunity media grows modestly on mobile/compact layouts to strengthen the real-work image anchor.
+- Non-highlight stat cards become quiet by default; highlighted stats retain explicit containment.
+- Quick-action secondary controls lose container chrome; the primary action remains filled.
+- Domain navigation groups and tags become quieter, with transparent borders and lighter fills.
+- Default premium panels retain their semantics and spacing but use less border/shadow weight; highlighted panels remain the only elevated shared tier.
+
+### Screenshot acceptance target for Wave 7
+The next runtime should visibly show fewer competing rectangles, stronger opportunity/media hierarchy, a quieter finance/work history, and a more editorial first fold while preserving all existing business semantics, RTL/LTR structure, 48dp targets, and exact 25-screen runtime coverage.

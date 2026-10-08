@@ -100,9 +100,9 @@ class OpportunityCard extends StatelessWidget {
                     stops: const [0, .44, 1],
                   )
                 : null,
-            color: featured ? null : Theme.of(context).colorScheme.surface,
+            color: featured || featuredScan ? null : Colors.transparent,
             borderRadius: BorderRadius.circular(
-              HopeV2Radii.lg,
+              featured || featuredScan ? HopeV2Radii.lg : HopeV2Radii.md,
             ),
             border: Border.all(
               color: featured || featuredScan
@@ -111,9 +111,7 @@ class OpportunityCard extends StatelessWidget {
                           ? (featuredScan ? .18 : .21)
                           : .18,
                     )
-                  : (Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withValues(alpha: .075)
-                      : HopeV2Surfaces.border(context).withValues(alpha: .60)),
+                  : Colors.transparent,
             ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
                 ? [
@@ -127,7 +125,7 @@ class OpportunityCard extends StatelessWidget {
                 : const <BoxShadow>[],
           ),
           padding: EdgeInsets.all(
-            featured ? 10 : (featuredScan ? 10 : (compact ? 9 : 10)),
+            featured ? 10 : (featuredScan ? 10 : (compact ? 7 : 6)),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
@@ -681,7 +679,7 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 72.0 : 84.0;
+    final mediaSize = compactViewport ? 76.0 : 96.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(

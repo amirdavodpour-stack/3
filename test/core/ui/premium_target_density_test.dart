@@ -154,4 +154,61 @@ void main() {
     );
   });
 
+  testWidgets('wave 7 keeps support surfaces quiet and primary commands focal',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: const Scaffold(
+          body: Column(
+            children: [
+              PremiumStatCard(
+                label: 'فعال',
+                value: '12',
+                icon: Icons.work_outline,
+              ),
+              PremiumQuickActionStrip(
+                title: 'دسترسی سریع',
+                actions: [
+                  PremiumQuickAction(
+                    label: 'ادامه',
+                    icon: Icons.arrow_forward,
+                    primary: true,
+                  ),
+                  PremiumQuickAction(
+                    label: 'تاریخچه',
+                    icon: Icons.history,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final statPanel = tester.widget<PremiumPanel>(
+      find.descendant(
+        of: find.byType(PremiumStatCard),
+        matching: find.byType(PremiumPanel),
+      ),
+    );
+    expect(statPanel.quiet, isTrue);
+    expect(statPanel.highlight, isFalse);
+
+    final actionInks = tester.widgetList<Ink>(find.byType(Ink)).toList();
+    expect(actionInks.length, greaterThanOrEqualTo(2));
+    final primaryDecoration = actionInks
+        .map((ink) => ink.decoration)
+        .whereType<BoxDecoration>()
+        .firstWhere((decoration) => decoration.color != null);
+    expect(primaryDecoration.color, isNot(Colors.transparent));
+  });
+
 }

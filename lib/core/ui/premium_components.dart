@@ -527,9 +527,8 @@ class _PremiumQuickActionButton extends StatelessWidget {
             : Theme.of(context).colorScheme.onSurface)
         : Theme.of(context).colorScheme.onSurfaceVariant;
     final background = action.primary
-        ? accent.withValues(alpha: dark ? .84 : .96)
-        : (dark ? HopeV2Colors.panelSoftDark : HopeV2Colors.panelSoftLight)
-            .withValues(alpha: dark ? .48 : .86);
+        ? accent.withValues(alpha: dark ? .92 : .96)
+        : Colors.transparent;
 
     return Semantics(
       button: true,
@@ -549,8 +548,8 @@ class _PremiumQuickActionButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(HopeV2Radii.md),
               border: Border.all(
                 color: action.primary
-                    ? accent.withValues(alpha: dark ? .28 : .20)
-                    : HopeV2Surfaces.border(context).withValues(alpha: .55),
+                    ? accent.withValues(alpha: dark ? .30 : .20)
+                    : Colors.transparent,
               ),
             ),
             child: Row(
@@ -756,7 +755,8 @@ class PremiumDomainNavigationGroup extends StatelessWidget {
             ),
           ),
           PremiumPanel(
-            glass: true,
+            quiet: true,
+            glass: false,
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Column(children: children),
           ),
@@ -935,15 +935,11 @@ class PremiumPanel extends StatelessWidget {
             : padding;
     final panelFill = dark
         ? (glass
-            ? HopeV2Colors.panelSoftDark
-            : (quiet
-                ? HopeV2Colors.panelSoftDark
-                : HopeV2Colors.panelDark))
+            ? HopeV2Colors.panelSoftDark.withValues(alpha: .74)
+            : HopeV2Colors.panelDark.withValues(alpha: .82))
         : (glass
             ? HopeV2Colors.panelSoftLight
-            : (quiet
-                ? HopeV2Colors.panelSoftLight.withValues(alpha: .72)
-                : Colors.transparent));
+            : HopeV2Surfaces.panel(context));
     final gradient = highlight
         ? LinearGradient(
             begin: AlignmentDirectional.topStart,
@@ -979,19 +975,20 @@ class PremiumPanel extends StatelessWidget {
               : highlight
                   ? scheme.primary.withValues(alpha: dark ? .17 : .16)
                   : (dark
-                      ? Colors.white.withValues(alpha: glass ? .12 : .075)
-                      : HopeV2Surfaces.border(context)),
+                      ? Colors.white.withValues(alpha: glass ? .08 : .045)
+                      : HopeV2Surfaces.border(context).withValues(alpha: .72)),
           width: 1,
         ),
         boxShadow: quiet
             ? const []
             : dark
                 ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: quiet ? 0 : .11),
-                      blurRadius: highlight ? 24 : 11,
-                      offset: Offset(0, highlight ? 10 : 4),
-                    ),
+                    if (highlight)
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: .12),
+                        blurRadius: 22,
+                        offset: const Offset(0, 9),
+                      ),
                     if (highlight)
                       BoxShadow(
                         color: scheme.primary.withValues(alpha: glass ? .07 : .045),
@@ -1534,6 +1531,7 @@ class PremiumStatCard extends StatelessWidget {
           final ultraCompact = constraints.maxWidth < 135;
           return PremiumPanel(
             semanticLabel: '$label: $value',
+            quiet: !highlight,
             padding: EdgeInsets.symmetric(
               horizontal: ultraCompact ? 8 : 12,
               vertical: ultraCompact ? 8 : 9,
@@ -1617,6 +1615,7 @@ class PremiumStatCard extends StatelessWidget {
 
     return PremiumPanel(
       semanticLabel: '$label: $value',
+      quiet: !highlight,
       padding: const EdgeInsets.all(14),
       highlight: highlight,
       child: Row(
@@ -1742,26 +1741,20 @@ class PremiumTag extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final foreground = inverse ? Colors.white : (dark ? Colors.white : base);
     final background = inverse
-        ? Colors.white.withValues(alpha: .12)
+        ? Colors.white.withValues(alpha: .10)
         : base.withValues(
-            alpha: Theme.of(context).brightness == Brightness.dark ? .078 : .085,
+            alpha: Theme.of(context).brightness == Brightness.dark ? .055 : .07,
           );
     return Semantics(
       label: label,
       container: true,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 22),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+        constraints: const BoxConstraints(minHeight: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
-          border: Border.all(
-            color: inverse
-                ? Colors.white24
-                : base.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark ? .055 : .055,
-                  ),
-          ),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1786,7 +1779,7 @@ class PremiumTag extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
-                  fontSize: 10.5,
+                  fontSize: 11,
                   height: 1.0,
                   fontWeight: FontWeight.w800,
                 ),
