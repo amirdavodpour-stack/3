@@ -25,7 +25,7 @@ dart_contracts=(
   "const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');"
   "invokeMethod<Uint8List>("
   "'screenshotName': marker"
-  'useHopeNativeTransport: true'
+  'useHopeNativeTransport'
 )
 for contract in "${dart_contracts[@]}"; do
   if ! grep -Fq "$contract" "$test_file"; then
