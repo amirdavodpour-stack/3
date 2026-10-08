@@ -401,10 +401,12 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
     super.key,
     required this.job,
     this.includeBudget = true,
+    this.includeMatch = true,
   });
 
   final HopeJob job;
   final bool includeBudget;
+  final bool includeMatch;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -471,13 +473,14 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
             : _t(context, 'دورکاری', 'Remote'),
         color: HopeV2Colors.secondary,
       ),
-      (
-        label: _t(context, 'تطبیق', 'Match'),
-        value: job.recommendationScore == null
-            ? _t(context, 'ثبت نشده', 'Not scored')
-            : '${job.recommendationScore!.clamp(0, 100).round()}%',
-        color: primary,
-      ),
+      if (includeMatch)
+        (
+          label: _t(context, 'تطبیق', 'Match'),
+          value: job.recommendationScore == null
+              ? _t(context, 'ثبت نشده', 'Not scored')
+              : '${job.recommendationScore!.clamp(0, 100).round()}%',
+          color: primary,
+        ),
       (
         label: _t(context, 'بودجه', 'Budget'),
         value: job.isMission

@@ -452,7 +452,7 @@ class OpportunityCard extends StatelessWidget {
         const SizedBox(height: 6),
         LayoutBuilder(
           builder: (context, constraints) {
-            final narrowMeta = constraints.maxWidth < 280;
+            final narrowMeta = constraints.maxWidth < 420;
             final tags = Wrap(
               spacing: HopeV2Spacing.sm,
               runSpacing: HopeV2Spacing.xs,
@@ -488,8 +488,8 @@ class OpportunityCard extends StatelessWidget {
                 ? null
                 : Text(
                     _formatAmount(amount, context),
-                    maxLines: narrowMeta ? 1 : 2,
-                    overflow: TextOverflow.clip,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     softWrap: true,
                     textAlign: TextAlign.end,
                     style: HopeV2Type.metric(context).copyWith(

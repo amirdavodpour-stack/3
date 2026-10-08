@@ -1091,9 +1091,9 @@ class _WalletPageState extends State<WalletPage> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      actions,
-                      SizedBox(height: compact ? 7 : 12),
                       hero,
+                      SizedBox(height: compact ? 7 : 12),
+                      actions,
                       SizedBox(height: compact ? 7 : 12),
                       HopeWalletFlowSignature(wallet: wallet),
                     ],

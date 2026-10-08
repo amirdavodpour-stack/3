@@ -524,4 +524,51 @@ void main() {
     );
   });
 
+  testWidgets('decision strip renders real numeric match and component scores',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: const Scaffold(
+          body: SingleChildScrollView(
+            padding: EdgeInsets.all(12),
+            child: HopeOpportunityDecisionStrip(
+              matchScore: 92,
+              kind: 'ماموریت',
+              budget: '۱٬۵۰۰٬۰۰۰ تا ۲٬۵۰۰٬۰۰۰ تومان',
+              category: 'نرم‌افزار',
+              location: 'تهران',
+              breakdown: {
+                'skills': 96,
+                'category': 88,
+                'location': 72,
+                'salary': 84,
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    for (final value in ['92%', '96%', '88%', '72%', '84%']) {
+      expect(find.text(value), findsOneWidget, reason: 'Missing rendered score $value');
+    }
+    expect(find.textContaining(r'${score}'), findsNothing);
+    expect(find.textContaining(r'${(value'), findsNothing);
+  });
+
 }

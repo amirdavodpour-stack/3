@@ -665,8 +665,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final canViewFinance = isOwner || isProvider;
     final collaborationChatOpen = (isOwner || isProvider) && ['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].contains(j.status?.toUpperCase());
 
-    final compactViewport =
-        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final compactViewport = viewportWidth < HopeV2Breakpoints.compact;
+    final denseViewport = viewportWidth < HopeV2Breakpoints.expanded;
     return Scaffold(
       extendBodyBehindAppBar: true,
       bottomNavigationBar: SafeArea(
@@ -755,12 +756,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
-                  height: compactViewport ? 146 : 214,
+                  height: compactViewport ? 146 : denseViewport ? 184 : 214,
+                  compactHero: denseViewport,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
                   top: 10,
-                  start: 10,
+                  end: 10,
                   child: PremiumIconButton(
                     icon: Localizations.localeOf(context).languageCode == 'en'
                         ? HopeV2Icons.arrowLeft
@@ -784,7 +786,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
             ),
             SizedBox(height: compactViewport ? 8 : 10),
                   const SizedBox(height: 10),
-                  HopeOpportunityDnaSignature(job: j, includeBudget: false),
+                  HopeOpportunityDnaSignature(job: j, includeBudget: false, includeMatch: false),
                   const SizedBox(height: 12),
                   PremiumSectionHeader(
                     domain: HopeProductDomain.discovery,

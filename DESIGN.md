@@ -1,24 +1,28 @@
-## Visual Wave 14 — Decision Surface + Responsive First Fold — 2026-10-09
+## Visual Wave 15 — Runtime #2148 Evidence-Driven Decision Clarity — 2026-10-09
 
-Wave 14 is the next large screenshot-driven convergence batch, based on the exact-head 25-PNG artifact from Runtime #2141 (37841654080) at HEAD 9a43831f0b54ee2269bb58f05b836a7a3a72b5f9. Rendered evidence showed the largest remaining deltas are composition-level: the 720px Wallet first fold exposes too little downstream financial information; Opportunity Detail duplicates decision context across two stacked surfaces; Candidate Comparison still carries repeated card chrome; Financial Insights remains dashboard-heavy; Profile settings retains avoidable framing.
+Wave 15 is grounded in the exact artifact from Runtime #2148 / workflow run `37847636651`, containing 19 primary Persian/RTL screenshots and six 720×1280 responsive screenshots. The artifact metadata identifies the captured PR merge ref as `30/merge` at merge SHA `a1b8d8f491cc95067cc870f541f9f4e945dd00f1`; the feature branch HEAD at audit time is `40293a6632a6a11efcd384b5e82d3e62f4ee590a`. Do not conflate those identifiers. The screenshot matrix confirms a real interpolation defect in Opportunity Detail, back-navigation overlap on the hero, cramped featured-opportunity budget wrapping, redundant match context, and a weak first-fold priority order in the wallet.
 
-The wave consolidates the decision spine and rebalances responsive composition:
-- `HopeOpportunityDecisionStrip` absorbs real match-component signals so Opportunity Detail can use hero → one decision surface → content.
-- Candidate matching removes repeated PremiumPanel chrome and turns component scores into transparent signal bars.
-- Financial charts become section-level evidence with shallower chart viewports and restrained surfaces instead of stacked dashboard cards.
-- Profile removes the redundant outer settings panel while preserving real settings controls.
-- Wallet uses a width-based 600–760px split inside the hero, putting total balance beside the four real ledger categories and suppressing nonessential subtitle copy at dense widths.
+### Wave 15 grouped implementation
+- Repair actual Dart interpolation in the shared opportunity decision strip so match score and component percentages render numeric values instead of raw template expressions.
+- Keep one canonical match score: Opportunity Detail's decision strip owns score/breakdown; Opportunity DNA continues to present only distinct real traits.
+- Recompose Opportunity Detail's hero at compact/medium widths, move the back affordance away from RTL title/eyebrow content, and preserve the fixed primary action and scroll behavior.
+- Give featured opportunity budgets their own line at narrow widths and use safe two-line truncation rather than clipping numeric financial content.
+- Remove the duplicate Home hero-to-feed spacer so the first discovery section arrives sooner.
+- Put the actual wallet balance and four ledger-state metrics before secondary wallet actions on narrow layouts.
+- Add one focused Flutter regression case for rendered score interpolation and source guards for the screenshot-specific layout contracts.
 
-### Wave 14 guardrails
-- Real data/media only; no synthetic records or filler.
+### Wave 15 guardrails
+- Real backend data/media only; no synthetic records, filler, or generated imagery in product surfaces.
 - Persian-first RTL, correct LTR islands, Vazirmatn-first.
 - Tappable targets remain at least 48px.
-- Dark near-black/navy canvas, indigo-led primary, restrained trust/success accents.
 - Existing HOPE tokens/components only; no new dependency.
 - Internal TOMAN ledger, authorization/admin boundaries, job/payment lifecycle and AI policy unchanged.
 - Main untouched; PR #30 remains OPEN/DRAFT/UNMERGED.
-- No renderer/timeout/transport weakening.
-- One grouped implementation commit; focused visual gate precedes exact-head Runtime capture.
+- Do not weaken renderer, timeout, screenshot transport, or capture validation.
+- One grouped implementation commit; one focused Flutter gate; only if green, one exact-head Runtime capture with the full 25-PNG matrix.
+
+### Wave 15 closure rule
+Source changes alone do not close the wave. The focused Flutter gate must pass, then one exact-head Runtime must produce all 25 PNGs, and all screenshots must be inspected before T10 can be accepted.
 
 # HOPE Design System — Durable Visual Context
 

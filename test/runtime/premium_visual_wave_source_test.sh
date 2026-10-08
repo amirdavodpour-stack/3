@@ -89,6 +89,24 @@ grep -Fq "'candidate-matches': () => EmployerCandidateMatchesPage(" "$runtime_dr
 grep -Fq "'chat': () => ChatPage(" "$runtime_driver"
 grep -Fq "'job-satisfaction': () => const JobSatisfactionPage(" "$runtime_driver"
 grep -Fq "'financial-insights': () => const FinancialInsightsPage()" "$runtime_driver"
+
+# Wave 15: guard the actual screenshot defects before runtime capture.
+grep -Fq "final scoreLabel = score == null ? '—' : " "$premium"
+grep -Fq 'value * 100).round()' "$premium"
+if grep -Fq '\${score}%' "$premium"; then
+  echo "FAIL: raw match-score interpolation remains" >&2
+  exit 1
+fi
+if grep -Fq '\${(value * 100).round()}%' "$premium"; then
+  echo "FAIL: raw component-score interpolation remains" >&2
+  exit 1
+fi
+grep -Fq 'compactHero: denseViewport' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'end: 10,' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'includeMatch: false' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'if (includeMatch)' "lib/core/ui/hope_signature_components.dart"
+grep -Fq 'constraints.maxWidth < 420' "lib/core/ui/opportunity_card.dart"
+
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.

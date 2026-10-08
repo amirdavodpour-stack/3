@@ -2015,7 +2015,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     final primary = accent ?? Theme.of(context).colorScheme.primary;
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final score = matchScore?.clamp(0, 100).round();
-    final scoreLabel = score == null ? '—' : '\${score}%';
+    final scoreLabel = score == null ? '—' : '${score}%';
 
     Widget fact(String label, String value, Object icon, Color color) {
       if (value.trim().isEmpty || value.trim() == '—') {
@@ -2090,7 +2090,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '\${(value * 100).round()}%',
+                  '${(value * 100).round()}%',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: primary,
                         fontWeight: FontWeight.w900,
