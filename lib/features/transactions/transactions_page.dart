@@ -387,7 +387,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     if (auth.isGuest) {
       return PremiumPageFrame(
                 page: HopePageId.workCenter,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 96),
         child: ListView(
           children: [
             PremiumHeader(
@@ -434,7 +434,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 96),
                 child: ListView(
                   children: [
                     PremiumHeader(
@@ -482,7 +482,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 96),
                 child: ListView(
                   children: [
                     PremiumHeader(
@@ -673,7 +673,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           'Collaborations still in execution or review.',
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       ...activeItems.map(_workItemCard),
                     ],
                     if (otherItems.isNotEmpty) ...[
@@ -688,7 +688,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           'Other collaboration states before final settlement.',
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       ...otherItems.map(_workItemCard),
                     ],
                     if (settledItems.isNotEmpty) ...[
@@ -703,10 +703,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           'Collaborations whose financial lifecycle is complete.',
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       ...settledItems.map(_workItemCard),
                     ],
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _activityNavigation(context),
                   ],
                 ),
