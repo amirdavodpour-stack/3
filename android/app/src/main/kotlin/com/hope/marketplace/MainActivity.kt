@@ -122,21 +122,17 @@ class MainActivity : FlutterActivity() {
             backgroundHandler,
         )
 
-        // Register the listener first, then probe the current surface. A screen
-        // can already have a rendered ImageReader frame when capture starts (as
-        // happened on Home after Login); waiting only for a new callback blocks.
-        // HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT
+        // Register the listener before requesting a fresh engine frame. The
+        // listener is the safe synchronization boundary: only acquire an
+        // ImageReader frame after Android reports that one is available.
+        // Avoid probing ImageReader synchronously on the main looper before
+        // a newly-rendered frame exists; that boundary can stall VM-service.
+        // HOPE_SCREENSHOT_REQUEST_FRAME_AFTER_LISTENER
         mainHandler.post {
             if (!hopeScreenshotInProgress.get()) {
                 return@post
             }
-            tryAcquireHopeScreenshotFrame(
-                flutterView,
-                imageReader,
-                mainHandler,
-                backgroundHandler,
-                result,
-            )
+            requestHopeFrame()
         }
     }
 
