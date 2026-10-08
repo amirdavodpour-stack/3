@@ -126,7 +126,7 @@ void main() {
 
     final title = find.text('فرصت بعدی خود را پیدا کنید');
     expect(title, findsOneWidget);
-    expect(tester.widget<Text>(title).style?.fontSize, 23);
+    expect(tester.widget<Text>(title).style?.fontSize, 21.5);
   });
 
   testWidgets('compact PremiumPanel default padding stays at the density baseline',
@@ -254,3 +254,72 @@ void main() {
   });
 
 }
+
+  testWidgets('wave 9 consolidates the full visual system density contract',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: ListView(
+            children: [
+              const PremiumHeader(
+                dense: true,
+                eyebrow: 'کاوش',
+                title: 'فرصت بعدی خود را پیدا کنید',
+                subtitle: 'کار و مأموریت‌های متناسب با مسیر کاری شما.',
+              ),
+              const PremiumPanel(
+                key: ValueKey('wave9-panel'),
+                child: SizedBox(width: 48, height: 48),
+              ),
+              SearchField(onChanged: (_) {}, hint: 'جستجو'),
+              const PremiumTag(label: 'دورکاری', icon: Icons.work_outline),
+              PremiumNavigationBar(
+                selectedIndex: 0,
+                onDestinationSelected: (_) {},
+                destinations: const [
+                  NavigationDestination(icon: Icon(Icons.home), label: 'خانه'),
+                  NavigationDestination(icon: Icon(Icons.search), label: 'کاوش'),
+                  NavigationDestination(icon: Icon(Icons.work), label: 'کار'),
+                  NavigationDestination(icon: Icon(Icons.wallet), label: 'کیف پول'),
+                  NavigationDestination(icon: Icon(Icons.person), label: 'پروفایل'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.widget<Text>(find.text('فرصت بعدی خود را پیدا کنید')).style?.fontSize,
+      21.5,
+    );
+    final panel = tester.widget<PremiumPanel>(
+      find.byKey(const ValueKey('wave9-panel')),
+    );
+    expect(panel.radius, HopeV2Radii.lg);
+
+    final search = tester.widget<TextField>(find.byType(TextField));
+    final border = search.decoration.enabledBorder;
+    expect(border, isA<OutlineInputBorder>());
+    expect((border! as OutlineInputBorder).borderRadius.topLeft.x,
+        HopeV2Radii.md);
+
+    expect(
+      tester.widget<Text>(find.text('دورکاری')).style?.fontSize,
+      11,
+    );
+
+    expect(
+      tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
+      HopeV2Navigation.barHeight,
+    );
+  });
