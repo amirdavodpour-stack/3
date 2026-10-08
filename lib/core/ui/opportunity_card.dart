@@ -256,7 +256,7 @@ class OpportunityCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 15 : 16,
+                    fontSize: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 15.0 : 16.0,
                     height: 1.06,
                     fontWeight: FontWeight.w900,
                     shadows: [

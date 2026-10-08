@@ -263,7 +263,7 @@ void main() {
     );
     expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
   });
-}
+
 
 
   testWidgets('wave 12 decision, trust and creation primitives preserve first-fold hierarchy', (tester) async {
@@ -372,3 +372,5 @@ void main() {
     expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
     expect(tester.getSize(find.byType(OpportunityCard)).height, lessThan(260));
   });
+
+}
