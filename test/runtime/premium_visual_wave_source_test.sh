@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
-# Grouped visual-wave source guard for the aggregated editorial hierarchy + scan-card redesign.
+# Grouped visual-wave source guard for the consolidated editorial hierarchy + quiet-surface redesign.
 # [runtime-capture-fa-home] isolate editorial media to the Home discovery capture.
 # Final verification capture after adding the scoped fixture contract.
 # The restored #1560 baseline does not require a runtime media fixture; editorial media activation remains a separate visual wave.
@@ -26,8 +26,9 @@ sh test/runtime/editorial_media_fixture_scope_test.sh
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
-grep -Fq "width: 72" "$opportunity"
+grep -Fq "final mediaSize = compactViewport ? 76.0 : 96.0;" "$opportunity"
 grep -Fq "height: 72" "$opportunity"
+# Compact media keeps its existing footprint; standard media is the stronger editorial anchor.
 
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq 'static const darkBorder = Color(0x1FFFFFFF);' "$theme"
@@ -37,9 +38,9 @@ grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 6, 16, 24)' "$home"
 grep -Fq 'fontSize: compact ? 23 : 28' "$premium"
-grep -Fq 'fontSize: 10.5' "$premium"
-grep -Fq 'alpha: Theme.of(context).brightness == Brightness.dark ? .078 : .085' "$premium"
-grep -Fq 'HopeV2Surfaces.border(context).withValues(alpha: .18)' "$premium"
+grep -Fq 'fontSize: 11' "$premium"
+grep -Fq 'alpha: Theme.of(context).brightness == Brightness.dark ? .055 : .07' "$premium"
+grep -Fq 'color: Colors.transparent,' "$premium"
 grep -Fq 'HopeV2Surfaces.controlBorder(context).withValues(alpha: .42)' "lib/core/ui/components.dart"
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
 # Current Home density contract is validated by its exact layout structure; no legacy vertical-spacing literal is required.
