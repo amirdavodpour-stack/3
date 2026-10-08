@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
@@ -878,8 +879,16 @@ Future<void> _captureRuntimeScreenshot(
     await _captureHopeNativeScreenshot(binding, marker);
     print('HOPE_SCREENSHOT_SOURCE:flutter-driver:onScreenshot-custom-native:$marker');
   } else {
-    await binding.takeScreenshot(marker);
-    print('HOPE_SCREENSHOT_SOURCE:flutter-driver:$marker');
+    try {
+      await binding.takeScreenshot(marker).timeout(const Duration(seconds: 12));
+      print('HOPE_SCREENSHOT_SOURCE:flutter-driver:$marker');
+    } on TimeoutException catch (error) {
+      print('HOPE_SCREENSHOT_FLUTTER_DRIVER_TIMEOUT:$marker:$error');
+      // Keep the proven Flutter-driver path as the primary transport, but do
+      // not let one stalled screenshot RPC strand the whole evidence session.
+      await _captureHopeNativeScreenshot(binding, marker);
+      print('HOPE_SCREENSHOT_SOURCE:flutter-driver:onScreenshot-native-fallback:$marker');
+    }
   }
   print('HOPE_SCREENSHOT_READY:$marker');
 }

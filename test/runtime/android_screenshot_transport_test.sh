@@ -36,6 +36,10 @@ done
 
 
 grep -Fq 'await binding.takeScreenshot(marker);' "$test_file"
+grep -Fq "import 'dart:async';" "$test_file"
+grep -Fq "takeScreenshot(marker).timeout(const Duration(seconds: 12))" "$test_file"
+grep -Fq 'HOPE_SCREENSHOT_FLUTTER_DRIVER_TIMEOUT' "$test_file"
+grep -Fq 'onScreenshot-native-fallback' "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:flutter-driver' "$test_file"
 grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
