@@ -254,7 +254,6 @@ void main() {
     expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
   });
 
-}
 
   testWidgets('wave 9 consolidates the full visual system density contract',
       (tester) async {
