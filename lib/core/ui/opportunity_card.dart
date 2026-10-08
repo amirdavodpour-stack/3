@@ -254,7 +254,7 @@ class OpportunityCard extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 15.0 : 16.0,
                     height: 1.06,
