@@ -189,3 +189,17 @@ Wave 7 is the consolidated editorial-density pass after the exact-head 25-screen
 
 ### Screenshot acceptance target for Wave 7
 The next runtime should visibly show fewer competing rectangles, stronger opportunity/media hierarchy, a quieter finance/work history, and a more editorial first fold while preserving all existing business semantics, RTL/LTR structure, 48dp targets, and exact 25-screen runtime coverage.
+
+
+## Visual Wave 8 — 2026-10-08
+
+Wave 8 is the second large consolidation pass after Runtime #2080. The screenshots confirm Wave 7 successfully removed most outer shells from standard opportunity rows and improved finance hierarchy, but the shell still dominates the composition: the selected mobile navigation cell is oversized, sparse work-center/profile surfaces waste vertical space, and the Home/Explore first fold carries too much inter-section breathing room.
+
+### Wave 8 implementation contract
+- Mobile navigation remains a full-width 48dp interaction target but renders its selected state as a compact centered capsule; the dock itself is reduced from 76dp to 68dp.
+- Section headers use a tighter title/subtitle rhythm so page identity remains strong without pushing primary content below the fold.
+- Home support sections use tighter spacing after the featured opportunity; the featured surface remains the dominant focal tier.
+- Work Center compresses sparse state groups and reduces shell padding; status strips remain the primary state cue.
+- Profile settings become a quiet structural group; trust and work-center destinations retain explicit hierarchy.
+- Explore results tighten inter-card/list rhythm while preserving the larger standard opportunity media anchor introduced in Wave 7.
+- No business semantics, data contracts, RTL behavior, or interaction target sizes change.

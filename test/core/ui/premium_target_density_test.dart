@@ -211,4 +211,46 @@ void main() {
     expect(primaryDecoration.color, isNot(Colors.transparent));
   });
 
+  testWidgets('wave 8 keeps mobile navigation visually compact',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: PremiumNavigationBar(
+          selectedIndex: 0,
+          onDestinationSelected: (_) {},
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'خانه',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.search),
+              selectedIcon: Icon(Icons.search),
+              label: 'کاوش',
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final dock = tester.widget<Container>(
+      find.byKey(const ValueKey('hope-navigation-dock')),
+    );
+    final decoration = dock.decoration! as BoxDecoration;
+    expect(dock.constraints, isNull);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
+      68,
+    );
+    expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
+  });
+
 }

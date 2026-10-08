@@ -729,7 +729,7 @@ child: Column(
             ),
           ),
         ],
-        const SizedBox(height: HopeV2Spacing.md),
+        const SizedBox(height: HopeV2Spacing.sm),
         if (nearby.isNotEmpty)
           _section(
             context,
@@ -738,7 +738,7 @@ child: Column(
             widget.onOpenExplore,
           ),
         if (remaining.isNotEmpty) ...[
-          const SizedBox(height: HopeV2Spacing.md),
+          const SizedBox(height: HopeV2Spacing.sm),
           _section(
             context,
             _t(context, 'سایر فرصت‌ها', 'Other opportunities'),
@@ -824,7 +824,7 @@ child: Column(
         domain: HopeProductDomain.discovery,
         title: title,
         action: TextButton(onPressed: action, child: Text(_t(context, 'مشاهده همه', 'View all')))),
-      const SizedBox(height: HopeV2Spacing.md),
+      const SizedBox(height: HopeV2Spacing.sm),
       LayoutBuilder(builder: (context, constraints) {
         final columns = constraints.maxWidth >= HopeV2Breakpoints.expanded ? 3 : constraints.maxWidth >= HopeV2Breakpoints.medium ? 2 : 1;
         if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm), child: OpportunityCard(job: j, variant: OpportunityCardVariant.compact))]);

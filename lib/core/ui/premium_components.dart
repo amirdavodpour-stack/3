@@ -65,11 +65,11 @@ class PremiumNavigationBar extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 6),
       child: Container(
         key: const ValueKey('hope-navigation-dock'),
-        height: HopeV2Navigation.barHeight,
-        padding: const EdgeInsets.fromLTRB(6, 5, 6, 4),
+        height: 68.0,
+        padding: const EdgeInsets.fromLTRB(6, 4, 6, 3),
         decoration: BoxDecoration(
           color: dark
               ? HopeV2Colors.navigationDark.withValues(alpha: .985)
@@ -130,40 +130,50 @@ class _PremiumNavigationItem extends StatelessWidget {
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
-          child: Ink(
-            decoration: BoxDecoration(
-              color: selected ? accent.withValues(alpha: dark ? .21 : .13) : Colors.transparent,
-              borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
-              border: selected
-                  ? Border.all(
-                      color: accent.withValues(alpha: dark ? .30 : .22),
-                    )
-                  : null,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: HopeV2Touch.minimum,
-                    height: 28,
-                    child: Center(child: icon),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 62, maxWidth: 82),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? accent.withValues(alpha: dark ? .18 : .11)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
+                    border: selected
+                        ? Border.all(
+                            color: accent.withValues(alpha: dark ? .24 : .18),
+                          )
+                        : null,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    destination.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: labelColor,
-                      fontSize: 12,
-                      height: 1.05,
-                      fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: HopeV2Touch.minimum,
+                          height: 26,
+                          child: Center(child: icon),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          destination.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: labelColor,
+                            fontSize: 11.5,
+                            height: 1.0,
+                            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -1686,7 +1696,8 @@ class PremiumSectionHeader extends StatelessWidget {
                     child: Text(
                       title,
                       style: HopeV2Type.section(context).copyWith(
-                        fontSize: compact ? 18 : null,
+                        fontSize: compact ? 17 : 18,
+                        height: 1.12,
                       ),
                     ),
                   ),
@@ -1694,7 +1705,7 @@ class PremiumSectionHeader extends StatelessWidget {
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 3),
-                Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
+                Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.35)),
               ],
             ],
           );

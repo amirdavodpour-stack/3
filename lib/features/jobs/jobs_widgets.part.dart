@@ -95,11 +95,11 @@ class _JobsResultsSliver extends StatelessWidget {
                     ),
                   ),
                   if (remaining.isNotEmpty)
-                    const SizedBox(height: HopeV2Spacing.lg),
+                    const SizedBox(height: HopeV2Spacing.md),
                   for (var i = 0; i < remaining.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(
-                        bottom: HopeV2Spacing.md,
+                        bottom: HopeV2Spacing.sm,
                       ),
                       child: AnimatedEntrance(
                         delay: Duration(
@@ -125,7 +125,7 @@ class _JobsResultsSliver extends StatelessWidget {
                   variant: OpportunityCardVariant.featuredScan,
                 ),
                 if (remaining.isNotEmpty)
-                  const SizedBox(height: HopeV2Spacing.lg),
+                  const SizedBox(height: HopeV2Spacing.md),
                 if (remaining.isNotEmpty)
                   Text(
                     _t(context, 'فرصت‌های بیشتر', 'More opportunities'),
