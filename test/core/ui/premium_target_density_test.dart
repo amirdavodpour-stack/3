@@ -223,21 +223,24 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(brightness: Brightness.dark),
-        home: PremiumNavigationBar(
-          selectedIndex: 0,
-          onDestinationSelected: (_) {},
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'خانه',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.search),
-              selectedIcon: Icon(Icons.search),
-              label: 'کاوش',
-            ),
-          ],
+        home: Scaffold(
+          body: const SizedBox.expand(),
+          bottomNavigationBar: PremiumNavigationBar(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'خانه',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.search),
+                selectedIcon: Icon(Icons.search),
+                label: 'کاوش',
+              ),
+            ],
+          ),
         ),
       ),
     );
