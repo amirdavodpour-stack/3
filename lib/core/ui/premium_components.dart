@@ -809,7 +809,7 @@ class PremiumHeader extends StatelessWidget {
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 23 : 28,
+                  fontSize: compact ? 21.5 : 27,
                   height: 1.08,
                   letterSpacing: compact ? -.5 : -.75,
                 ),
@@ -821,7 +821,7 @@ class PremiumHeader extends StatelessWidget {
                   maxLines: compact ? 2 : 4,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: compact ? 13 : null,
+                        fontSize: compact ? 12.5 : null,
                         height: compact ? 1.3 : 1.42,
                       ),
                 ),
@@ -915,7 +915,7 @@ class PremiumPanel extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
-    this.radius = HopeV2Radii.xl,
+    this.radius = HopeV2Radii.lg,
     this.highlight = false,
     this.glass = false,
     this.quiet = false,
@@ -1638,7 +1638,7 @@ class PremiumStatCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: Theme.of(context).textTheme.bodyMedium),
+                Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12.5, height: 1.25),
                 const SizedBox(height: 3),
                 Text(value, style: HopeV2Type.metric(context)),
                 if (caption != null)
