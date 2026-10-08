@@ -125,7 +125,9 @@ class OpportunityCard extends StatelessWidget {
                 : const <BoxShadow>[],
           ),
           padding: EdgeInsets.all(
-            featured ? 10 : (featuredScan ? 10 : (compact ? 7 : 6)),
+            featured
+                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 8 : 10)
+                : (featuredScan ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 8 : 10) : (compact ? 7 : 6)),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
@@ -200,7 +202,7 @@ class OpportunityCard extends StatelessWidget {
       child: SizedBox(
         key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 140 : 152)
+            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 108 : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 128 : 152))
             : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 78 : 92),
         width: double.infinity,
         child: Stack(
@@ -254,8 +256,8 @@ class OpportunityCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
-                    height: 1.08,
+                    fontSize: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 15 : 16,
+                    height: 1.06,
                     fontWeight: FontWeight.w900,
                     shadows: [
                       Shadow(
@@ -597,7 +599,7 @@ class OpportunityCard extends StatelessWidget {
       );
     }
 
-    if (featuredScan) {
+    if (featuredScan || (featured && MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact)) {
       return _scanStandard(
         context,
         title: title,
@@ -679,7 +681,7 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 70.0 : 88.0;
+    final mediaSize = compactViewport ? 58.0 : 88.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(

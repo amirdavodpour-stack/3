@@ -275,6 +275,8 @@ class _CreateJobForm extends StatelessWidget {
     return ListView(
         padding: const EdgeInsets.fromLTRB(20, 6, 20, 40),
         children: [
+          const HopeCreationProgress(activeIndex: 0),
+          const SizedBox(height: 2),
           _TypeHero(
             kind: kind,
             onChanged: onKindChanged,
@@ -288,7 +290,7 @@ class _CreateJobForm extends StatelessWidget {
               key: const ValueKey('opportunity-live-preview-peek'),
               tilePadding: const EdgeInsets.symmetric(horizontal: 2),
               childrenPadding: EdgeInsets.zero,
-              initiallyExpanded: false,
+              initiallyExpanded: true,
               leading: const HopeIconTile(
                 HopeV2Icons.insights,
                 size: 38,

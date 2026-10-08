@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/premium_lifecycle.dart';
 import 'package:hope_mobile/core/ui/components.dart';
+import 'package:hope_mobile/core/ui/opportunity_card.dart';
+import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
@@ -262,3 +264,111 @@ void main() {
     expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
   });
 }
+
+
+  testWidgets('wave 12 decision, trust and creation primitives preserve first-fold hierarchy', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                const HopeCreationProgress(activeIndex: 0),
+                HopeOpportunityDecisionStrip(
+                  matchScore: 94,
+                  budget: '۱,۵۰۰,۰۰۰ تا ۲,۵۰۰,۰۰۰ تومان',
+                  category: 'نرم‌افزار',
+                  location: 'تهران',
+                  kind: 'ماموریت',
+                ),
+                const SizedBox(height: 8),
+                HopeTrustSignalRail(
+                  signals: [
+                    (
+                      icon: Icons.verified_outlined,
+                      label: 'اعتماد',
+                      value: 'تأییدشده',
+                      color: HopeV2Colors.primary,
+                    ),
+                    (
+                      icon: Icons.task_alt_outlined,
+                      label: 'تکمیل‌شده',
+                      value: '27',
+                      color: HopeV2Colors.success,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('create-opportunity-progress')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
+    expect(find.byType(HopeTrustSignalRail), findsOneWidget);
+    expect(find.text('۱,۵۰۰,۰۰۰ تا ۲,۵۰۰,۰۰۰ تومان'), findsOneWidget);
+  });
+
+  testWidgets('wave 12 featured opportunity cards become compact decision scans on narrow screens', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final job = HopeJob.fromMap({
+      'id': 'wave12-job',
+      'title': 'طراحی رابط موبایل حرفه‌ای',
+      'category': 'Software',
+      'city': 'تهران',
+      'kind': 'MISSION',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'recommendationScore': 94,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(12),
+            child: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.featured,
+              onTap: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
+    expect(tester.getSize(find.byType(OpportunityCard)).height, lessThan(260));
+  });

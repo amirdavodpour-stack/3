@@ -771,46 +771,21 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      if (j.recommendationScore != null)
-                        KeyedSubtree(
-                          key: const ValueKey('opportunity-detail-hero-match'),
-                          child: PremiumTag(
-                            icon: HopeV2Icons.featured,
-                            label: _t(
-                              '${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% تطبیق',
-                              '${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% Match',
-                            ),
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-
-                    ],
-                  ),
-                  if (j.isRecommended &&
-                      (j.recommendationScore != null ||
-                          j.recommendationReasons.isNotEmpty)) ...[
-                    SizedBox(height: compactViewport ? 8 : 12),
-                    if (compactViewport)
-                      ConstrainedBox(
-                        key: const ValueKey(
-                          'opportunity-match-intelligence-compact-boundary',
-                        ),
-                        constraints: const BoxConstraints(minHeight: 142),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: _MatchIntelligence(job: j, compact: true),
-                        ),
-                      )
-                    else
-                      _MatchIntelligence(job: j),
-                  ],
-                  const SizedBox(height: 8),
-                  _OpportunitySnapshot(job: j),
+            HopeOpportunityDecisionStrip(
+              matchScore: j.recommendationScore,
+              kind: isJob ? _t('فرصت شغلی', 'Job') : _t('ماموریت', 'Mission'),
+              budget: isJob
+                  ? moneyLabel(context, j.monthlySalary ?? j.budgetMin ?? '—')
+                  : moneyLabel(context, (j.budgetMin ?? '—') + ' تا ' + (j.budgetMax ?? '—')),
+              category: j.category ?? j.categoryId ?? '—',
+              location: j.city?.trim().isNotEmpty == true ? j.city!.trim() : _t('دورکاری', 'Remote'),
+              accent: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 8),
+            if (j.isRecommended &&
+                (j.recommendationScore != null || j.recommendationReasons.isNotEmpty))
+              _MatchIntelligence(job: j, compact: true),
+            const SizedBox(height: 10),
                   const SizedBox(height: 10),
                   HopeOpportunityDnaSignature(job: j, includeBudget: false),
                   const SizedBox(height: 12),

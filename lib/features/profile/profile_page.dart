@@ -167,6 +167,61 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           const SizedBox(height: 10),
+          FutureBuilder<HopeProviderProfile>(
+            future: profile,
+            builder: (context, snapshot) {
+              final data = snapshot.data;
+              if (data == null) return const SizedBox.shrink();
+              final signals = <({
+                Object icon,
+                String label,
+                String value,
+                Color color,
+              })>[
+                (
+                  icon: HopeV2Icons.verified,
+                  label: _t(context, 'اعتماد', 'Trust'),
+                  value: data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'),
+                  color: data.isVerified ? Theme.of(context).colorScheme.primary : HopeV2Colors.muted,
+                ),
+                (
+                  icon: HopeV2Icons.completed,
+                  label: _t(context, 'تکمیل‌شده', 'Completed'),
+                  value: data.completedJobs.toString(),
+                  color: HopeV2Colors.success,
+                ),
+                (
+                  icon: HopeV2Icons.activity,
+                  label: _t(context, 'فعال', 'Active'),
+                  value: data.activeJobs.toString(),
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+                (
+                  icon: HopeV2Icons.job,
+                  label: _t(context, 'ظرفیت', 'Capacity'),
+                  value: _capacityLabel(context, data.capacity),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ];
+              return PremiumPanel(
+                key: const ValueKey('profile-professional-first-fold'),
+                quiet: true,
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _t(context, 'پروفایل حرفه‌ای', 'Professional profile'),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 8),
+                    HopeTrustSignalRail(signals: signals),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
           PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: MediaQuery.sizeOf(context).width < 500
@@ -181,103 +236,6 @@ class _ProfilePageState extends State<ProfilePage> {
             child: _settingsCard(context, settings, theme),
           ),
           const SizedBox(height: 8),
-          PremiumSectionHeader(
-            domain: HopeProductDomain.trust,
-            title: _t(context, 'اعتماد و پروفایل حرفه‌ای', 'Trust & professional profile'),
-            subtitle: _t(
-              context,
-              'وضعیت تأیید و شاخص‌های کاری مستقل از تنظیمات حساب.',
-              'Verification and work signals are kept separate from account settings.',
-            ),
-          ),
-          const SizedBox(height: 10),
-          FutureBuilder<HopeProviderProfile>(
-            future: profile,
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return HopeAsyncState(
-                  kind: HopeStateKind.error,
-                  title: _t(context, 'اطلاعات حرفه‌ای در دسترس نیست', 'Professional profile unavailable'),
-                  message: _t(context, 'وضعیت تأیید و شاخص‌های اعتماد فعلاً قابل دریافت نیست.', 'Verification and trust signals are temporarily unavailable.'),
-                  action: OutlinedButton.icon(
-                    onPressed: () => setState(() {
-                      profile = _controller.loadProfile();
-                    }),
-                    icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-                    label: Text(_t(context, 'تلاش دوباره', 'Retry')),
-                  ),
-                );
-              }
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return HopeAsyncState(
-                  kind: HopeStateKind.loading,
-                  title: _t(
-                    context,
-                    'در حال بارگذاری اطلاعات حرفه‌ای',
-                    'Loading professional profile',
-                  ),
-                  message: _t(
-                    context,
-                    'وضعیت تأیید و شاخص‌های اعتماد در حال دریافت است.',
-                    'Verification and trust signals are loading.',
-                  ),
-                );
-              }
-              final data = snapshot.data;
-
-              return PremiumPanel(
-                quiet: true,
-padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                child: Column(
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const HopeIconTile(
-                        HopeV2Icons.job,
-                      ),
-                      title: Text(
-                        HopeCopy.of(context).copy_work_profile_885ecac,
-                      ),
-                      subtitle: Text(
-                        '${data?.providerType.isNotEmpty == true ? _providerTypeLabel(context, data!.providerType) : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? _capacityLabel(context, data!.capacity) : HopeCopy.of(context).copy_open_to_work_aa59263}',
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    if (data != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 14),
-                        child: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            _trustMetric(context, HopeV2Icons.verified, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : HopeV2Colors.muted),
-                            if (data.providerType.isNotEmpty)
-                              _trustMetric(
-                                context,
-                                HopeV2Icons.job,
-                                _providerTypeLabel(context, data.providerType),
-                                Theme.of(context).colorScheme.secondary,
-                              ),
-                            if (data.capacity.isNotEmpty)
-                              _trustMetric(
-                                context,
-                                HopeV2Icons.pending,
-                                _capacityLabel(context, data.capacity),
-                                Theme.of(context).colorScheme.secondary,
-                              ),
-                            if (data.completedJobs > 0) _trustMetric(context, HopeV2Icons.completed, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', HopeV2Colors.success),
-                            if (data.activeJobs > 0) _trustMetric(context, HopeV2Icons.activity, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 1),
-                    ],
-
-                  ],
-                ),
-              );
-            },
-          ),
           PremiumSectionHeader(
             domain: HopeProductDomain.work,
             title: _t(context, 'مرکز کار', 'Work center'),

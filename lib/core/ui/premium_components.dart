@@ -1966,3 +1966,344 @@ class PremiumSearchBar extends StatelessWidget {
         ),
       );
 }
+    
+/// Compact decision surface for opportunity-first screens.
+class HopeOpportunityDecisionStrip extends StatelessWidget {
+  const HopeOpportunityDecisionStrip({
+    super.key,
+    required this.matchScore,
+    required this.budget,
+    required this.category,
+    required this.location,
+    required this.kind,
+    this.accent,
+  });
+
+  final double? matchScore;
+  final String budget;
+  final String category;
+  final String location;
+  final String kind;
+  final Color? accent;
+
+  String _t(BuildContext context, String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = accent ?? Theme.of(context).colorScheme.primary;
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final score = matchScore?.clamp(0, 100).round();
+    final scoreLabel = score == null ? '—' : score.toString() + '%';
+
+    Widget fact(String label, String value, Object icon, Color color) {
+      if (value.trim().isEmpty || value.trim() == '—') return const SizedBox.shrink();
+      return Container(
+        constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .07),
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          border: Border.all(color: color.withValues(alpha: .13)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            HopeIcon(icon, size: 16, color: color, strokeWidth: 1.8),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? HopeV2Colors.darkMuted
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    value,
+                    maxLines: compact ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Semantics(
+      container: true,
+      label: _t(context, 'خلاصه تصمیم فرصت', 'Opportunity decision summary'),
+      child: PremiumPanel(
+        key: const ValueKey('opportunity-decision-strip'),
+        highlight: matchScore != null && score! >= 90,
+        padding: EdgeInsets.fromLTRB(
+          compact ? 10 : 12,
+          compact ? 9 : 11,
+          compact ? 10 : 12,
+          compact ? 9 : 11,
+        ),
+        child: compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              kind,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: primary,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: .4,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _t(context, 'برای تصمیم سریع', 'Quick decision'),
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (score != null)
+                        Container(
+                          constraints: const BoxConstraints(minWidth: 62, minHeight: 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: primary.withValues(alpha: .13),
+                            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                            border: Border.all(color: primary.withValues(alpha: .24)),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(scoreLabel, style: HopeV2Type.metric(context).copyWith(color: primary, fontSize: 21)),
+                              Text(_t(context, 'تطبیق', 'match'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: primary, fontWeight: FontWeight.w800)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
+                      fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
+                      fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
+                    ],
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  if (score != null) ...[
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 70, minHeight: 60),
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: primary.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                        border: Border.all(color: primary.withValues(alpha: .22)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(scoreLabel, style: HopeV2Type.metric(context).copyWith(color: primary, fontSize: 24)),
+                          Text(_t(context, 'تطبیق', 'match'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: primary)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: Wrap(
+                      spacing: 7,
+                      runSpacing: 7,
+                      children: [
+                        fact(_t(context, 'نوع', 'Type'), kind, HopeV2Icons.job, primary),
+                        fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
+                        fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
+                        fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Five-step composition marker for the Create Opportunity flow.
+class HopeCreationProgress extends StatelessWidget {
+  const HopeCreationProgress({super.key, this.activeIndex = 0});
+
+  final int activeIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    const labelsFa = ['نوع', 'دیده‌شدن', 'جزئیات', 'مالی', 'انتشار'];
+    const labelsEn = ['Type', 'Audience', 'Details', 'Money', 'Publish'];
+    final en = Localizations.localeOf(context).languageCode == 'en';
+    final safeIndex = activeIndex.clamp(0, labelsFa.length - 1);
+    return Semantics(
+      container: true,
+      label: en ? 'Create opportunity progress' : 'پیشرفت ثبت فرصت',
+      child: Container(
+        key: const ValueKey('create-opportunity-progress'),
+        padding: const EdgeInsets.fromLTRB(4, 3, 4, 7),
+        child: Row(
+          children: [
+            for (var step = 0; step < labelsFa.length; step++)
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    end: step == labelsFa.length - 1 ? 0 : 5,
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: step <= safeIndex
+                              ? Theme.of(context).colorScheme.primary
+                              : HopeV2Surfaces.border(context).withValues(alpha: .6),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: step == safeIndex
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: .16)
+                              : Theme.of(context).colorScheme.surface,
+                          border: Border.all(
+                            color: step <= safeIndex
+                                ? Theme.of(context).colorScheme.primary.withValues(alpha: .32)
+                                : HopeV2Surfaces.border(context),
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          (step + 1).toString(),
+                          style: TextStyle(
+                            color: step <= safeIndex
+                                ? Theme.of(context).colorScheme.primary
+                                : HopeV2Colors.darkMuted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        en ? labelsEn[step] : labelsFa[step],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: step == safeIndex
+                                  ? Theme.of(context).colorScheme.primary
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? HopeV2Colors.darkMuted
+                                      : Theme.of(context).colorScheme.onSurfaceVariant),
+                              fontWeight: step == safeIndex ? FontWeight.w900 : FontWeight.w700,
+                              fontSize: 9.5,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Dense professional trust signals for first-fold identity surfaces.
+class HopeTrustSignalRail extends StatelessWidget {
+  const HopeTrustSignalRail({super.key, required this.signals});
+
+  final List<({Object icon, String label, String value, Color color})> signals;
+
+  @override
+  Widget build(BuildContext context) {
+    if (signals.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 680
+            ? signals.length.clamp(1, 4).toInt()
+            : 2;
+        const gap = 7.0;
+        final width = columns == 1
+            ? constraints.maxWidth
+            : (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final signal in signals)
+              SizedBox(
+                width: width,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: signal.color.withValues(alpha: .07),
+                    borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                    border: Border.all(color: signal.color.withValues(alpha: .14)),
+                  ),
+                  child: Row(
+                    children: [
+                      HopeIcon(signal.icon, size: 17, color: signal.color, strokeWidth: 1.8),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(signal.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).brightness == Brightness.dark ? HopeV2Colors.darkMuted : Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
+                            )),
+                            const SizedBox(height: 1),
+                            Text(signal.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w900)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}

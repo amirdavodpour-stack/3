@@ -651,6 +651,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    _activityNavigation(context),
+                    const SizedBox(height: 10),
                     if (activeItems.isNotEmpty || settledItems.isNotEmpty) ...[
                       PremiumSectionHeader(
                         page: HopePageId.workCenter,

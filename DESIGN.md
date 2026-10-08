@@ -260,3 +260,16 @@ One focused Flutter gate for this entire grouped wave. Only if that gate passes,
 **Guardrails:** Persian-first RTL with correct LTR islands, Vazirmatn, dark navy/indigo identity, 48dp targets, real backend data/media only, no page-wide photography, no user-facing AI chat, admin access restrictions, and the internal TOMAN ledger/job lifecycle remain unchanged.
 
 **Verification:** one `flutter test --no-pub test/core/ui/premium_target_density_test.dart` command for the full wave. If green, exactly one serialized exact-HEAD Runtime capture; inspect all 25 screenshots before T10 acceptance. Do not run parallel captures or treat a green workflow as visual acceptance.
+
+
+## Wave 12 — Product Signature + First Fold — implementation checkpoint
+
+**Implementation target:** Runtime #37832916891 / artifact `11575520191` on exact HEAD `197703288c913a8fa43b4d1b300cf31ee6fbe884`.
+
+**Visual findings carried into this wave:** compact Home/Jobs featured opportunities leave excessive dead space while decision content is visually fragmented; Opportunity Detail spends too much first-fold height on hero/match before key facts; Candidate Comparison lacks real component-level comparison; Create Opportunity hides Live Preview and has no persistent five-step visual map; Profile puts professional trust signals below settings; Wallet pushes actions below a large balance hero; Work Center leaves useful quick destinations outside the first fold.
+
+**Wave 12 grouped scope:** Opportunity Card compact/featured convergence; Opportunity Detail decision strip + DNA order; Candidate Comparison real component bars; Create Opportunity five-step progress + visible Live Preview; Wallet first-fold command rail + existing internal ledger-flow signature; Transactions first-fold quick access; Profile professional first-fold trust rail; shared HOPE primitives for decision/progress/trust composition.
+
+**Guardrails:** no invented content; real backend data/media only; Persian-first RTL and correct LTR islands; Vazirmatn; 48dp targets; no user-facing AI chat; admin authorization remains unchanged; internal TOMAN ledger semantics and job/payment lifecycle remain unchanged; Main untouched.
+
+**Verification contract:** one focused Flutter test command for the entire wave — `flutter test --no-pub test/core/ui/premium_target_density_test.dart`. Only after it passes, one serialized exact-head Runtime with the complete 25-PNG matrix. No parallel capture and no T10 acceptance until every PNG is inspected.

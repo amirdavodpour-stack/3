@@ -31,6 +31,69 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
         _ => value,
       };
 
+  String _componentLabel(BuildContext context, String key) => switch (key) {
+    'skills' => _t(context, 'مهارت', 'Skills'),
+    'experience' => _t(context, 'تجربه', 'Experience'),
+    'location' => _t(context, 'مکان', 'Location'),
+    'salary' => _t(context, 'درآمد', 'Salary'),
+    _ => key,
+  };
+
+  Widget _componentBreakdown(BuildContext context, HopeEmployerCandidateMatch candidate) {
+    const keys = ['skills', 'experience', 'location', 'salary'];
+    final values = <MapEntry<String, double>>[];
+    for (final key in keys) {
+      final value = candidate.components[key];
+      if (value != null) values.add(MapEntry(key, value <= 1 ? value : value / 100));
+    }
+    if (values.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth < 360 ? constraints.maxWidth : (constraints.maxWidth - 7) / 2;
+        return Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: values.map((entry) {
+            final ratio = entry.value.clamp(0.0, 1.0);
+            return SizedBox(
+              width: width,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: .055),
+                  borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(_componentLabel(context, entry.key), maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700)),
+                        ),
+                        Text((ratio * 100).round().toString() + '%', style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: LinearProgressIndicator(
+                        minHeight: 4,
+                        value: ratio,
+                        backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .45),
+                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(growable: false),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PremiumPageFrame(
@@ -55,6 +118,61 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        if (data.candidates.isNotEmpty)
+          Builder(
+            builder: (context) {
+              final best = data.candidates.first;
+              final gap = data.candidates.length > 1
+                  ? (best.score - data.candidates[1].score).clamp(0, 100)
+                  : 0.0;
+              return PremiumPanel(
+                key: const ValueKey('candidate-comparison-overview'),
+                quiet: true,
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _t(context, 'بهترین تطابق', 'Best fit'),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: HopeV2Colors.darkMuted,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            best.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PremiumTag(
+                      icon: HopeV2Icons.match,
+                      label: best.score.round().toString() + '%',
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    if (data.candidates.length > 1) ...[
+                      const SizedBox(width: 7),
+                      PremiumTag(
+                        label: _t(context, 'اختلاف ' + gap.round().toString() + '٪', gap.round().toString() + '% gap'),
+                        color: HopeV2Colors.secondary,
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        if (data.candidates.isNotEmpty)
+          const SizedBox(height: 8),
         if (data.candidates.isEmpty)
           PremiumPanel(
             padding: const EdgeInsets.all(16),
@@ -177,6 +295,10 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                             )
                             .toList(growable: false),
                       ),
+                    ],
+                    if (candidate.components.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      _componentBreakdown(context, candidate),
                     ],
                     if ((candidate.skills ?? '').trim().isNotEmpty) ...[
                       const SizedBox(height: 10),

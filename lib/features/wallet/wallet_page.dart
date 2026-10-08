@@ -13,6 +13,7 @@ import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/hope_async_state.dart';
+import '../../core/ui/hope_signature_components.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/router/app_routes.dart';
 
@@ -751,7 +752,7 @@ class _WalletPageState extends State<WalletPage> {
               softWrap: true,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: compact ? 27 : 36,
+                fontSize: compact ? 24 : 36,
                 height: 1.02,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -.7,
@@ -1073,18 +1074,27 @@ class _WalletPageState extends State<WalletPage> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      hero,
-                      SizedBox(height: compact ? 8 : 12),
                       actions,
+                      SizedBox(height: compact ? 7 : 12),
+                      hero,
+                      SizedBox(height: compact ? 7 : 12),
+                      HopeWalletFlowSignature(wallet: wallet),
                     ],
                   );
                 }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(flex: 7, child: hero),
-                    const SizedBox(width: 12),
-                    Expanded(flex: 5, child: actions),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 7, child: hero),
+                        const SizedBox(width: 12),
+                        Expanded(flex: 5, child: actions),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    HopeWalletFlowSignature(wallet: wallet),
                   ],
                 );
               },
