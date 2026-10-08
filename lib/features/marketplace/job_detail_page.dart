@@ -1328,7 +1328,7 @@ class _JobLifecycleCard extends StatelessWidget {
                 return HopeLifecycleRail(
                   labels: [for (final stage in stages) _label(context, stage)],
                   icons: const [
-                    HopeV2Icons.edit,
+                    HopeV2Icons.pending,
                     HopeV2Icons.featured,
                     HopeV2Icons.wallet,
                     HopeV2Icons.activity,
