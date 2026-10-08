@@ -6,6 +6,17 @@ test_file="$repo_root/integration_test/runtime/critical_screens_evidence_test.da
 driver_file="$repo_root/test_driver/hope_runtime_screenshot_driver.dart"
 script_file="$repo_root/tools/hope-wallet-runtime-evidence.sh"
 
+main_activity="$repo_root/android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt"
+grep -Fq 'private const val HOPE_SCREENSHOT_CHANNEL = "hope.runtime/screenshot"' "$main_activity"
+grep -Fq 'getCurrentImageSurface()' "$main_activity"
+grep -Fq 'setOnImageAvailableListener' "$main_activity"
+grep -Fq 'acquireLatestImageViewFrame()' "$main_activity"
+grep -Fq 'BuildConfig.DEBUG' "$main_activity"
+grep -Fq "const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');" "$test_file"
+grep -Fq 'await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(' "$test_file"
+grep -Fq "'screenshotName': marker" "$test_file"
+grep -Fq 'useHopeNativeTransport: true' "$test_file"
+
 grep -Fq 'await binding.takeScreenshot(marker);' "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:flutter-driver' "$test_file"
 grep -Fq 'onScreenshot:' "$driver_file"
