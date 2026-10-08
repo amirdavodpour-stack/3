@@ -51,7 +51,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07' && contains(github.event.pull_request.title, '[runtime-capture-fa]') && contains(github.event.pull_request.title, '[wave9-runtime]')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]'))) }}
     name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
