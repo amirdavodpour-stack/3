@@ -378,11 +378,11 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             ),
             if (!auth.isGuest) ...[
               _activeWork(context),
-              const SizedBox(height: HopeV2Spacing.md),
+              const SizedBox(height: HopeV2Spacing.sm),
             ],
 
             _homePulse(context, auth),
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.sm),
             if (!auth.isGuest && _agentState != null)
               FutureBuilder<HopeOpportunityAgentState>(
                 future: _agentState,
@@ -398,9 +398,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 },
               ),
             if (!auth.isGuest && _agentState != null)
-              const SizedBox(height: HopeV2Spacing.md),
+              const SizedBox(height: HopeV2Spacing.sm),
             _quickActions(context, auth),
-            const SizedBox(height: HopeV2Spacing.md),
+            const SizedBox(height: HopeV2Spacing.sm),
             if (!auth.isGuest) ...[
             ],
           ],
