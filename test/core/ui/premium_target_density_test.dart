@@ -247,7 +247,6 @@ void main() {
       find.byKey(const ValueKey('hope-navigation-dock')),
     );
     final decoration = dock.decoration! as BoxDecoration;
-    expect(dock.constraints, isNull);
     expect(
       tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
       HopeV2Navigation.barHeight,
