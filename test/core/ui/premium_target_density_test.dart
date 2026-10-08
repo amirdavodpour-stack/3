@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/premium_lifecycle.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
@@ -308,7 +309,7 @@ void main() {
     expect(panel.radius, HopeV2Radii.lg);
 
     final search = tester.widget<TextField>(find.byType(TextField));
-    final border = search.decoration.enabledBorder;
+    final border = search.decoration!.enabledBorder;
     expect(border, isA<OutlineInputBorder>());
     expect((border! as OutlineInputBorder).borderRadius.topLeft.x,
         HopeV2Radii.md);
