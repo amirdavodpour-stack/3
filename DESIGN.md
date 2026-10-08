@@ -9,7 +9,7 @@ Wave 15 is grounded in the exact artifact from Runtime #2148 / workflow run `378
 - Give featured opportunity budgets their own line at narrow widths and use safe two-line truncation rather than clipping numeric financial content.
 - Remove the duplicate Home hero-to-feed spacer so the first discovery section arrives sooner.
 - Put the actual wallet balance and four ledger-state metrics before secondary wallet actions on narrow layouts.
-- Add one focused Flutter regression case for rendered score interpolation and source guards for the screenshot-specific layout contracts.
+- Add one single-case Flutter gate that exercises rendered score interpolation, compact Hero composition, duplicate-score suppression, and featured-card overflow; keep source guards for the remaining screenshot-specific contracts.
 
 ### Wave 15 guardrails
 - Real backend data/media only; no synthetic records, filler, or generated imagery in product surfaces.
@@ -19,10 +19,10 @@ Wave 15 is grounded in the exact artifact from Runtime #2148 / workflow run `378
 - Internal TOMAN ledger, authorization/admin boundaries, job/payment lifecycle and AI policy unchanged.
 - Main untouched; PR #30 remains OPEN/DRAFT/UNMERGED.
 - Do not weaken renderer, timeout, screenshot transport, or capture validation.
-- One grouped implementation commit; one focused Flutter gate; only if green, one exact-head Runtime capture with the full 25-PNG matrix.
+- One focused command: `flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart` (one grouped widget test). The static workflow runs it before the `[wave15-preverified]` marker is added; after it passes, the exact-head Runtime capture skips only this duplicate gate and captures the full 25-PNG matrix.
 
 ### Wave 15 closure rule
-Source changes alone do not close the wave. The focused Flutter gate must pass, then one exact-head Runtime must produce all 25 PNGs, and all screenshots must be inspected before T10 can be accepted.
+Source changes alone do not close the wave. The single Wave 15 Flutter test must pass on the exact feature HEAD, then one exact-head Runtime must produce all 25 PNGs, and all screenshots must be inspected before T10 can be accepted. The preverified marker is added only after the test passes; it prevents duplicate Flutter execution in the Runtime workflow without bypassing the test result.
 
 # HOPE Design System — Durable Visual Context
 

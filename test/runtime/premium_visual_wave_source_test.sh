@@ -106,6 +106,7 @@ grep -Fq 'end: 10,' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'includeMatch: false' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'if (includeMatch)' "lib/core/ui/hope_signature_components.dart"
 grep -Fq 'constraints.maxWidth < 420' "lib/core/ui/opportunity_card.dart"
+test -f "test/core/ui/premium_visual_wave_15_test.dart"
 
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
