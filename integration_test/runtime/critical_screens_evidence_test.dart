@@ -1,8 +1,6 @@
 // ignore_for_file: avoid_print
 
-import 'dart:async';
 import 'dart:io';
-import 'dart:ui' show FrameTiming;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -819,27 +817,6 @@ typedef _Runtime = ({
 
 var _runtimeScreenshotSurfacePrepared = false;
 
-Future<void> _waitForRuntimeRasterizedFrame(WidgetTester tester) async {
-  final completer = Completer<void>();
-  void onTimings(List<FrameTiming> timings) {
-    if (timings.isNotEmpty && !completer.isCompleted) {
-      completer.complete();
-    }
-  }
-
-  final scheduler = WidgetsBinding.instance;
-  scheduler.addTimingsCallback(onTimings);
-  try {
-    // This is the single framework pump required after surface conversion.
-    // The timing callback waits for the engine-reported rasterized frame
-    // without scheduling the extra pump that previously stalled the driver.
-    await tester.pump();
-    await completer.future.timeout(const Duration(seconds: 3));
-  } finally {
-    scheduler.removeTimingsCallback(onTimings);
-  }
-}
-
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
   if (_runtimeScreenshotSurfacePrepared) {
     return;
@@ -850,7 +827,7 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_START');
   await binding.convertFlutterSurfaceToImage();
-  await _waitForRuntimeRasterizedFrame(tester);
+  await tester.pump();
   _runtimeScreenshotSurfacePrepared = true;
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
