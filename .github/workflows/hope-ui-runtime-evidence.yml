@@ -172,7 +172,7 @@ jobs:
           ram-size: 8192M
           disable-linux-hw-accel: false
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -no-snapshot -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
 
