@@ -58,7 +58,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
           children: values.map((entry) {
             final ratio = entry.value.clamp(0.0, 1.0);
             return SizedBox(
-              key: ValueKey('candidate-signal-\${entry.key}'),
+              key: ValueKey('candidate-signal-${entry.key}'),
               width: width,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +79,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '\${(ratio * 100).round()}%',
+                        '${(ratio * 100).round()}%',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.w900,
                             ),

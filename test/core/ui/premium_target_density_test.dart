@@ -3,6 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/marketplace/employer_candidate_matching_repository.dart';
+import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
 import 'package:hope_mobile/core/ui/premium_lifecycle.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
@@ -461,6 +463,59 @@ void main() {
     expect(find.byKey(const ValueKey('opportunity-decision-breakdown-skills')), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-decision-breakdown-salary')), findsOneWidget);
     expect(find.byType(PremiumPanel), findsOneWidget);
+  });
+
+
+  testWidgets('wave 14 candidate comparison renders unique component signals',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const candidate = HopeEmployerCandidateMatch(
+      rank: 1,
+      userId: 'candidate-1',
+      displayName: 'کاربر نمونه',
+      score: 94,
+      components: {
+        'skills': .94,
+        'experience': .91,
+        'location': .88,
+        'salary': .92,
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: EmployerCandidateMatchesPage(
+          data: const HopeEmployerCandidateMatchList(
+            jobId: 'wave14-job',
+            kind: 'JOB',
+            candidates: [candidate],
+          ),
+          onRetry: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    for (final key in const ['skills', 'experience', 'location', 'salary']) {
+      expect(
+        find.byKey(ValueKey('candidate-signal-$key')),
+        findsOneWidget,
+      );
+    }
+    expect(find.text('94%'), findsOneWidget);
   });
 
 }
