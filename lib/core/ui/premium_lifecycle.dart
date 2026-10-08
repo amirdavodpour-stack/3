@@ -40,7 +40,7 @@ class PremiumLifecycle extends StatelessWidget {
     return PremiumPanel(
       semanticLabel: title,
       quiet: true,
-      padding: EdgeInsets.all(compact ? HopeV2Spacing.md : HopeV2Spacing.lg),
+      padding: EdgeInsets.all(compact ? 10 : HopeV2Spacing.md),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,7 +51,7 @@ class PremiumLifecycle extends StatelessWidget {
               const SizedBox(height: HopeV2Spacing.xs),
               Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
             ],
-            SizedBox(height: compact ? 6 : HopeV2Spacing.lg),
+            SizedBox(height: compact ? 5 : HopeV2Spacing.md),
           ],
           ...List.generate(steps.length, (index) {
             final step = steps[index];
@@ -112,7 +112,7 @@ class _StepRow extends StatelessWidget {
               if (!last)
                 Container(
                   width: 2,
-                  height: compact ? 4 : 34,
+                  height: compact ? 3 : 28,
                   margin: EdgeInsets.symmetric(vertical: compact ? 1 : 4),
                   color: Theme.of(context).dividerColor,
                 ),
@@ -122,7 +122,7 @@ class _StepRow extends StatelessWidget {
         SizedBox(width: compact ? HopeV2Spacing.sm : HopeV2Spacing.md),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(bottom: compact ? 4 : HopeV2Spacing.lg),
+            padding: EdgeInsets.only(bottom: compact ? 3 : HopeV2Spacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
