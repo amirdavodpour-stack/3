@@ -586,6 +586,18 @@ class OpportunityCard extends StatelessWidget {
     String? mediaUrl,
     HopeCopy copy,
   ) {
+    if (featured && MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact) {
+      return _scanStandard(
+        context,
+        title: title,
+        city: city,
+        amount: amount,
+        primary: primary,
+        mediaUrl: mediaUrl,
+        copy: copy,
+      );
+    }
+
     if (featured) {
       return _featuredStandard(
         context,
@@ -594,18 +606,6 @@ class OpportunityCard extends StatelessWidget {
         amount: amount,
         primary: primary,
         score: job.recommendationScore,
-        mediaUrl: mediaUrl,
-        copy: copy,
-      );
-    }
-
-    if (featuredScan || (featured && MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact)) {
-      return _scanStandard(
-        context,
-        title: title,
-        city: city,
-        amount: amount,
-        primary: primary,
         mediaUrl: mediaUrl,
         copy: copy,
       );
