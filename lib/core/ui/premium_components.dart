@@ -799,7 +799,7 @@ class PremiumHeader extends StatelessWidget {
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 22.5 : 28,
+                  fontSize: compact ? 23 : 28,
                   height: 1.08,
                   letterSpacing: compact ? -.5 : -.75,
                 ),

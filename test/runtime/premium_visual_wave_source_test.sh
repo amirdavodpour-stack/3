@@ -36,7 +36,7 @@ grep -Fq 'static const darkDivider = Color(0x18FFFFFF);' "$theme"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
 grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 6, 16, 24)' "$home"
-grep -Fq 'fontSize: compact ? 22.5 : 28' "$premium"
+grep -Fq 'fontSize: compact ? 23 : 28' "$premium"
 grep -Fq 'fontSize: 10.5' "$premium"
 grep -Fq 'alpha: Theme.of(context).brightness == Brightness.dark ? .078 : .085' "$premium"
 grep -Fq 'HopeV2Surfaces.border(context).withValues(alpha: .18)' "$premium"
