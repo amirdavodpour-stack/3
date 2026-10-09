@@ -220,7 +220,7 @@ void main() {
       ).controller?.text,
       'keep this draft',
     );
-    expect(find.text('Message action failed'), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-send-error')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

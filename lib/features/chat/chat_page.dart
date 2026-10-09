@@ -290,15 +290,36 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 if (_error != null && _thread != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: HopeAsyncState(
-                      kind: HopeStateKind.error,
-                      title: _t('ارسال پیام ناموفق بود', 'Message action failed'),
-                      message: _error!,
-                      action: TextButton.icon(
-                        onPressed: _busy ? null : _load,
-                        icon: const HopeIcon(HopeV2Icons.refresh, size: 16),
-                        label: Text(_t('تلاش دوباره', 'Retry')),
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Container(
+                      key: const ValueKey('chat-send-error'),
+                      decoration: BoxDecoration(
+                        color: colors.errorContainer.withValues(alpha: .38),
+                        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                      ),
+                      padding: const EdgeInsetsDirectional.only(start: 10, end: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline_rounded, size: 16, color: colors.error),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(48, 48),
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              tapTargetSize: MaterialTapTargetSize.padded,
+                            ),
+                            onPressed: _busy ? null : _load,
+                            child: Text(_t('تلاش دوباره', 'Retry')),
+                          ),
+                        ],
                       ),
                     ),
                   ),
