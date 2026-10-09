@@ -21,6 +21,7 @@ No backend endpoint, API payload, route, authentication decision, wallet/ledger 
 
 - The source guard checks the actual source ordering so the transaction-pagination CTA stays above the Withdrawals heading.
 - The source-guard shell file retains executable mode `100755`; this mode is required by the repository's backend executable-permissions test and is verified as part of the final tree.
+- The existing runtime source guard was also updated to reference the new 320×640dp navigation regression name; the earlier failure was a stale assertion, not a Flutter/UI finding.
 - Consolidated Flutter regression, backend fast/security/static checks, lockfile verification, contrast guard, Flutter Analyze, and exact-HEAD Android capture remain the acceptance gates.
 - Static CI must run without runtime/preverified PR markers so the consolidated Flutter suite is truly executed. Only after Static PASS may the approved runtime markers be restored for the exact same feature SHA.
 - Source, widget-regression and source-guard changes were grouped in commit `9e839e79260b08da9679be77d79fcf56ec1a2624`. A report-only follow-up commit is being used to emit the standard PR synchronization event; acceptance will bind to that resulting final SHA, not the grouped parent SHA.
