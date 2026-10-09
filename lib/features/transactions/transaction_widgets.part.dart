@@ -42,30 +42,24 @@ extension on _TransactionPageState {
             ],
           ),
           const SizedBox(height: 5),
-          if (compact)
-            HopeLifecycleRail(
-              labels: [for (var i = 0; i < fa.length; i++) _t(fa[i], en[i])],
-              icons: icons,
-              current: current,
-            )
-          else ...[
+          if (!compact) ...[
             _lifecycleProgress(
               context,
               current: current,
               total: en.length,
             ),
             const SizedBox(height: 4),
-            for (var i = 0; i < en.length; i++)
-              _lifecycleStep(
-                context,
-                index: i,
-                current: current,
-                label: _t(fa[i], en[i]),
-                icon: icons[i],
-                last: i == en.length - 1,
-                compact: compact,
-              ),
           ],
+          for (var i = 0; i < en.length; i++)
+            _lifecycleStep(
+              context,
+              index: i,
+              current: current,
+              label: _t(fa[i], en[i]),
+              icon: icons[i],
+              last: i == en.length - 1,
+              compact: compact,
+            ),
           const SizedBox(height: 4),
           if (!compact)
             Container(

@@ -1,3 +1,31 @@
+# HOPE Design System 2.0 Superwave — 2026-10-09
+
+## Superwave direction
+The supplied HOPE Design System 2.0 showcase is the visual reference, not a literal single-screen mock. Carry its compact premium-dark language into the real Persian RTL / English LTR application: indigo primary actions and match signals; emerald completed/protected states; amber pending states; compact cards; explicit next actions; an explanatory score ring; and a readable vertical financial timeline.
+
+### Acceptance principles
+- Design values converge through shared components; avoid one-off screen-local decoration.
+- The first fold prioritizes orientation, real metrics, best-fit content and the next meaningful action.
+- Wallet balances remain server-derived. Aggregate `lockedBalance` is displayed as an aggregate; active-hold categories are details and are not summed into another fabricated total.
+- Satisfaction and agreement fields remain unselected until the user actively answers. A report cannot be submitted with missing answers.
+- Persian RTL and English LTR remain supported. Compact screens must not hide filters or actions behind fixed navigation.
+- Runtime evidence is evidence of rendering only; it does not establish TalkBack compliance when accessibility services are disabled.
+
+## Wave 23 implementation scope
+- Home Pulse precedes recommendations in a non-scrolling responsive metric panel.
+- Compact opportunity score becomes a circular score indicator while existing component percentages remain grounded in the model.
+- Wallet shows the aggregate locked balance from `HopeWallet.lockedBalance`.
+- Transaction detail uses the same readable vertical status timeline at compact and wide widths.
+- Candidate matching gains a real-data comparison matrix on wide layouts while phones retain stacked detail cards.
+- Create Opportunity preview defaults collapsed on compact screens and expanded on wider layouts.
+- Satisfaction scores and work-agreement choice require explicit user selection.
+- Default compact panel inset tightens without overriding page-specific padding.
+
+## Verification contract
+One consolidated Flutter test invocation runs after the complete grouped commit. The Android capture runs only after that exact HEAD is statically green; every primary and responsive screenshot is reviewed before visual acceptance.
+
+---
+
 # Visual Wave 22 — Compact-first-fold convergence — 2026-10-09
 
 ## Wave 22 implementation

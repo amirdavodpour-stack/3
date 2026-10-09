@@ -972,11 +972,11 @@ class PremiumPanel extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    // Only default 16px panels tighten on compact mobile. Explicit page-specific
-    // padding remains untouched so feature-level composition stays intentional.
+    // Compact default panels use a denser 12dp inset; explicitly tuned feature
+    // panels retain their own values so existing layouts stay intentional.
     final effectivePadding =
         compact && padding == const EdgeInsets.all(HopeV2Spacing.lg)
-            ? const EdgeInsets.all(14)
+            ? const EdgeInsets.all(12)
             : padding;
     final panelFill = dark
         ? (glass
@@ -2319,30 +2319,46 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                         ),
                       ),
                       if (score != null)
-                        Container(
-                          constraints: const BoxConstraints(minWidth: 62, minHeight: 48),
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: primary.withValues(alpha: .13),
-                            borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                            border: Border.all(color: primary.withValues(alpha: .24)),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                        SizedBox(
+                          key: const ValueKey('opportunity-match-score-ring'),
+                          width: 62,
+                          height: 62,
+                          child: Stack(
+                            alignment: Alignment.center,
                             children: [
-                              Text(
-                                scoreLabel,
-                                style: HopeV2Type.metric(context).copyWith(
-                                  color: primary,
-                                  fontSize: 21,
+                              SizedBox.expand(
+                                child: CircularProgressIndicator(
+                                  value: score / 100,
+                                  strokeWidth: 4,
+                                  backgroundColor: HopeV2Surfaces.border(context)
+                                      .withValues(alpha: .42),
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(primary),
                                 ),
                               ),
-                              Text(
-                                _t(context, 'تطبیق', 'match'),
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    scoreLabel,
+                                    style: HopeV2Type.metric(context).copyWith(
                                       color: primary,
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: 17,
+                                      height: 1.0,
                                     ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _t(context, 'تطبیق', 'match'),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: primary,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),

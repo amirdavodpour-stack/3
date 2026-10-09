@@ -747,9 +747,9 @@ class _WalletPageState extends State<WalletPage> {
           emphasized: false,
         ),
         (
-          key: 'wallet-balance-metric-locked-other',
-          label: _t('قفل‌شده', 'Locked funds'),
-          value: _money(wallet.otherLockedBalance),
+          key: 'wallet-balance-metric-locked-total',
+          label: _t('کل قفل‌شده', 'Total locked'),
+          value: _money(wallet.lockedBalance),
           emphasized: false,
         ),
       ];

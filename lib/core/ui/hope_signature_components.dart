@@ -265,28 +265,34 @@ class HopeWalletFlowSignature extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!compact)
-            Row(
-              children: [
-                HopeIcon(
-                  HopeV2Icons.route,
-                size: compact ? 16 : 18,
+          Row(
+            children: [
+              HopeIcon(
+                HopeV2Icons.route,
+                size: compact ? 15 : 18,
                 color: HopeV2Colors.secondary,
               ),
               const SizedBox(width: 7),
               Expanded(
                 child: Text(
-                  _t(context, 'گردش وجه در دفترکل', 'Money flow in the ledger'),
+                  _t(
+                    context,
+                    compact ? 'گردش وجه' : 'گردش وجه در دفترکل',
+                    compact ? 'Money flow' : 'Money flow in the ledger',
+                  ),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              PremiumTag(
-                icon: HopeV2Icons.secure,
-                label: currencyLabel,
-                color: HopeV2Colors.success,
-              ),
+              if (!compact)
+                PremiumTag(
+                  icon: HopeV2Icons.secure,
+                  label: currencyLabel,
+                  color: HopeV2Colors.success,
+                ),
             ],
           ),
           if (!compact) const SizedBox(height: 6),
@@ -318,7 +324,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
                 if (index > 0) const SizedBox(width: 6),
                 Expanded(
                   child: Container(
-                    constraints: BoxConstraints(minHeight: compact ? 36 : 43),
+                    constraints: BoxConstraints(minHeight: compact ? 32 : 43),
                     padding: EdgeInsets.symmetric(
                       horizontal: compact ? 4 : 5,
                       vertical: compact ? 5 : 7,

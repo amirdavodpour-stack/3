@@ -19,7 +19,7 @@ class _Wave22WalletRepository implements WalletRepository {
         'currency': 'TOMAN',
         'availableBalance': 2500000,
         'lockedBalance': 1000000,
-        'escrowBalance': 1000000,
+        'escrowBalance': 0,
         'totalBalance': 3500000,
         'status': 'ACTIVE',
       });
@@ -117,6 +117,17 @@ void main() {
       final dock = find.byKey(const ValueKey('hope-navigation-dock'));
 
       expect(historyTitle, findsOneWidget);
+      final lockedMetric =
+          find.byKey(const ValueKey('wallet-balance-metric-locked-total'));
+      expect(lockedMetric, findsOneWidget);
+      expect(
+        find.descendant(
+          of: lockedMetric,
+          matching: find.text('۱٬۰۰۰٬۰۰۰ تومان'),
+        ),
+        findsOneWidget,
+        reason: 'Show the aggregate locked balance even when active-hold detail totals are zero.',
+      );
       expect(historyFilters, findsOneWidget);
       expect(dock, findsOneWidget);
       for (final label in ['همه', 'ورودی', 'خروجی', 'قفل‌ها']) {

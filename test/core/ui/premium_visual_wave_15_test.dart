@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/marketplace/job.dart';
+import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/hope_signature_components.dart';
@@ -128,6 +129,11 @@ void main() {
       find.byKey(const ValueKey('premium-hero-compact-fallback')),
       findsOneWidget,
       reason: 'Compact Auth heroes must use the quiet fallback without ornamental strokes.',
+    );
+    expect(
+      find.byKey(const ValueKey('opportunity-match-score-ring')),
+      findsOneWidget,
+      reason: 'Compact opportunity screens use the score ring from the target design.',
     );
     final breakdownSkills =
         find.byKey(const ValueKey('opportunity-decision-breakdown-skills'));
@@ -280,4 +286,55 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+  testWidgets(
+    'Superwave compact Money Flow keeps a heading and every lifecycle step',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const wallet = HopeWallet(
+        id: 'superwave-wallet',
+        userId: 'u1',
+        currency: 'TOMAN',
+        availableBalance: 2500000,
+        lockedBalance: 1000000,
+        escrowBalance: 0,
+        status: 'ACTIVE',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: const Scaffold(
+            body: Padding(
+              padding: EdgeInsets.all(8),
+              child: HopeWalletFlowSignature(wallet: wallet),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('گردش وجه'), findsOneWidget);
+      expect(find.text('ثبت دفترکل'), findsOneWidget);
+      expect(find.text('رزرو تا تأیید'), findsOneWidget);
+      expect(find.text('آزادسازی وجه'), findsOneWidget);
+      expect(
+        find.textContaining('۱٬۰۰۰٬۰۰۰ تومان'),
+        findsNothing,
+        reason: 'The lifecycle must not duplicate or invent numeric wallet amounts.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

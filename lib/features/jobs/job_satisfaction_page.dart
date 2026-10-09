@@ -17,13 +17,17 @@ class JobSatisfactionPage extends StatefulWidget {
 
 class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
   late Future<JobSatisfactionState> _future;
-  int _overallRating = 5;
-  int _communicationRating = 5;
-  bool _completedAsAgreed = true;
+  int? _overallRating;
+  int? _communicationRating;
+  bool? _completedAsAgreed;
   final _report = TextEditingController();
   bool _busy = false;
 
   bool get _en => Localizations.localeOf(context).languageCode == 'en';
+  bool get _feedbackComplete =>
+      _overallRating != null &&
+      _communicationRating != null &&
+      _completedAsAgreed != null;
   String _t(String fa, String en) => _en ? en : fa;
 
   @override
@@ -42,14 +46,14 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
       context.read<JobSatisfactionRepository>().getState(widget.jobId);
 
   Future<void> _submit() async {
-    if (_busy) return;
+    if (_busy || !_feedbackComplete) return;
     setState(() => _busy = true);
     try {
       final result = await context.read<JobSatisfactionRepository>().submit(
         jobId: widget.jobId,
-        overallRating: _overallRating,
-        completedAsAgreed: _completedAsAgreed,
-        communicationRating: _communicationRating,
+        overallRating: _overallRating!,
+        completedAsAgreed: _completedAsAgreed!,
+        communicationRating: _communicationRating!,
         report: _report.text,
       );
       if (!mounted) return;
@@ -249,22 +253,56 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                 ),
                 const SizedBox(height: 14),
                 _RatingField(
+                  key: const ValueKey('satisfaction-overall-rating'),
                   label: _t('رضایت کلی', 'Overall satisfaction'),
                   value: _overallRating,
                   onChanged: (value) => setState(() => _overallRating = value),
                 ),
                 const SizedBox(height: 12),
-                SwitchListTile.adaptive(
-                  title: Text(_t(
-                    'کار مطابق توافق انجام شد',
-                    'Work was completed as agreed',
-                  )),
-                  value: _completedAsAgreed,
-                  onChanged: (value) =>
-                      setState(() => _completedAsAgreed = value),
+                PremiumPanel(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _t(
+                          'کار مطابق توافق انجام شد؟',
+                          'Was the work completed as agreed?',
+                        ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<bool>(
+                        key: const ValueKey('satisfaction-agreement-choice'),
+                        segments: [
+                          ButtonSegment<bool>(
+                            value: true,
+                            label: Text(_t('بله', 'Yes')),
+                            icon: const Icon(Icons.check_rounded),
+                          ),
+                          ButtonSegment<bool>(
+                            value: false,
+                            label: Text(_t('خیر', 'No')),
+                            icon: const Icon(Icons.flag_outlined),
+                          ),
+                        ],
+                        selected: _completedAsAgreed == null
+                            ? <bool>{}
+                            : <bool>{_completedAsAgreed!},
+                        emptySelectionAllowed: true,
+                        onSelectionChanged: (selected) => setState(
+                          () => _completedAsAgreed =
+                              selected.isEmpty ? null : selected.first,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _RatingField(
+                  key: const ValueKey('satisfaction-communication-rating'),
                   label: _t(
                     'ارتباط و هماهنگی',
                     'Communication and coordination',
@@ -273,6 +311,18 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                   onChanged: (value) =>
                       setState(() => _communicationRating = value),
                 ),
+                const SizedBox(height: 8),
+                if (!_feedbackComplete)
+                  Text(
+                    _t(
+                      'برای ثبت گزارش، دو امتیاز و پاسخ توافق را انتخاب کنید.',
+                      'Choose both ratings and the agreement answer before submitting.',
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _report,
@@ -288,7 +338,8 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                 ),
                 const SizedBox(height: 14),
                 FilledButton.icon(
-                  onPressed: _busy ? null : _submit,
+                  key: const ValueKey('job-satisfaction-submit'),
+                  onPressed: _busy || !_feedbackComplete ? null : _submit,
                   icon: _busy
                       ? const SizedBox(
                           width: 18,
@@ -319,14 +370,15 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
 
 class _RatingField extends StatelessWidget {
   const _RatingField({
+    super.key,
     required this.label,
     required this.value,
     required this.onChanged,
   });
 
   final String label;
-  final int value;
-  final ValueChanged<int> onChanged;
+  final int? value;
+  final ValueChanged<int?> onChanged;
 
   @override
   Widget build(BuildContext context) => PremiumPanel(
@@ -353,9 +405,10 @@ class _RatingField extends StatelessWidget {
                   );
                 },
               ),
-              selected: <int>{value},
+              selected: value == null ? <int>{} : <int>{value!},
+              emptySelectionAllowed: true,
               onSelectionChanged: (selected) =>
-                  onChanged(selected.first),
+                  onChanged(selected.isEmpty ? null : selected.first),
             ),
           ],
         ),

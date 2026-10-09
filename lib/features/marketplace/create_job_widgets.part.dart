@@ -292,7 +292,7 @@ class _CreateJobForm extends StatelessWidget {
               key: const ValueKey('opportunity-live-preview-peek'),
               tilePadding: const EdgeInsets.symmetric(horizontal: 2),
               childrenPadding: EdgeInsets.zero,
-              initiallyExpanded: true,
+              initiallyExpanded: !compact,
               leading: const HopeIconTile(
                 HopeV2Icons.insights,
                 size: 38,

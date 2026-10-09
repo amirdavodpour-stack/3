@@ -107,6 +107,106 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     );
   }
 
+  Widget _comparisonMatrix(BuildContext context) {
+    final candidates = data.candidates.take(3).toList(growable: false);
+    const keys = ['skills', 'experience', 'location', 'salary'];
+    final widths = <int, TableColumnWidth>{
+      0: const FixedColumnWidth(86),
+    };
+    for (var index = 0; index < candidates.length; index++) {
+      widths[index + 1] = const FixedColumnWidth(110);
+    }
+
+    Widget cell(String value, {bool heading = false}) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: heading
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontWeight: heading ? FontWeight.w900 : FontWeight.w700,
+                ),
+          ),
+        );
+
+    String valueFor(HopeEmployerCandidateMatch candidate, String key) {
+      final value = candidate.components[key];
+      if (value != null) {
+        final normalized = value <= 1 ? value * 100 : value;
+        return '${normalized.clamp(0.0, 100.0).round()}٪';
+      }
+      if (key == 'skills' && (candidate.skills ?? '').trim().isNotEmpty) {
+        return candidate.skills!.trim();
+      }
+      return '—';
+    }
+
+    return PremiumPanel(
+      key: const ValueKey('candidate-comparison-matrix'),
+      quiet: true,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _t(context, 'مقایسهٔ سریع نامزدها', 'Quick candidate comparison'),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 5),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Table(
+              columnWidths: widths,
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              border: TableBorder(
+                horizontalInside: BorderSide(
+                  color: HopeV2Surfaces.border(context).withValues(alpha: .38),
+                ),
+              ),
+              children: [
+                TableRow(
+                  children: [
+                    cell(_t(context, 'شاخص', 'Metric'), heading: true),
+                    for (final candidate in candidates)
+                      cell(
+                        candidate.displayName.trim().isEmpty
+                            ? _t(context, 'نامزد ${candidate.rank}', 'Candidate ${candidate.rank}')
+                            : candidate.displayName.trim(),
+                        heading: true,
+                      ),
+                  ],
+                ),
+                for (final key in keys)
+                  TableRow(
+                    children: [
+                      cell(_componentLabel(context, key), heading: true),
+                      for (final candidate in candidates)
+                        cell(valueFor(candidate, key)),
+                    ],
+                  ),
+                TableRow(
+                  children: [
+                    cell(_t(context, 'انطباق', 'Match'), heading: true),
+                    for (final candidate in candidates)
+                      cell(
+                        '${candidate.score.toStringAsFixed(candidate.score == candidate.score.roundToDouble() ? 0 : 1)}٪',
+                        heading: true,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PremiumPageFrame(
@@ -184,6 +284,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
               );
             },
           ),
+        if (data.candidates.length > 1 &&
+            MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium) ...[
+          _comparisonMatrix(context),
+          const SizedBox(height: 8),
+        ],
         if (data.candidates.isNotEmpty)
           const SizedBox(height: 8),
         if (data.candidates.isEmpty)

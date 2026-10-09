@@ -341,6 +341,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               onOpenMenu: widget.onOpenMenu,
             ),
             const SizedBox(height: HopeV2Spacing.sm),
+            _homePulse(context, auth),
+            const SizedBox(height: HopeV2Spacing.sm),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -379,8 +381,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               const SizedBox(height: HopeV2Spacing.sm),
             ],
 
-            _homePulse(context, auth),
-            const SizedBox(height: HopeV2Spacing.sm),
             if (!auth.isGuest && _agentState != null)
               FutureBuilder<HopeOpportunityAgentState>(
                 future: _agentState,
@@ -448,50 +448,58 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           ),
         ];
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+        return PremiumPanel(
+          key: const ValueKey('home-pulse-panel'),
+          semanticLabel: 'HOPE Pulse',
+          quiet: true,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (var index = 0; index < stats.length; index++) ...[
-                if (index > 0)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 9),
-                    child: SizedBox(
-                      height: 20,
-                      child: VerticalDivider(
-                        width: 1,
-                        color: HopeV2Surfaces.border(context).withValues(alpha: .22),
-                      ),
-                    ),
+              Row(
+                children: [
+                  Text(
+                    'HOPE Pulse',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                   ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    HopeIcon(
-                      stats[index].icon,
-                      size: 14,
-                      color: stats[index].accent,
-                      strokeWidth: 1.9,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      stats[index].value,
-                      style: HopeV2Type.metric(context).copyWith(
-                        fontSize: 13.5,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      stats[index].label,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: HopeV2Colors.darkMuted,
-                            fontWeight: FontWeight.w700,
+                  const Spacer(),
+                  Text(
+                    _t(context, 'نمای کلی', 'Your snapshot'),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: HopeV2Colors.darkMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const gap = 6.0;
+                  final columns = constraints.maxWidth >= 300 ? 4 : 2;
+                  final cellWidth =
+                      (constraints.maxWidth - gap * (columns - 1)) / columns;
+                  return Wrap(
+                    spacing: gap,
+                    runSpacing: 6,
+                    children: [
+                      for (final stat in stats)
+                        SizedBox(
+                          width: cellWidth,
+                          child: _homePulseStat(
+                            context,
+                            value: stat.value,
+                            label: stat.label,
+                            icon: stat.icon,
+                            accent: stat.accent,
                           ),
-                    ),
-                  ],
-                ),
-              ],
+                        ),
+                    ],
+                  );
+                },
+              ),
             ],
           ),
         );
