@@ -197,6 +197,9 @@ grep -Fq "test/features/jobs/job_satisfaction_page_test.dart" ".github/workflows
 grep -Fq "test/features/marketplace/employer_candidate_matches_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
 grep -Fq "Wave 23 vertical transaction timeline" "test/features/transactions/transaction_page_test.dart"
 # Wave 24 compact flow, discovery controls, chart labels and accessibility gates.
+grep -Fq 'radius: MediaQuery.sizeOf(context).width < 500 ? 24 : 32' lib/features/profile/profile_page.dart
+grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-wave-1-static.yml
+grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-runtime-evidence.yml
 grep -Fq 'static const scrollEndGap = 12.0;' lib/core/theme/hope_v2_design.dart
 grep -Fq 'height: HopeV2Navigation.barHeight,' lib/core/ui/premium_components.dart
 grep -Fq 'wallet-history-entry-${item.id}' lib/features/wallet/wallet_page.dart
@@ -204,7 +207,7 @@ grep -Fq 'profile-language-selector' lib/features/profile/profile_page.dart
 grep -Fq 'work-center-lifecycle-${job.id}' lib/features/transactions/transactions_page.dart
 grep -Fq 'hope-explore-kind-filters' lib/features/jobs/jobs_filter_bar.part.dart
 grep -Fq 'financial-cashflow-legend' lib/features/financial/financial_insights_page.dart
-grep -Fq 'Wave 24 language selector clears the dock' test/features/profile/wave24_compact_dock_test.dart
+grep -Fq 'Wave 25 first-fold profile language selector stays fully above the dock' test/features/profile/wave24_compact_dock_test.dart
 grep -Fq 'Wave 24 collaboration lifecycle clears the dock' test/features/transactions/transactions_page_test.dart
 grep -Fq 'Wave 24 compact Explore kind filter' test/features/marketplace/jobs_page_test.dart
 grep -Fq 'Wave 24 financial chart legend' test/features/financial/financial_insights_page_test.dart

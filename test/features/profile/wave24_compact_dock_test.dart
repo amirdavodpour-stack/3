@@ -47,12 +47,15 @@ class _Wave24ProfileRepository implements ProfileRepository {
 
 void main() {
   testWidgets(
-    'Wave 24 language selector clears the dock at 360x640 and remains tappable',
+    'Wave 25 first-fold profile language selector stays fully above the dock and remains tappable',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1;
+      // Match the compact Android capture's bottom system/gesture inset.
+      tester.view.padding = const FakeViewPadding(bottom: 48);
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPadding);
       SharedPreferences.setMockInitialValues({});
       final settings = HopeSettingsController();
       await settings.load();
@@ -90,13 +93,7 @@ void main() {
       final selector = find.byKey(
         const ValueKey('profile-language-selector'),
       );
-      await tester.scrollUntilVisible(
-        selector,
-        180,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-
+      // Do not auto-scroll: assert the actual first fold at 360x640.
       final dock = find.byKey(const ValueKey('hope-navigation-dock'));
       expect(selector, findsOneWidget);
       expect(dock, findsOneWidget);

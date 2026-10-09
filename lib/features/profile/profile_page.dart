@@ -116,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ? null
                 : user['email']?.toString(),
             trailing: CircleAvatar(
-              radius: 32,
+              radius: MediaQuery.sizeOf(context).width < 500 ? 24 : 32,
               backgroundColor:
                   HopeV2Colors.primary.withValues(alpha: .14),
               child: Text(

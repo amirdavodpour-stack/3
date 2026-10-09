@@ -68,4 +68,15 @@ Turn Wave23's reviewed runtime defects and the supplied HOPE Design System 2.0 r
 
 The first expanded run surfaced old widget files not included in the Wave23 green suite; several assert legacy Wallet/Profile/Opportunity Detail labels and keys that do not match the current implementation. Wave24 does not claim those tests passed. The authoritative Wave24 command keeps the prior seven-test Wave23 baseline and adds focused tests for the touched compact UI surfaces. The old broader widget files are excluded from this particular command, and their failures remain documented rather than being counted as Wave24 failures or successes.
 
-The focused suite explicitly tests the compact Wallet history row, Profile language selector, Work Center lifecycle, Explore filter state, finance chart legend and navigation target/label guidance. A final PASS still requires one exact-head static run plus a same-head runtime capture and individual review of all 25 screenshots.
+The focused suite explicitly tests the compact Wallet history row, Profile language selector, Work Center lifecycle, Explore filter state, finance chart legend and navigation target/label guidance. The exact-head static and same-head runtime gates passed on 2026-10-09. The final runtime artifact and post-capture visual finding are recorded below.
+
+
+## Final gate results — 2026-10-09
+
+- Exact feature HEAD: `aca117898f290d7e1a4335c69a0d33bbd02c0288`.
+- Static verification: [run 37960350028](https://github.com/amirdavodpour-stack/3/actions/runs/37960350028) — success; one consolidated Flutter invocation reported 102 passing tests.
+- Android runtime evidence: [run 37961937703](https://github.com/amirdavodpour-stack/3/actions/runs/37961937703) — success on the same HEAD; capture, artifact validation and upload passed.
+- Artifact: `hope-critical-screens-runtime-evidence-c30949792964c230cbbd532845944e0d203979d5-37961937703`, ID `11632481859`, SHA-256 `ec3f4cbc85b5803c939bd98b9865be192b25cc54b6f5814e160446a7df8e9317`.
+- Metadata declares 19 primary PNGs (1080×1920) and 6 responsive PNGs (720×1280; 360×640 logical dp), Persian RTL, dark theme, 48px interactive-target contract, and test exit code 0.
+- Accessibility evidence: `accessibility-enabled=0`, `accessibility-services=null`. TalkBack/T10 remains **NOT ACCEPTED**.
+- Post-capture review found a first-fold gap: the Profile language selector was too close to the fixed dock at 360×640dp. The previous widget regression auto-scrolled the selector into view before measuring, so it did not validate its initial position. This residual is addressed by Wave25's compact Profile header and a no-scroll first-fold assertion.
