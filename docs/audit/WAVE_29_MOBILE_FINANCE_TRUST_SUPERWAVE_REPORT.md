@@ -22,6 +22,7 @@ No backend endpoint, API payload, route, authentication decision, wallet/ledger 
 - The source guard checks the actual source ordering so the transaction-pagination CTA stays above the Withdrawals heading.
 - Consolidated Flutter regression, backend fast/security/static checks, lockfile verification, contrast guard, Flutter Analyze, and exact-HEAD Android capture remain the acceptance gates.
 - Static CI must run without runtime/preverified PR markers so the consolidated Flutter suite is truly executed. Only after Static PASS may the approved runtime markers be restored for the exact same feature SHA.
+- Source, widget-regression and source-guard changes were grouped in commit `9e839e79260b08da9679be77d79fcf56ec1a2624`. A report-only follow-up commit is being used to emit the standard PR synchronization event; acceptance will bind to that resulting final SHA, not the grouped parent SHA.
 - The Android artifact's exact SHA, run, screenshot count, and archive hash will only be reported after those records are fetched and checked.
 - TalkBack/T10 is not accepted without proof that a screen-reader service was enabled. The fa-RTL runtime lane does not certify en-light/LTR parity.
 
