@@ -224,7 +224,7 @@ grep -Fq 'blurRadius: dark ? 20 : 16' "$premium"
 grep -Fq 'HopeV2Icons.homeSelected, selected: true' "$premium"
 grep -Fq 'HopeV2Icons.walletSelected, selected: true' "$premium"
 grep -Fq 'HopeV2Icons.profileSelected, selected: true' "$premium"
-grep -Fq "Wave 26 keeps every navigation label visible at 320dp" "test/core/ui/premium_navigation_test.dart"
+grep -Fq "Wave 29 keeps every navigation label visible at 320x640dp" "test/core/ui/premium_navigation_test.dart"
 
 # Wave 26 adaptive Explore density must use the purpose-built compact grid tile.
 grep -Fq 'final textScale = MediaQuery.textScalerOf(context).scale(1);' "$jobs_widgets"
