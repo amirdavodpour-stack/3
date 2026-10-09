@@ -245,6 +245,8 @@ void main() {
       findsOneWidget,
       reason: 'Wave26 keeps all five Persian navigation labels visible at narrow widths.',
     );
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
     expect(find.bySemanticsLabel('پروفایل'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const ValueKey('wave17-filled-scroll-viewport'))).height,
@@ -336,6 +338,82 @@ void main() {
         find.textContaining('۱٬۰۰۰٬۰۰۰ تومان'),
         findsNothing,
         reason: 'The lifecycle must not duplicate or invent numeric wallet amounts.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 26 compact-grid cards expose the complete Toman range without ellipsis',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'wave26-compact-grid-budget',
+        'title': 'طراحی رابط کاربری',
+        'description': 'Compact grid financial disclosure contract.',
+        'categoryId': 'design',
+        'category': 'طراحی',
+        'jobType': 'FIXED',
+        'budgetMin': '1000000',
+        'budgetMax': '1500000',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.86,
+                children: [
+                  OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.compactGrid,
+                  ),
+                  OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.compactGrid,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final amountFinder = find.byKey(
+        const ValueKey('opportunity-card-compact-grid-budget'),
+      ).first;
+      expect(amountFinder, findsOneWidget);
+      final amount = tester.widget<Text>(amountFinder);
+      expect(amount.data, contains('۱٬۰۰۰٬۰۰۰'));
+      expect(amount.data, contains('۱٬۵۰۰٬۰۰۰'));
+      expect(amount.maxLines, 3);
+      expect(amount.overflow, TextOverflow.clip);
+      expect(
+        tester.renderObject<RenderParagraph>(amountFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'The complete Toman range must remain visible in compact discovery cards.',
       );
       expect(tester.takeException(), isNull);
     },

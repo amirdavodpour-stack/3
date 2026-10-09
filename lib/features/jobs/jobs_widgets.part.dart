@@ -64,11 +64,15 @@ class _JobsResultsSliver extends StatelessWidget {
             // Explore remains a readable list on very narrow layouts or when
             // accessibility text scaling makes a two-column card too dense.
             final textScale = MediaQuery.textScalerOf(context).scale(1);
-            final columns = constraints.maxWidth >= HopeV2Breakpoints.expanded
-                ? 3
-                : (constraints.maxWidth >= 340 && textScale <= 1.2)
-                    ? 2
-                    : 1;
+            // Prefer readable single-column cards when users enlarge text;
+            // adaptive density must not outrank accessibility readability.
+            final columns = textScale > 1.2
+                ? 1
+                : constraints.maxWidth >= HopeV2Breakpoints.expanded
+                    ? 3
+                    : constraints.maxWidth >= 340
+                        ? 2
+                        : 1;
             final featuredJob = jobs.firstWhere(
               (job) => job.isRecommended && job.recommendationScore != null,
               orElse: () => jobs.first,

@@ -105,8 +105,12 @@ class _Repo implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
-Future<void> _pump(WidgetTester tester, _Repo repo,
-    {HopeSettingsController? settings}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  _Repo repo, {
+  HopeSettingsController? settings,
+  double textScale = 1,
+}) async {
   HopeSettingsController resolvedSettings;
   if (settings != null) {
     resolvedSettings = settings;
@@ -125,12 +129,17 @@ Future<void> _pump(WidgetTester tester, _Repo repo,
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: resolvedSettings),
-        Provider<MarketplaceRepository>.value(value: repo),
-      ],
-      child: const JobsPage(),
+    home: MediaQuery(
+      data: MediaQueryData.fromView(tester.view).copyWith(
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: resolvedSettings),
+          Provider<MarketplaceRepository>.value(value: repo),
+        ],
+        child: const JobsPage(),
+      ),
     ),
   ));
   await tester.pump();
@@ -459,6 +468,31 @@ void main() {
         tester.widget<SegmentedButton<String>>(filter).selected,
         isNot(contains('ALL')),
       );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 26 Explore falls back to a single column at enlarged text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo(), textScale: 1.5);
+      await tester.pumpAndSettle();
+
+      final cards = tester.widgetList<OpportunityCard>(
+        find.byType(OpportunityCard),
+      );
+      expect(cards, isNotEmpty);
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compactGrid),
+        isFalse,
+        reason: 'Enlarged text must prioritize readable single-column opportunity summaries.',
+      );
+      expect(find.text('طراحی اپ'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

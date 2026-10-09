@@ -353,7 +353,7 @@ class OpportunityCard extends StatelessWidget {
     HopeCopy copy,
   ) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final mediaHeight = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 62.0 : 76.0;
+    final mediaHeight = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 58.0 : 64.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -427,9 +427,10 @@ class OpportunityCard extends StatelessWidget {
         if (amount.isNotEmpty)
           Text(
             _formatAmount(amount, context),
-            maxLines: 2,
+            key: const ValueKey('opportunity-card-compact-grid-budget'),
+            maxLines: 3,
             softWrap: true,
-            overflow: TextOverflow.ellipsis,
+            overflow: TextOverflow.clip,
             style: TextStyle(fontSize: 12, height: 1.16, fontWeight: FontWeight.w900, color: primary),
           ),
       ],
@@ -499,9 +500,10 @@ class OpportunityCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   _formatAmount(amount, context),
-                  maxLines: 2,
+                  key: const ValueKey('opportunity-card-compact-budget'),
+                  maxLines: 3,
                   softWrap: true,
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.clip,
                   textAlign: TextAlign.start,
                   style: TextStyle(fontSize: 12.5, height: 1.2, fontWeight: FontWeight.w900, color: primary),
                 ),
@@ -585,8 +587,9 @@ class OpportunityCard extends StatelessWidget {
                 ? null
                 : Text(
                     _formatAmount(amount, context),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    key: const ValueKey('opportunity-card-standard-budget'),
+                    maxLines: 3,
+                    overflow: TextOverflow.clip,
                     softWrap: true,
                     textAlign: TextAlign.end,
                     style: HopeV2Type.metric(context).copyWith(
@@ -1173,9 +1176,10 @@ class OpportunityCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         _formatAmount(amount, context),
-                        maxLines: compactViewport ? 2 : 1,
-                        softWrap: compactViewport,
-                        overflow: TextOverflow.ellipsis,
+                        key: const ValueKey('opportunity-card-expanded-budget'),
+                        maxLines: compactViewport ? 3 : 2,
+                        softWrap: true,
+                        overflow: TextOverflow.clip,
                         style: HopeV2Type.metric(context).copyWith(
                           fontSize: compactViewport ? 14 : 18,
                           height: compactViewport ? 1.15 : 1.05,

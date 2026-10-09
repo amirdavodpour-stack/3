@@ -233,6 +233,15 @@ grep -Fq 'enum OpportunityCardVariant { compact, compactGrid, standard, featured
 grep -Fq 'Widget _compactGrid(' "$opportunity"
 grep -Fq 'variant: columns == 2' "$jobs_widgets"
 grep -Fq 'childAspectRatio: columns == 3 ? 1.04 : 0.86' "$jobs_widgets"
+grep -Fq 'final columns = textScale > 1.2' "$jobs_widgets"
+grep -Fq "Wave 26 Explore falls back to a single column at enlarged text scale" "test/features/marketplace/jobs_page_test.dart"
+grid_money_block="$(sed -n '/Widget _compactGrid(/,/Widget _compact(/p' "$opportunity")"
+printf '%s\n' "$grid_money_block" | grep -Fq "ValueKey('opportunity-card-compact-grid-budget')"
+printf '%s\n' "$grid_money_block" | grep -Fq 'maxLines: 3,'
+printf '%s\n' "$grid_money_block" | grep -Fq 'overflow: TextOverflow.clip,'
+compact_money_block="$(sed -n '/Widget _compact(/,/Widget _standard(/p' "$opportunity")"
+printf '%s\n' "$compact_money_block" | grep -Fq "ValueKey('opportunity-card-compact-budget')"
+printf '%s\n' "$compact_money_block" | grep -Fq 'overflow: TextOverflow.clip,'
 
 echo "PASS: Wave 23 superwave + Wave 22 compact-first-fold source contracts"
 echo "PASS: Wave 21 shared visual + locale + evidence integrity contracts"

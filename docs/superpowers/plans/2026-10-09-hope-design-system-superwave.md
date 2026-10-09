@@ -21,11 +21,15 @@ Raise actual visual and interaction quality against the user-supplied HOPE showc
 7. Add a data-grounded wide candidate comparison matrix while retaining stacked mobile cards.
 8. Collapse the optional live preview on compact Create Opportunity screens.
 9. Leave ratings and work agreement unset until explicitly selected; disable incomplete satisfaction submission.
+10. Never ellipsize opportunity-card amount/range text; compact variants may wrap to three lines and must retain the full model-supplied value.
+11. Explore must fall back to a single column above a 1.2 text scale so layout density never outranks accessibility readability; enable Semantics when testing accessible navigation labels.
 
 ## Regression plan
 - Keep shared visual/localization, date formatter, compact Wallet, Saved Search and transaction behavior tests in one consolidated Flutter invocation.
 - Assert aggregate locked-balance visibility if active-hold detail values are zero.
 - Assert a score ring and compact Money Flow heading/steps while preventing duplicate lifecycle amounts.
+- Assert compact-grid Toman ranges remain complete without paragraph max-line overflow.
+- Assert Explore uses a single-column card summary at enlarged text scale with no layout exception.
 - Assert the mobile transaction page renders a vertical timeline.
 - Add wide candidate matrix and satisfaction-form tests for no biased defaults/incomplete submission.
 - Extend source guards without removing previous-wave checks.
