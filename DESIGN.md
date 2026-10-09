@@ -1,3 +1,27 @@
+## Visual Wave 17 — Responsive viewport, navigation and financial clarity — 2026-10-09
+
+Wave 17 is grounded in Android runtime workflow #2168 / run `37863924499` at exact feature HEAD `b69f3a87d94951018ac45d1124adec32d2d8468e`. The artifact contains 19 Persian/RTL primary images and six responsive images at physical resolution 720×1280. Its metadata records the PR merge ref as `30/merge` at merge SHA `5f1db15b7525246ec8d4f9e572008fb4b748ee48`; that merge ref is distinct from the exact feature HEAD checked out and rendered by the workflow.
+
+### Evidence-driven findings
+- In responsive Jobs and Transactions captures, the scrollable content ended well above the navigation dock, leaving a visually dead band. Opportunity Detail similarly showed content cut off well before its fixed primary action. This is consistent with the shared page frame allowing an inner scroll view to shrink-wrap instead of filling the available body viewport.
+- On widths below 340 logical pixels, the five-tab dock forced 62dp minimum content into items narrower than that constraint; inactive Persian labels showed ellipses and Wallet's selected label was abbreviated.
+- Wallet summary values explicitly used one line plus ellipsis, truncating available balance amounts. Work-centre labels had similar one-line constraints; opportunity budget range endpoints were also sent to the money label as one unformatted string.
+
+### Wave 17 grouped implementation
+- Make `PremiumPageFrame` constrain its inner page content to the available body height, without removing the shared opaque canvas, max-width centering, safe-bottom padding, or page semantics.
+- Use an ultra-compact navigation variant below 340 logical pixels: selected destination retains its label (allowing two lines), inactive destinations retain accessible semantic labels while showing icons only, and the dock no longer imposes a 62dp minimum width on each of five items.
+- Allow Wallet's labelled balance metrics and Work Centre summary text to wrap rather than discarding amount/status content behind ellipses.
+- Give compact featured-opportunity budget values up to two lines, with responsive typography; localize and group each Opportunity Detail budget endpoint through the shared display formatter before joining the range.
+- Extend the existing single-case Flutter widget test with narrow-width navigation and a measurable scroll-viewport-fill assertion; extend source guard and workflow markers for this wave.
+- Preserve actual backend values and existing TOMAN semantics. Do not add synthetic records or alter authorization, ledger lifecycle, payment state, route behavior, media provenance, or AI policy.
+
+### Wave 17 acceptance sequence
+- Keep the runtime-trigger marker off while implementation and static validation run.
+- Run the one focused Flutter test on the exact new feature HEAD; only after it is green, set `[runtime-capture-fa]` and `[wave17-preverified]` together to initiate one runtime capture without running that focused test twice.
+- Inspect all 25 PNGs from the new artifact before calling the wave visually certified. Keep PR #30 draft and unmerged; main remains untouched.
+- Flutter's adaptive layout guidance distinguishes app-window size from local widget constraints and recommends selecting layouts from available space. Sources: https://docs.flutter.dev/ui/adaptive-responsive/general and https://docs.flutter.dev/ui/adaptive-responsive/best-practices.
+
+
 ## Visual Wave 16 — Responsive density and empty-state convergence — 2026-10-09
 
 Wave 16 is grounded in the final Wave 15 exact-head runtime artifact from workflow #2155 / run `37861305993`, containing 19 Persian/RTL primary screenshots and six responsive screenshots at 720×1280. The run completed successfully and its artifact was inspected as a 25-image contact-sheet set before implementation. Main observations: the discovery and finance surfaces use noticeably different vertical densities; some compact opportunity metadata is vulnerable to single-line truncation; and empty/error-first screens (chat, notifications, saved searches, applications, and Home discovery) do not share a consistent visual hierarchy. Screenshot evidence alone cannot establish whether low data density reflects a valid backend-empty state or a capture fixture; therefore this wave does not add synthetic records.
