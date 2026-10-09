@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,7 +11,7 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('Wave 18 grouped responsive visual contracts',
+  testWidgets('Wave 19 grouped responsive financial visibility contracts',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -113,6 +114,20 @@ void main() {
     expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
     expect(tester.widget<PremiumHero>(find.byType(PremiumHero)).compactHero,
         isTrue);
+
+    final budgetAmount = find.byKey(
+      const ValueKey('opportunity-card-budget-amount'),
+    );
+    expect(budgetAmount, findsOneWidget);
+    final budgetText = tester.widget<Text>(budgetAmount);
+    expect(budgetText.maxLines, 3);
+    expect(budgetText.softWrap, isTrue);
+    expect(budgetText.data, contains('۲٬۵۰۰٬۰۰۰ تومان'));
+    expect(
+      tester.renderObject<RenderParagraph>(budgetAmount).didExceedMaxLines,
+      isFalse,
+      reason: 'The featured card must expose the complete financial range, not an ellipsis.',
+    );
     expect(tester.takeException(), isNull);
 
     tester.view.physicalSize = const Size(320, 720);

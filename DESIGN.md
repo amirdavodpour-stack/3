@@ -1,3 +1,25 @@
+## Visual Wave 19 — Full-width featured opportunity financial disclosure — 2026-10-09
+
+Wave 18 Runtime #2200 / run `37873778024`, artifact `11592230431`, successfully captured 19 primary and six responsive Persian/RTL screens after calibrating the responsive viewport to 360×640 logical dp at 320dpi. The capture calibration and compact-height frame padding changes are confirmed in the artifact metadata and all six responsive screens. The visual audit found one material residual defect: Home's featured OpportunityCard still cuts off the actual budget range with an ellipsis. The same shared layout can affect narrow featured cards on Jobs.
+
+### Screenshot-grounded finding
+- Primary `home-fa-rtl.png` and responsive `responsive-720x1280-home-fa-rtl.png` both show the featured opportunity's price line ending in an ellipsis after the low/high range starts. The amount and city are competing in the same compact metadata row in `_scanStandard`, and `_metaText` enforces one-line text with ellipsis. That hides part of a financial value despite the overall screen being correctly sized.
+- The two secondary opportunity cards render their full range; the defect is isolated to the featured/scan metadata composition rather than the formatter or backend data. Preserve the existing server-provided budget endpoints and locale-aware `HopeDisplayFormatter.amount`.
+
+### Grouped change
+- Remove amount from the single-line generic metadata Wrap. Render it as a dedicated, full-card-width row using the existing payment icon and a three-line soft-wrapping Text; do not share half of the available width with the city.
+- Keep city and work-mode metadata in the separate wrapping row beneath/after the amount. Preserve visual tokens, semantic button label, CTA, media sizing, RTL directionality, and existing 48dp touch targets.
+- Extend the existing single `testWidgets` case to inspect the real featured card's localized budget Text and assert its RenderParagraph does not exceed its line limit.
+- Extend the source guard and align the workflow markers so the full focused Flutter test runs once on the final implementation HEAD; runtime runs only after the gate passes.
+
+### Wave 19 acceptance
+- Keep PR #30 Draft/unmerged; do not modify main. Remove `[runtime-capture-fa]` while code is being prepared.
+- Run Flutter analyze, the source/contrast guards, and exactly one focused Flutter test on the final Wave 19 HEAD.
+- If green, add `[runtime-capture-fa]` and `[wave19-preverified]` together and allow one full 25-PNG Android capture. The runtime step skips only the already-passed focused gate.
+- Visually inspect all 25 PNGs, explicitly verify full budget ranges in primary and responsive Home and Jobs, and confirm viewport metadata. Keep visual certification NOT ACCEPTED if any range is still truncated.
+- Keep the official Flutter adaptive-layout guidance and actual 360×640dp capture calibration documented: https://docs.flutter.dev/ui/adaptive-responsive and https://api.flutter.dev/flutter/widgets/MediaQueryData/size.html.
+
+
 ## Visual Wave 18 — Compact viewport calibration and first-fold recovery — 2026-10-09
 
 Wave 17's Android artifact (runtime #2188 / run `37871022058`, artifact `11590562044`) contains 19 primary and six responsive Persian/RTL screenshots. Original-size responsive Jobs and Profile captures were inspected individually. The 720×1280 physical-pixel override was applied without a matching density override. On the Pixel 2 emulator's native density, that yields an approximately 274×488dp logical viewport; the screenshots consequently show inflated typography, clipped first-fold cards and an oversized empty band before the fixed navigation dock. This is a capture-calibration defect that also exposed a real compact-height spacing problem; it must not be mislabeled as a color-only issue.

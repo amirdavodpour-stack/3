@@ -732,14 +732,6 @@ class OpportunityCard extends StatelessWidget {
           mode,
           secondaryAccent(context),
         ),
-      if (amount.isNotEmpty)
-        _metaText(
-          context,
-          HopeV2Icons.payments,
-          _formatAmount(amount, context),
-          primary,
-          emphasize: true,
-        ),
       if (city.trim().isNotEmpty)
         _metaText(
           context,
@@ -809,46 +801,44 @@ class OpportunityCard extends StatelessWidget {
             ),
           ],
         ),
-        if (meta.isNotEmpty) ...[
+        if (amount.isNotEmpty) ...[
           SizedBox(height: compactViewport ? 5 : 7),
-          if (compactViewport && amount.isNotEmpty && city.trim().isNotEmpty)
-            Row(
-              children: [
-                Expanded(
-                  child: _metaText(
-                    context,
-                    HopeV2Icons.payments,
-                    _formatAmount(amount, context),
-                    primary,
-                    emphasize: true,
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HugeIcon(
+                icon: HopeV2Icons.payments,
+                size: 15,
+                color: primary,
+                strokeWidth: 1.8,
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  _formatAmount(amount, context),
+                  key: const ValueKey('opportunity-card-budget-amount'),
+                  maxLines: 3,
+                  softWrap: true,
+                  overflow: TextOverflow.clip,
+                  textAlign: TextAlign.start,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: primary,
+                        fontSize: compactViewport ? 12 : 13,
+                        height: 1.18,
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _metaText(
-                    context,
-                    HopeV2Icons.location,
-                    city,
-                    secondaryAccent(context),
-                  ),
-                ),
-              ],
-            )
-          else
-            Wrap(
-              spacing: HopeV2Spacing.sm,
-              runSpacing: HopeV2Spacing.xs,
-              children: meta,
-            ),
-          if (compactViewport && mode != null) ...[
-            const SizedBox(height: 4),
-            _metaText(
-              context,
-              HopeV2Icons.workshop,
-              mode,
-              secondaryAccent(context),
-            ),
-          ],
+              ),
+            ],
+          ),
+        ],
+        if (meta.isNotEmpty) ...[
+          SizedBox(height: compactViewport ? 4 : 7),
+          Wrap(
+            spacing: HopeV2Spacing.sm,
+            runSpacing: HopeV2Spacing.xs,
+            children: meta,
+          ),
         ],
         if (tags.children.isNotEmpty && !compactViewport) ...[
           const SizedBox(height: HopeV2Spacing.sm),
