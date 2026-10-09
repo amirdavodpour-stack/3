@@ -1,3 +1,49 @@
+## Visual Wave 21 — RTL date, compact hero, financial hierarchy and evidence integrity — 2026-10-09
+
+Wave 20 Runtime #2206 / run `37903124390` produced artifact `11603134050` for source HEAD `1d3c92f3742fd76880a2325dc9504b1d4d2ef209`. The job log verifies `HOPE_RUNTIME_EXACT_HEAD` checked out the feature source, while its metadata incorrectly used the PR merge SHA. This wave corrects the metadata contract as well as visible defects.
+
+### Screenshot-grounded findings
+- `notifications-fa-rtl.png` and `offers-fa-rtl.png` show the date `3005 شهریور 30`: the Jalali converter accumulates days from the wrong Gregorian epoch. Relative dates also use Latin digits in Persian, English day labels are wrong, and future timestamps beyond one minute are capped at a misleading 59-minute string.
+- `login-fa-rtl.png`, `register-fa-rtl.png` and `password-reset-fa-rtl.png` show a decorative hero icon drawn over the title/subtitle when `compactHero` is true.
+- `wallet-fa-rtl.png` and `responsive-720x1280-wallet-fa-rtl.png` repeat total/available/protected financial values below the balance card under a “Ledger flow” heading, consuming vertical space and conflating distinct ledger fields.
+- `offers-fa-rtl.png` clips the rejected-status filter at the physical edge because the four status chips are only reachable through a horizontal gesture.
+- `job-detail-fa-rtl.png` and its responsive counterpart spend the first fold on a tall hero and oversized trait tiles before users reach actionable work detail.
+- `financial-insights-fa-rtl.png` presents the four metrics without strong mobile grouping; long Toman values are constrained to one line and can be ellipsized.
+- Runtime artifact's `metadata.json` records merge SHA `696e3de634d7b66df1a430b31fe38f0f4266f495` although the exact-head checkout log and artifact API identify feature SHA `1d3c92f3742fd76880a2325dc9504b1d4d2ef209`. The capture evidence is successful, but the self-reported SHA field needs correction for future artifacts.
+
+### Grouped change
+- Correct the 1600/621 Gregorian epoch offset in the Jalali converter; localize Persian dates and compact-money values; give relative and future timestamps correct localized digit and threshold behavior.
+- Suppress decorative fallback icons in compact editorial heroes.
+- Replace duplicate wallet-balance tiles with a compact three-step ledger lifecycle: ledger entry → held for approval → release.
+- Wrap Offers filters so all states are discoverable in the 360dp layout.
+- Render financial summary metrics as distinct responsive tiles and allow exact money labels to wrap without ellipsis.
+- Shorten compact opportunity-detail hero height and tighten compact trait tile density without removing real fields or scores.
+- Export exact feature SHA from the PR checkout into the runtime step and persist that SHA into `metadata.json`.
+- Extend formatter and visual regression tests, source guards, and workflow markers; keep the Flutter test suite to one invocation.
+
+### Visual regression / source guard contract
+- Jalali date for `2026-09-01` must render `۱۴۰۵ شهریور ۱۰`.
+- Future time at a fixed 12-hour offset must render `در ۱۲ ساعت` / `in 12 hours`.
+- Compact Hero icon must be absent from the fallback subtree.
+- Opportunity-trait signature must fit within the compact height assertion.
+- Offers chips use responsive wrapping; financial metrics use two-column tiles with two-line values.
+- Runtime metadata's `sha` field must prefer `HOPE_RUNTIME_EXACT_HEAD` and use `GITHUB_SHA` only for non-PR capture paths.
+
+### Invariants / non-goals
+No backend, wallet ledger, payment lifecycle, currency arithmetic, route, authentication, persistence, permissions, or API behavior changes. Preserve RTL/LTR localization, real backend data, existing design tokens, 48dp touch targets, and dependency lockfile. Keep PR #30 Draft/unmerged and never modify `main/production`.
+
+### Evidence limitation
+The Wave 20 artifact proves a rendered dark Persian/RTL screenshot set (19 primary + 6 responsive). It does not constitute a TalkBack certification: the capture recorded `accessibility_enabled=0` and no enabled accessibility service. Wave 21 T10 remains NOT ACCEPTED until its own runtime artifact is individually reviewed; accessibility must not be inferred from screenshots alone.
+
+### Wave 21 acceptance
+1. The single combined Flutter test invocation passes.
+2. Static/backend/security/localization/contrast/source gates are green on one exact feature HEAD.
+3. One Android runtime capture succeeds on that exact HEAD with a truthful source SHA in metadata.
+4. All 25 screenshots are reviewed individually, including primary/responsive dates, compact Auth heroes, wallet flow hierarchy, Offers filters and job-detail first fold.
+5. T10 is accepted only after visual results are recorded; PR remains Draft and unmerged.
+
+---
+
 ## Visual Wave 20 — Compact-height content convergence — 2026-10-09
 
 Runtime #2203 / run `37875475661`, artifact `11591933824`, contains 19 primary Persian/RTL screenshots and six responsive 360×640dp captures. The screenshot audit shows a repeated dead band above the navigation dock on Jobs, Wallet, Profile, and Work/Finance Center, with the same issue visible in the primary Jobs/Wallet/Work Center screens. Opportunity Detail also reserves 102dp before a sticky CTA; Create Opportunity and Job Satisfaction reserve redundant bottom space across their page frame and nested scroll view.

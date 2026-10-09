@@ -5,13 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/hope_signature_components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('Wave 20 grouped responsive content visibility contracts',
+  testWidgets('Wave 21 grouped responsive visual and localization contracts',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -66,6 +67,7 @@ void main() {
                   eyebrow: 'ماموریت',
                   title: 'طراحی رابط موبایل حرفه‌ای',
                   message: 'تهران • طراحی محصول',
+                  icon: HopeV2Icons.login,
                   height: 184,
                   compactHero: true,
                 ),
@@ -114,6 +116,19 @@ void main() {
     expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
     expect(tester.widget<PremiumHero>(find.byType(PremiumHero)).compactHero,
         isTrue);
+    expect(
+      find.descendant(
+        of: find.byType(PremiumHero),
+        matching: find.byType(HopeIcon),
+      ),
+      findsNothing,
+      reason: 'Compact editorial fallback icons must never overlap the hero title.',
+    );
+    expect(
+      tester.getSize(find.byKey(const ValueKey('opportunity-dna-signature'))).height,
+      lessThan(180),
+      reason: 'Compact opportunity trait cards must preserve first-fold space.',
+    );
 
     final budgetAmount = find.byKey(
       const ValueKey('opportunity-card-budget-amount'),

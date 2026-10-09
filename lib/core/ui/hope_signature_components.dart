@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../transactions/wallet.dart';
 import '../marketplace/job.dart';
@@ -212,9 +211,8 @@ class HopeOpportunityLivePreview extends StatelessWidget {
   }
 }
 
-/// Financial signature used on the Wallet surface. Values are taken directly
-/// from the internal ledger model, so the visual never implies a nonexistent
-/// fee or external payout provider.
+/// Compact, data-preserving explanation of the internal money lifecycle.
+/// Detailed balances remain in the wallet summary so fields are not repeated.
 class HopeWalletFlowSignature extends StatelessWidget {
   const HopeWalletFlowSignature({
     super.key,

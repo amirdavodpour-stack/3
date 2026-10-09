@@ -609,7 +609,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "workflow": "$GITHUB_WORKFLOW",
   "run_id": "$GITHUB_RUN_ID",
   "ref": "$GITHUB_REF_NAME",
-  "sha": "$GITHUB_SHA",
+  "sha": "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}",
   "evidence_type": "rendered_android_runtime",
   "screens": $CAPTURED_BASELINE_SCREENS,
   "responsive_screens": $CAPTURED_RESPONSIVE_SCREENS,

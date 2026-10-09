@@ -27,7 +27,7 @@ void main() {
     test('short money never rounds above the actual value', () {
       expect(
         HopeDisplayFormatter.money('1599999', locale: 'fa', short: true),
-        '1.5 میلیون تومان',
+        '۱٫۵ میلیون تومان',
       );
     });
 
@@ -51,7 +51,7 @@ void main() {
           locale: 'fa',
           now: now,
         ),
-        '2 ساعت پیش',
+        '۲ ساعت پیش',
       );
       expect(
         HopeDisplayFormatter.relativeDateTime(
@@ -59,7 +59,31 @@ void main() {
           locale: 'fa',
           now: now,
         ),
-        isNot(contains('T')),
+        '۱۴۰۵ شهریور ۱۰',
+      );
+      expect(
+        HopeDisplayFormatter.relativeDateTime(
+          '2026-10-08T00:00:00Z',
+          locale: 'fa',
+          now: now,
+        ),
+        'در ۱۲ ساعت',
+      );
+      expect(
+        HopeDisplayFormatter.relativeDateTime(
+          '2026-10-08T00:00:00Z',
+          locale: 'en',
+          now: now,
+        ),
+        'in 12 hours',
+      );
+      expect(
+        HopeDisplayFormatter.relativeDateTime(
+          '2026-09-01T10:00:00Z',
+          locale: 'en',
+          now: now,
+        ),
+        'Sep 1, 2026',
       );
     });
   });

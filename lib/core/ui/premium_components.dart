@@ -1325,7 +1325,7 @@ class PremiumHero extends StatelessWidget {
                 child: _HeroEditorialFallback(
                   accent: resolvedDomain?.spec.accent ??
                       Theme.of(context).colorScheme.primary,
-                  icon: icon,
+                  icon: compactHero ? null : icon,
                 ),
               ),
             if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)

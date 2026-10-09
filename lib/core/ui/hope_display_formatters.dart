@@ -66,7 +66,8 @@ class HopeDisplayFormatter {
         final whole = abs ~/ 1000000;
         final decimal = (abs % 1000000) ~/ 100000;
         final compact = decimal == 0 ? whole.toString() : '$whole.$decimal';
-        return '$sign$compact ${fa ? 'میلیون تومان' : 'million TOMAN'}';
+        final displayed = fa ? localizeDigits('$sign$compact', locale: locale) : '$sign$compact';
+        return '$displayed ${fa ? 'میلیون تومان' : 'million TOMAN'}';
       }
     }
     return '${integer(parsed, locale: locale)} ${fa ? 'تومان' : 'TOMAN'}';
@@ -101,30 +102,46 @@ class HopeDisplayFormatter {
     final current = now ?? DateTime.now();
     final diff = current.difference(parsed);
     final fa = locale.toLowerCase().startsWith('fa');
+    String digits(int value) => localizeDigits('$value', locale: locale);
+    String calendarDate() {
+      if (!fa) return DateFormat('MMM d, y', 'en').format(parsed);
+      final j = _gregorianToJalali(parsed.year, parsed.month, parsed.day);
+      const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+      return localizeDigits('${j.year} ${months[j.month - 1]} ${j.day}', locale: locale);
+    }
+
     if (diff.inSeconds.abs() < 60) return fa ? 'همین حالا' : 'Just now';
     if (diff.isNegative) {
-      final minutes = (-diff.inMinutes).clamp(1, 59);
-      return fa ? 'در $minutes دقیقه' : 'in $minutes min';
+      final ahead = parsed.difference(current);
+      if (ahead.inMinutes < 60) {
+        return fa ? 'در ${digits(ahead.inMinutes)} دقیقه' : 'in ${ahead.inMinutes} min';
+      }
+      if (ahead.inHours < 24) {
+        return fa ? 'در ${digits(ahead.inHours)} ساعت' : 'in ${ahead.inHours} hours';
+      }
+      if (ahead.inDays < 2) return fa ? 'فردا' : 'Tomorrow';
+      if (ahead.inDays < 7) {
+        return fa ? 'در ${digits(ahead.inDays)} روز' : 'in ${ahead.inDays} days';
+      }
+      return calendarDate();
     }
     if (diff.inMinutes < 60) {
-      return fa ? '${diff.inMinutes} دقیقه پیش' : '${diff.inMinutes}m ago';
+      return fa ? '${digits(diff.inMinutes)} دقیقه پیش' : '${diff.inMinutes}m ago';
     }
     if (diff.inHours < 24) {
-      return fa ? '${diff.inHours} ساعت پیش' : '${diff.inHours}h ago';
+      return fa ? '${digits(diff.inHours)} ساعت پیش' : '${diff.inHours}h ago';
     }
     if (diff.inHours < 48) return fa ? 'دیروز' : 'Yesterday';
     if (diff.inDays < 7) {
-      return fa ? '${diff.inDays} روز پیش' : '${diff.inDays} روز پیش';
+      return fa ? '${digits(diff.inDays)} روز پیش' : '${diff.inDays}d ago';
     }
-    if (!fa) return DateFormat('MMM d, y', 'en').format(parsed);
-    final j = _gregorianToJalali(parsed.year, parsed.month, parsed.day);
-    const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-    return '${j.year} ${months[j.month - 1]} ${j.day}';
+    return calendarDate();
   }
 
   static ({int year, int month, int day}) _gregorianToJalali(int gy, int gm, int gd) {
     final gdm = [0,31,59,90,120,151,181,212,243,273,304,334];
     var jy = gy <= 1600 ? 0 : 979;
+    gy -= gy <= 1600 ? 621 : 1600;
     var gy2 = gm > 2 ? gy + 1 : gy;
     var days = 365 * gy + (gy2 + 3) ~/ 4 - (gy2 + 99) ~/ 100 + (gy2 + 399) ~/ 400 - 80 + gd + gdm[gm - 1];
     jy += 33 * (days ~/ 12053);

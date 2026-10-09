@@ -173,6 +173,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
 
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.data, required this.money, required this.t});
+
   final HopeFinancialInsights data;
   final String Function(int) money;
   final String Function(String, String) t;
@@ -181,6 +182,29 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final summary = data.summary;
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
+    final metrics = <({String label, String value, bool highlight})>[
+      (
+        label: t('قابل استفاده', 'Available'),
+        value: money(summary.available),
+        highlight: true,
+      ),
+      (
+        label: t('قفل‌شده', 'Locked'),
+        value: money(summary.locked),
+        highlight: false,
+      ),
+      (
+        label: t('ورودی', 'Inflow'),
+        value: money(int.tryParse(summary.totalInflow) ?? 0),
+        highlight: false,
+      ),
+      (
+        label: t('خروجی', 'Outflow'),
+        value: money(int.tryParse(summary.totalOutflow) ?? 0),
+        highlight: false,
+      ),
+    ];
+
     return PremiumPanel(
       highlight: true,
       padding: EdgeInsets.all(compact ? 12 : 18),
@@ -198,24 +222,28 @@ class _SummaryCard extends StatelessWidget {
             'بر پایه لجر داخلی TOMAN و بدون تخمین‌های خارج از تراکنش‌ها.',
             'Based on the internal TOMAN ledger only; no off-ledger estimates.',
           )),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _Metric(label: t('قابل استفاده', 'Available'), value: money(summary.available), quiet: compact),
-              _Metric(label: t('قفل‌شده', 'Locked'), value: money(summary.locked), quiet: compact),
-              _Metric(
-                label: t('ورودی', 'Inflow'),
-                value: money(int.tryParse(summary.totalInflow) ?? 0),
-                quiet: compact,
-              ),
-              _Metric(
-                label: t('خروجی', 'Outflow'),
-                value: money(int.tryParse(summary.totalOutflow) ?? 0),
-                quiet: compact,
-              ),
-            ],
+          const SizedBox(height: 13),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 8.0;
+              final metricWidth = (constraints.maxWidth - gap) / 2;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final metric in metrics)
+                    SizedBox(
+                      width: metricWidth,
+                      child: _Metric(
+                        label: metric.label,
+                        value: metric.value,
+                        compact: compact,
+                        highlight: metric.highlight,
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -227,51 +255,65 @@ class _Metric extends StatelessWidget {
   const _Metric({
     required this.label,
     required this.value,
-    this.quiet = false,
+    required this.compact,
+    this.highlight = false,
   });
+
   final String label;
   final String value;
-  final bool quiet;
+  final bool compact;
+  final bool highlight;
 
   @override
-  Widget build(BuildContext context) => Container(
-        constraints: const BoxConstraints(minWidth: 145),
-        padding: EdgeInsets.symmetric(horizontal: quiet ? 8 : 13, vertical: quiet ? 8 : 12),
-        decoration: BoxDecoration(
-          color: quiet ? Colors.transparent : HopeV2Surfaces.panelSoft(context),
-          borderRadius: BorderRadius.circular(HopeV2Radii.md),
-          border: Border.all(
-            color: quiet
-                ? Colors.transparent
-                : HopeV2Surfaces.border(context).withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark ? .48 : .72,
-                  ),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = Theme.of(context).colorScheme.primary;
+    return Container(
+      constraints: BoxConstraints(minHeight: compact ? 66 : 74),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 12,
+        vertical: compact ? 8 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: highlight
+            ? accent.withValues(alpha: dark ? .14 : .07)
+            : HopeV2Surfaces.panelSoft(context),
+        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        border: Border.all(
+          color: highlight
+              ? accent.withValues(alpha: dark ? .30 : .22)
+              : HopeV2Surfaces.border(context).withValues(alpha: dark ? .42 : .65),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? HopeV2Colors.darkMuted
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? HopeV2Colors.darkMuted
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-          ],
-        ),
-      );
+          const SizedBox(height: 5),
+          Text(
+            value,
+            maxLines: 2,
+            softWrap: true,
+            overflow: TextOverflow.clip,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ChartCard extends StatelessWidget {

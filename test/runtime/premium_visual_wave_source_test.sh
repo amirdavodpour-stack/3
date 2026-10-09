@@ -151,6 +151,25 @@ grep -Fq 'overflow: TextOverflow.clip' "$opportunity"
 grep -Fq "budgetText.data, contains('۲٬۵۰۰٬۰۰۰ تومان')" 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'didExceedMaxLines' 'test/core/ui/premium_visual_wave_15_test.dart'
 
+# Wave 21: locale-safe date output, compact hero layering, visible filters,
+# compact financial metrics, and truthful exact-source evidence metadata.
+grep -Fq 'gy -= gy <= 1600 ? 621 : 1600;' "lib/core/ui/hope_display_formatters.dart"
+grep -Fq "icon: compactHero ? null : icon" "$premium"
+grep -Fq 'find.descendant(' 'test/core/ui/premium_visual_wave_15_test.dart'
+grep -Fq '۱۴۰۵ شهریور ۱۰' 'test/core/ui/hope_display_formatters_test.dart'
+grep -Fq 'در ۱۲ ساعت' 'test/core/ui/hope_display_formatters_test.dart'
+grep -Fq 'Wrap(' "lib/features/offers/offers_page.dart"
+grep -Fq 'final metricWidth = (constraints.maxWidth - gap) / 2;' "lib/features/financial/financial_insights_page.dart"
+grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
+grep -Fq 'height: compactViewport ? 132 : denseViewport ? 166 : 214,' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'HOPE_RUNTIME_EXACT_HEAD=$exact_head' ".github/workflows/hope-ui-runtime-evidence.yml"
+if sed -n '/class HopeWalletFlowSignature/,/Target-aligned opportunity DNA signature/p' "lib/core/ui/hope_signature_components.dart" | grep -Eq 'wallet\.(totalBalance|availableBalance|lockedBalance)'; then
+  echo "FAIL: wallet ledger lifecycle panel must not repeat balance values" >&2
+  exit 1
+fi
+grep -Fq '"sha": "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}"' "tools/hope-wallet-runtime-evidence.sh"
+
+echo "PASS: Wave 21 shared visual + locale + evidence integrity contracts"
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.

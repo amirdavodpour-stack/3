@@ -68,6 +68,7 @@ jobs:
           git checkout --detach "$exact_head"
           test "$(git rev-parse HEAD)" = "$exact_head"
           echo "HOPE_RUNTIME_EXACT_HEAD:$exact_head"
+          echo "HOPE_RUNTIME_EXACT_HEAD=$exact_head" >> "$GITHUB_ENV"
 
       - name: Checkout pinned Android Emulator Runner
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -131,10 +132,10 @@ jobs:
       - name: Prepare Flutter dependencies
         run: flutter pub get --enforce-lockfile
 
-      # One focused Flutter gate for the full grouped Wave 20; runtime begins only after it passes.
+      # Wave 21 static gate owns the single Flutter test invocation; runtime starts only after that exact-head gate passes.
       - name: Flutter visual wave focused gate
-        if: ${{ !contains(github.event.pull_request.title, '[wave20-preverified]') }}
-        run: flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart
+        if: ${{ !contains(github.event.pull_request.title, '[wave21-preverified]') }}
+        run: flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart
 
       - name: Validate runtime evidence script syntax
         run: bash -n tools/hope-wallet-runtime-evidence.sh
