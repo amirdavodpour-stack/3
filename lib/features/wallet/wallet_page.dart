@@ -779,22 +779,26 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Text(
                 item.label,
-                maxLines: 1,
+                maxLines: 2,
+                softWrap: true,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: item.emphasized ? Colors.white : Colors.white70,
                   fontSize: 10,
+                  height: 1.1,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 item.value,
-                maxLines: 1,
+                maxLines: 2,
+                softWrap: true,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: item.emphasized ? 13 : 11,
+                  fontSize: item.emphasized ? 12.5 : 10.5,
+                  height: 1.12,
                   fontWeight: FontWeight.w900,
                 ),
               ),
