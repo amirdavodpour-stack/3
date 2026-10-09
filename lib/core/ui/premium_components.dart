@@ -220,7 +220,7 @@ class PremiumPrimaryNavigationScaffold extends StatelessWidget {
     return [
       NavigationDestination(
         icon: const HopeNavigationGlyph(icon: HopeV2Icons.home, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.home, selected: true),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.homeSelected, selected: true),
         label: label('خانه', 'Home'),
       ),
       NavigationDestination(
@@ -235,12 +235,12 @@ class PremiumPrimaryNavigationScaffold extends StatelessWidget {
       ),
       NavigationDestination(
         icon: const HopeNavigationGlyph(icon: HopeV2Icons.wallet, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.wallet, selected: true),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.walletSelected, selected: true),
         label: label('کیف پول', 'Wallet'),
       ),
       NavigationDestination(
         icon: const HopeNavigationGlyph(icon: HopeV2Icons.profile, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.profile, selected: true),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.profileSelected, selected: true),
         label: label('پروفایل', 'Profile'),
       ),
     ];
