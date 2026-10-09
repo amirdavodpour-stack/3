@@ -187,5 +187,42 @@ void main() {
       reason: 'The page frame must fill available scroll height instead of shrink-wrapping its slivers.',
     );
     expect(tester.takeException(), isNull);
+
+    // Wave 18: compact-height pages must not reserve a desktop-sized dead band
+    // below the scroll viewport. The one consolidated test covers the 360×640dp
+    // target used by the calibrated Android responsive capture.
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1.0;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: PremiumPageFrame(
+            child: ListView(
+              key: const ValueKey('wave18-compact-scroll-viewport'),
+              children: const [SizedBox(height: 900)],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final framePadding = tester.widget<Padding>(
+      find.byKey(const ValueKey('premium-page-frame-content-padding')),
+    );
+    expect(framePadding.padding.bottom, 40);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('wave18-compact-scroll-viewport'))).height,
+      greaterThan(480),
+    );
+    expect(tester.takeException(), isNull);
   });
 }
