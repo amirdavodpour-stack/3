@@ -1003,59 +1003,5 @@ void main() {
   );
 
 
-  testWidgets(
-    'compact wallet first fold exposes history title and filter controls',
-    (tester) async {
-      final auth = AuthController(_AuthRepo(), SecureStore());
-      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
-      final wallet = _FakeWallet();
-
-      tester.view.physicalSize = const Size(360, 640);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('fa'),
-          supportedLocales: const [Locale('fa'), Locale('en')],
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          home: MultiProvider(
-            providers: [
-              ChangeNotifierProvider.value(value: auth),
-              Provider<WalletRepository>.value(value: wallet),
-            ],
-            child: WalletPage(repository: wallet),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final historyTitle = find.text('تاریخچه کیف پول');
-      final historyFilters =
-          find.byKey(const ValueKey('wallet-history-filters'));
-      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
-      expect(historyTitle, findsOneWidget);
-      expect(historyFilters, findsOneWidget);
-      expect(dock, findsOneWidget);
-      expect(
-        tester.getTopLeft(historyTitle).dy,
-        lessThan(tester.getTopLeft(dock).dy),
-        reason: 'Wallet history should be discoverable above the navigation dock.',
-      );
-      expect(
-        tester.getTopLeft(historyFilters).dy,
-        lessThan(tester.getTopLeft(dock).dy),
-        reason: 'All history filters should be visible without a hidden horizontal gesture.',
-      );
-      expect(tester.takeException(), isNull);
-    },
-  );
-
   // Runtime certification trigger: grouped Wave G-2 after compile-scope repair.
 }

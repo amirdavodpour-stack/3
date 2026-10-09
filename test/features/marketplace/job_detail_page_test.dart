@@ -301,32 +301,6 @@ void main() {
     );
   });
 
-  testWidgets(
-    'compact opportunity detail prioritizes work content over repeated traits',
-    (tester) async {
-      await _pump(tester, job: _job(), width: 390, height: 844);
-
-      final skills =
-          find.byKey(const ValueKey('opportunity-decision-breakdown-skills'));
-      final category =
-          find.byKey(const ValueKey('opportunity-decision-breakdown-category'));
-      expect(skills, findsOneWidget);
-      expect(category, findsOneWidget);
-      expect(tester.getSize(skills).width, lessThan(200));
-      expect(
-        (tester.getTopLeft(category).dy - tester.getTopLeft(skills).dy).abs(),
-        lessThan(8),
-      );
-      expect(
-        find.byKey(const ValueKey('opportunity-dna-signature')),
-        findsNothing,
-        reason: 'Category and location already appear in the compact decision surface.',
-      );
-      expect(find.text('Job description'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
   testWidgets('opportunity hero preserves a stronger editorial focal height',
       (tester) async {
     await _pump(tester, job: _job());

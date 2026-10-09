@@ -265,10 +265,11 @@ class HopeWalletFlowSignature extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              HopeIcon(
-                HopeV2Icons.route,
+          if (!compact)
+            Row(
+              children: [
+                HopeIcon(
+                  HopeV2Icons.route,
                 size: compact ? 16 : 18,
                 color: HopeV2Colors.secondary,
               ),
@@ -288,11 +289,12 @@ class HopeWalletFlowSignature extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: compact ? 4 : 6),
-          Text(
-            _t(
-              context,
-              compact
+          if (!compact) const SizedBox(height: 6),
+          if (!compact)
+            Text(
+              _t(
+                context,
+                compact
                   ? 'رزرو وجه تا تأیید کار'
                   : 'تغییرات موجودی در دفترکل داخلی ثبت می‌شود؛ وجه رزروشده پس از تأیید کار آزاد می‌شود.',
               compact
@@ -309,7 +311,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
                   height: compact ? 1.2 : 1.35,
                 ),
           ),
-          SizedBox(height: compact ? 5 : 9),
+          if (!compact) const SizedBox(height: 9),
           Row(
             children: [
               for (var index = 0; index < steps.length; index++) ...[

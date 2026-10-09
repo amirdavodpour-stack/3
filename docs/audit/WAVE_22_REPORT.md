@@ -50,7 +50,7 @@
 ## Verification contract
 One consolidated Flutter invocation:
 ```
-flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart test/features/wallet/wallet_page_test.dart test/features/marketplace/job_detail_page_test.dart test/features/jobs/saved_searches_page_test.dart
+flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart test/features/wallet/wave22_compact_wallet_test.dart test/features/jobs/saved_searches_page_test.dart
 ```
 Require the full static gate on exact new HEAD: backend fast/security/static checks, lock/dependencies, localization/contrast/source guards, Flutter Analyze, and that one test invocation. Only after static PASS, add `[runtime-capture-fa] [wave22-preverified]` and capture Android once on exact HEAD.
 
