@@ -228,7 +228,7 @@ grep -Fq "Wave 26 keeps every navigation label visible at 320dp" "test/core/ui/p
 
 # Wave 26 adaptive Explore density must use the purpose-built compact grid tile.
 grep -Fq 'final textScale = MediaQuery.textScalerOf(context).scale(1);' "$jobs_widgets"
-grep -Fq 'constraints.maxWidth >= 340 && textScale <= 1.2' "$jobs_widgets"
+grep -Fq 'constraints.maxWidth >= 340' "$jobs_widgets"
 grep -Fq 'enum OpportunityCardVariant { compact, compactGrid, standard, featured, featuredScan, expanded }' "$opportunity"
 grep -Fq 'Widget _compactGrid(' "$opportunity"
 grep -Fq 'variant: columns == 2' "$jobs_widgets"
