@@ -218,7 +218,7 @@ void main() {
     final framePadding = tester.widget<Padding>(
       find.byKey(const ValueKey('premium-page-frame-content-padding')),
     );
-    expect(framePadding.padding.bottom, 40);
+    expect(framePadding.padding.resolve(TextDirection.rtl).bottom, 40);
     expect(
       tester.getSize(find.byKey(const ValueKey('wave18-compact-scroll-viewport'))).height,
       greaterThan(480),
