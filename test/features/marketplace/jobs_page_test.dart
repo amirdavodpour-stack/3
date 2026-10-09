@@ -485,12 +485,19 @@ void main() {
       await tester.pumpAndSettle();
 
       final lastOpportunity = find.text('طراحی در شیراز');
-      await tester.scrollUntilVisible(
+      final exploreScrollView = find.byType(CustomScrollView);
+      expect(exploreScrollView, findsOneWidget);
+      for (var attempt = 0;
+          attempt < 8 && lastOpportunity.evaluate().isEmpty;
+          attempt += 1) {
+        await tester.drag(exploreScrollView, const Offset(0, -220));
+        await tester.pumpAndSettle();
+      }
+      expect(
         lastOpportunity,
-        180,
-        scrollable: find.byType(Scrollable).first,
+        findsOneWidget,
+        reason: 'The final server-provided opportunity must remain in the scrollable Explore results.',
       );
-      await tester.pumpAndSettle();
       await tester.ensureVisible(lastOpportunity);
       await tester.pumpAndSettle();
 
