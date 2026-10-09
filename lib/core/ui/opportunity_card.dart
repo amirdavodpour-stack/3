@@ -56,8 +56,6 @@ class OpportunityCard extends StatelessWidget {
     final featured = variant == OpportunityCardVariant.featured;
     final featuredScan = variant == OpportunityCardVariant.featuredScan;
     final expanded = variant == OpportunityCardVariant.expanded;
-    final compactViewport =
-        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final copy = HopeCopy.of(context);
     final city = job.city?.trim().isNotEmpty == true ? job.city! : copy.copy_remote_dcbb625;
     final amount = job.isMission
@@ -940,6 +938,8 @@ class OpportunityCard extends StatelessWidget {
     required String? mediaUrl,
     required HopeCopy copy,
   }) {
+    final compactViewport =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
