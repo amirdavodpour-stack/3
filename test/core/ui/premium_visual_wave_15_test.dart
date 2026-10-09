@@ -145,5 +145,46 @@ void main() {
     expect(find.text('هنوز جست‌وجویی ذخیره نشده است'), findsOneWidget);
     expect(find.text('برای شروع، یک جست‌وجو ذخیره کنید.'), findsOneWidget);
     expect(tester.takeException(), isNull);
+
+    // Wave 17: scrollables must occupy the body above the dock even when
+    // their slivers contain little content. Narrow navigation keeps the
+    // selected label readable and accessible names remain available.
+    tester.view.physicalSize = const Size(320, 720);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: PremiumPrimaryNavigationScaffold(
+          selectedIndex: 3,
+          onDestinationSelected: (_) {},
+          child: PremiumPageFrame(
+            padding: const EdgeInsets.all(12),
+            child: CustomScrollView(
+              key: const ValueKey('wave17-filled-scroll-viewport'),
+              slivers: const [
+                SliverToBoxAdapter(child: SizedBox(height: 120)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+    expect(find.text('کیف پول'), findsOneWidget);
+    expect(find.text('پروفایل'), findsNothing);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('wave17-filled-scroll-viewport'))).height,
+      greaterThan(550),
+      reason: 'The page frame must fill available scroll height instead of shrink-wrapping its slivers.',
+    );
+    expect(tester.takeException(), isNull);
   });
 }
