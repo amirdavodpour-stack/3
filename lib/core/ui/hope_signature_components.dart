@@ -231,6 +231,8 @@ class HopeWalletFlowSignature extends StatelessWidget {
     final currencyLabel = wallet.currency == 'TOMAN'
         ? _t(context, 'تومان داخلی', 'Internal Toman')
         : wallet.currency;
+    const compactFa = ['دفترکل', 'رزرو', 'آزادسازی'];
+    const compactEn = ['Ledger', 'Hold', 'Release'];
     final steps = <({Object icon, String fa, String en, Color color})>[
       (
         icon: HopeV2Icons.wallet,
@@ -258,9 +260,9 @@ class HopeWalletFlowSignature extends StatelessWidget {
       quiet: true,
       padding: EdgeInsets.fromLTRB(
         compact ? 10 : 12,
-        compact ? 8 : 11,
+        compact ? 3 : 11,
         compact ? 10 : 12,
-        compact ? 8 : 11,
+        compact ? 3 : 11,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +271,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
             children: [
               HopeIcon(
                 HopeV2Icons.route,
-                size: compact ? 15 : 18,
+                size: compact ? 12 : 18,
                 color: HopeV2Colors.secondary,
               ),
               const SizedBox(width: 7),
@@ -280,9 +282,10 @@ class HopeWalletFlowSignature extends StatelessWidget {
                     compact ? 'گردش وجه' : 'گردش وجه در دفترکل',
                     compact ? 'Money flow' : 'Money flow in the ledger',
                   ),
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                  style: (compact
+                          ? Theme.of(context).textTheme.labelMedium
+                          : Theme.of(context).textTheme.titleSmall)
+                      ?.copyWith(fontWeight: FontWeight.w900),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -324,10 +327,10 @@ class HopeWalletFlowSignature extends StatelessWidget {
                 if (index > 0) const SizedBox(width: 6),
                 Expanded(
                   child: Container(
-                    constraints: BoxConstraints(minHeight: compact ? 32 : 43),
+                    constraints: BoxConstraints(minHeight: compact ? 26 : 43),
                     padding: EdgeInsets.symmetric(
-                      horizontal: compact ? 4 : 5,
-                      vertical: compact ? 5 : 7,
+                      horizontal: compact ? 2 : 5,
+                      vertical: compact ? 2 : 7,
                     ),
                     decoration: BoxDecoration(
                       color: steps[index].color.withValues(alpha: .07),
@@ -341,13 +344,17 @@ class HopeWalletFlowSignature extends StatelessWidget {
                       children: [
                         HopeIcon(
                           steps[index].icon,
-                          size: compact ? 14 : 16,
+                          size: compact ? 12 : 16,
                           color: steps[index].color,
                         ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            _t(context, steps[index].fa, steps[index].en),
+                            _t(
+                              context,
+                              compact ? compactFa[index] : steps[index].fa,
+                              compact ? compactEn[index] : steps[index].en,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.clip,
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(

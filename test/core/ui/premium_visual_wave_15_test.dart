@@ -325,9 +325,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('گردش وجه'), findsOneWidget);
-      expect(find.text('ثبت دفترکل'), findsOneWidget);
-      expect(find.text('رزرو تا تأیید'), findsOneWidget);
-      expect(find.text('آزادسازی وجه'), findsOneWidget);
+      expect(find.text('دفترکل'), findsOneWidget);
+      expect(find.text('رزرو'), findsOneWidget);
+      expect(find.text('آزادسازی'), findsOneWidget);
       expect(
         find.textContaining('۱٬۰۰۰٬۰۰۰ تومان'),
         findsNothing,
