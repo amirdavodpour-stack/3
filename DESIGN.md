@@ -1,6 +1,6 @@
 ## Visual Wave 18 — Compact viewport calibration and first-fold recovery — 2026-10-09
 
-Wave 17's Android artifact (runtime #2188 / run `37871022058`) contains 19 primary and six responsive Persian/RTL screenshots. Review of the original-size responsive Jobs and Profile captures found that the 720×1280 physical-pixel override was applied without a matching density override. On the Pixel 2 emulator's native density, that yields an approximately 274×488dp logical viewport; the screenshots consequently show inflated typography, clipped first-fold cards and an oversized empty band before the fixed navigation dock. This is a capture-calibration defect that also exposed a real compact-height spacing problem; it must not be mislabeled as a color-only issue.
+Wave 17's Android artifact (runtime #2188 / run `37871022058`, artifact `11590562044`) contains 19 primary and six responsive Persian/RTL screenshots. Original-size responsive Jobs and Profile captures were inspected individually. The 720×1280 physical-pixel override was applied without a matching density override. On the Pixel 2 emulator's native density, that yields an approximately 274×488dp logical viewport; the screenshots consequently show inflated typography, clipped first-fold cards and an oversized empty band before the fixed navigation dock. This is a capture-calibration defect that also exposed a real compact-height spacing problem; it must not be mislabeled as a color-only issue.
 
 ### Grouped changes
 
