@@ -1755,6 +1755,82 @@ class PremiumSectionHeader extends StatelessWidget {
       );
 }
 
+/// Shared, compact empty state for data-backed product surfaces.
+class PremiumEmptyState extends StatelessWidget {
+  const PremiumEmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+    this.dense = false,
+  });
+
+  final Object icon;
+  final String title;
+  final String message;
+  final Widget? action;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final accent = Theme.of(context).colorScheme.primary;
+    return Semantics(
+      container: true,
+      child: PremiumPanel(
+        glass: false,
+        highlight: false,
+        padding: EdgeInsets.all(dense ? 14 : (compact ? 18 : 24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: dense ? 44 : 52,
+              height: dense ? 44 : 52,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                border: Border.all(color: accent.withValues(alpha: .18)),
+              ),
+              alignment: Alignment.center,
+              child: HopeIcon(icon, size: dense ? 22 : 26, color: accent),
+            ),
+            SizedBox(height: dense ? 9 : 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: HopeV2Type.section(context).copyWith(
+                fontSize: compact ? 16 : 17,
+                height: 1.25,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? HopeV2Colors.darkMuted
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.45,
+                ),
+              ),
+            ),
+            if (action != null) ...[
+              SizedBox(height: dense ? 10 : 14),
+              action!,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class PremiumTag extends StatelessWidget {
   const PremiumTag({
     super.key,
