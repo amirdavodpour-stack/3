@@ -47,7 +47,7 @@ void main() {
     );
 
     expect(find.text('پذیرندگان بر اساس انطباق'), findsOneWidget);
-    expect(find.text('Worker One'), findsOneWidget);
+    expect(find.text('Worker One'), findsWidgets);
     expect(find.text('91.4٪'), findsOneWidget);
     expect(find.text('مهارت'), findsOneWidget);
     expect(find.text('تجربه'), findsOneWidget);

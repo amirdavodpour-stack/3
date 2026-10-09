@@ -42,14 +42,12 @@ extension on _TransactionPageState {
             ],
           ),
           const SizedBox(height: 5),
-          if (!compact) ...[
-            _lifecycleProgress(
-              context,
-              current: current,
-              total: en.length,
-            ),
-            const SizedBox(height: 4),
-          ],
+          _lifecycleProgress(
+            context,
+            current: current,
+            total: en.length,
+          ),
+          const SizedBox(height: 4),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
               context,

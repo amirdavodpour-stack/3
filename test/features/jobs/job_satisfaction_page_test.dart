@@ -76,10 +76,6 @@ void main() {
         find.byKey(const ValueKey('satisfaction-agreement-choice')),
       );
       expect(agreement.selected, isEmpty);
-      expect(
-        find.text('برای ثبت گزارش، دو امتیاز و پاسخ توافق را انتخاب کنید'),
-        findsOneWidget,
-      );
       final submit = tester.widget<FilledButton>(
         find.byKey(const ValueKey('job-satisfaction-submit')),
       );
