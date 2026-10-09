@@ -806,12 +806,12 @@ class PremiumHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                maxLines: compact ? 2 : 3,
+                maxLines: compact ? 3 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 21.5 : 27,
-                  height: 1.08,
-                  letterSpacing: compact ? -.5 : -.75,
+                  fontSize: compact ? 20.5 : 27,
+                  height: compact ? 1.14 : 1.08,
+                  letterSpacing: compact ? -.35 : -.75,
                 ),
               ),
               if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
