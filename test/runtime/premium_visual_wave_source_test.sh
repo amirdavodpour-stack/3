@@ -139,7 +139,7 @@ grep -Fq 'responsive_logical_viewport": "360x640dp' "tools/hope-wallet-runtime-e
 grep -Fq 'final compactBottomPadding = size.height < 560' "$premium"
 grep -Fq "premium-page-frame-content-padding" "$premium"
 grep -Fq 'wave18-compact-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
-grep -Fq 'expect(framePadding.padding.bottom, 40);' 'test/core/ui/premium_visual_wave_15_test.dart'
+grep -Fq 'framePadding.padding.resolve(TextDirection.rtl).bottom, 40' 'test/core/ui/premium_visual_wave_15_test.dart'
 
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
