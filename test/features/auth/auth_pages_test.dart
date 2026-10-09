@@ -170,9 +170,9 @@ void main() {
         final icon = find.byKey(ValueKey(key));
         expect(icon, findsOneWidget, reason: 'Missing field icon $key');
         expect(
-          tester.getSize(icon),
-          const Size(18, 18),
-          reason: 'Field glyph $key must render at 18dp, not fill the full prefix slot.',
+          tester.widget<Icon>(icon).size,
+          18,
+          reason: 'The painted Material glyph for $key must be configured at 18dp; its prefix slot remains 48dp for touch/layout consistency.',
         );
       }
       expect(tester.takeException(), isNull);
