@@ -383,6 +383,15 @@ class PremiumPageFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
+    // The page body already sits above the scaffold's navigation dock. A fixed
+    // 96–112dp tail leaves a dead band on short responsive viewports and pushes
+    // first-fold content behind the fold. Keep a small safety tail on compact
+    // heights while preserving the generous desktop/long-phone rhythm.
+    final compactBottomPadding = size.height < 560
+        ? padding.bottom.clamp(0.0, 20.0).toDouble()
+        : size.height < 680
+            ? padding.bottom.clamp(0.0, 40.0).toDouble()
+            : padding.bottom;
     final resolvedDomain = domain ?? page?.spec.domain;
     final domainAccent = resolvedDomain?.spec.accent;
     final showDomainRail = size.width >= HopeV2Breakpoints.medium;
@@ -426,8 +435,9 @@ class PremiumPageFrame extends StatelessWidget {
                     minHeight: availableHeight,
                   ),
                   child: Padding(
+                    key: const ValueKey('premium-page-frame-content-padding'),
                     padding: padding.copyWith(
-                      bottom: padding.bottom + bottomInset,
+                      bottom: compactBottomPadding + bottomInset,
                     ),
                     child: Semantics(
                       container: true,
