@@ -126,7 +126,7 @@ grep -Fq 'maxLines: 2,' "lib/features/wallet/wallet_page.dart"
 grep -Fq 'softWrap: true' "lib/features/wallet/wallet_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/transactions/transactions_page.dart"
 grep -Fq 'final compactViewport =' "$opportunity"
-grep -Fq 'maxLines: compactViewport ? 2 : 1' "$opportunity"
+grep -Fq 'maxLines: compactViewport ? 3 : 2' "$opportunity"
 grep -Fq 'String _budgetRangeLabel(BuildContext context, HopeJob job)' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq '_budgetRangeLabel(context, j)' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'wave17-filled-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
