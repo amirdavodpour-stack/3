@@ -134,6 +134,7 @@ grep -Fq 'wave17-filled-scroll-viewport' 'test/core/ui/premium_visual_wave_15_te
 # page bodies do not waste the first fold on the fixed navigation-safe tail.
 grep -Fq 'adb shell wm density 320' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq 'adb shell wm density reset' "tools/hope-wallet-runtime-evidence.sh"
+grep -Fq 'responsive-density.txt' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq 'responsive_logical_viewport": "360x640dp' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq 'final compactBottomPadding = size.height < 560' "$premium"
 grep -Fq "premium-page-frame-content-padding" "$premium"
