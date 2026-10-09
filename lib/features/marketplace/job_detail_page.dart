@@ -54,7 +54,7 @@ class _OpportunitySnapshot extends StatelessWidget {
         label: isJob ? _t(context, 'حقوق ماهانه', 'Monthly pay') : _t(context, 'بودجه', 'Budget'),
         value: isJob
             ? moneyLabel(context, job.monthlySalary ?? job.budgetMin ?? '—')
-            : _budgetRangeLabel(context, '${job.budgetMin ?? '—'} تا ${job.budgetMax ?? '—'}'),
+            : _budgetRangeLabel(context, job),
         color: Theme.of(context).colorScheme.primary,
       ),
       (
