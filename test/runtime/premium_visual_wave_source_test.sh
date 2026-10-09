@@ -130,6 +130,16 @@ grep -Fq 'String _budgetRangeLabel(BuildContext context, HopeJob job)' "lib/feat
 grep -Fq '_budgetRangeLabel(context, j)' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'wave17-filled-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
 
+# Wave 18: responsive screenshots represent a real 360x640dp viewport, and short
+# page bodies do not waste the first fold on the fixed navigation-safe tail.
+grep -Fq 'adb shell wm density 320' "tools/hope-wallet-runtime-evidence.sh"
+grep -Fq 'adb shell wm density reset' "tools/hope-wallet-runtime-evidence.sh"
+grep -Fq 'responsive_logical_viewport": "360x640dp' "tools/hope-wallet-runtime-evidence.sh"
+grep -Fq 'final compactBottomPadding = size.height < 560' "$premium"
+grep -Fq "premium-page-frame-content-padding" "$premium"
+grep -Fq 'wave18-compact-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
+grep -Fq 'expect(framePadding.padding.bottom, 40);' 'test/core/ui/premium_visual_wave_15_test.dart'
+
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
