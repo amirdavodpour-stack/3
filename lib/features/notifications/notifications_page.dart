@@ -438,7 +438,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       const AlwaysScrollableScrollPhysics(),
                                   padding: const EdgeInsets.only(top: 24),
                                   children: [
-                                    EmptyState(
+                                    PremiumEmptyState(
                                       icon: HopeV2Icons.notifications,
                                       title: _t(
                                         'اعلانی وجود ندارد',
@@ -446,6 +446,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       ),
                                       message: HopeCopy.of(context)
                                           .copy_you_have_no_new_notifications_45f9685,
+                                      dense: true,
                                     ),
                                   ],
                                 )
