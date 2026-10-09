@@ -404,6 +404,17 @@ class _BarChart extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        SizedBox(height: shortViewport ? 3 : 5),
+        Wrap(
+          key: const ValueKey('financial-cashflow-legend'),
+          spacing: shortViewport ? 5 : HopeV2Spacing.sm,
+          runSpacing: shortViewport ? 2 : HopeV2Spacing.xs,
+          children: [
+            _FinancialLegendItem(color: inflow, label: english ? 'Inflow' : 'ورودی'),
+            _FinancialLegendItem(color: outflow, label: english ? 'Outflow' : 'خروجی'),
+            _FinancialLegendItem(color: reserved, label: english ? 'Reserved' : 'رزرو شده'),
+          ],
+        ),
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -434,17 +445,7 @@ class _BarChart extends StatelessWidget {
             },
           ),
         ),
-        SizedBox(height: shortViewport ? 3 : 5),
-        Wrap(
-          key: const ValueKey('financial-cashflow-legend'),
-          spacing: shortViewport ? 5 : HopeV2Spacing.sm,
-          runSpacing: shortViewport ? 2 : HopeV2Spacing.xs,
-          children: [
-            _FinancialLegendItem(color: inflow, label: english ? 'Inflow' : 'ورودی'),
-            _FinancialLegendItem(color: outflow, label: english ? 'Outflow' : 'خروجی'),
-            _FinancialLegendItem(color: reserved, label: english ? 'Reserved' : 'رزرو شده'),
-          ],
-        ),
+
       ],
     );
   }

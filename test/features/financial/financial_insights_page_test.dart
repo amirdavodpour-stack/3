@@ -124,12 +124,21 @@ void main() {
       final legend = find.byKey(const ValueKey('financial-cashflow-legend'));
       expect(legend, findsOneWidget);
       final bounds = tester.getRect(legend);
+      final plotBounds = tester.getRect(
+        find.byKey(const ValueKey('financial-cashflow-chart-scroll')),
+      );
       expect(bounds.top, greaterThanOrEqualTo(0));
       expect(
         bounds.bottom,
         lessThanOrEqualTo(640),
         reason: 'The first cash-flow legend must be visible without a user scroll.',
       );
+      expect(
+        bounds.bottom,
+        lessThanOrEqualTo(plotBounds.top),
+        reason: 'Explain the series before rendering their plot.',
+      );
+      expect(legend.hitTestable(), findsOneWidget);
       for (final label in ['ورودی', 'خروجی', 'رزرو شده']) {
         expect(
           find.descendant(of: legend, matching: find.text(label)),

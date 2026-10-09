@@ -150,4 +150,33 @@ void main() {
     expect(find.byType(PasswordResetPage), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
   });
+  testWidgets('Wave 28 auth prefix glyphs have deterministic compact render bounds',
+      (tester) async {
+    final screens = <Widget>[
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ];
+    final expectedKeys = <List<String>>[
+      ['auth-email-field-icon', 'auth-password-field-icon'],
+      ['auth-name-field-icon', 'auth-email-field-icon', 'auth-password-field-icon'],
+      ['auth-email-field-icon'],
+    ];
+
+    for (var index = 0; index < screens.length; index++) {
+      await tester.pumpWidget(await _screen(screens[index]));
+      await tester.pumpAndSettle();
+      for (final key in expectedKeys[index]) {
+        final icon = find.byKey(ValueKey(key));
+        expect(icon, findsOneWidget, reason: 'Missing field icon $key');
+        expect(
+          tester.getSize(icon),
+          const Size(18, 18),
+          reason: 'Field glyph $key must render at 18dp, not fill the full prefix slot.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    }
+  });
+
 }
