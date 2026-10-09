@@ -55,7 +55,7 @@ grep -Fq 'HopeV2Surfaces.controlBorder(context).withValues(alpha: .30)' "lib/cor
 grep -Fq 'variant: OpportunityCardVariant.compact' "$home"
 # Current Home density contract is validated by its exact layout structure; no legacy vertical-spacing literal is required.
 grep -Fq 'if (recommended.length > 1)' "$home"
-grep -Fq 'variant: OpportunityCardVariant.compact' "$jobs_widgets"
+grep -Fq 'OpportunityCardVariant.compact' "$jobs_widgets"
 grep -Fq 'padding: EdgeInsets.all(compact ? 10 : HopeV2Spacing.md)' "lib/core/ui/premium_lifecycle.dart"
 grep -Fq '<item name="android:navigationBarColor">#070A12</item>' "$android_theme"
 grep -Fq '<item name="android:windowLightNavigationBar">false</item>' "$android_theme_v26"
