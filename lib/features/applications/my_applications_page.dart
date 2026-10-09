@@ -257,7 +257,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: EdgeInsets.only(bottom: HopeV2Navigation.scrollEndGap),
           children: [
             PremiumHeader(
               page: HopePageId.myApplications,
@@ -378,7 +378,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
         quiet: true,
-        padding: const EdgeInsets.all(13),
+        padding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 11 : 13,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

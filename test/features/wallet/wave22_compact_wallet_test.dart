@@ -5,6 +5,7 @@ import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/transactions/wallet_repository.dart';
 import 'package:hope_mobile/features/wallet/wallet_page.dart';
@@ -29,7 +30,18 @@ class _Wave22WalletRepository implements WalletRepository {
     int limit = 30,
     String? cursor,
   }) async =>
-      const WalletTransactionsPage(items: []);
+      const WalletTransactionsPage(items: [
+        HopeWalletTransaction(
+          id: 'wave24-wallet-row',
+          entryType: 'JOB_PAYMENT_RELEASE',
+          direction: 'CREDIT',
+          amount: 125000,
+          currency: 'TOMAN',
+          referenceType: 'JOB',
+          financialOperationId: 'wave24-operation',
+          createdAt: '2026-10-09T12:00:00Z',
+        ),
+      ]);
 
   @override
   Future<List<HopePayout>> listPayouts() async => const [];
@@ -143,6 +155,20 @@ void main() {
         lessThan(tester.getTopLeft(dock).dy),
         reason: 'Wallet filters should be available without hidden horizontal scrolling.',
       );
+      final transactionRow = find.byKey(
+        const ValueKey('wallet-history-entry-wave24-wallet-row'),
+      );
+      expect(transactionRow, findsOneWidget);
+      await tester.ensureVisible(transactionRow);
+      await tester.pumpAndSettle();
+      final rowRect = tester.getRect(transactionRow);
+      final dockRect = tester.getRect(dock);
+      expect(
+        rowRect.bottom,
+        lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
+        reason: 'The transaction row must remain fully reachable above the dock.',
+      );
+      expect(transactionRow, hitTestable());
       expect(tester.takeException(), isNull);
     },
   );

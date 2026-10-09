@@ -302,6 +302,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             ),
             const SizedBox(height: 8),
             PremiumLifecycle(
+              key: ValueKey('work-center-lifecycle-${job.id}'),
               compact: true,
               steps: _stepsForStatus(status),
               title: _t('مسیر همکاری', 'Work flow'),
@@ -528,7 +529,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 page: HopePageId.workCenter,
                 padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
                 child: ListView(
-                  padding: EdgeInsets.zero,
+                  padding: EdgeInsets.only(bottom: HopeV2Navigation.scrollEndGap),
                   children: [
                     PremiumHeader(
               dense: true,

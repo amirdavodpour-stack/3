@@ -420,6 +420,36 @@ class _JobsFilterHeader extends StatelessWidget {
               refinement,
             ],
           ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            key: const ValueKey('hope-explore-kind-filters'),
+            segments: [
+              ButtonSegment<String>(
+                value: 'ALL',
+                label: Text(copy.copy_all_ba7d5b6),
+              ),
+              ButtonSegment<String>(
+                value: 'JOB',
+                label: Text(copy.copy_jobs_ebf9a80),
+                icon: const HopeIcon(HopeV2Icons.job, size: 15),
+              ),
+              ButtonSegment<String>(
+                value: 'MISSION',
+                label: Text(copy.copy_missions_a833d13),
+                icon: const HopeIcon(HopeV2Icons.mission, size: 15),
+              ),
+            ],
+            selected: {kind},
+            onSelectionChanged: (selected) {
+              if (selected.isNotEmpty) onKindChanged(selected.first);
+            },
+            style: ButtonStyle(
+              minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
+              padding: const WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 7),
+              ),
+            ),
+          ),
         ] else
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,

@@ -9,6 +9,7 @@ import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/features/profile/profile_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -75,10 +76,11 @@ Future<void> _pump(
   WidgetTester tester, {
   bool authenticated = false,
   double width = 900,
+  double height = 2400,
   ProfileRepository? repository,
   bool settle = true,
 }) async {
-  tester.view.physicalSize = Size(width, 2400);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -215,4 +217,26 @@ testWidgets('profile keeps application management in the dedicated work destinat
     expect(find.text('تأییدشده'), findsWidgets);
     expect(find.textContaining('VERIFIED'), findsNothing);
   });
+  testWidgets(
+    'Wave 24 language selector clears the dock at 360x640 and remains tappable',
+    (tester) async {
+      await _pump(tester, authenticated: true, width: 360, height: 640);
+      final selector = find.byKey(const ValueKey('profile-language-selector'));
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(selector, findsOneWidget);
+      expect(dock, findsOneWidget);
+      await tester.ensureVisible(selector);
+      await tester.pumpAndSettle();
+      final selectorRect = tester.getRect(selector);
+      final dockRect = tester.getRect(dock);
+      expect(
+        selectorRect.bottom,
+        lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
+        reason: 'Language selection must be reachable without overlapping navigation.',
+      );
+      expect(selector, hitTestable());
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

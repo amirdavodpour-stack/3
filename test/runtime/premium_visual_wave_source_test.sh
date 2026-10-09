@@ -196,6 +196,24 @@ grep -Fq "emptySelectionAllowed: true" "lib/features/jobs/job_satisfaction_page.
 grep -Fq "test/features/jobs/job_satisfaction_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
 grep -Fq "test/features/marketplace/employer_candidate_matches_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
 grep -Fq "Wave 23 vertical transaction timeline" "test/features/transactions/transaction_page_test.dart"
+# Wave 24 compact flow, discovery controls, chart labels and accessibility gates.
+grep -Fq 'static const scrollEndGap = 12.0;' lib/core/theme/hope_v2_design.dart
+grep -Fq 'height: HopeV2Navigation.barHeight,' lib/core/ui/premium_components.dart
+grep -Fq 'wallet-history-entry-${item.id}' lib/features/wallet/wallet_page.dart
+grep -Fq 'profile-language-selector' lib/features/profile/profile_page.dart
+grep -Fq 'work-center-lifecycle-${job.id}' lib/features/transactions/transactions_page.dart
+grep -Fq 'hope-explore-kind-filters' lib/features/jobs/jobs_filter_bar.part.dart
+grep -Fq 'financial-cashflow-legend' lib/features/financial/financial_insights_page.dart
+grep -Fq 'Wave 24 language selector clears the dock' test/features/profile/profile_page_test.dart
+grep -Fq 'Wave 24 collaboration lifecycle clears the dock' test/features/transactions/transactions_page_test.dart
+grep -Fq 'Wave 24 compact Explore kind filter' test/features/marketplace/jobs_page_test.dart
+grep -Fq 'Wave 24 financial chart legend' test/features/financial/financial_insights_page_test.dart
+grep -Fq 'Wave 24 primary dock satisfies Android target sizing' test/core/ui/premium_navigation_test.dart
+grep -Fq 'test/features/financial/financial_insights_page_test.dart' .github/workflows/hope-ui-wave-1-static.yml
+if grep -Fq '[wave23-preverified]' .github/workflows/hope-ui-wave-1-static.yml; then
+  echo 'FAIL: static workflow still carries the Wave23 skip marker' >&2
+  exit 1
+fi
 echo "PASS: Wave 23 superwave + Wave 22 compact-first-fold source contracts"
 echo "PASS: Wave 21 shared visual + locale + evidence integrity contracts"
 echo "PASS: premium visual composition wave source integrity"

@@ -104,7 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
       maxWidth: 920,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       child: ListView(
-        padding: EdgeInsets.zero,
+        padding: EdgeInsets.only(bottom: HopeV2Navigation.scrollEndGap),
         children: [
           PremiumHeader(
             page: HopePageId.profile,
@@ -524,6 +524,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
           LayoutBuilder(
             builder: (context, constraints) {
               final selector = SegmentedButton<String>(
+                key: const ValueKey('profile-language-selector'),
                 segments: [
                   ButtonSegment(
                     value: 'fa',

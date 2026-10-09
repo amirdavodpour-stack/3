@@ -41,6 +41,9 @@ required_files=(
   test/core/quality/hope_accessibility_gate_test.dart
   test/core/quality/hope_quality_matrix_test.dart
   test/core/finance/toman_formatter_test.dart
+  test/features/financial/financial_insights_page_test.dart
+  docs/audit/WAVE_24_SUPERWAVE_REPORT.md
+  docs/superpowers/plans/2026-10-09-v2hope-wave24.md
   lib/core/finance/toman_formatter.dart
 )
 for f in "${required_files[@]}"; do need_file "$f"; done
@@ -76,6 +79,9 @@ grep -q "continueAsGuest" integration_test/runtime/app_smoke_test.dart || fail "
 grep -q "loginWithGoogle" lib/features/auth/login_page.dart || fail "Google Sign-In action contract is missing"
 grep -R -q "تومان" lib/features/wallet lib/features/transactions || fail "TOMAN labelling is not present in finance surfaces"
 grep -q "semanticsIdentifier" lib/core/ui/premium_components.dart || fail "stable semantics identifier contract is missing"
+grep -q "scrollEndGap = 12.0" lib/core/theme/hope_v2_design.dart || fail "shared scroll end-gap token is missing"
+grep -q "hope-explore-kind-filters" lib/features/jobs/jobs_filter_bar.part.dart || fail "compact Explore kind control is missing"
+grep -q "financial-cashflow-legend" lib/features/financial/financial_insights_page.dart || fail "financial series legend is missing"
 grep -q "HopeTomanFormatter.grouped" lib/core/ui/copy.dart || fail "TOMAN display formatter is not connected"
 
 echo "HOPE design/runtime guardrails PASS"

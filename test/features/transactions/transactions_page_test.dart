@@ -6,6 +6,7 @@ import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -79,8 +80,9 @@ Future<void> _pump(
   _Transactions repo, {
   bool guest = false,
   double width = 900,
+  double height = 2400,
 }) async {
-  tester.view.physicalSize = Size(width, 2400);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -277,4 +279,30 @@ void main() {
   });
 
   // Runtime certification trigger: grouped Wave G-3B Create + Work Center.
+  testWidgets(
+    'Wave 24 collaboration lifecycle clears the dock at 360x640 and remains tappable',
+    (tester) async {
+      final repo = _Transactions()
+        ..jobs = [_job('wave24-active', status: 'IN_PROGRESS')];
+      await _pump(tester, repo, width: 360, height: 640);
+      final lifecycle = find.byKey(
+        const ValueKey('work-center-lifecycle-wave24-active'),
+      );
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(lifecycle, findsOneWidget);
+      expect(dock, findsOneWidget);
+      await tester.ensureVisible(lifecycle);
+      await tester.pumpAndSettle();
+      final lifecycleRect = tester.getRect(lifecycle);
+      final dockRect = tester.getRect(dock);
+      expect(
+        lifecycleRect.bottom,
+        lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
+        reason: 'The collaboration lifecycle must be reachable above the fixed dock.',
+      );
+      expect(lifecycle, hitTestable());
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

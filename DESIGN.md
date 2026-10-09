@@ -528,3 +528,14 @@ Real data/media only; Persian-first RTL; correct LTR islands; Vazirmatn; 48dp ta
 
 ### Verification
 One focused Flutter gate for the grouped wave, followed only if green by one serialized exact-head Android Runtime with the complete 25-PNG matrix. No T10 acceptance from green CI alone; every new PNG must be inspected.
+
+
+## Visual Wave 24 — Expanded compact-flow and information-clarity superwave
+
+- Add a canonical 12dp scroll-end gap. Scaffold remains responsible for the fixed dock and OS insets; individual scrollables reserve a small end gap rather than duplicating dock height.
+- Wallet history rows, Profile language selection and Work Center lifecycle panels gain stable keys plus 360×640dp scroll geometry and hit-test regressions. The wallet fixture includes one transaction so the test covers a real row.
+- Compact Explore exposes the existing ALL/JOB/MISSION state as a 48dp segmented control wired to the existing callback. City, visibility and category continue through the current refinement flow.
+- Compact opportunity media, application-card padding, auth prefix icons, Create Opportunity type tiles and chat composer receive a coordinated density pass without dropping job facts, amounts, model-backed scores, input hit areas, suffix actions or multiline messaging.
+- Financial charts render API-provided month/date labels in a dedicated axis band and disclose the three existing cash-flow series with a color-matched legend. Financial amounts, balance arithmetic, ledger and payment state transitions remain unchanged.
+- Add Flutter accessibility-guideline tests for Android target size and labeled dock controls. Runtime screenshots still cannot certify TalkBack when accessibility services are disabled.
+- Wave24 is accepted only after one exact-head static run, one exact-head runtime capture, and individual review of all 25 PNGs.

@@ -52,3 +52,12 @@ Acceptance gate: Static verification must pass once for this grouped tree, then 
 - Tokens are split between legacy compatibility names and `HopeV2Colors`; there is not yet a dedicated `tokens.dart`.
 - Baseline contains sub-12sp metrics labels and truncation at 720×1280.
 - A target token value does not itself prove contrast; calculate actual foreground/background pairs.
+
+
+## Wave 24 — Compact layout and scroll-end contract
+
+- HopeV2Navigation.barHeight is the canonical dock height (68dp).
+- HopeV2Navigation.scrollEndGap is a 12dp tail inside relevant scrollables. It is not a second dock reservation: the Scaffold owns dock geometry and system insets.
+- At 360×640 logical dp, meaningful rows and controls must remain scrollable, end at least 12dp above the fixed dock after ensureVisible, and pass hit testing.
+- Android interactive targets should remain at least 48×48dp. Use Flutter's Accessibility Guideline API for size and label checks rather than visual inspection alone.
+- Compact chart axes use existing API labels; never manufacture balance points or alter financial state to make a chart look smoother.

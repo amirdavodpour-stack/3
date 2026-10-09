@@ -429,4 +429,32 @@ void main() {
         scrollable: find.byType(Scrollable).first);
     expect(find.text('طراحی در شیراز'), findsOneWidget);
   });
+  testWidgets(
+    'Wave 24 compact Explore kind filter is visible, 48dp high and stateful',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repo = _Repo();
+      await _pump(tester, repo);
+      await tester.pumpAndSettle();
+      final filter = find.byKey(const ValueKey('hope-explore-kind-filters'));
+      expect(filter, findsOneWidget);
+      expect(tester.getSize(filter).height, greaterThanOrEqualTo(48));
+      expect(
+        tester.widget<SegmentedButton<String>>(filter).selected,
+        contains('ALL'),
+      );
+      final rect = tester.getRect(filter);
+      await tester.tapAt(Offset(rect.left + rect.width / 6, rect.center.dy));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<SegmentedButton<String>>(filter).selected,
+        isNot(contains('ALL')),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

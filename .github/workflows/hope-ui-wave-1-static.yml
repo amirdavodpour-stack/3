@@ -1,5 +1,5 @@
 # Wave 1 static gate intentionally runs on every working-branch push so each visual batch has a fresh verification record.
-name: HOPE UI Wave 22 Static Verification
+name: HOPE UI Wave 24 Expanded Superwave Verification
 
 on:
   # Verification is PR-scoped so one commit produces one authoritative static record.
@@ -20,7 +20,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || (!contains(github.event.pull_request.title, '[runtime-capture-fa]') && !contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
     name: Wave 1 Flutter + backend + visual guardrails
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -66,6 +66,6 @@ jobs:
       # Wave 1 verification trigger: execute the bounded suite against the latest branch head.
 
       - name: HOPE Superwave — one consolidated Flutter regression gate
-        if: ${{ !contains(github.event.pull_request.title, '[wave23-preverified]') }}
-        timeout-minutes: 5
-        run: timeout --foreground --signal=TERM --kill-after=30s 270s flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart test/features/wallet/wave22_compact_wallet_test.dart test/features/jobs/saved_searches_page_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/employer_candidate_matches_page_test.dart test/features/jobs/job_satisfaction_page_test.dart
+        if: ${{ !contains(github.event.pull_request.title, '[wave24-preverified]') }}
+        timeout-minutes: 7
+        run: timeout --foreground --signal=TERM --kill-after=30s 360s flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart test/features/wallet/wave22_compact_wallet_test.dart test/features/jobs/saved_searches_page_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/employer_candidate_matches_page_test.dart test/features/jobs/job_satisfaction_page_test.dart test/core/ui/premium_navigation_test.dart test/core/ui/opportunity_card_test.dart test/features/wallet/wallet_page_test.dart test/features/profile/profile_page_test.dart test/features/transactions/transactions_page_test.dart test/features/marketplace/jobs_page_test.dart test/features/marketplace/job_detail_page_test.dart test/features/marketplace/create_job_page_test.dart test/features/auth/auth_pages_test.dart test/features/applications/my_applications_page_test.dart test/features/chat/chat_page_test.dart test/features/financial/financial_insights_page_test.dart

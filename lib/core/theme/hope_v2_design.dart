@@ -205,6 +205,8 @@ class HopeV2Navigation {
   const HopeV2Navigation._();
 
   static const barHeight = 68.0;
+  /// Scroll tail for the final meaningful item above the fixed dock.
+  static const scrollEndGap = 12.0;
   static const dockRadius = 18.0;
   static const itemRadius = 12.0;
   static const itemWidth = 42.0;

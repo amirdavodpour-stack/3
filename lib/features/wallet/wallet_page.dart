@@ -1027,7 +1027,7 @@ class _WalletPageState extends State<WalletPage> {
             tightViewport ? 24 : 32,
           ),
         child: ListView(
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.only(bottom: HopeV2Navigation.scrollEndGap),
           children: [
             PremiumHeader(
               key: const ValueKey('wallet-finance-header'),
@@ -1179,6 +1179,7 @@ class _WalletPageState extends State<WalletPage> {
                     onTap: () => _showTransaction(item),
                     child: ExcludeSemantics(
                       child: PremiumPanel(
+                        key: ValueKey('wallet-history-entry-${item.id}'),
                         glass: false,
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         child: ListTile(

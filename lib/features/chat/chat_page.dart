@@ -399,7 +399,7 @@ class _ChatPageState extends State<ChatPage> {
                         Expanded(
                           child: TextField(
                             controller: _controller,
-                            maxLines: 4,
+                            maxLines: 3,
                             minLines: 1,
                             enabled: !_busy,
                             onSubmitted: (_) => _send(),

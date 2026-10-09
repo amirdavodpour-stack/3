@@ -8,9 +8,10 @@ class _TypeHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     return PremiumPanel(
       highlight: true,
-      padding: const EdgeInsets.all(17),
+      padding: EdgeInsets.all(compact ? 12 : 17),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -87,6 +88,7 @@ class _TypeHero extends StatelessWidget {
     String title,
     String sub,
   ) {
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final selected = kind == value;
 
     return PressableScale(
@@ -109,14 +111,14 @@ class _TypeHero extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(compact ? 10 : 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   HopeIcon(
                     icon,
                     color: selected ? Colors.white : AppColors.primary,
-                    size: 25,
+                    size: compact ? 22 : 25,
                     strokeWidth: 2.0,
                   ),
                   const SizedBox(height: 8),
