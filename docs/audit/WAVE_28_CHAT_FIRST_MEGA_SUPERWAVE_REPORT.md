@@ -16,3 +16,9 @@ Wave28 initial exact-head Static run 37996055350 passed with 111 consolidated Fl
 
 ## Branch policy
 Only `feat/ui-v2-wave-1-execution-2026-10-07` is in scope. PR #30 stays OPEN / DRAFT / UNMERGED. `main`/production are forbidden write targets; do not force-push, merge, publish, or bypass checks.
+
+
+## Screenshot-led calibration follow-up — exact-head verification pending
+- Previous runtime run 37996231004 passed on the parent Wave28 UI SHA and its 25 screenshots were inspected directly; this caught two remaining visual issues not adequately enforced by the initial widget tests: oversized-looking custom HugeIcon prefixes and the financial legend being below/hidden relative to the plot in actual runtime capture.
+- Correction commit 6d410cf8c827568f63afad4ce76059ef63a46529 switches the three auth forms to standard 18dp Material field glyphs and adds widget-size assertions for Login/Register/PasswordReset; moves the cash-flow legend before the plot and adds explicit legend-vs-plot geometry and hit-test assertions. This follow-up needs fresh exact-HEAD static + Android runtime PASS before these refinements are accepted.
+- The preceding screenshots do not certify this follow-up. T10/TalkBack still remains NOT ACCEPTED without explicit enabled accessibility service evidence.
