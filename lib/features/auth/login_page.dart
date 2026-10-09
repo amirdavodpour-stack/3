@@ -198,7 +198,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.emailLabel,
-                          prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 18),
+                          prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 16, strokeWidth: 1.6),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -208,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
-                          prefixIcon: const HopeIcon(HopeV2Icons.password, size: 18),
+                          prefixIcon: const HopeIcon(HopeV2Icons.password, size: 16, strokeWidth: 1.6),
                           suffixIcon: IconButton(
                             icon: HugeIcon(
                               icon: obscure

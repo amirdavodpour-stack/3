@@ -295,3 +295,14 @@ grep -Fq 'initiallyExpanded: !compact' lib/features/marketplace/create_job_widge
 grep -Fq 'onPressed: _busy || !_feedbackComplete ? null : _submit' lib/features/jobs/job_satisfaction_page.dart
 grep -Fq 'Wave 27 scroll tail includes unconsumed system bottom inset' test/core/ui/premium_navigation_test.dart
 echo "PASS: Wave 27 cross-surface scroll safety + readable finance chart contracts"
+
+# Wave 28 chat-first composition and compact-input contracts.
+grep -Fq "ValueKey('chat-conversation-header')" "lib/features/chat/chat_page.dart"
+grep -Fq "ValueKey('chat-message-list')" "lib/features/chat/chat_page.dart"
+grep -Fq "ValueKey('chat-composer-panel')" "lib/features/chat/chat_page.dart"
+grep -Fq "ValueKey('chat-message-input')" "lib/features/chat/chat_page.dart"
+grep -Fq "final shortViewport = MediaQuery.sizeOf(context).height < 700;" "lib/features/financial/financial_insights_page.dart"
+grep -Fq "shortViewport ? 106.0 : compact ? 148.0 : 172.0" "lib/features/financial/financial_insights_page.dart"
+grep -Fq "prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 16, strokeWidth: 1.6)" "lib/features/auth/login_page.dart"
+grep -Fq "prefixIcon: const HopeIcon(HopeV2Icons.userAdd, size: 16, strokeWidth: 1.6)" "lib/features/auth/register_page.dart"
+grep -Fq "last Work Center item stays reachable above the fixed dock" "test/features/transactions/transactions_page_test.dart"

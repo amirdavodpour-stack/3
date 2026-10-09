@@ -312,4 +312,38 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Wave 28 last Work Center item stays reachable above the fixed dock on compact phones',
+    (tester) async {
+      final repo = _Transactions()
+        ..jobs = List.generate(
+          8,
+          (index) => _job('reach-$index', status: 'IN_PROGRESS'),
+        );
+      await _pump(tester, repo, width: 360, height: 640);
+
+      final lastJob = find.text('پروژه reach-7');
+      await tester.scrollUntilVisible(
+        lastJob,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(lastJob);
+      await tester.pumpAndSettle();
+
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(lastJob, findsOneWidget);
+      expect(dock, findsOneWidget);
+      final rowBounds = tester.getRect(lastJob);
+      final dockBounds = tester.getRect(dock);
+      expect(
+        rowBounds.bottom,
+        lessThanOrEqualTo(dockBounds.top - HopeV2Navigation.scrollEndGap),
+      );
+      expect(lastJob.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

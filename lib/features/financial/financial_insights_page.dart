@@ -37,11 +37,20 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final viewport = MediaQuery.sizeOf(context);
+    final compactWidth = viewport.width < HopeV2Breakpoints.medium;
+    final shortViewport = viewport.height < 700;
+    return Scaffold(
         body: SafeArea(
           child: PremiumPageFrame(
             maxWidth: 1100,
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 72),
+            padding: EdgeInsets.fromLTRB(
+              compactWidth ? 12 : 20,
+              shortViewport ? 8 : 18,
+              compactWidth ? 12 : 20,
+              shortViewport ? 24 : 72,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -50,10 +59,12 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                   domain: HopeProductDomain.finance,
                   eyebrow: _t('مالی', 'FINANCE'),
                   title: _t('تحلیل مالی', 'Financial insights'),
-                  subtitle: _t(
-                    'تصویر مالی شما بر پایه لجر داخلی تومان و فعالیت‌های ثبت‌شده در HOPE.',
-                    'A ledger-based view of your balance and recorded financial activity in HOPE.',
-                  ),
+                  subtitle: shortViewport
+                      ? _t('بر پایه لجر داخلی تومان.', 'Internal TOMAN ledger.')
+                      : _t(
+                          'تصویر مالی شما بر پایه لجر داخلی تومان و فعالیت‌های ثبت‌شده در HOPE.',
+                          'A ledger-based view of your balance and recorded financial activity in HOPE.',
+                        ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -73,7 +84,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: HopeV2Spacing.lg),
+                SizedBox(height: shortViewport ? 8 : HopeV2Spacing.lg),
                 Expanded(
                   child: FutureBuilder<HopeFinancialInsights>(
                     future: _future,
@@ -116,20 +127,24 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
                           children: [
-                            _SummaryCard(data: data, money: _money, t: _t),
+                            _SummaryCard(data: data, money: _money, t: _t, compact: shortViewport),
                             SizedBox(
-                              height: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact
-                                  ? HopeV2Spacing.md
-                                  : HopeV2Spacing.section,
+                              height: shortViewport
+                                  ? 8
+                                  : MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact
+                                      ? HopeV2Spacing.md
+                                      : HopeV2Spacing.section,
                             ),
                             PremiumSectionHeader(
                               page: HopePageId.financialInsights,
                               domain: HopeProductDomain.finance,
                               title: _t('روندهای مالی', 'Financial trends'),
-                              subtitle: _t(
-                                'جریان نقدی، موجودی و منابع فعالیت را در یک نمای واحد ببینید.',
-                                'Review cash flow, balance, and activity sources in one view.',
-                              ),
+                              subtitle: shortViewport
+                                  ? _t('شش ماه ثبت‌شده', 'Six recorded months')
+                                  : _t(
+                                      'جریان نقدی، موجودی و منابع فعالیت را در یک نمای واحد ببینید.',
+                                      'Review cash flow, balance, and activity sources in one view.',
+                                    ),
                             ),
                             const SizedBox(height: HopeV2Spacing.md),
                             _ChartCard(
@@ -169,19 +184,21 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
           ),
         ),
       );
+  }
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.data, required this.money, required this.t});
+  const _SummaryCard({required this.data, required this.money, required this.t, required this.compact});
 
   final HopeFinancialInsights data;
   final String Function(int) money;
   final String Function(String, String) t;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final summary = data.summary;
-    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
+    final compact = this.compact || MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
     final metrics = <({String label, String value, bool highlight})>[
       (
         label: t('قابل استفاده', 'Available'),
@@ -213,16 +230,16 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Text(
             t('تصویر مالی', 'Financial snapshot'),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            style: (compact ? Theme.of(context).textTheme.titleMedium : Theme.of(context).textTheme.titleLarge)?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: compact ? 4 : 6),
           Text(t(
-            'بر پایه لجر داخلی TOMAN و بدون تخمین‌های خارج از تراکنش‌ها.',
-            'Based on the internal TOMAN ledger only; no off-ledger estimates.',
+            compact ? 'لجر داخلی تومان؛ بدون تخمین.' : 'بر پایه لجر داخلی TOMAN و بدون تخمین‌های خارج از تراکنش‌ها.',
+            compact ? 'Internal TOMAN ledger only.' : 'Based on the internal TOMAN ledger only; no off-ledger estimates.',
           )),
-          const SizedBox(height: 13),
+          SizedBox(height: compact ? 8 : 13),
           LayoutBuilder(
             builder: (context, constraints) {
               const gap = 8.0;
@@ -269,10 +286,10 @@ class _Metric extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final accent = Theme.of(context).colorScheme.primary;
     return Container(
-      constraints: BoxConstraints(minHeight: compact ? 66 : 74),
+      constraints: BoxConstraints(minHeight: compact ? 60 : 74),
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 8 : 12,
-        vertical: compact ? 8 : 10,
+        vertical: compact ? 6 : 10,
       ),
       decoration: BoxDecoration(
         color: highlight
@@ -329,7 +346,8 @@ class _ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
-    final chartHeight = compact ? 148.0 : 172.0;
+    final shortViewport = MediaQuery.sizeOf(context).height < 700;
+    final chartHeight = shortViewport ? 106.0 : compact ? 148.0 : 172.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -356,9 +374,9 @@ class _ChartCard extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.fromLTRB(
               10,
-              compact ? 8 : 10,
+              shortViewport ? 4 : compact ? 8 : 10,
               10,
-              compact ? 8 : 10,
+              shortViewport ? 4 : compact ? 8 : 10,
             ),
             child: SizedBox(
               height: chartHeight,
@@ -377,6 +395,7 @@ class _BarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shortViewport = MediaQuery.sizeOf(context).height < 700;
     final theme = Theme.of(context);
     final inflow = theme.colorScheme.primary;
     final outflow = theme.colorScheme.tertiary;
@@ -415,11 +434,11 @@ class _BarChart extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: 5),
+        SizedBox(height: shortViewport ? 3 : 5),
         Wrap(
           key: const ValueKey('financial-cashflow-legend'),
-          spacing: HopeV2Spacing.sm,
-          runSpacing: HopeV2Spacing.xs,
+          spacing: shortViewport ? 5 : HopeV2Spacing.sm,
+          runSpacing: shortViewport ? 2 : HopeV2Spacing.xs,
           children: [
             _FinancialLegendItem(color: inflow, label: english ? 'Inflow' : 'ورودی'),
             _FinancialLegendItem(color: outflow, label: english ? 'Outflow' : 'خروجی'),

@@ -94,4 +94,50 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'Wave 28 keeps the real cash-flow legend inside the initial 360x640 viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            theme: ThemeData.light(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final legend = find.byKey(const ValueKey('financial-cashflow-legend'));
+      expect(legend, findsOneWidget);
+      final bounds = tester.getRect(legend);
+      expect(bounds.top, greaterThanOrEqualTo(0));
+      expect(
+        bounds.bottom,
+        lessThanOrEqualTo(640),
+        reason: 'The first cash-flow legend must be visible without a user scroll.',
+      );
+      for (final label in ['ورودی', 'خروجی', 'رزرو شده']) {
+        expect(
+          find.descendant(of: legend, matching: find.text(label)),
+          findsOneWidget,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

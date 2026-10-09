@@ -100,7 +100,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 18),
+                            prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 16, strokeWidth: 1.6),
                           ),
                         ),
                         const SizedBox(height: 14),
