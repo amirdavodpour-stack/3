@@ -1,3 +1,27 @@
+## Visual Wave 18 — Compact viewport calibration and first-fold recovery — 2026-10-09
+
+Wave 17's Android artifact (runtime #2188 / run `37871022058`) contains 19 primary and six responsive Persian/RTL screenshots. Review of the original-size responsive Jobs and Profile captures found that the 720×1280 physical-pixel override was applied without a matching density override. On the Pixel 2 emulator's native density, that yields an approximately 274×488dp logical viewport; the screenshots consequently show inflated typography, clipped first-fold cards and an oversized empty band before the fixed navigation dock. This is a capture-calibration defect that also exposed a real compact-height spacing problem; it must not be mislabeled as a color-only issue.
+
+### Grouped changes
+
+- Calibrate the responsive Android capture to 720×1280 physical pixels at 320 dpi, i.e. 360×640 logical dp, and record physical/logical dimensions plus density in the artifact metadata.
+- Restore both emulator physical size and density after the responsive batch to avoid leaking the test configuration into subsequent capture sessions.
+- Make `PremiumPageFrame` cap its bottom safety tail at 40dp for short-height viewports and 20dp for very short viewports. The body already sits above the Scaffold dock; a fixed 96–112dp tail wastes the first fold on compact screens.
+- Add a stable key to the frame padding and extend the existing single Flutter widget-test case with a 360×640dp scroll-viewport/padding contract.
+- Add source guards for density calibration, restoration, metadata, and compact frame padding. Keep all business data and ledger semantics unchanged.
+
+### Evidence and exit gate
+
+- Input artifact: [Runtime #2188](https://github.com/amirdavodpour-stack/3/actions/runs/37871022058), artifact ID `11590562044`; all 25 PNGs were inspected, including full-size responsive Jobs and Profile images.
+- The previous responsive artifact is not visually certified: its logical viewport was too small for the intended compact-phone comparison, and the first-fold composition is materially distorted.
+- Run the consolidated Flutter test once on the final Wave 18 code, then run the static workflow. Only if both are green, trigger one Persian/RTL Android runtime capture. Do not close Wave 18 until all 25 new screenshots are individually inspected and the responsive screens show no clipped first-fold cards or artificial blank band.
+- Keep PR #30 draft/unmerged and main untouched.
+
+### References
+
+- Flutter adaptive/responsive design: https://docs.flutter.dev/ui/adaptive-responsive
+- Flutter logical-pixel sizing contract: https://api.flutter.dev/flutter/widgets/MediaQueryData/size.html
+
 ## Visual Wave 17 — Responsive viewport, navigation and financial clarity — 2026-10-09
 
 Wave 17 is grounded in Android runtime workflow #2168 / run `37863924499` at exact feature HEAD `b69f3a87d94951018ac45d1124adec32d2d8468e`. The artifact contains 19 Persian/RTL primary images and six responsive images at physical resolution 720×1280. Its metadata records the PR merge ref as `30/merge` at merge SHA `5f1db15b7525246ec8d4f9e572008fb4b748ee48`; that merge ref is distinct from the exact feature HEAD checked out and rendered by the workflow.
