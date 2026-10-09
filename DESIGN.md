@@ -1,3 +1,14 @@
+# Visual Wave 22 — Compact-first-fold convergence — 2026-10-09
+
+## Wave 22 implementation
+1. Compact Auth Hero fallback becomes a clean accent-led gradient plus diffuse glow; no crossing outlines behind title. Wide editorial fallback remains intact.
+2. Compact decision-strip scores use a two-column responsive grid, preserving all skills/category/location/salary scores.
+3. Compact Opportunity Detail does not repeat the DNA panel's category/location immediately below the same values in the decision strip; wide layout keeps it.
+4. Tighten compact wallet card and lifecycle panel; preserve exact amounts and balance touch targets. Wallet history filters use Wrap, not hidden horizontal scroll.
+5. Move Saved Search create action into normal scroll order after the result/empty state; remove the distant floating FAB.
+
+
+
 ## Visual Wave 21 — RTL date, compact hero, financial hierarchy and evidence integrity — 2026-10-09
 
 Wave 20 Runtime #2206 / run `37903124390` produced artifact `11603134050` for source HEAD `1d3c92f3742fd76880a2325dc9504b1d4d2ef209`. The job log verifies `HOPE_RUNTIME_EXACT_HEAD` checked out the feature source, while its metadata incorrectly used the PR merge SHA. This wave corrects the metadata contract as well as visible defects.

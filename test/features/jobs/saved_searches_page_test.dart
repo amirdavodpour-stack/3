@@ -70,6 +70,26 @@ Widget _host(_SequencedSavedSearchRepository repository) {
 }
 
 void main() {
+  testWidgets(
+    'Saved Search create action stays beside page content instead of floating below it',
+    (tester) async {
+      final repository = _SequencedSavedSearchRepository();
+      repository.itemsOverride = [
+        _search('adjacent', 'Adjacent search', category: 'SOFTWARE'),
+      ];
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('saved-search-create-cta')),
+        findsOneWidget,
+      );
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byKey(const ValueKey('saved-search-list')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('saved-search enum filters use localized labels', (tester) async {
     final repository = _SequencedSavedSearchRepository();
     repository.itemsOverride = [

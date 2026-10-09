@@ -12,7 +12,7 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('Wave 21 grouped responsive visual and localization contracts',
+  testWidgets('Wave 22 grouped responsive visual and localization contracts',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -123,6 +123,31 @@ void main() {
       ),
       findsNothing,
       reason: 'Compact editorial fallback icons must never overlap the hero title.',
+    );
+    expect(
+      find.byKey(const ValueKey('premium-hero-compact-fallback')),
+      findsOneWidget,
+      reason: 'Compact Auth heroes must use the quiet fallback without ornamental strokes.',
+    );
+    final breakdownSkills =
+        find.byKey(const ValueKey('opportunity-decision-breakdown-skills'));
+    final breakdownCategory =
+        find.byKey(const ValueKey('opportunity-decision-breakdown-category'));
+    final breakdownLocation =
+        find.byKey(const ValueKey('opportunity-decision-breakdown-location'));
+    final breakdownSalary =
+        find.byKey(const ValueKey('opportunity-decision-breakdown-salary'));
+    expect(breakdownSkills, findsOneWidget);
+    expect(breakdownCategory, findsOneWidget);
+    expect(breakdownLocation, findsOneWidget);
+    expect(breakdownSalary, findsOneWidget);
+    expect(tester.getSize(breakdownSkills).width, lessThan(200));
+    expect(
+      (tester.getTopLeft(breakdownCategory).dy -
+              tester.getTopLeft(breakdownSkills).dy)
+          .abs(),
+      lessThan(8),
+      reason: 'Compact score bars should form two columns, not four full-width rows.',
     );
     expect(
       tester.getSize(find.byKey(const ValueKey('opportunity-dna-signature'))).height,

@@ -802,10 +802,16 @@ class _JobDetailPageState extends State<JobDetailPage> {
               breakdown: j.recommendationComponents,
             ),
             SizedBox(height: compactViewport ? 6 : 10),
-                  SizedBox(height: compactViewport ? 4 : 8),
-                  HopeOpportunityDnaSignature(job: j, includeBudget: false, includeMatch: false),
-                  const SizedBox(height: 12),
-                  PremiumSectionHeader(
+            if (!compactViewport) ...[
+              const SizedBox(height: 8),
+              HopeOpportunityDnaSignature(
+                job: j,
+                includeBudget: false,
+                includeMatch: false,
+              ),
+              const SizedBox(height: 12),
+            ],
+            PremiumSectionHeader(
                     domain: HopeProductDomain.discovery,
                     title: _t('شرح فرصت', 'Job description'),
                   ),

@@ -226,6 +226,8 @@ class HopeWalletFlowSignature extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final currencyLabel = wallet.currency == 'TOMAN'
         ? _t(context, 'تومان داخلی', 'Internal Toman')
         : wallet.currency;
@@ -254,15 +256,20 @@ class HopeWalletFlowSignature extends StatelessWidget {
       key: const ValueKey('wallet-money-flow-signature'),
       glass: false,
       quiet: true,
-      padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 10 : 12,
+        compact ? 8 : 11,
+        compact ? 10 : 12,
+        compact ? 8 : 11,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const HopeIcon(
+              HopeIcon(
                 HopeV2Icons.route,
-                size: 18,
+                size: compact ? 16 : 18,
                 color: HopeV2Colors.secondary,
               ),
               const SizedBox(width: 7),
@@ -281,29 +288,38 @@ class HopeWalletFlowSignature extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: compact ? 4 : 6),
           Text(
             _t(
               context,
-              'تغییرات موجودی در دفترکل داخلی ثبت می‌شود؛ وجه رزروشده پس از تأیید کار آزاد می‌شود.',
-              'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
+              compact
+                  ? 'رزرو وجه تا تأیید کار'
+                  : 'تغییرات موجودی در دفترکل داخلی ثبت می‌شود؛ وجه رزروشده پس از تأیید کار آزاد می‌شود.',
+              compact
+                  ? 'Funds held until work approval'
+                  : 'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
             ),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            maxLines: compact ? 1 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: (compact
+                    ? Theme.of(context).textTheme.labelSmall
+                    : Theme.of(context).textTheme.bodySmall)
+                ?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.35,
+                  height: compact ? 1.2 : 1.35,
                 ),
           ),
-          const SizedBox(height: 9),
+          SizedBox(height: compact ? 5 : 9),
           Row(
             children: [
               for (var index = 0; index < steps.length; index++) ...[
                 if (index > 0) const SizedBox(width: 6),
                 Expanded(
                   child: Container(
-                    constraints: const BoxConstraints(minHeight: 43),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 7,
+                    constraints: BoxConstraints(minHeight: compact ? 36 : 43),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 4 : 5,
+                      vertical: compact ? 5 : 7,
                     ),
                     decoration: BoxDecoration(
                       color: steps[index].color.withValues(alpha: .07),
@@ -317,7 +333,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
                       children: [
                         HopeIcon(
                           steps[index].icon,
-                          size: 16,
+                          size: compact ? 14 : 16,
                           color: steps[index].color,
                         ),
                         const SizedBox(width: 4),

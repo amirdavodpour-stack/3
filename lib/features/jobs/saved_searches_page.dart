@@ -269,11 +269,6 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _edit(),
-        icon: const HopeIcon(HopeV2Icons.add, size: 20),
-        label: Text(_t('جست‌وجوی جدید', 'New search')),
-      ),
       body: PremiumPageFrame(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
         child: RefreshIndicator(
@@ -400,6 +395,21 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                   }).toList(),
                 ),
               ),
+            if (!_loading && _error == null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('saved-search-create-cta'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: () => _edit(),
+                  icon: const HopeIcon(HopeV2Icons.add, size: 20),
+                  label: Text(_t('جست‌وجوی جدید', 'New search')),
+                ),
+              ),
+            ],
             ],
           ),
         ),

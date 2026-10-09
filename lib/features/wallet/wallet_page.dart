@@ -713,7 +713,7 @@ class _WalletPageState extends State<WalletPage> {
                 softWrap: true,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: denseViewport ? 27 : (compact ? 24 : 36),
+                  fontSize: compact ? 24 : (denseViewport ? 27 : 36),
                   height: 1.02,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -.7,
@@ -762,7 +762,10 @@ class _WalletPageState extends State<WalletPage> {
       }) item) {
         return Container(
           key: ValueKey(item.key),
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 6 : 7,
+            vertical: compact ? 3 : 4,
+          ),
           decoration: BoxDecoration(
             color: item.emphasized
                 ? HopeV2Colors.primary.withValues(alpha: .16)
@@ -794,7 +797,7 @@ class _WalletPageState extends State<WalletPage> {
                 item.value,
                 maxLines: 2,
                 softWrap: true,
-                overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.clip,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: item.emphasized ? 12.5 : 10.5,
@@ -829,9 +832,9 @@ class _WalletPageState extends State<WalletPage> {
         key: const ValueKey('wallet-balance-hero'),
         padding: EdgeInsets.fromLTRB(
           14,
-          compact ? 8 : 10,
+          compact ? 6 : 10,
           14,
-          compact ? 9 : 10,
+          compact ? 7 : 10,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
@@ -857,7 +860,7 @@ class _WalletPageState extends State<WalletPage> {
               children: [
                 HopeIconTile(
                   HopeV2Icons.wallet,
-                  size: compact ? 32 : (denseViewport ? 30 : 36),
+                  size: compact ? 28 : (denseViewport ? 30 : 36),
                   filled: true,
                 ),
                 const Spacer(),
@@ -877,7 +880,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ],
             ),
-            SizedBox(height: denseViewport ? 7 : 8),
+            SizedBox(height: denseViewport ? 4 : 8),
             if (mediumViewport)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,7 +892,7 @@ class _WalletPageState extends State<WalletPage> {
               )
             else ...[
               totalBlock(),
-              SizedBox(height: compact ? 5 : 6),
+              SizedBox(height: compact ? 3 : 6),
               metricsBlock(),
             ],
           ],
@@ -1134,25 +1137,23 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
             SizedBox(height: compact ? 8 : 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final filter in const ['ALL', 'CREDIT', 'DEBIT', 'HOLD']) ...[
-                    PremiumFilterChip(
-                      label: switch (filter) {
-                        'CREDIT' => _t('ورودی', 'Credits'),
-                        'DEBIT' => _t('خروجی', 'Debits'),
-                        'HOLD' => _t('قفل‌ها', 'Holds'),
-                        _ => _t('همه', 'All'),
-                      },
-                      selected: _historyFilter == filter,
-                      onTap: () => setState(() => _historyFilter = filter),
-                    ),
-                    if (filter != 'HOLD') const SizedBox(width: 8),
-                  ],
-                ],
-              ),
+            Wrap(
+              key: const ValueKey('wallet-history-filters'),
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final filter in const ['ALL', 'CREDIT', 'DEBIT', 'HOLD'])
+                  PremiumFilterChip(
+                    label: switch (filter) {
+                      'CREDIT' => _t('ورودی', 'Credits'),
+                      'DEBIT' => _t('خروجی', 'Debits'),
+                      'HOLD' => _t('قفل‌ها', 'Holds'),
+                      _ => _t('همه', 'All'),
+                    },
+                    selected: _historyFilter == filter,
+                    onTap: () => setState(() => _historyFilter = filter),
+                  ),
+              ],
             ),
             SizedBox(height: compact ? 8 : 12),
             if (_visibleTransactions().isEmpty)

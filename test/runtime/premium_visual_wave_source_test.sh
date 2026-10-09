@@ -169,6 +169,22 @@ if sed -n '/class HopeWalletFlowSignature/,/Target-aligned opportunity DNA signa
 fi
 grep -Fq '"sha": "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}"' "tools/hope-wallet-runtime-evidence.sh"
 
+# Wave 22 compact-first-fold visual contracts.
+grep -Fq "this.compact = false" "$premium"
+grep -Fq "premium-hero-compact-fallback" "$premium"
+grep -Fq "final itemWidth = compact" "$premium"
+grep -Fq "ValueKey('wallet-history-filters')" "lib/features/wallet/wallet_page.dart"
+grep -Fq "if (!compactViewport) ...[" "lib/features/marketplace/job_detail_page.dart"
+grep -Fq "saved-search-create-cta" "lib/features/jobs/saved_searches_page.dart"
+grep -Fq "compact wallet first fold exposes history title and filter controls" "test/features/wallet/wallet_page_test.dart"
+grep -Fq "compact opportunity detail prioritizes work content over repeated traits" "test/features/marketplace/job_detail_page_test.dart"
+grep -Fq "Saved Search create action stays beside page content" "test/features/jobs/saved_searches_page_test.dart"
+grep -Fq "Wave 22 single Flutter compact-first-fold gate" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "test/features/wallet/wallet_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "test/features/marketplace/job_detail_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "test/features/jobs/saved_searches_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+
+echo "PASS: Wave 22 compact-first-fold source and evidence contracts"
 echo "PASS: Wave 21 shared visual + locale + evidence integrity contracts"
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"

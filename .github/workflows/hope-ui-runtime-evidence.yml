@@ -132,10 +132,10 @@ jobs:
       - name: Prepare Flutter dependencies
         run: flutter pub get --enforce-lockfile
 
-      # Wave 21 static gate owns the single Flutter test invocation; runtime starts only after that exact-head gate passes.
+      # Wave 22 static gate owns the single combined Flutter invocation; runtime starts only after that exact-head gate passes.
       - name: Flutter visual wave focused gate
-        if: ${{ !contains(github.event.pull_request.title, '[wave21-preverified]') }}
-        run: flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart
+        if: ${{ !contains(github.event.pull_request.title, '[wave22-preverified]') }}
+        run: flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart test/features/wallet/wallet_page_test.dart test/features/marketplace/job_detail_page_test.dart test/features/jobs/saved_searches_page_test.dart
 
       - name: Validate runtime evidence script syntax
         run: bash -n tools/hope-wallet-runtime-evidence.sh

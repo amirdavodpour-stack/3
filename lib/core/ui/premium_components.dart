@@ -1080,13 +1080,46 @@ class _HeroEditorialFallback extends StatelessWidget {
   const _HeroEditorialFallback({
     required this.accent,
     required this.icon,
+    this.compact = false,
   });
 
   final Color accent;
   final Object? icon;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    if (compact) {
+      return DecoratedBox(
+        key: const ValueKey('premium-hero-compact-fallback'),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: AlignmentDirectional.topEnd,
+            end: AlignmentDirectional.bottomStart,
+            colors: [
+              accent.withValues(alpha: .24),
+              const Color(0xFF151A31),
+              const Color(0xFF080B13),
+            ],
+            stops: const [0, .46, 1],
+          ),
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: AlignmentDirectional.topEnd,
+              radius: 1.2,
+              colors: [
+                accent.withValues(alpha: .12),
+                Colors.transparent,
+              ],
+              stops: const [0, .82],
+            ),
+          ),
+          child: const SizedBox.expand(),
+        ),
+      );
+    }
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1326,6 +1359,7 @@ class PremiumHero extends StatelessWidget {
                   accent: resolvedDomain?.spec.accent ??
                       Theme.of(context).colorScheme.primary,
                   icon: compactHero ? null : icon,
+                  compact: compactHero,
                 ),
               ),
             if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
@@ -2174,11 +2208,11 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
       );
     }
 
-    Widget breakdownBar(String key) {
+    Widget breakdownBar(String key, {required double width}) {
       final value = _normalized(key);
       return SizedBox(
         key: ValueKey('opportunity-decision-breakdown-$key'),
-        width: compact ? double.infinity : 240,
+        width: width,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2225,10 +2259,20 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
       if (!hasBreakdown) return const SizedBox.shrink();
       const ordered = ['skills', 'category', 'location', 'salary'];
       final items = ordered.where((key) => breakdown.containsKey(key));
-      return Wrap(
-        spacing: compact ? 12 : 20,
-        runSpacing: compact ? 7 : 10,
-        children: [for (final key in items) breakdownBar(key)],
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = compact
+              ? (constraints.maxWidth - 12) / 2
+              : 240.0;
+          return Wrap(
+            spacing: compact ? 12 : 20,
+            runSpacing: compact ? 7 : 10,
+            children: [
+              for (final key in items)
+                breakdownBar(key, width: itemWidth),
+            ],
+          );
+        },
       );
     }
 
