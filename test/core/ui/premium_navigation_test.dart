@@ -410,6 +410,7 @@ void main() {
 
   testWidgets('Wave 27 scroll tail includes unconsumed system bottom inset',
       (tester) async {
+    EdgeInsets? resolvedPadding;
     await tester.pumpWidget(
       MaterialApp(
         home: MediaQuery(
@@ -418,11 +419,11 @@ void main() {
           ),
           child: Builder(
             builder: (context) {
-              final padding = HopeV2Navigation.scrollEndPadding(context);
-              return SizedBox(
-                key: const ValueKey('wave27-scroll-end-padding'),
+              resolvedPadding = HopeV2Navigation.scrollEndPadding(context);
+              return const SizedBox(
+                key: ValueKey('wave27-scroll-end-padding'),
                 width: 10,
-                height: padding.bottom,
+                height: 1,
               );
             },
           ),
@@ -430,9 +431,6 @@ void main() {
       ),
     );
 
-    expect(
-      tester.getSize(find.byKey(const ValueKey('wave27-scroll-end-padding'))).height,
-      36,
-    );
+    expect(resolvedPadding?.bottom, 36);
   });
 }

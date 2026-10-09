@@ -451,7 +451,7 @@ class OpportunityCard extends StatelessWidget {
             maxLines: 3,
             softWrap: true,
             overflow: TextOverflow.clip,
-            style: TextStyle(fontSize: 12, height: 1.16, fontWeight: FontWeight.w900, color: primary),
+            style: TextStyle(fontSize: 10.5, height: 1.12, fontWeight: FontWeight.w900, color: primary),
           ),
       ],
     );
