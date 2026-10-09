@@ -821,7 +821,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: jobs.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: columns, crossAxisSpacing: HopeV2Spacing.md, mainAxisSpacing: HopeV2Spacing.md, childAspectRatio: columns == 3 ? 1.05 : 1.18),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: columns, crossAxisSpacing: HopeV2Spacing.md, mainAxisSpacing: HopeV2Spacing.md, childAspectRatio: columns == 3 ? 0.92 : 1.02),
           itemBuilder: (_, i) => OpportunityCard(job: jobs[i]),
         );
       }),
