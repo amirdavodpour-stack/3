@@ -217,6 +217,14 @@ if grep -Fq '[wave23-preverified]' .github/workflows/hope-ui-wave-1-static.yml; 
   echo 'FAIL: static workflow still carries the Wave23 skip marker' >&2
   exit 1
 fi
+# Wave 26 adaptive Explore density must use the purpose-built compact grid tile.
+grep -Fq 'final textScale = MediaQuery.textScalerOf(context).scale(1);' "$jobs_widgets"
+grep -Fq 'constraints.maxWidth >= 340 && textScale <= 1.2' "$jobs_widgets"
+grep -Fq 'enum OpportunityCardVariant { compact, compactGrid, standard, featured, featuredScan, expanded }' "$opportunity"
+grep -Fq 'Widget _compactGrid(' "$opportunity"
+grep -Fq 'variant: columns == 2' "$jobs_widgets"
+grep -Fq 'childAspectRatio: columns == 3 ? 1.04 : 0.86' "$jobs_widgets"
+
 echo "PASS: Wave 23 superwave + Wave 22 compact-first-fold source contracts"
 echo "PASS: Wave 21 shared visual + locale + evidence integrity contracts"
 echo "PASS: premium visual composition wave source integrity"
