@@ -1,3 +1,23 @@
+## Visual Wave 16 — Responsive density and empty-state convergence — 2026-10-09
+
+Wave 16 is grounded in the final Wave 15 exact-head runtime artifact from workflow #2155 / run `37861305993`, containing 19 Persian/RTL primary screenshots and six responsive screenshots at 720×1280. The run completed successfully and its artifact was inspected as a 25-image contact-sheet set before implementation. Main observations: the discovery and finance surfaces use noticeably different vertical densities; some compact opportunity metadata is vulnerable to single-line truncation; and empty/error-first screens (chat, notifications, saved searches, applications, and Home discovery) do not share a consistent visual hierarchy. Screenshot evidence alone cannot establish whether low data density reflects a valid backend-empty state or a capture fixture; therefore this wave does not add synthetic records.
+
+### Wave 16 grouped implementation
+- Introduce a reusable `PremiumEmptyState` with bounded copy width, semantic container, responsive spacing, restrained icon treatment, and optional real action.
+- Apply the shared state to saved searches, application history, notifications, first-message chat state, and Home discovery with no matching opportunities.
+- Allow compact opportunity budget metadata to wrap onto a second line rather than losing the financial range to single-line ellipsis.
+- Reduce narrow header truncation risk with a slightly smaller compact display size and a third title line.
+- Give two- and three-column Home opportunity grids more vertical room for title and metadata; do not force compact single-column layouts into a grid.
+- Extend the existing single Flutter widget test case to verify the responsive empty-state contract at a narrow 320 logical-pixel viewport alongside Wave 15 decision/card assertions.
+- Extend the source guard to lock the cross-screen empty-state and responsive metadata contracts.
+
+### Wave 16 verification contract
+- One Flutter test invocation for the complete visual wave; the existing single test case now includes the shared empty-state rendering at 320 logical pixels.
+- Only after that gate is green, trigger exactly one Persian/RTL runtime screenshot workflow and inspect all 25 screenshots from its new artifact.
+- Keep the PR draft and unmerged; do not alter main or claim visual certification until the new artifact is inspected.
+- Keep real backend data/media only, Persian-first RTL with correct LTR islands, existing design tokens, and touch targets at least 48 dp.
+- Official responsive/accessibility basis reviewed through Exa: Flutter's adaptive/responsive guidance recommends layout decisions from available constraints rather than device identity/orientation; Flutter accessibility guidance calls for adequate contrast, scalable text, and minimum 48×48 dp touch targets. Sources: https://docs.flutter.dev/ui/adaptive-responsive/best-practices and https://docs.flutter.dev/ui/accessibility/ui-design-and-styling.
+
 ## Visual Wave 15 — Runtime #2148 Evidence-Driven Decision Clarity — 2026-10-09
 
 Wave 15 is grounded in the exact artifact from Runtime #2148 / workflow run `37847636651`, containing 19 primary Persian/RTL screenshots and six 720×1280 responsive screenshots. The artifact metadata identifies the captured PR merge ref as `30/merge` at merge SHA `a1b8d8f491cc95067cc870f541f9f4e945dd00f1`; the feature branch HEAD at audit time is `40293a6632a6a11efcd384b5e82d3e62f4ee590a`. Do not conflate those identifiers. The screenshot matrix confirms a real interpolation defect in Opportunity Detail, back-navigation overlap on the hero, cramped featured-opportunity budget wrapping, redundant match context, and a weak first-fold priority order in the wallet.
