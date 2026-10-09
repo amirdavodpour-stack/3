@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +15,20 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class _Wave22WalletRepository implements WalletRepository {
+  final Completer<WalletTransactionsPage> olderPage = Completer();
+  int transactionCalls = 0;
+
+  HopeWalletTransaction _transaction(int index) => HopeWalletTransaction(
+        id: index == 0 ? 'wave24-wallet-row' : 'wave24-wallet-row-$index',
+        entryType: 'JOB_PAYMENT_RELEASE',
+        direction: 'CREDIT',
+        amount: 125000 + index,
+        currency: 'TOMAN',
+        referenceType: 'JOB',
+        financialOperationId: 'wave24-operation-$index',
+        createdAt: '2026-10-09T12:00:00Z',
+      );
+
   @override
   Future<HopeWallet> getWallet() async => HopeWallet.fromMap({
         'id': 'wave22-wallet',
@@ -29,19 +45,14 @@ class _Wave22WalletRepository implements WalletRepository {
   Future<WalletTransactionsPage> listTransactions({
     int limit = 30,
     String? cursor,
-  }) async =>
-      const WalletTransactionsPage(items: [
-        HopeWalletTransaction(
-          id: 'wave24-wallet-row',
-          entryType: 'JOB_PAYMENT_RELEASE',
-          direction: 'CREDIT',
-          amount: 125000,
-          currency: 'TOMAN',
-          referenceType: 'JOB',
-          financialOperationId: 'wave24-operation',
-          createdAt: '2026-10-09T12:00:00Z',
-        ),
-      ]);
+  }) async {
+    transactionCalls += 1;
+    if (cursor != null) return olderPage.future;
+    return WalletTransactionsPage(
+      items: List.generate(12, _transaction),
+      nextCursor: 'wave29-older-page',
+    );
+  }
 
   @override
   Future<List<HopePayout>> listPayouts() async => const [];
@@ -155,15 +166,15 @@ void main() {
         lessThan(tester.getTopLeft(dock).dy),
         reason: 'Wallet filters should be available without hidden horizontal scrolling.',
       );
+      final transactionRow = find.byKey(
+        const ValueKey('wallet-history-entry-wave24-wallet-row-11'),
+      );
       await tester.scrollUntilVisible(
-        find.textContaining('125,000'),
-        180,
+        transactionRow,
+        160,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
-      final transactionRow = find.byKey(
-        const ValueKey('wallet-history-entry-wave24-wallet-row'),
-      );
       expect(transactionRow, findsOneWidget);
       await tester.ensureVisible(transactionRow);
       await tester.pumpAndSettle();
@@ -180,4 +191,102 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'Wave 29 load-more is adjacent to transaction history and safely appends older entries',
+    (tester) async {
+      final auth = AuthController(_Wave22AuthRepository(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _Wave22WalletRepository();
+
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final loadMore = find.byKey(
+        const ValueKey('wallet-transactions-load-more'),
+      );
+      await tester.scrollUntilVisible(
+        loadMore,
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(loadMore, findsOneWidget);
+      expect(wallet.transactionCalls, 1);
+
+      await tester.tap(loadMore);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('در حال دریافت تراکنش‌ها…'), findsOneWidget);
+      expect(tester.widget<OutlinedButton>(loadMore).onPressed, isNull);
+      expect(wallet.transactionCalls, 2);
+
+      wallet.olderPage.complete(
+        WalletTransactionsPage(
+          items: [
+            const HopeWalletTransaction(
+              id: 'wave29-older-row',
+              entryType: 'JOB_PAYMENT_RELEASE',
+              direction: 'CREDIT',
+              amount: 98765,
+              currency: 'TOMAN',
+              referenceType: 'JOB',
+              financialOperationId: 'wave29-older-operation',
+              createdAt: '2026-10-08T12:00:00Z',
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(loadMore, findsNothing);
+
+      final olderRow = find.byKey(
+        const ValueKey('wallet-history-entry-wave29-older-row'),
+      );
+      await tester.scrollUntilVisible(
+        olderRow,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(olderRow);
+      await tester.pumpAndSettle();
+
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      final rowRect = tester.getRect(olderRow);
+      final dockRect = tester.getRect(dock);
+      expect(
+        rowRect.bottom,
+        lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
+      );
+      expect(olderRow.hitTestable(), findsOneWidget);
+      await tester.tap(olderRow);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

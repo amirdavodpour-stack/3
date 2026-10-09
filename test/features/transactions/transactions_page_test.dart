@@ -313,16 +313,16 @@ void main() {
   );
 
   testWidgets(
-    'Wave 28 last Work Center item stays reachable above the fixed dock on compact phones',
+    'Wave 29 last Work Center item stays reachable above the fixed dock with a 12-item list',
     (tester) async {
       final repo = _Transactions()
         ..jobs = List.generate(
-          8,
+          12,
           (index) => _job('reach-$index', status: 'IN_PROGRESS'),
         );
       await _pump(tester, repo, width: 360, height: 640);
 
-      final lastJob = find.text('پروژه reach-7');
+      final lastJob = find.text('پروژه reach-11');
       await tester.scrollUntilVisible(
         lastJob,
         160,

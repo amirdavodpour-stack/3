@@ -1129,6 +1129,7 @@ class _WalletPageState extends State<WalletPage> {
             Container(
               key: _historyKey,
               child: PremiumSectionHeader(
+                key: const ValueKey('wallet-history-title'),
                 domain: HopeProductDomain.finance,
                 title: _t('تاریخچه کیف پول', 'Wallet history'),
                 subtitle: _t(
@@ -1182,7 +1183,10 @@ class _WalletPageState extends State<WalletPage> {
                       child: PremiumPanel(
                         key: ValueKey('wallet-history-entry-${item.id}'),
                         glass: false,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: compact ? 12 : 14,
+                          vertical: compact ? 9 : 12,
+                        ),
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           onTap: () => _showTransaction(item),
@@ -1190,13 +1194,15 @@ class _WalletPageState extends State<WalletPage> {
                             _directionIcon(item.isCredit),
                             color: _directionColor(context, item.isCredit),
                             filled: false,
-                            size: 38,
+                            size: compact ? 34 : 38,
                           ),
                           title: Semantics(
                             container: true,
                             label: _entryTitle(item),
                             child: Text(
                               _entryTitle(item),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontWeight: FontWeight.w800),
                             ),
                           ),
@@ -1220,8 +1226,26 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                 ),
               ),
+            if (_nextCursor != null && _nextCursor!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              OutlinedButton.icon(
+                key: const ValueKey('wallet-transactions-load-more'),
+                onPressed: _loadingMore ? null : _loadMore,
+                icon: _loadingMore
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const HopeIcon(HopeV2Icons.arrowRight, size: 19),
+                label: Text(_loadingMore
+                    ? _t('در حال دریافت تراکنش‌ها…', 'Loading transactions…')
+                    : _t('تراکنش‌های بیشتر', 'Load more transactions')),
+              ),
+            ],
             SizedBox(height: tightViewport ? 8 : 16),
             PremiumSectionHeader(
+              key: const ValueKey('wallet-withdrawals-title'),
               domain: HopeProductDomain.finance,
               title: _t('برداشت‌ها', 'Withdrawals'),
               subtitle: _t(
@@ -1284,20 +1308,6 @@ padding: const EdgeInsets.all(18),
                   ),
                 ),
               ),
-            if (_nextCursor != null && _nextCursor!.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              OutlinedButton.icon(
-                onPressed: _loadingMore ? null : _loadMore,
-                icon: _loadingMore
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const HopeIcon(HopeV2Icons.arrowRight, size: 19),
-                label: Text(_t('تراکنش‌های بیشتر', 'Load more')),
-              ),
-            ],
           ],
         ),
       ),

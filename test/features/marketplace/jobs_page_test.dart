@@ -472,6 +472,43 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'Wave 29 final Explore opportunity stays reachable above the fixed dock at 360x640',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo());
+      await tester.pumpAndSettle();
+
+      final lastOpportunity = find.text('طراحی در شیراز');
+      await tester.scrollUntilVisible(
+        lastOpportunity,
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(lastOpportunity);
+      await tester.pumpAndSettle();
+
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(lastOpportunity, findsOneWidget);
+      expect(dock, findsOneWidget);
+      final opportunityRect = tester.getRect(lastOpportunity);
+      final dockRect = tester.getRect(dock);
+      expect(
+        opportunityRect.bottom,
+        lessThanOrEqualTo(dockRect.top - 12),
+        reason: 'Final Explore opportunity must clear the dock after scrolling.',
+      );
+      expect(lastOpportunity.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Wave 26 Explore falls back to a single column at enlarged text scale',
     (tester) async {

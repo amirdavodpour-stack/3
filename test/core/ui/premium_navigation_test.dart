@@ -380,8 +380,8 @@ void main() {
     }
   });
 
-  testWidgets('Wave 26 keeps every navigation label visible at 320dp', (tester) async {
-    tester.view.physicalSize = const Size(320, 800);
+  testWidgets('Wave 29 keeps every navigation label visible at 320x640dp', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
