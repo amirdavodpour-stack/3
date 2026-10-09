@@ -144,11 +144,16 @@ class _JobsResultsSliver extends StatelessWidget {
                     crossAxisCount: columns,
                     crossAxisSpacing: HopeV2Spacing.md,
                     mainAxisSpacing: HopeV2Spacing.md,
-                    childAspectRatio: columns == 3 ? 1.04 : 1.12,
+                    childAspectRatio: columns == 3 ? 1.04 : 0.86,
                   ),
                   itemBuilder: (context, index) => AnimatedEntrance(
                     delay: Duration(milliseconds: 35 * index.clamp(0, 10)),
-                    child: OpportunityCard(job: remaining[index]),
+                    child: OpportunityCard(
+                      job: remaining[index],
+                      variant: columns == 2
+                          ? OpportunityCardVariant.compactGrid
+                          : OpportunityCardVariant.standard,
+                    ),
                   ),
                 ),
               ],
