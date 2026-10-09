@@ -1,3 +1,27 @@
+## Visual Wave 20 — Compact-height content convergence — 2026-10-09
+
+Runtime #2203 / run `37875475661`, artifact `11591933824`, contains 19 primary Persian/RTL screenshots and six responsive 360×640dp captures. The screenshot audit shows a repeated dead band above the navigation dock on Jobs, Wallet, Profile, and Work/Finance Center, with the same issue visible in the primary Jobs/Wallet/Work Center screens. Opportunity Detail also reserves 102dp before a sticky CTA; Create Opportunity and Job Satisfaction reserve redundant bottom space across their page frame and nested scroll view.
+
+### Grouped changes
+- Reduce compact-height `PremiumPageFrame` bottom-tail caps from 20/40dp to 8/16dp; the navigation dock is already outside the page body.
+- Align Jobs, Wallet, Profile, Work/Finance Center, Applications, Opportunity Detail, Create Opportunity, and Job Satisfaction page-tail padding to the real viewport composition.
+- Reduce Jobs result sliver tail padding from 122dp to 56dp.
+- Preserve HOPE design tokens, full budget ranges, RTL, real backend data, route semantics, lifecycle behavior, and 48dp touch targets.
+- Keep one consolidated Flutter test invocation for the whole wave; update source guards and workflow markers to Wave 20.
+
+### Wave 20 acceptance
+- PR #30 stays Draft/unmerged; `main/production` remains untouched.
+- Run the static gate once on the final Wave 20 HEAD, including Flutter analyze, source/contrast guards, backend checks, and the single focused Flutter test.
+- If green, trigger one Android runtime capture on the same HEAD and review all 25 PNGs. Explicitly compare responsive and primary dock gaps and confirm the Home/Jobs financial range is fully visible.
+- T10 Visual Certification remains NOT ACCEPTED until the final runtime artifact is reviewed.
+
+### References
+- HOPE UI Audit Board: 48dp touch targets, real data, responsive first-fold hierarchy, and restrained canonical colors.
+- Material Design accessibility: https://m2.material.io/design/usability/accessibility
+- Flutter adaptive layouts: https://docs.flutter.dev/ui/adaptive-responsive
+
+---
+
 ## Visual Wave 19 — Full-width featured opportunity financial disclosure — 2026-10-09
 
 Wave 18 Runtime #2200 / run `37873778024`, artifact `11592230431`, successfully captured 19 primary and six responsive Persian/RTL screens after calibrating the responsive viewport to 360×640 logical dp at 320dpi. The capture calibration and compact-height frame padding changes are confirmed in the artifact metadata and all six responsive screens. The visual audit found one material residual defect: Home's featured OpportunityCard still cuts off the actual budget range with an ellipsis. The same shared layout can affect narrow featured cards on Jobs.

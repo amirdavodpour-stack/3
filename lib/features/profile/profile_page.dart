@@ -102,7 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return PremiumPageFrame(
       maxWidth: 920,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 112),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -424,7 +424,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
     return Material(
       color: Colors.transparent,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 112),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: [
           const HopeMark(),
           const SizedBox(height: 24),

@@ -383,14 +383,14 @@ class PremiumPageFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final bottomInset = safeBottom ? MediaQuery.paddingOf(context).bottom : 0.0;
-    // The page body already sits above the scaffold's navigation dock. A fixed
-    // 96–112dp tail leaves a dead band on short responsive viewports and pushes
-    // first-fold content behind the fold. Keep a small safety tail on compact
-    // heights while preserving the generous desktop/long-phone rhythm.
+    // The navigation dock is outside the page body, so large fixed bottom tails
+    // double-reserve space and create a dead band above the dock on compact phones.
+    // Keep only a small gesture/safe-area cushion; longer screens retain their
+    // page-specific editorial spacing.
     final compactBottomPadding = size.height < 560
-        ? padding.bottom.clamp(0.0, 20.0).toDouble()
+        ? padding.bottom.clamp(0.0, 8.0).toDouble()
         : size.height < 680
-            ? padding.bottom.clamp(0.0, 40.0).toDouble()
+            ? padding.bottom.clamp(0.0, 16.0).toDouble()
             : padding.bottom;
     final resolvedDomain = domain ?? page?.spec.domain;
     final domainAccent = resolvedDomain?.spec.accent;

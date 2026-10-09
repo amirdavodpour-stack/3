@@ -65,7 +65,7 @@ jobs:
       # Wave 1 contract reconciliation follows a single verification run.
       # Wave 1 verification trigger: execute the bounded suite against the latest branch head.
 
-      - name: Wave 19 single Flutter visual gate
-        if: ${{ !contains(github.event.pull_request.title, '[wave19-preverified]') }}
+      - name: Wave 20 single Flutter visual gate
+        if: ${{ !contains(github.event.pull_request.title, '[wave20-preverified]') }}
         timeout-minutes: 5
         run: timeout --foreground --signal=TERM --kill-after=30s 270s flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart

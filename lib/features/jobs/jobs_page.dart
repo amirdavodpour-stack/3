@@ -381,7 +381,7 @@ class _JobsPageState extends State<JobsPage> {
               compact ? 16 : 20,
               compact ? 6 : 14,
               compact ? 16 : 20,
-              72,
+              24,
             ),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),

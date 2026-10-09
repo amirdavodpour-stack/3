@@ -1021,7 +1021,7 @@ class _WalletPageState extends State<WalletPage> {
             tightViewport ? 14 : 20,
             tightViewport ? 8 : 18,
             tightViewport ? 14 : 20,
-            tightViewport ? 60 : 72,
+            tightViewport ? 24 : 32,
           ),
         child: ListView(
           padding: EdgeInsets.zero,

@@ -167,7 +167,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
     return Scaffold(
       body: PremiumPageFrame(
         maxWidth: 980,
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: SizedBox.expand(
           child: Column(
             children: [

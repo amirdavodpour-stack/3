@@ -275,7 +275,7 @@ class _CreateJobForm extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final sectionGap = compact ? 12.0 : 20.0;
     return ListView(
-        padding: const EdgeInsets.fromLTRB(20, 6, 20, 40),
+        padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
         children: [
           const HopeCreationProgress(activeIndex: 0),
           const SizedBox(height: 2),

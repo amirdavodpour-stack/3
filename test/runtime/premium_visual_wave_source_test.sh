@@ -139,7 +139,10 @@ grep -Fq 'responsive_logical_viewport": "360x640dp' "tools/hope-wallet-runtime-e
 grep -Fq 'final compactBottomPadding = size.height < 560' "$premium"
 grep -Fq "premium-page-frame-content-padding" "$premium"
 grep -Fq 'wave18-compact-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
-grep -Fq 'framePadding.padding.resolve(TextDirection.rtl).bottom, 40' 'test/core/ui/premium_visual_wave_15_test.dart'
+grep -Fq 'framePadding.padding.resolve(TextDirection.rtl).bottom, 16' 'test/core/ui/premium_visual_wave_15_test.dart'
+grep -Fq 'EdgeInsets.fromLTRB(0, 0, 0, 56)' 'lib/features/jobs/jobs_widgets.part.dart'
+grep -Fq 'tightViewport ? 24 : 32' 'lib/features/wallet/wallet_page.dart'
+grep -Fq 'compactViewport ? 24 : 32' 'lib/features/marketplace/job_detail_page.dart'
 
 # Wave 19: the financial range uses the full card width and must not be ellipsized.
 grep -Fq "opportunity-card-budget-amount" "$opportunity"

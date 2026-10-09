@@ -752,7 +752,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
           compactViewport ? 14 : 18,
           8,
           compactViewport ? 14 : 18,
-          102,
+          compactViewport ? 24 : 32,
         ),
         child: ListView(
           padding: EdgeInsets.zero,

@@ -11,7 +11,7 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('Wave 19 grouped responsive financial visibility contracts',
+  testWidgets('Wave 20 grouped responsive content visibility contracts',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -233,7 +233,7 @@ void main() {
     final framePadding = tester.widget<Padding>(
       find.byKey(const ValueKey('premium-page-frame-content-padding')),
     );
-    expect(framePadding.padding.resolve(TextDirection.rtl).bottom, 40);
+    expect(framePadding.padding.resolve(TextDirection.rtl).bottom, 16);
     expect(
       tester.getSize(find.byKey(const ValueKey('wave18-compact-scroll-viewport'))).height,
       greaterThan(480),
