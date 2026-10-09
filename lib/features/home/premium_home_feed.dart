@@ -666,31 +666,22 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     final remaining = jobs.where((j) => !used.contains(j)).toList();
 
     if (jobs.isEmpty) {
-      return PremiumPanel(
-        glass: false,
-child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _t(context, 'فعلاً فرصت مرتبطی پیدا نشد', 'No matching opportunities yet'),
-              style: HopeV2Type.section(context),
-            ),
-            const SizedBox(height: HopeV2Spacing.sm),
-            Text(
-              _t(
-                context,
-                'می‌توانید در Explore فیلترها را بازتر کنید.',
-                'Try broadening filters in Explore.',
-              ),
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: HopeV2Spacing.md),
-            OutlinedButton.icon(
-              onPressed: widget.onOpenExplore,
-              icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 18),
-              label: Text(_t(context, 'رفتن به Explore', 'Open Explore')),
-            ),
-          ],
+      return PremiumEmptyState(
+        icon: HopeV2Icons.workshop,
+        title: _t(
+          context,
+          'فعلاً فرصت مرتبطی پیدا نشد',
+          'No matching opportunities yet',
+        ),
+        message: _t(
+          context,
+          'می‌توانید در بخش کاوش فیلترها را بازتر کنید.',
+          'Try broadening filters in Explore.',
+        ),
+        action: OutlinedButton.icon(
+          onPressed: widget.onOpenExplore,
+          icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 18),
+          label: Text(_t(context, 'رفتن به کاوش', 'Open Explore')),
         ),
       );
     }
