@@ -349,25 +349,13 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 ),
               )
             else if (_items.isEmpty)
-              PremiumPanel(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const HopeIcon(HopeV2Icons.savedSearches, size: 40),
-                    const SizedBox(height: 8),
-                    Text(
-                      _t('هنوز جست‌وجوی ذخیره‌شده‌ای ندارید.',
-                          'You have no saved searches yet.'),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _t('از بخش Explore یک جست‌وجو را ذخیره کنید یا یک جست‌وجوی جدید بسازید.',
-                          'Save a search from Explore or start with the button below.'),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+              PremiumEmptyState(
+                icon: HopeV2Icons.savedSearches,
+                title: _t('هنوز جست‌وجوی ذخیره‌شده‌ای ندارید.',
+                    'You have no saved searches yet.'),
+                message: _t(
+                  'از بخش کاوش یک جست‌وجو را ذخیره کنید یا با دکمهٔ پایین اولین جست‌وجو را بسازید.',
+                  'Save a search from Explore or create your first one with the button below.',
                 ),
               )
             else
