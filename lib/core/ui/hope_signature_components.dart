@@ -224,45 +224,29 @@ class HopeWalletFlowSignature extends StatelessWidget {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _money(BuildContext context, int value) {
-    return "${NumberFormat.decimalPattern('en_US').format(value)} ${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'Toman') : wallet.currency}";
-  }
-
   @override
   Widget build(BuildContext context) {
-    final nodes = <({
-      Object icon,
-      String label,
-      String value,
-      Color color,
-    })>[
+    final currencyLabel = wallet.currency == 'TOMAN'
+        ? _t(context, 'تومان داخلی', 'Internal Toman')
+        : wallet.currency;
+    final steps = <({Object icon, String fa, String en, Color color})>[
       (
         icon: HopeV2Icons.wallet,
-        label: _t(context, 'کل موجودی', 'Total'),
-        value: _money(context, wallet.totalBalance),
+        fa: 'ثبت دفترکل',
+        en: 'Ledger entry',
         color: HopeV2Colors.primary,
       ),
       (
         icon: HopeV2Icons.protectedFunds,
-        label: _t(context, 'محافظت‌شده', 'Protected'),
-        value: _money(context, wallet.lockedBalance),
+        fa: 'رزرو تا تأیید',
+        en: 'Hold for approval',
         color: HopeV2Colors.warningDark,
       ),
       (
-        icon: HopeV2Icons.payments,
-        label: _t(context, 'قابل استفاده', 'Available'),
-        value: _money(context, wallet.availableBalance),
-        color: HopeV2Colors.secondary,
-      ),
-      (
         icon: HopeV2Icons.completed,
-        label: _t(context, 'وضعیت', 'Status'),
-        value: wallet.isActive
-            ? _t(context, 'فعال', 'Active')
-            : wallet.status,
-        color: wallet.isActive
-            ? HopeV2Colors.success
-            : HopeV2Colors.warning,
+        fa: 'آزادسازی وجه',
+        en: 'Release funds',
+        color: HopeV2Colors.secondary,
       ),
     ];
 
@@ -270,7 +254,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
       key: const ValueKey('wallet-money-flow-signature'),
       glass: false,
       quiet: true,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -284,7 +268,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
               const SizedBox(width: 7),
               Expanded(
                 child: Text(
-                  _t(context, 'نمای مالی دفترکل', 'Ledger flow'),
+                  _t(context, 'گردش وجه در دفترکل', 'Money flow in the ledger'),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
@@ -292,99 +276,67 @@ class HopeWalletFlowSignature extends StatelessWidget {
               ),
               PremiumTag(
                 icon: HopeV2Icons.secure,
-                label: _t(
-                  context,
-                  'داخلی و محافظت‌شده',
-                  'Internal & protected',
-                ),
+                label: currencyLabel,
                 color: HopeV2Colors.success,
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 520 ? 4 : 2;
-              const gap = 7.0;
-              final width = columns == 4
-                  ? (constraints.maxWidth - gap * 3) / 4
-                  : (constraints.maxWidth - gap) / 2;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: [
-                  for (final node in nodes)
-                    SizedBox(
-                      width: width,
-                      child: _FlowNode(
-                        icon: node.icon,
-                        label: node.label,
-                        value: node.value,
-                        color: node.color,
+          const SizedBox(height: 6),
+          Text(
+            _t(
+              context,
+              'تغییرات موجودی در دفترکل داخلی ثبت می‌شود؛ وجه رزروشده پس از تأیید کار آزاد می‌شود.',
+              'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
+            ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.35,
+                ),
+          ),
+          const SizedBox(height: 9),
+          Row(
+            children: [
+              for (var index = 0; index < steps.length; index++) ...[
+                if (index > 0) const SizedBox(width: 6),
+                Expanded(
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 43),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: steps[index].color.withValues(alpha: .07),
+                      borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                      border: Border.all(
+                        color: steps[index].color.withValues(alpha: .16),
                       ),
                     ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FlowNode extends StatelessWidget {
-  const _FlowNode({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final Object icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 62),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .055),
-        borderRadius: BorderRadius.circular(HopeV2Radii.md),
-        border: Border.all(color: color.withValues(alpha: .13)),
-      ),
-      child: Row(
-        children: [
-          HopeIcon(icon, size: 17, color: color, strokeWidth: 1.9),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: HopeV2Colors.muted,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        HopeIcon(
+                          steps[index].icon,
+                          size: 16,
+                          color: steps[index].color,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            _t(context, steps[index].fa, steps[index].en),
+                            maxLines: 2,
+                            overflow: TextOverflow.clip,
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
-            ),
+            ],
           ),
         ],
       ),
