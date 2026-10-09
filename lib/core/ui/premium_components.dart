@@ -63,7 +63,8 @@ class PremiumNavigationBar extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final surface = HopeV2Surfaces.navigation(context);
     final width = MediaQuery.sizeOf(context).width;
-    final compactLabels = width < 340;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactLabels = width < 340 || textScale > 1.2;
     final horizontalInset = compactLabels ? 4.0 : 12.0;
 
     return SafeArea(

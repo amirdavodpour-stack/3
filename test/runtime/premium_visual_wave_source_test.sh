@@ -117,7 +117,7 @@ grep -Fq 'constraints.maxWidth < 420' "lib/core/ui/opportunity_card.dart"
 test -f "test/core/ui/premium_visual_wave_15_test.dart"
 
 # Wave 17: viewport fill, compact navigation labels and financial-value wrapping.
-grep -Fq 'final compactLabels = width < 340;' "$premium"
+grep -Fq 'final compactLabels = width < 340 || textScale > 1.2;' "$premium"
 grep -Fq 'showLabel: true,' "$premium"
 grep -Fq 'blurRadius: dark ? 20 : 16' "$premium"
 grep -Fq 'minHeight: availableHeight,' "$premium"

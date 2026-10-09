@@ -211,8 +211,6 @@ void main() {
     // their slivers contain little content. Narrow navigation keeps the
     // selected label readable and accessible names remain available.
     tester.view.physicalSize = const Size(280, 720);
-    final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('fa'),
