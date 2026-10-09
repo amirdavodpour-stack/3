@@ -403,10 +403,11 @@ class OpportunityCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   _formatAmount(amount, context),
-                  maxLines: 1,
+                  maxLines: 2,
+                  softWrap: true,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.start,
-                  style: TextStyle(fontSize: 13, height: 1.15, fontWeight: FontWeight.w900, color: primary),
+                  style: TextStyle(fontSize: 12.5, height: 1.2, fontWeight: FontWeight.w900, color: primary),
                 ),
               ],
             ],
