@@ -482,6 +482,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
           const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
+              final compact = constraints.maxWidth < 400;
               final columns = constraints.maxWidth >= 560 ? 5 : 2;
               const gap = 7.0;
               final width = columns == 5
@@ -495,8 +496,11 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
                     SizedBox(
                       width: width,
                       child: Container(
-                        constraints: const BoxConstraints(minHeight: 58),
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+                        constraints: BoxConstraints(minHeight: compact ? 50 : 58),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: compact ? 8 : 9,
+                          vertical: compact ? 6 : 8,
+                        ),
                         decoration: BoxDecoration(
                           color: dimension.color.withValues(alpha: .055),
                           borderRadius: BorderRadius.circular(HopeV2Radii.md),

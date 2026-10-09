@@ -104,7 +104,13 @@ class HopeDisplayFormatter {
     final fa = locale.toLowerCase().startsWith('fa');
     String digits(int value) => localizeDigits('$value', locale: locale);
     String calendarDate() {
-      if (!fa) return DateFormat('MMM d, y', 'en').format(parsed);
+      if (!fa) {
+        const months = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        ];
+        return '${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
+      }
       final j = _gregorianToJalali(parsed.year, parsed.month, parsed.day);
       const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
       return localizeDigits('${j.year} ${months[j.month - 1]} ${j.day}', locale: locale);
