@@ -62,14 +62,17 @@ class PremiumNavigationBar extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     final surface = HopeV2Surfaces.navigation(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final compactLabels = width < 340;
+    final horizontalInset = compactLabels ? 4.0 : 12.0;
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+      minimum: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 6),
       child: Container(
         key: const ValueKey('hope-navigation-dock'),
         height: 68.0,
-        padding: const EdgeInsets.fromLTRB(6, 4, 6, 3),
+        padding: EdgeInsets.fromLTRB(compactLabels ? 2 : 6, 4, compactLabels ? 2 : 6, 3),
         decoration: BoxDecoration(
           color: dark
               ? HopeV2Colors.navigationDark.withValues(alpha: .985)
@@ -91,6 +94,8 @@ class PremiumNavigationBar extends StatelessWidget {
                   selected: index == selectedIndex,
                   onPressed: () => onDestinationSelected(index),
                   accent: primary,
+                  compact: compactLabels,
+                  showLabel: !compactLabels || index == selectedIndex,
                 ),
               ),
           ],
@@ -106,12 +111,16 @@ class _PremiumNavigationItem extends StatelessWidget {
     required this.selected,
     required this.onPressed,
     required this.accent,
+    required this.compact,
+    required this.showLabel,
   });
 
   final NavigationDestination destination;
   final bool selected;
   final VoidCallback onPressed;
   final Color accent;
+  final bool compact;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -131,10 +140,10 @@ class _PremiumNavigationItem extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 2, vertical: 3),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 62, maxWidth: 82),
+                constraints: const BoxConstraints(maxWidth: 82),
                 child: Ink(
                   decoration: BoxDecoration(
                     color: selected
@@ -148,7 +157,7 @@ class _PremiumNavigationItem extends StatelessWidget {
                         : null,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 5, vertical: 4),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -157,19 +166,22 @@ class _PremiumNavigationItem extends StatelessWidget {
                           height: 26,
                           child: Center(child: icon),
                         ),
-                        const SizedBox(height: 1),
-                        Text(
-                          destination.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: labelColor,
-                            fontSize: 11.5,
-                            height: 1.0,
-                            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                        if (showLabel) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            destination.label,
+                            maxLines: compact ? 2 : 1,
+                            softWrap: compact,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: labelColor,
+                              fontSize: 11.5,
+                              height: 1.0,
+                              fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -401,25 +413,35 @@ class PremiumPageFrame extends StatelessWidget {
                     ),
                   ),
           ),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Padding(
-                padding: padding.copyWith(
-                  bottom: padding.bottom + bottomInset,
-                ),
-                child: Semantics(
-                  container: true,
-                  explicitChildNodes: true,
-                  label: page?.spec.title(context),
-                  child: Material(
-                    type: MaterialType.transparency,
-                    child: child,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final availableHeight = constraints.hasBoundedHeight
+                  ? constraints.maxHeight
+                  : size.height;
+              return Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: maxWidth,
+                    minHeight: availableHeight,
+                  ),
+                  child: Padding(
+                    padding: padding.copyWith(
+                      bottom: padding.bottom + bottomInset,
+                    ),
+                    child: Semantics(
+                      container: true,
+                      explicitChildNodes: true,
+                      label: page?.spec.title(context),
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: child,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
