@@ -13,6 +13,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/marketplace/employer_candidate_matching_repository.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_signature_components.dart';
 import '../../core/ui/hope_async_state.dart';
@@ -23,6 +24,18 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 
+String _budgetRangeLabel(BuildContext context, HopeJob job) {
+  final locale = Localizations.localeOf(context).languageCode;
+  final minimum = HopeDisplayFormatter.integer(job.budgetMin, locale: locale);
+  final maximum = HopeDisplayFormatter.integer(job.budgetMax, locale: locale);
+  if (minimum == '—' && maximum == '—') return '—';
+  final range = minimum == '—'
+      ? maximum
+      : maximum == '—'
+          ? minimum
+          : '$minimum تا $maximum';
+  return moneyLabel(context, range);
+}
 class _OpportunitySnapshot extends StatelessWidget {
   const _OpportunitySnapshot({required this.job});
 
@@ -41,7 +54,7 @@ class _OpportunitySnapshot extends StatelessWidget {
         label: isJob ? _t(context, 'حقوق ماهانه', 'Monthly pay') : _t(context, 'بودجه', 'Budget'),
         value: isJob
             ? moneyLabel(context, job.monthlySalary ?? job.budgetMin ?? '—')
-            : moneyLabel(context, '${job.budgetMin ?? '—'} تا ${job.budgetMax ?? '—'}'),
+            : _budgetRangeLabel(context, '${job.budgetMin ?? '—'} تا ${job.budgetMax ?? '—'}'),
         color: Theme.of(context).colorScheme.primary,
       ),
       (
@@ -778,7 +791,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               kind: isJob ? _t('فرصت شغلی', 'Job') : _t('ماموریت', 'Mission'),
               budget: isJob
                   ? moneyLabel(context, j.monthlySalary ?? j.budgetMin ?? '—')
-                  : moneyLabel(context, (j.budgetMin ?? '—') + ' تا ' + (j.budgetMax ?? '—')),
+                  : _budgetRangeLabel(context, j),
               category: j.category ?? j.categoryId ?? '—',
               location: j.city?.trim().isNotEmpty == true ? j.city!.trim() : _t('دورکاری', 'Remote'),
               accent: Theme.of(context).colorScheme.primary,
