@@ -319,6 +319,7 @@ class _JobsFilterHeader extends StatelessWidget {
     final copy = HopeCopy.of(context);
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final filterCount = [
       if (kind != 'ALL') 1,
       if (visibility != 'ALL') 1,
@@ -444,7 +445,9 @@ class _JobsFilterHeader extends StatelessWidget {
               if (selected.isNotEmpty) onKindChanged(selected.first);
             },
             style: ButtonStyle(
-              minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
+              minimumSize: WidgetStatePropertyAll(
+                Size(0, enlargedText ? 56 : 48),
+              ),
               padding: const WidgetStatePropertyAll(
                 EdgeInsets.symmetric(horizontal: 7),
               ),

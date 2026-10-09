@@ -247,7 +247,15 @@ void main() {
       findsOneWidget,
       reason: 'Wave26 keeps all five Persian navigation labels visible at narrow widths.',
     );
-    expect(find.bySemanticsLabel('پروفایل'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == 'پروفایل',
+      ),
+      findsOneWidget,
+      reason: 'The dock item exposes its localized accessible name through Semantics.',
+    );
     expect(
       tester.getSize(find.byKey(const ValueKey('wave17-filled-scroll-viewport'))).height,
       greaterThan(550),

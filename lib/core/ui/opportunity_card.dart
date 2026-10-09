@@ -46,9 +46,9 @@ class OpportunityCard extends StatelessWidget {
     }
 
     final values = [first, second]..sort();
-    return '${HopeDisplayFormatter.integer(values[0], locale: locale)} '
+    return '${HopeDisplayFormatter.integer(values[0], locale: locale)}\\n'
         '${_t(context, 'تا', '–')} '
-        '${HopeDisplayFormatter.integer(values[1], locale: locale)} '
+        '${HopeDisplayFormatter.integer(values[1], locale: locale)}\\n'
         '${_t(context, 'تومان', 'TOMAN')}';
   }
   String _reason(BuildContext context, String value) {

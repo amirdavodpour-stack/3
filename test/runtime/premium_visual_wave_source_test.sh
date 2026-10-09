@@ -238,6 +238,8 @@ grep -Fq 'variant: textScale > 1.2' "$jobs_widgets"
 grep -Fq 'childAspectRatio: columns == 3 ? 1.04 : 0.86' "$jobs_widgets"
 grep -Fq 'final columns = textScale > 1.2' "$jobs_widgets"
 grep -Fq "Wave 26 Explore falls back to a single column at enlarged text scale" "test/features/marketplace/jobs_page_test.dart"
+grep -Fq 'minimumSize: WidgetStatePropertyAll(' "lib/features/jobs/jobs_filter_bar.part.dart"
+grep -Fq 'Size(0, enlargedText ? 56 : 48)' "lib/features/jobs/jobs_filter_bar.part.dart"
 grid_money_block="$(sed -n '/Widget _compactGrid(/,/Widget _compact(/p' "$opportunity")"
 printf '%s\n' "$grid_money_block" | grep -Fq "ValueKey('opportunity-card-compact-grid-budget')"
 printf '%s\n' "$grid_money_block" | grep -Fq 'maxLines: 3,'
