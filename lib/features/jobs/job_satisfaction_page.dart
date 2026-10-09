@@ -172,7 +172,11 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
               final feedback = state.feedback!;
               final dispute = state.dispute;
               return ListView(
-                padding: const EdgeInsets.all(20),
+                padding: HopeV2Navigation.scrollEndPadding(
+                  context,
+                  horizontal: 20,
+                  top: 20,
+                ),
                 children: [
                   PremiumPanel(
                     highlight: true,
@@ -241,7 +245,11 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
             }
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 64),
+              padding: HopeV2Navigation.scrollEndPadding(
+                context,
+                horizontal: 20,
+                top: 20,
+              ),
               children: [
                 PremiumPanel(
                   glass: true,

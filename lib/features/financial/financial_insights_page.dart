@@ -386,16 +386,33 @@ class _BarChart extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: CustomPaint(
-            painter: _BarChartPainter(
-              data,
-              inflow,
-              outflow,
-              reserved,
-              theme.colorScheme.outline,
-              Directionality.of(context),
-            ),
-            child: const SizedBox.expand(),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Keep each month readable instead of squeezing all labels into
+              // the viewport; the chart becomes horizontally scrollable only
+              // when the real series count needs more width.
+              final chartWidth =
+                  math.max(constraints.maxWidth, data.length * 42.0).toDouble();
+              return SingleChildScrollView(
+                key: const ValueKey('financial-cashflow-chart-scroll'),
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: chartWidth,
+                  height: constraints.maxHeight,
+                  child: CustomPaint(
+                    painter: _BarChartPainter(
+                      data,
+                      inflow,
+                      outflow,
+                      reserved,
+                      theme.colorScheme.outline,
+                      Directionality.of(context),
+                    ),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(height: 5),
@@ -506,7 +523,7 @@ class _BarChartPainter extends CustomPainter {
           text: value,
           style: TextStyle(
             color: axisColor.withValues(alpha: .82),
-            fontSize: groupWidth < 38 ? 8 : 10,
+            fontSize: groupWidth < 38 ? 9 : 11,
             height: 1,
           ),
         ),
@@ -538,9 +555,30 @@ class _LineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
-    return CustomPaint(
-      painter: _LineChartPainter(points, color, color.withValues(alpha: .12), Directionality.of(context)),
-      child: const SizedBox.expand(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // A stable minimum plot width prevents date labels from colliding on
+        // narrow screens while retaining the exact backend point sequence.
+        final chartWidth =
+            math.max(constraints.maxWidth, points.length * 52.0).toDouble();
+        return SingleChildScrollView(
+          key: const ValueKey('financial-balance-chart-scroll'),
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: chartWidth,
+            height: constraints.maxHeight,
+            child: CustomPaint(
+              painter: _LineChartPainter(
+                points,
+                color,
+                color.withValues(alpha: .12),
+                Directionality.of(context),
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -603,7 +641,7 @@ class _LineChartPainter extends CustomPainter {
           text: points[i].date,
           style: TextStyle(
             color: color.withValues(alpha: .76),
-            fontSize: labelWidth < 36 ? 8 : 9,
+            fontSize: labelWidth < 36 ? 9 : 10,
             height: 1,
           ),
         ),

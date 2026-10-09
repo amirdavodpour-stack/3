@@ -254,3 +254,44 @@ echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
 # [runtime-capture] full EN/LTR editorial media certification after FA/RTL proof.
+
+# Wave 27 mega-superwave: dock-safe scroll tails across the real product surfaces.
+grep -Fq 'static EdgeInsets scrollEndPadding(' "$theme"
+grep -Fq 'final bottomInset = MediaQuery.paddingOf(context).bottom;' "$theme"
+grep -Fq 'bottomInset + scrollEndGap' "$theme"
+for page in \
+  lib/features/wallet/wallet_page.dart \
+  lib/features/transactions/transactions_page.dart \
+  lib/features/profile/profile_page.dart \
+  lib/features/marketplace/job_detail_page.dart \
+  lib/features/marketplace/employer_candidate_matches_page.dart \
+  lib/features/applications/my_applications_page.dart \
+  lib/features/jobs/saved_searches_page.dart \
+  lib/features/jobs/jobs_page.dart \
+  lib/features/home/premium_home_feed.dart \
+  lib/features/notifications/notifications_page.dart \
+  lib/features/notifications/notification_devices_page.dart \
+  lib/features/offers/offers_page.dart \
+  lib/features/transactions/transaction_widgets.part.dart \
+  lib/features/marketplace/create_job_widgets.part.dart \
+  lib/features/jobs/job_satisfaction_page.dart \
+  lib/features/auth/login_page.dart \
+  lib/features/auth/register_page.dart \
+  lib/features/auth/password_reset_page.dart; do
+  test -f "$page"
+  grep -Fq 'HopeV2Navigation.scrollEndPadding' "$page"
+done
+# Finance charts preserve real data while allowing readable category/date labels.
+grep -Fq "financial-cashflow-chart-scroll" lib/features/financial/financial_insights_page.dart
+grep -Fq "financial-balance-chart-scroll" lib/features/financial/financial_insights_page.dart
+grep -Fq 'math.max(constraints.maxWidth, data.length * 42.0)' lib/features/financial/financial_insights_page.dart
+grep -Fq 'math.max(constraints.maxWidth, points.length * 52.0)' lib/features/financial/financial_insights_page.dart
+grep -Fq "find.byKey(const ValueKey('financial-cashflow-chart-scroll'))" test/features/financial/financial_insights_page_test.dart
+grep -Fq "find.byKey(const ValueKey('financial-balance-chart-scroll'))" test/features/financial/financial_insights_page_test.dart
+grep -Fq 'constraints.maxWidth >= 1080 ? 3' lib/features/home/premium_home_feed.dart
+grep -Fq "isNot(contains(r'\\n'))" test/core/ui/premium_visual_wave_15_test.dart
+grep -Fq 'HopeV2Icons.message,' lib/features/chat/chat_page.dart
+grep -Fq 'initiallyExpanded: !compact' lib/features/marketplace/create_job_widgets.part.dart
+grep -Fq 'onPressed: _busy || !_feedbackComplete ? null : _submit' lib/features/jobs/job_satisfaction_page.dart
+grep -Fq 'Wave 27 scroll tail includes unconsumed system bottom inset' test/core/ui/premium_navigation_test.dart
+echo "PASS: Wave 27 cross-surface scroll safety + readable finance chart contracts"

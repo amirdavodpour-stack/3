@@ -415,6 +415,11 @@ void main() {
       expect(amount.data, contains('۱٬۰۰۰٬۰۰۰'));
       expect(amount.data, contains('۱٬۵۰۰٬۰۰۰'));
       expect(amount.data!.split('تومان').length - 1, 1);
+      expect(
+        amount.data,
+        isNot(contains(r'\n')),
+        reason: 'Compact amount ranges must render real line breaks, not the visible \\n escape sequence.',
+      );
       expect(amount.maxLines, 3);
       expect(amount.overflow, TextOverflow.clip);
       expect(

@@ -308,6 +308,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();
+    final compactFold = MediaQuery.sizeOf(context).height < 760 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final displayName = auth.user?['displayName']?.toString().trim() ?? '';
     final initial = displayName.isNotEmpty
         ? displayName.substring(0, 1).toUpperCase()
@@ -330,6 +332,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             _homeHero(
               context,
@@ -340,9 +343,13 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               avatarUrl: avatarUrl,
               onOpenMenu: widget.onOpenMenu,
             ),
-            const SizedBox(height: HopeV2Spacing.sm),
+            SizedBox(
+              height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
+            ),
             _homePulse(context, auth),
-            const SizedBox(height: HopeV2Spacing.sm),
+            SizedBox(
+              height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
+            ),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -823,7 +830,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         action: TextButton(onPressed: action, child: Text(_t(context, 'مشاهده همه', 'View all')))),
       const SizedBox(height: HopeV2Spacing.sm),
       LayoutBuilder(builder: (context, constraints) {
-        final columns = constraints.maxWidth >= HopeV2Breakpoints.expanded ? 3 : constraints.maxWidth >= HopeV2Breakpoints.medium ? 2 : 1;
+        final columns = constraints.maxWidth >= 1080 ? 3 : constraints.maxWidth >= HopeV2Breakpoints.medium ? 2 : 1;
         if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm), child: OpportunityCard(job: j, variant: OpportunityCardVariant.compact))]);
         return GridView.builder(
           shrinkWrap: true,

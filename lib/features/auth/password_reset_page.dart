@@ -60,7 +60,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
               maxWidth: 640,
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
               child: ListView(
-                padding: EdgeInsets.zero,
+                padding: HopeV2Navigation.scrollEndPadding(context),
                 children: [
                   Row(
                     children: [

@@ -409,8 +409,8 @@ class _ChatPageState extends State<ChatPage> {
                                 'Write a message',
                               ),
                               prefixIcon: const HopeIcon(
-                                        HopeV2Icons.message,
-                                size: 20,
+                                HopeV2Icons.message,
+                                size: 18,
                               ),
                             ),
                           ),

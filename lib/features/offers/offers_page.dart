@@ -105,7 +105,7 @@ class _OffersPageState extends State<OffersPage> {
         child: PremiumPageFrame(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: HopeV2Navigation.scrollEndPadding(context),
             children: [
               PremiumHeader(
                 page: HopePageId.offers,

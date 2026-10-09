@@ -215,6 +215,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       maxWidth: 920,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       child: ListView(
+        padding: HopeV2Navigation.scrollEndPadding(context),
         children: [
         PremiumSectionHeader(
           page: HopePageId.candidateMatches,

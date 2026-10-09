@@ -608,6 +608,7 @@ class _WalletPageState extends State<WalletPage> {
         onRefresh: _load,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             const SizedBox(height: 160),
             HopeAsyncState(
@@ -1027,7 +1028,7 @@ class _WalletPageState extends State<WalletPage> {
             tightViewport ? 24 : 32,
           ),
         child: ListView(
-          padding: EdgeInsets.only(bottom: HopeV2Navigation.scrollEndGap),
+          padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               key: const ValueKey('wallet-finance-header'),

@@ -407,4 +407,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+
+  testWidgets('Wave 27 scroll tail includes unconsumed system bottom inset',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(
+            padding: EdgeInsets.only(bottom: 24),
+          ),
+          child: Builder(
+            builder: (context) {
+              final padding = HopeV2Navigation.scrollEndPadding(context);
+              return SizedBox(
+                key: const ValueKey('wave27-scroll-end-padding'),
+                width: 10,
+                height: padding.bottom,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byKey(const ValueKey('wave27-scroll-end-padding'))).height,
+      36,
+    );
+  });
 }

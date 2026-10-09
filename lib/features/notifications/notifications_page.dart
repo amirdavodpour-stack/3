@@ -392,6 +392,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   child: loading
                       ? ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
+                          padding: HopeV2Navigation.scrollEndPadding(context),
                           children: [
                             const SizedBox(height: 120),
                             HopeAsyncState(
@@ -410,7 +411,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       : error != null
                           ? ListView(
                               physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.only(top: 24),
+                              padding: HopeV2Navigation.scrollEndPadding(context, top: 24),
                               children: [
                                 HopeAsyncState(
                                   kind: HopeStateKind.error,
@@ -436,7 +437,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               ? ListView(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.only(top: 24),
+                                  padding: HopeV2Navigation.scrollEndPadding(context, top: 24),
                                   children: [
                                     PremiumEmptyState(
                                       icon: HopeV2Icons.notifications,
@@ -453,7 +454,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               : ListView(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.only(bottom: 24),
+                                  padding: HopeV2Navigation.scrollEndPadding(context),
                                   children: [
                                     ...items.map(_notificationCard),
                                   ],

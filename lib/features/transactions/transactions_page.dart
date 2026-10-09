@@ -391,6 +391,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 page: HopePageId.workCenter,
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 96),
         child: ListView(
+          padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               page: HopePageId.workCenter,
@@ -438,6 +439,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 page: HopePageId.workCenter,
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 96),
                 child: ListView(
+                  padding: HopeV2Navigation.scrollEndPadding(context),
                   children: [
                     PremiumHeader(
               dense: true,
@@ -486,6 +488,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 page: HopePageId.workCenter,
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 96),
                 child: ListView(
+                  padding: HopeV2Navigation.scrollEndPadding(context),
                   children: [
                     PremiumHeader(
               dense: true,
@@ -529,7 +532,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 page: HopePageId.workCenter,
                 padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
                 child: ListView(
-                  padding: EdgeInsets.only(bottom: HopeV2Navigation.scrollEndGap),
+                  padding: HopeV2Navigation.scrollEndPadding(context),
                   children: [
                     PremiumHeader(
               dense: true,

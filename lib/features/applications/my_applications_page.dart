@@ -257,7 +257,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
-            padding: EdgeInsets.only(bottom: HopeV2Navigation.scrollEndGap),
+            padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               page: HopePageId.myApplications,

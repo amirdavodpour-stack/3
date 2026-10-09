@@ -77,6 +77,14 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(legend, findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('financial-cashflow-chart-scroll')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('financial-balance-chart-scroll')),
+        findsOneWidget,
+      );
       for (final label in ['ورودی', 'خروجی', 'رزرو شده']) {
         expect(
           find.descendant(of: legend, matching: find.text(label)),

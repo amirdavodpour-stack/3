@@ -427,7 +427,7 @@ extension on _TransactionPageState {
             onRefresh: refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
+              padding: HopeV2Navigation.scrollEndPadding(context),
               children: [
               if (error != null) ...[
                 HopeAsyncState(

@@ -104,7 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
       maxWidth: 920,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       child: ListView(
-        padding: EdgeInsets.only(bottom: HopeV2Navigation.scrollEndGap),
+        padding: HopeV2Navigation.scrollEndPadding(context),
         children: [
           PremiumHeader(
             page: HopePageId.profile,
@@ -424,7 +424,11 @@ padding: const EdgeInsets.symmetric(vertical: 6),
     return Material(
       color: Colors.transparent,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        padding: HopeV2Navigation.scrollEndPadding(
+          context,
+          horizontal: 16,
+          top: 14,
+        ),
         children: [
           const HopeMark(),
           const SizedBox(height: 24),

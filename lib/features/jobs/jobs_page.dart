@@ -446,6 +446,11 @@ class _JobsPageState extends State<JobsPage> {
                       snapshot.connectionState == ConnectionState.waiting,
                   hasError: snapshot.hasError,
                 ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: HopeV2Navigation.scrollEndPadding(context).bottom,
+                  ),
+                ),
               ],
             ),
           );

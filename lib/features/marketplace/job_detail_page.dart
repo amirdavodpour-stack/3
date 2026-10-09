@@ -755,7 +755,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
           compactViewport ? 24 : 32,
         ),
         child: ListView(
-          padding: EdgeInsets.zero,
+          padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             Stack(
               clipBehavior: Clip.none,

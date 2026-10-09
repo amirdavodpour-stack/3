@@ -207,6 +207,23 @@ class HopeV2Navigation {
   static const barHeight = 68.0;
   /// Scroll tail for the final meaningful item above the fixed dock.
   static const scrollEndGap = 12.0;
+
+  /// Tail padding for scrollable content. Scaffold reserves the dock height;
+  /// this adds final breathing room and any system inset not consumed by SafeArea.
+  static EdgeInsets scrollEndPadding(
+    BuildContext context, {
+    double horizontal = 0,
+    double top = 0,
+  }) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return EdgeInsets.fromLTRB(
+      horizontal,
+      top,
+      horizontal,
+      bottomInset + scrollEndGap,
+    );
+  }
+
   static const dockRadius = 18.0;
   static const itemRadius = 12.0;
   static const itemWidth = 42.0;
