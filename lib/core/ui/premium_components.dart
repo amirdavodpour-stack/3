@@ -140,7 +140,7 @@ class _PremiumNavigationItem extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 2, vertical: 3),
+            padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 2, vertical: compact ? 1 : 3),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 82),
@@ -157,13 +157,13 @@ class _PremiumNavigationItem extends StatelessWidget {
                         : null,
                   ),
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 5, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 5, vertical: compact ? 2 : 4),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(
                           width: HopeV2Touch.minimum,
-                          height: 26,
+                          height: compact ? 22 : 26,
                           child: Center(child: icon),
                         ),
                         if (showLabel) ...[
@@ -176,8 +176,8 @@ class _PremiumNavigationItem extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: labelColor,
-                              fontSize: 11.5,
-                              height: 1.0,
+                              fontSize: compact ? 10.5 : 11.5,
+                              height: compact ? .95 : 1.0,
                               fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
                             ),
                           ),
