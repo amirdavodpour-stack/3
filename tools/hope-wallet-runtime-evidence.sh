@@ -473,6 +473,10 @@ fi
 
 if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   adb shell wm size 720x1280
+  # wm size changes physical pixels, not density. Keep the responsive fixture at
+  # 360x640 logical dp (320 dpi) rather than accidentally shrinking a Pixel 2 to
+  # ~274x488dp and producing misleading typography/clipping evidence.
+  adb shell wm density 320
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
 
@@ -563,6 +567,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   fi
 
   adb shell wm size reset || true
+  adb shell wm density reset || true
   adb shell sleep 1 >/dev/null 2>&1 || true
 
   if [ "$responsive_status" -eq 0 ] && \
@@ -578,7 +583,9 @@ fi
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
 adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || true
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
-printf '%s\n' '720x1280' > "$evidence_dir/responsive-viewport.txt"
+printf '%s\n' '720x1280 physical pixels' > "$evidence_dir/responsive-viewport.txt"
+printf '%s\n' '360x640 logical dp at 320 dpi' > "$evidence_dir/responsive-logical-viewport.txt"
+adb shell wm density > "$evidence_dir/responsive-density.txt" 2>&1 || true
 
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   CAPTURED_BASELINE_SCREENS=1
@@ -607,7 +614,9 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "evidence_type": "rendered_android_runtime",
   "screens": $CAPTURED_BASELINE_SCREENS,
   "responsive_screens": $CAPTURED_RESPONSIVE_SCREENS,
-  "responsive_viewport": "720x1280",
+  "responsive_viewport": "720x1280 physical pixels",
+  "responsive_logical_viewport": "360x640dp",
+  "responsive_density_dpi": 320,
   "capture_locale": "$CAPTURE_LOCALE",
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
