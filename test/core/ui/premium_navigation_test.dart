@@ -380,4 +380,31 @@ void main() {
     }
   });
 
+  testWidgets('Wave 26 keeps every navigation label visible at 320dp', (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        locale: const Locale('fa'),
+        home: Scaffold(
+          body: PremiumNavigationBar(
+            selectedIndex: 2,
+            onDestinationSelected: (_) {},
+            destinations: destinations,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+    for (final label in ['خانه', 'کاوش', 'فعالیت', 'کیف پول', 'پروفایل']) {
+      expect(find.text(label), findsOneWidget, reason: 'Missing compact nav label: $label');
+    }
+    expect(tester.takeException(), isNull);
+  });
+
 }
