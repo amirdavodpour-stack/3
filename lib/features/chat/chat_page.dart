@@ -282,28 +282,22 @@ class _ChatPageState extends State<ChatPage> {
                               ),
                             )
                       : _thread!.messages.isEmpty
-                          ? PremiumPanel(
-                              glass: true,
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(28),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const HopeIcon(
-                                        HopeV2Icons.message,
-                                        size: 38,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        _t(
-                                          'هنوز پیامی ثبت نشده است.',
-                                          'No messages yet.',
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: HopeV2Spacing.md,
+                                ),
+                                child: PremiumEmptyState(
+                                  icon: HopeV2Icons.message,
+                                  title: _t(
+                                    'هنوز پیامی ثبت نشده است.',
+                                    'No messages yet.',
                                   ),
+                                  message: _t(
+                                    'پیام‌های این همکاری پس از شروع گفتگو در این بخش نمایش داده می‌شوند.',
+                                    'Messages for this collaboration will appear here once the conversation starts.',
+                                  ),
+                                  dense: true,
                                 ),
                               ),
                             )
