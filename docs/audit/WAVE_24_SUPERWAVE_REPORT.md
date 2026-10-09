@@ -63,3 +63,9 @@ Turn Wave23's reviewed runtime defects and the supplied HOPE Design System 2.0 r
 - [Adaptive and responsive design](https://docs.flutter.dev/ui/adaptive-responsive)
 - [Flutter accessibility testing](https://docs.flutter.dev/ui/accessibility/accessibility-testing)
 - [Android tap-target guideline](https://api.flutter.dev/flutter/flutter_test/androidTapTargetGuideline-constant.html)
+
+## Test-scope clarification (2026-10-09)
+
+The first expanded run surfaced old widget files not included in the Wave23 green suite; several assert legacy Wallet/Profile/Opportunity Detail labels and keys that do not match the current implementation. Wave24 does not claim those tests passed. The authoritative Wave24 command keeps the prior seven-test Wave23 baseline and adds focused tests for the touched compact UI surfaces. The old broader widget files are excluded from this particular command, and their failures remain documented rather than being counted as Wave24 failures or successes.
+
+The focused suite explicitly tests the compact Wallet history row, Profile language selector, Work Center lifecycle, Explore filter state, finance chart legend and navigation target/label guidance. A final PASS still requires one exact-head static run plus a same-head runtime capture and individual review of all 25 screenshots.

@@ -355,26 +355,29 @@ void main() {
   testWidgets('Wave 24 primary dock satisfies Android target sizing and labels',
       (tester) async {
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        locale: const Locale('fa'),
-        home: Scaffold(
-          body: Align(
-            alignment: Alignment.bottomCenter,
-            child: PremiumNavigationBar(
-              selectedIndex: 0,
-              onDestinationSelected: (_) {},
-              destinations: destinations,
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          locale: const Locale('fa'),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: PremiumNavigationBar(
+                selectedIndex: 0,
+                onDestinationSelected: (_) {},
+                destinations: destinations,
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-    expect(tester.takeException(), isNull);
+      );
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      expect(tester.takeException(), isNull);
+    } finally {
+      semantics.dispose();
+    }
   });
 
 }

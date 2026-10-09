@@ -78,7 +78,10 @@ void main() {
       );
       expect(legend, findsOneWidget);
       for (final label in ['ورودی', 'خروجی', 'رزرو شده']) {
-        expect(find.text(label), findsOneWidget);
+        expect(
+          find.descendant(of: legend, matching: find.text(label)),
+          findsOneWidget,
+        );
       }
       expect(tester.takeException(), isNull);
     },

@@ -155,6 +155,12 @@ void main() {
         lessThan(tester.getTopLeft(dock).dy),
         reason: 'Wallet filters should be available without hidden horizontal scrolling.',
       );
+      await tester.scrollUntilVisible(
+        find.textContaining('125,000'),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       final transactionRow = find.byKey(
         const ValueKey('wallet-history-entry-wave24-wallet-row'),
       );

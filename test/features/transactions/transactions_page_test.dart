@@ -285,6 +285,12 @@ void main() {
       final repo = _Transactions()
         ..jobs = [_job('wave24-active', status: 'IN_PROGRESS')];
       await _pump(tester, repo, width: 360, height: 640);
+      await tester.scrollUntilVisible(
+        find.text('پروژه wave24-active'),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       final lifecycle = find.byKey(
         const ValueKey('work-center-lifecycle-wave24-active'),
       );

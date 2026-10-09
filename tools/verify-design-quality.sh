@@ -42,6 +42,7 @@ required_files=(
   test/core/quality/hope_quality_matrix_test.dart
   test/core/finance/toman_formatter_test.dart
   test/features/financial/financial_insights_page_test.dart
+  test/features/profile/wave24_compact_dock_test.dart
   docs/audit/WAVE_24_SUPERWAVE_REPORT.md
   docs/superpowers/plans/2026-10-09-v2hope-wave24.md
   lib/core/finance/toman_formatter.dart

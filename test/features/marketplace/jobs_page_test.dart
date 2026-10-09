@@ -218,8 +218,14 @@ void main() {
     final featuredRect = tester.getRect(featuredFinder);
 
     expect(filterRect.top, closeTo(searchRect.bottom + 10, 2));
-    // The refinement launcher is on the bottom row of the compact control band.
-    expect(featuredRect.top - filterRect.bottom, lessThan(40));
+    // The kind selector follows the refinement row, then the featured card.
+    final kindFilter = find.byKey(
+      const ValueKey('hope-explore-kind-filters'),
+    );
+    expect(kindFilter, findsOneWidget);
+    final kindRect = tester.getRect(kindFilter);
+    expect(kindRect.top - filterRect.bottom, lessThan(20));
+    expect(featuredRect.top - kindRect.bottom, lessThan(40));
     expect(tester.takeException(), isNull);
   });
 

@@ -204,7 +204,7 @@ grep -Fq 'profile-language-selector' lib/features/profile/profile_page.dart
 grep -Fq 'work-center-lifecycle-${job.id}' lib/features/transactions/transactions_page.dart
 grep -Fq 'hope-explore-kind-filters' lib/features/jobs/jobs_filter_bar.part.dart
 grep -Fq 'financial-cashflow-legend' lib/features/financial/financial_insights_page.dart
-grep -Fq 'Wave 24 language selector clears the dock' test/features/profile/profile_page_test.dart
+grep -Fq 'Wave 24 language selector clears the dock' test/features/profile/wave24_compact_dock_test.dart
 grep -Fq 'Wave 24 collaboration lifecycle clears the dock' test/features/transactions/transactions_page_test.dart
 grep -Fq 'Wave 24 compact Explore kind filter' test/features/marketplace/jobs_page_test.dart
 grep -Fq 'Wave 24 financial chart legend' test/features/financial/financial_insights_page_test.dart
