@@ -168,7 +168,9 @@ void main() {
         lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
         reason: 'The transaction row must remain fully reachable above the dock.',
       );
-      expect(transactionRow, hitTestable());
+      await tester.tap(transactionRow);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

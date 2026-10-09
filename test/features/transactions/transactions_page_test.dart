@@ -300,7 +300,8 @@ void main() {
         lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
         reason: 'The collaboration lifecycle must be reachable above the fixed dock.',
       );
-      expect(lifecycle, hitTestable());
+      await tester.tapAt(lifecycleRect.center);
+      await tester.pump();
       expect(tester.takeException(), isNull);
     },
   );

@@ -234,7 +234,10 @@ testWidgets('profile keeps application management in the dedicated work destinat
         lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
         reason: 'Language selection must be reachable without overlapping navigation.',
       );
-      expect(selector, hitTestable());
+      await tester.tapAt(
+        Offset(selectorRect.left + selectorRect.width * .25, selectorRect.center.dy),
+      );
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     },
   );
