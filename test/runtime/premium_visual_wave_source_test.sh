@@ -116,6 +116,20 @@ grep -Fq 'if (includeMatch)' "lib/core/ui/hope_signature_components.dart"
 grep -Fq 'constraints.maxWidth < 420' "lib/core/ui/opportunity_card.dart"
 test -f "test/core/ui/premium_visual_wave_15_test.dart"
 
+# Wave 17: viewport fill, compact navigation labels and financial-value wrapping.
+grep -Fq 'final compactLabels = width < 340;' "$premium"
+grep -Fq 'showLabel: !compactLabels || index == selectedIndex' "$premium"
+grep -Fq 'minHeight: availableHeight,' "$premium"
+grep -Fq 'constraints: const BoxConstraints(maxWidth: 82)' "$premium"
+grep -Fq 'maxLines: 2,' "lib/features/wallet/wallet_page.dart"
+grep -Fq 'softWrap: true' "lib/features/wallet/wallet_page.dart"
+grep -Fq 'maxLines: 2,' "lib/features/transactions/transactions_page.dart"
+grep -Fq 'final compactViewport =' "$opportunity"
+grep -Fq 'maxLines: compactViewport ? 2 : 1' "$opportunity"
+grep -Fq 'String _budgetRangeLabel(BuildContext context, HopeJob job)' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq '_budgetRangeLabel(context, j)' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'wave17-filled-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
+
 echo "PASS: premium visual composition wave source integrity"
 echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
