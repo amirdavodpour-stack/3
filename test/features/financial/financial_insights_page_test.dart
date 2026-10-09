@@ -138,6 +138,8 @@ void main() {
         lessThanOrEqualTo(plotBounds.top),
         reason: 'Explain the series before rendering their plot.',
       );
+      expect(plotBounds.top, lessThan(640));
+      expect(plotBounds.height, greaterThan(0));
       expect(legend.hitTestable(), findsOneWidget);
       for (final label in ['ورودی', 'خروجی', 'رزرو شده']) {
         expect(

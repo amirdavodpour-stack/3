@@ -22,3 +22,10 @@ Only `feat/ui-v2-wave-1-execution-2026-10-07` is in scope. PR #30 stays OPEN / D
 - Previous runtime run 37996231004 passed on the parent Wave28 UI SHA and its 25 screenshots were inspected directly; this caught two remaining visual issues not adequately enforced by the initial widget tests: oversized-looking custom HugeIcon prefixes and the financial legend being below/hidden relative to the plot in actual runtime capture.
 - Correction commit 6d410cf8c827568f63afad4ce76059ef63a46529 switches the three auth forms to standard 18dp Material field glyphs and adds widget-size assertions for Login/Register/PasswordReset; moves the cash-flow legend before the plot and adds explicit legend-vs-plot geometry and hit-test assertions. This follow-up needs fresh exact-HEAD static + Android runtime PASS before these refinements are accepted.
 - The preceding screenshots do not certify this follow-up. T10/TalkBack still remains NOT ACCEPTED without explicit enabled accessibility service evidence.
+
+
+## Axis-label visibility correction — pending verification
+- Runtime run 37998018321 passed on SHA 4fa5c423648a1dc1f2380cbafd9d6a68eb13d667. Artifact ID 11648283057 (25 PNGs; SHA-256 1f867418c48a7320a37a9d5eb1d52abcec9e13b6c3a903e4400f76fba453de90) confirms Chat structure, compact composer, standard Auth prefix icons and legend-before-plot ordering.
+- Financial Insights capture shows the legend is visible, but month labels remain below the initial chart clipping boundary. This is an additional residual; no blanket visual-complete claim is warranted.
+- Follow-up raises compact-height threshold from 700dp to 800dp to engage condensed layout on the ~730dp runtime viewport and moves month labels into the top band above the bars. A first-fold plot visibility assertion and source guard were added. Fresh exact-head static and Android runtime runs remain mandatory.
+- Runtime metadata: Android 15, fa-RTL only, 19 primary + 6 responsive captures, integration exit 0. `accessibility-enabled.txt=0`, `accessibility-services.txt=null`; T10/TalkBack NOT ACCEPTED.

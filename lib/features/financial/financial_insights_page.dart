@@ -40,7 +40,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
   Widget build(BuildContext context) {
     final viewport = MediaQuery.sizeOf(context);
     final compactWidth = viewport.width < HopeV2Breakpoints.medium;
-    final shortViewport = viewport.height < 700;
+    final shortViewport = viewport.height < 800;
     return Scaffold(
         body: SafeArea(
           child: PremiumPageFrame(
@@ -346,7 +346,7 @@ class _ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
-    final shortViewport = MediaQuery.sizeOf(context).height < 700;
+    final shortViewport = MediaQuery.sizeOf(context).height < 800;
     final chartHeight = shortViewport ? 106.0 : compact ? 148.0 : 172.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,7 +395,7 @@ class _BarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shortViewport = MediaQuery.sizeOf(context).height < 700;
+    final shortViewport = MediaQuery.sizeOf(context).height < 800;
     final theme = Theme.of(context);
     final inflow = theme.colorScheme.primary;
     final outflow = theme.colorScheme.tertiary;
@@ -501,7 +501,10 @@ class _BarChartPainter extends CustomPainter {
         .toList();
     final maxValue = values.isEmpty ? 1.0 : math.max(1.0, values.reduce(math.max));
     final labelHeight = size.height < 150 ? 14.0 : 18.0;
-    final plotHeight = math.max(1.0, size.height - labelHeight).toDouble();
+    final plotTop = labelHeight + 3;
+    final plotBottom =
+        math.max(plotTop + 1, size.height - 3).toDouble();
+    final plotHeight = math.max(1.0, plotBottom - plotTop).toDouble();
     final groupWidth = size.width / math.max(1, data.length);
     final paints = [
       Paint()..color = inflowColor.withValues(alpha: .72),
@@ -521,7 +524,7 @@ class _BarChartPainter extends CustomPainter {
           RRect.fromRectAndRadius(
             Rect.fromLTWH(
               i * groupWidth + groupWidth * (.12 + j * .24),
-              plotHeight - height - 2,
+              plotBottom - height,
               groupWidth * .18,
               height,
             ),
@@ -535,7 +538,7 @@ class _BarChartPainter extends CustomPainter {
     final axis = Paint()
       ..color = axisColor.withValues(alpha: .35)
       ..strokeWidth = 1;
-    canvas.drawLine(Offset(0, plotHeight - 1), Offset(size.width, plotHeight - 1), axis);
+    canvas.drawLine(Offset(0, plotBottom), Offset(size.width, plotBottom), axis);
     for (var i = 0; i < data.length; i++) {
       final value = data[i].label.trim().isEmpty ? data[i].month : data[i].label;
       final painter = TextPainter(
@@ -555,7 +558,7 @@ class _BarChartPainter extends CustomPainter {
       final x = (i * groupWidth + (groupWidth - painter.width) / 2)
           .clamp(0.0, math.max(0.0, size.width - painter.width))
           .toDouble();
-      painter.paint(canvas, Offset(x, plotHeight + 1));
+      painter.paint(canvas, Offset(x, 0));
     }
   }
 
