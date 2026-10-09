@@ -26,7 +26,7 @@ sh test/runtime/editorial_media_fixture_scope_test.sh
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
-grep -Fq "final mediaSize = compactViewport ? 70.0 : 88.0;" "$opportunity"
+grep -Fq "final mediaSize = compactViewport ? 64.0 : 88.0;" "$opportunity"
 grep -Fq "height: 72" "$opportunity"
 # Compact media keeps its existing footprint; standard media is the stronger editorial anchor.
 
