@@ -34,7 +34,8 @@
 ## Verification status at assembly
 
 - Baseline static attempt on the starting HEAD: [run 37971041004](https://github.com/amirdavodpour-stack/3/actions/runs/37971041004) failed at the consolidated Flutter invocation (102 passed, 1 failed). The remaining failure is a semantics-name finder run with the semantics tree disabled; this batch enables semantics instead of removing the assertion.
-- The grouped static workflow must pass backend checks, contrast/source guards, Flutter Analyze and the one consolidated Flutter invocation before any visual acceptance claim.
+- The first grouped run on this batch, [run 37972172732](https://github.com/amirdavodpour-stack/3/actions/runs/37972172732), failed in the backend executable-permissions test because the Git tree assembly accidentally changed `test/runtime/premium_visual_wave_source_test.sh` from mode `100755` to `100644`. This is a packaging/mode regression, not a test assertion; the follow-up commit explicitly restores mode `100755`.
+- The next exact-HEAD static run must pass backend checks, contrast/source guards, Flutter Analyze and the one consolidated Flutter invocation before any visual acceptance claim.
 - Same-HEAD runtime capture and visual inspection remain pending. Do not claim screenshot parity or a higher visual-alignment percentage from source/CI results alone.
 - TalkBack/T10 remains **NOT ACCEPTED** unless a fresh runtime artifact proves accessibility is enabled and a screen-reader service is active.
 
