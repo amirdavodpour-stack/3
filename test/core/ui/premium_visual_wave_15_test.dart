@@ -10,7 +10,7 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('Wave 16 grouped responsive and empty-state visual contracts',
+  testWidgets('Wave 17 grouped responsive visual contracts',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -149,7 +149,7 @@ void main() {
     // Wave 17: scrollables must occupy the body above the dock even when
     // their slivers contain little content. Narrow navigation keeps the
     // selected label readable and accessible names remain available.
-    tester.view.physicalSize = const Size(320, 720);
+    tester.view.physicalSize = const Size(280, 720);
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('fa'),
@@ -180,6 +180,7 @@ void main() {
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.text('کیف پول'), findsOneWidget);
     expect(find.text('پروفایل'), findsNothing);
+    expect(find.bySemanticsLabel('پروفایل'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const ValueKey('wave17-filled-scroll-viewport'))).height,
       greaterThan(550),
