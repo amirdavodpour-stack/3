@@ -477,6 +477,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   # 360x640 logical dp (320 dpi) rather than accidentally shrinking a Pixel 2 to
   # ~274x488dp and producing misleading typography/clipping evidence.
   adb shell wm density 320
+  adb shell wm density > "$evidence_dir/responsive-density.txt" 2>&1 || true
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
 
@@ -585,8 +586,6 @@ adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || tr
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
 printf '%s\n' '720x1280 physical pixels' > "$evidence_dir/responsive-viewport.txt"
 printf '%s\n' '360x640 logical dp at 320 dpi' > "$evidence_dir/responsive-logical-viewport.txt"
-adb shell wm density > "$evidence_dir/responsive-density.txt" 2>&1 || true
-
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   CAPTURED_BASELINE_SCREENS=1
   CAPTURED_RESPONSIVE_SCREENS=0
