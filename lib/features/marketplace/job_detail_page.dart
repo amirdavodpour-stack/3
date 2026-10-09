@@ -26,15 +26,19 @@ import '../../core/ui/hope_l10n.dart';
 
 String _budgetRangeLabel(BuildContext context, HopeJob job) {
   final locale = Localizations.localeOf(context).languageCode;
-  final minimum = HopeDisplayFormatter.integer(job.budgetMin, locale: locale);
-  final maximum = HopeDisplayFormatter.integer(job.budgetMax, locale: locale);
-  if (minimum == '—' && maximum == '—') return '—';
-  final range = minimum == '—'
-      ? maximum
-      : maximum == '—'
-          ? minimum
-          : '$minimum تا $maximum';
-  return moneyLabel(context, range);
+  final minimum = HopeDisplayFormatter.parseInteger(job.budgetMin);
+  final maximum = HopeDisplayFormatter.parseInteger(job.budgetMax);
+  if (minimum == null && maximum == null) return '—';
+  if (minimum == null) {
+    return HopeDisplayFormatter.money(maximum, locale: locale);
+  }
+  if (maximum == null) {
+    return HopeDisplayFormatter.money(minimum, locale: locale);
+  }
+  return HopeDisplayFormatter.amount(
+    '$minimum - $maximum',
+    locale: locale,
+  );
 }
 class _OpportunitySnapshot extends StatelessWidget {
   const _OpportunitySnapshot({required this.job});
