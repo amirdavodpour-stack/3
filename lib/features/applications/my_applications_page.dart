@@ -334,21 +334,22 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ..._applicationSections(context, visible),
               ]
             else if (visible.isEmpty)
-              PremiumPanel(
-                padding: const EdgeInsets.all(26),
-                child: Column(
-                  children: [
-                    const HopeIcon(HopeV2Icons.mission, size: 40),
-                    const SizedBox(height: 12),
-                    Text(
-                      _filter == 'ALL'
-                          ? _t('هنوز درخواستی ثبت نکرده‌اید.', 'You have not submitted any applications yet.')
-                          : _t('در این وضعیت درخواستی وجود ندارد.', 'No applications match this status.'),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
-                ),
+              PremiumEmptyState(
+                icon: HopeV2Icons.mission,
+                title: _filter == 'ALL'
+                    ? _t('هنوز درخواستی ثبت نکرده‌اید.',
+                        'You have not submitted any applications yet.')
+                    : _t('در این وضعیت درخواستی وجود ندارد.',
+                        'No applications match this status.'),
+                message: _filter == 'ALL'
+                    ? _t(
+                        'پس از ارسال درخواست برای یک فرصت، وضعیت و مسیر همکاری در همین صفحه نمایش داده می‌شود.',
+                        'After you apply to an opportunity, its status and collaboration lifecycle will appear here.',
+                      )
+                    : _t(
+                        'فیلتر دیگری را انتخاب کنید تا درخواست‌های همان وضعیت را ببینید.',
+                        'Choose another status filter to see applications in that state.',
+                      ),
               )
             else
               ..._applicationSections(context, visible),
