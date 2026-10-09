@@ -21,7 +21,7 @@
 
 1. **Navigation labels/semantics:** keep the five Persian navigation labels visible at narrow widths; the legacy regression expects the intended visible Profile label and enables the semantics tree before checking its accessible name.
 2. **Adaptive Explore density:** use one-column presentation when text scale exceeds 1.2 even on wide canvases; do not force accessibility-scaled text into two/three dense columns.
-3. **Financial disclosure on cards:** compact-grid, compact, standard and expanded opportunity-card amount ranges wrap over up to three lines instead of using ellipsis. Compact-grid media height is reduced to reclaim vertical space for the financial value.
+3. **Financial disclosure on cards:** compact-grid, compact, standard and expanded opportunity-card amount ranges wrap instead of using ellipsis. Compact-grid ranges preserve both exact endpoint integers but show the currency unit once after the range, and media height is reduced to reclaim space.
 4. **Executable regression coverage:** assert complete minimum/maximum Toman values and that the compact-grid amount paragraph does not exceed its line limit; add an Explore test for enlarged text fallback.
 5. **Persistent guardrails:** source guard pins the high-text fallback and no-ellipsis amount contract.
 
@@ -37,6 +37,7 @@
 - The first grouped run on this batch, [run 37972172732](https://github.com/amirdavodpour-stack/3/actions/runs/37972172732), failed in the backend executable-permissions test because the Git tree assembly accidentally changed `test/runtime/premium_visual_wave_source_test.sh` from mode `100755` to `100644`. This is a packaging/mode regression, not a test assertion; the follow-up commit explicitly restores mode `100755`.
 - The next exact-HEAD static run must pass backend checks, contrast/source guards, Flutter Analyze and the one consolidated Flutter invocation before any visual acceptance claim.
 - Exact-head static run [37972375031](https://github.com/amirdavodpour-stack/3/actions/runs/37972375031) passed backend tests, security audit, backend static check, contrast checks and design/runtime quality guards, but failed the runtime source guard because one legacy amount-overflow assertion still expected the old `maxLines: compactViewport ? 2 : 1`. This follow-up updates the guard to the new no-ellipsis financial-display contract.
+- Exact-head consolidated Flutter run [37972620965](https://github.com/amirdavodpour-stack/3/actions/runs/37972620965) reached the 102-test suite and found three actionable regressions: Semantics was enabled after rendering, compact-grid money text exceeded three lines because it repeated the unit twice, and compact Explore cards overflowed by one pixel at enlarged text. This follow-up enables Semantics before pumping the navigation tree, keeps exact range endpoints while displaying the unit once, reduces nonessential grid media height, and uses standard opportunity cards above 1.2 text scale. The next exact-head run must verify these changes.
 - Same-HEAD runtime capture and visual inspection remain pending. Do not claim screenshot parity or a higher visual-alignment percentage from source/CI results alone.
 - TalkBack/T10 remains **NOT ACCEPTED** unless a fresh runtime artifact proves accessibility is enabled and a screen-reader service is active.
 

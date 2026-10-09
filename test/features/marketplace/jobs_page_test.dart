@@ -492,6 +492,11 @@ void main() {
         isFalse,
         reason: 'Enlarged text must prioritize readable single-column opportunity summaries.',
       );
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compact),
+        isFalse,
+        reason: 'Compressed summaries are not used when system text is enlarged.',
+      );
       expect(find.text('طراحی اپ'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },

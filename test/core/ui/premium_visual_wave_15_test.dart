@@ -211,6 +211,8 @@ void main() {
     // their slivers contain little content. Narrow navigation keeps the
     // selected label readable and accessible names remain available.
     tester.view.physicalSize = const Size(280, 720);
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('fa'),
@@ -245,8 +247,6 @@ void main() {
       findsOneWidget,
       reason: 'Wave26 keeps all five Persian navigation labels visible at narrow widths.',
     );
-    final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     expect(find.bySemanticsLabel('پروفایل'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const ValueKey('wave17-filled-scroll-viewport'))).height,
@@ -408,6 +408,7 @@ void main() {
       final amount = tester.widget<Text>(amountFinder);
       expect(amount.data, contains('۱٬۰۰۰٬۰۰۰'));
       expect(amount.data, contains('۱٬۵۰۰٬۰۰۰'));
+      expect(amount.data!.split('تومان').length - 1, 1);
       expect(amount.maxLines, 3);
       expect(amount.overflow, TextOverflow.clip);
       expect(

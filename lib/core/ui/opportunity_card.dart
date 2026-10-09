@@ -31,6 +31,26 @@ class OpportunityCard extends StatelessWidget {
         value,
         locale: Localizations.localeOf(context).languageCode,
       );
+
+  // Compact discovery tiles retain the exact range while showing the
+  // currency unit once, so narrow cards have room for both amounts.
+  String _formatCompactGridAmount(String value, BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final parts = value.trim().split(RegExp(r'\s*[–-]\s*'));
+    if (parts.length != 2) return _formatAmount(value, context);
+
+    final first = HopeDisplayFormatter.parseInteger(parts.first);
+    final second = HopeDisplayFormatter.parseInteger(parts.last);
+    if (first == null || second == null) {
+      return _formatAmount(value, context);
+    }
+
+    final values = [first, second]..sort();
+    return '${HopeDisplayFormatter.integer(values[0], locale: locale)} '
+        '${_t(context, 'تا', '–')} '
+        '${HopeDisplayFormatter.integer(values[1], locale: locale)} '
+        '${_t(context, 'تومان', 'TOMAN')}';
+  }
   String _reason(BuildContext context, String value) {
     final copy = HopeCopy.of(context);
     return switch (value) {
@@ -353,7 +373,7 @@ class OpportunityCard extends StatelessWidget {
     HopeCopy copy,
   ) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final mediaHeight = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 58.0 : 64.0;
+    final mediaHeight = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 46.0 : 54.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -426,7 +446,7 @@ class OpportunityCard extends StatelessWidget {
         const Spacer(),
         if (amount.isNotEmpty)
           Text(
-            _formatAmount(amount, context),
+            _formatCompactGridAmount(amount, context),
             key: const ValueKey('opportunity-card-compact-grid-budget'),
             maxLines: 3,
             softWrap: true,

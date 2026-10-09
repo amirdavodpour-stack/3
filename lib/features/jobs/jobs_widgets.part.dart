@@ -114,7 +114,11 @@ class _JobsResultsSliver extends StatelessWidget {
                         ),
                         child: OpportunityCard(
                           job: remaining[i],
-                          variant: OpportunityCardVariant.compact,
+                          // Larger system text needs the roomier editorial card,
+                          // not the compressed summary reserved for default scale.
+                          variant: textScale > 1.2
+                              ? OpportunityCardVariant.standard
+                              : OpportunityCardVariant.compact,
                         ),
                       ),
                     ),
