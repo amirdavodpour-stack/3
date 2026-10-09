@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
+import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/transactions/wallet_repository.dart';
 import 'package:hope_mobile/features/wallet/wallet_page.dart';
