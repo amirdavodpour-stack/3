@@ -12,7 +12,7 @@ import 'hope_l10n.dart';
 import 'premium_components.dart';
 
 // Core marketplace card pattern for the HOPE visual system.
-enum OpportunityCardVariant { compact, standard, featured, featuredScan, expanded }
+enum OpportunityCardVariant { compact, compactGrid, standard, featured, featuredScan, expanded }
 
 class OpportunityCard extends StatelessWidget {
   const OpportunityCard({
@@ -53,6 +53,7 @@ class OpportunityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = variant == OpportunityCardVariant.compact;
+    final compactGrid = variant == OpportunityCardVariant.compactGrid;
     final featured = variant == OpportunityCardVariant.featured;
     final featuredScan = variant == OpportunityCardVariant.featuredScan;
     final expanded = variant == OpportunityCardVariant.expanded;
@@ -131,7 +132,9 @@ class OpportunityCard extends StatelessWidget {
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
-              : _standard(
+              : compactGrid
+                  ? _compactGrid(context, title, city, amount, primary, mediaUrl, copy)
+                  : _standard(
                   context,
                   title,
                   city,
@@ -340,6 +343,99 @@ class OpportunityCard extends StatelessWidget {
       ),
     );
   }
+  Widget _compactGrid(
+    BuildContext context,
+    String title,
+    String city,
+    String amount,
+    Color primary,
+    String? mediaUrl,
+    HopeCopy copy,
+  ) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final mediaHeight = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 62.0 : 76.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          child: SizedBox(
+            height: mediaHeight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (mediaUrl != null)
+                  Image.network(
+                    mediaUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
+                  )
+                else
+                  _fallbackMedia(context, primary),
+                PositionedDirectional(
+                  top: 5,
+                  start: 5,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: (dark ? Colors.black : Colors.white).withValues(alpha: .82),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontSize: 13,
+            height: 1.18,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            HopeIcon(HopeV2Icons.location, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, strokeWidth: 1.8),
+            const SizedBox(width: 3),
+            Expanded(
+              child: Text(
+                city,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10.5),
+              ),
+            ),
+          ],
+        ),
+        const Spacer(),
+        if (amount.isNotEmpty)
+          Text(
+            _formatAmount(amount, context),
+            maxLines: 2,
+            softWrap: true,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, height: 1.16, fontWeight: FontWeight.w900, color: primary),
+          ),
+      ],
+    );
+  }
+
   Widget _compact(
     BuildContext context,
     String title,
