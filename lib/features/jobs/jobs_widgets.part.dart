@@ -61,9 +61,12 @@ class _JobsResultsSliver extends StatelessWidget {
       sliver: SliverToBoxAdapter(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            // Explore remains a readable list on very narrow layouts or when
+            // accessibility text scaling makes a two-column card too dense.
+            final textScale = MediaQuery.textScalerOf(context).scale(1);
             final columns = constraints.maxWidth >= HopeV2Breakpoints.expanded
                 ? 3
-                : constraints.maxWidth >= HopeV2Breakpoints.medium
+                : (constraints.maxWidth >= 340 && textScale <= 1.2)
                     ? 2
                     : 1;
             final featuredJob = jobs.firstWhere(
