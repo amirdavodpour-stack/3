@@ -9,7 +9,7 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('Wave 15 decision, match and responsive card contracts',
+  testWidgets('Wave 16 grouped responsive and empty-state visual contracts',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -112,6 +112,37 @@ void main() {
     expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
     expect(tester.widget<PremiumHero>(find.byType(PremiumHero)).compactHero,
         isTrue);
+    expect(tester.takeException(), isNull);
+
+    tester.view.physicalSize = const Size(320, 720);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(12),
+            child: PremiumEmptyState(
+              key: const ValueKey('wave16-empty-state'),
+              icon: HopeV2Icons.savedSearches,
+              title: 'هنوز جست‌وجویی ذخیره نشده است',
+              message: 'برای شروع، یک جست‌وجو ذخیره کنید.',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wave16-empty-state')), findsOneWidget);
+    expect(find.text('هنوز جست‌وجویی ذخیره نشده است'), findsOneWidget);
+    expect(find.text('برای شروع، یک جست‌وجو ذخیره کنید.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
