@@ -218,7 +218,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 children: [
                   Text(
                     label,
-                    maxLines: 1,
+                    maxLines: 2,
+                    softWrap: true,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: HopeV2Colors.muted,
@@ -632,7 +633,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                           '$settledCount همکاری تسویه شده است',
                                           '$settledCount collaborations settled',
                                         ),
-                                  maxLines: 1,
+                                  maxLines: 2,
+                                  softWrap: true,
                                   overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                         fontWeight: FontWeight.w900,
