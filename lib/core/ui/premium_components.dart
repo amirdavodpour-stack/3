@@ -78,6 +78,13 @@ class PremiumNavigationBar extends StatelessWidget {
               ? HopeV2Colors.navigationDark.withValues(alpha: .985)
               : surface.withValues(alpha: .98),
           borderRadius: BorderRadius.circular(HopeV2Navigation.dockRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: dark ? .22 : .075),
+              blurRadius: dark ? 20 : 16,
+              offset: const Offset(0, 5),
+            ),
+          ],
           border: Border.all(
             color: dark
                 ? Colors.white.withValues(alpha: .065)
@@ -95,7 +102,7 @@ class PremiumNavigationBar extends StatelessWidget {
                   onPressed: () => onDestinationSelected(index),
                   accent: primary,
                   compact: compactLabels,
-                  showLabel: !compactLabels || index == selectedIndex,
+                  showLabel: true,
                 ),
               ),
           ],
