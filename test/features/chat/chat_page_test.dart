@@ -70,6 +70,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
     await tester.tap(find.byTooltip('Send'));
     await tester.pumpAndSettle();
 
@@ -209,6 +210,7 @@ void main() {
       find.byKey(const ValueKey('chat-message-input')),
       'keep this draft',
     );
+    await tester.pump();
     await tester.tap(find.byTooltip('Send'));
     await tester.pumpAndSettle();
 
