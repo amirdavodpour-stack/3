@@ -484,7 +484,7 @@ void main() {
       await _pump(tester, _Repo());
       await tester.pumpAndSettle();
 
-      final lastOpportunity = find.text('طراحی در شیراز');
+      final lastOpportunity = find.text('طراحی گرافیک');
       final exploreScrollView = find.byType(CustomScrollView);
       expect(exploreScrollView, findsOneWidget);
       for (var attempt = 0;
