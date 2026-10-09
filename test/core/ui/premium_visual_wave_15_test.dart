@@ -240,7 +240,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.text('کیف پول'), findsOneWidget);
-    expect(find.text('پروفایل'), findsNothing);
+    expect(
+      find.text('پروفایل'),
+      findsOneWidget,
+      reason: 'Wave26 keeps all five Persian navigation labels visible at narrow widths.',
+    );
     expect(find.bySemanticsLabel('پروفایل'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const ValueKey('wave17-filled-scroll-viewport'))).height,
