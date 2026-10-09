@@ -118,7 +118,8 @@ test -f "test/core/ui/premium_visual_wave_15_test.dart"
 
 # Wave 17: viewport fill, compact navigation labels and financial-value wrapping.
 grep -Fq 'final compactLabels = width < 340;' "$premium"
-grep -Fq 'showLabel: !compactLabels || index == selectedIndex' "$premium"
+grep -Fq 'showLabel: true,' "$premium"
+grep -Fq 'blurRadius: dark ? 20 : 16' "$premium"
 grep -Fq 'minHeight: availableHeight,' "$premium"
 grep -Fq 'constraints: const BoxConstraints(maxWidth: 82)' "$premium"
 grep -Fq 'maxLines: 2,' "lib/features/wallet/wallet_page.dart"
