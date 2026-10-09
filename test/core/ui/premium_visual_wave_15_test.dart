@@ -10,7 +10,7 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('Wave 17 grouped responsive visual contracts',
+  testWidgets('Wave 18 grouped responsive visual contracts',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
