@@ -763,4 +763,124 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'Wave 34 compact opportunity city uses a theme-aware readable foreground in light mode',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const city = 'تهران';
+      final theme = ThemeData.light();
+      final job = HopeJob.fromMap({
+        'id': 'compact-light-city',
+        'title': 'طراحی محصول',
+        'category': 'طراحی',
+        'kind': 'MISSION',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1000000',
+        'budgetMax': '1500000',
+        'city': city,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.compact,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cityText = tester.widget<Text>(
+        find.byKey(const ValueKey('opportunity-card-compact-location')),
+      );
+      expect(cityText.data, city);
+      expect(cityText.style?.color, theme.colorScheme.onSurfaceVariant);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 34 compact-grid card remains usable at 1.5x text scale with legible key metadata',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'compact-grid-large-text',
+        'title': 'طراحی رابط کاربری حرفه‌ای',
+        'category': 'طراحی',
+        'kind': 'MISSION',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1000000',
+        'budgetMax': '1500000',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          theme: ThemeData.light(),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 156,
+                height: 270,
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.compactGrid,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cityText = tester.widget<Text>(
+        find.byKey(const ValueKey('opportunity-card-compact-grid-location')),
+      );
+      final budgetText = tester.widget<Text>(
+        find.byKey(const ValueKey('opportunity-card-compact-grid-budget')),
+      );
+      expect(cityText.style?.fontSize, greaterThanOrEqualTo(11.5));
+      expect(budgetText.style?.fontSize, greaterThanOrEqualTo(12));
+      expect(find.text('طراحی رابط کاربری حرفه‌ای'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

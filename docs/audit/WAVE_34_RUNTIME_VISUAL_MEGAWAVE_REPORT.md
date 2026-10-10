@@ -34,3 +34,12 @@
 - Inspect all new primary/responsive PNGs and metadata before concluding the visual wave is accepted.
 - Recheck 360×640dp and 1.5× text scale; 411×731dp, 2.0× text, loading/empty/error/offline/keyboard and TalkBack require explicit evidence in follow-up lanes.
 - Keep PR #30 OPEN / DRAFT / UNMERGED; never force-push or modify main/production.
+
+## Wave 34 follow-on — truthful five-stage creation and shared opportunity readability
+
+- Create Opportunity no longer presents five decorative milestones above a single long form. Stages now separate type/audience, details, compensation/schedule, fees/acceptance criteria, and final review.
+- Step changes reset the form scroll position. The live preview appears in the final review, is still driven only by current user-entered values, and the existing create-then-publish use case remains unchanged.
+- The selected opportunity-type tile uses paired Material primary-container colors for the selected fill and foreground, avoiding white-on-translucent-primary contrast assumptions across light and dark themes.
+- Shared compact opportunity cards now use theme-aware location color, less undersized type/budget metadata, and explicit widget keys for contrast and 1.5×-scale regressions.
+- Tests were adapted to traverse the real steps for mission/job creation, validation, busy/failure behavior, and job-deadline requirements; additional tests cover step isolation/back navigation and compact-card readability.
+- The offers-source guard accepts either the prior wrapping filters or the new horizontally scrollable `offers-status-filter-scroll`; widget tests assert that the new rail is horizontal.
