@@ -577,7 +577,14 @@ void main() {
       userId: 'u1',
     );
 
-    expect(find.text('Needs review'), findsOneWidget);
+    final quickStatus = find.byKey(
+      const ValueKey('opportunity-quick-status'),
+    );
+    expect(
+      find.descendant(of: quickStatus, matching: find.text('Needs review')),
+      findsOneWidget,
+    );
+    expect(find.text('Needs review'), findsNWidgets(2));
     expect(find.text('FUTURE_STATE'), findsNothing);
   });
   testWidgets('unknown lifecycle status does not mark a stage complete', (tester) async {
@@ -589,7 +596,14 @@ void main() {
 
     final draft = tester.widget<Text>(find.text('Draft'));
     expect(draft.style?.fontWeight, isNot(FontWeight.w800));
-    expect(find.text('Needs review'), findsOneWidget);
+    final quickStatus = find.byKey(
+      const ValueKey('opportunity-quick-status'),
+    );
+    expect(
+      find.descendant(of: quickStatus, matching: find.text('Needs review')),
+      findsOneWidget,
+    );
+    expect(find.text('Needs review'), findsNWidgets(2));
   });
 
   testWidgets('non-owner never sees the candidate pipeline', (tester) async {
