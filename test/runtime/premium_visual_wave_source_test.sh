@@ -204,7 +204,7 @@ grep -Fq 'radius: MediaQuery.sizeOf(context).width < 500 ? 24 : 32' lib/features
 grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-wave-1-static.yml
 grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-runtime-evidence.yml
 grep -Fq 'static const scrollEndGap = 12.0;' lib/core/theme/hope_v2_design.dart
-grep -Fq 'height: HopeV2Navigation.barHeight,' lib/core/ui/premium_components.dart
+grep -Fq 'height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 12 : 0)' lib/core/ui/premium_components.dart
 grep -Fq 'wallet-history-entry-${item.id}' lib/features/wallet/wallet_page.dart
 grep -Fq 'profile-language-selector' lib/features/profile/profile_page.dart
 grep -Fq 'work-center-lifecycle-${job.id}' lib/features/transactions/transactions_page.dart
