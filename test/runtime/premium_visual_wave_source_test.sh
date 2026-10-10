@@ -185,7 +185,8 @@ grep -Fq "test/features/jobs/saved_searches_page_test.dart" ".github/workflows/h
 
 # HOPE Design System 2.0 superwave: concrete visual and form contracts.
 grep -Fq "ValueKey('home-pulse-panel')" "lib/features/home/premium_home_feed.dart"
-grep -Fq "final columns = constraints.maxWidth >= 300 ? 4 : 2;" "lib/features/home/premium_home_feed.dart"
+grep -Fq "final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;" "lib/features/home/premium_home_feed.dart"
+grep -Fq "final columns = enlargedText" "lib/features/home/premium_home_feed.dart"
 grep -Fq "opportunity-match-score-ring" "$premium"
 grep -Fq "wallet-balance-metric-locked-total" "lib/features/wallet/wallet_page.dart"
 grep -Fq "_money(wallet.lockedBalance)" "lib/features/wallet/wallet_page.dart"
