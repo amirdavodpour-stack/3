@@ -222,6 +222,16 @@ class _SummaryCard extends StatelessWidget {
         value: money(int.tryParse(summary.totalOutflow) ?? 0),
         highlight: false,
       ),
+      (
+        label: t('کل رزرو‌شده', 'Total reserved'),
+        value: money(int.tryParse(summary.totalReserved) ?? 0),
+        highlight: false,
+      ),
+      (
+        label: t('خالص جریان نقدی', 'Net cash flow'),
+        value: money(int.tryParse(summary.netCashFlow) ?? 0),
+        highlight: false,
+      ),
     ];
 
     return PremiumPanel(
@@ -245,7 +255,14 @@ class _SummaryCard extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               const gap = 8.0;
-              final metricWidth = (constraints.maxWidth - gap) / 2;
+              final textScale = MediaQuery.textScalerOf(context).scale(1);
+              final columns = compact &&
+                      constraints.maxWidth >= 300 &&
+                      textScale <= 1.2
+                  ? 3
+                  : 2;
+              final metricWidth =
+                  (constraints.maxWidth - gap * (columns - 1)) / columns;
               return Wrap(
                 spacing: gap,
                 runSpacing: gap,
@@ -450,17 +467,22 @@ class _BarChart extends StatelessWidget {
                     container: true,
                     label: data.isEmpty
                         ? (english
-                            ? 'No recorded monthly cash-flow data.'
-                            : 'داده‌ای برای جریان نقدی ماهانه ثبت نشده است.')
-                        : data.map((month) {
-                            String money(String raw) => HopeDisplayFormatter.money(
-                                  double.tryParse(raw)?.round() ?? 0,
-                                  locale: Localizations.localeOf(context).languageCode,
-                                );
-                            return english
-                                ? '${month.label}: inflow ${money(month.inflow)}, outflow ${money(month.outflow)}, reserved ${money(month.reserved)}'
-                                : '${month.label}: ورودی ${money(month.inflow)}، خروجی ${money(month.outflow)}، رزرو شده ${money(month.reserved)}';
-                          }).join(english ? '. ' : '؛ '),
+                            ? 'Monthly cash flow: no recorded data. Amounts are in TOMAN.'
+                            : 'جریان نقدی ماهانه: داده‌ای ثبت نشده است. مبالغ به تومان هستند.')
+                        : (english
+                            ? 'Monthly cash flow; amounts in TOMAN; ${data.length} recorded months. '
+                            : 'جریان نقدی ماهانه؛ مبالغ به تومان؛ ${data.length} ماه ثبت‌شده. ') +
+                            data.map((month) {
+                              String money(String raw) =>
+                                  HopeDisplayFormatter.money(
+                                    double.tryParse(raw)?.round() ?? 0,
+                                    locale: Localizations.localeOf(context)
+                                        .languageCode,
+                                  );
+                              return english
+                                  ? '${month.month} (${month.label}): inflow ${money(month.inflow)}, outflow ${money(month.outflow)}, reserved ${money(month.reserved)}'
+                                  : '${month.month} (${month.label}): ورودی ${money(month.inflow)}، خروجی ${money(month.outflow)}، رزرو شده ${money(month.reserved)}';
+                            }).join(english ? '. ' : '؛ '),
                     child: CustomPaint(
                       painter: _BarChartPainter(
                         data,
@@ -636,15 +658,18 @@ class _LineChart extends StatelessWidget {
               container: true,
               label: points.isEmpty
                   ? (Localizations.localeOf(context).languageCode == 'en'
-                      ? 'No recorded balance trend data.'
-                      : 'داده‌ای برای روند موجودی ثبت نشده است.')
-                  : points.map((point) {
-                      final value = HopeDisplayFormatter.money(
-                        point.value.round(),
-                        locale: Localizations.localeOf(context).languageCode,
-                      );
-                      return '${point.date}: $value';
-                    }).join('؛ '),
+                      ? 'Balance trend: no recorded closing balances. Amounts are in TOMAN.'
+                      : 'روند موجودی: مانده پایانی ثبت‌شده‌ای وجود ندارد. مبالغ به تومان هستند.')
+                  : (Localizations.localeOf(context).languageCode == 'en'
+                          ? 'Balance trend; recorded closing balance in TOMAN. '
+                          : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
+                      points.map((point) {
+                        final value = HopeDisplayFormatter.money(
+                          point.value.round(),
+                          locale: Localizations.localeOf(context).languageCode,
+                        );
+                        return '${point.date}: $value';
+                      }).join('؛ '),
               child: CustomPaint(
                 painter: _LineChartPainter(
                   points,
@@ -759,6 +784,32 @@ class _SourceChart extends StatelessWidget {
   final List<HopeFinancialSource> data;
   final String Function(String, String) t;
 
+  String _sourceLabel(String raw) {
+    switch (raw.trim().toUpperCase()) {
+      case 'JOB':
+        return t('فرصت شغلی', 'Job');
+      case 'MISSION':
+        return t('ماموریت', 'Mission');
+      case 'TRANSFER':
+      case 'WALLET_TRANSFER':
+        return t('انتقال داخلی', 'Internal transfer');
+      case 'TOP_UP':
+      case 'TOPUP':
+      case 'DEPOSIT':
+        return t('واریز', 'Top-up');
+      case 'PAYOUT':
+      case 'WITHDRAWAL':
+        return t('برداشت', 'Withdrawal');
+      case 'REFUND':
+        return t('بازپرداخت', 'Refund');
+      case 'FEE':
+      case 'PLATFORM_FEE':
+        return t('کارمزد', 'Fee');
+      default:
+        return t('سایر', 'Other');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
@@ -766,6 +817,8 @@ class _SourceChart extends StatelessWidget {
         child: Text(t('داده کافی وجود ندارد.', 'Not enough data yet.')),
       );
     }
+    final locale = Localizations.localeOf(context).languageCode;
+    final english = locale == 'en';
     final total = math.max(
       1.0,
       data.fold<double>(0, (sum, item) => sum + item.value),
@@ -777,32 +830,54 @@ class _SourceChart extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = data[index];
         final ratio = item.value / total;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
+        final sourceLabel = _sourceLabel(item.source);
+        final amount = HopeDisplayFormatter.money(
+          item.value.round(),
+          locale: locale,
+        );
+        final share = HopeDisplayFormatter.percent(
+          ratio * 100,
+          locale: locale,
+        );
+        final semanticLabel = english
+            ? '$sourceLabel: amount $amount; $share of recorded source activity.'
+            : '$sourceLabel؛ مبلغ $amount؛ سهم $share از منابع ثبت‌شده';
+        return Semantics(
+          key: ValueKey('financial-source-row-${item.source.trim().toUpperCase()}'),
+          container: true,
+          label: semanticLabel,
+          child: ExcludeSemantics(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Text(
-                    item.source,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        sourceLabel,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    Text(share),
+                  ],
                 ),
+                const SizedBox(height: 3),
                 Text(
-                  HopeDisplayFormatter.percent(
-                    ratio * 100,
-                    locale: Localizations.localeOf(context).languageCode,
-                  ),
+                  english ? 'Amount: $amount' : 'مبلغ: $amount',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 5),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(value: ratio, minHeight: 8),
                 ),
               ],
             ),
-            const SizedBox(height: 5),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(value: ratio, minHeight: 8),
-            ),
-          ],
+          ),
         );
       },
     );
