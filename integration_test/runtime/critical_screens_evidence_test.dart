@@ -999,7 +999,42 @@ Future<void> _captureRuntimeScreen(
         'Runtime Wallet capture reached screenshot boundary before the loaded financial state.',
       );
     }
+    expect(
+      find.text('۳٬۵۰۰٬۰۰۰ تومان'),
+      findsOneWidget,
+      reason: 'Wallet total must match the runtime fixture exactly.',
+    );
+    expect(
+      find.text('۲٬۵۰۰٬۰۰۰ تومان'),
+      findsOneWidget,
+      reason: 'Wallet available balance must match the runtime fixture exactly.',
+    );
     print('HOPE_RUNTIME_WALLET_LOADED_STATE_ASSERTED:$marker');
+    await _captureRuntimeScreenshot(marker);
+    return;
+  }
+  if (child is FinancialInsightsPage) {
+    await _waitForRuntimeRenderToSettle(tester);
+    final fixtureValues = <String>[
+      locale.languageCode == 'fa' ? '۲٬۵۰۰٬۰۰۰ تومان' : '2,500,000 TOMAN',
+      locale.languageCode == 'fa' ? '۱٬۰۰۰٬۰۰۰ تومان' : '1,000,000 TOMAN',
+      locale.languageCode == 'fa' ? '۴٬۲۰۰٬۰۰۰ تومان' : '4,200,000 TOMAN',
+      locale.languageCode == 'fa' ? '۱٬۷۰۰٬۰۰۰ تومان' : '1,700,000 TOMAN',
+    ];
+    final renderedMoney = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((widget) => widget.data ?? widget.textSpan?.toPlainText() ?? '')
+        .where((value) => value.contains('تومان') || value.contains('TOMAN'))
+        .toList(growable: false);
+    print('HOPE_RUNTIME_FINANCIAL_WIDGET_MONEY:$marker:${renderedMoney.join(' | ')}');
+    for (final value in fixtureValues) {
+      expect(
+        find.text(value),
+        findsOneWidget,
+        reason: 'Financial Insights rendered widget value must match its exact runtime fixture: $value',
+      );
+    }
+    print('HOPE_RUNTIME_FINANCIAL_WIDGET_VALUES_ASSERTED:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
