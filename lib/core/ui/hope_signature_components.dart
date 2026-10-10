@@ -269,72 +269,74 @@ class HopeWalletFlowSignature extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (enlargedText)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: HopeIcon(
-                        HopeV2Icons.route,
-                        size: 20,
-                        color: HopeV2Colors.secondary,
+          if (!compact) ...[
+            if (enlargedText)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: HopeIcon(
+                          HopeV2Icons.route,
+                          size: 20,
+                          color: HopeV2Colors.secondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        _t(context, 'گردش وجه در دفترکل', 'Money flow in the ledger'),
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          _t(context, 'گردش وجه در دفترکل', 'Money flow in the ledger'),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                PremiumTag(
-                  icon: HopeV2Icons.secure,
-                  label: currencyLabel,
-                  color: HopeV2Colors.success,
-                ),
-              ],
-            )
-          else
-            Row(
-              children: [
-                HopeIcon(
-                  HopeV2Icons.route,
-                  size: compact ? 12 : 18,
-                  color: HopeV2Colors.secondary,
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    _t(
-                      context,
-                      compact ? 'گردش وجه' : 'گردش وجه در دفترکل',
-                      compact ? 'Money flow' : 'Money flow in the ledger',
-                    ),
-                    style: (compact
-                            ? Theme.of(context).textTheme.labelMedium
-                            : Theme.of(context).textTheme.titleSmall)
-                        ?.copyWith(fontWeight: FontWeight.w900),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    ],
                   ),
-                ),
-                if (!compact)
+                  const SizedBox(height: 8),
                   PremiumTag(
                     icon: HopeV2Icons.secure,
                     label: currencyLabel,
                     color: HopeV2Colors.success,
                   ),
-              ],
-            ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  HopeIcon(
+                    HopeV2Icons.route,
+                    size: compact ? 12 : 18,
+                    color: HopeV2Colors.secondary,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      _t(
+                        context,
+                        compact ? 'گردش وجه' : 'گردش وجه در دفترکل',
+                        compact ? 'Money flow' : 'Money flow in the ledger',
+                      ),
+                      style: (compact
+                              ? Theme.of(context).textTheme.labelMedium
+                              : Theme.of(context).textTheme.titleSmall)
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (!compact)
+                    PremiumTag(
+                      icon: HopeV2Icons.secure,
+                      label: currencyLabel,
+                      color: HopeV2Colors.success,
+                    ),
+                ],
+              ),
+          ],
           if (!compact) const SizedBox(height: 6),
           if (!compact)
             Text(
@@ -516,7 +518,14 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final locale = Localizations.localeOf(context).languageCode;
     const secondary = HopeV2Colors.secondary;
+    String amountLabel(String? raw) {
+      final value = raw?.trim() ?? '';
+      if (value.isEmpty) return '—';
+      final formatted = HopeDisplayFormatter.amount(value, locale: locale);
+      return formatted == '—' ? value : formatted;
+    }
     final dimensions = <({String label, String value, Color color})>[
       (
         label: _t(context, 'نوع همکاری', 'Work mode'),
@@ -542,16 +551,21 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
           label: _t(context, 'تطبیق', 'Match'),
           value: job.recommendationScore == null
               ? _t(context, 'ثبت نشده', 'Not scored')
-              : '${job.recommendationScore!.clamp(0, 100).round()}%',
+              : HopeDisplayFormatter.percent(
+                  job.recommendationScore!.clamp(0, 100),
+                  locale: locale,
+                ),
           color: primary,
         ),
       (
         label: _t(context, 'بودجه', 'Budget'),
-        value: job.isMission
-            ? [job.budgetMin, job.budgetMax]
-                .where((v) => v?.trim().isNotEmpty == true)
-                .join(' – ')
-            : (job.monthlySalary ?? job.budgetMin ?? '—'),
+        value: amountLabel(
+          job.isMission
+              ? [job.budgetMin, job.budgetMax]
+                  .where((v) => v?.trim().isNotEmpty == true)
+                  .join(' – ')
+              : job.monthlySalary ?? job.budgetMin,
+        ),
         color: HopeV2Colors.warning,
       ),
     ];

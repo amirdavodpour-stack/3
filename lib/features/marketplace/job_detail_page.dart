@@ -1602,7 +1602,7 @@ class _MatchIntelligence extends StatelessWidget {
                             ),
                           if (confidence != null)
                             Text(
-                              '${(confidence.clamp(0, 1) * 100).round()} ${_t(context, 'درصد اطمینان', '% confidence')}',
+                              '${HopeDisplayFormatter.percent((confidence.clamp(0, 1) * 100).round(), locale: Localizations.localeOf(context).languageCode)} ${_t(context, 'اطمینان', 'confidence')}',
                               key: const ValueKey('match-confidence-note'),
                               style: Theme.of(context)
                                   .textTheme
@@ -1730,7 +1730,7 @@ class _MatchIntelligence extends StatelessWidget {
                           Expanded(child: Text(_t(context, 'هوش تطبیق', 'Match intelligence'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
                         ]),
                         if (fit != null) ...[SizedBox(height: compact ? 2 : 4), Text(fit, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: primary, fontWeight: FontWeight.w800))],
-                        if (confidence != null) ...[SizedBox(height: compact ? 2 : 4), Text('${(confidence.clamp(0, 1) * 100).round()}% ${_t(context, 'اطمینان', 'confidence')}', key: const ValueKey('match-confidence-note'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: HopeV2Colors.muted))],
+                        if (confidence != null) ...[SizedBox(height: compact ? 2 : 4), Text('${HopeDisplayFormatter.percent((confidence.clamp(0, 1) * 100).round(), locale: Localizations.localeOf(context).languageCode)} ${_t(context, 'اطمینان', 'confidence')}', key: const ValueKey('match-confidence-note'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: HopeV2Colors.muted))],
                       ]),
                     ),
                   ],

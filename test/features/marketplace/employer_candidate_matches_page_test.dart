@@ -156,7 +156,22 @@ void main() {
     expect(find.text('Candidate One'), findsWidgets);
     expect(find.text('Candidate Two'), findsWidgets);
     expect(find.text('Candidate Three'), findsWidgets);
-    expect(find.text('۹۸٪'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-comparison-matrix')),
+        matching: find.text('۹۸٪'),
+      ),
+      findsOneWidget,
+      reason: 'Matrix percentages must use the shared Persian display formatter.',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-comparison-matrix')),
+        matching: find.text('98٪'),
+      ),
+      findsNothing,
+      reason: 'Raw Latin digits must not leak into the Persian comparison matrix.',
+    );
     expect(tester.takeException(), isNull);
   });
 

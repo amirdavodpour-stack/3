@@ -144,7 +144,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       final value = candidate.components[key];
       if (value != null) {
         final normalized = value <= 1 ? value * 100 : value;
-        return '${normalized.clamp(0.0, 100.0).round()}٪';
+        return _percent(context, normalized.clamp(0.0, 100.0).round());
       }
       if (key == 'skills' && (candidate.skills ?? '').trim().isNotEmpty) {
         return candidate.skills!.trim();
@@ -183,7 +183,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                     for (final candidate in candidates)
                       cell(
                         candidate.displayName.trim().isEmpty
-                            ? _t(context, 'نامزد ${candidate.rank}', 'Candidate ${candidate.rank}')
+                            ? _t(
+                                context,
+                                'نامزد ${HopeDisplayFormatter.integer(candidate.rank, locale: Localizations.localeOf(context).languageCode)}',
+                                'Candidate ${HopeDisplayFormatter.integer(candidate.rank, locale: Localizations.localeOf(context).languageCode)}',
+                              )
                             : candidate.displayName.trim(),
                         heading: true,
                       ),
@@ -368,7 +372,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              '${candidate.rank}',
+                              HopeDisplayFormatter.integer(candidate.rank, locale: Localizations.localeOf(context).languageCode),
                               style: const TextStyle(fontWeight: FontWeight.w900,
                                 fontSize: 13),
                             ),

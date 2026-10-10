@@ -156,6 +156,25 @@ void main() {
       for (final label in ['همه', 'ورودی', 'خروجی', 'قفل‌ها']) {
         expect(find.text(label), findsOneWidget, reason: 'Filter "$label" should be visible.');
       }
+      final firstTransaction = find.byKey(
+        const ValueKey('wallet-history-entry-wave24-wallet-row'),
+      );
+      final firstAmount = find.text('\u2066+۱۲۵٬۰۰۰ تومان⁩');
+      expect(firstTransaction, findsOneWidget);
+      expect(firstAmount, findsOneWidget);
+      final firstTransactionRect = tester.getRect(firstTransaction);
+      final firstAmountRect = tester.getRect(firstAmount);
+      final initialDockRect = tester.getRect(dock);
+      expect(
+        firstTransactionRect.top,
+        lessThan(initialDockRect.top - 48),
+        reason: 'The first ledger entry should enter the compact first fold, not start under the dock.',
+      );
+      expect(
+        firstAmountRect.bottom,
+        lessThanOrEqualTo(initialDockRect.top - 4),
+        reason: 'The first signed Toman amount must be visible above the fixed navigation dock.',
+      );
       expect(
         tester.getTopLeft(historyTitle).dy,
         lessThan(tester.getTopLeft(dock).dy),

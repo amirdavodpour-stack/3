@@ -227,7 +227,11 @@ void main() {
     expect(featuredFinder, findsOneWidget);
     final featuredRect = tester.getRect(featuredFinder);
 
-    expect(filterRect.top, closeTo(searchRect.bottom + 10, 2));
+    expect(
+      (filterRect.top - searchRect.top).abs(),
+      lessThan(5),
+      reason: 'Compact search and refinement should share a row to recover first-fold height.',
+    );
     // The kind selector follows the refinement row, then the featured card.
     final kindFilter = find.byKey(
       const ValueKey('hope-explore-kind-filters'),
@@ -238,6 +242,53 @@ void main() {
     expect(featuredRect.top - kindRect.bottom, lessThan(40));
     expect(tester.takeException(), isNull);
   });
+
+
+  testWidgets(
+    'compact explore consolidates controls and keeps the first opportunity in the 360x640 viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo());
+      await tester.pumpAndSettle();
+
+      final search = tester.getRect(find.byType(PremiumSearchBar));
+      final filter = tester.getRect(
+        find.byKey(const ValueKey('hope-opportunity-refinement-launcher')),
+      );
+      final resultCount = tester.getRect(
+        find.byKey(const ValueKey('hope-explore-result-count')),
+      );
+      final kindFilter = tester.getRect(
+        find.byKey(const ValueKey('hope-explore-kind-filters')),
+      );
+      final featured = tester.getRect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is OpportunityCard &&
+              widget.variant == OpportunityCardVariant.featuredScan,
+        ),
+      );
+      final dock = tester.getRect(
+        find.byKey(const ValueKey('hope-navigation-dock')),
+      );
+
+      expect((filter.top - search.top).abs(), lessThan(5));
+      expect((resultCount.top - search.top).abs(), lessThan(10));
+      expect(filter.size, const Size(48, 48));
+      expect(kindFilter.height, greaterThanOrEqualTo(48));
+      expect(kindFilter.top - filter.bottom, lessThan(20));
+      expect(
+        featured.top,
+        lessThan(dock.top - 80),
+        reason: 'The first real opportunity must occupy a useful part of the compact first fold.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('compact explore uses a short search hint so the control band stays overflow-free',
       (tester) async {

@@ -197,8 +197,8 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                       label: Text(
                         _t(
                           context,
-                          'جستجوهای ذخیره‌شده · $savedSearchCount',
-                          'Saved searches · $savedSearchCount',
+                          'جستجوهای ذخیره‌شده · ${HopeDisplayFormatter.integer(savedSearchCount, locale: Localizations.localeOf(context).languageCode)}',
+                          'Saved searches · ${HopeDisplayFormatter.integer(savedSearchCount, locale: Localizations.localeOf(context).languageCode)}',
                         ),
                       ),
                     ),
@@ -258,7 +258,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                 ),
                 key: const ValueKey('hope-opportunity-refinement-active-count'),
                 child: Text(
-                  '$activeCount',
+                  HopeDisplayFormatter.integer(activeCount, locale: Localizations.localeOf(context).languageCode),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
@@ -364,7 +364,7 @@ class _JobsFilterHeader extends StatelessWidget {
         ),
       ),
       child: Text(
-        '$resultCount ${copy.copy_results_2d120a3}',
+        '${HopeDisplayFormatter.integer(resultCount, locale: Localizations.localeOf(context).languageCode)} ${copy.copy_results_2d120a3}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -396,7 +396,7 @@ class _JobsFilterHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  '$filterCount ${_t(context, 'فیلتر فعال', 'active filters')}',
+                  '${HopeDisplayFormatter.integer(filterCount, locale: Localizations.localeOf(context).languageCode)} ${_t(context, 'فیلتر فعال', 'active filters')}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: HopeV2Colors.secondaryStrong,
                         fontWeight: FontWeight.w900,
@@ -410,14 +410,13 @@ class _JobsFilterHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (compact) ...[
-          searchField,
-          const SizedBox(height: 10),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              resultLabel,
+              Expanded(child: searchField),
               const SizedBox(width: 7),
-              if (activeState != null) activeState,
-              const Spacer(),
+              resultLabel,
+              const SizedBox(width: 6),
               refinement,
             ],
           ),

@@ -1152,7 +1152,8 @@ class _WalletPageState extends State<WalletPage> {
                       SizedBox(height: compact ? 4 : 12),
                       actions,
                       SizedBox(height: compact ? 4 : 12),
-                      HopeWalletFlowSignature(wallet: wallet),
+                      if (!compact)
+                        HopeWalletFlowSignature(wallet: wallet),
                     ],
                   );
                 }
@@ -1181,10 +1182,12 @@ class _WalletPageState extends State<WalletPage> {
                 key: const ValueKey('wallet-history-title'),
                 domain: HopeProductDomain.finance,
                 title: _t('تاریخچه کیف پول', 'Wallet history'),
-                subtitle: _t(
-                  'ثبت‌های مالی به ترتیب زمانی، با بارگذاری مرحله‌ای.',
-                  'Financial entries in chronological order, loaded in pages.',
-                ),
+                subtitle: compact
+                    ? null
+                    : _t(
+                        'ثبت‌های مالی به ترتیب زمانی، با بارگذاری مرحله‌ای.',
+                        'Financial entries in chronological order, loaded in pages.',
+                      ),
               ),
             ),
             SizedBox(height: compact ? 4 : 12),
@@ -1291,6 +1294,10 @@ class _WalletPageState extends State<WalletPage> {
                     ? _t('در حال دریافت تراکنش‌ها…', 'Loading transactions…')
                     : _t('تراکنش‌های بیشتر', 'Load more transactions')),
               ),
+            ],
+            if (compact) ...[
+              const SizedBox(height: 8),
+              HopeWalletFlowSignature(wallet: wallet),
             ],
             SizedBox(height: tightViewport ? 8 : 16),
             PremiumSectionHeader(
