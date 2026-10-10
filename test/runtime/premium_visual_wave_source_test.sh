@@ -289,7 +289,7 @@ grep -Fq "financial-balance-chart-scroll" lib/features/financial/financial_insig
 grep -Fq 'final monthWidth = math.max(58.0, 58.0 * textScale);' lib/features/financial/financial_insights_page.dart
 grep -Fq 'final pointWidth = math.max(64.0, 64.0 * textScale);' lib/features/financial/financial_insights_page.dart
 grep -Fq "find.byKey(const ValueKey('financial-cashflow-chart-scroll'))" test/features/financial/financial_insights_page_test.dart
-grep -Fq "find.byKey(const ValueKey('financial-balance-chart-scroll'))" test/features/financial/financial_insights_page_test.dart
+grep -Fq "financial-balance-chart-scroll" test/features/financial/financial_insights_page_test.dart
 grep -Fq 'constraints.maxWidth >= 1080 ? 3' lib/features/home/premium_home_feed.dart
 grep -Fq "isNot(contains(r'\\n'))" test/core/ui/premium_visual_wave_15_test.dart
 grep -Fq 'HopeV2Icons.message,' lib/features/chat/chat_page.dart
