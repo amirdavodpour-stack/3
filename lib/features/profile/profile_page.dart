@@ -255,29 +255,34 @@ class _ProfilePageState extends State<ProfilePage> {
               return PremiumPanel(
                 key: const ValueKey('profile-professional-first-fold'),
                 quiet: true,
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _t(context, 'پروفایل حرفه‌ای', 'Professional profile'),
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          _t(context, 'پروفایل حرفه‌ای', 'Professional profile'),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
+                        PremiumTag(
+                          label: _providerTypeLabel(context, data.providerType),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: PremiumTag(
-                        label: _providerTypeLabel(context, data.providerType),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     HopeTrustSignalRail(signals: signals),
                   ],
                 ),
               );
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
             subtitle: MediaQuery.sizeOf(context).width < 500
