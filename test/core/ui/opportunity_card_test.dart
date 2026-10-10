@@ -811,6 +811,132 @@ void main() {
 
 
   testWidgets(
+    'image-less fallback localizes categoryId and rejects non-web media URLs',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'wave36-category-id-fallback',
+        'title': 'توسعه‌دهنده Flutter',
+        'categoryId': 'software',
+        'imageUrl': 'file:///tmp/not-a-network-image.png',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.compact,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final categoryLabel = find.byKey(
+        const ValueKey('opportunity-fallback-category-label'),
+      );
+      expect(categoryLabel, findsOneWidget);
+      expect(tester.widget<Text>(categoryLabel).data, 'نرم‌افزار');
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Image && widget.image is NetworkImage,
+        ),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'featured no-media opportunity uses a shorter category-led hero with a separate title',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const title = 'طراحی محصول برای بازار خدمات';
+      final job = HopeJob.fromMap({
+        'id': 'wave36-featured-no-media',
+        'title': title,
+        'categoryId': 'design',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+        'budgetMin': '1500000',
+        'budgetMax': '2500000',
+        'recommendationScore': 0.93,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featured,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final header = find.byKey(
+        const ValueKey('opportunity-media-header'),
+      );
+      final fallbackTitle = find.byKey(
+        const ValueKey('opportunity-featured-fallback-title'),
+      );
+      expect(header, findsOneWidget);
+      expect(tester.getSize(header).height, lessThanOrEqualTo(80));
+      expect(fallbackTitle, findsOneWidget);
+      expect(find.text(title), findsOneWidget);
+      expect(
+        tester.getRect(fallbackTitle).top,
+        greaterThanOrEqualTo(tester.getRect(header).bottom),
+      );
+      expect(
+        find.byKey(const ValueKey('opportunity-fallback-category-label')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Wave 34 compact opportunity city uses a theme-aware readable foreground in light mode',
     (tester) async {
       tester.view.physicalSize = const Size(360, 800);

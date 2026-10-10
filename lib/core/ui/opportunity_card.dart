@@ -100,11 +100,10 @@ class OpportunityCard extends StatelessWidget {
     ].take(3).toList(growable: false);
     final mediaUrl = _mediaUrl(job);
     final locale = Localizations.localeOf(context).languageCode;
-    final category = job.category?.trim().isNotEmpty == true
-        ? hopeCategoryLabel(context, job.category!)
-        : (job.categoryId?.trim().isNotEmpty == true
-            ? hopeCategoryLabel(context, job.categoryId!)
-            : '');
+    final categoryValue = _categoryValue();
+    final category = categoryValue == null
+        ? ''
+        : hopeCategoryLabel(context, categoryValue);
     final opportunityKind = job.isMission
         ? _t(context, 'ماموریت', 'Mission')
         : _t(context, 'فرصت شغلی', 'Job');
@@ -199,8 +198,22 @@ class OpportunityCard extends StatelessWidget {
     );
   }
 
-  // Listing cards should use real opportunity media when the payload provides it.
-  // The deterministic category illustration remains the fallback when no usable media exists.
+  bool _isWebImageUrl(String value) {
+    final uri = Uri.tryParse(value);
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
+
+  String? _categoryValue() {
+    final category = job.category?.trim();
+    if (category != null && category.isNotEmpty) return category;
+    final categoryId = job.categoryId?.trim();
+    return categoryId != null && categoryId.isNotEmpty ? categoryId : null;
+  }
+
+  // Listing cards use only absolute HTTP(S) media from the opportunity payload.
+  // When no usable media exists, the localized category identity becomes the visual fallback.
   String? _mediaUrl(HopeJob job) {
     final candidates = <dynamic>[
       job.raw['imageUrl'],
@@ -214,7 +227,7 @@ class OpportunityCard extends StatelessWidget {
     for (final candidate in candidates) {
       if (candidate is String && candidate.trim().isNotEmpty) {
         final value = candidate.trim();
-        if (Uri.tryParse(value)?.hasScheme == true) return value;
+        if (_isWebImageUrl(value)) return value;
       }
     }
     final media = job.raw['media'];
@@ -225,7 +238,7 @@ class OpportunityCard extends StatelessWidget {
           final candidate = item[key];
           if (candidate is String && candidate.trim().isNotEmpty) {
             final value = candidate.trim();
-            if (Uri.tryParse(value)?.hasScheme == true) return value;
+            if (_isWebImageUrl(value)) return value;
           }
         }
       }
@@ -246,13 +259,16 @@ class OpportunityCard extends StatelessWidget {
     bool showTitle = true,
   }) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final hasMedia = mediaUrl?.trim().isNotEmpty == true;
     final percent = score == null ? null : (score <= 1 ? score * 100 : score);
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
         key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 108 : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 128 : 152))
+            ? (hasMedia
+                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 108 : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 128 : 152))
+                : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 64 : 76))
             : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 78 : 92),
         width: double.infinity,
         child: Stack(
@@ -295,7 +311,7 @@ class OpportunityCard extends StatelessWidget {
                 inverse: true,
               ),
             ),
-            if (showTitle)
+            if (showTitle && hasMedia)
               PositionedDirectional(
                 start: 12,
                 end: 12,
@@ -325,7 +341,11 @@ class OpportunityCard extends StatelessWidget {
   }
 
   Widget _fallbackMedia(BuildContext context, Color primary) {
-    final categoryKey = (job.category ?? '')
+    final categoryValue = _categoryValue();
+    final categoryLabel = categoryValue == null || categoryValue.isEmpty
+        ? null
+        : hopeCategoryLabel(context, categoryValue);
+    final categoryKey = (categoryValue ?? '')
         .trim()
         .toLowerCase()
         .replaceAll('_', '-')
@@ -372,27 +392,63 @@ class OpportunityCard extends StatelessWidget {
           ],
         ),
       ),
-      child: Center(
-        child: Container(
-          key: const ValueKey('opportunity-fallback-icon-container'),
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: dark ? .07 : .04),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: accent.withValues(alpha: dark ? .13 : .10),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showCategoryLabel = categoryLabel != null &&
+              constraints.maxHeight >= 60 &&
+              constraints.maxWidth >= 66 &&
+              MediaQuery.textScalerOf(context).scale(1) <= 1.2;
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  key: const ValueKey('opportunity-fallback-icon-container'),
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: dark ? .07 : .04),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: accent.withValues(alpha: dark ? .13 : .10),
+                    ),
+                  ),
+                  child: Center(
+                    child: HopeIcon(
+                      icon,
+                      color: accent.withValues(alpha: dark ? .92 : 1),
+                      size: 16,
+                      strokeWidth: 1.6,
+                    ),
+                  ),
+                ),
+                if (showCategoryLabel && categoryLabel != null) ...[
+                  const SizedBox(height: 3),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth - 8,
+                    ),
+                    child: Text(
+                      categoryLabel,
+                      key: const ValueKey('opportunity-fallback-category-label'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: dark ? .90 : .82,
+                        ),
+                        fontSize: 10,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ),
-          child: Center(
-            child: HopeIcon(
-              icon,
-              color: accent.withValues(alpha: dark ? .92 : 1),
-              size: 16,
-              strokeWidth: 1.6,
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -595,6 +651,7 @@ class OpportunityCard extends StatelessWidget {
     required String? mediaUrl,
     required HopeCopy copy,
   }) {
+    final hasMedia = mediaUrl?.trim().isNotEmpty == true;
     final company = _companyName();
     final mode = _workMode(context);
     return Column(
@@ -608,7 +665,25 @@ class OpportunityCard extends StatelessWidget {
           mediaUrl: mediaUrl,
           score: score,
           featured: true,
+          showTitle: hasMedia,
         ),
+        if (!hasMedia) ...[
+          const SizedBox(height: 8),
+          Text(
+            title,
+            key: const ValueKey('opportunity-featured-fallback-title'),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: MediaQuery.sizeOf(context).width <
+                          HopeV2Breakpoints.medium
+                      ? 16
+                      : 18,
+                  height: 1.15,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ],
         const SizedBox(height: 6),
         LayoutBuilder(
           builder: (context, constraints) {
