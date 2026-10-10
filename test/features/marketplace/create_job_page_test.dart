@@ -130,7 +130,7 @@ Future<void> _pump(
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, child) {
-        final media = MediaQueryData.fromView(View.of(context));
+        final media = MediaQuery.of(context);
         return MediaQuery(
           data: media.copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
