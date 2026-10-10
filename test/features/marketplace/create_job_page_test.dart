@@ -172,6 +172,7 @@ Future<void> _advanceToReview(WidgetTester tester) async {
 }
 
 Future<void> _fillMissionForm(WidgetTester tester, {String? category}) async {
+  await _advance(tester); // Details
   await tester.enterText(
       find.widgetWithText(TextField, 'Title'), 'Design a landing page');
   await tester.enterText(find.widgetWithText(TextField, 'Full description'),
