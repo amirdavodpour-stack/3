@@ -5,6 +5,7 @@ import 'package:hugeicons/hugeicons.dart';
 import '../theme/hope_v2_design.dart';
 
 import 'components.dart';
+import 'hope_display_formatters.dart';
 import 'hope_product_architecture.dart';
 
 /// Shared page shell. Every V2 flagship surface should use this instead of
@@ -2218,47 +2219,53 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
 
     Widget breakdownBar(String key, {required double width}) {
       final value = _normalized(key);
-      return SizedBox(
+      final percent = (value * 100).round();
+      final locale = Localizations.localeOf(context).languageCode;
+      return Semantics(
         key: ValueKey('opportunity-decision-breakdown-$key'),
-        width: width,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _label(context, key),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+        container: true,
+        label: '${_label(context, key)}: ${HopeDisplayFormatter.percent(percent, locale: locale)}',
+        child: SizedBox(
+          width: width,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _label(context, key),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? HopeV2Colors.darkMuted
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ),
+                  Text(
+                    HopeDisplayFormatter.percent(percent, locale: locale),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? HopeV2Colors.darkMuted
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w800,
+                          color: primary,
+                          fontWeight: FontWeight.w900,
                         ),
                   ),
-                ),
-                Text(
-                  '${(value * 100).round()}%',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: primary,
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                minHeight: 4,
-                value: value,
-                backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .32),
-                valueColor: AlwaysStoppedAnimation<Color>(primary),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(
+                  minHeight: 4,
+                  value: value,
+                  backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .32),
+                  valueColor: AlwaysStoppedAnimation<Color>(primary),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }

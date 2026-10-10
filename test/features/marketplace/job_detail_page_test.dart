@@ -507,6 +507,40 @@ void main() {
   });
 
   testWidgets(
+      'Wave 39 match breakdown exposes each localized component and percentage to semantics',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    try {
+      await _pump(
+        tester,
+        job: _job(kind: 'JOB', ownerId: 'u1'),
+        userId: 'u9',
+        width: 390,
+        height: 1200,
+        locale: const Locale('fa'),
+      );
+
+      final expected = <String, List<String>>{
+        'skills': ['مهارت', '۹۶٪'],
+        'category': ['دسته‌بندی', '۱۰۰٪'],
+        'location': ['مکان', '۸۸٪'],
+        'salary': ['درآمد', '۸۲٪'],
+      };
+      for (final entry in expected.entries) {
+        final node = tester.getSemantics(
+          find.byKey(ValueKey('opportunity-decision-breakdown-${entry.key}')),
+        );
+        for (final token in entry.value) {
+          expect(node.label, contains(token), reason: entry.key);
+        }
+      }
+      expect(tester.takeException(), isNull);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  testWidgets(
       'active compact decision strip exposes real recommendation dimensions and values',
       (tester) async {
     await _pump(
