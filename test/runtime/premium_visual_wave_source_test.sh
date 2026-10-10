@@ -366,3 +366,7 @@ grep -Fq "constraints.maxWidth >= 800" "lib/features/home/premium_home_feed.dart
 grep -Fq "statGridWidth >= 800 ? 70.0 : 140.0" "test/features/home/premium_home_feed_test.dart"
 grep -Fq "if (gridWidth >= 800)" "test/features/home/premium_home_feed_test.dart"
 echo "PASS: Wave30 narrow Home Pulse columns stay aligned at responsive widths"
+
+# Wave30 screenshot-led correction: profile language label stacks at enlarged English LTR scale.
+grep -Fq 'MediaQuery.textScalerOf(context).scale(1) <= 1.2' "lib/features/profile/profile_page.dart"
+grep -Fq 'Wave30 Profile language selector uses a readable stacked layout at 1.5x English LTR' "test/features/profile/profile_page_test.dart"

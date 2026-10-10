@@ -79,6 +79,8 @@ Future<void> _pump(
   double height = 2400,
   ProfileRepository? repository,
   bool settle = true,
+  double textScale = 1,
+  Locale locale = const Locale('fa'),
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -95,7 +97,7 @@ Future<void> _pump(
   }
   await tester.pumpWidget(MaterialApp(
     theme: ThemeData.light(),
-    locale: const Locale('fa'),
+    locale: locale,
     supportedLocales: const [Locale('fa'), Locale('en')],
     localizationsDelegates: const [
       AppLocalizations.delegate,
@@ -103,6 +105,13 @@ Future<void> _pump(
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
+    builder: (context, child) {
+      final media = MediaQuery.of(context);
+      return MediaQuery(
+        data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      );
+    },
     home: Scaffold(
       body: MultiProvider(
         providers: [
@@ -217,6 +226,50 @@ testWidgets('profile keeps application management in the dedicated work destinat
     expect(find.text('تأییدشده'), findsWidgets);
     expect(find.textContaining('VERIFIED'), findsNothing);
   });
+
+  testWidgets(
+    'Wave30 Profile language selector uses a readable stacked layout at 1.5x English LTR',
+    (tester) async {
+      await _pump(
+        tester,
+        authenticated: true,
+        width: 360,
+        height: 640,
+        locale: const Locale('en'),
+        textScale: 1.5,
+      );
+
+      final title = find.text('App language');
+      final selector = find.byKey(
+        const ValueKey('profile-language-selector'),
+      );
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(title, findsOneWidget);
+      expect(selector, findsOneWidget);
+      expect(dock, findsOneWidget);
+      expect(
+        tester.getSize(title).height,
+        lessThan(60),
+        reason: 'The language title must not break into three narrow lines.',
+      );
+
+      await tester.ensureVisible(selector);
+      await tester.pumpAndSettle();
+      final selectorRect = tester.getRect(selector);
+      final dockRect = tester.getRect(dock);
+      expect(
+        selectorRect.left,
+        lessThan(100),
+        reason: 'At enlarged text, the selector must stack below the details, not beside them.',
+      );
+      expect(
+        selectorRect.bottom,
+        lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Wave 24 language selector clears the dock at 360x640 and remains tappable',
     (tester) async {

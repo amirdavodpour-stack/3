@@ -561,7 +561,8 @@ padding: const EdgeInsets.symmetric(vertical: 6),
               );
 
               if (constraints.maxWidth < 500) {
-                if (constraints.maxWidth >= 360) {
+                if (constraints.maxWidth >= 360 &&
+                    MediaQuery.textScalerOf(context).scale(1) <= 1.2) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(
