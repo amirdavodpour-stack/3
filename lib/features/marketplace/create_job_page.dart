@@ -41,6 +41,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
   final accept = TextEditingController();
 
   bool busy = false;
+  int activeStep = 0;
   String kind = 'MISSION';
   String visibility = 'PUBLIC';
   String schedule = 'FULL_TIME';
@@ -212,6 +213,8 @@ class _CreateJobPageState extends State<CreateJobPage> {
                   deadline: deadline,
                   acceptanceCriteria: accept,
                   busy: busy,
+                  activeStep: activeStep,
+                  onStepChanged: (step) => setState(() => activeStep = step),
                   kind: kind,
                   visibility: visibility,
                   schedule: schedule,
