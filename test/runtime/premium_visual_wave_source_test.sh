@@ -161,7 +161,12 @@ grep -Fq 'find.descendant(' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq '۱۴۰۵ شهریور ۱۰' 'test/core/ui/hope_display_formatters_test.dart'
 grep -Fq 'در ۱۲ ساعت' 'test/core/ui/hope_display_formatters_test.dart'
 grep -Fq 'offers-status-filter-scroll' "lib/features/offers/offers_page.dart" || grep -Fq 'Wrap(' "lib/features/offers/offers_page.dart"
-grep -Fq 'final metricWidth = (constraints.maxWidth - gap) / 2;' "lib/features/financial/financial_insights_page.dart"
+# Wave 43: financial metric tiles adapt to actual width and accessibility text scale.
+grep -Fq 'final columns = compact &&' "lib/features/financial/financial_insights_page.dart"
+grep -Fq 'textScale <= 1.2' "lib/features/financial/financial_insights_page.dart"
+grep -Fq '? 3' "lib/features/financial/financial_insights_page.dart"
+grep -Fq ': 2;' "lib/features/financial/financial_insights_page.dart"
+grep -Fq '(constraints.maxWidth - gap * (columns - 1)) / columns;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'height: compactViewport ? 132 : denseViewport ? 166 : 214,' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'HOPE_RUNTIME_EXACT_HEAD=$exact_head' ".github/workflows/hope-ui-runtime-evidence.yml"
