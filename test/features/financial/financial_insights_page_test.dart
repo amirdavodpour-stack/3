@@ -81,10 +81,15 @@ void main() {
         find.byKey(const ValueKey('financial-cashflow-chart-scroll')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const ValueKey('financial-balance-chart-scroll')),
-        findsOneWidget,
+      final balanceChart = find.byKey(
+        const ValueKey('financial-balance-chart-scroll'),
       );
+      await tester.scrollUntilVisible(
+        balanceChart,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(balanceChart, findsOneWidget);
       for (final label in ['ورودی', 'خروجی', 'رزرو شده']) {
         expect(
           find.descendant(of: legend, matching: find.text(label)),
