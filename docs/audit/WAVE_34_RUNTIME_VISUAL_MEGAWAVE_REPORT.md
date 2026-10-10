@@ -43,3 +43,9 @@
 - Shared compact opportunity cards now use theme-aware location color, less undersized type/budget metadata, and explicit widget keys for contrast and 1.5×-scale regressions.
 - Tests were adapted to traverse the real steps for mission/job creation, validation, busy/failure behavior, and job-deadline requirements; additional tests cover step isolation/back navigation and compact-card readability.
 - The offers-source guard accepts either the prior wrapping filters or the new horizontally scrollable `offers-status-filter-scroll`; widget tests assert that the new rail is horizontal.
+
+## Wave 35 follow-on — category localization and truthful progress labels
+
+- The runtime Job Detail screenshot exposed a known category value (`Software`) untranslated in a Persian interface. A shared taxonomy formatter now maps known backend category slugs/labels to official app-localization strings in OpportunityCard, Job Detail, and Saved Searches. Unknown/custom category names remain untouched in cards/details; saved-search filters retain their existing safe “Other” fallback.
+- The five-step creation progress rail now matches the real staged form: Type, Details, Budget, Criteria, Review; its current-step headline uses the same localized numbering.
+- The 1.5× financial chart regression was hardened to drive the keyed outer list directly until Flutter mounts the lazy balance chart.
