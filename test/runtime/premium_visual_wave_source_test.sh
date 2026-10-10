@@ -192,7 +192,7 @@ grep -Fq "opportunity-match-score-ring" "$premium"
 grep -Fq "wallet-balance-metric-locked-total" "lib/features/wallet/wallet_page.dart"
 grep -Fq "_money(wallet.lockedBalance)" "lib/features/wallet/wallet_page.dart"
 grep -Fq "for (var i = 0; i < en.length; i++)" "lib/features/transactions/transaction_widgets.part.dart"
-grep -Fq "initiallyExpanded: !compact" "lib/features/marketplace/create_job_widgets.part.dart"
+grep -Fq "initiallyExpanded: true" "lib/features/marketplace/create_job_widgets.part.dart"
 grep -Fq "candidate-comparison-matrix" "lib/features/marketplace/employer_candidate_matches_page.dart"
 grep -Fq "bool? _completedAsAgreed;" "lib/features/jobs/job_satisfaction_page.dart"
 grep -Fq "emptySelectionAllowed: true" "lib/features/jobs/job_satisfaction_page.dart"
@@ -286,14 +286,14 @@ done
 # Finance charts preserve real data while allowing readable category/date labels.
 grep -Fq "financial-cashflow-chart-scroll" lib/features/financial/financial_insights_page.dart
 grep -Fq "financial-balance-chart-scroll" lib/features/financial/financial_insights_page.dart
-grep -Fq 'math.max(constraints.maxWidth, data.length * 42.0)' lib/features/financial/financial_insights_page.dart
-grep -Fq 'math.max(constraints.maxWidth, points.length * 52.0)' lib/features/financial/financial_insights_page.dart
+grep -Fq 'final monthWidth = math.max(58.0, 58.0 * textScale);' lib/features/financial/financial_insights_page.dart
+grep -Fq 'final pointWidth = math.max(64.0, 64.0 * textScale);' lib/features/financial/financial_insights_page.dart
 grep -Fq "find.byKey(const ValueKey('financial-cashflow-chart-scroll'))" test/features/financial/financial_insights_page_test.dart
 grep -Fq "find.byKey(const ValueKey('financial-balance-chart-scroll'))" test/features/financial/financial_insights_page_test.dart
 grep -Fq 'constraints.maxWidth >= 1080 ? 3' lib/features/home/premium_home_feed.dart
 grep -Fq "isNot(contains(r'\\n'))" test/core/ui/premium_visual_wave_15_test.dart
 grep -Fq 'HopeV2Icons.message,' lib/features/chat/chat_page.dart
-grep -Fq 'initiallyExpanded: !compact' lib/features/marketplace/create_job_widgets.part.dart
+grep -Fq 'initiallyExpanded: true' lib/features/marketplace/create_job_widgets.part.dart
 grep -Fq 'onPressed: _busy || !_feedbackComplete ? null : _submit' lib/features/jobs/job_satisfaction_page.dart
 grep -Fq 'Wave 27 scroll tail includes unconsumed system bottom inset' test/core/ui/premium_navigation_test.dart
 echo "PASS: Wave 27 cross-surface scroll safety + readable finance chart contracts"
@@ -306,7 +306,7 @@ grep -Fq "ValueKey('chat-message-input')" "lib/features/chat/chat_page.dart"
 grep -Fq "final shortViewport = MediaQuery.sizeOf(context).height < 800;" "lib/features/financial/financial_insights_page.dart"
 grep -Fq "painter.paint(canvas, Offset(x, 0));" "lib/features/financial/financial_insights_page.dart"
 grep -Fq "final plotTop = labelHeight + 3;" "lib/features/financial/financial_insights_page.dart"
-grep -Fq "shortViewport ? 106.0 : compact ? 148.0 : 172.0" "lib/features/financial/financial_insights_page.dart"
+grep -Fq "shortViewport ? 122.0 : compact ? 156.0 : 172.0" "lib/features/financial/financial_insights_page.dart"
 grep -Fq "Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')" "lib/features/auth/login_page.dart"
 grep -Fq "Icons.person_add_alt_1_rounded, size: 18, key: ValueKey('auth-name-field-icon')" "lib/features/auth/register_page.dart"
 grep -Fq "auth-password-field-icon" "lib/features/auth/login_page.dart"
