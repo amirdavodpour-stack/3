@@ -2455,8 +2455,25 @@ class HopeCreationProgress extends StatelessWidget {
       child: Container(
         key: const ValueKey('create-opportunity-progress'),
         padding: const EdgeInsets.fromLTRB(4, 3, 4, 7),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 2, end: 2, bottom: 5),
+              child: Text(
+                en
+                    ? 'Step ${safeIndex + 1} of ${labelsEn.length}'
+                    : 'مرحله ${const ['۱', '۲', '۳', '۴', '۵'][safeIndex]} از ۵',
+                key: const ValueKey('create-opportunity-current-step-label'),
+                textAlign: TextAlign.start,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+            ),
+            Row(
+              children: [
             for (var step = 0; step < labelsFa.length; step++)
               Expanded(
                 child: Padding(
@@ -2521,6 +2538,8 @@ class HopeCreationProgress extends StatelessWidget {
                   ),
                 ),
               ),
+          ],
+            ),
           ],
         ),
       ),
