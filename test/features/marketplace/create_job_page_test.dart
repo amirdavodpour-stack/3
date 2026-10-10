@@ -450,41 +450,44 @@ void main() {
     'Wave 36 creation progress uses Persian stage and circle numerals in RTL',
     (tester) async {
       final handle = tester.ensureSemantics();
-      addTearDown(handle.dispose);
+      try {
 
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('fa'),
-          supportedLocales: const [Locale('fa'), Locale('en')],
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          home: const Scaffold(
-            body: Padding(
-              padding: EdgeInsets.all(16),
-              child: HopeCreationProgress(activeIndex: 2),
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const Scaffold(
+              body: Padding(
+                padding: EdgeInsets.all(16),
+                child: HopeCreationProgress(activeIndex: 2),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('مرحله ۳ از ۵'), findsOneWidget);
-      expect(find.text('مبلغ'), findsOneWidget);
-      expect(find.text('شرایط'), findsOneWidget);
-      expect(find.text('بازبینی'), findsOneWidget);
-      expect(find.text('۳'), findsOneWidget);
-      expect(find.text('3'), findsNothing);
-      expect(
-        tester.getSemantics(
-          find.byKey(const ValueKey('create-opportunity-progress')),
-        ).label,
-        contains('مرحله ۳ از ۵'),
-      );
-      expect(tester.takeException(), isNull);
+        expect(find.text('مرحله ۳ از ۵'), findsOneWidget);
+        expect(find.text('مبلغ'), findsOneWidget);
+        expect(find.text('شرایط'), findsOneWidget);
+        expect(find.text('بازبینی'), findsOneWidget);
+        expect(find.text('۳'), findsOneWidget);
+        expect(find.text('3'), findsNothing);
+        expect(
+          tester.getSemantics(
+            find.byKey(const ValueKey('create-opportunity-progress')),
+          ).label,
+          contains('مرحله ۳ از ۵'),
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
     },
   );
 }

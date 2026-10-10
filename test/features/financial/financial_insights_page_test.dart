@@ -225,63 +225,66 @@ void main() {
     'Wave 36 financial charts expose recorded series values to semantics',
     (tester) async {
       final handle = tester.ensureSemantics();
-      addTearDown(handle.dispose);
-      tester.view.physicalSize = const Size(360, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      try {
+        tester.view.physicalSize = const Size(360, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        Provider<FinancialInsightsRepository>.value(
-          value: const _Wave24InsightsRepository(),
-          child: MaterialApp(
-            locale: const Locale('fa'),
-            supportedLocales: const [Locale('fa'), Locale('en')],
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            home: const FinancialInsightsPage(),
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _Wave24InsightsRepository(),
+            child: MaterialApp(
+              locale: const Locale('fa'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final barScroll = find.byKey(
-        const ValueKey('financial-cashflow-chart-scroll'),
-      );
-      await tester.scrollUntilVisible(
-        barScroll,
-        140,
-        scrollable: find.byType(Scrollable).first,
-      );
-      final bars = tester.getSemantics(
-        find.byKey(const ValueKey('financial-cashflow-chart-semantics')),
-      );
-      expect(bars.label, contains('اردیبهشت'));
-      expect(bars.label, contains('ورودی'));
-      expect(bars.label, contains('رزرو شده'));
-
-      final balanceScroll = find.byKey(
-        const ValueKey('financial-balance-chart-scroll'),
-      );
-      final pageList = find.byKey(
-        const ValueKey('financial-insights-list'),
-      );
-      for (var attempt = 0;
-          attempt < 12 && balanceScroll.evaluate().isEmpty;
-          attempt++) {
-        await tester.drag(pageList, const Offset(0, -400));
+        );
         await tester.pumpAndSettle();
+
+        final barScroll = find.byKey(
+          const ValueKey('financial-cashflow-chart-scroll'),
+        );
+        await tester.scrollUntilVisible(
+          barScroll,
+          140,
+          scrollable: find.byType(Scrollable).first,
+        );
+        final bars = tester.getSemantics(
+          find.byKey(const ValueKey('financial-cashflow-chart-semantics')),
+        );
+        expect(bars.label, contains('اردیبهشت'));
+        expect(bars.label, contains('ورودی'));
+        expect(bars.label, contains('رزرو شده'));
+
+        final balanceScroll = find.byKey(
+          const ValueKey('financial-balance-chart-scroll'),
+        );
+        final pageList = find.byKey(
+          const ValueKey('financial-insights-list'),
+        );
+        for (var attempt = 0;
+            attempt < 12 && balanceScroll.evaluate().isEmpty;
+            attempt++) {
+          await tester.drag(pageList, const Offset(0, -400));
+          await tester.pumpAndSettle();
+        }
+        final balance = tester.getSemantics(
+          find.byKey(const ValueKey('financial-balance-chart-semantics')),
+        );
+        expect(balance.label, contains('2026-05'));
+        expect(balance.label, contains('2026-10'));
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
       }
-      final balance = tester.getSemantics(
-        find.byKey(const ValueKey('financial-balance-chart-semantics')),
-      );
-      expect(balance.label, contains('2026-05'));
-      expect(balance.label, contains('2026-10'));
-      expect(tester.takeException(), isNull);
     },
   );
 }
