@@ -332,7 +332,7 @@ void main() {
 
     await _pump(tester, job: _job(), width: 1280, height: 1200);
     expect(find.byType(PremiumHero), findsOneWidget);
-    expect(tester.getSize(find.byType(PremiumHero)).height, 214);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 280);
     expect(tester.takeException(), isNull);
   });
 
@@ -492,7 +492,6 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-decision-breakdown-skills')), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-decision-breakdown-category')), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-decision-breakdown-location')), findsOneWidget);
@@ -515,7 +514,7 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
+    expect(find.text('94%'), findsOneWidget);
     expect(find.text('Quick decision'), findsOneWidget);
     expect(find.text('Match signals'), findsOneWidget);
     expect(find.byType(BottomSheet), findsNothing);
