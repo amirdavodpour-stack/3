@@ -348,7 +348,7 @@ class _ChartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
     final shortViewport = MediaQuery.sizeOf(context).height < 800;
-    final chartHeight = shortViewport ? 106.0 : compact ? 148.0 : 172.0;
+    final chartHeight = shortViewport ? 122.0 : compact ? 156.0 : 172.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -411,9 +411,21 @@ class _BarChart extends StatelessWidget {
           spacing: shortViewport ? 5 : HopeV2Spacing.sm,
           runSpacing: shortViewport ? 2 : HopeV2Spacing.xs,
           children: [
-            _FinancialLegendItem(color: inflow, label: english ? 'Inflow' : 'ورودی'),
-            _FinancialLegendItem(color: outflow, label: english ? 'Outflow' : 'خروجی'),
-            _FinancialLegendItem(color: reserved, label: english ? 'Reserved' : 'رزرو شده'),
+            _FinancialLegendItem(
+              color: inflow,
+              icon: Icons.call_received_rounded,
+              label: english ? 'Inflow' : 'ورودی',
+            ),
+            _FinancialLegendItem(
+              color: outflow,
+              icon: Icons.call_made_rounded,
+              label: english ? 'Outflow' : 'خروجی',
+            ),
+            _FinancialLegendItem(
+              color: reserved,
+              icon: Icons.lock_outline_rounded,
+              label: english ? 'Reserved' : 'رزرو شده',
+            ),
           ],
         ),
         Expanded(
@@ -422,8 +434,10 @@ class _BarChart extends StatelessWidget {
               // Keep each month readable instead of squeezing all labels into
               // the viewport; the chart becomes horizontally scrollable only
               // when the real series count needs more width.
+              final textScale = MediaQuery.textScalerOf(context).scale(1);
+              final monthWidth = math.max(58.0, 58.0 * textScale);
               final chartWidth =
-                  math.max(constraints.maxWidth, data.length * 42.0).toDouble();
+                  math.max(constraints.maxWidth, data.length * monthWidth).toDouble();
               return SingleChildScrollView(
                 key: const ValueKey('financial-cashflow-chart-scroll'),
                 scrollDirection: Axis.horizontal,
@@ -438,6 +452,7 @@ class _BarChart extends StatelessWidget {
                       reserved,
                       theme.colorScheme.outline,
                       Directionality.of(context),
+                      textScale,
                     ),
                     child: const SizedBox.expand(),
                   ),
@@ -453,26 +468,27 @@ class _BarChart extends StatelessWidget {
 }
 
 class _FinancialLegendItem extends StatelessWidget {
-  const _FinancialLegendItem({required this.color, required this.label});
+  const _FinancialLegendItem({
+    required this.color,
+    required this.icon,
+    required this.label,
+  });
 
   final Color color;
+  final IconData icon;
   final String label;
 
   @override
   Widget build(BuildContext context) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
           ),
         ],
@@ -487,6 +503,7 @@ class _BarChartPainter extends CustomPainter {
     this.reservedColor,
     this.axisColor,
     this.textDirection,
+    this.textScale = 1,
   );
   final List<HopeMonthlyCashFlow> data;
   final Color inflowColor;
@@ -494,6 +511,7 @@ class _BarChartPainter extends CustomPainter {
   final Color reservedColor;
   final Color axisColor;
   final TextDirection textDirection;
+  final double textScale;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -501,7 +519,7 @@ class _BarChartPainter extends CustomPainter {
         .expand((x) => [x.inflowValue, x.outflowValue, x.reservedValue])
         .toList();
     final maxValue = values.isEmpty ? 1.0 : math.max(1.0, values.reduce(math.max));
-    final labelHeight = size.height < 150 ? 14.0 : 18.0;
+    final labelHeight = size.height < 150 ? 20.0 : 24.0;
     final plotTop = labelHeight + 3;
     final plotBottom =
         math.max(plotTop + 1, size.height - 3).toDouble();
@@ -546,9 +564,9 @@ class _BarChartPainter extends CustomPainter {
         text: TextSpan(
           text: value,
           style: TextStyle(
-            color: axisColor.withValues(alpha: .82),
-            fontSize: groupWidth < 38 ? 9 : 11,
-            height: 1,
+            color: axisColor.withValues(alpha: .92),
+            fontSize: (12.0 * textScale).toDouble(),
+            height: 1.1,
           ),
         ),
         textDirection: textDirection,
@@ -569,7 +587,9 @@ class _BarChartPainter extends CustomPainter {
       oldDelegate.inflowColor != inflowColor ||
       oldDelegate.outflowColor != outflowColor ||
       oldDelegate.reservedColor != reservedColor ||
-      oldDelegate.textDirection != textDirection;
+      oldDelegate.axisColor != axisColor ||
+      oldDelegate.textDirection != textDirection ||
+      oldDelegate.textScale != textScale;
 }
 
 class _LineChart extends StatelessWidget {
@@ -583,8 +603,10 @@ class _LineChart extends StatelessWidget {
       builder: (context, constraints) {
         // A stable minimum plot width prevents date labels from colliding on
         // narrow screens while retaining the exact backend point sequence.
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final pointWidth = math.max(64.0, 64.0 * textScale);
         final chartWidth =
-            math.max(constraints.maxWidth, points.length * 52.0).toDouble();
+            math.max(constraints.maxWidth, points.length * pointWidth).toDouble();
         return SingleChildScrollView(
           key: const ValueKey('financial-balance-chart-scroll'),
           scrollDirection: Axis.horizontal,
@@ -597,6 +619,7 @@ class _LineChart extends StatelessWidget {
                 color,
                 color.withValues(alpha: .12),
                 Directionality.of(context),
+                textScale,
               ),
               child: const SizedBox.expand(),
             ),
@@ -608,11 +631,18 @@ class _LineChart extends StatelessWidget {
 }
 
 class _LineChartPainter extends CustomPainter {
-  _LineChartPainter(this.points, this.color, this.fillColor, this.textDirection);
+  _LineChartPainter(
+    this.points,
+    this.color,
+    this.fillColor,
+    this.textDirection,
+    this.textScale,
+  );
   final List<HopeBalancePoint> points;
   final Color color;
   final Color fillColor;
   final TextDirection textDirection;
+  final double textScale;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -621,7 +651,7 @@ class _LineChartPainter extends CustomPainter {
     final maxValue = math.max(1.0, values.reduce(math.max));
     final minValue = values.reduce(math.min);
     final range = math.max(1.0, maxValue - minValue);
-    final labelHeight = size.height < 150 ? 14.0 : 18.0;
+    final labelHeight = size.height < 150 ? 20.0 : 24.0;
     final plotHeight = math.max(1.0, size.height - labelHeight).toDouble();
     final labelWidth = math.max(1.0, size.width / math.max(1, points.length) - 2).toDouble();
     final path = Path();
@@ -664,9 +694,9 @@ class _LineChartPainter extends CustomPainter {
         text: TextSpan(
           text: points[i].date,
           style: TextStyle(
-            color: color.withValues(alpha: .76),
-            fontSize: labelWidth < 36 ? 9 : 10,
-            height: 1,
+            color: color.withValues(alpha: .92),
+            fontSize: (12.0 * textScale).toDouble(),
+            height: 1.1,
           ),
         ),
         textDirection: textDirection,
@@ -687,7 +717,8 @@ class _LineChartPainter extends CustomPainter {
       oldDelegate.points != points ||
       oldDelegate.color != color ||
       oldDelegate.fillColor != fillColor ||
-      oldDelegate.textDirection != textDirection;
+      oldDelegate.textDirection != textDirection ||
+      oldDelegate.textScale != textScale;
 }
 
 class _SourceChart extends StatelessWidget {

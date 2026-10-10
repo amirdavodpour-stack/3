@@ -151,4 +151,55 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'Wave 34 financial chart labels remain readable and scrollable at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final legend = find.byKey(const ValueKey('financial-cashflow-legend'));
+      await tester.scrollUntilVisible(
+        legend,
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(legend, findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('financial-cashflow-chart-scroll')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('financial-balance-chart-scroll')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
