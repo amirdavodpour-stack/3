@@ -6,6 +6,7 @@ import '../../core/application/application_registry_context.dart';
 import '../../core/marketplace/saved_search_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/hope_v2_design.dart';
@@ -308,7 +309,10 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
             if (!_loading && _error == null && _items.isNotEmpty)
               PremiumStatCard(
                 label: _t('جست‌وجوهای فعال', 'Saved searches'),
-                value: _items.length.toString(),
+                value: HopeDisplayFormatter.integer(
+                  _items.length,
+                  locale: Localizations.localeOf(context).languageCode,
+                ),
                 icon: HopeV2Icons.savedSearches,
                 accent: Theme.of(context).colorScheme.primary,
                 compact: true,

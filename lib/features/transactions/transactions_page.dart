@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import 'package:provider/provider.dart';
 import '../../core/transactions/transaction_repository.dart';
 import '../../core/application/application_registry_context.dart';
@@ -564,19 +565,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         final metrics = [
                           _workCenterMetric(
                             label: _t('همکاری‌ها', 'Collaborations'),
-                            value: '${items.length}',
+                            value: HopeDisplayFormatter.integer(items.length, locale: Localizations.localeOf(context).languageCode),
                             icon: HopeV2Icons.job,
                             accent: Theme.of(context).colorScheme.primary,
                           ),
                           _workCenterMetric(
                             label: _t('در حال اجرا', 'Active work'),
-                            value: '$activeCount',
+                            value: HopeDisplayFormatter.integer(activeCount, locale: Localizations.localeOf(context).languageCode),
                             icon: HopeV2Icons.mission,
                             accent: secondaryAccent(context),
                           ),
                           _workCenterMetric(
                             label: _t('تسویه‌شده', 'Settled'),
-                            value: '$settledCount',
+                            value: HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode),
                             icon: HopeV2Icons.completed,
                             accent: HopeV2Colors.success,
                           ),
@@ -630,12 +631,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                 Text(
                                   activeItems.isNotEmpty
                                       ? _t(
-                                          '$activeCount همکاری در جریان است',
-                                          '$activeCount active collaborations',
+                                          '${HopeDisplayFormatter.integer(activeCount, locale: Localizations.localeOf(context).languageCode)} همکاری در جریان است',
+                                          '${HopeDisplayFormatter.integer(activeCount, locale: Localizations.localeOf(context).languageCode)} active collaborations',
                                         )
                                       : _t(
-                                          '$settledCount همکاری تسویه شده است',
-                                          '$settledCount collaborations settled',
+                                          '${HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode)} همکاری تسویه شده است',
+                                          '${HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode)} collaborations settled',
                                         ),
                                   maxLines: 2,
                                   softWrap: true,
@@ -650,7 +651,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           if (settledItems.isNotEmpty)
                             PremiumTag(
                               icon: HopeV2Icons.completed,
-                              label: '$settledCount ${_t('تسویه', 'settled')}',
+                              label: '${HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode)} ${_t('تسویه', 'settled')}',
                               color: HopeV2Colors.success,
                             ),
                         ],

@@ -3,6 +3,7 @@ import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/marketplace/employer_candidate_matching_repository.dart';
 import '../../core/theme/hope_v2_design.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 
 class EmployerCandidateMatchesPage extends StatelessWidget {
@@ -17,6 +18,13 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _percent(BuildContext context, num value, {int fractionDigits = 0}) =>
+      HopeDisplayFormatter.percent(
+        value,
+        locale: Localizations.localeOf(context).languageCode,
+        fractionDigits: fractionDigits,
+      );
 
   String _reason(BuildContext context, String value) => switch (value) {
         'SKILL_MATCH' => _t(context, 'مهارت', 'Skills'),
@@ -79,7 +87,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${(ratio * 100).round()}%',
+                        _percent(context, (ratio * 100).round()),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.w900,
                             ),
@@ -194,7 +202,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                     cell(_t(context, 'انطباق', 'Match'), heading: true),
                     for (final candidate in candidates)
                       cell(
-                        '${candidate.score.toStringAsFixed(candidate.score == candidate.score.roundToDouble() ? 0 : 1)}٪',
+                        _percent(
+                          context,
+                          candidate.score,
+                          fractionDigits: candidate.score == candidate.score.roundToDouble() ? 0 : 1,
+                        ),
                         heading: true,
                       ),
                   ],
@@ -270,13 +282,17 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                     ),
                     PremiumTag(
                       icon: HopeV2Icons.match,
-                      label: best.score.round().toString() + '%',
+                      label: _percent(context, best.score.round()),
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     if (data.candidates.length > 1) ...[
                       const SizedBox(width: 7),
                       PremiumTag(
-                        label: _t(context, 'اختلاف ' + gap.round().toString() + '٪', gap.round().toString() + '% gap'),
+                        label: _t(
+                          context,
+                          'اختلاف ${_percent(context, gap.round())}',
+                          '${_percent(context, gap.round())} gap',
+                        ),
                         color: HopeV2Colors.secondary,
                       ),
                     ],
@@ -396,7 +412,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            '${candidate.score.toStringAsFixed(candidate.score == candidate.score.roundToDouble() ? 0 : 1)}٪',
+                            _percent(
+                          context,
+                          candidate.score,
+                          fractionDigits: candidate.score == candidate.score.roundToDouble() ? 0 : 1,
+                        ),
                             style: HopeV2Type.metric(context).copyWith(
                               color: Theme.of(context).colorScheme.primary,
                               fontSize: 22,

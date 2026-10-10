@@ -287,4 +287,11 @@ void main() {
     );
     expect(item.enabled, isFalse);
   });
+  testWidgets('notification unread counts use Persian digits', (tester) async {
+    await tester.pumpWidget(_app(_Repo()));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('۱ اعلان جدید'), findsOneWidget);
+  });
+
 }

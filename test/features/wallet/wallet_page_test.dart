@@ -384,8 +384,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('3,500,000 تومان'), findsOneWidget);
-      expect(find.textContaining('2,500,000 تومان'), findsOneWidget);
+      expect(find.textContaining('۳٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
+      expect(find.textContaining('۲٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
       expect(find.text('قابل استفاده'), findsOneWidget);
       expect(find.text('در امانت HOPE'), findsOneWidget);
       expect(find.text('محافظت‌شده'), findsNothing);
@@ -535,7 +535,7 @@ void main() {
       isTrue,
     );
     expect(
-      labels.any((label) => label.contains('500,000 تومان')),
+      labels.any((label) => label.contains('\u2066+۵۰۰٬۰۰۰ تومان\u2069')),
       isTrue,
     );
     } finally {
@@ -805,13 +805,13 @@ void main() {
     expect(find.textContaining('cursor'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.text('400,000 تومان'),
+      find.text('۴۰۰٬۰۰۰ تومان'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('400,000 تومان'));
+    await tester.tap(find.text('۴۰۰٬۰۰۰ تومان'));
     await tester.pumpAndSettle();
 
     expect(find.text('کیف پول داخلی'), findsOneWidget);

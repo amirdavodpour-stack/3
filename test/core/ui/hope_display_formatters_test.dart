@@ -17,6 +17,40 @@ void main() {
       );
     });
 
+    test('collapses equal ranges to one value', () {
+      expect(
+        HopeDisplayFormatter.amount('2500000 – 2500000', locale: 'fa'),
+        '۲٬۵۰۰٬۰۰۰ تومان',
+      );
+    });
+
+    test('isolates signed Persian Toman amounts and preserves English display', () {
+      expect(
+        HopeDisplayFormatter.signedMoney(500000, positive: true, locale: 'fa'),
+        '\u2066+۵۰۰٬۰۰۰ تومان\u2069',
+      );
+      expect(
+        HopeDisplayFormatter.signedMoney(500000, positive: false, locale: 'fa'),
+        '\u2066-۵۰۰٬۰۰۰ تومان\u2069',
+      );
+      expect(
+        HopeDisplayFormatter.signedMoney(500000, positive: true, locale: 'en'),
+        '+500,000 TOMAN',
+      );
+    });
+
+    test('localizes percentage digits, decimal separators, and percent sign', () {
+      expect(HopeDisplayFormatter.percent(96, locale: 'fa'), '۹۶٪');
+      expect(
+        HopeDisplayFormatter.percent(91.4, locale: 'fa', fractionDigits: 1),
+        '۹۱٫۴٪',
+      );
+      expect(
+        HopeDisplayFormatter.percent(91.4, locale: 'en', fractionDigits: 1),
+        '91.4%',
+      );
+    });
+
     test('formats English money without Persian digits', () {
       expect(
         HopeDisplayFormatter.money('1500000', locale: 'en'),

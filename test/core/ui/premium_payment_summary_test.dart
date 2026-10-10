@@ -98,6 +98,31 @@ void main() {
     expect(find.text('2000000.0 Toman'), findsNothing);
   });
 
+
+  testWidgets(
+      'PremiumPaymentSummary formats Persian Toman with Persian digits',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: PremiumPaymentSummary(payment: _payment(currency: 'TOMAN')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('۱٬۰۰۰٬۰۰۰ تومان'), findsWidgets);
+    expect(find.textContaining('1,000,000 تومان'), findsNothing);
+  });
+
   testWidgets(
       'PremiumPaymentSummary always presents the current internal ledger as Toman',
       (tester) async {

@@ -427,7 +427,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         final stats = <({String value, String label, Object icon, Color accent})>[
           (
             value: snapshot.connectionState == ConnectionState.done
-                ? '${jobs.where((j) => j.isRecommended).length}'
+                ? HopeDisplayFormatter.integer(
+                    jobs.where((j) => j.isRecommended).length,
+                    locale: Localizations.localeOf(context).languageCode,
+                  )
                 : '—',
             label: _t(context, 'تطابق', 'matches'),
             icon: HopeV2Icons.match,
@@ -435,14 +438,22 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           ),
           (
             value: snapshot.connectionState == ConnectionState.done
-                ? '${jobs.where(_isNewOpportunity).length}'
+                ? HopeDisplayFormatter.integer(
+                    jobs.where(_isNewOpportunity).length,
+                    locale: Localizations.localeOf(context).languageCode,
+                  )
                 : '—',
             label: _t(context, 'جدید', 'new'),
             icon: HopeV2Icons.job,
             accent: HopeV2Colors.secondary,
           ),
           (
-            value: auth.isGuest ? '—' : _activeJobCount?.toString() ?? '—',
+            value: auth.isGuest || _activeJobCount == null
+                ? '—'
+                : HopeDisplayFormatter.integer(
+                    _activeJobCount,
+                    locale: Localizations.localeOf(context).languageCode,
+                  ),
             label: _t(context, 'فعال', 'active'),
             icon: HopeV2Icons.mission,
             accent: HopeV2Colors.primary,

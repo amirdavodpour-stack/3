@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/jobs/job_satisfaction_repository.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/hope_async_state.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/hope_v2_design.dart';
 
@@ -409,7 +410,9 @@ class _RatingField extends StatelessWidget {
                   final number = index + 1;
                   return ButtonSegment<int>(
                     value: number,
-                    label: Text(number.toString()),
+                    label: Text(
+                      HopeDisplayFormatter.integer(number, locale: _en ? 'en' : 'fa'),
+                    ),
                   );
                 },
               ),

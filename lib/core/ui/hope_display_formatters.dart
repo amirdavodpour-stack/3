@@ -28,7 +28,8 @@ class HopeDisplayFormatter {
         .replaceAll('8', '۸')
         .replaceAll('9', '۹')
         .replaceAll(',', '٬')
-        .replaceAll('.', '٫');
+        .replaceAll('.', '٫')
+        .replaceAll('%', '٪');
   }
 
   /// Formats a server-issued public reference; never derives one from an internal ID.
@@ -53,6 +54,41 @@ class HopeDisplayFormatter {
     final parsed = parseInteger(value);
     if (parsed == null) return '—';
     return localizeDigits(NumberFormat.decimalPattern('en_US').format(parsed), locale: locale);
+  }
+
+  /// Formats a ledger amount without changing stored values or wallet arithmetic.
+  /// Persian output is isolated LTR so the sign and unit remain in a stable order.
+  static String signedMoney(
+    Object? value, {
+    required bool positive,
+    required String locale,
+    bool short = false,
+  }) {
+    final parsed = parseInteger(value);
+    if (parsed == null) return '—';
+    final sign = positive ? '+' : '-';
+    final formatted = '$sign${money(parsed.abs(), locale: locale, short: short)}';
+    return locale.toLowerCase().startsWith('fa')
+        ? '\u2066$formatted\u2069'
+        : formatted;
+  }
+
+  static String percent(
+    Object? value, {
+    required String locale,
+    int fractionDigits = 0,
+  }) {
+    if (value == null || fractionDigits < 0 || fractionDigits > 6) return '—';
+    final raw = _asciiDigits(value.toString().trim())
+        .replaceAll(',', '')
+        .replaceAll('٬', '')
+        .replaceAll('٫', '.');
+    final parsed = value is num ? value : num.tryParse(raw);
+    if (parsed == null || !parsed.isFinite) return '—';
+    return localizeDigits(
+      '${parsed.toStringAsFixed(fractionDigits)}%',
+      locale: locale,
+    );
   }
 
   static String money(Object? value, {required String locale, bool short = false}) {
@@ -88,6 +124,9 @@ class HopeDisplayFormatter {
         .toList();
     if (parts.length == 2) {
       parts.sort();
+      if (parts.first == parts.last) {
+        return money(parts.first, locale: locale, short: short);
+      }
       final separator = locale.toLowerCase().startsWith('fa') ? 'تا' : '–';
       return '${money(parts.first, locale: locale, short: short)} $separator ${money(parts.last, locale: locale, short: short)}';
     }

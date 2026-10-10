@@ -116,8 +116,17 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  String _money(int amount) =>
-      '${HopeDisplayFormatter.integer(amount, locale: 'en')} ${_t('تومان', 'TOMAN')}';
+  String _money(int amount) => HopeDisplayFormatter.money(
+        amount,
+        locale: Localizations.localeOf(context).languageCode,
+      );
+
+  String _signedMoney(HopeWalletTransaction item) =>
+      HopeDisplayFormatter.signedMoney(
+        item.amount,
+        positive: item.isCredit,
+        locale: Localizations.localeOf(context).languageCode,
+      );
 
   String _date(String? raw) => HopeDisplayFormatter.relativeDateTime(
         raw,
@@ -427,7 +436,7 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Text(_entryTitle(item), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 12),
-              _DetailRow(label: _t('مبلغ', 'Amount'), value: '${item.isCredit ? '+' : '-'}${_money(item.amount)}'),
+              _DetailRow(label: _t('مبلغ', 'Amount'), value: '${_signedMoney(item)}'),
               _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: _entryTypeLabel(item.entryType)),
               _DetailRow(label: _t('جهت', 'Direction'), value: _directionLabel(item.direction)),
               _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: _referenceTypeLabel(item.referenceType)),
@@ -789,7 +798,7 @@ class _WalletPageState extends State<WalletPage> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: item.emphasized ? Colors.white : Colors.white70,
-                  fontSize: 10,
+                  fontSize: 12,
                   height: 1.1,
                   fontWeight: FontWeight.w800,
                 ),
@@ -802,7 +811,7 @@ class _WalletPageState extends State<WalletPage> {
                 overflow: TextOverflow.clip,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: item.emphasized ? 12.5 : 10.5,
+                  fontSize: item.emphasized ? 12.5 : 12,
                   height: 1.12,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1217,7 +1226,7 @@ class _WalletPageState extends State<WalletPage> {
                     explicitChildNodes: false,
                     excludeSemantics: true,
                     label:
-                        '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${item.isCredit ? '+' : '-'}${_money(item.amount)}',
+                        '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${_signedMoney(item)}',
                     onTap: () => _showTransaction(item),
                     child: ExcludeSemantics(
                       child: PremiumPanel(
@@ -1253,7 +1262,7 @@ class _WalletPageState extends State<WalletPage> {
                           ),
                           isThreeLine: true,
                           trailing: Text(
-                            '${item.isCredit ? '+' : '-'}${_money(item.amount)}',
+                            '${_signedMoney(item)}',
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               fontWeight: FontWeight.w900,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/hope_v2_design.dart';
 import '../transactions/payment.dart';
+import 'hope_display_formatters.dart';
 import 'premium_components.dart';
 import 'components.dart';
 
@@ -47,6 +48,10 @@ class PremiumPaymentSummary extends StatelessWidget {
     final amount = int.tryParse(normalized);
     if (amount == null) {
       return "$normalized ${_label(context, 'تومان', 'Toman')}";
+    }
+    final locale = Localizations.localeOf(context).languageCode;
+    if (locale.toLowerCase().startsWith('fa')) {
+      return HopeDisplayFormatter.money(amount, locale: locale);
     }
     final digits = amount.abs().toString();
     final parts = <String>[];

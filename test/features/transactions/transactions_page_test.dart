@@ -165,7 +165,7 @@ void main() {
     );
     expect(find.text('تسویه‌شده'), findsOneWidget);
     expect(
-      find.descendant(of: metrics, matching: find.text('1')),
+      find.descendant(of: metrics, matching: find.text('۱')),
       findsNWidgets(2),
     );
     expect(tester.getSize(metrics).height, lessThan(120));

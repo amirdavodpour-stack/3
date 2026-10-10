@@ -139,7 +139,10 @@ class _OffersPageState extends State<OffersPage> {
               const SizedBox(height: 10),
               if (!_loading && _loadError == null && all.isNotEmpty) ...[
                 Text(
-                  all.length.toString() + _t(' پیشنهاد', ' offers'),
+                  HopeDisplayFormatter.integer(
+                    all.length,
+                    locale: Localizations.localeOf(context).languageCode,
+                  ) + _t(' پیشنهاد', ' offers'),
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w700,

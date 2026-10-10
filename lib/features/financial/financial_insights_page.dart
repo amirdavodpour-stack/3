@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../core/financial/financial_insights_repository.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/hope_async_state.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/hope_v2_design.dart';
 
@@ -31,10 +32,10 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _money(int value) {
-    final formatter = MaterialLocalizations.of(context);
-    return '${formatter.formatDecimal(value)} ${_t('تومان', 'TOMAN')}';
-  }
+  String _money(int value) => HopeDisplayFormatter.money(
+        value,
+        locale: Localizations.localeOf(context).languageCode,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -724,7 +725,12 @@ class _SourceChart extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
-                Text('${(ratio * 100).toStringAsFixed(0)}%'),
+                Text(
+                  HopeDisplayFormatter.percent(
+                    ratio * 100,
+                    locale: Localizations.localeOf(context).languageCode,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 5),

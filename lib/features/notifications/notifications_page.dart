@@ -311,6 +311,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   Widget build(BuildContext context) {
     final unreadCount = items.where((item) => item.isUnread).length;
+    final unreadCountLabel = HopeDisplayFormatter.integer(
+      unreadCount,
+      locale: Localizations.localeOf(context).languageCode,
+    );
     return Scaffold(
       body: SafeArea(
         child: PremiumPageFrame(
@@ -325,8 +329,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 title: _t('اعلان‌ها', 'Notifications'),
                 subtitle: unreadCount > 0
                     ? _t(
-                        'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • $unreadCount اعلان جدید',
-                        'Updates for applications, work, and payments • $unreadCount new',
+                        'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • $unreadCountLabel اعلان جدید',
+                        'Updates for applications, work, and payments • $unreadCountLabel new',
                       )
                     : _t(
                         'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند',

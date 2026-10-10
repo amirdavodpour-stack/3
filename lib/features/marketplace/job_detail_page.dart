@@ -1549,7 +1549,10 @@ class _MatchIntelligence extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '${score.clamp(0, 100).toStringAsFixed(0)}%',
+                                  HopeDisplayFormatter.percent(
+                                    score.clamp(0, 100),
+                                    locale: Localizations.localeOf(context).languageCode,
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     height: 1,
@@ -1708,7 +1711,10 @@ class _MatchIntelligence extends StatelessWidget {
                             SizedBox.square(dimension: compact ? 50 : 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.0, color: primary.withValues(alpha: .10))),
                             SizedBox.square(dimension: compact ? 50 : 52, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: primary)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
-                              Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
+                              Text(HopeDisplayFormatter.percent(
+                                    score.clamp(0, 100),
+                                    locale: Localizations.localeOf(context).languageCode,
+                                  ), style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
                               Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: primary, letterSpacing: .6)),
                             ]),
@@ -1816,7 +1822,10 @@ class _MatchIntelligence extends StatelessWidget {
                         child: Stack(alignment: Alignment.center, children: [
                           SizedBox.square(dimension: 88, child: CircularProgressIndicator(value: 1, strokeWidth: 7, color: primary.withValues(alpha: .12))),
                           SizedBox.square(dimension: 88, child: CircularProgressIndicator(value: value, strokeWidth: 7, strokeCap: StrokeCap.round, color: primary)),
-                          Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
+                          Text(HopeDisplayFormatter.percent(
+                                    score.clamp(0, 100),
+                                    locale: Localizations.localeOf(context).languageCode,
+                                  ), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
                         ]),
                       ),
                     if (score != null) const SizedBox(width: 16),

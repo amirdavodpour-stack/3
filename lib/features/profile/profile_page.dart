@@ -12,6 +12,7 @@ import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import 'profile_controller.dart';
 
 import '../../core/ui/premium_components.dart';
@@ -187,13 +188,19 @@ class _ProfilePageState extends State<ProfilePage> {
                 (
                   icon: HopeV2Icons.completed,
                   label: _t(context, 'تکمیل‌شده', 'Completed'),
-                  value: data.completedJobs.toString(),
+                  value: HopeDisplayFormatter.integer(
+                    data.completedJobs,
+                    locale: Localizations.localeOf(context).languageCode,
+                  ),
                   color: HopeV2Colors.success,
                 ),
                 (
                   icon: HopeV2Icons.activity,
                   label: _t(context, 'فعال', 'Active'),
-                  value: data.activeJobs.toString(),
+                  value: HopeDisplayFormatter.integer(
+                    data.activeJobs,
+                    locale: Localizations.localeOf(context).languageCode,
+                  ),
                   color: Theme.of(context).colorScheme.secondary,
                 ),
                 (
