@@ -346,6 +346,7 @@ class OpportunityCard extends StatelessWidget {
       ),
       child: Center(
         child: Container(
+          key: const ValueKey('opportunity-fallback-icon-container'),
           width: 46,
           height: 46,
           decoration: BoxDecoration(

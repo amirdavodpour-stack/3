@@ -665,4 +665,98 @@ void main() {
     },
   );
 
+  testWidgets(
+    'image-less opportunity cards keep their fallback subordinate across shared variants',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'wave33-no-media',
+        'title': 'توسعه‌دهنده Flutter',
+        'description': 'Missing-media fallback hierarchy contract.',
+        'categoryId': 'software',
+        'category': 'Software',
+        'jobType': 'FIXED',
+        'budgetMin': '1500000',
+        'budgetMax': '2500000',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+        'recommendationScore': 0.94,
+      });
+
+      Widget cardHost(OpportunityCardVariant variant) => MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: ThemeData(brightness: Brightness.dark),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SizedBox(
+                    height: 260,
+                    child: OpportunityCard(job: job, variant: variant),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+      const variants = <OpportunityCardVariant>[
+        OpportunityCardVariant.compact,
+        OpportunityCardVariant.compactGrid,
+        OpportunityCardVariant.standard,
+        OpportunityCardVariant.featured,
+        OpportunityCardVariant.featuredScan,
+      ];
+
+      for (final variant in variants) {
+        await tester.pumpWidget(cardHost(variant));
+        await tester.pumpAndSettle();
+
+        final fallback = find.byKey(
+          const ValueKey('opportunity-fallback-icon-container'),
+        );
+        expect(fallback, findsOneWidget, reason: 'missing-media placeholder must exist');
+        final size = tester.getSize(fallback);
+        expect(
+          size.width,
+          lessThanOrEqualTo(32),
+          reason: 'fallback icon container must remain at most 32dp wide',
+        );
+        expect(
+          size.height,
+          lessThanOrEqualTo(32),
+          reason: 'fallback icon container must remain at most 32dp high',
+        );
+        expect(find.text('توسعه‌دهنده Flutter'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+
+      // Also cover the non-compact featured-media header on a wider viewport.
+      tester.view.physicalSize = const Size(800, 900);
+      await tester.pumpWidget(cardHost(OpportunityCardVariant.featured));
+      await tester.pumpAndSettle();
+      final featuredFallback = find.byKey(
+        const ValueKey('opportunity-fallback-icon-container'),
+      );
+      expect(featuredFallback, findsOneWidget);
+      final featuredSize = tester.getSize(featuredFallback);
+      expect(featuredSize.width, lessThanOrEqualTo(32));
+      expect(featuredSize.height, lessThanOrEqualTo(32));
+      expect(find.byKey(const ValueKey('opportunity-media-header')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
