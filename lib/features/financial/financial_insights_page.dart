@@ -502,9 +502,9 @@ class _BarChartPainter extends CustomPainter {
     this.outflowColor,
     this.reservedColor,
     this.axisColor,
-    this.textDirection,
+    this.textDirection, [
     this.textScale = 1,
-  );
+  ]);
   final List<HopeMonthlyCashFlow> data;
   final Color inflowColor;
   final Color outflowColor;
