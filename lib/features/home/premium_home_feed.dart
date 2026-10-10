@@ -508,11 +508,11 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 key: const ValueKey('home-pulse-stat-grid'),
                 builder: (context, constraints) {
                   const gap = 6.0;
-                  // Four columns only when every metric gets enough width for its icon
-                  // and label to sit on one stable scanline.
+                  // Four columns only on a genuinely wide rail; medium-width labels wrap
+                  // too early and visually stagger the four metric baselines.
                   final columns = enlargedText
                       ? 2
-                      : constraints.maxWidth >= 350
+                      : constraints.maxWidth >= 800
                           ? 4
                           : 2;
                   final cellWidth =

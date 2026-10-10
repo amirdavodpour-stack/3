@@ -359,7 +359,7 @@ grep -Fq "Wave30 English navigation dock expands vertically at 1.5x" "test/core/
 echo "PASS: Wave30 responsive Home rail, enlarged Wallet status and navigation dock fit contracts"
 
 # Wave30 narrow-rail correction: only use four metrics columns when cells are wide enough to align labels.
-grep -Fq "constraints.maxWidth >= 350" "lib/features/home/premium_home_feed.dart"
-grep -Fq "statGridWidth >= 350 ? 70.0 : 105.0" "test/features/home/premium_home_feed_test.dart"
-grep -Fq "if (gridWidth >= 350)" "test/features/home/premium_home_feed_test.dart"
+grep -Fq "constraints.maxWidth >= 800" "lib/features/home/premium_home_feed.dart"
+grep -Fq "statGridWidth >= 800 ? 70.0 : 105.0" "test/features/home/premium_home_feed_test.dart"
+grep -Fq "if (gridWidth >= 800)" "test/features/home/premium_home_feed_test.dart"
 echo "PASS: Wave30 narrow Home Pulse columns stay aligned at responsive widths"
