@@ -255,7 +255,7 @@ class _ProfilePageState extends State<ProfilePage> {
               return PremiumPanel(
                 key: const ValueKey('profile-professional-first-fold'),
                 quiet: true,
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
