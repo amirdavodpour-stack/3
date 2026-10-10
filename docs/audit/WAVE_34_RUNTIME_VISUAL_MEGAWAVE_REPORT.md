@@ -56,3 +56,26 @@
 - Persian progress labels now use Persian digits in both the current-step headline and all numbered step circles.
 - Painted cash-flow and balance charts expose localized semantic descriptions of their actual recorded month/date/value sequences. Dedicated tests cover category localization across the Job Detail hero/decision strip, Persian progress numbering, and recorded chart semantics.
 - The existing native evidence does not certify TalkBack: the artifact reports `accessibility-enabled.txt=0` and `accessibility-services.txt=null`. Semantic widget tests are not a substitute for an enabled-service runtime accessibility pass.
+
+## Wave 36 — exact-HEAD runtime artifact inspection (2026-10-10)
+
+### Provenance and integrity
+- Runtime run: [38070229927](https://github.com/amirdavodpour-stack/3/actions/runs/38070229927), conclusion `success`, source HEAD `2af62ffad6157300abd85378d2b796fb23900034`.
+- Artifact ID: `11676716904`; GitHub SHA-256 digest: `a18b55a5fa271b14b6e80546b78b381436f3eca74f459cbeef79c12756c907e8`. Independently computed archive SHA-256 matches exactly.
+- Native PixelCopy artifact contains 25 distinct PNGs: 19 primary screens at 1080×1920 and 6 responsive screens at 720×1280 (360×640dp), fa-RTL, dark theme, text scale 1.0. Metadata reports `test_exit_code=0`.
+- All 25 PNGs were opened and individually visually reviewed. The inventory, unique image hashes, metadata, and exact source SHA were checked.
+
+### Baseline comparison and observed scope changes
+- Baseline runtime: [38063346940](https://github.com/amirdavodpour-stack/3/actions/runs/38063346940), HEAD `560dde349bf5b6223878ab31bd7d999d63990885`; artifact ID `11673909591`. Independently computed archive SHA-256 matches GitHub's `8013b8c5dd6f68191e77b21abe1f7af7cc2d2ccf909c2f1253d7ff4d17be831d`.
+- Alpha-agnostic RGB comparison: 22/25 images are byte-identical; 22/25 are RGB-identical. Three images have RGB differences:
+  - `create-job-fa-rtl.png`: 874 changed RGB pixels (0.0421%), consistent with localized Persian step numerals.
+  - `job-detail-fa-rtl.png`: 19,759 changed RGB pixels (0.9529%), consistent with localizing the known category `Software` to the app's Persian category label across the hero and category chip.
+  - `responsive-720x1280-job-detail-fa-rtl.png`: 5,769 changed RGB pixels (0.6260%), consistent with the same category localization at the responsive viewport.
+- Visual review confirmed the category is localized in the main and responsive Job Detail hero and taxonomy chip. The Create Opportunity progress headline/circles show Persian numerals. No overlap or clipping attributable to these changed regions was found in these captures.
+- No claim is made that the 25 screenshots certify every app state, English/LTR, 1.5× text scale, keyboard/IME, offline/error state, or screen-reader behavior.
+
+### Remaining gates and limits
+- The Static workflow for source HEAD `2af62ffad6157300abd85378d2b796fb23900034` was `skipped`; the consolidated Flutter test step in the runtime workflow was also `skipped`. Therefore this runtime artifact is inspected evidence but does **not** substitute for a green exact-HEAD static gate.
+- `accessibility-enabled.txt=0` and `accessibility-services.txt=null`; TalkBack/T10 remains **NOT ACCEPTED**.
+- The PR title markers `[runtime-capture-fa]` and `[flutter-preverified]` were removed to unblock the static gate. Changing the title alone did not trigger the PR-only Static workflow because it does not declare the `edited` activity type. This report update will create a normal branch commit and trigger PR `synchronize` without starting a new runtime capture.
+- This artifact belongs to `2af62ffad6157300abd85378d2b796fb23900034`. After the report commit, it is historical evidence for its recorded SHA; fresh visual acceptance requires Static PASS and then one serialized capture on the resulting exact HEAD.
