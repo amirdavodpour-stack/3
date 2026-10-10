@@ -125,6 +125,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                           await _future;
                         },
                         child: ListView(
+                          key: const ValueKey('financial-insights-list'),
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
                           children: [
