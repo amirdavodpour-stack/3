@@ -65,7 +65,7 @@ class _OpportunitySnapshot extends StatelessWidget {
         id: 'field',
         icon: HopeV2Icons.category,
         label: _t(context, 'زمینه', 'Field'),
-        value: job.category ?? job.categoryId ?? '—',
+        value: hopeCategoryLabel(context, job.category ?? job.categoryId ?? '—'),
         color: secondaryAccent(context),
       ),
       (
