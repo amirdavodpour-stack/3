@@ -483,12 +483,14 @@ void main() {
   });
 
   testWidgets(
-      'active decision strip exposes real recommendation dimensions and values',
+      'active compact decision strip exposes real recommendation dimensions and values',
       (tester) async {
     await _pump(
       tester,
       job: _job(kind: 'JOB', ownerId: 'u1'),
       userId: 'u9',
+      width: 390,
+      height: 1200,
     );
 
     expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
@@ -505,12 +507,14 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Job Detail uses the active decision surface without a retired modal',
+  testWidgets('compact Job Detail uses the active decision surface without a retired modal',
       (tester) async {
     await _pump(
       tester,
       job: _job(kind: 'JOB', ownerId: 'u1'),
       userId: 'u9',
+      width: 390,
+      height: 1200,
     );
 
     expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
