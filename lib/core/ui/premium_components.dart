@@ -2449,7 +2449,7 @@ class HopeCreationProgress extends StatelessWidget {
     const labelsEn = ['Type', 'Audience', 'Details', 'Money', 'Publish'];
     const persianDigits = ['۱', '۲', '۳', '۴', '۵'];
     final en = Localizations.localeOf(context).languageCode == 'en';
-    final safeIndex = activeIndex.clamp(0, labelsFa.length - 1);
+    final safeIndex = activeIndex.clamp(0, labelsFa.length - 1).toInt();
     final currentStep = en
         ? 'Step ${safeIndex + 1} of ${labelsEn.length}'
         : 'مرحله ${persianDigits[safeIndex]} از ۵';
