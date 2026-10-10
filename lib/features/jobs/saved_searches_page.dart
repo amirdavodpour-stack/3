@@ -257,8 +257,12 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
   }
   String _scope(HopeSavedSearch item) {
     final parts = <String>[];
-    if (item.query.isNotEmpty) parts.add(item.query);
-    if (item.city.isNotEmpty && item.city != 'AUTO') parts.add(item.city);
+    // Isolate user-entered or Latin-script values so they cannot reorder
+    // adjacent Persian filter labels and separators in the RTL summary.
+    if (item.query.isNotEmpty) parts.add('\u2068${item.query}\u2069');
+    if (item.city.isNotEmpty && item.city != 'AUTO') {
+      parts.add('\u2068${item.city}\u2069');
+    }
     if (item.kind != 'ALL') parts.add(_kindLabel(item));
     if (item.visibility != 'ALL') parts.add(_visibilityLabel(item));
     if (item.category != 'ALL') parts.add(_categoryLabel(item));

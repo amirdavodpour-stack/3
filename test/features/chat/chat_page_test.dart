@@ -164,6 +164,15 @@ void main() {
 
     expect(find.text('Hello from the worker'), findsOneWidget);
     expect(find.text(formatted), findsOneWidget);
+    final timestampWidget = tester.widget<Text>(
+      find.byKey(const ValueKey('chat-message-timestamp-message-1')),
+    );
+    expect(timestampWidget.textDirection, TextDirection.ltr);
+    expect(
+      timestampWidget.style?.fontSize,
+      greaterThanOrEqualTo(12),
+      reason: 'Message times must remain legible beside the message content.',
+    );
   });
   testWidgets(
     'Wave 28 chat is organized for compact phones and keeps primary targets at 48dp',

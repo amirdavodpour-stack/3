@@ -416,7 +416,16 @@ class _ChatPageState extends State<ChatPage> {
                                                         ),
                                                       ),
                                                       const SizedBox(width: 8),
-                                                      Text(timestamp, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
+                                                      Text(
+                                                        timestamp,
+                                                        key: ValueKey('chat-message-timestamp-${message.id}'),
+                                                        textDirection: TextDirection.ltr,
+                                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                          color: colors.onSurfaceVariant,
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
                                                     ],
                                                   )
                                                 else
