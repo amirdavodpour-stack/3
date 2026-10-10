@@ -791,10 +791,12 @@ const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
-const _captureTextScale = double.fromEnvironment(
+const _captureTextScaleRaw = String.fromEnvironment(
   'HOPE_CAPTURE_TEXT_SCALE',
-  defaultValue: 1.0,
+  defaultValue: '1.0',
 );
+final double _captureTextScale =
+    double.tryParse(_captureTextScaleRaw) ?? 1.0;
 const _captureHomeOnly =
     bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
 const _responsiveBatch =
