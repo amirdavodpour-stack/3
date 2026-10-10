@@ -429,7 +429,6 @@ void main() {
       final finalSection = find.byKey(finalSectionKey);
       final cta = find.byKey(ctaKey);
       expect(list, findsOneWidget);
-      expect(finalSection, findsOneWidget);
       expect(cta, findsOneWidget);
 
       final listScroller = find.descendant(
@@ -441,9 +440,12 @@ void main() {
         240,
         scrollable: listScroller,
       );
+      await tester.pumpAndSettle();
       await tester.ensureVisible(finalSection);
       await tester.pumpAndSettle();
 
+      // ListView builds distant children lazily; assert presence after scrolling.
+      expect(finalSection, findsOneWidget);
       final viewportRect = tester.getRect(list);
       final finalRect = tester.getRect(finalSection);
       final ctaRect = tester.getRect(cta);
