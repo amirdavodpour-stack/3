@@ -883,4 +883,54 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'Wave 35 recognized opportunity categories use the active locale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'localized-software-category',
+        'title': 'Flutter developer',
+        'categoryId': 'software',
+        'category': 'Software',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'PUBLISHED',
+        'city': 'Tehran',
+        'monthlySalary': '12000000',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.standard,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('نرم‌افزار'), findsOneWidget);
+      expect(find.text('Software'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
