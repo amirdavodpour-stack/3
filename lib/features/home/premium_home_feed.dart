@@ -346,10 +346,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             SizedBox(
               height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
             ),
-            _homePulse(context, auth),
-            SizedBox(
-              height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
-            ),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -382,6 +378,14 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 final jobs = snapshot.data ?? const <HopeJob>[];
                 return _opportunitySections(context, jobs, settings);
               },
+            ),
+            // The primary opportunity belongs above secondary dashboard metrics.
+            SizedBox(
+              height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
+            ),
+            _homePulse(context, auth),
+            SizedBox(
+              height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
             ),
             if (!auth.isGuest) ...[
               _activeWork(context),
