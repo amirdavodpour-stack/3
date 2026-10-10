@@ -84,15 +84,15 @@ void main() {
       final balanceChart = find.byKey(
         const ValueKey('financial-balance-chart-scroll'),
       );
-      final verticalScroll = find.byWidgetPredicate(
-        (widget) =>
-            widget is Scrollable && widget.axisDirection == AxisDirection.down,
-      ).first;
-      await tester.scrollUntilVisible(
-        find.text('روند موجودی'),
-        160,
-        scrollable: verticalScroll,
+      final pageList = find.byKey(
+        const ValueKey('financial-insights-list'),
       );
+      for (var attempt = 0;
+          attempt < 6 && balanceChart.evaluate().isEmpty;
+          attempt++) {
+        await tester.drag(pageList, const Offset(0, -180));
+        await tester.pumpAndSettle();
+      }
       expect(balanceChart, findsOneWidget);
       for (final label in ['ورودی', 'خروجی', 'رزرو شده']) {
         expect(
