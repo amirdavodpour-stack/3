@@ -175,4 +175,70 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+
+  testWidgets(
+    'Wave 34 compact phones can compare real candidate values in a horizontal matrix',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-compact-compare',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-1',
+            displayName: 'Candidate One',
+            score: 94,
+            reasons: ['SKILL_MATCH'],
+            components: {'skills': 98, 'experience': 90, 'location': 94, 'salary': 87},
+            applicationId: 'app-1',
+            status: 'PENDING',
+            skills: 'Flutter, Dart',
+          ),
+          HopeEmployerCandidateMatch(
+            rank: 2,
+            userId: 'worker-2',
+            displayName: 'Candidate Two',
+            score: 91,
+            reasons: ['EXPERIENCE_MATCH'],
+            components: {'skills': 90, 'experience': 92, 'location': 91, 'salary': 89},
+            applicationId: 'app-2',
+            status: 'PENDING',
+            skills: 'Flutter, UI',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final matrix = find.byKey(const ValueKey('candidate-comparison-matrix'));
+      expect(matrix, findsOneWidget);
+      final horizontalScroll = find.descendant(
+        of: matrix,
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(horizontalScroll, findsOneWidget);
+      expect(find.text('Candidate Two'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

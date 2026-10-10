@@ -268,7 +268,9 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           Text(
                             _t(context, 'بهترین تطابق', 'Best fit'),
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: HopeV2Colors.darkMuted,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? HopeV2Colors.darkMuted
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
@@ -305,8 +307,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
               );
             },
           ),
-        if (data.candidates.length > 1 &&
-            MediaQuery.sizeOf(context).width >= HopeV2Breakpoints.medium) ...[
+        if (data.candidates.length > 1) ...[
           _comparisonMatrix(context),
           const SizedBox(height: 8),
         ],

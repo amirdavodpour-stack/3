@@ -188,4 +188,25 @@ testWidgets('accepting an offer disables the financial action until completion',
     expect(find.text('Offers unavailable'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });
+
+  testWidgets(
+    'Wave 34 offer status filters stay in one horizontally scrollable rail',
+    (tester) async {
+      final repository = _SequencedOfferRepository();
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(const ValueKey('offers-status-filter-scroll'));
+      expect(rail, findsOneWidget);
+      expect(
+        tester.widget<SingleChildScrollView>(rail).scrollDirection,
+        Axis.horizontal,
+      );
+      expect(find.textContaining('All ('), findsOneWidget);
+      expect(find.textContaining('Pending ('), findsOneWidget);
+      expect(find.textContaining('Accepted ('), findsOneWidget);
+      expect(find.textContaining('Rejected ('), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

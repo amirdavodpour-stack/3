@@ -176,22 +176,27 @@ class _OffersPageState extends State<OffersPage> {
                 ),
                 const SizedBox(height: 10),
               ],
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
-                    PremiumFilterChip(
-                      selected: _filter == x,
-                      label: x == 'ALL'
-                          ? '${_t('همه', 'All')} (${all.length})'
-                          : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
-                      color: x == 'ALL'
-                          ? Theme.of(context).colorScheme.primary
-                          : _statusColor(context, x),
-                      onTap: () => setState(() => _filter = x),
-                    ),
-                ],
+              SingleChildScrollView(
+                key: const ValueKey('offers-status-filter-scroll'),
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 8),
+                        child: PremiumFilterChip(
+                          selected: _filter == x,
+                          label: x == 'ALL'
+                              ? '${_t('همه', 'All')} (${all.length})'
+                              : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
+                          color: x == 'ALL'
+                              ? Theme.of(context).colorScheme.primary
+                              : _statusColor(context, x),
+                          onTap: () => setState(() => _filter = x),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 10),
               if (rows.isEmpty)
