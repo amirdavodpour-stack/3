@@ -5,6 +5,7 @@ import '../../core/ui/hope_async_state.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/profile/profile_repository.dart';
+import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/theme/theme_controller.dart';
@@ -171,8 +172,49 @@ class _ProfilePageState extends State<ProfilePage> {
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return HopeAsyncState(
+                  kind: hopeStateKindForError(snapshot.error!),
+                  title: _t(
+                    context,
+                    'اطلاعات حرفه‌ای در دسترس نیست',
+                    'Professional profile unavailable',
+                  ),
+                  message: apiErrorMessage(
+                    snapshot.error!,
+                    fallback: _t(
+                      context,
+                      'بارگذاری اطلاعات حرفه‌ای ناموفق بود.',
+                      'Could not load professional profile information.',
+                    ),
+                  ),
+                  action: FilledButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        profile = _controller.loadProfile();
+                      });
+                    },
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(_t(context, 'تلاش دوباره', 'Retry')),
+                  ),
+                );
+              }
               final data = snapshot.data;
-              if (data == null) return const SizedBox.shrink();
+              if (data == null) {
+                return HopeAsyncState(
+                  kind: HopeStateKind.loading,
+                  title: _t(
+                    context,
+                    'در حال بارگذاری اطلاعات حرفه‌ای',
+                    'Loading professional profile information',
+                  ),
+                  message: _t(
+                    context,
+                    'اطلاعات اعتماد و سابقه همکاری در حال دریافت است.',
+                    'Provider trust and work-history details are loading.',
+                  ),
+                );
+              }
               final signals = <({
                 Object icon,
                 String label,

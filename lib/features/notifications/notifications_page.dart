@@ -67,6 +67,30 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
+  Widget _notificationsLoadError({required bool retainsRows}) {
+    return HopeAsyncState(
+      kind: error == null ? HopeStateKind.error : HopeStateKind.error,
+      title: retainsRows
+          ? _t(
+              'اعلان‌ها قابل تازه‌سازی نیستند',
+              'Could not refresh notifications',
+            )
+          : _t(
+              'اعلان‌ها در دسترس نیستند',
+              'Notifications unavailable',
+            ),
+      message: error ?? _t(
+        'خطای نامشخص در دریافت اعلان‌ها',
+        'An unknown error occurred while loading notifications.',
+      ),
+      action: FilledButton.icon(
+        onPressed: loading ? null : _load,
+        icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
+        label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+      ),
+    );
+  }
+
   Future<void> _read(String id) async {
     try {
       await _applicationRegistry(context).markNotificationRead(id);
@@ -412,29 +436,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                           ],
                         )
-                      : error != null
+                      : error != null && items.isEmpty
                           ? ListView(
                               physics: const AlwaysScrollableScrollPhysics(),
                               padding: HopeV2Navigation.scrollEndPadding(context, top: 24),
                               children: [
-                                HopeAsyncState(
-                                  kind: HopeStateKind.error,
-                                  title: _t(
-                                    'اعلان‌ها در دسترس نیستند',
-                                    'Notifications unavailable',
-                                  ),
-                                  message: error!,
-                                  action: FilledButton.icon(
-                                    onPressed: loading ? null : _load,
-                                    icon: const HopeIcon(
-                                      HopeV2Icons.refresh,
-                                      size: 19,
-                                    ),
-                                    label: Text(
-                                      HopeCopy.of(context).copy_retry_49f3eba,
-                                    ),
-                                  ),
-                                ),
+                                _notificationsLoadError(retainsRows: false),
                               ],
                             )
                           : items.isEmpty
@@ -460,6 +467,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       const AlwaysScrollableScrollPhysics(),
                                   padding: HopeV2Navigation.scrollEndPadding(context),
                                   children: [
+                                    if (error != null) ...[
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 12),
+                                        child: _notificationsLoadError(
+                                          retainsRows: true,
+                                        ),
+                                      ),
+                                    ],
                                     ...items.map(_notificationCard),
                                   ],
                                 ),
