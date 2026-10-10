@@ -425,6 +425,14 @@ void main() {
         locale: const Locale('fa'),
       );
 
+      final initialException = tester.takeException();
+      expect(
+        initialException,
+        isNull,
+        reason: 'Initial Job Detail layout at $width dp / 1.5x: '
+            '${initialException is FlutterError ? initialException.diagnostics.map((node) => node.toString()).join(' | ') : initialException}',
+      );
+
       final list = find.byKey(listKey);
       final finalSection = find.byKey(finalSectionKey);
       final cta = find.byKey(ctaKey);
@@ -455,7 +463,13 @@ void main() {
       expect(viewportRect.bottom, lessThanOrEqualTo(ctaRect.top));
       expect(ctaRect.height, greaterThanOrEqualTo(48));
       expect(ctaRect.bottom, lessThanOrEqualTo(tester.view.physicalSize.height));
-      expect(tester.takeException(), isNull);
+      final tailException = tester.takeException();
+      expect(
+        tailException,
+        isNull,
+        reason: 'Job Detail after scroll at $width dp / 1.5x: '
+            '${tailException is FlutterError ? tailException.diagnostics.map((node) => node.toString()).join(' | ') : tailException}',
+      );
     }
   });
 
