@@ -294,7 +294,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 child: Row(
                   children: [
                     _filterChip('ALL', _t('همه', 'All'), _items.length),
-                    ...['PENDING', 'SHORTLISTED', 'FORWARDED', 'INTERVIEW', 'OFFERED', 'ACCEPTED', 'REJECTED']
+                    ...['PENDING', 'SHORTLISTED', 'FORWARDED', 'INTERVIEW', 'OFFERED', 'ACCEPTED', 'REJECTED', 'WITHDRAWN']
                         .where((s) => (counts[s] ?? 0) > 0)
                         .map((s) => _filterChip(s, HopeApplication(
                               id: '', jobId: '', jobTitle: '', jobCity: null,
