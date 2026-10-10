@@ -433,6 +433,7 @@ void main() {
 
       await _advance(tester);
       expect(find.text('Step 2 of 5'), findsOneWidget);
+      expect(find.text('جزئیات'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'Minimum pay'), findsNothing);
 
