@@ -452,7 +452,7 @@ void main() {
         'منتشر شده',
       ];
       var scrollStep = 0;
-      for (; scrollStep < 20; scrollStep++) {
+      for (; scrollStep < 80; scrollStep++) {
         await tester.drag(listScroller, const Offset(0, -160));
         await tester.pumpAndSettle();
         final stepException = tester.takeException();
