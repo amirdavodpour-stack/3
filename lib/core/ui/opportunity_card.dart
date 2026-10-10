@@ -332,42 +332,48 @@ class OpportunityCard extends StatelessWidget {
         (const Color(0xFF22C55E), HopeV2Icons.workshop),
       _ => (primary, HopeV2Icons.category),
     };
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final baseSurface =
+        dark ? HopeV2Colors.darkCard : theme.colorScheme.surface;
 
     return DecoratedBox(
+      key: const ValueKey('opportunity-fallback-media-surface'),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: AlignmentDirectional.topEnd,
           end: AlignmentDirectional.bottomStart,
           colors: [
-            accent.withValues(alpha: .16),
-            HopeV2Colors.darkCard,
+            accent.withValues(alpha: dark ? .09 : .05),
+            baseSurface,
           ],
         ),
       ),
       child: Center(
         child: Container(
           key: const ValueKey('opportunity-fallback-icon-container'),
-          width: 46,
-          height: 46,
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
-            color: accent.withValues(alpha: .11),
+            color: accent.withValues(alpha: dark ? .07 : .04),
             shape: BoxShape.circle,
             border: Border.all(
-              color: accent.withValues(alpha: .18),
+              color: accent.withValues(alpha: dark ? .13 : .10),
             ),
           ),
           child: Center(
             child: HopeIcon(
               icon,
-              color: Colors.white,
-              size: 22,
-              strokeWidth: 1.8,
+              color: accent.withValues(alpha: dark ? .92 : 1),
+              size: 16,
+              strokeWidth: 1.6,
             ),
           ),
         ),
       ),
     );
   }
+
   Widget _compactGrid(
     BuildContext context,
     String title,
@@ -810,6 +816,7 @@ class OpportunityCard extends StatelessWidget {
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
+        key: const ValueKey('opportunity-scan-media'),
         width: mediaSize,
         height: mediaSize,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty

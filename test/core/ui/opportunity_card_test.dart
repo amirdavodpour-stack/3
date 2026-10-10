@@ -148,7 +148,7 @@ void main() {
     expect((image.image as NetworkImage).url, imageUrl);
   });
 
-  testWidgets('featured opportunity media header gets an editorial focal height on mobile',
+  testWidgets('featured opportunity keeps the compact scan media on mobile',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -197,8 +197,12 @@ void main() {
     await tester.pump();
 
     expect(
-      tester.getSize(find.byKey(const ValueKey('opportunity-media-header'))).height,
-      greaterThanOrEqualTo(140),
+      tester.getSize(find.byKey(const ValueKey('opportunity-scan-media'))),
+      const Size(64, 64),
+    );
+    expect(
+      find.byKey(const ValueKey('opportunity-media-header')),
+      findsNothing,
     );
   });
 
