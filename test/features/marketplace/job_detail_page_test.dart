@@ -292,21 +292,23 @@ void main() {
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
       'Flutter developer',
     );
-    expect(find.text('Monthly pay'), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
+    expect(find.textContaining('12,000,000'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.textContaining('2026-09-30'), findsOneWidget);
     expect(find.textContaining('reviewed by an admin'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
   });
 
-  testWidgets('match breakdown compresses into a two-column decision grid on compact mobile',
+  testWidgets('decision strip renders all four breakdown dimensions in a compact grid',
       (tester) async {
     await _pump(tester, job: _job(), width: 390, height: 844);
 
-    final skills = find.byKey(const ValueKey('match-breakdown-skills'));
-    final category = find.byKey(const ValueKey('match-breakdown-category'));
-    final location = find.byKey(const ValueKey('match-breakdown-location'));
-    final salary = find.byKey(const ValueKey('match-breakdown-salary'));
+    final skills = find.byKey(const ValueKey('opportunity-decision-breakdown-skills'));
+    final category = find.byKey(const ValueKey('opportunity-decision-breakdown-category'));
+    final location = find.byKey(const ValueKey('opportunity-decision-breakdown-location'));
+    final salary = find.byKey(const ValueKey('opportunity-decision-breakdown-salary'));
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
     expect(skills, findsOneWidget);
     expect(category, findsOneWidget);
     expect(location, findsOneWidget);
@@ -319,38 +321,37 @@ void main() {
       (tester.getTopLeft(salary).dy - tester.getTopLeft(location).dy).abs(),
       lessThan(90),
     );
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('opportunity hero preserves a stronger editorial focal height',
+  testWidgets('opportunity hero uses the shared responsive height contract',
       (tester) async {
-    await _pump(tester, job: _job());
-    final hero = find.byType(PremiumHero);
-    expect(hero, findsOneWidget);
-    expect(tester.getSize(hero).height, greaterThanOrEqualTo(180));
+    await _pump(tester, job: _job(), width: 900, height: 1200);
+    expect(find.byType(PremiumHero), findsOneWidget);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 166);
+
+    await _pump(tester, job: _job(), width: 1280, height: 1200);
+    expect(find.byType(PremiumHero), findsOneWidget);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 214);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-      'compact opportunity detail keeps a painted match surface in the tight runtime viewport',
+      'compact opportunity detail keeps the active decision strip visible in a narrow viewport',
       (tester) async {
     await _pump(tester, job: _job(), width: 274, height: 457);
 
-    final match = find.byKey(
-      const ValueKey('opportunity-match-intelligence-compact-surface'),
-    );
+    final decision = find.byKey(const ValueKey('opportunity-decision-strip'));
     final hero = find.byType(PremiumHero);
-    expect(match, findsOneWidget);
-    final matchBoundary = find.byKey(
-      const ValueKey('opportunity-match-intelligence-compact-boundary'),
-    );
-    expect(matchBoundary, findsOneWidget);
-    expect(tester.getSize(matchBoundary).height, greaterThanOrEqualTo(160));
-    expect(tester.getSize(hero).height, lessThanOrEqualTo(180));
-    expect(find.text('94% Match'), findsOneWidget);
-    expect(find.text('Match intelligence'), findsOneWidget);
-    expect(tester.getTopLeft(match).dy, lessThan(280));
-    expect(tester.getSize(match).height, greaterThanOrEqualTo(160));
-    expect(tester.getSize(match).width, greaterThan(240));
-    expect(find.text('Match signals'), findsNothing);
+    expect(decision, findsOneWidget);
+    expect(hero, findsOneWidget);
+    expect(tester.getSize(hero).height, 132);
+    expect(tester.getSize(decision).width, greaterThan(220));
+    expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
+    expect(find.text('94%'), findsOneWidget);
+    expect(find.text('Quick decision'), findsOneWidget);
+    expect(find.text('Match signals'), findsOneWidget);
+    expect(tester.getTopLeft(decision).dy, lessThan(300));
     expect(tester.takeException(), isNull);
   });
 
@@ -482,7 +483,7 @@ void main() {
   });
 
   testWidgets(
-      'match intelligence exposes four visual breakdown bars and a trust note',
+      'active decision strip exposes real recommendation dimensions and values',
       (tester) async {
     await _pump(
       tester,
@@ -490,51 +491,40 @@ void main() {
       userId: 'u9',
     );
 
-    expect(find.byKey(const ValueKey('match-breakdown-skills')), findsOneWidget);
-    expect(find.byKey(const ValueKey('match-breakdown-category')), findsOneWidget);
-    expect(find.byKey(const ValueKey('match-breakdown-location')), findsOneWidget);
-    expect(find.byKey(const ValueKey('match-breakdown-salary')), findsOneWidget);
-    expect(find.text('92% confidence'), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-skills')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-category')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-location')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-salary')), findsOneWidget);
+    expect(find.text('94%'), findsOneWidget);
+    expect(find.text('96%'), findsOneWidget);
+    expect(find.text('100%'), findsOneWidget);
+    expect(find.text('88%'), findsOneWidget);
+    expect(find.text('82%'), findsOneWidget);
     expect(find.text('Match signals'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('match intelligence opens a detailed evidence sheet', (tester) async {
+  testWidgets('Job Detail uses the active decision surface without a retired modal',
+      (tester) async {
     await _pump(
       tester,
       job: _job(kind: 'JOB', ownerId: 'u1'),
       userId: 'u9',
     );
 
-    expect(find.text('Match intelligence'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('opportunity-match-intelligence')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Why this opportunity fits'), findsOneWidget);
-    final sheet = find.byType(BottomSheet);
-    expect(
-      find.descendant(
-        of: sheet,
-        matching: find.text('Match signals'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: sheet, matching: find.text('Skill match')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: sheet, matching: find.text('Work mode fit')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: sheet, matching: find.text('Category match')),
-      findsOneWidget,
-    );
-    expect(find.text('94%'), findsWidgets);
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
+    expect(find.text('Quick decision'), findsOneWidget);
+    expect(find.text('Match signals'), findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.text('Why this opportunity fits'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-      'opportunity snapshot renders as a compact flat fact strip',
+      'Opportunity DNA exposes current category and location facts without duplicate budget or match',
       (tester) async {
     await _pump(
       tester,
@@ -542,12 +532,15 @@ void main() {
       userId: 'u9',
     );
 
-    expect(find.byKey(const ValueKey('opportunity-snapshot-facts')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-budget')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-field')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-location')), findsOneWidget);
-    // Deadline is rendered once in working details; keep the compact snapshot free of duplicate core facts.
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-deadline')), findsNothing);
+    final dna = find.byKey(const ValueKey('opportunity-dna-signature'));
+    expect(dna, findsOneWidget);
+    expect(find.descendant(of: dna, matching: find.text('Opportunity traits')), findsOneWidget);
+    expect(find.descendant(of: dna, matching: find.text('Category')), findsOneWidget);
+    expect(find.descendant(of: dna, matching: find.text('Location')), findsOneWidget);
+    expect(find.descendant(of: dna, matching: find.text('Work mode')), findsOneWidget);
+    expect(find.descendant(of: dna, matching: find.text('Budget')), findsNothing);
+    expect(find.descendant(of: dna, matching: find.text('Match')), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('unknown job lifecycle status is presented safely', (tester) async {
