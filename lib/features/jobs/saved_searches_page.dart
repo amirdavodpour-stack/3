@@ -7,7 +7,6 @@ import '../../core/marketplace/saved_search_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/hope_display_formatters.dart';
-import '../../l10n/generated/app_localizations.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/hope_v2_design.dart';
 
@@ -210,51 +209,8 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
     }
   }
 
-  String _categoryLabel(HopeSavedSearch item) {
-    final slug = item.category.trim().toLowerCase().replaceAll('_', '-');
-    final l10n = AppLocalizations.of(context);
-    switch (slug) {
-      case 'software':
-      case 'software-development':
-      case 'development':
-        return l10n.categorySoftware;
-      case 'design':
-      case 'graphic-design':
-        return l10n.categoryDesign;
-      case 'marketing':
-        return l10n.categoryMarketing;
-      case 'content':
-      case 'translation':
-      case 'content-translation':
-        return l10n.categoryContentTranslation;
-      case 'finance':
-      case 'accounting':
-      case 'finance-accounting':
-        return l10n.categoryFinanceAccounting;
-      case 'education':
-        return l10n.categoryEducation;
-      case 'support':
-        return l10n.categorySupport;
-      case 'construction':
-      case 'technical':
-      case 'construction-technical':
-        return l10n.categoryConstructionTechnical;
-      case 'video':
-      case 'audio':
-      case 'video-audio':
-      case 'video-production':
-        return l10n.categoryVideoAudio;
-      case 'data':
-      case 'ai':
-      case 'data-ai':
-      case 'artificial-intelligence':
-        return l10n.categoryDataAI;
-      case 'sales':
-        return l10n.categorySales;
-      default:
-        return l10n.categoryOther;
-    }
-  }
+  String _categoryLabel(HopeSavedSearch item) =>
+      hopeCategoryLabel(context, item.category, unknownAsOther: true);
   String _scope(HopeSavedSearch item) {
     final parts = <String>[];
     // Isolate user-entered or Latin-script values so they cannot reorder
