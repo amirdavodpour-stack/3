@@ -165,10 +165,16 @@ class _CreateJobPageState extends State<CreateJobPage> {
 
   @override
   Widget build(BuildContext context) {
+    final shortViewport = MediaQuery.sizeOf(context).height < 420;
     return Scaffold(
       body: PremiumPageFrame(
         maxWidth: 980,
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          shortViewport ? 4 : 12,
+          20,
+          shortViewport ? 8 : 24,
+        ),
         child: SizedBox.expand(
           child: Column(
             children: [
@@ -176,12 +182,16 @@ class _CreateJobPageState extends State<CreateJobPage> {
                 dense: true,
                 page: HopePageId.createOpportunity,
                 domain: HopeProductDomain.work,
-                eyebrow: HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
+                eyebrow: shortViewport
+                    ? ''
+                    : HopeCopy.of(context).copy_post_a_new_opportunity_f7fe3d9,
                 title: _t('ثبت فرصت جدید', 'Post an opportunity'),
-                subtitle: _t(
-                  'نوع فرصت، مشخصات، مبلغ و شرایط را مشخص کنید.',
-                  'Set the opportunity type, details, budget, and requirements.',
-                ),
+                subtitle: shortViewport
+                    ? null
+                    : _t(
+                        'نوع فرصت، مشخصات، مبلغ و شرایط را مشخص کنید.',
+                        'Set the opportunity type, details, budget, and requirements.',
+                      ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -201,7 +211,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: HopeV2Spacing.sm),
+              SizedBox(height: shortViewport ? 2 : HopeV2Spacing.sm),
               Expanded(
                 child: _CreateJobForm(
                   title: title,
@@ -214,7 +224,10 @@ class _CreateJobPageState extends State<CreateJobPage> {
                   acceptanceCriteria: accept,
                   busy: busy,
                   activeStep: activeStep,
-                  onStepChanged: (step) => setState(() => activeStep = step),
+                  onStepChanged: (step) {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    setState(() => activeStep = step.clamp(0, 4));
+                  },
                   kind: kind,
                   visibility: visibility,
                   schedule: schedule,

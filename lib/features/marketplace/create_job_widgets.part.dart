@@ -49,9 +49,11 @@ class _TypeHero extends StatelessWidget {
                 ),
               ];
 
-              // Keep both opportunity types side-by-side on normal phone widths.
-              // Stack only for genuinely narrow embedded surfaces.
-              if (constraints.maxWidth < 240) {
+              final enlargedText =
+                  MediaQuery.textScalerOf(context).scale(1) > 1.2;
+              // Keep both choices side-by-side at normal text sizes; enlarged
+              // text gets a vertical reading order rather than compressed copy.
+              if (constraints.maxWidth < 240 || enlargedText) {
                 return Column(
                   children: [
                     tiles[0],

@@ -158,7 +158,12 @@ Future<void> _open(WidgetTester tester) async {
 
 Future<void> _selectCategory(WidgetTester tester, String label) async {
   final dropdown = find.byType(DropdownButtonFormField<String>).first;
-  await tester.ensureVisible(dropdown);
+  await tester.scrollUntilVisible(
+    dropdown,
+    180,
+    scrollable: find.byType(Scrollable).first,
+    maxScrolls: 30,
+  );
   await tester.pumpAndSettle();
   await tester.tap(dropdown);
   await tester.pumpAndSettle();
@@ -171,7 +176,12 @@ Future<void> _selectCategory(WidgetTester tester, String label) async {
 
 Future<void> _advance(WidgetTester tester) async {
   final next = find.byKey(const ValueKey('create-opportunity-next-step'));
-  await tester.ensureVisible(next);
+  await tester.scrollUntilVisible(
+    next,
+    180,
+    scrollable: find.byType(Scrollable).first,
+    maxScrolls: 30,
+  );
   await tester.tap(next);
   await tester.pumpAndSettle();
 }
@@ -242,7 +252,13 @@ void main() {
     tester.view.physicalSize = const Size(800, 360);
     await tester.pumpAndSettle();
 
-    expect(tester.takeException(), isNull);
+    final landscapeException = tester.takeException();
+    expect(
+      landscapeException,
+      isNull,
+      reason: 'Create Opportunity landscape layout: '
+          '${landscapeException is FlutterError ? landscapeException.diagnostics.map((node) => node.toString()).join(' | ') : landscapeException}',
+    );
     expect(find.byType(CreateJobPage), findsOneWidget);
   });
 
