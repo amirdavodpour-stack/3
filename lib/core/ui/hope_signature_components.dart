@@ -226,8 +226,10 @@ class HopeWalletFlowSignature extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final compact =
-        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact &&
+            !enlargedText;
     final currencyLabel = wallet.currency == 'TOMAN'
         ? _t(context, 'تومان داخلی', 'Internal Toman')
         : wallet.currency;
@@ -321,16 +323,17 @@ class HopeWalletFlowSignature extends StatelessWidget {
                 ),
           ),
           if (!compact) const SizedBox(height: 9),
-          Row(
-            children: [
-              for (var index = 0; index < steps.length; index++) ...[
-                if (index > 0) const SizedBox(width: 6),
-                Expanded(
-                  child: Container(
-                    constraints: BoxConstraints(minHeight: compact ? 26 : 43),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: compact ? 2 : 5,
-                      vertical: compact ? 2 : 7,
+          if (enlargedText)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var index = 0; index < steps.length; index++) ...[
+                  if (index > 0) const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
                     ),
                     decoration: BoxDecoration(
                       color: steps[index].color.withValues(alpha: .07),
@@ -340,24 +343,21 @@ class HopeWalletFlowSignature extends StatelessWidget {
                       ),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        HopeIcon(
-                          steps[index].icon,
-                          size: compact ? 12 : 16,
-                          color: steps[index].color,
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: HopeIcon(
+                            steps[index].icon,
+                            size: 20,
+                            color: steps[index].color,
+                          ),
                         ),
-                        const SizedBox(width: 4),
-                        Flexible(
+                        const SizedBox(width: 10),
+                        Expanded(
                           child: Text(
-                            _t(
-                              context,
-                              compact ? compactFa[index] : steps[index].fa,
-                              compact ? compactEn[index] : steps[index].en,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.clip,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            _t(context, steps[index].fa, steps[index].en),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
@@ -365,10 +365,58 @@ class HopeWalletFlowSignature extends StatelessWidget {
                       ],
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
-          ),
+            )
+          else
+            Row(
+              children: [
+                for (var index = 0; index < steps.length; index++) ...[
+                  if (index > 0) const SizedBox(width: 6),
+                  Expanded(
+                    child: Container(
+                      constraints: BoxConstraints(minHeight: compact ? 26 : 43),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 2 : 5,
+                        vertical: compact ? 2 : 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: steps[index].color.withValues(alpha: .07),
+                        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                        border: Border.all(
+                          color: steps[index].color.withValues(alpha: .16),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          HopeIcon(
+                            steps[index].icon,
+                            size: compact ? 12 : 16,
+                            color: steps[index].color,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              _t(
+                                context,
+                                compact ? compactFa[index] : steps[index].fa,
+                                compact ? compactEn[index] : steps[index].en,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.clip,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
         ],
       ),
     );

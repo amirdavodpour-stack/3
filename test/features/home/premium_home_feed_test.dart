@@ -119,6 +119,7 @@ class _HomeHarness {
 Future<_HomeHarness> _host(
   _SequencedMarketplaceRepository repository, {
   bool authenticated = false,
+  double textScale = 1,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
@@ -142,6 +143,13 @@ Future<_HomeHarness> _host(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        );
+      },
       home: MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: settings),
@@ -300,6 +308,43 @@ void main() {
       tester.view.resetDevicePixelRatio();
     }
   });
+
+
+  testWidgets(
+    'Wave30 Home Pulse reflows into two readable rows at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _SequencedMarketplaceRepository(),
+        textScale: 1.5,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final keys = [
+        'home-pulse-stat-matches',
+        'home-pulse-stat-new',
+        'home-pulse-stat-active',
+        'home-pulse-stat-Held in escrow',
+      ].map((key) => find.byKey(ValueKey(key))).toList(growable: false);
+      for (final stat in keys) {
+        expect(stat, findsOneWidget);
+      }
+      final rects = keys.map((finder) => tester.getRect(finder)).toList(growable: false);
+      expect((rects[0].top - rects[1].top).abs(), lessThan(1.0));
+      expect((rects[2].top - rects[3].top).abs(), lessThan(1.0));
+      expect(rects[2].top, greaterThan(rects[0].top));
+      expect(
+        tester.getSize(find.byKey(const ValueKey('home-pulse-panel'))).height,
+        greaterThan(70),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('home money labels use the canonical Toman copy helper',
       (tester) async {

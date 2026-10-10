@@ -303,7 +303,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             const SizedBox(height: 8),
             PremiumLifecycle(
               key: ValueKey('work-center-lifecycle-${job.id}'),
-              compact: true,
+              compact: MediaQuery.textScalerOf(context).scale(1) <= 1.2,
               steps: _stepsForStatus(status),
               title: _t('مسیر همکاری', 'Work flow'),
               subtitle: _t(

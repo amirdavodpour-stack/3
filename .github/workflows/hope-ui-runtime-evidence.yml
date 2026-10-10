@@ -51,7 +51,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]'))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]') || contains(github.event.pull_request.title, '[runtime-capture-en-scale]'))) }}
     name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -161,7 +161,8 @@ jobs:
         env:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
-          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
+          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
+          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
           HOPE_RUNTIME_STRICT_VALIDATION: '0'
           HOPE_CAPTURE_HOME_ONLY: ${{ ((github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture-fa-home]'))) && '1' || '0' }}
         with:
@@ -188,6 +189,9 @@ jobs:
           png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
           # Full capture gate: 19 baseline + 6 responsive screenshots.
           test "${png_count}" -ge 25
+          jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" \
+            '.sha == $sha and .capture_locale == $locale and .text_scale == $scale and .screens == 19 and .responsive_screens == 6 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy"' \
+            docs/audit/evidence/android-runtime/metadata.json
 
       - name: Validate home-only diagnostic artifact contents
         if: ${{ success() && github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]') }}

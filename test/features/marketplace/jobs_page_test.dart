@@ -110,6 +110,7 @@ Future<void> _pump(
   _Repo repo, {
   HopeSettingsController? settings,
   double textScale = 1,
+  Locale locale = const Locale('fa'),
 }) async {
   HopeSettingsController resolvedSettings;
   if (settings != null) {
@@ -121,7 +122,7 @@ Future<void> _pump(
   }
   await tester.pumpWidget(MaterialApp(
     theme: ThemeData.light(),
-    locale: const Locale('fa'),
+    locale: locale,
     supportedLocales: const [Locale('fa'), Locale('en')],
     localizationsDelegates: const [
       AppLocalizations.delegate,
@@ -512,6 +513,43 @@ void main() {
         reason: 'Final Explore opportunity must clear the dock after scrolling.',
       );
       expect(lastOpportunity.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'Wave30 Explore renders English LTR single-column cards with 1.5x system text',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(
+        tester,
+        _Repo(),
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Find your next opportunity'), findsOneWidget);
+      expect(find.text('Recommended for you'), findsOneWidget);
+      final cards = tester.widgetList<OpportunityCard>(
+        find.byType(OpportunityCard),
+      );
+      expect(cards, isNotEmpty);
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compactGrid),
+        isFalse,
+        reason: 'Enlarged English text must not use two-column compact-grid cards.',
+      );
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compact),
+        isFalse,
+        reason: 'Enlarged English text must use readable opportunity summaries.',
+      );
       expect(tester.takeException(), isNull);
     },
   );

@@ -485,7 +485,12 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               LayoutBuilder(
                 builder: (context, constraints) {
                   const gap = 6.0;
-                  final columns = constraints.maxWidth >= 300 ? 4 : 2;
+                  final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                  final columns = enlargedText
+                      ? 2
+                      : constraints.maxWidth >= 300
+                          ? 4
+                          : 2;
                   final cellWidth =
                       (constraints.maxWidth - gap * (columns - 1)) / columns;
                   return Wrap(
@@ -501,6 +506,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                             label: stat.label,
                             icon: stat.icon,
                             accent: stat.accent,
+                            key: ValueKey('home-pulse-stat-${stat.label}'),
                           ),
                         ),
                     ],
@@ -592,8 +598,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     required String label,
     required Object icon,
     required Color accent,
+    required Key key,
   }) {
     return Container(
+      key: key,
       constraints: const BoxConstraints(minHeight: 38),
       padding: const EdgeInsets.symmetric(
         horizontal: 6,

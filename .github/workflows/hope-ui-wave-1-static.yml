@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   verify:
-    if: ${{ github.event_name != 'pull_request' || (!contains(github.event.pull_request.title, '[runtime-capture-fa]') && !contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
+    if: ${{ github.event_name != 'pull_request' || (!contains(github.event.pull_request.title, '[runtime-capture-fa]') && !contains(github.event.pull_request.title, '[runtime-capture-fa-home]') && !contains(github.event.pull_request.title, '[runtime-capture-en-scale]')) }}
     name: Wave 1 Flutter + backend + visual guardrails
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -58,6 +58,8 @@ jobs:
         run: bash tools/verify-design-quality.sh
       - name: Runtime source guard
         run: bash test/runtime/premium_visual_wave_source_test.sh
+      - name: Runtime driver contract
+        run: bash tools/tests/hope-runtime-driver-contract.sh
       - name: Flutter analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
       # Bound the wave lane: a failing widget test must never consume 10-minute defaults.
@@ -68,4 +70,4 @@ jobs:
       - name: HOPE Superwave — one consolidated Flutter regression gate
         if: ${{ !contains(github.event.pull_request.title, '[flutter-preverified]') }}
         timeout-minutes: 7
-        run: timeout --foreground --signal=TERM --kill-after=30s 360s flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart test/features/wallet/wave22_compact_wallet_test.dart test/features/jobs/saved_searches_page_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/employer_candidate_matches_page_test.dart test/features/jobs/job_satisfaction_page_test.dart test/core/ui/premium_navigation_test.dart test/features/transactions/transactions_page_test.dart test/features/marketplace/jobs_page_test.dart test/features/marketplace/create_job_page_test.dart test/features/auth/auth_pages_test.dart test/features/applications/my_applications_page_test.dart test/features/chat/chat_page_test.dart test/features/financial/financial_insights_page_test.dart test/features/profile/wave24_compact_dock_test.dart
+        run: timeout --foreground --signal=TERM --kill-after=30s 360s flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart test/features/wallet/wave22_compact_wallet_test.dart test/features/jobs/saved_searches_page_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/employer_candidate_matches_page_test.dart test/features/jobs/job_satisfaction_page_test.dart test/core/ui/premium_navigation_test.dart test/features/transactions/transactions_page_test.dart test/features/marketplace/jobs_page_test.dart test/features/marketplace/create_job_page_test.dart test/features/auth/auth_pages_test.dart test/features/applications/my_applications_page_test.dart test/features/chat/chat_page_test.dart test/features/financial/financial_insights_page_test.dart test/features/home/premium_home_feed_test.dart test/features/profile/wave24_compact_dock_test.dart

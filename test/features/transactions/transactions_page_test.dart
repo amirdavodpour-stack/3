@@ -10,6 +10,7 @@ import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/ui/premium_lifecycle.dart';
 import 'package:hope_mobile/features/transactions/transactions_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -81,6 +82,8 @@ Future<void> _pump(
   bool guest = false,
   double width = 900,
   double height = 2400,
+  double textScale = 1,
+  Locale locale = const Locale('fa'),
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -97,7 +100,7 @@ Future<void> _pump(
   }
   await tester.pumpWidget(MaterialApp(
     theme: ThemeData.light(),
-    locale: const Locale('fa'),
+    locale: locale,
     supportedLocales: const [Locale('fa'), Locale('en')],
     localizationsDelegates: const [
       AppLocalizations.delegate,
@@ -105,9 +108,14 @@ Future<void> _pump(
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: MultiProvider(
-      providers: [ChangeNotifierProvider.value(value: auth)],
-      child: TransactionsPage(repository: repo),
+    home: MediaQuery(
+      data: MediaQueryData.fromView(tester.view).copyWith(
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: MultiProvider(
+        providers: [ChangeNotifierProvider.value(value: auth)],
+        child: TransactionsPage(repository: repo),
+      ),
     ),
   ));
   await tester.pumpAndSettle();
@@ -308,6 +316,39 @@ void main() {
       );
       await tester.tapAt(lifecycleRect.center);
       await tester.pump();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'Wave30 English Work Center expands lifecycle rows at 1.5x and preserves scroll reachability',
+    (tester) async {
+      final repo = _Transactions()
+        ..jobs = [_job('scale', status: 'IN_PROGRESS')];
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+
+      final lifecycle = find.byKey(
+        const ValueKey('work-center-lifecycle-scale'),
+      );
+      await tester.scrollUntilVisible(
+        lifecycle,
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(lifecycle, findsOneWidget);
+      expect(tester.widget<PremiumLifecycle>(lifecycle).compact, isFalse);
+      expect(find.text('Work flow'), findsOneWidget);
+      expect(lifecycle.hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

@@ -24,6 +24,7 @@ DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
+CAPTURE_TEXT_SCALE="${HOPE_CAPTURE_TEXT_SCALE:-1.0}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
 # bool.fromEnvironment only treats the string "true" as true. The workflow
@@ -40,8 +41,16 @@ case "$CAPTURE_LOCALE" in
     exit 2
     ;;
 esac
+case "$CAPTURE_TEXT_SCALE" in
+  1.0|1.25|1.5|2.0) ;;
+  *)
+    echo "Unsupported HOPE_CAPTURE_TEXT_SCALE: $CAPTURE_TEXT_SCALE" >&2
+    exit 2
+    ;;
+esac
 
 echo "HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build"
+echo "HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$CAPTURE_TEXT_SCALE"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -313,6 +322,7 @@ run_host_batch_session() {
   flutter drive --no-pub --no-dds --no-enable-impeller \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
+    --dart-define=HOPE_CAPTURE_TEXT_SCALE="${CAPTURE_TEXT_SCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
     --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
     --dart-define=HOPE_BASELINE_BATCH="${baseline_batch}" \
@@ -617,6 +627,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "responsive_logical_viewport": "360x640dp",
   "responsive_density_dpi": 320,
   "capture_locale": "$CAPTURE_LOCALE",
+  "text_scale": $CAPTURE_TEXT_SCALE,
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",

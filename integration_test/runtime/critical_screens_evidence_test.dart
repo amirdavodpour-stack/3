@@ -766,7 +766,10 @@ class _EvidenceHost extends StatelessWidget {
           final media = MediaQuery.of(context);
           return PremiumAppCanvas(
             child: MediaQuery(
-              data: media.copyWith(disableAnimations: true),
+              data: media.copyWith(
+                disableAnimations: true,
+                textScaler: TextScaler.linear(_captureTextScale),
+              ),
               child: appChild!,
             ),
           );
@@ -788,6 +791,10 @@ const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
+const _captureTextScale = double.fromEnvironment(
+  'HOPE_CAPTURE_TEXT_SCALE',
+  defaultValue: 1.0,
+);
 const _captureHomeOnly =
     bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
 const _responsiveBatch =
@@ -1150,7 +1157,13 @@ void main() {
       'HOPE_CAPTURE_LOCALE must be supplied as fa or en for exact-locale runtime evidence.',
     );
   }
+  if (![1.0, 1.25, 1.5, 2.0].contains(_captureTextScale)) {
+    throw StateError(
+      'HOPE_CAPTURE_TEXT_SCALE must be one of 1.0, 1.25, 1.5, or 2.0.',
+    );
+  }
   print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
+  print('HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale');
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {

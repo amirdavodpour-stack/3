@@ -289,4 +289,67 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Wave30 Wallet money-flow signature expands for English LTR at 1.5x text scale',
+    (tester) async {
+      final auth = AuthController(_Wave22AuthRepository(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _Wave22WalletRepository();
+
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: auth),
+                Provider<WalletRepository>.value(value: wallet),
+              ],
+              child: WalletPage(repository: wallet),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final signature = find.byKey(
+        const ValueKey('wallet-money-flow-signature'),
+      );
+      await tester.scrollUntilVisible(
+        signature,
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(signature, findsOneWidget);
+      expect(find.text('Money flow in the ledger'), findsOneWidget);
+      expect(
+        find.text(
+          'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
+        ),
+        findsOneWidget,
+      );
+      for (final label in ['Ledger entry', 'Hold for approval', 'Release funds']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
