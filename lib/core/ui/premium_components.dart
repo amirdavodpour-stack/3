@@ -2447,11 +2447,18 @@ class HopeCreationProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     const labelsFa = ['نوع', 'دیده‌شدن', 'جزئیات', 'مالی', 'انتشار'];
     const labelsEn = ['Type', 'Audience', 'Details', 'Money', 'Publish'];
+    const persianDigits = ['۱', '۲', '۳', '۴', '۵'];
     final en = Localizations.localeOf(context).languageCode == 'en';
     final safeIndex = activeIndex.clamp(0, labelsFa.length - 1);
+    final currentStep = en
+        ? 'Step ${safeIndex + 1} of ${labelsEn.length}'
+        : 'مرحله ${persianDigits[safeIndex]} از ۵';
+
     return Semantics(
       container: true,
-      label: en ? 'Create opportunity progress' : 'پیشرفت ثبت فرصت',
+      label: en
+          ? 'Create opportunity progress, $currentStep, ${labelsEn[safeIndex]}'
+          : 'پیشرفت ثبت فرصت، $currentStep، ${labelsFa[safeIndex]}',
       child: Container(
         key: const ValueKey('create-opportunity-progress'),
         padding: const EdgeInsets.fromLTRB(4, 3, 4, 7),
@@ -2459,11 +2466,13 @@ class HopeCreationProgress extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsetsDirectional.only(start: 2, end: 2, bottom: 5),
+              padding: const EdgeInsetsDirectional.only(
+                start: 2,
+                end: 2,
+                bottom: 5,
+              ),
               child: Text(
-                en
-                    ? 'Step ${safeIndex + 1} of ${labelsEn.length}'
-                    : 'مرحله ${const ['۱', '۲', '۳', '۴', '۵'][safeIndex]} از ۵',
+                currentStep,
                 key: const ValueKey('create-opportunity-current-step-label'),
                 textAlign: TextAlign.start,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -2474,71 +2483,78 @@ class HopeCreationProgress extends StatelessWidget {
             ),
             Row(
               children: [
-            for (var step = 0; step < labelsFa.length; step++)
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    end: step == labelsFa.length - 1 ? 0 : 5,
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: step <= safeIndex
-                              ? Theme.of(context).colorScheme.primary
-                              : HopeV2Surfaces.border(context).withValues(alpha: .6),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
+                for (var step = 0; step < labelsFa.length; step++)
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        end: step == labelsFa.length - 1 ? 0 : 5,
                       ),
-                      const SizedBox(height: 5),
-                      Container(
-                        width: 26,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: step == safeIndex
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: .16)
-                              : Theme.of(context).colorScheme.surface,
-                          border: Border.all(
-                            color: step <= safeIndex
-                                ? Theme.of(context).colorScheme.primary.withValues(alpha: .32)
-                                : HopeV2Surfaces.border(context),
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          (step + 1).toString(),
-                          style: TextStyle(
-                            color: step <= safeIndex
-                                ? Theme.of(context).colorScheme.primary
-                                : HopeV2Colors.darkMuted,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        en ? labelsEn[step] : labelsFa[step],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: step == safeIndex
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: step <= safeIndex
                                   ? Theme.of(context).colorScheme.primary
-                                  : (Theme.of(context).brightness == Brightness.dark
-                                      ? HopeV2Colors.darkMuted
-                                      : Theme.of(context).colorScheme.onSurfaceVariant),
-                              fontWeight: step == safeIndex ? FontWeight.w900 : FontWeight.w700,
-                              fontSize: 9.5,
+                                  : HopeV2Surfaces.border(context)
+                                      .withValues(alpha: .6),
+                              borderRadius: BorderRadius.circular(99),
                             ),
+                          ),
+                          const SizedBox(height: 5),
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: step == safeIndex
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: .16)
+                                  : Theme.of(context).colorScheme.surface,
+                              border: Border.all(
+                                color: step <= safeIndex
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withValues(alpha: .32)
+                                    : HopeV2Surfaces.border(context),
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              (step + 1).toString(),
+                              style: TextStyle(
+                                color: step <= safeIndex
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            en ? labelsEn[step] : labelsFa[step],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: step == safeIndex
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                  fontWeight: step == safeIndex
+                                      ? FontWeight.w900
+                                      : FontWeight.w700,
+                                  fontSize: 9.5,
+                                ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-          ],
+              ],
             ),
           ],
         ),
