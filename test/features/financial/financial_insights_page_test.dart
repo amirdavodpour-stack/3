@@ -350,6 +350,10 @@ void main() {
         expect(bars.label, contains('اردیبهشت'));
         expect(bars.label, contains('ورودی'));
         expect(bars.label, contains('رزرو شده'));
+        // Protect data fidelity, not just the presence of axis/series labels.
+        expect(bars.label, contains('ورودی ۸۰ تومان'));
+        expect(bars.label, contains('خروجی ۲۵ تومان'));
+        expect(bars.label, contains('رزرو شده ۱۰ تومان'));
 
         final balanceScroll = find.byKey(
           const ValueKey('financial-balance-chart-scroll'),
@@ -370,6 +374,9 @@ void main() {
         expect(balance.label, contains('تومان'));
         expect(balance.label, contains('2026-05'));
         expect(balance.label, contains('2026-10'));
+        // First and last recorded closing balances must be announced exactly.
+        expect(balance.label, contains('2026-05: ۷۰۰٬۰۰۰ تومان'));
+        expect(balance.label, contains('2026-10: ۱٬۲۰۰٬۰۰۰ تومان'));
         expect(tester.takeException(), isNull);
       } finally {
         handle.dispose();
