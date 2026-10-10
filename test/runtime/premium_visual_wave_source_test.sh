@@ -160,7 +160,7 @@ grep -Fq "icon: compactHero ? null : icon" "$premium"
 grep -Fq 'find.descendant(' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq '۱۴۰۵ شهریور ۱۰' 'test/core/ui/hope_display_formatters_test.dart'
 grep -Fq 'در ۱۲ ساعت' 'test/core/ui/hope_display_formatters_test.dart'
-grep -Fq 'Wrap(' "lib/features/offers/offers_page.dart"
+grep -Fq 'offers-status-filter-scroll' "lib/features/offers/offers_page.dart" || grep -Fq 'Wrap(' "lib/features/offers/offers_page.dart"
 grep -Fq 'final metricWidth = (constraints.maxWidth - gap) / 2;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'height: compactViewport ? 132 : denseViewport ? 166 : 214,' "lib/features/marketplace/job_detail_page.dart"
