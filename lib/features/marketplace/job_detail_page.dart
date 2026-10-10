@@ -768,7 +768,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       : HopeCopy.of(context).copy_mission_fb4c5e1,
                   title: j.title,
                   message: [
-                    j.category ?? j.categoryId,
+                    if (j.category?.trim().isNotEmpty == true)
+                      hopeCategoryLabel(context, j.category!)
+                    else if (j.categoryId?.trim().isNotEmpty == true)
+                      hopeCategoryLabel(context, j.categoryId!),
                     if (j.city != null && j.city!.trim().isNotEmpty) j.city,
                   ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
@@ -796,7 +799,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
               budget: isJob
                   ? moneyLabel(context, j.monthlySalary ?? j.budgetMin ?? '—')
                   : _budgetRangeLabel(context, j),
-              category: j.category ?? j.categoryId ?? '—',
+              category: hopeCategoryLabel(
+                context,
+                j.category?.trim().isNotEmpty == true
+                    ? j.category!
+                    : j.categoryId ?? '—',
+              ),
               location: j.city?.trim().isNotEmpty == true ? j.city!.trim() : _t('دورکاری', 'Remote'),
               accent: Theme.of(context).colorScheme.primary,
               breakdown: j.recommendationComponents,

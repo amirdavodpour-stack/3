@@ -208,6 +208,7 @@ Future<void> _pump(
   String userId = 'u9',
   double width = 900,
   double height = 3400,
+  Locale locale = const Locale('en'),
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -217,7 +218,7 @@ Future<void> _pump(
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
-  await settings.setLanguage('en');
+  await settings.setLanguage(locale.languageCode);
   final auth = AuthController(_AuthRepo(), SecureStore());
   await auth.applyRefreshedUser({'id': userId, 'displayName': 'Ali'});
 
@@ -234,7 +235,7 @@ Future<void> _pump(
     ],
     child: MaterialApp(
       theme: ThemeData.light(),
-      locale: const Locale('en'),
+      locale: locale,
       supportedLocales: const [Locale('en'), Locale('fa')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -263,6 +264,24 @@ void main() {
     expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
+
+  testWidgets(
+    'Wave 36 known job categories stay localized across hero and decision strip',
+    (tester) async {
+      await _pump(
+        tester,
+        job: _job(kind: 'JOB', category: 'Software'),
+        width: 360,
+        height: 1800,
+        locale: const Locale('fa'),
+      );
+
+      expect(find.textContaining('نرم‌افزار'), findsNWidgets(2));
+      expect(find.text('Software'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 
   testWidgets('job details render monthly pay, deadline and admin banner',
       (tester) async {

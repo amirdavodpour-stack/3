@@ -6,6 +6,7 @@ import '../theme/hope_v2_design.dart';
 import 'components.dart';
 import 'premium_components.dart';
 import 'hope_display_formatters.dart';
+import 'hope_l10n.dart';
 
 /// Shared visual signature for the creation flow. It mirrors only values that
 /// the user has already entered; it never invents marketplace data.
@@ -501,39 +502,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
   String _categoryLabel(BuildContext context, String? raw) {
     final value = raw?.trim();
     if (value == null || value.isEmpty) return '—';
-    const fa = <String, String>{
-      'software': 'نرم‌افزار',
-      'design': 'طراحی',
-      'marketing': 'بازاریابی',
-      'content': 'محتوا و ترجمه',
-      'finance': 'مالی و حسابداری',
-      'education': 'آموزش',
-      'support': 'پشتیبانی',
-      'construction': 'ساخت‌وساز و فنی',
-      'video': 'تولید ویدیو و صدا',
-      'ai': 'داده و هوش مصنوعی',
-      'data': 'داده و هوش مصنوعی',
-      'sales': 'فروش',
-      'other': 'سایر',
-    };
-    const en = <String, String>{
-      'نرم‌افزار': 'Software',
-      'طراحی': 'Design',
-      'بازاریابی': 'Marketing',
-      'محتوا و ترجمه': 'Content & Translation',
-      'مالی و حسابداری': 'Finance & Accounting',
-      'آموزش': 'Education',
-      'پشتیبانی': 'Support',
-      'ساخت‌وساز و فنی': 'Construction & Technical',
-      'تولید ویدیو و صدا': 'Video & Audio',
-      'داده و هوش مصنوعی': 'Data & AI',
-      'فروش': 'Sales',
-      'سایر': 'Other',
-    };
-    final faValue = fa[value.toLowerCase()] ?? value;
-    return Localizations.localeOf(context).languageCode == 'en'
-        ? (en[faValue] ?? faValue)
-        : faValue;
+    return hopeCategoryLabel(context, value);
   }
 
   @override

@@ -445,17 +445,34 @@ class _BarChart extends StatelessWidget {
                 child: SizedBox(
                   width: chartWidth,
                   height: constraints.maxHeight,
-                  child: CustomPaint(
-                    painter: _BarChartPainter(
-                      data,
-                      inflow,
-                      outflow,
-                      reserved,
-                      theme.colorScheme.outline,
-                      Directionality.of(context),
-                      textScale,
+                  child: Semantics(
+                    key: const ValueKey('financial-cashflow-chart-semantics'),
+                    container: true,
+                    label: data.isEmpty
+                        ? (english
+                            ? 'No recorded monthly cash-flow data.'
+                            : 'داده‌ای برای جریان نقدی ماهانه ثبت نشده است.')
+                        : data.map((month) {
+                            String money(String raw) => HopeDisplayFormatter.money(
+                                  double.tryParse(raw)?.round() ?? 0,
+                                  locale: Localizations.localeOf(context).languageCode,
+                                );
+                            return english
+                                ? '${month.label}: inflow ${money(month.inflow)}, outflow ${money(month.outflow)}, reserved ${money(month.reserved)}'
+                                : '${month.label}: ورودی ${money(month.inflow)}، خروجی ${money(month.outflow)}، رزرو شده ${money(month.reserved)}';
+                          }).join(english ? '. ' : '؛ '),
+                    child: CustomPaint(
+                      painter: _BarChartPainter(
+                        data,
+                        inflow,
+                        outflow,
+                        reserved,
+                        theme.colorScheme.outline,
+                        Directionality.of(context),
+                        textScale,
+                      ),
+                      child: const SizedBox.expand(),
                     ),
-                    child: const SizedBox.expand(),
                   ),
                 ),
               );
@@ -614,15 +631,30 @@ class _LineChart extends StatelessWidget {
           child: SizedBox(
             width: chartWidth,
             height: constraints.maxHeight,
-            child: CustomPaint(
-              painter: _LineChartPainter(
-                points,
-                color,
-                color.withValues(alpha: .12),
-                Directionality.of(context),
-                textScale,
+            child: Semantics(
+              key: const ValueKey('financial-balance-chart-semantics'),
+              container: true,
+              label: points.isEmpty
+                  ? (Localizations.localeOf(context).languageCode == 'en'
+                      ? 'No recorded balance trend data.'
+                      : 'داده‌ای برای روند موجودی ثبت نشده است.')
+                  : points.map((point) {
+                      final value = HopeDisplayFormatter.money(
+                        point.value.round(),
+                        locale: Localizations.localeOf(context).languageCode,
+                      );
+                      return '${point.date}: $value';
+                    }).join('؛ '),
+              child: CustomPaint(
+                painter: _LineChartPainter(
+                  points,
+                  color,
+                  color.withValues(alpha: .12),
+                  Directionality.of(context),
+                  textScale,
+                ),
+                child: const SizedBox.expand(),
               ),
-              child: const SizedBox.expand(),
             ),
           ),
         );

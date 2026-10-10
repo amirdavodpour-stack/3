@@ -49,3 +49,10 @@
 - The runtime Job Detail screenshot exposed a known category value (`Software`) untranslated in a Persian interface. A shared taxonomy formatter now maps known backend category slugs/labels to official app-localization strings in OpportunityCard, Job Detail, and Saved Searches. Unknown/custom category names remain untouched in cards/details; saved-search filters retain their existing safe “Other” fallback.
 - The five-step creation progress rail now matches the real staged form: Type, Details, Budget, Criteria, Review; its current-step headline uses the same localized numbering.
 - The 1.5× financial chart regression was hardened to drive the keyed outer list directly until Flutter mounts the lazy balance chart.
+
+## Wave 36 — runtime-driven localization and chart semantics
+
+- The Wave 35 native Job Detail capture still showed the English category label in the hero and recommendation decision strip. Both now use the canonical taxonomy mapper; the wider Opportunity DNA signature shares the same mapper rather than carrying a second category table.
+- Persian progress labels now use Persian digits in both the current-step headline and all numbered step circles.
+- Painted cash-flow and balance charts expose localized semantic descriptions of their actual recorded month/date/value sequences. Dedicated tests cover category localization across the Job Detail hero/decision strip, Persian progress numbering, and recorded chart semantics.
+- The existing native evidence does not certify TalkBack: the artifact reports `accessibility-enabled.txt=0` and `accessibility-services.txt=null`. Semantic widget tests are not a substitute for an enabled-service runtime accessibility pass.

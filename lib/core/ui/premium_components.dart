@@ -2524,7 +2524,7 @@ class HopeCreationProgress extends StatelessWidget {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              (step + 1).toString(),
+                              en ? (step + 1).toString() : persianDigits[step],
                               style: TextStyle(
                                 color: step <= safeIndex
                                     ? Theme.of(context).colorScheme.primary
