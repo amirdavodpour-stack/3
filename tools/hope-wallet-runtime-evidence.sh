@@ -497,9 +497,9 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
       "responsive-720x1280-home-en-ltr"
       "responsive-720x1280-jobs-en-ltr"
       "responsive-720x1280-job-detail-en-ltr"
+      "responsive-720x1280-transactions-en-ltr"
       "responsive-720x1280-wallet-en-ltr"
       "responsive-720x1280-profile-en-ltr"
-      "responsive-720x1280-transactions-en-ltr"
     )
   else
     responsive_session_screens=(

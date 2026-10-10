@@ -15,6 +15,7 @@
 - Explore has an English/LTR 360×640dp + 1.5x regression that verifies the headline, featured label, single-column card variants, and absence of Flutter layout exceptions.
 - Runtime certification gains a validated `HOPE_CAPTURE_TEXT_SCALE` parameter (1.0, 1.25, 1.5, 2.0). The one-shot PR marker `[runtime-capture-en-scale]` selects English at 1.5x and metadata records the numeric scale.
 - Static CI includes the runtime-driver contract and Home Pulse regression in its consolidated gate.
+- The first en-LTR 1.5x Android attempt rendered all 19 primary images and passed the Flutter driver body, but the host wrapper rejected `responsive-b`: the wrapper expected Wallet as the fourth responsive screen while the test driver intentionally isolates Transactions fourth, then Wallet/Profile in the final session. The shell marker list is now aligned with the driver map order (Transactions → Wallet → Profile), and the host contract asserts that order so this mismatch cannot recur.
 
 ## Acceptance matrix
 
