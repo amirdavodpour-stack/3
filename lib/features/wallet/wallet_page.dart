@@ -576,6 +576,7 @@ class _WalletPageState extends State<WalletPage> {
   Widget _buildContent(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final denseViewport = MediaQuery.sizeOf(context).width < 800;
     final tightViewport = compact || denseViewport;
     final auth = context.watch<AuthController>();
@@ -856,31 +857,70 @@ class _WalletPageState extends State<WalletPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              key: const ValueKey('wallet-provider-status'),
-              children: [
-                HopeIconTile(
-                  HopeV2Icons.wallet,
-                  size: compact ? 28 : (denseViewport ? 30 : 36),
-                  filled: true,
-                ),
-                const Spacer(),
-                PremiumTag(
-                  icon: HopeV2Icons.secure,
-                  label: _providerLabel('INTERNAL'),
-                  color: scheme.tertiary,
-                ),
-                const SizedBox(width: 6),
-                PremiumTag(
-                  icon: wallet.isActive
-                      ? HopeV2Icons.verified
-                      : HopeV2Icons.pending,
-                  label: _walletStatusLabel(wallet.status),
-                  color: Colors.white,
-                  inverse: true,
-                ),
-              ],
-            ),
+            if (enlargedText)
+              Column(
+                key: const ValueKey('wallet-provider-status'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      HopeIconTile(
+                        HopeV2Icons.wallet,
+                        size: 30,
+                        filled: true,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _providerLabel('INTERNAL'),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: PremiumTag(
+                      icon: wallet.isActive
+                          ? HopeV2Icons.verified
+                          : HopeV2Icons.pending,
+                      label: _walletStatusLabel(wallet.status),
+                      color: Colors.white,
+                      inverse: true,
+                    ),
+                  ),
+                ],
+              )
+            else
+              Row(
+                key: const ValueKey('wallet-provider-status'),
+                children: [
+                  HopeIconTile(
+                    HopeV2Icons.wallet,
+                    size: compact ? 28 : (denseViewport ? 30 : 36),
+                    filled: true,
+                  ),
+                  const Spacer(),
+                  PremiumTag(
+                    icon: HopeV2Icons.secure,
+                    label: _providerLabel('INTERNAL'),
+                    color: scheme.tertiary,
+                  ),
+                  const SizedBox(width: 6),
+                  PremiumTag(
+                    icon: wallet.isActive
+                        ? HopeV2Icons.verified
+                        : HopeV2Icons.pending,
+                    label: _walletStatusLabel(wallet.status),
+                    color: Colors.white,
+                    inverse: true,
+                  ),
+                ],
+              ),
             SizedBox(height: denseViewport ? 4 : 8),
             if (mediumViewport)
               Row(

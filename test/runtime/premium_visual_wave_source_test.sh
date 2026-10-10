@@ -346,3 +346,13 @@ grep -Fq "TextScaler.linear(_captureTextScale)" "integration_test/runtime/critic
 grep -Fq "[runtime-capture-en-scale]" ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq "jq -e --arg sha" ".github/workflows/hope-ui-runtime-evidence.yml"
 echo "PASS: Wave 30 enlarged-text, cross-surface adaptive layout, and exact-head en-LTR evidence contracts"
+
+# Wave30: preserve readable Home Pulse header/metric reflow and wallet/dock LTR large-text layouts.
+grep -Fq "if (enlargedText)" "lib/features/home/premium_home_feed.dart"
+grep -Fq "ValueKey('home-pulse-stat-grid')" "lib/features/home/premium_home_feed.dart"
+grep -Fq "if (textScale <= 1) return child!;" "test/features/home/premium_home_feed_test.dart"
+grep -Fq "home pulse adapts its metric rows to the actual responsive rail width" "test/features/home/premium_home_feed_test.dart"
+grep -Fq "final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;" "lib/features/wallet/wallet_page.dart"
+grep -Fq "height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 12 : 0)" "lib/core/ui/premium_components.dart"
+grep -Fq "Wave30 English navigation dock expands vertically at 1.5x" "test/core/ui/premium_navigation_test.dart"
+echo "PASS: Wave30 responsive Home rail, enlarged Wallet status and navigation dock fit contracts"

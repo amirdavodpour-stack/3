@@ -419,6 +419,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       future: _opportunities,
       builder: (context, snapshot) {
         final jobs = snapshot.data ?? const <HopeJob>[];
+        final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
         final stats = <({String value, String label, Object icon, Color accent})>[
           (
             value: snapshot.connectionState == ConnectionState.done
@@ -463,29 +464,50 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Text(
-                    'HOPE Pulse',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _t(context, 'نمای کلی', 'Your snapshot'),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: HopeV2Colors.darkMuted,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                ],
-              ),
+              if (enlargedText)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'HOPE Pulse',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _t(context, 'نمای کلی', 'Your snapshot'),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: HopeV2Colors.darkMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    Text(
+                      'HOPE Pulse',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      _t(context, 'نمای کلی', 'Your snapshot'),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: HopeV2Colors.darkMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 8),
               LayoutBuilder(
+                key: const ValueKey('home-pulse-stat-grid'),
                 builder: (context, constraints) {
                   const gap = 6.0;
-                  final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
                   final columns = enlargedText
                       ? 2
                       : constraints.maxWidth >= 300

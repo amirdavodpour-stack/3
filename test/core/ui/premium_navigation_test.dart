@@ -408,6 +408,44 @@ void main() {
   });
 
 
+
+  testWidgets(
+    'Wave30 English navigation dock expands vertically at 1.5x without label overflow',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: PremiumPrimaryNavigationScaffold(
+              selectedIndex: 0,
+              onDestinationSelected: (_) {},
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(dock, findsOneWidget);
+      expect(tester.getSize(dock).height, greaterThan(68));
+      for (final label in ['Home', 'Explore', 'Work', 'Wallet', 'Profile']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Wave 27 scroll tail includes unconsumed system bottom inset',
       (tester) async {
     EdgeInsets? resolvedPadding;

@@ -144,7 +144,8 @@ Future<_HomeHarness> _host(
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, child) {
-        final media = MediaQuery.of(context);
+        if (textScale <= 1) return child!;
+        final media = MediaQueryData.fromView(View.of(context));
         return MediaQuery(
           data: media.copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
@@ -259,11 +260,13 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final pulse = find.ancestor(
-        of: find.text('matches'),
-        matching: find.byType(PremiumPanel),
-      ).first;
-      expect(tester.getSize(pulse).height, lessThanOrEqualTo(70));
+      final pulse = find.byKey(const ValueKey('home-pulse-panel'));
+      final pulseSize = tester.getSize(pulse);
+      final statGridWidth = tester.getSize(
+        find.byKey(const ValueKey('home-pulse-stat-grid')),
+      ).width;
+      final expectedMaximumHeight = statGridWidth >= 300 ? 70.0 : 105.0;
+      expect(pulseSize.height, lessThanOrEqualTo(expectedMaximumHeight));
 
       final bestMatch = find.text('Best match for you');
       expect(bestMatch, findsOneWidget);
@@ -278,7 +281,7 @@ void main() {
   });
 
   testWidgets(
-      'home pulse stays in one visual row at the 720x1280 responsive viewport',
+      'home pulse adapts its metric rows to the actual responsive rail width at 720x1280',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
     tester.view.devicePixelRatio = 1.0;
@@ -298,11 +301,17 @@ void main() {
       final tops = stats
           .map((finder) => tester.getTopLeft(finder).dy)
           .toList(growable: false);
+      final gridWidth = tester.getSize(
+        find.byKey(const ValueKey('home-pulse-stat-grid')),
+      ).width;
 
-      expect(
-        tops.every((top) => (top - tops.first).abs() < 1.0),
-        isTrue,
-      );
+      if (gridWidth >= 300) {
+        expect(tops.every((top) => (top - tops.first).abs() < 1.0), isTrue);
+      } else {
+        expect((tops[0] - tops[1]).abs(), lessThan(1.0));
+        expect((tops[2] - tops[3]).abs(), lessThan(1.0));
+        expect(tops[2], greaterThan(tops[0]));
+      }
     } finally {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
