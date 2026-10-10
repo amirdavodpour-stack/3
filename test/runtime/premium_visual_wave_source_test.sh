@@ -357,3 +357,9 @@ grep -Fq "final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;"
 grep -Fq "height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 12 : 0)" "lib/core/ui/premium_components.dart"
 grep -Fq "Wave30 English navigation dock expands vertically at 1.5x" "test/core/ui/premium_navigation_test.dart"
 echo "PASS: Wave30 responsive Home rail, enlarged Wallet status and navigation dock fit contracts"
+
+# Wave30 narrow-rail correction: only use four metrics columns when cells are wide enough to align labels.
+grep -Fq "constraints.maxWidth >= 350" "lib/features/home/premium_home_feed.dart"
+grep -Fq "statGridWidth >= 350 ? 70.0 : 105.0" "test/features/home/premium_home_feed_test.dart"
+grep -Fq "if (gridWidth >= 350)" "test/features/home/premium_home_feed_test.dart"
+echo "PASS: Wave30 narrow Home Pulse columns stay aligned at responsive widths"

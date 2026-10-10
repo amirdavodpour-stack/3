@@ -305,7 +305,7 @@ void main() {
         find.byKey(const ValueKey('home-pulse-stat-grid')),
       ).width;
 
-      if (gridWidth >= 300) {
+      if (gridWidth >= 350) {
         expect(tops.every((top) => (top - tops.first).abs() < 1.0), isTrue);
       } else {
         expect((tops[0] - tops[1]).abs(), lessThan(1.0));
