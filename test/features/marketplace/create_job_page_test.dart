@@ -158,6 +158,19 @@ Future<void> _selectCategory(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _advance(WidgetTester tester) async {
+  final next = find.byKey(const ValueKey('create-opportunity-next-step'));
+  await tester.ensureVisible(next);
+  await tester.tap(next);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _advanceToReview(WidgetTester tester) async {
+  for (var step = 0; step < 4; step++) {
+    await _advance(tester);
+  }
+}
+
 Future<void> _fillMissionForm(WidgetTester tester, {String? category}) async {
   await tester.enterText(
       find.widgetWithText(TextField, 'Title'), 'Design a landing page');
@@ -166,13 +179,16 @@ Future<void> _fillMissionForm(WidgetTester tester, {String? category}) async {
   if (category != null) {
     await _selectCategory(tester, category);
   }
+  await _advance(tester); // Compensation
   await tester.enterText(
       find.widgetWithText(TextField, 'Minimum pay'), '500000');
   await tester.enterText(
       find.widgetWithText(TextField, 'Maximum pay'), '800000');
+  await _advance(tester); // Fee and acceptance criteria
   await tester.enterText(
       find.widgetWithText(TextField, 'Acceptance / selection criteria'),
       'Deliver PSD and Figma files');
+  await _advance(tester); // Final review
 }
 
 void main() {
@@ -242,6 +258,7 @@ void main() {
     await _pump(tester, repo);
     await _open(tester);
 
+    await _advanceToReview(tester);
     await tester.ensureVisible(find.text('Publish opportunity'));
     await tester.tap(find.text('Publish opportunity'));
     await tester.pump();
@@ -288,6 +305,9 @@ void main() {
       greaterThan(tester.getBottomRight(find.text('Public')).dy),
     );
 
+    await _advance(tester); // Details
+    await _advance(tester); // Compensation
+
     final minField = find.widgetWithText(TextField, 'Minimum pay');
     final maxField = find.widgetWithText(TextField, 'Maximum pay');
     expect(minField, findsOneWidget);
@@ -305,31 +325,29 @@ void main() {
     await _pump(tester, repo);
     await _open(tester);
 
-    // MISSION default: mission pricing + mission fee copy.
-    expect(find.text('Minimum pay'), findsOneWidget);
-    expect(find.text('Maximum pay'), findsOneWidget);
-    expect(find.text('Duration (hours)'), findsOneWidget);
+    expect(find.text('Minimum pay'), findsNothing);
     expect(find.text('Monthly salary'), findsNothing);
-    expect(find.textContaining('10% from the employer'), findsOneWidget);
-
-    // Switch to JOB via the type hero tile.
     await tester.tap(find.text('Job'));
     await tester.pumpAndSettle();
-    expect(find.text('Monthly salary'), findsOneWidget);
-    expect(find.text('Application deadline'), findsOneWidget);
-    expect(find.text('Minimum pay'), findsNothing);
-    expect(find.text('Duration (hours)'), findsNothing);
-    expect(find.textContaining('30% of the candidate'), findsOneWidget);
+    await _advance(tester); // Details
 
-    // JOB published without a deadline is rejected by the dedicated guard.
     await tester.enterText(
         find.widgetWithText(TextField, 'Title'), 'Flutter developer');
     await tester.enterText(find.widgetWithText(TextField, 'Full description'),
         'Build and ship the mobile application');
-    // Child categories are rendered with a '  ↳ ' indent prefix.
     await _selectCategory(tester, 'Development');
+    await _advance(tester); // Compensation
+
+    expect(find.text('Monthly salary'), findsOneWidget);
+    expect(find.text('Application deadline'), findsOneWidget);
+    expect(find.text('Minimum pay'), findsNothing);
+    expect(find.text('Duration (hours)'), findsNothing);
     await tester.enterText(
         find.widgetWithText(TextField, 'Monthly salary'), '12000000');
+    await _advance(tester); // Fee and acceptance criteria
+    expect(find.textContaining('30% of the candidate'), findsOneWidget);
+    await _advance(tester); // Final review
+
     await tester.ensureVisible(find.text('Publish opportunity'));
     await tester.tap(find.text('Publish opportunity'));
     await tester.pump();
@@ -337,7 +355,10 @@ void main() {
     expect(find.text('Set the application deadline.'), findsOneWidget);
     expect(repo.calls, isEmpty);
 
-    // With a deadline the job publishes.
+    await tester.tap(find.byKey(const ValueKey('create-opportunity-previous-step')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('create-opportunity-previous-step')));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextField, 'Application deadline'));
     await tester.pumpAndSettle();
     expect(find.byType(DatePickerDialog), findsOneWidget);
@@ -347,6 +368,8 @@ void main() {
       await tester.tap(find.text('OK').last);
       await tester.pumpAndSettle();
     }
+    await _advance(tester); // Fee and criteria
+    await _advance(tester); // Final review
     await tester.ensureVisible(find.text('Publish opportunity'));
     await tester.tap(find.text('Publish opportunity'));
     await tester.pumpAndSettle();
@@ -394,4 +417,29 @@ void main() {
     // Still on the form: the pop only happens on success.
     expect(find.byType(CreateJobPage), findsOneWidget);
   });
+
+  testWidgets(
+    'Wave 34 create opportunity is a real five-stage flow with staged fields and final publish',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(tester, repo, width: 360);
+      await _open(tester);
+
+      expect(find.text('Step 1 of 5'), findsOneWidget);
+      expect(find.byKey(const ValueKey('create-opportunity-next-step')), findsOneWidget);
+      expect(find.byKey(const ValueKey('create-opportunity-previous-step')), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Title'), findsNothing);
+
+      await _advance(tester);
+      expect(find.text('Step 2 of 5'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Minimum pay'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('create-opportunity-previous-step')));
+      await tester.pumpAndSettle();
+      expect(find.text('Step 1 of 5'), findsOneWidget);
+      expect(find.text('Mission'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
