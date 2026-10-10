@@ -69,7 +69,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Widget _notificationsLoadError({required bool retainsRows}) {
     return HopeAsyncState(
-      kind: error == null ? HopeStateKind.error : HopeStateKind.error,
+      kind: HopeStateKind.error,
       title: retainsRows
           ? _t(
               'اعلان‌ها قابل تازه‌سازی نیستند',

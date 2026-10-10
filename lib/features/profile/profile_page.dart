@@ -264,6 +264,13 @@ class _ProfilePageState extends State<ProfilePage> {
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: PremiumTag(
+                        label: _providerTypeLabel(context, data.providerType),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     HopeTrustSignalRail(signals: signals),
                   ],
                 ),
