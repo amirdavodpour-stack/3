@@ -931,9 +931,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ),
                   ],
                   const SizedBox(height: 13),
-                  _JobLifecycleCard(
+                  KeyedSubtree(
               key: const ValueKey('opportunity-detail-last-section'),
-              job: j,
+              child: _JobLifecycleCard(job: j),
             ),
                   const SizedBox(height: 13),
                   if (context.read<AuthController?>()?.user?['id'] == (j.ownerId ?? '') &&
