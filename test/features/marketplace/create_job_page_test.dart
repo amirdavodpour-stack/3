@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' show SemanticsFlag;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show debugDumpRenderTree;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
@@ -182,6 +183,8 @@ Future<void> _advance(WidgetTester tester) async {
     scrollable: find.byType(Scrollable).first,
     maxScrolls: 30,
   );
+  await tester.ensureVisible(next);
+  await tester.pumpAndSettle();
   await tester.tap(next);
   await tester.pumpAndSettle();
 }
@@ -253,6 +256,15 @@ void main() {
     await tester.pumpAndSettle();
 
     final landscapeException = tester.takeException();
+    if (landscapeException != null) {
+      final pageContext = tester.element(find.byType(CreateJobPage));
+      debugPrint(
+        'WAVE43 landscape MediaQuery size=${MediaQuery.sizeOf(pageContext)} '
+        'viewInsets=${MediaQuery.viewInsetsOf(pageContext)} '
+        'padding=${MediaQuery.paddingOf(pageContext)}',
+      );
+      debugDumpRenderTree();
+    }
     expect(
       landscapeException,
       isNull,
