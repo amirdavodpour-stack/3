@@ -21,6 +21,7 @@ String hopeCategoryLabel(
     case 'software-development':
     case 'development':
     case 'نرم-افزار':
+    case 'نرمافزار':
       return l10n.categorySoftware;
     case 'design':
     case 'graphic-design':
