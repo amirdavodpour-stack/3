@@ -721,7 +721,7 @@ class _CreateJobForm extends StatelessWidget {
                       ? null
                       : () => onStepChanged(activeStep - 1),
                   icon: HugeIcon(
-                    icon: Directionality.of(context) == TextDirection.rtl
+                    icon: Directionality.of(context) == ui.TextDirection.rtl
                         ? HopeV2Icons.arrowRight
                         : HopeV2Icons.arrowLeft,
                     size: 18,
@@ -746,7 +746,7 @@ class _CreateJobForm extends StatelessWidget {
                         )
                       : HugeIcon(
                           icon: activeStep < 4
-                              ? (Directionality.of(context) == TextDirection.rtl
+                              ? (Directionality.of(context) == ui.TextDirection.rtl
                                   ? HopeV2Icons.arrowLeft
                                   : HopeV2Icons.arrowRight)
                               : HopeV2Icons.featured,
