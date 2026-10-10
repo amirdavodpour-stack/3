@@ -857,7 +857,7 @@ void main() {
       final categorySemantics = find.byWidgetPredicate(
         (widget) =>
             widget is Semantics &&
-            (widget.label ?? '').contains('نرم‌افزار'),
+            (widget.properties.label ?? '').contains('نرم‌افزار'),
       );
       expect(categorySemantics, findsOneWidget);
       final fallbackSurface = tester.widget<DecoratedBox>(
