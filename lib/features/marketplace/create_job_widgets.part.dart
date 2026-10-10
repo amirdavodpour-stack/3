@@ -720,7 +720,12 @@ class _CreateJobForm extends StatelessWidget {
                   onPressed: activeStep == 0 || busy
                       ? null
                       : () => onStepChanged(activeStep - 1),
-                  icon: const HugeIcon(icon: HopeV2Icons.arrowLeft, size: 18),
+                  icon: HugeIcon(
+                    icon: Directionality.of(context) == TextDirection.rtl
+                        ? HopeV2Icons.arrowRight
+                        : HopeV2Icons.arrowLeft,
+                    size: 18,
+                  ),
                   label: Text(translate('مرحلهٔ قبل', 'Back')),
                 ),
               ),
@@ -741,7 +746,9 @@ class _CreateJobForm extends StatelessWidget {
                         )
                       : HugeIcon(
                           icon: activeStep < 4
-                              ? HopeV2Icons.arrowRight
+                              ? (Directionality.of(context) == TextDirection.rtl
+                                  ? HopeV2Icons.arrowLeft
+                                  : HopeV2Icons.arrowRight)
                               : HopeV2Icons.featured,
                           size: 18,
                         ),
