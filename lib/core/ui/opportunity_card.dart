@@ -900,10 +900,10 @@ class OpportunityCard extends StatelessWidget {
       spacing: HopeV2Spacing.sm,
       runSpacing: HopeV2Spacing.xs,
       children: [
-        if ((job.category ?? '').isNotEmpty)
+        if (_categoryValue() != null)
           PremiumTag(
             icon: HopeV2Icons.category,
-            label: hopeCategoryLabel(context, job.category!),
+            label: hopeCategoryLabel(context, _categoryValue()!),
             color: HopeV2Colors.muted,
           ),
         if (job.visibility == 'SPECIALIZED')
@@ -1219,10 +1219,10 @@ class OpportunityCard extends StatelessWidget {
               label: city,
               color: secondaryAccent(context),
             ),
-            if ((job.category ?? '').isNotEmpty)
+            if (_categoryValue() != null)
               PremiumTag(
                 icon: HopeV2Icons.category,
-                label: hopeCategoryLabel(context, job.category!),
+                label: hopeCategoryLabel(context, _categoryValue()!),
                 color: HopeV2Colors.muted,
               ),
             if (job.distanceKm != null)
