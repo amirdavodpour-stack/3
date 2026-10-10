@@ -605,7 +605,7 @@ void main() {
         'مهارت مرتبط',
         'دسته‌بندی مرتبط',
         'خیلی نزدیک',
-        'آنلاین',
+        'مکان مشخص نشده',
         'مشاهده و اقدام برای ماموریت',
       ],
       'en': const [
@@ -617,7 +617,7 @@ void main() {
         'Skill match',
         'Category match',
         'Very near',
-        'Remote',
+        'Location not specified',
         'View and act on mission',
       ],
     };
