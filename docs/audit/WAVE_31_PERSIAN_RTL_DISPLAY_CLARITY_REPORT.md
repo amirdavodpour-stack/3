@@ -11,7 +11,7 @@
   - Persian percent sign and decimal separator localization.
   - Signed Toman amount output with RTL-safe LTR isolation.
   - A single-value display for equal minimum/maximum budgets without altering underlying values.
-- Wallet uses the active locale for Toman formatting, presents signed credits/debits in a directionally isolated run, and raises compact sub-balance labels/values to 12sp.
+- Wallet uses the active locale for Toman formatting, presents signed credits/debits in a directionally isolated run, and raises compact sub-balance labels/values to 12sp. Compact 360×640 spacing around the hero, flow signature, and history transition is tightened to preserve first-fold filter availability.
 - Locale-aware digits are applied to Home Pulse metrics, Profile counts, Work Center metrics, notification unread count, offer and saved-search counts, satisfaction ratings, candidate-match scores, job-detail percentage scores, and financial breakdown percentages.
 - Payment summary adopts the canonical formatter for Persian integer Toman values while preserving the existing English “Toman” presentation.
 - Exact-HEAD Static CI includes page-level regression suites for the touched financial, wallet, detail, profile, notification, and offer surfaces in one consolidated Flutter invocation.

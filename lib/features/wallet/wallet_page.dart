@@ -843,9 +843,9 @@ class _WalletPageState extends State<WalletPage> {
         key: const ValueKey('wallet-balance-hero'),
         padding: EdgeInsets.fromLTRB(
           14,
-          compact ? 6 : 10,
+          compact ? 4 : 10,
           14,
-          compact ? 7 : 10,
+          compact ? 4 : 10,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
@@ -1149,9 +1149,9 @@ class _WalletPageState extends State<WalletPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       hero,
-                      SizedBox(height: compact ? 7 : 12),
+                      SizedBox(height: compact ? 4 : 12),
                       actions,
-                      SizedBox(height: compact ? 7 : 12),
+                      SizedBox(height: compact ? 4 : 12),
                       HopeWalletFlowSignature(wallet: wallet),
                     ],
                   );
@@ -1173,8 +1173,8 @@ class _WalletPageState extends State<WalletPage> {
                 );
               },
             ),
-            const SizedBox(height: 10),
-            SizedBox(height: tightViewport ? 8 : 16),
+            SizedBox(height: tightViewport ? 2 : 10),
+            SizedBox(height: tightViewport ? 2 : 16),
             Container(
               key: _historyKey,
               child: PremiumSectionHeader(
@@ -1187,7 +1187,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ),
             ),
-            SizedBox(height: compact ? 8 : 12),
+            SizedBox(height: compact ? 4 : 12),
             Wrap(
               key: const ValueKey('wallet-history-filters'),
               spacing: 8,
