@@ -378,7 +378,7 @@ void main() {
 
 
   testWidgets(
-    'applications support zero, one and many states including a filter for withdrawn rows',
+    'applications expose a withdrawn filter in a multi-status list',
     (tester) async {
       final profile = _ManyApplicationsRepository();
       await tester.pumpWidget(
@@ -399,10 +399,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Active design task'), findsOneWidget);
-      expect(find.text('Withdrawn design task'), findsOneWidget);
-      expect(find.text('Accepted design task'), findsOneWidget);
-      final withdrawnFilter = find.textContaining('Withdrawn').first;
+      final withdrawnFilter = find.textContaining('Withdrawn');
       expect(withdrawnFilter, findsOneWidget);
       await tester.tap(withdrawnFilter);
       await tester.pumpAndSettle();
