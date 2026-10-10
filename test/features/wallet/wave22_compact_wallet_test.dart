@@ -339,12 +339,18 @@ void main() {
 
       expect(signature, findsOneWidget);
       expect(find.text('Money flow in the ledger'), findsOneWidget);
-      expect(
+      final flowHeading = tester.widget<Text>(
+        find.text('Money flow in the ledger'),
+      );
+      expect(flowHeading.maxLines, isNull);
+      expect(flowHeading.overflow, isNull);
+      final flowExplanation = tester.widget<Text>(
         find.text(
           'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
         ),
-        findsOneWidget,
       );
+      expect(flowExplanation.maxLines, isNull);
+      expect(flowExplanation.overflow, TextOverflow.visible);
       for (final label in ['Ledger entry', 'Hold for approval', 'Release funds']) {
         expect(find.text(label), findsOneWidget);
       }

@@ -16,6 +16,7 @@
 - Runtime certification gains a validated `HOPE_CAPTURE_TEXT_SCALE` parameter (1.0, 1.25, 1.5, 2.0). The one-shot PR marker `[runtime-capture-en-scale]` selects English at 1.5x and metadata records the numeric scale.
 - Static CI includes the runtime-driver contract and Home Pulse regression in its consolidated gate.
 - The first en-LTR 1.5x Android attempt rendered all 19 primary images and passed the Flutter driver body, but the host wrapper rejected `responsive-b`: the wrapper expected Wallet as the fourth responsive screen while the test driver intentionally isolates Transactions fourth, then Wallet/Profile in the final session. The shell marker list is now aligned with the driver map order (Transactions → Wallet → Profile), and the host contract asserts that order so this mismatch cannot recur.
+- Full-resolution review of the first en-LTR 1.5x artifact also found the Wallet flow heading competing with its currency badge and the explanatory copy being ellipsized. The enlarged-scale branch now stacks the badge under a wrapping heading and removes the two-line clamp for the explanation; the widget regression explicitly asserts both Text widgets have no max-line clamp.
 - Corrective change: `3cb73a780a4e7a3e6e419d0e87ec3ffd47398b0e`. The focused contract and runtime workflow need to be revalidated after this order correction; prior runtime artifact is retained as a failed attempt, not accepted evidence.
 
 ## Acceptance matrix

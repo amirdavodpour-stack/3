@@ -269,37 +269,72 @@ class HopeWalletFlowSignature extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              HopeIcon(
-                HopeV2Icons.route,
-                size: compact ? 12 : 18,
-                color: HopeV2Colors.secondary,
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(
-                  _t(
-                    context,
-                    compact ? 'گردش وجه' : 'گردش وجه در دفترکل',
-                    compact ? 'Money flow' : 'Money flow in the ledger',
-                  ),
-                  style: (compact
-                          ? Theme.of(context).textTheme.labelMedium
-                          : Theme.of(context).textTheme.titleSmall)
-                      ?.copyWith(fontWeight: FontWeight.w900),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          if (enlargedText)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: HopeIcon(
+                        HopeV2Icons.route,
+                        size: 20,
+                        color: HopeV2Colors.secondary,
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        _t(context, 'گردش وجه در دفترکل', 'Money flow in the ledger'),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              if (!compact)
+                const SizedBox(height: 8),
                 PremiumTag(
                   icon: HopeV2Icons.secure,
                   label: currencyLabel,
                   color: HopeV2Colors.success,
                 ),
-            ],
-          ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                HopeIcon(
+                  HopeV2Icons.route,
+                  size: compact ? 12 : 18,
+                  color: HopeV2Colors.secondary,
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    _t(
+                      context,
+                      compact ? 'گردش وجه' : 'گردش وجه در دفترکل',
+                      compact ? 'Money flow' : 'Money flow in the ledger',
+                    ),
+                    style: (compact
+                            ? Theme.of(context).textTheme.labelMedium
+                            : Theme.of(context).textTheme.titleSmall)
+                        ?.copyWith(fontWeight: FontWeight.w900),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (!compact)
+                  PremiumTag(
+                    icon: HopeV2Icons.secure,
+                    label: currencyLabel,
+                    color: HopeV2Colors.success,
+                  ),
+              ],
+            ),
           if (!compact) const SizedBox(height: 6),
           if (!compact)
             Text(
@@ -312,8 +347,8 @@ class HopeWalletFlowSignature extends StatelessWidget {
                   ? 'Funds held until work approval'
                   : 'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
             ),
-            maxLines: compact ? 1 : 2,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : (compact ? 1 : 2),
+            overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
             style: (compact
                     ? Theme.of(context).textTheme.labelSmall
                     : Theme.of(context).textTheme.bodySmall)
