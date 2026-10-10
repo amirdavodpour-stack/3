@@ -357,6 +357,52 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+      'Wave 37 Opportunity Card exposes type, localized category, amount and match score to semantics',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    try {
+      final job = HopeJob.fromMap({
+        'id': 'semantic-opportunity-card',
+        'title': 'Flutter developer',
+        'description': 'Accessible marketplace summary.',
+        'categoryId': 'software',
+        'category': 'Software',
+        'kind': 'JOB',
+        'jobType': 'HOURLY',
+        'monthlySalary': '12000000',
+        'budgetMin': '12000000',
+        'city': 'تهران',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'recommendationScore': 0.94,
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(body: OpportunityCard(job: job)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final summary = tester.getSemantics(find.byType(OpportunityCard)).label;
+      expect(summary, contains('فرصت شغلی'));
+      expect(summary, contains('نرم‌افزار'));
+      expect(summary, contains('تهران'));
+      expect(summary, contains('۱۲٬۰۰۰٬۰۰۰ تومان'));
+      expect(summary, contains('۹۴٪ تطابق'));
+      expect(tester.takeException(), isNull);
+    } finally {
+      handle.dispose();
+    }
+  });
+
   testWidgets('recommended opportunity exposes its real match score signal',
       (tester) async {
     final job = HopeJob.fromMap({

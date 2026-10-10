@@ -99,10 +99,33 @@ class OpportunityCard extends StatelessWidget {
       ...job.recommendationReasons,
     ].take(3).toList(growable: false);
     final mediaUrl = _mediaUrl(job);
+    final locale = Localizations.localeOf(context).languageCode;
+    final category = job.category?.trim().isNotEmpty == true
+        ? hopeCategoryLabel(context, job.category!)
+        : (job.categoryId?.trim().isNotEmpty == true
+            ? hopeCategoryLabel(context, job.categoryId!)
+            : '');
+    final opportunityKind = job.isMission
+        ? _t(context, 'ماموریت', 'Mission')
+        : _t(context, 'فرصت شغلی', 'Job');
+    final rawScore = job.recommendationScore;
+    final scoreLabel = rawScore == null
+        ? ''
+        : '${HopeDisplayFormatter.percent(
+            (rawScore <= 1 ? rawScore * 100 : rawScore).round(),
+            locale: locale,
+          )} ${_t(context, 'تطابق', 'match')}';
 
     return Semantics(
       button: true,
-      label: '$title, $city${amount.isEmpty ? '' : ', ${_formatAmount(amount, context)}'}',
+      label: [
+        title,
+        opportunityKind,
+        if (category.isNotEmpty) category,
+        city,
+        if (amount.isNotEmpty) _formatAmount(amount, context),
+        if (scoreLabel.isNotEmpty) scoreLabel,
+      ].join(', '),
       child: PressableScale(
         onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
         child: Container(
