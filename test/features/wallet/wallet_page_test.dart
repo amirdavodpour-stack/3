@@ -241,6 +241,56 @@ class _AuthRepo implements AuthRepository {
 void main() {
 
   testWidgets(
+    'Wave 43 payout amount and status stay consistent between history row and details',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet(payoutStatus: 'REQUESTED');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Withdrawals'),
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final historyAmount = find.text('400,000 TOMAN');
+      final historyStatus = find.text('Requested');
+      expect(historyAmount, findsOneWidget);
+      expect(historyStatus, findsOneWidget);
+
+      await tester.tap(historyStatus);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Withdrawal details'), findsOneWidget);
+      expect(find.text('Amount'), findsOneWidget);
+      expect(find.text('Status'), findsOneWidget);
+      expect(find.text('400,000 TOMAN'), findsOneWidget);
+      expect(find.text('Requested'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'an older refresh response cannot overwrite a newer refresh result',
     (tester) async {
       final auth = AuthController(_AuthRepo(), SecureStore());

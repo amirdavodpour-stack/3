@@ -46,6 +46,90 @@ class _Wave24InsightsRepository implements FinancialInsightsRepository {
 
 void main() {
   testWidgets(
+    'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Total reserved'), findsOneWidget);
+      expect(find.text('Net cash flow'), findsOneWidget);
+      expect(find.text('30,000 TOMAN'), findsOneWidget);
+      expect(find.text('380,000 TOMAN'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 43 source chart localizes source types and displays recorded amounts',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        tester.view.physicalSize = const Size(360, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _Wave24InsightsRepository(),
+            child: MaterialApp(
+              locale: const Locale('en'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text('Financial activity sources'),
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Job'), findsOneWidget);
+        expect(find.text('JOB'), findsNothing);
+        expect(find.textContaining('380,000 TOMAN'), findsOneWidget);
+        final sourceSemantics = tester.getSemantics(
+          find.byKey(const ValueKey('financial-source-row-JOB')),
+        );
+        expect(sourceSemantics.label, contains('Job'));
+        expect(sourceSemantics.label, contains('380,000 TOMAN'));
+        expect(sourceSemantics.label, contains('100%'));
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
+    },
+  );
+
+  testWidgets(
     'Wave 24 financial chart legend describes the three real cash-flow series',
     (tester) async {
       tester.view.physicalSize = const Size(360, 900);
@@ -260,6 +344,9 @@ void main() {
         final bars = tester.getSemantics(
           find.byKey(const ValueKey('financial-cashflow-chart-semantics')),
         );
+        expect(bars.label, contains('جریان نقدی ماهانه'));
+        expect(bars.label, contains('2026-05'));
+        expect(bars.label, contains('تومان'));
         expect(bars.label, contains('اردیبهشت'));
         expect(bars.label, contains('ورودی'));
         expect(bars.label, contains('رزرو شده'));
@@ -279,6 +366,8 @@ void main() {
         final balance = tester.getSemantics(
           find.byKey(const ValueKey('financial-balance-chart-semantics')),
         );
+        expect(balance.label, contains('روند موجودی'));
+        expect(balance.label, contains('تومان'));
         expect(balance.label, contains('2026-05'));
         expect(balance.label, contains('2026-10'));
         expect(tester.takeException(), isNull);
