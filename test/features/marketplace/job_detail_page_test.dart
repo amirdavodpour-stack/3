@@ -443,15 +443,41 @@ void main() {
         of: list,
         matching: find.byType(Scrollable),
       ).first;
-      await tester.scrollUntilVisible(
-        finalSection,
-        240,
-        scrollable: listScroller,
+      var reachedFinalSection = false;
+      const diagnosticMarkers = <String>[
+        'چرخه عمر فرصت',
+        'شرح فرصت',
+        'جزئیات کار',
+        'FINAL_ACCEPTANCE_MARKER',
+        'منتشر شده',
+      ];
+      var scrollStep = 0;
+      for (; scrollStep < 20; scrollStep++) {
+        await tester.drag(listScroller, const Offset(0, -160));
+        await tester.pumpAndSettle();
+        final stepException = tester.takeException();
+        expect(
+          stepException,
+          isNull,
+          reason: 'Job Detail vertical step $scrollStep at $width dp / 1.5x; '
+              'built markers: ${diagnosticMarkers.where((marker) => find.textContaining(marker).evaluate().isNotEmpty).join(', ')}; '
+              '${stepException is FlutterError ? stepException.diagnostics.map((node) => node.toString()).join(' | ') : stepException}',
+        );
+        if (finalSection.evaluate().isNotEmpty) {
+          final viewport = tester.getRect(list);
+          final sectionRect = tester.getRect(finalSection);
+          if (sectionRect.top >= viewport.top &&
+              sectionRect.bottom <= viewport.bottom) {
+            reachedFinalSection = true;
+            break;
+          }
+        }
+      }
+      expect(
+        reachedFinalSection,
+        isTrue,
+        reason: 'The lifecycle section should become fully visible in the scrollable at $width dp.',
       );
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(finalSection);
-      await tester.pumpAndSettle();
-
       // ListView builds distant children lazily; assert presence after scrolling.
       expect(finalSection, findsOneWidget);
       final viewportRect = tester.getRect(list);
