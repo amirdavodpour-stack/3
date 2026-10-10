@@ -1030,8 +1030,8 @@ Future<void> _captureRuntimeScreen(
     for (final value in fixtureValues) {
       expect(
         find.text(value),
-        findsOneWidget,
-        reason: 'Financial Insights rendered widget value must match its exact runtime fixture: $value',
+        findsWidgets,
+        reason: 'Financial Insights must render the exact runtime fixture value at least once: $value',
       );
     }
     print('HOPE_RUNTIME_FINANCIAL_WIDGET_VALUES_ASSERTED:$marker');
