@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show debugDumpRenderTree;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/router/app_routes.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/features/marketplace/create_job_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
@@ -619,6 +621,38 @@ void main() {
       } finally {
         handle.dispose();
       }
+    },
+  );
+
+  testWidgets(
+    'Create Opportunity previous and next arrows follow Persian RTL direction',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(
+        tester,
+        repo,
+        width: 390,
+        height: 844,
+        locale: const Locale('fa'),
+      );
+      await _open(tester);
+
+      final previousIcon = tester.widget<HugeIcon>(
+        find.descendant(
+          of: find.byKey(const ValueKey('create-opportunity-previous-step')),
+          matching: find.byType(HugeIcon),
+        ),
+      );
+      final nextIcon = tester.widget<HugeIcon>(
+        find.descendant(
+          of: find.byKey(const ValueKey('create-opportunity-next-step')),
+          matching: find.byType(HugeIcon),
+        ),
+      );
+
+      expect(previousIcon.icon, HopeV2Icons.arrowRight);
+      expect(nextIcon.icon, HopeV2Icons.arrowLeft);
+      expect(tester.takeException(), isNull);
     },
   );
 }
