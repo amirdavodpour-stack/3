@@ -164,12 +164,15 @@ HopeJob _job({
   String? city = 'Tehran',
   String? title,
   String? category,
+  String? description,
+  String? acceptanceCriteria,
+  String? workMode,
   String status = 'PUBLISHED',
 }) =>
     HopeJob.fromMap({
       'id': id,
       'title': title ?? (kind == 'JOB' ? 'Flutter developer' : 'Design a logo'),
-      'description': 'A clear, concise deliverable description for the page.',
+      'description': description ?? 'A clear, concise deliverable description for the page.',
       'categoryId': 'c1',
       'category': category ?? 'Design',
       'jobType': kind == 'JOB' ? 'HOURLY' : 'FIXED',
@@ -177,7 +180,8 @@ HopeJob _job({
       'budgetMin': '1000000',
       'budgetMax': '1500000',
       'duration': '8',
-      'acceptanceCriteria': 'Acceptance criteria are listed here.',
+      'acceptanceCriteria': acceptanceCriteria ?? 'Acceptance criteria are listed here.',
+      'workMode': workMode,
       'status': status,
       'ownerId': ownerId,
       'providerId': 'p1',
@@ -209,6 +213,7 @@ Future<void> _pump(
   String userId = 'u9',
   double width = 900,
   double height = 3400,
+  double textScale = 1.0,
   Locale locale = const Locale('en'),
 }) async {
   tester.view.physicalSize = Size(width, height);
@@ -244,6 +249,14 @@ Future<void> _pump(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        if (textScale <= 1) return child!;
+        final media = MediaQueryData.fromView(View.of(context));
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        );
+      },
       home: JobDetailPage(job: job),
     ),
   ));
@@ -277,7 +290,8 @@ void main() {
         locale: const Locale('fa'),
       );
 
-      expect(find.textContaining('نرم‌افزار'), findsNWidgets(2));
+      expect(find.textContaining('نرم‌افزار'), findsOneWidget);
+      expect(find.text('نرم‌افزار • Tehran'), findsNothing);
       expect(find.text('Software'), findsNothing);
       expect(tester.takeException(), isNull);
     },
@@ -377,6 +391,70 @@ void main() {
     expect(find.text('Match signals'), findsOneWidget);
     expect(tester.getTopLeft(decision).dy, lessThan(300));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Wave 42 final Job Detail section remains reachable above the fixed CTA at 1.5x text',
+      (tester) async {
+    const finalSectionKey = ValueKey('opportunity-detail-last-section');
+    const listKey = ValueKey('opportunity-detail-content-list');
+    const ctaKey = ValueKey('opportunity-detail-primary-cta');
+
+    for (final width in <double>[274, 360, 390]) {
+      await _pump(
+        tester,
+        job: _job(
+          kind: 'JOB',
+          ownerId: 'u1',
+          city: 'تهران',
+          title: 'طراحی فرصت Flutter برای همکاری بین‌المللی ABC-123',
+          category: 'Software',
+          description:
+              'شرح فارسی طولانی برای بررسی چیدمان در اندازه متن بزرگ. '
+              'شناسه لاتین ABC-123 و مسیر /api/v1/jobs باید کامل و خوانا بمانند. '
+              'این متن برای آزمون اسکرول، شکست خط و جهت نوشتار ترکیبی است.',
+          acceptanceCriteria:
+              'شرح نهایی: FINAL_ACCEPTANCE_MARKER — بررسی ABC-123 و /api/v1/jobs '
+              'بدون تغییر داده‌های واقعی یا جابه‌جایی دکمه اصلی.',
+          status: 'PUBLISHED',
+        ),
+        userId: 'u9',
+        width: width,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+
+      final list = find.byKey(listKey);
+      final finalSection = find.byKey(finalSectionKey);
+      final cta = find.byKey(ctaKey);
+      expect(list, findsOneWidget);
+      expect(finalSection, findsOneWidget);
+      expect(cta, findsOneWidget);
+
+      final listScroller = find.descendant(
+        of: list,
+        matching: find.byType(Scrollable),
+      ).first;
+      await tester.scrollUntilVisible(
+        finalSection,
+        240,
+        scrollable: listScroller,
+      );
+      await tester.ensureVisible(finalSection);
+      await tester.pumpAndSettle();
+
+      final viewportRect = tester.getRect(list);
+      final finalRect = tester.getRect(finalSection);
+      final ctaRect = tester.getRect(cta);
+
+      expect(finalRect.top, greaterThanOrEqualTo(viewportRect.top));
+      expect(finalRect.bottom, lessThanOrEqualTo(viewportRect.bottom));
+      expect(viewportRect.bottom, lessThanOrEqualTo(ctaRect.top));
+      expect(ctaRect.height, greaterThanOrEqualTo(48));
+      expect(ctaRect.bottom, lessThanOrEqualTo(tester.view.physicalSize.height));
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('long opportunity titles stay contained in the hero',
@@ -585,49 +663,56 @@ void main() {
   });
 
   testWidgets(
-      'Opportunity DNA exposes current category and location facts without duplicate budget or match',
+      'Opportunity DNA stays absent when no distinct real work-mode fact exists',
       (tester) async {
     await _pump(
       tester,
       job: _job(kind: 'JOB', ownerId: 'u1'),
       userId: 'u9',
+      width: 900,
+      height: 1200,
     );
 
-    final dna = find.byKey(const ValueKey('opportunity-dna-signature'));
-    expect(dna, findsOneWidget);
-    expect(find.descendant(of: dna, matching: find.text('Opportunity traits')), findsOneWidget);
-    expect(find.descendant(of: dna, matching: find.text('Category')), findsOneWidget);
-    expect(find.descendant(of: dna, matching: find.text('Location')), findsOneWidget);
-    expect(find.descendant(of: dna, matching: find.text('Work mode')), findsOneWidget);
-    expect(find.descendant(of: dna, matching: find.text('Budget')), findsNothing);
-    expect(find.descendant(of: dna, matching: find.text('Match')), findsNothing);
+    expect(find.byKey(const ValueKey('opportunity-dna-signature')), findsNothing);
+    expect(find.text('Category'), findsOneWidget);
+    expect(find.text('Location'), findsOneWidget);
+    expect(find.textContaining('12000000'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-      'Wave 40 Opportunity DNA exposes real category and location facts to fa-RTL semantics',
+      'Wave 40 Job Detail keeps category/location on the decision surface and only unique work mode in DNA',
       (tester) async {
     final handle = tester.ensureSemantics();
     try {
       await _pump(
         tester,
-        job: _job(kind: 'JOB', category: 'Software', city: 'Tehran'),
+        job: _job(
+          kind: 'JOB',
+          category: 'Software',
+          city: 'Tehran',
+          workMode: 'HYBRID',
+        ),
         width: 900,
         height: 1600,
         locale: const Locale('fa'),
       );
 
-      final category = tester.getSemantics(
-        find.byKey(const ValueKey('opportunity-dna-fact-category')),
-      );
-      expect(category.label, contains('دسته‌بندی'));
-      expect(category.label, contains('نرم‌افزار'));
+      expect(find.byKey(const ValueKey('opportunity-dna-signature')), findsOneWidget);
+      expect(find.text('نرم‌افزار'), findsOneWidget);
+      expect(find.text('Tehran'), findsOneWidget);
 
-      final location = tester.getSemantics(
-        find.byKey(const ValueKey('opportunity-dna-fact-location')),
+      final workMode = tester.getSemantics(
+        find.byKey(const ValueKey('opportunity-dna-fact-work-mode')),
       );
-      expect(location.label, contains('مکان'));
-      expect(location.label, contains('Tehran'));
+      expect(workMode.label, contains('نوع همکاری'));
+      expect(workMode.label, contains('هیبریدی'));
+
+      final dna = find.byKey(const ValueKey('opportunity-dna-signature'));
+      expect(find.descendant(of: dna, matching: find.text('دسته‌بندی')), findsNothing);
+      expect(find.descendant(of: dna, matching: find.text('مکان')), findsNothing);
+      expect(find.descendant(of: dna, matching: find.text('بودجه')), findsNothing);
+      expect(find.descendant(of: dna, matching: find.text('تطبیق')), findsNothing);
       expect(tester.takeException(), isNull);
     } finally {
       handle.dispose();
