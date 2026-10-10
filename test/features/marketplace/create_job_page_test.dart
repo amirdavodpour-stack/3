@@ -99,10 +99,12 @@ Future<void> _pump(
   _FakeMarket repo, {
   HopeSettingsController? settings,
   double width = 900,
+  double height = 3400,
+  double textScale = 1.0,
   ThemeData? theme,
   Locale locale = const Locale('en'),
 }) async {
-  tester.view.physicalSize = Size(width, 3400);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -126,6 +128,13 @@ Future<void> _pump(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        final media = MediaQueryData.fromView(View.of(context));
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        );
+      },
       home: Builder(
         builder: (context) => Scaffold(
           body: Center(
@@ -225,7 +234,7 @@ void main() {
     addTearDown(tester.view.resetViewInsets);
     addTearDown(tester.view.resetViewPadding);
 
-    await _pump(tester, repo, width: 360);
+    await _pump(tester, repo, width: 360, height: 800);
     await _open(tester);
     expect(tester.takeException(), isNull);
 
@@ -420,6 +429,72 @@ void main() {
     // Still on the form: the pop only happens on success.
     expect(find.byType(CreateJobPage), findsOneWidget);
   });
+
+  testWidgets(
+    'Wave 43 Create Opportunity type choices stack at 1.5x fa-RTL without layout errors',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+      await _open(tester);
+
+      final mission = find.text('ماموریت');
+      final job = find.text('شغل');
+      expect(mission, findsOneWidget);
+      expect(job, findsOneWidget);
+      expect(
+        tester.getTopLeft(job).dy,
+        greaterThanOrEqualTo(tester.getBottomRight(mission).dy),
+        reason: 'At enlarged text, choice descriptions need a vertical reading order.',
+      );
+      expect(find.text('مرحله ۱ از ۵'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 43 entered detail fields and selected category survive step navigation',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(tester, repo, width: 360, height: 640);
+      await _open(tester);
+      await _advance(tester);
+
+      final title = find.widgetWithText(TextField, 'Title');
+      final description = find.widgetWithText(TextField, 'Full description');
+      await tester.enterText(title, 'Flutter developer ABC-123');
+      await tester.enterText(description, 'Build a Persian and English product.');
+      await _selectCategory(tester, 'Development');
+      await _advance(tester);
+      expect(find.text('Step 3 of 5'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('create-opportunity-previous-step')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<TextField>(title).controller!.text, 'Flutter developer ABC-123');
+      expect(
+        tester.widget<TextField>(description).controller!.text,
+        'Build a Persian and English product.',
+      );
+      final category = tester.widget<DropdownButtonFormField<String>>(
+        find.byType(DropdownButtonFormField<String>).first,
+      );
+      expect(category.initialValue, 'dev');
+
+      await _advance(tester);
+      expect(find.text('Step 3 of 5'), findsOneWidget);
+      expect(find.text('Monthly salary'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'Wave 34 create opportunity is a real five-stage flow with staged fields and final publish',
