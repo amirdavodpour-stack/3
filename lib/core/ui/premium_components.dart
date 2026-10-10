@@ -2445,8 +2445,8 @@ class HopeCreationProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labelsFa = ['نوع', 'دیده‌شدن', 'جزئیات', 'مالی', 'انتشار'];
-    const labelsEn = ['Type', 'Audience', 'Details', 'Money', 'Publish'];
+    const labelsFa = ['نوع', 'جزئیات', 'مبلغ', 'شرایط', 'بازبینی'];
+    const labelsEn = ['Type', 'Details', 'Budget', 'Criteria', 'Review'];
     const persianDigits = ['۱', '۲', '۳', '۴', '۵'];
     final en = Localizations.localeOf(context).languageCode == 'en';
     final safeIndex = activeIndex.clamp(0, labelsFa.length - 1).toInt();
