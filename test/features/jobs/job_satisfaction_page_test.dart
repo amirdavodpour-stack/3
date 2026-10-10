@@ -72,6 +72,13 @@ void main() {
           .toList(growable: false);
       expect(ratings, hasLength(2));
       expect(ratings.every((rating) => rating.selected.isEmpty), isTrue);
+      for (final digit in ['۱', '۲', '۳', '۴', '۵']) {
+        expect(
+          find.text(digit),
+          findsNWidgets(2),
+          reason: 'Both Persian rating controls should localize digit $digit.',
+        );
+      }
       final agreement = tester.widget<SegmentedButton<bool>>(
         find.byKey(const ValueKey('satisfaction-agreement-choice')),
       );

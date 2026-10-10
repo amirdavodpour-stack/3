@@ -411,7 +411,10 @@ class _RatingField extends StatelessWidget {
                   return ButtonSegment<int>(
                     value: number,
                     label: Text(
-                      HopeDisplayFormatter.integer(number, locale: _en ? 'en' : 'fa'),
+                      HopeDisplayFormatter.integer(
+                        number,
+                        locale: Localizations.localeOf(context).languageCode,
+                      ),
                     ),
                   );
                 },
