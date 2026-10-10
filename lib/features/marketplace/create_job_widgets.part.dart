@@ -24,13 +24,7 @@ class _TypeHero extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              PremiumTag(
-                icon: HopeV2Icons.route,
-                label: Localizations.localeOf(context).languageCode == 'en'
-                    ? 'Step 1 of 5'
-                    : 'مرحله ۱ از ۵',
-                color: Theme.of(context).colorScheme.primary,
-              ),
+
             ],
           ),
           const SizedBox(height: 10),
