@@ -1193,4 +1193,78 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'opportunity card does not infer remote work from a missing city',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'no-city-no-work-mode',
+        'title': 'توسعه‌دهنده Flutter',
+        'categoryId': 'software',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'monthlySalary': '12000000',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(body: OpportunityCard(job: job)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('مکان مشخص نشده'), findsOneWidget);
+      expect(find.text('آنلاین'), findsNothing);
+      final summary = tester.getSemantics(find.byType(OpportunityCard)).label;
+      expect(summary, contains('مکان مشخص نشده'));
+      expect(summary, isNot(contains('آنلاین')));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'opportunity card shows remote only when work mode explicitly says REMOTE',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'remote-mode-no-city',
+        'title': 'Flutter developer',
+        'categoryId': 'software',
+        'workMode': 'REMOTE',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'monthlySalary': '12000000',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(body: OpportunityCard(job: job)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('دورکاری'), findsOneWidget);
+      expect(find.text('مکان مشخص نشده'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
