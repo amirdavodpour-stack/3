@@ -604,6 +604,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+      'Wave 40 Opportunity DNA exposes real category and location facts to fa-RTL semantics',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    try {
+      await _pump(
+        tester,
+        job: _job(kind: 'JOB', category: 'Software', city: 'Tehran'),
+        width: 900,
+        height: 1600,
+        locale: const Locale('fa'),
+      );
+
+      final category = tester.getSemantics(
+        find.byKey(const ValueKey('opportunity-dna-fact-category')),
+      );
+      expect(category.label, contains('دسته‌بندی'));
+      expect(category.label, contains('نرم‌افزار'));
+
+      final location = tester.getSemantics(
+        find.byKey(const ValueKey('opportunity-dna-fact-location')),
+      );
+      expect(location.label, contains('مکان'));
+      expect(location.label, contains('Tehran'));
+      expect(tester.takeException(), isNull);
+    } finally {
+      handle.dispose();
+    }
+  });
+
   testWidgets('unknown job lifecycle status is presented safely', (tester) async {
     await _pump(
       tester,

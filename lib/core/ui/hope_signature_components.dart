@@ -516,13 +516,15 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
       final formatted = HopeDisplayFormatter.amount(value, locale: locale);
       return formatted == '—' ? value : formatted;
     }
-    final dimensions = <({String label, String value, Color color})>[
+    final dimensions = <({String id, String label, String value, Color color})>[
       (
+        id: 'work-mode',
         label: _t(context, 'نوع همکاری', 'Work mode'),
         value: _workMode(context),
         color: primary,
       ),
       (
+        id: 'category',
         label: _t(context, 'دسته‌بندی', 'Category'),
         value: _categoryLabel(context, job.category?.trim().isNotEmpty == true
             ? job.category
@@ -530,6 +532,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
         color: secondary,
       ),
       (
+        id: 'location',
         label: _t(context, 'مکان', 'Location'),
         value: job.city?.trim().isNotEmpty == true
             ? job.city!.trim()
@@ -538,6 +541,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
       ),
       if (includeMatch)
         (
+          id: 'match',
           label: _t(context, 'تطبیق', 'Match'),
           value: job.recommendationScore == null
               ? _t(context, 'ثبت نشده', 'Not scored')
@@ -548,6 +552,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
           color: primary,
         ),
       (
+        id: 'budget',
         label: _t(context, 'بودجه', 'Budget'),
         value: amountLabel(
           job.isMission
@@ -611,41 +616,46 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
                 runSpacing: gap,
                 children: [
                   for (final dimension in dimensions)
-                    SizedBox(
-                      width: width,
-                      child: Container(
-                        constraints: BoxConstraints(minHeight: compact ? 50 : 58),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: compact ? 8 : 9,
-                          vertical: compact ? 6 : 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: dimension.color.withValues(alpha: .055),
-                          borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                          border: Border.all(color: dimension.color.withValues(alpha: .13)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dimension.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: HopeV2Colors.muted,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              dimension.value.isEmpty ? '—' : dimension.value,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                            ),
-                          ],
+                    Semantics(
+                      key: ValueKey('opportunity-dna-fact-${dimension.id}'),
+                      container: true,
+                      label: '${dimension.label}: ${dimension.value.isEmpty ? '—' : dimension.value}',
+                      child: SizedBox(
+                        width: width,
+                        child: Container(
+                          constraints: BoxConstraints(minHeight: compact ? 50 : 58),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 8 : 9,
+                            vertical: compact ? 6 : 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: dimension.color.withValues(alpha: .055),
+                            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                            border: Border.all(color: dimension.color.withValues(alpha: .13)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                dimension.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: HopeV2Colors.muted,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                dimension.value.isEmpty ? '—' : dimension.value,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
