@@ -163,6 +163,7 @@ HopeJob _job({
   String? ownerId = 'u1',
   String? city = 'Tehran',
   String? title,
+  String? category,
   String status = 'PUBLISHED',
 }) =>
     HopeJob.fromMap({
@@ -170,7 +171,7 @@ HopeJob _job({
       'title': title ?? (kind == 'JOB' ? 'Flutter developer' : 'Design a logo'),
       'description': 'A clear, concise deliverable description for the page.',
       'categoryId': 'c1',
-      'category': 'Design',
+      'category': category ?? 'Design',
       'jobType': kind == 'JOB' ? 'HOURLY' : 'FIXED',
       'budgetType': 'FIXED',
       'budgetMin': '1000000',
