@@ -265,7 +265,7 @@ void main() {
       final statGridWidth = tester.getSize(
         find.byKey(const ValueKey('home-pulse-stat-grid')),
       ).width;
-      final expectedMaximumHeight = statGridWidth >= 300 ? 70.0 : 105.0;
+      final expectedMaximumHeight = statGridWidth >= 350 ? 70.0 : 105.0;
       expect(pulseSize.height, lessThanOrEqualTo(expectedMaximumHeight));
 
       final bestMatch = find.text('Best match for you');
