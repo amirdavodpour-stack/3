@@ -38,13 +38,20 @@ class _ProfileRepo implements ProfileRepository {
       Completer<HopeApplication>();
   int withdrawCalls = 0;
 
+  bool failProviderProfile = false;
+
   @override
-  Future<HopeProviderProfile> getProviderProfile() async =>
-      const HopeProviderProfile(
-          providerType: 'INDIVIDUAL',
-          capacity: 'OPEN',
-          verificationStatus: 'VERIFIED',
-          trustSignals: {'verified': true});
+  Future<HopeProviderProfile> getProviderProfile() async {
+    if (failProviderProfile) {
+      throw StateError('provider profile unavailable');
+    }
+    return const HopeProviderProfile(
+      providerType: 'INDIVIDUAL',
+      capacity: 'OPEN',
+      verificationStatus: 'VERIFIED',
+      trustSignals: {'verified': true},
+    );
+  }
 
   bool failApplicationReload = false;
 
@@ -147,6 +154,32 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('مجری مستقل'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'profile professional data failure is visible and retry restores the real profile',
+    (tester) async {
+      final repo = _ProfileRepo()..failProviderProfile = true;
+      await _pump(
+        tester,
+        authenticated: true,
+        repository: repo,
+      );
+
+      expect(find.byType(HopeAsyncState), findsOneWidget);
+      expect(find.text('اطلاعات حرفه‌ای در دسترس نیست'), findsOneWidget);
+      expect(find.text('تلاش دوباره'), findsOneWidget);
+      expect(find.text('مجری مستقل'), findsNothing);
+
+      repo.failProviderProfile = false;
+      await tester.tap(find.text('تلاش دوباره'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('اطلاعات حرفه‌ای در دسترس نیست'), findsNothing);
+      expect(find.text('مجری مستقل'), findsOneWidget);
+      expect(find.text('تأییدشده'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 
