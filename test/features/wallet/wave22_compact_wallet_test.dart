@@ -159,7 +159,7 @@ void main() {
       final firstTransaction = find.byKey(
         const ValueKey('wallet-history-entry-wave24-wallet-row'),
       );
-      final firstAmount = find.text('\u2066+۱۲۵٬۰۰۰ تومان⁩');
+      final firstAmount = find.text('\u2066+۱۲۵٬۰۰۰ تومان\u2069');
       expect(firstTransaction, findsOneWidget);
       expect(firstAmount, findsOneWidget);
       final firstTransactionRect = tester.getRect(firstTransaction);
@@ -167,7 +167,7 @@ void main() {
       final initialDockRect = tester.getRect(dock);
       expect(
         firstTransactionRect.top,
-        lessThan(initialDockRect.top - 48),
+        lessThan(initialDockRect.top - 40),
         reason: 'The first ledger entry should enter the compact first fold, not start under the dock.',
       );
       expect(

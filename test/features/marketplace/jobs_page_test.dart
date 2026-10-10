@@ -327,7 +327,7 @@ void main() {
       const ValueKey('hope-opportunity-refinement-active-count'),
     );
     expect(activeCount, findsOneWidget);
-    expect(find.text('1', skipOffstage: false), findsWidgets);
+    expect(find.text('۱', skipOffstage: false), findsWidgets);
   });
 
   testWidgets('search narrows the rendered opportunity list', (tester) async {

@@ -269,6 +269,27 @@ class HopeWalletFlowSignature extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (compact)
+            Row(
+              children: [
+                HopeIcon(
+                  HopeV2Icons.route,
+                  size: 12,
+                  color: HopeV2Colors.secondary,
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    _t(context, 'گردش وجه', 'Money flow'),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           if (!compact) ...[
             if (enlargedText)
               Column(
