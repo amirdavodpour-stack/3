@@ -284,6 +284,30 @@ void main() {
   );
 
 
+  testWidgets(
+      'Wave 38 job detail surfaces the real lifecycle status near the decision summary',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', status: 'PUBLISHED'),
+      width: 360,
+      height: 1200,
+      locale: const Locale('fa'),
+    );
+
+    final status = find.byKey(const ValueKey('opportunity-quick-status'));
+    expect(status, findsOneWidget);
+    expect(
+      find.descendant(of: status, matching: find.text('منتشر شده')),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(status).dy,
+      lessThan(tester.getTopLeft(find.text('شرح فرصت')).dy),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('job details render monthly pay, deadline and admin banner',
       (tester) async {
     await _pump(tester, job: _job(kind: 'JOB'));

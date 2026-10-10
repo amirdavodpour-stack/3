@@ -40,6 +40,21 @@ String _budgetRangeLabel(BuildContext context, HopeJob job) {
     locale: locale,
   );
 }
+String _opportunityStatusLabel(BuildContext context, String? raw) {
+  final english = Localizations.localeOf(context).languageCode == 'en';
+  return switch (raw?.toUpperCase()) {
+    'DRAFT' => english ? 'Draft' : 'پیش‌نویس',
+    'PUBLISHED' => english ? 'Published' : 'منتشر شده',
+    'FUNDED' => english ? 'Funded' : 'تأمین وجه شده',
+    'IN_PROGRESS' => english ? 'In progress' : 'در حال انجام',
+    'DELIVERED' => english ? 'Delivered' : 'تحویل شده',
+    'UNDER_REVIEW' => english ? 'Under review' : 'در حال بررسی',
+    'COMPLETED' => english ? 'Completed' : 'تکمیل شده',
+    'CANCELLED' => english ? 'Cancelled' : 'لغو شده',
+    _ => english ? 'Needs review' : 'نیازمند بررسی',
+  };
+}
+
 class _OpportunitySnapshot extends StatelessWidget {
   const _OpportunitySnapshot({required this.job});
 
@@ -808,6 +823,20 @@ class _JobDetailPageState extends State<JobDetailPage> {
               location: j.city?.trim().isNotEmpty == true ? j.city!.trim() : _t('دورکاری', 'Remote'),
               accent: Theme.of(context).colorScheme.primary,
               breakdown: j.recommendationComponents,
+            ),
+            Padding(
+              key: const ValueKey('opportunity-quick-status'),
+              padding: EdgeInsets.only(top: compactViewport ? 6 : 8),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: StatusPill(
+                  _opportunityStatusLabel(context, j.status),
+                  icon: HopeV2Icons.pending,
+                  color: j.status?.toUpperCase() == 'CANCELLED'
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ),
             SizedBox(height: compactViewport ? 6 : 10),
             if (!compactViewport) ...[
