@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-script="\${1:-tools/hope-wallet-runtime-evidence.sh}"
-driver="\${2:-test_driver/hope_runtime_screenshot_driver.dart}"
-test_file="\${3:-integration_test/runtime/critical_screens_evidence_test.dart}"
+script="${1:-tools/hope-wallet-runtime-evidence.sh}"
+driver="${2:-test_driver/hope_runtime_screenshot_driver.dart}"
+test_file="${3:-integration_test/runtime/critical_screens_evidence_test.dart}"
 if [[ -x /system/bin/toybox ]]; then
   T="/system/bin/toybox"
   grep_fixed() { "$T" grep "$@"; }
