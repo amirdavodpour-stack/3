@@ -106,9 +106,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    for (final value in ['92%', '96%', '88%', '72%', '84%']) {
+    // Match score remains a headline score; per-dimension values follow
+    // the active fa-RTL locale and use Persian digits plus the Persian percent sign.
+    for (final value in ['92%', '۹۶٪', '۸۸٪', '۷۲٪', '۸۴٪']) {
       expect(find.text(value), findsOneWidget,
-          reason: 'Wave 15 must render the real numeric score $value');
+          reason: 'Wave 15 must render the real localized numeric score $value');
     }
     expect(find.textContaining(r'${score}'), findsNothing);
     expect(find.textContaining(r'${(value'), findsNothing);
