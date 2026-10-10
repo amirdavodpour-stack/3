@@ -1373,24 +1373,65 @@ class _JobLifecycleCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const HopeIconTile(HopeV2Icons.route, filled: true, size: 40),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _t(context, 'چرخه عمر فرصت', 'Opportunity lifecycle'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              StatusPill(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackedHeader =
+                  constraints.maxWidth < HopeV2Breakpoints.compact ||
+                      MediaQuery.textScalerOf(context).scale(1) > 1.2;
+              final lifecycleTitle = Text(
+                _t(context, 'چرخه عمر فرصت', 'Opportunity lifecycle'),
+                style: Theme.of(context).textTheme.titleMedium,
+              );
+              final lifecycleStatus = StatusPill(
                 _label(context, status),
                 icon: HopeV2Icons.pending,
                 color: status == 'CANCELLED'
                     ? Theme.of(context).colorScheme.error
                     : Theme.of(context).colorScheme.primary,
-              ),
-            ],
+              );
+
+              if (stackedHeader) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const HopeIconTile(
+                          HopeV2Icons.route,
+                          filled: true,
+                          size: 40,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(child: lifecycleTitle),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: lifecycleStatus,
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  const HopeIconTile(
+                    HopeV2Icons.route,
+                    filled: true,
+                    size: 40,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: lifecycleTitle),
+                  lifecycleStatus,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           LayoutBuilder(
