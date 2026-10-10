@@ -372,4 +372,4 @@ grep -Fq 'MediaQuery.textScalerOf(context).scale(1) <= 1.2' "lib/features/profil
 grep -Fq 'Wave30 Profile language selector uses a readable stacked layout at 1.5x English LTR' "test/features/profile/profile_page_test.dart"
 
 # Wave30: the Profile 1.5x regression must execute inside the consolidated Flutter gate.
-grep -Fq "test/features/profile/profile_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "test/features/profile/wave30_profile_language_scale_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
