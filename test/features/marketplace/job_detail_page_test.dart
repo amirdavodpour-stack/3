@@ -674,9 +674,9 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('opportunity-dna-signature')), findsNothing);
-    expect(find.text('Category'), findsOneWidget);
-    expect(find.text('Location'), findsOneWidget);
-    expect(find.textContaining('12000000'), findsOneWidget);
+    expect(find.text('Design'), findsOneWidget);
+    expect(find.text('Tehran'), findsOneWidget);
+    expect(find.textContaining('12,000,000'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -697,6 +697,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final canViewFinance = isOwner || isProvider;
     final collaborationChatOpen = (isOwner || isProvider) && ['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].contains(j.status?.toUpperCase());
 
+    final rawWorkMode = j.raw['workMode'] ??
+        j.raw['mode'] ??
+        j.raw['locationType'] ??
+        j.raw['work_mode'];
+    final hasExplicitWorkMode =
+        rawWorkMode?.toString().trim().isNotEmpty == true &&
+            rawWorkMode?.toString().trim() != '—';
     final viewportWidth = MediaQuery.sizeOf(context).width;
     final compactViewport = viewportWidth < HopeV2Breakpoints.compact;
     final denseViewport = viewportWidth < HopeV2Breakpoints.expanded;
@@ -722,6 +729,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             : HopeCopy.of(context)
                                 .copy_offer_for_mission_ced8d4c,
                 child: FilledButton.icon(
+                  key: const ValueKey('opportunity-detail-primary-cta'),
                   onPressed: loading
                       ? null
                       : canViewFinance
@@ -770,6 +778,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
           compactViewport ? 24 : 32,
         ),
         child: ListView(
+          key: const ValueKey('opportunity-detail-content-list'),
           padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             Stack(
@@ -782,13 +791,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       ? HopeCopy.of(context).copy_job_ce2feba
                       : HopeCopy.of(context).copy_mission_fb4c5e1,
                   title: j.title,
-                  message: [
-                    if (j.category?.trim().isNotEmpty == true)
-                      hopeCategoryLabel(context, j.category!)
-                    else if (j.categoryId?.trim().isNotEmpty == true)
-                      hopeCategoryLabel(context, j.categoryId!),
-                    if (j.city != null && j.city!.trim().isNotEmpty) j.city,
-                  ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
+                  // Category and location are carried by the decision strip.
+                  // Keep the hero focused on the opportunity identity.
+                  message: '',
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
                   height: compactViewport ? 132 : denseViewport ? 166 : 214,
@@ -839,12 +844,14 @@ class _JobDetailPageState extends State<JobDetailPage> {
               ),
             ),
             SizedBox(height: compactViewport ? 6 : 10),
-            if (!compactViewport) ...[
+            if (!compactViewport && hasExplicitWorkMode) ...[
               const SizedBox(height: 8),
               HopeOpportunityDnaSignature(
                 job: j,
                 includeBudget: false,
                 includeMatch: false,
+                includeCategory: false,
+                includeLocation: false,
               ),
               const SizedBox(height: 12),
             ],
@@ -922,7 +929,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ),
                   ],
                   const SizedBox(height: 13),
-                  _JobLifecycleCard(job: j),
+                  _JobLifecycleCard(
+              key: const ValueKey('opportunity-detail-last-section'),
+              job: j,
+            ),
                   const SizedBox(height: 13),
                   if (context.read<AuthController?>()?.user?['id'] == (j.ownerId ?? '') &&
                       context.read<EmployerCandidateMatchingRepository?>() != null)

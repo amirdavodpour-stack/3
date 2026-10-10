@@ -490,11 +490,15 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
     required this.job,
     this.includeBudget = true,
     this.includeMatch = true,
+    this.includeCategory = true,
+    this.includeLocation = true,
   });
 
   final HopeJob job;
   final bool includeBudget;
   final bool includeMatch;
+  final bool includeCategory;
+  final bool includeLocation;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -523,22 +527,24 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
         value: _workMode(context),
         color: primary,
       ),
-      (
-        id: 'category',
-        label: _t(context, 'دسته‌بندی', 'Category'),
-        value: _categoryLabel(context, job.category?.trim().isNotEmpty == true
-            ? job.category
-            : job.categoryId),
-        color: secondary,
-      ),
-      (
-        id: 'location',
-        label: _t(context, 'مکان', 'Location'),
-        value: job.city?.trim().isNotEmpty == true
-            ? job.city!.trim()
-            : _t(context, 'دورکاری', 'Remote'),
-        color: HopeV2Colors.secondary,
-      ),
+      if (includeCategory)
+        (
+          id: 'category',
+          label: _t(context, 'دسته‌بندی', 'Category'),
+          value: _categoryLabel(context, job.category?.trim().isNotEmpty == true
+              ? job.category
+              : job.categoryId),
+          color: secondary,
+        ),
+      if (includeLocation)
+        (
+          id: 'location',
+          label: _t(context, 'مکان', 'Location'),
+          value: job.city?.trim().isNotEmpty == true
+              ? job.city!.trim()
+              : _t(context, 'دورکاری', 'Remote'),
+          color: HopeV2Colors.secondary,
+        ),
       if (includeMatch)
         (
           id: 'match',
@@ -551,20 +557,103 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
                 ),
           color: primary,
         ),
-      (
-        id: 'budget',
-        label: _t(context, 'بودجه', 'Budget'),
-        value: amountLabel(
-          job.isMission
-              ? [job.budgetMin, job.budgetMax]
-                  .where((v) => v?.trim().isNotEmpty == true)
-                  .join(' – ')
-              : job.monthlySalary ?? job.budgetMin,
+      if (includeBudget)
+        (
+          id: 'budget',
+          label: _t(context, 'بودجه', 'Budget'),
+          value: amountLabel(
+            job.isMission
+                ? [job.budgetMin, job.budgetMax]
+                    .where((v) => v?.trim().isNotEmpty == true)
+                    .join(' – ')
+                : job.monthlySalary ?? job.budgetMin,
+          ),
+          color: HopeV2Colors.warning,
         ),
-        color: HopeV2Colors.warning,
-      ),
     ];
-    if (!includeBudget) dimensions.removeLast();
+
+    if (dimensions.isEmpty) return const SizedBox.shrink();
+
+    if (dimensions.length == 1) {
+      final dimension = dimensions.single;
+      final factLabel =
+          '${dimension.label}: ${dimension.value.isEmpty ? '—' : dimension.value}';
+      return Semantics(
+        key: const ValueKey('opportunity-dna-signature'),
+        container: true,
+        label: _t(
+          context,
+          'ویژگی متمایز فرصت، $factLabel',
+          'Distinct opportunity trait, $factLabel',
+        ),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Semantics(
+            key: ValueKey('opportunity-dna-fact-${dimension.id}'),
+            container: true,
+            label: factLabel,
+            child: ExcludeSemantics(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 320,
+                  minHeight: HopeV2Touch.minimum,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: dimension.color.withValues(alpha: .055),
+                    borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                    border: Border.all(
+                      color: dimension.color.withValues(alpha: .16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: dimension.color,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dimension.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: HopeV2Colors.muted,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              dimension.value.isEmpty ? '—' : dimension.value,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return PremiumPanel(
       key: const ValueKey('opportunity-dna-signature'),

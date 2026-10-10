@@ -1551,18 +1551,20 @@ class PremiumHero extends StatelessWidget {
                               letterSpacing: -.9,
                             ),
                           ),
-                          SizedBox(
-                            height: dense ? 5 : HopeV2Spacing.sm,
-                          ),
-                          Text(
-                            message,
-                            maxLines: compactHero ? 2 : (dense ? 2 : 3),
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              height: dense ? 1.34 : 1.48,
+                          if (message.trim().isNotEmpty) ...[
+                            SizedBox(
+                              height: dense ? 5 : HopeV2Spacing.sm,
                             ),
-                          ),
+                            Text(
+                              message,
+                              maxLines: compactHero ? 2 : (dense ? 2 : 3),
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                height: dense ? 1.34 : 1.48,
+                              ),
+                            ),
+                          ],
                           if (action != null) ...[
                             SizedBox(
                               height: dense ? 9 : HopeV2Spacing.lg,
@@ -2165,6 +2167,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = accent ?? Theme.of(context).colorScheme.primary;
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final scoreRingSize = enlargedText ? 78.0 : 62.0;
     final score = matchScore?.clamp(0, 100).round();
     final scoreLabel = score == null ? '—' : '${score}%';
 
@@ -2336,8 +2340,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                       if (score != null)
                         SizedBox(
                           key: const ValueKey('opportunity-match-score-ring'),
-                          width: 62,
-                          height: 62,
+                          width: scoreRingSize,
+                          height: scoreRingSize,
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
@@ -2358,7 +2362,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                     scoreLabel,
                                     style: HopeV2Type.metric(context).copyWith(
                                       color: primary,
-                                      fontSize: 17,
+                                      fontSize: enlargedText ? 14 : 17,
                                       height: 1.0,
                                     ),
                                   ),
@@ -2371,6 +2375,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                         ?.copyWith(
                                           color: primary,
                                           fontWeight: FontWeight.w800,
+                                          fontSize: enlargedText ? 10 : null,
+                                          height: enlargedText ? 1 : null,
                                         ),
                                   ),
                                 ],
