@@ -447,6 +447,33 @@ void main() {
   );
 
   testWidgets(
+      'Wave 41 Create Opportunity progress announces active step changes in fa-RTL',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    try {
+      final repo = _FakeMarket();
+      await _pump(tester, repo, width: 360, locale: const Locale('fa'));
+      await _open(tester);
+
+      final progress = find.byKey(
+        const ValueKey('create-opportunity-progress'),
+      );
+      var node = tester.getSemantics(progress);
+      expect(node.label, contains('مرحله ۱ از ۵'));
+      expect(node.value, 'نوع');
+      expect(node.hasFlag(SemanticsFlag.isLiveRegion), isTrue);
+
+      await _advance(tester);
+      node = tester.getSemantics(progress);
+      expect(node.label, contains('مرحله ۲ از ۵'));
+      expect(node.value, 'جزئیات');
+      expect(tester.takeException(), isNull);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  testWidgets(
     'Wave 36 creation progress uses Persian stage and circle numerals in RTL',
     (tester) async {
       final handle = tester.ensureSemantics();

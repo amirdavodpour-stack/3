@@ -2463,9 +2463,11 @@ class HopeCreationProgress extends StatelessWidget {
 
     return Semantics(
       container: true,
+      liveRegion: true,
       label: en
           ? 'Create opportunity progress, $currentStep, ${labelsEn[safeIndex]}'
           : 'پیشرفت ثبت فرصت، $currentStep، ${labelsFa[safeIndex]}',
+      value: en ? labelsEn[safeIndex] : labelsFa[safeIndex],
       child: Container(
         key: const ValueKey('create-opportunity-progress'),
         padding: const EdgeInsets.fromLTRB(4, 3, 4, 7),
