@@ -146,7 +146,7 @@ void main() {
       expect(
         find.descendant(
           of: lockedMetric,
-          matching: find.text('1,000,000 تومان'),
+          matching: find.text('۱٬۰۰۰٬۰۰۰ تومان'),
         ),
         findsOneWidget,
         reason: 'Show the aggregate locked balance even when active-hold detail totals are zero.',

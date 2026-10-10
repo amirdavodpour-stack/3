@@ -583,7 +583,7 @@ void main() {
         matching: find.byType(Semantics),
       ).first;
       final node = tester.getSemantics(row);
-      expect(node.label, '400,000 تومان، کیف پول داخلی، درخواست‌شده');
+      expect(node.label, '۴۰۰٬۰۰۰ تومان، کیف پول داخلی، درخواست‌شده');
     } finally {
       semantics.dispose();
     }

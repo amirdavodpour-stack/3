@@ -45,6 +45,10 @@ class OpportunityCard extends StatelessWidget {
       return _formatAmount(value, context);
     }
 
+    if (first == second) {
+      return HopeDisplayFormatter.money(first, locale: locale);
+    }
+
     final values = [first, second]..sort();
     return '${HopeDisplayFormatter.integer(values[0], locale: locale)}\n'
         '${_t(context, 'تا', '–')} '
