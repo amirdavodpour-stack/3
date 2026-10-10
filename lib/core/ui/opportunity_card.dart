@@ -342,9 +342,6 @@ class OpportunityCard extends StatelessWidget {
 
   Widget _fallbackMedia(BuildContext context, Color primary) {
     final categoryValue = _categoryValue();
-    final categoryLabel = categoryValue == null || categoryValue.isEmpty
-        ? null
-        : hopeCategoryLabel(context, categoryValue);
     final categoryKey = (categoryValue ?? '')
         .trim()
         .toLowerCase()
@@ -392,63 +389,27 @@ class OpportunityCard extends StatelessWidget {
           ],
         ),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final showCategoryLabel = categoryLabel != null &&
-              constraints.maxHeight >= 60 &&
-              constraints.maxWidth >= 66 &&
-              MediaQuery.textScalerOf(context).scale(1) <= 1.2;
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  key: const ValueKey('opportunity-fallback-icon-container'),
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: dark ? .07 : .04),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: accent.withValues(alpha: dark ? .13 : .10),
-                    ),
-                  ),
-                  child: Center(
-                    child: HopeIcon(
-                      icon,
-                      color: accent.withValues(alpha: dark ? .92 : 1),
-                      size: 16,
-                      strokeWidth: 1.6,
-                    ),
-                  ),
-                ),
-                if (showCategoryLabel && categoryLabel != null) ...[
-                  const SizedBox(height: 3),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: constraints.maxWidth - 8,
-                    ),
-                    child: Text(
-                      categoryLabel,
-                      key: const ValueKey('opportunity-fallback-category-label'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: dark ? .90 : .82,
-                        ),
-                        fontSize: 10,
-                        height: 1,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+      child: Center(
+        child: Container(
+          key: const ValueKey('opportunity-fallback-icon-container'),
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: dark ? .07 : .04),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: accent.withValues(alpha: dark ? .13 : .10),
             ),
-          );
-        },
+          ),
+          child: Center(
+            child: HopeIcon(
+              icon,
+              color: accent.withValues(alpha: dark ? .92 : 1),
+              size: 16,
+              strokeWidth: 1.6,
+            ),
+          ),
+        ),
       ),
     );
   }

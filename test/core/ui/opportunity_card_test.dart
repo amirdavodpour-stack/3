@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
@@ -811,7 +812,7 @@ void main() {
 
 
   testWidgets(
-    'image-less fallback localizes categoryId and rejects non-web media URLs',
+    'image-less fallback resolves categoryId and rejects non-web media URLs',
     (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1;
@@ -853,11 +854,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final categoryLabel = find.byKey(
-        const ValueKey('opportunity-fallback-category-label'),
+      final categorySemantics = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            (widget.label ?? '').contains('نرم‌افزار'),
       );
-      expect(categoryLabel, findsOneWidget);
-      expect(tester.widget<Text>(categoryLabel).data, 'نرم‌افزار');
+      expect(categorySemantics, findsOneWidget);
+      final fallbackSurface = tester.widget<DecoratedBox>(
+        find.byKey(const ValueKey('opportunity-fallback-media-surface')),
+      );
+      final fallbackDecoration = fallbackSurface.decoration as BoxDecoration;
+      final fallbackGradient = fallbackDecoration.gradient! as LinearGradient;
+      expect(
+        fallbackGradient.colors.first,
+        HopeV2Colors.primary.withValues(alpha: .09),
+      );
       expect(
         find.byWidgetPredicate(
           (widget) => widget is Image && widget.image is NetworkImage,
@@ -869,7 +880,7 @@ void main() {
   );
 
   testWidgets(
-    'featured no-media opportunity uses a shorter category-led hero with a separate title',
+    'featured no-media opportunity uses a shorter hero with a separate title',
     (tester) async {
       tester.view.physicalSize = const Size(800, 900);
       tester.view.devicePixelRatio = 1;
@@ -927,10 +938,6 @@ void main() {
       expect(
         tester.getRect(fallbackTitle).top,
         greaterThanOrEqualTo(tester.getRect(header).bottom),
-      );
-      expect(
-        find.byKey(const ValueKey('opportunity-fallback-category-label')),
-        findsOneWidget,
       );
       expect(tester.takeException(), isNull);
     },
