@@ -184,6 +184,9 @@ jobs:
 
       - name: Validate runtime evidence artifact contents
         if: ${{ success() && !(github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
+        env:
+          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
+          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
         run: |
           test -d docs/audit/evidence/android-runtime
           png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
