@@ -1112,4 +1112,85 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'standard opportunity card visibly localizes categoryId when category label is absent',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'category-id-visible-standard',
+        'title': 'توسعه‌دهنده Flutter',
+        'categoryId': 'software',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+        'monthlySalary': '12000000',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.standard,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('نرم‌افزار'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'expanded opportunity card visibly localizes categoryId when category label is absent',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'category-id-visible-expanded',
+        'title': 'توسعه‌دهنده Flutter',
+        'description': 'جزئیات فرصت توسعه نرم‌افزار',
+        'categoryId': 'software',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+        'monthlySalary': '12000000',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.expanded,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('نرم‌افزار'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
