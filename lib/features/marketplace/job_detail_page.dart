@@ -844,16 +844,18 @@ class _JobDetailPageState extends State<JobDetailPage> {
               ),
             ),
             SizedBox(height: compactViewport ? 6 : 10),
-            if (!compactViewport && hasExplicitWorkMode) ...[
-              const SizedBox(height: 8),
-              HopeOpportunityDnaSignature(
-                job: j,
-                includeBudget: false,
-                includeMatch: false,
-                includeCategory: false,
-                includeLocation: false,
-              ),
-              const SizedBox(height: 12),
+            if (!compactViewport) ...[
+              if (hasExplicitWorkMode) ...[
+                const SizedBox(height: 8),
+                HopeOpportunityDnaSignature(
+                  job: j,
+                  includeBudget: false,
+                  includeMatch: false,
+                  includeCategory: false,
+                  includeLocation: false,
+                ),
+                const SizedBox(height: 12),
+              ],
             ],
             PremiumSectionHeader(
                     domain: HopeProductDomain.discovery,
