@@ -55,6 +55,21 @@ String _opportunityStatusLabel(BuildContext context, String? raw) {
   };
 }
 
+String _opportunityLocationLabel(BuildContext context, HopeJob job) {
+  final city = job.city?.trim();
+  if (city != null && city.isNotEmpty) return city;
+
+  final rawWorkMode = job.raw['workMode'] ??
+      job.raw['mode'] ??
+      job.raw['locationType'] ??
+      job.raw['work_mode'];
+  final english = Localizations.localeOf(context).languageCode == 'en';
+  if (rawWorkMode?.toString().trim().toUpperCase() == 'REMOTE') {
+    return english ? 'Remote' : 'دورکاری';
+  }
+  return english ? 'Location not specified' : 'مکان مشخص نشده';
+}
+
 class _OpportunitySnapshot extends StatelessWidget {
   const _OpportunitySnapshot({required this.job});
 
@@ -87,7 +102,7 @@ class _OpportunitySnapshot extends StatelessWidget {
         id: 'location',
         icon: HopeV2Icons.location,
         label: _t(context, 'مکان', 'Location'),
-        value: job.city?.trim().isNotEmpty == true ? job.city! : _t(context, 'از راه دور', 'Remote'),
+        value: _opportunityLocationLabel(context, job),
         color: HopeV2Colors.secondary,
       ),
     ];
@@ -825,7 +840,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ? j.category!
                     : j.categoryId ?? '—',
               ),
-              location: j.city?.trim().isNotEmpty == true ? j.city!.trim() : _t('دورکاری', 'Remote'),
+              location: _opportunityLocationLabel(context, j),
               accent: Theme.of(context).colorScheme.primary,
               breakdown: j.recommendationComponents,
             ),

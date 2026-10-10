@@ -82,7 +82,12 @@ class OpportunityCard extends StatelessWidget {
     final featuredScan = variant == OpportunityCardVariant.featuredScan;
     final expanded = variant == OpportunityCardVariant.expanded;
     final copy = HopeCopy.of(context);
-    final city = job.city?.trim().isNotEmpty == true ? job.city! : copy.copy_remote_dcbb625;
+    final explicitWorkMode = _workMode(context);
+    final city = job.city?.trim().isNotEmpty == true
+        ? job.city!.trim()
+        : (explicitWorkMode == _t(context, 'دورکاری', 'Remote')
+            ? explicitWorkMode!
+            : _t(context, 'مکان مشخص نشده', 'Location not specified'));
     final amount = job.isMission
         ? [job.budgetMin, job.budgetMax].where((v) => v?.isNotEmpty == true).join(' – ')
         : (job.monthlySalary?.isNotEmpty == true
@@ -666,7 +671,7 @@ class OpportunityCard extends StatelessWidget {
                     label: company,
                     color: HopeV2Colors.muted,
                   ),
-                if (mode != null)
+                if (mode != null && mode != city)
                   PremiumTag(
                     icon: HopeV2Icons.workshop,
                     label: mode,
@@ -922,7 +927,7 @@ class OpportunityCard extends StatelessWidget {
     );
 
     final meta = <Widget>[
-      if (mode != null)
+      if (mode != null && mode != city)
         _metaText(
           context,
           HopeV2Icons.workshop,

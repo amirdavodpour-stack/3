@@ -803,4 +803,39 @@ void main() {
   });
 
   // Runtime certification trigger: Wave G-3A compact Match Intelligence.
+
+
+  testWidgets(
+    'Job Detail does not infer remote location when city and work mode are missing',
+    (tester) async {
+      await _pump(
+        tester,
+        job: _job(city: null, workMode: null),
+        width: 360,
+        height: 1200,
+        locale: const Locale('fa'),
+      );
+
+      expect(find.text('مکان مشخص نشده'), findsOneWidget);
+      expect(find.text('دورکاری'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Job Detail displays Remote only when workMode explicitly says REMOTE',
+    (tester) async {
+      await _pump(
+        tester,
+        job: _job(city: null, workMode: 'REMOTE'),
+        width: 360,
+        height: 1200,
+        locale: const Locale('en'),
+      );
+
+      expect(find.text('Remote'), findsOneWidget);
+      expect(find.text('Location not specified'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
