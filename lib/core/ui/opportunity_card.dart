@@ -844,7 +844,7 @@ class OpportunityCard extends StatelessWidget {
         if ((job.category ?? '').isNotEmpty)
           PremiumTag(
             icon: HopeV2Icons.category,
-            label: job.category!,
+            label: hopeCategoryLabel(context, job.category!),
             color: HopeV2Colors.muted,
           ),
         if (job.visibility == 'SPECIALIZED')
@@ -1163,7 +1163,7 @@ class OpportunityCard extends StatelessWidget {
             if ((job.category ?? '').isNotEmpty)
               PremiumTag(
                 icon: HopeV2Icons.category,
-                label: job.category!,
+                label: hopeCategoryLabel(context, job.category!),
                 color: HopeV2Colors.muted,
               ),
             if (job.distanceKm != null)
