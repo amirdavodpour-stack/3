@@ -204,10 +204,19 @@ void main() {
         find.byKey(const ValueKey('financial-cashflow-chart-scroll')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const ValueKey('financial-balance-chart-scroll')),
-        findsOneWidget,
+      final balanceChart = find.byKey(
+        const ValueKey('financial-balance-chart-scroll'),
       );
+      final pageList = find.byKey(
+        const ValueKey('financial-insights-list'),
+      );
+      for (var attempt = 0;
+          attempt < 12 && balanceChart.evaluate().isEmpty;
+          attempt++) {
+        await tester.drag(pageList, const Offset(0, -400));
+        await tester.pumpAndSettle();
+      }
+      expect(balanceChart, findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
