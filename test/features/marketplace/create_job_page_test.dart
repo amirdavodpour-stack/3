@@ -771,7 +771,12 @@ void main() {
 
       await tester.enterText(titleField, 'Keyboard-safe opportunity');
       expect(find.text('Keyboard-safe opportunity'), findsOneWidget);
-      expect(find.text('Step 2 of 5'), findsOneWidget);
+      // The progress header is above the scrolled lazy ListView and need not
+      // remain built after the Title field is reached.
+      expect(
+        find.byKey(const ValueKey('create-opportunity-step-1')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );
