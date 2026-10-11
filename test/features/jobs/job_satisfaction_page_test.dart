@@ -8,6 +8,11 @@ import 'package:provider/provider.dart';
 
 class _FakeJobSatisfactionRepository implements JobSatisfactionRepository {
   bool submitted = false;
+  String? submittedJobId;
+  int? submittedOverallRating;
+  bool? submittedCompletedAsAgreed;
+  int? submittedCommunicationRating;
+  String? submittedReport;
 
   @override
   Future<JobSatisfactionState> getState(String jobId) async =>
@@ -31,6 +36,11 @@ class _FakeJobSatisfactionRepository implements JobSatisfactionRepository {
     required String report,
   }) async {
     submitted = true;
+    submittedJobId = jobId;
+    submittedOverallRating = overallRating;
+    submittedCompletedAsAgreed = completedAsAgreed;
+    submittedCommunicationRating = communicationRating;
+    submittedReport = report;
     return <String, dynamic>{};
   }
 
@@ -245,6 +255,96 @@ void main() {
       final submit = tester.widget<FilledButton>(submitFinder);
       expect(submit.onPressed, isNull);
       expect(repository.submitted, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'complete satisfaction feedback enables submit and forwards exact values',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = _FakeJobSatisfactionRepository();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Provider<JobSatisfactionRepository>.value(
+            value: repository,
+            child: const JobSatisfactionPage(jobId: 'job-1'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final overallField = find.byKey(
+        const ValueKey('satisfaction-overall-rating'),
+      );
+      await tester.ensureVisible(overallField);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: overallField, matching: find.text('۴')),
+      );
+      await tester.pump();
+
+      final agreement = find.byKey(
+        const ValueKey('satisfaction-agreement-choice'),
+      );
+      await tester.ensureVisible(agreement);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: agreement, matching: find.text('خیر')),
+      );
+      await tester.pump();
+
+      final communicationField = find.byKey(
+        const ValueKey('satisfaction-communication-rating'),
+      );
+      await tester.ensureVisible(communicationField);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: communicationField, matching: find.text('۵')),
+      );
+      await tester.pump();
+
+      final reportFinder = find.byType(TextField);
+      await tester.ensureVisible(reportFinder);
+      await tester.pumpAndSettle();
+      await tester.enterText(reportFinder, 'گزارش آزمایشی');
+      await tester.testTextInput.hide();
+      await tester.pump();
+
+      final submitFinder = find.byKey(
+        const ValueKey('job-satisfaction-submit'),
+      );
+      await tester.scrollUntilVisible(
+        submitFinder,
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(submitFinder).onPressed, isNotNull);
+
+      await tester.tap(submitFinder);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(repository.submitted, isTrue);
+      expect(repository.submittedJobId, 'job-1');
+      expect(repository.submittedOverallRating, 4);
+      expect(repository.submittedCompletedAsAgreed, isFalse);
+      expect(repository.submittedCommunicationRating, 5);
+      expect(repository.submittedReport, 'گزارش آزمایشی');
       expect(tester.takeException(), isNull);
     },
   );
