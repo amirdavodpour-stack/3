@@ -2174,8 +2174,13 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final scoreRingSize = enlargedText ? 78.0 : 62.0;
-    final score = matchScore?.clamp(0, 100).round();
-    final scoreLabel = score == null ? '—' : '${score}%';
+    final normalizedScore =
+        HopeDisplayFormatter.matchPercentage(matchScore);
+    final score = normalizedScore?.round();
+    final locale = Localizations.localeOf(context).languageCode;
+    final scoreLabel = score == null
+        ? '—'
+        : HopeDisplayFormatter.percent(score, locale: locale);
 
     Widget fact(String label, String value, Object icon, Color color) {
       if (value.trim().isEmpty || value.trim() == '—') {
@@ -2305,7 +2310,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
       label: _t(context, 'خلاصه تصمیم فرصت', 'Opportunity decision summary'),
       child: PremiumPanel(
         key: const ValueKey('opportunity-decision-strip'),
-        highlight: matchScore != null && score! >= 90,
+        highlight: score != null && score >= 90,
         padding: EdgeInsets.fromLTRB(
           compact ? 10 : 12,
           compact ? 9 : 11,
