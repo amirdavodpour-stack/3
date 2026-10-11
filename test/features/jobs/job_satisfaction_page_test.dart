@@ -72,6 +72,26 @@ void main() {
           .toList(growable: false);
       expect(ratings, hasLength(2));
       expect(ratings.every((rating) => rating.selected.isEmpty), isTrue);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'رضایت کلی' &&
+              widget.properties.value == 'انتخاب نشده' &&
+              widget.properties.hint == 'از ۱ تا ۵ انتخاب کنید',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'کیفیت ارتباط' &&
+              widget.properties.value == 'انتخاب نشده' &&
+              widget.properties.hint == 'از ۱ تا ۵ انتخاب کنید',
+        ),
+        findsOneWidget,
+      );
       for (final digit in ['۱', '۲', '۳', '۴', '۵']) {
         expect(
           find.text(digit),
