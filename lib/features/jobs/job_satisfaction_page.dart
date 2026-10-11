@@ -285,8 +285,24 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                             ),
                       ),
                       const SizedBox(height: 8),
-                      SegmentedButton<bool>(
-                        key: const ValueKey('satisfaction-agreement-choice'),
+                      Semantics(
+                        container: true,
+                        explicitChildNodes: true,
+                        label: _t(
+                          'کار مطابق توافق انجام شد؟',
+                          'Was the work completed as agreed?',
+                        ),
+                        value: _completedAsAgreed == null
+                            ? _t('انتخاب نشده', 'Not selected')
+                            : _completedAsAgreed!
+                                ? _t('بله', 'Yes')
+                                : _t('خیر', 'No'),
+                        hint: _t(
+                          'بله یا خیر را انتخاب کنید',
+                          'Choose Yes or No',
+                        ),
+                        child: SegmentedButton<bool>(
+                          key: const ValueKey('satisfaction-agreement-choice'),
                         segments: [
                           ButtonSegment<bool>(
                             value: true,
@@ -303,9 +319,10 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                             ? <bool>{}
                             : <bool>{_completedAsAgreed!},
                         emptySelectionAllowed: true,
-                        onSelectionChanged: (selected) => setState(
-                          () => _completedAsAgreed =
-                              selected.isEmpty ? null : selected.first,
+                          onSelectionChanged: (selected) => setState(
+                            () => _completedAsAgreed =
+                                selected.isEmpty ? null : selected.first,
+                          ),
                         ),
                       ),
                     ],
