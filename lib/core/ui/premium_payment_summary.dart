@@ -41,7 +41,13 @@ class PremiumPaymentSummary extends StatelessWidget {
   String _money(BuildContext context, dynamic value) {
     if (value == null) return '—';
     final locale = Localizations.localeOf(context).languageCode;
-    return HopeDisplayFormatter.money(value, locale: locale);
+    final raw = '$value'.trim();
+    final integralDecimal = RegExp(r'^([+-]?\d+)\.0+$').firstMatch(raw);
+    final normalized = integralDecimal?.group(1) ?? raw;
+    final parsed = HopeDisplayFormatter.parseInteger(normalized);
+    if (parsed == null) return '—';
+    return '${HopeDisplayFormatter.integer(parsed, locale: locale)} '
+        '${_label(context, 'تومان', 'Toman')}';
   }
   Object _statusIcon() {
     switch (payment.status) {

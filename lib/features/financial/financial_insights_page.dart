@@ -629,6 +629,9 @@ class _BarChart extends StatelessWidget {
                       data.length * monthWidth,
                     ).toDouble();
                     final labelHeight = constraints.maxHeight < 150 ? 20.0 : 24.0;
+                    final axisTicks = textScale > 1.2
+                        ? const [4, 2, 0]
+                        : const [4, 3, 2, 1, 0];
 
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -662,7 +665,7 @@ class _BarChart extends StatelessWidget {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                      for (var tick = 4; tick >= 0; tick--)
+                                      for (final tick in axisTicks)
                                         Text(
                                           _cashFlowAxisLabel(
                                             (scaleMaximum * tick / 4).round(),
