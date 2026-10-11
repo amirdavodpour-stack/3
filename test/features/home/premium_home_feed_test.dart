@@ -120,6 +120,7 @@ Future<_HomeHarness> _host(
   _SequencedMarketplaceRepository repository, {
   bool authenticated = false,
   double textScale = 1,
+  String locale = 'en',
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
@@ -135,7 +136,7 @@ Future<_HomeHarness> _host(
   }
   return _HomeHarness(
     MaterialApp(
-      locale: const Locale('en'),
+      locale: Locale(locale),
       supportedLocales: const [Locale('fa'), Locale('en')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -198,7 +199,7 @@ void main() {
     expect(find.text('Matches'), findsNothing);
   });
 
-  testWidgets('home snapshot appears before featured recommendations',
+  testWidgets('compact home fold prioritizes the featured opportunity before the pulse',
       (tester) async {
     tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1;
@@ -211,7 +212,7 @@ void main() {
     final featured = find.text('Best match for you');
     expect(pulse, findsOneWidget);
     expect(featured, findsOneWidget);
-    expect(tester.getTopLeft(pulse).dy, lessThan(tester.getTopLeft(featured).dy));
+    expect(tester.getTopLeft(featured).dy, lessThan(tester.getTopLeft(pulse).dy));
     expect(tester.takeException(), isNull);
   });
 
@@ -381,6 +382,21 @@ void main() {
     expect(
       moneyLabel(tester.element(find.byType(PremiumHomeFeed)), 125000),
       contains('125,000 TOMAN'),
+    );
+  });
+
+  testWidgets('home money labels localize Persian digits and grouping in fa-RTL',
+      (tester) async {
+    final harness = await _host(
+      _SequencedMarketplaceRepository(),
+      locale: 'fa',
+    );
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    expect(
+      moneyLabel(tester.element(find.byType(PremiumHomeFeed)), 125000),
+      contains('۱۲۵٬۰۰۰'),
     );
   });
 
