@@ -198,7 +198,7 @@ class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.data, required this.money, required this.t, required this.compact});
 
   final HopeFinancialInsights data;
-  final String Function(int) money;
+  final String Function(Object?) money;
   final String Function(String, String) t;
   final bool compact;
 
