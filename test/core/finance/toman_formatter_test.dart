@@ -35,5 +35,24 @@ void main() {
     test('supports integer runtime values', () {
       expect(HopeTomanFormatter.grouped(125000), '125,000');
     });
+    test('localizes exact financial grouping for Persian without precision loss', () {
+      expect(
+        HopeTomanFormatter.groupedForLocale('9007199254740993', locale: 'fa'),
+        '۹٬۰۰۷٬۱۹۹٬۲۵۴٬۷۴۰٬۹۹۳',
+      );
+      expect(
+        HopeTomanFormatter.groupedForLocale('-125000', locale: 'fa'),
+        '-۱۲۵٬۰۰۰',
+      );
+      expect(
+        HopeTomanFormatter.groupedForLocale('125000', locale: 'en'),
+        '125,000',
+      );
+      expect(
+        HopeTomanFormatter.groupedForLocale('125000.50', locale: 'fa'),
+        '125000.50',
+      );
+    });
+
   });
 }

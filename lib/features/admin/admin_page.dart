@@ -43,6 +43,11 @@ class _AdminPageState extends State<AdminPage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 4, vsync: this);
+    _summary = Future.value(const HopeAdminSummary(values: {}));
+    _jobs = Future.value(const <HopeJob>[]);
+    _applications = Future.value(const <HopeApplication>[]);
+    _users = Future.value(const <HopeAdminUser>[]);
+    _audit = Future.value(const <HopeAdminAuditEvent>[]);
     _checkPanelAccess();
   }
 
@@ -61,19 +66,40 @@ class _AdminPageState extends State<AdminPage>
         Navigator.pushReplacement(context, HopeRoutes.adminAccess());
         return;
       }
+      final repository = context.read<AdminRepository>();
+      final summary = repository.getSummary();
+      final jobs = repository.listJobs();
+      final applications = repository.listApplications();
+      final users = repository.listUsers();
+      final audit = repository.listAudit();
+      _observeFuture(summary);
+      _observeFuture(jobs);
+      _observeFuture(applications);
+      _observeFuture(users);
+      _observeFuture(audit);
       setState(() {
         _panelVerified = true;
         _isPrimaryAdmin = access['primaryAdmin'] == true;
         _currentAdminId = '${access['userId'] ?? ''}';
-        _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
+        _permissions = (access['permissions'] is List)
+            ? (access['permissions'] as List).whereType<String>().toSet()
+            : <String>{};
         _checkingPanel = false;
+        _summary = summary;
+        _jobs = jobs;
+        _applications = applications;
+        _users = users;
+        _audit = audit;
       });
-      _reload();
     } catch (_) {
       if (!mounted) return;
       setState(() => _checkingPanel = false);
       Navigator.pushReplacement(context, HopeRoutes.adminAccess());
     }
+  }
+
+  void _observeFuture<T>(Future<T> future) {
+    future.then<void>((_) {}, onError: (Object _, StackTrace __) {});
   }
 
   void _reload() {
@@ -83,6 +109,11 @@ class _AdminPageState extends State<AdminPage>
     _applications = repository.listApplications();
     _users = repository.listUsers();
     _audit = repository.listAudit();
+    _observeFuture(_summary);
+    _observeFuture(_jobs);
+    _observeFuture(_applications);
+    _observeFuture(_users);
+    _observeFuture(_audit);
     if (mounted) setState(() {});
   }
 
@@ -222,13 +253,11 @@ class _AdminPageState extends State<AdminPage>
                           onPressed: _actionBusy
                               ? null
                               : () async {
-                                  await context.read<AdminRepository>().lockPanel();
-                                  if (mounted) {
-                                    Navigator.pushReplacement(
-                                      context,
-                                      HopeRoutes.adminAccess(),
-                                    );
-                                  }
+                                  final repository = context.read<AdminRepository>();
+                                  final navigator = Navigator.of(context);
+                                  await repository.lockPanel();
+                                  if (!mounted) return;
+                                  navigator.pushReplacement(HopeRoutes.adminAccess());
                                 },
                         ),
                       ],
@@ -398,7 +427,7 @@ class _AdminPageState extends State<AdminPage>
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(_t('لغو نقش مدیر؟', 'Revoke administrator role?')),
-        content: Text(_t('دسترسی مدیریتی '+"${user.displayName.isEmpty ? user.email : user.displayName}"+' قطع می‌شود.', 'Administrator access for '+"${user.displayName.isEmpty ? user.email : user.displayName}"+' will be removed.')),
+        content: Text(_t('دسترسی مدیریتی ${user.displayName.isEmpty ? user.email : user.displayName} قطع می‌شود.', 'Administrator access for ${user.displayName.isEmpty ? user.email : user.displayName} will be removed.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_t('انصراف', 'Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(_t('لغو نقش', 'Revoke role'))),

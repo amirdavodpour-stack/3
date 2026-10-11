@@ -48,7 +48,10 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<List<HopeJob>> listJobs() async {
     calls.add('jobs');
-    if (failJobs) throw Exception('network down');
+    if (failJobs) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      throw Exception('network down');
+    }
     return jobs;
   }
 
@@ -161,6 +164,11 @@ class _FakeAdmin implements AdminRepository {
 
   @override
   Future<Map<String, dynamic>> getCrashSummary({int days = 30}) async => const {};
+  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async => const {'verified': true};
+  @override Future<void> lockPanel() async {}
+  @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
+  @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
+  @override Future<Map<String, dynamic>> resolveDispute(String id, {required String resolution, String? reason}) async => const {};
 }
 
 HopeJob _job(String id,
@@ -437,6 +445,7 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
         findsOneWidget);
   });
 
+  // A rejected jobs future must stay owned by the page FutureBuilder so the retry path can render it.
   testWidgets('admin load failure shows retry and recovers', (tester) async {
     final repo = _FakeAdmin(failJobs: true)
       ..jobs = [_job('j1', kind: 'MISSION', status: 'PUBLISHED')];

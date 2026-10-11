@@ -1,12 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/features/marketplace/job_detail_page.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
+import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/job_detail_repository.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
+import 'package:hope_mobile/core/transactions/payment.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -123,42 +126,62 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Job description'),
+      450,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Opportunity snapshot'),
+      450,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Opportunity snapshot'), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-detail-hero-match')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('opportunity-detail-hero-match'), skipOffstage: false),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const ValueKey('opportunity-detail-hero-budget')),
       findsNothing,
     );
-    expect(find.text('Budget'), findsOneWidget);
-    expect(find.text('Field'), findsOneWidget);
-    expect(find.text('Location'), findsOneWidget);
-    expect(find.text('Duration'), findsOneWidget);
-
-    final heroSize = tester.getSize(find.byType(PremiumHero).first);
-    expect(heroSize.height, lessThanOrEqualTo(180));
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-budget')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-field')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-location')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-deadline')), findsNothing);
 
     final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
     final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
+    final heroSize = tester.getSize(
+      find.byType(PremiumHero, skipOffstage: false).first,
+    );
+    expect(heroSize.height, greaterThanOrEqualTo(180));
+
     expect(descriptionTop, lessThan(snapshotTop));
+
+    await tester.scrollUntilVisible(
+      find.text('Duration'),
+      450,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Duration'), findsOneWidget);
   });
-}
 
-
-testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
+  testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
     (tester) async {
   await tester.pumpWidget(
-    MediaQuery(
-      data: const MediaQueryData(size: Size(240, 640)),
+    const MediaQuery(
+      data: MediaQueryData(size: Size(240, 640)),
       child: MaterialApp(
-        locale: const Locale('fa'),
-        supportedLocales: const [Locale('fa'), Locale('en')],
-        localizationsDelegates: const [
+        locale: Locale('fa'),
+        supportedLocales: [Locale('fa'), Locale('en')],
+        localizationsDelegates: [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: const Directionality(
+        home: Directionality(
           textDirection: TextDirection.rtl,
           child: Scaffold(
             body: Padding(
@@ -181,3 +204,5 @@ testWidgets('premium hero domain marker stays bounded on compact RTL surfaces',
   expect(tester.getSize(find.byType(PremiumHero)).height, 176);
   expect(tester.takeException(), isNull);
 });
+
+}

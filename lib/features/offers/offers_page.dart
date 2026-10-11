@@ -98,16 +98,14 @@ class _OffersPageState extends State<OffersPage> {
     final rows = _filter == 'ALL'
         ? all
         : all.where((x) => x.status.toUpperCase() == _filter).toList();
-    final pendingCount = all.where((x) => x.status.toUpperCase() == 'PENDING').length;
-    final acceptedCount = all.where((x) => x.status.toUpperCase() == 'ACCEPTED').length;
 
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _reload,
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 56),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: HopeV2Navigation.scrollEndPadding(context),
             children: [
               PremiumHeader(
                 page: HopePageId.offers,
@@ -138,10 +136,13 @@ class _OffersPageState extends State<OffersPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               if (!_loading && _loadError == null && all.isNotEmpty) ...[
                 Text(
-                  all.length.toString() + _t(' پیشنهاد', ' offers'),
+                  HopeDisplayFormatter.integer(
+                    all.length,
+                    locale: Localizations.localeOf(context).languageCode,
+                  ) + _t(' پیشنهاد', ' offers'),
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w700,
@@ -159,7 +160,7 @@ class _OffersPageState extends State<OffersPage> {
                   ),
                 ),
               if (_loading && _items.isEmpty)
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
               if (_loadError != null) ...[
                 HopeAsyncState(
                   kind: hopeStateKindForError(_loadError!),
@@ -173,32 +174,27 @@ class _OffersPageState extends State<OffersPage> {
                     child: Text(_t('تلاش دوباره', 'Retry')),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
               ],
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final x in const ['ALL','PENDING','ACCEPTED','REJECTED'])
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 8),
-                        child: PremiumFilterChip(
-                          selected: _filter == x,
-                          label: x == 'ALL'
-                              ? _t('همه', 'All') + ' (' + all.length.toString() + ')'
-                              : _statusLabel(x) + ' (' +
-                                  all.where((o) => o.status.toUpperCase() == x).length.toString() +
-                                  ')',
-                          color: x == 'ALL'
-                              ? Theme.of(context).colorScheme.primary
-                              : _statusColor(context, x),
-                          onTap: () => setState(() => _filter = x),
-                        ),
-                      ),
-                  ],
-                ),
+              Wrap(
+                key: const ValueKey('offers-status-filter-group'),
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
+                    PremiumFilterChip(
+                      selected: _filter == x,
+                      label: x == 'ALL'
+                          ? '${_t('همه', 'All')} (${all.length})'
+                          : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
+                      color: x == 'ALL'
+                          ? Theme.of(context).colorScheme.primary
+                          : _statusColor(context, x),
+                      onTap: () => setState(() => _filter = x),
+                    ),
+                ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               if (rows.isEmpty)
                 EmptyState(
                   icon: HopeV2Icons.featured,
@@ -230,7 +226,7 @@ class _OffersPageState extends State<OffersPage> {
             container: true,
             button: true,
             excludeSemantics: true,
-            label: (o.jobTitle?.trim().isNotEmpty == true ? o.jobTitle!.trim() : _t('پیشنهاد همکاری', 'Work offer')) + '، ' + _money(o.price) + '، ' + _statusLabel(o.status),
+            label: '${o.jobTitle?.trim().isNotEmpty == true ? o.jobTitle!.trim() : _t('پیشنهاد همکاری', 'Work offer')}، ${_money(o.price)}، ${_statusLabel(o.status)}',
             onTap: () => _showDetails(o),
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
@@ -401,10 +397,63 @@ class _OffersPageState extends State<OffersPage> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(_t('پذیرش پیشنهاد؟', 'Accept this offer?')),
-          content: Text(_t(
-            'پذیرش پیشنهاد یک اقدام مالی/قراردادی است. قبل از تأیید مبلغ و شرایط را بررسی کنید.',
-            'Accepting an offer is a contractual/financial action. Review the amount and terms before confirming.',
-          )),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _t('فرصت', 'Opportunity'),
+                  style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  o.jobTitle?.trim().isNotEmpty == true
+                      ? o.jobTitle!.trim()
+                      : _t('پیشنهاد همکاری', 'Work offer'),
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _t('مبلغ پیشنهاد', 'Offer amount'),
+                  style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _money(o.price),
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(ctx).colorScheme.primary,
+                      ),
+                ),
+                if (o.message.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _t('شرایط پیشنهاد', 'Offer terms'),
+                    style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(o.message),
+                ],
+                const SizedBox(height: 12),
+                Text(_t(
+                  'پذیرش پیشنهاد یک اقدام مالی/قراردادی است. قبل از تأیید مبلغ و شرایط را بررسی کنید.',
+                  'Accepting an offer is a contractual/financial action. Review the amount and terms before confirming.',
+                )),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),

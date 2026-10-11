@@ -231,7 +231,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         .toList(growable: false);
     if (uncategorized.isNotEmpty) {
       addSection(
-        _t('نیازمند بررسی', 'Needs review'),
+        _t('سایر وضعیت‌ها', 'Other statuses'),
         _t(
           'وضعیتی که در چرخهٔ استاندارد درخواست تعریف نشده است.',
           'A status outside the standard application lifecycle.',
@@ -253,11 +253,11 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
     return Scaffold(
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 72),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               page: HopePageId.myApplications,
@@ -294,7 +294,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 child: Row(
                   children: [
                     _filterChip('ALL', _t('همه', 'All'), _items.length),
-                    ...['PENDING', 'SHORTLISTED', 'FORWARDED', 'INTERVIEW', 'OFFERED', 'ACCEPTED', 'REJECTED']
+                    ...['PENDING', 'SHORTLISTED', 'FORWARDED', 'INTERVIEW', 'OFFERED', 'ACCEPTED', 'REJECTED', 'WITHDRAWN']
                         .where((s) => (counts[s] ?? 0) > 0)
                         .map((s) => _filterChip(s, HopeApplication(
                               id: '', jobId: '', jobTitle: '', jobCity: null,
@@ -334,21 +334,22 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ..._applicationSections(context, visible),
               ]
             else if (visible.isEmpty)
-              PremiumPanel(
-                padding: const EdgeInsets.all(26),
-                child: Column(
-                  children: [
-                    const HopeIcon(HopeV2Icons.mission, size: 40),
-                    const SizedBox(height: 12),
-                    Text(
-                      _filter == 'ALL'
-                          ? _t('هنوز درخواستی ثبت نکرده‌اید.', 'You have not submitted any applications yet.')
-                          : _t('در این وضعیت درخواستی وجود ندارد.', 'No applications match this status.'),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
-                ),
+              PremiumEmptyState(
+                icon: HopeV2Icons.mission,
+                title: _filter == 'ALL'
+                    ? _t('هنوز درخواستی ثبت نکرده‌اید.',
+                        'You have not submitted any applications yet.')
+                    : _t('در این وضعیت درخواستی وجود ندارد.',
+                        'No applications match this status.'),
+                message: _filter == 'ALL'
+                    ? _t(
+                        'پس از ارسال درخواست برای یک فرصت، وضعیت و مسیر همکاری در همین صفحه نمایش داده می‌شود.',
+                        'After you apply to an opportunity, its status and collaboration lifecycle will appear here.',
+                      )
+                    : _t(
+                        'فیلتر دیگری را انتخاب کنید تا درخواست‌های همان وضعیت را ببینید.',
+                        'Choose another status filter to see applications in that state.',
+                      ),
               )
             else
               ..._applicationSections(context, visible),
@@ -376,7 +377,10 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(13),
+        quiet: true,
+        padding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 11 : 13,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -394,8 +398,13 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
-                          style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                        ),
+                      ),
                       const SizedBox(height: 5),
                       Wrap(
                         spacing: 7,

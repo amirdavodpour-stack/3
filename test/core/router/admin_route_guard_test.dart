@@ -49,6 +49,11 @@ Future<void> _pushAndAssertRestricted(
   expect(find.text('Admin access is restricted.'), findsOneWidget);
   expect(find.text('Admin panel verification'), findsNothing);
   expect(find.text('Admin control center'), findsNothing);
+
+  Navigator.of(
+    tester.element(find.text('Admin access is restricted.')),
+  ).pop();
+  await tester.pumpAndSettle();
 }
 
 void main() {

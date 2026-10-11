@@ -46,8 +46,8 @@ test('V2 premium design system is present and wired into flagship surfaces', () 
   assert.match(home, /buildResponsiveHomeFeed/);
   assert.match(homeWidgets, /HopeResponsive\(/);
   assert.match(homeWidgets, /PremiumHomeFeed/);
-  assert.match(homeFeed, /PremiumHero/);
-  assert.match(homeFeed, /PremiumStatCard/);
+  assert.match(homeFeed, /OpportunityCard/);
+  assert.match(homeFeed, /home-pulse-stat|_homePulseStat/);
   assert.match(jobs, /premium_components\.dart/);
   // Explore/Home intentionally share the canonical OpportunityCard; the old
   // private Jobs card is now only a part-file marker.

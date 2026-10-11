@@ -106,6 +106,10 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final denseAuth =
+        (MediaQuery.sizeOf(context).height < 760 ||
+            MediaQuery.viewInsetsOf(context).bottom > 0) &&
+        MediaQuery.textScalerOf(context).scale(1) <= 1.2;
     return Directionality(
       textDirection: Localizations.localeOf(context).languageCode == 'en'
           ? TextDirection.ltr
@@ -115,9 +119,14 @@ class _LoginPageState extends State<LoginPage> {
           child: PremiumPageFrame(
             page: HopePageId.login,
             maxWidth: 640,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              denseAuth ? 4 : 12,
+              20,
+              denseAuth ? 12 : 30,
+            ),
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: HopeV2Navigation.scrollEndPadding(context),
               children: [
               Row(
                 children: [
@@ -135,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                   const HopeMark(size: 34),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: denseAuth ? 6 : 12),
               PremiumHero(
                 page: HopePageId.login,
                 domain: HopeProductDomain.account,
@@ -143,15 +152,16 @@ class _LoginPageState extends State<LoginPage> {
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
-                height: 164,
+                height: denseAuth ? 92 : 104,
+                compactHero: true,
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: denseAuth ? 6 : 10),
               AnimatedEntrance(
                 child: PremiumPanel(
                   // Auth is a dense primary surface; avoid a nested GPU blur
                   // here so the first Android frame remains deterministic.
                   glass: false,
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -159,8 +169,22 @@ class _LoginPageState extends State<LoginPage> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF1F1F1F),
+                              side: const BorderSide(color: Color(0xFFDADCE0)),
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                             onPressed: loading ? null : submitGoogle,
-                            icon: const HugeIcon(icon: HopeV2Icons.userAdd, size: 19),
+                            icon: Image.asset(
+                              'assets/branding/google_g.png',
+                              width: 20,
+                              height: 20,
+                              excludeFromSemantics: true,
+                            ),
                             label: Text(l10n.signInWithGoogle),
                           ),
                         ),
@@ -183,7 +207,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.emailLabel,
-                          prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 20),
+                          prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -193,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
-                          prefixIcon: const HopeIcon(HopeV2Icons.password, size: 20),
+                          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
                           suffixIcon: IconButton(
                             icon: HugeIcon(
                               icon: obscure
@@ -234,7 +258,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: denseAuth ? 8 : 14),
               OutlinedButton.icon(
                 onPressed: loading
                     ? null
@@ -244,25 +268,6 @@ class _LoginPageState extends State<LoginPage> {
                       },
                 icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(l10n.orDivider),
-                  ),
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                ],
               ),
               const SizedBox(height: 8),
               TextButton(

@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# [runtime-capture-fa] certify isolated auth-tail Driver sessions after Run #1838 screenshot transport hang.
-# Runtime evidence uses Skia on Flutter 3.47.2 to avoid the known Impeller-GLES snapshot crash path.
 set -euo pipefail
 
 evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
@@ -26,6 +24,7 @@ DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
+CAPTURE_TEXT_SCALE="${HOPE_CAPTURE_TEXT_SCALE:-1.0}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
 # bool.fromEnvironment only treats the string "true" as true. The workflow
@@ -42,8 +41,16 @@ case "$CAPTURE_LOCALE" in
     exit 2
     ;;
 esac
+case "$CAPTURE_TEXT_SCALE" in
+  1.0|1.25|1.5|2.0) ;;
+  *)
+    echo "Unsupported HOPE_CAPTURE_TEXT_SCALE: $CAPTURE_TEXT_SCALE" >&2
+    exit 2
+    ;;
+esac
 
 echo "HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build"
+echo "HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$CAPTURE_TEXT_SCALE"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
@@ -213,6 +220,19 @@ validate_capture_set() {
   return 0
 }
 
+extended_screens_fa=(
+  "financial-insights-fa-rtl"
+  "job-satisfaction-fa-rtl"
+  "candidate-matches-fa-rtl"
+  "chat-fa-rtl"
+)
+extended_screens_en=(
+  "financial-insights-en-ltr"
+  "job-satisfaction-en-ltr"
+  "candidate-matches-en-ltr"
+  "chat-en-ltr"
+)
+
 screens=(
   "login-fa-rtl"
   "home-fa-rtl"
@@ -248,9 +268,9 @@ baseline_screens=("${screens[@]}")
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   baseline_screens=("home-${CAPTURE_LOCALE}-rtl")
 elif [ "$CAPTURE_LOCALE" = "fa" ]; then
-  baseline_screens=("${screens[@]:0:15}")
+  baseline_screens=("${screens[@]:0:15}" "${extended_screens_fa[@]}")
 elif [ "$CAPTURE_LOCALE" = "en" ]; then
-  baseline_screens=("${screens[@]:15:15}")
+  baseline_screens=("${screens[@]:15:15}" "${extended_screens_en[@]}")
 fi
 
 run_host_batch_session() {
@@ -267,7 +287,6 @@ run_host_batch_session() {
     baseline-b) baseline_batch="b" ;;
     baseline-c) baseline_batch="c" ;;
     baseline-d) baseline_batch="d" ;;
-    baseline-g) baseline_batch="g" ;;
   esac
   if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ] || [ "$mode" = "responsive-c" ]; then
     responsive_only="true"
@@ -294,11 +313,16 @@ run_host_batch_session() {
   # is tied to the exact Flutter render request instead of a later framebuffer.
   set +e
   export HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"
+  # CI runtime evidence runs on the x86_64 Linux emulator software graphics stack.
+  # Flutter 3.47 enables Impeller by default on Android API 29+; current Flutter/emulator
+  # evidence shows materially worse raster stability in this environment. Keep the opt-out
+  # scoped to this debug evidence lane; product builds retain their normal renderer.
   HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s" \
-  flutter drive --no-enable-impeller --no-pub --no-dds \
+  flutter drive --no-pub --no-dds --no-enable-impeller \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
+    --dart-define=HOPE_CAPTURE_TEXT_SCALE="${CAPTURE_TEXT_SCALE}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
     --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
     --dart-define=HOPE_BASELINE_BATCH="${baseline_batch}" \
@@ -420,37 +444,31 @@ if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   fi
 else
   baseline_status=0
-  if [ "$CAPTURE_LOCALE" = "fa" ]; then
-    # Isolate the auth tail proactively. The exact #1838 failure occurred
-    # inside integration_test.takeScreenshot(register) after 14 prior captures;
-    # upstream integration_test has known Android takeScreenshot hang modes.
-    # Fresh Driver sessions keep a late screenshot transport stall from
-    # invalidating the entire baseline or taking the emulator offline during
-    # recovery.
-    echo "HOPE_HOST_RUNTIME_PARTITIONED_BASELINE_START:fa"
-    run_host_batch_session baseline-a "${baseline_screens[@]:0:7}" || baseline_status=$?
-    if [ "$baseline_status" -eq 0 ]; then
+  # Preserve the proven single-session baseline first. If the long-lived
+  # VM-service dies only at the final auth tail, recover just that missing
+  # tail in a fresh Driver session instead of mutating product/UI code.
+  run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
+
+  if [ "$baseline_status" -ne 0 ] && [ "$CAPTURE_LOCALE" = "fa" ]; then
+    # baseline-d is the existing certified tail batch: create-job, register,
+    # password-reset. Keep the already-captured offers screenshot untouched.
+    auth_tail_screens=(
+      "create-job-fa-rtl"
+      "register-fa-rtl"
+      "password-reset-fa-rtl"
+    )
+    auth_tail_complete=0
+    for marker in "${auth_tail_screens[@]}"; do
+      if ! test -s "$evidence_dir/$marker.png"; then
+        auth_tail_complete=1
+        break
+      fi
+    done
+    if [ "$auth_tail_complete" -eq 1 ] && test -s "$evidence_dir/create-job-fa-rtl.png"; then
+      echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
       hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-b "${baseline_screens[@]:7:1}" || baseline_status=$?
+      run_host_batch_session baseline-d "${auth_tail_screens[@]}" || true
     fi
-    if [ "$baseline_status" -eq 0 ]; then
-      hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-c "${baseline_screens[@]:8:4}" || baseline_status=$?
-    fi
-    if [ "$baseline_status" -eq 0 ]; then
-      hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-g "create-job-fa-rtl" || baseline_status=$?
-    fi
-    if [ "$baseline_status" -eq 0 ]; then
-      hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-e "register-fa-rtl" || baseline_status=$?
-    fi
-    if [ "$baseline_status" -eq 0 ]; then
-      hope_android_device_ready "$RUNTIME_SERIAL"
-      run_host_batch_session baseline-f "password-reset-fa-rtl" || baseline_status=$?
-    fi
-  else
-    run_host_batch_session baseline "${baseline_screens[@]}" || baseline_status=$?
   fi
 
   if ! validate_capture_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-baseline-runtime.log" "${baseline_screens[@]}"; then
@@ -465,6 +483,11 @@ fi
 
 if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   adb shell wm size 720x1280
+  # wm size changes physical pixels, not density. Keep the responsive fixture at
+  # 360x640 logical dp (320 dpi) rather than accidentally shrinking a Pixel 2 to
+  # ~274x488dp and producing misleading typography/clipping evidence.
+  adb shell wm density 320
+  adb shell wm density > "$evidence_dir/responsive-density.txt" 2>&1 || true
   sleep 2
   : > "$runner_temp/hope-responsive-runtime.log"
 
@@ -474,9 +497,9 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
       "responsive-720x1280-home-en-ltr"
       "responsive-720x1280-jobs-en-ltr"
       "responsive-720x1280-job-detail-en-ltr"
+      "responsive-720x1280-transactions-en-ltr"
       "responsive-720x1280-wallet-en-ltr"
       "responsive-720x1280-profile-en-ltr"
-      "responsive-720x1280-transactions-en-ltr"
     )
   else
     responsive_session_screens=(
@@ -555,6 +578,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   fi
 
   adb shell wm size reset || true
+  adb shell wm density reset || true
   adb shell sleep 1 >/dev/null 2>&1 || true
 
   if [ "$responsive_status" -eq 0 ] && \
@@ -570,18 +594,18 @@ fi
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
 adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || true
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
-printf '%s\n' '720x1280' > "$evidence_dir/responsive-viewport.txt"
-
+printf '%s\n' '720x1280 physical pixels' > "$evidence_dir/responsive-viewport.txt"
+printf '%s\n' '360x640 logical dp at 320 dpi' > "$evidence_dir/responsive-logical-viewport.txt"
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
   CAPTURED_BASELINE_SCREENS=1
   CAPTURED_RESPONSIVE_SCREENS=0
   CAPTURED_LOCALE_LABEL="fa-RTL home-only"
 elif [ "$CAPTURE_LOCALE" = "fa" ]; then
-  CAPTURED_BASELINE_SCREENS=15
+  CAPTURED_BASELINE_SCREENS=19
   CAPTURED_RESPONSIVE_SCREENS=6
   CAPTURED_LOCALE_LABEL="fa-RTL"
 elif [ "$CAPTURE_LOCALE" = "en" ]; then
-  CAPTURED_BASELINE_SCREENS=15
+  CAPTURED_BASELINE_SCREENS=19
   CAPTURED_RESPONSIVE_SCREENS=6
   CAPTURED_LOCALE_LABEL="en-LTR"
 else
@@ -595,16 +619,19 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "workflow": "$GITHUB_WORKFLOW",
   "run_id": "$GITHUB_RUN_ID",
   "ref": "$GITHUB_REF_NAME",
-  "sha": "$GITHUB_SHA",
+  "sha": "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}",
   "evidence_type": "rendered_android_runtime",
   "screens": $CAPTURED_BASELINE_SCREENS,
   "responsive_screens": $CAPTURED_RESPONSIVE_SCREENS,
-  "responsive_viewport": "720x1280",
+  "responsive_viewport": "720x1280 physical pixels",
+  "responsive_logical_viewport": "360x640dp",
+  "responsive_density_dpi": 320,
   "capture_locale": "$CAPTURE_LOCALE",
+  "text_scale": $CAPTURE_TEXT_SCALE,
   "locales": ["$CAPTURED_LOCALE_LABEL"],
   "theme": "dark",
   "interactive_target_contract": "48px",
-  "capture_transport": "flutter_integration_test_onScreenshot",
+  "capture_transport": "native_android_pixelcopy",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
@@ -622,8 +649,13 @@ cat > "$evidence_dir/metadata.json" <<EOF
     "CreateJobPage",
     "LoginPage",
     "RegisterPage",
-    "PasswordResetPage"
-  ]
+    "PasswordResetPage",
+    "FinancialInsightsPage",
+    "JobSatisfactionPage",
+    "EmployerCandidateMatchesPage",
+    "ChatPage"
+  ],
+  "target_extension_screens": 4
 }
 EOF
 

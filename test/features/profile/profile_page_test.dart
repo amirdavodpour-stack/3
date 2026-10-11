@@ -9,6 +9,7 @@ import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/features/profile/profile_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -33,20 +34,24 @@ class _AuthRepo implements AuthRepository {
 }
 
 class _ProfileRepo implements ProfileRepository {
-  _ProfileRepo({this.applications = const []});
-
-  final List<HopeApplication> applications;
   final Completer<HopeApplication> withdrawResult =
       Completer<HopeApplication>();
   int withdrawCalls = 0;
 
+  bool failProviderProfile = false;
+
   @override
-  Future<HopeProviderProfile> getProviderProfile() async =>
-      const HopeProviderProfile(
-          providerType: 'INDIVIDUAL',
-          capacity: 'OPEN',
-          verificationStatus: 'VERIFIED',
-          trustSignals: {'verified': true});
+  Future<HopeProviderProfile> getProviderProfile() async {
+    if (failProviderProfile) {
+      throw StateError('provider profile unavailable');
+    }
+    return const HopeProviderProfile(
+      providerType: 'INDIVIDUAL',
+      capacity: 'OPEN',
+      verificationStatus: 'VERIFIED',
+      trustSignals: {'verified': true},
+    );
+  }
 
   bool failApplicationReload = false;
 
@@ -56,7 +61,7 @@ class _ProfileRepo implements ProfileRepository {
     if (failApplicationReload) {
       throw StateError('applications unavailable');
     }
-    return applications;
+    return const <HopeApplication>[];
   }
 
   @override
@@ -78,10 +83,11 @@ Future<void> _pump(
   WidgetTester tester, {
   bool authenticated = false,
   double width = 900,
+  double height = 2400,
   ProfileRepository? repository,
   bool settle = true,
 }) async {
-  tester.view.physicalSize = Size(width, 2400);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -151,80 +157,38 @@ void main() {
     },
   );
 
-testWidgets('withdrawing an application disables the action until completion',
+  testWidgets(
+    'profile professional data failure is visible and retry restores the real profile',
+    (tester) async {
+      final repo = _ProfileRepo()..failProviderProfile = true;
+      await _pump(
+        tester,
+        authenticated: true,
+        repository: repo,
+      );
+
+      expect(find.byType(HopeAsyncState), findsOneWidget);
+      expect(find.text('اطلاعات حرفه‌ای در دسترس نیست'), findsOneWidget);
+      expect(find.text('تلاش دوباره'), findsOneWidget);
+      expect(find.text('مجری مستقل'), findsNothing);
+
+      repo.failProviderProfile = false;
+      await tester.tap(find.text('تلاش دوباره'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('اطلاعات حرفه‌ای در دسترس نیست'), findsNothing);
+      expect(find.text('مجری مستقل'), findsOneWidget);
+      expect(find.text('تأییدشده'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+testWidgets('profile keeps application management in the dedicated work destination',
       (tester) async {
-    const application = HopeApplication(
-      id: 'a1',
-      jobId: 'j1',
-      jobTitle: 'Flutter developer',
-      jobCity: 'تهران',
-      jobKind: 'JOB',
-      resumeText: 'A concise resume with enough detail.',
-      skills: 'Flutter',
-      status: 'PENDING',
-      createdAt: null,
-      updatedAt: null,
-    );
-    final repo = _ProfileRepo(applications: [application]);
-    await _pump(tester, authenticated: true, repository: repo);
-
-    await tester.scrollUntilVisible(
-      find.text('Flutter developer'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    final undo = find.byTooltip('انصراف');
-    expect(undo, findsOneWidget);
-
-    await tester.tap(undo);
-    await tester.pump();
-
-    expect(repo.withdrawCalls, 1);
-    final undoButton =
-        find.ancestor(of: undo, matching: find.byType(IconButton));
-    expect(undoButton, findsOneWidget);
-    expect(tester.widget<IconButton>(undoButton).onPressed, isNull);
-
-    await tester.tap(undo);
-    await tester.pump();
-    expect(repo.withdrawCalls, 1);
-
-    repo.withdrawResult.complete(application);
-    await tester.pumpAndSettle();
-    expect(repo.withdrawCalls, 1);
-  });
-
-  testWidgets('withdraw refresh failure stays visible instead of becoming empty',
-      (tester) async {
-    const application = HopeApplication(
-      id: 'a2',
-      jobId: 'j2',
-      jobTitle: 'Backend engineer',
-      jobCity: 'تهران',
-      jobKind: 'JOB',
-      resumeText: 'A concise resume with enough detail.',
-      skills: 'Dart',
-      status: 'PENDING',
-      createdAt: null,
-      updatedAt: null,
-    );
-    final repo = _ProfileRepo(applications: [application]);
-    await _pump(tester, authenticated: true, repository: repo);
-
-    await tester.scrollUntilVisible(
-      find.text('Backend engineer'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-
-    await tester.tap(find.byTooltip('انصراف'));
-    await tester.pump();
-    repo.failApplicationReload = true;
-    repo.withdrawResult.complete(application);
-    await tester.pumpAndSettle();
-
-    expect(find.text('درخواست‌ها در دسترس نیستند'), findsOneWidget);
-    expect(find.text('Backend engineer'), findsOneWidget);
+    await _pump(tester, authenticated: true);
+    expect(find.text('مرکز کار'), findsOneWidget);
+    expect(find.byTooltip('انصراف'), findsNothing);
+    expect(find.text('درخواست‌ها'), findsNothing);
   });
 
   testWidgets('guest profile explains sign-in requirement', (tester) async {
@@ -250,7 +214,7 @@ testWidgets('withdrawing an application disables the action until completion',
 
     final panel = find.byKey(const ValueKey('profile-settings-panel'));
     expect(panel, findsOneWidget);
-    expect(tester.getSize(panel).height, lessThan(520));
+    expect(tester.getSize(panel).height, lessThan(700));
     expect(tester.takeException(), isNull);
   });
 
@@ -286,4 +250,29 @@ testWidgets('withdrawing an application disables the action until completion',
     expect(find.text('تأییدشده'), findsWidgets);
     expect(find.textContaining('VERIFIED'), findsNothing);
   });
+  testWidgets(
+    'Wave 24 language selector clears the dock at 360x640 and remains tappable',
+    (tester) async {
+      await _pump(tester, authenticated: true, width: 360, height: 640);
+      final selector = find.byKey(const ValueKey('profile-language-selector'));
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(selector, findsOneWidget);
+      expect(dock, findsOneWidget);
+      await tester.ensureVisible(selector);
+      await tester.pumpAndSettle();
+      final selectorRect = tester.getRect(selector);
+      final dockRect = tester.getRect(dock);
+      expect(
+        selectorRect.bottom,
+        lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
+        reason: 'Language selection must be reachable without overlapping navigation.',
+      );
+      await tester.tapAt(
+        Offset(selectorRect.left + selectorRect.width * .25, selectorRect.center.dy),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

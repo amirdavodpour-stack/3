@@ -18,6 +18,7 @@ class FakeApiClient extends ApiClient {
     String path, {
     Object? body,
     bool auth = false,
+    Map<String, String>? headers,
   }) async {
     this.method = method;
     this.path = path;

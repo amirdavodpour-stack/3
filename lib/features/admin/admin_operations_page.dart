@@ -21,6 +21,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   int _days = 30;
+  // Wave 1: admin control data starts from safe empty futures before access resolves.
   late Future<Map<String, dynamic>> _finance;
   late Future<List<Map<String, dynamic>>> _reports;
   late Future<List<Map<String, dynamic>>> _unknownPayouts;
@@ -35,6 +36,12 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 5, vsync: this);
+    _finance = Future.value(const <String, dynamic>{});
+    _reports = Future.value(const <Map<String, dynamic>>[]);
+    _unknownPayouts = Future.value(const <Map<String, dynamic>>[]);
+    _analytics = Future.value(const <String, dynamic>{});
+    _funnel = Future.value(const <String, dynamic>{});
+    _crashes = Future.value(const <String, dynamic>{});
     _reload();
   }
 
@@ -44,13 +51,18 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     super.dispose();
   }
 
-  void _reload() async {
+  Future<void> _reload() async {
     final r = context.read<AdminRepository>();
     try {
       final access = await r.getPanelAccess();
       if (!mounted) return;
-      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
-    } catch (_) {}
+      _permissions = access['permissions'] is List
+          ? (access['permissions'] as List).whereType<String>().toSet()
+          : <String>{};
+    } catch (_) {
+      if (!mounted) return;
+      _permissions = <String>{};
+    }
 
     _finance = r.getFinanceSummary();
     _reports = r.listTrustReports();
@@ -58,11 +70,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     _analytics = r.getAnalyticsSummary(days: _days);
     _funnel = r.getFunnel(days: _days);
     _crashes = r.getCrashSummary(days: _days);
-    r.getPanelAccess().then((access) {
-      if (!mounted) return;
-      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
-      setState(() {});
-    }).catchError((_) {});
     if (mounted) setState(() {});
   }
 

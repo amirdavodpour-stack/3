@@ -252,7 +252,7 @@ void main() {
   });
 
   testWidgets(
-    'compact payment lifecycle remains decision-dense',
+    'Wave 23 vertical transaction timeline remains decision-dense on compact screens',
     (tester) async {
       final repo = _FakeTx()
         ..payment = Future.value(HopePayment.fromMap({
@@ -268,6 +268,14 @@ void main() {
           find.byKey(const ValueKey('transaction-payment-lifecycle'));
       expect(flow, findsOneWidget);
       expect(tester.getSize(flow).height, lessThan(340));
+      expect(find.text('Fund'), findsOneWidget);
+      expect(find.text('Hold'), findsOneWidget);
+      expect(find.text('Payout'), findsOneWidget);
+      expect(
+        find.byType(HopeLifecycleRail),
+        findsNothing,
+        reason: 'Compact transaction detail should use the readable vertical timeline instead of a horizontal rail.',
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -284,7 +292,7 @@ void main() {
       }));
     await _pump(tester, repo, ownerId: 'u1');
 
-    expect(find.text('Funded'), findsWidgets);
+    expect(find.text('Funds held'), findsWidgets);
     expect(
       find.byWidgetPredicate((widget) {
         if (widget is! Text || widget.data == null) return false;
@@ -444,12 +452,12 @@ void main() {
 
     expect(find.text('Payment status'), findsOneWidget);
     expect(find.text('Amount'), findsOneWidget);
-    expect(find.text('Reference'), findsOneWidget);
+    expect(find.text('Reference'), findsNothing);
     expect(
       find.text(
         'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(tester.takeException(), isNull);
   });

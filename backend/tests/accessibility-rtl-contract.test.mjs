@@ -27,8 +27,8 @@ test('mobile UI honors bidirectional layout, accessibility semantics and localiz
   assert.match(text, /TextDirection\.ltr/, 'LTR contract missing');
   assert.match(text, /TextDirection\.rtl/, 'RTL contract missing');
   assert.match(text, /HopeCopy\.of\(context\)\.copy_search_dd58413/, 'SearchField locale-aware hint contract missing');
-  assert.match(text, /Icons\.arrow_back_rounded/, 'bidirectional back navigation icon missing');
-  assert.match(text, /Icons\.arrow_forward_rounded/, 'bidirectional forward navigation icon missing');
+  assert.match(text, /HopeV2Icons\.arrowLeft/, 'shared bidirectional back icon contract missing');
+  assert.match(text, /HopeV2Icons\.arrowRight/, 'shared bidirectional forward icon contract missing');
   assert.match(text, /HopeCopy\.of\(context\)\.copy_back_6e09f79/, 'localized back tooltip contract missing');
 });
 

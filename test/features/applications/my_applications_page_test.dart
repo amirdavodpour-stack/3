@@ -107,6 +107,59 @@ class _FailingProfileRepository implements ProfileRepository {
       throw UnimplementedError();
 }
 
+
+class _ManyApplicationsRepository implements ProfileRepository {
+  static const items = <HopeApplication>[
+    HopeApplication(
+      id: 'pending-app',
+      jobId: 'pending-job',
+      jobTitle: 'Active design task',
+      jobCity: 'Berlin',
+      jobKind: 'JOB',
+      resumeText: '',
+      skills: '',
+      status: 'PENDING',
+      createdAt: null,
+      updatedAt: null,
+    ),
+    HopeApplication(
+      id: 'withdrawn-app',
+      jobId: 'withdrawn-job',
+      jobTitle: 'Withdrawn design task',
+      jobCity: 'Berlin',
+      jobKind: 'JOB',
+      resumeText: '',
+      skills: '',
+      status: 'WITHDRAWN',
+      createdAt: null,
+      updatedAt: null,
+    ),
+    HopeApplication(
+      id: 'accepted-app',
+      jobId: 'accepted-job',
+      jobTitle: 'Accepted design task',
+      jobCity: 'Berlin',
+      jobKind: 'JOB',
+      resumeText: '',
+      skills: '',
+      status: 'ACCEPTED',
+      createdAt: null,
+      updatedAt: null,
+    ),
+  ];
+
+  @override
+  Future<HopeProviderProfile> getProviderProfile() =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<HopeApplication>> listApplications() async => items;
+
+  @override
+  Future<HopeApplication> withdrawApplication(String applicationId) =>
+      throw UnimplementedError();
+}
+
 void main() {
   testWidgets(
     'applications loading uses the canonical async state',
@@ -131,7 +184,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(HopeAsyncState), findsOneWidget);
-      expect(find.text('در حال بارگذاری درخواست‌ها'), findsOneWidget);
+      expect(find.text('Loading applications'), findsOneWidget);
 
       profile.initialLoad.complete(const []);
       await tester.pumpAndSettle();
@@ -323,4 +376,39 @@ void main() {
     );
   });
 
+
+  testWidgets(
+    'applications expose a withdrawn filter in a multi-status list',
+    (tester) async {
+      final profile = _ManyApplicationsRepository();
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Provider<ApplicationRegistry>.value(
+            value: ApplicationRegistry(profile: profile),
+            child: const MyApplicationsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final withdrawnFilter = find.textContaining('Withdrawn');
+      expect(withdrawnFilter, findsOneWidget);
+      await tester.tap(withdrawnFilter);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Withdrawn design task'), findsOneWidget);
+      expect(find.text('Active design task'), findsNothing);
+      expect(find.text('Accepted design task'), findsNothing);
+      expect(find.text('No applications match this status.'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

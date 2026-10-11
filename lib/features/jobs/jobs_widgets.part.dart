@@ -21,7 +21,7 @@ class _JobsResultsSliver extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isLoading) {
       return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 122),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 56),
         sliver: SliverList(
           delegate: SliverChildListDelegate([
             const OpportunitySkeletonCard(),
@@ -57,15 +57,22 @@ class _JobsResultsSliver extends StatelessWidget {
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 122),
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 56),
       sliver: SliverToBoxAdapter(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= HopeV2Breakpoints.expanded
-                ? 3
-                : constraints.maxWidth >= HopeV2Breakpoints.medium
-                    ? 2
-                    : 1;
+            // Explore remains a readable list on very narrow layouts or when
+            // accessibility text scaling makes a two-column card too dense.
+            final textScale = MediaQuery.textScalerOf(context).scale(1);
+            // Prefer readable single-column cards when users enlarge text;
+            // adaptive density must not outrank accessibility readability.
+            final columns = textScale > 1.2
+                ? 1
+                : constraints.maxWidth >= HopeV2Breakpoints.expanded
+                    ? 3
+                    : constraints.maxWidth >= 340
+                        ? 2
+                        : 1;
             final featuredJob = jobs.firstWhere(
               (job) => job.isRecommended && job.recommendationScore != null,
               orElse: () => jobs.first,
@@ -95,11 +102,11 @@ class _JobsResultsSliver extends StatelessWidget {
                     ),
                   ),
                   if (remaining.isNotEmpty)
-                    const SizedBox(height: HopeV2Spacing.lg),
+                    const SizedBox(height: HopeV2Spacing.md),
                   for (var i = 0; i < remaining.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(
-                        bottom: HopeV2Spacing.md,
+                        bottom: HopeV2Spacing.sm,
                       ),
                       child: AnimatedEntrance(
                         delay: Duration(
@@ -107,7 +114,11 @@ class _JobsResultsSliver extends StatelessWidget {
                         ),
                         child: OpportunityCard(
                           job: remaining[i],
-                          variant: OpportunityCardVariant.compact,
+                          // Larger system text needs the roomier editorial card,
+                          // not the compressed summary reserved for default scale.
+                          variant: textScale > 1.2
+                              ? OpportunityCardVariant.standard
+                              : OpportunityCardVariant.compact,
                         ),
                       ),
                     ),
@@ -125,7 +136,7 @@ class _JobsResultsSliver extends StatelessWidget {
                   variant: OpportunityCardVariant.featuredScan,
                 ),
                 if (remaining.isNotEmpty)
-                  const SizedBox(height: HopeV2Spacing.lg),
+                  const SizedBox(height: HopeV2Spacing.md),
                 if (remaining.isNotEmpty)
                   Text(
                     _t(context, 'فرصت‌های بیشتر', 'More opportunities'),
@@ -141,11 +152,16 @@ class _JobsResultsSliver extends StatelessWidget {
                     crossAxisCount: columns,
                     crossAxisSpacing: HopeV2Spacing.md,
                     mainAxisSpacing: HopeV2Spacing.md,
-                    childAspectRatio: columns == 3 ? 1.04 : 1.12,
+                    childAspectRatio: columns == 3 ? 1.04 : 0.86,
                   ),
                   itemBuilder: (context, index) => AnimatedEntrance(
                     delay: Duration(milliseconds: 35 * index.clamp(0, 10)),
-                    child: OpportunityCard(job: remaining[index]),
+                    child: OpportunityCard(
+                      job: remaining[index],
+                      variant: columns == 2
+                          ? OpportunityCardVariant.compactGrid
+                          : OpportunityCardVariant.standard,
+                    ),
                   ),
                 ),
               ],

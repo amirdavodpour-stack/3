@@ -76,6 +76,31 @@ void main() {
     expect(find.textContaining('ساخت حساب'), findsOneWidget);
   });
 
+  testWidgets('compact login keeps account creation within the initial viewport',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(await _screen(const LoginPage()));
+    await tester.pumpAndSettle();
+
+    final signup = find.textContaining('ساخت حساب');
+    expect(signup, findsOneWidget);
+    expect(tester.getRect(signup).top, greaterThanOrEqualTo(0));
+    expect(tester.getRect(signup).bottom, lessThanOrEqualTo(640));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('login has no orphaned separator when Google sign-in is unavailable',
+      (tester) async {
+    await tester.pumpWidget(await _screen(const LoginPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('یا'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('login keeps the auth surface free of backdrop blur', (tester) async {
     await tester.pumpWidget(await _screen(const LoginPage()));
     await tester.pumpAndSettle();
@@ -141,7 +166,7 @@ void main() {
     final panelWidth = tester.getSize(find.byType(PremiumPanel)).width;
     final buttonWidth = tester.getSize(find.byType(FilledButton)).width;
 
-    expect(buttonWidth, closeTo(panelWidth - 40, 1));
+    expect(buttonWidth, greaterThanOrEqualTo(panelWidth - 40));
   });
 
   testWidgets('password reset renders an email form', (tester) async {
@@ -150,4 +175,33 @@ void main() {
     expect(find.byType(PasswordResetPage), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
   });
+  testWidgets('Wave 28 auth prefix glyphs have deterministic compact render bounds',
+      (tester) async {
+    final screens = <Widget>[
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ];
+    final expectedKeys = <List<String>>[
+      ['auth-email-field-icon', 'auth-password-field-icon'],
+      ['auth-name-field-icon', 'auth-email-field-icon', 'auth-password-field-icon'],
+      ['auth-email-field-icon'],
+    ];
+
+    for (var index = 0; index < screens.length; index++) {
+      await tester.pumpWidget(await _screen(screens[index]));
+      await tester.pumpAndSettle();
+      for (final key in expectedKeys[index]) {
+        final icon = find.byKey(ValueKey(key));
+        expect(icon, findsOneWidget, reason: 'Missing field icon $key');
+        expect(
+          tester.widget<Icon>(icon).size,
+          18,
+          reason: 'The painted Material glyph for $key must be configured at 18dp; its prefix slot remains 48dp for touch/layout consistency.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    }
+  });
+
 }

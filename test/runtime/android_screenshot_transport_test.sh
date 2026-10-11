@@ -6,21 +6,70 @@ test_file="$repo_root/integration_test/runtime/critical_screens_evidence_test.da
 driver_file="$repo_root/test_driver/hope_runtime_screenshot_driver.dart"
 script_file="$repo_root/tools/hope-wallet-runtime-evidence.sh"
 
-grep -Fq 'await binding.takeScreenshot(marker);' "$test_file"
-grep -Fq 'HOPE_SCREENSHOT_SOURCE:flutter-driver' "$test_file"
+main_activity="$repo_root/android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt"
+runtime_contracts=(
+  'private const val HOPE_SCREENSHOT_CHANNEL = "hope.runtime/screenshot"'
+  'getCurrentImageSurface()'
+  'setOnImageAvailableListener'
+  'acquireLatestImageViewFrame()'
+  '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT'
+  'hopeScreenshotFrameCaptured.compareAndSet(false, true)'
+  'BuildConfig.DEBUG'
+)
+for contract in "${runtime_contracts[@]}"; do
+  if ! grep -Fq "$contract" "$main_activity"; then
+    echo "FAIL: MainActivity native screenshot contract missing: $contract" >&2
+    exit 1
+  fi
+done
+
+dart_contracts=(
+  "const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');"
+  "invokeMethod<Uint8List>("
+  "'screenshotName': marker"
+  'useHopeNativeTransport'
+)
+for contract in "${dart_contracts[@]}"; do
+  if ! grep -Fq "$contract" "$test_file"; then
+    echo "FAIL: Dart runtime screenshot contract missing: $contract" >&2
+    exit 1
+  fi
+done
+
+
+grep -Fq 'await _captureHopeNativeScreenshot(binding, marker);' "$test_file"
+grep -Fq 'HOPE_SCREENSHOT_SOURCE:native-primary:' "$test_file"
+grep -Fq 'HOPE_SCREENSHOT_READY:' "$test_file"
+if grep -Fq 'await binding.takeScreenshot(marker)' "$test_file"; then
+  echo "FAIL: runtime evidence must not use Flutter Driver takeScreenshot transport" >&2
+  exit 1
+fi
 grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
-grep -Fq 'flutter drive --no-enable-impeller --no-pub --no-dds' "$script_file"
+grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
 grep -Fq 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build' "$script_file"
 # Self-build includes Flutter/Gradle compilation before VM-service connection.
 grep -Fq 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"' "$script_file"
-grep -Fq 'emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'emulator-options: -no-window -no-snapshot -gpu swiftshader' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq -- '-feature -Vulkan' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"; then
   echo "FAIL: runtime evidence must not use the generic software GPU alias" >&2
   exit 1
 fi
 grep -Fq ': > "$log_path"' "$script_file"
+
+# Protect the ImageReader capture boundary: register the listener first, then
+# probe the current FlutterImageView surface. Home can already have a rendered
+# ImageReader frame when capture starts; waiting only for a fresh callback blocks.
+immediate_frame_line="$(grep -nF '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT' "$main_activity" | head -n1 | cut -d: -f1)"
+listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | head -n1 | cut -d: -f1)"
+if [ -z "$immediate_frame_line" ] || [ -z "$listener_line" ] || [ "$immediate_frame_line" -le "$listener_line" ]; then
+  echo "FAIL: native screenshot must register the ImageReader listener before the immediate current-frame probe" >&2
+  exit 1
+fi
+immediate_block="$(sed -n "$((immediate_frame_line - 2)),$((immediate_frame_line + 12))p" "$main_activity")"
+grep -Fq 'tryAcquireHopeScreenshotFrame(' <<<"$immediate_block"
+grep -Fq 'hopeScreenshotFrameCaptured.compareAndSet(false, true)' "$main_activity"
 
 if grep -Fq -- '--use-application-binary' "$script_file"; then
   echo "FAIL: runtime evidence must not use --use-application-binary" >&2
@@ -74,15 +123,17 @@ grep -Fq 'run_host_batch_session responsive-a' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b' "$script_file"
 grep -Fq 'run_host_batch_session responsive-c' "$script_file"
 grep -Fq 'responsive-c) responsive_batch="3"' "$script_file"
-# Baseline capture is partitioned to isolate the previously reproducible auth-tail
-# screenshot transport hang. Each partition owns a fresh Driver/VM-service boundary.
-grep -Fq 'HOPE_HOST_RUNTIME_PARTITIONED_BASELINE_START:fa' "$script_file"
-grep -Fq 'run_host_batch_session baseline-a "${baseline_screens[@]:0:7}"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-b "${baseline_screens[@]:7:1}"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-c "${baseline_screens[@]:8:4}"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-g "create-job-fa-rtl"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-e "register-fa-rtl"' "$script_file"
-grep -Fq 'run_host_batch_session baseline-f "password-reset-fa-rtl"' "$script_file"
+# Baseline capture must remain one Driver/VM-service session; the proven green
+# certification run captured the complete locale baseline without repeated
+# emulator-side teardown/startup cycles.
+grep -Fq 'run_host_batch_session baseline "${baseline_screens[@]}"' "$script_file"
+if grep -Fq 'baseline_first_screens=' "$script_file" ||
+   grep -Fq 'baseline_second_screens=' "$script_file" ||
+   grep -Fq 'baseline_third_screens=' "$script_file" ||
+   grep -Fq 'baseline_fourth_screens=' "$script_file"; then
+  echo "FAIL: baseline evidence must not churn multiple Driver sessions" >&2
+  exit 1
+fi
 grep -Fq 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$script_file"
 grep -Fq 'if (child is WalletPage)' "$test_file"
 grep -Fq 'await _waitForRuntimeRenderToSettle(tester);' "$test_file"
@@ -103,7 +154,7 @@ if grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$script_file"; then
   echo "FAIL: runtime evidence still force-stops the driver after screenshot flush" >&2
   exit 1
 fi
-grep -Fq '"capture_transport": "flutter_integration_test_onScreenshot"' "$script_file"
+grep -Fq '"capture_transport": "native_android_pixelcopy"' "$script_file"
 grep -Fq 'RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"' "$script_file"
 
 # Baseline host partitions must stay aligned with the Dart page-map insertion order.

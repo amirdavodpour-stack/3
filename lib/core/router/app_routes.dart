@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'app_router.dart';
 import 'package:provider/provider.dart';
 
 import 'auth_return_intent.dart';
@@ -18,6 +20,7 @@ import '../../features/auth/register_page.dart';
 import '../../features/marketplace/create_job_page.dart';
 import '../marketplace/job.dart';
 import '../../features/marketplace/job_detail_page.dart';
+import '../marketplace/employer_candidate_matching_repository.dart';
 import '../../features/offers/offers_page.dart';
 import '../../features/notifications/notifications_page.dart';
 import '../../features/notifications/notification_devices_page.dart';
@@ -50,6 +53,9 @@ abstract final class HopeRoutes {
       _page(RegisterPage(returnIntent: returnIntent));
   static Route<void> passwordReset() => _page(const PasswordResetPage());
 
+  /// Root/home destination.
+  static Route<void> home() => _page(const AppRouter());
+
   /// Account & content destinations.
   static Route<void> notifications() => _page(const NotificationsPage());
   static Route<void> notificationDevices() => _page(const NotificationDevicesPage());
@@ -79,6 +85,14 @@ abstract final class HopeRoutes {
   /// Marketplace.
   static Route<JobDetailPage> jobDetail(HopeJob job) =>
       _page(JobDetailPage(job: job));
+  static Route<void> candidateMatches({
+    required Future<HopeEmployerCandidateMatchList> future,
+    required String jobTitle,
+  }) =>
+      _page(EmployerCandidateMatchesLoader(
+        future: future,
+        jobTitle: jobTitle,
+      ));
   static Route<TransactionPage> transaction({
     required TransactionRepository repository,
     required UploadQueue uploadQueue,

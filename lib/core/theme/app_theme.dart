@@ -8,6 +8,13 @@ class AppColors {
   const AppColors._();
 
   static const primary = HopeV2Colors.primary;
+  static const primaryAction = HopeV2Colors.primaryAction;
+  static const primaryOnLight = HopeV2Colors.primaryOnLight;
+  static const successOnLight = HopeV2Colors.successOnLight;
+  static const warningOnLight = HopeV2Colors.warningOnLight;
+  static const dangerOnLight = HopeV2Colors.dangerOnLight;
+  static const secondaryAction = HopeV2Colors.secondaryAction;
+
   static const primaryDark = HopeV2Colors.primaryDark;
   static const secondary = HopeV2Colors.secondary;
   static const secondaryStrong = HopeV2Colors.secondaryStrong;
@@ -41,10 +48,10 @@ class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: brightness,
-      primary: AppColors.primary,
-      onPrimary: Colors.white,
-      secondary: dark ? AppColors.secondaryDark : AppColors.secondary,
-      onSecondary: Colors.white,
+      primary: dark ? AppColors.primaryDark : AppColors.primaryAction,
+      onPrimary: dark ? AppColors.ink : Colors.white,
+      secondary: dark ? AppColors.secondaryDark : AppColors.secondaryAction,
+      onSecondary: dark ? AppColors.ink : Colors.white,
       surface: dark ? AppColors.darkSurface : AppColors.surface,
       onSurface: dark ? AppColors.darkText : AppColors.ink,
     );

@@ -1,22 +1,21 @@
 #!/usr/bin/env sh
-# [runtime-capture-fa] Wave 1: runtime fixtures intentionally use deterministic product fallback media.
+# Full-page evidence uses category fallback art; opt-in editorial media is not injected into captured screens.
 set -eu
 
 runtime_driver="integration_test/runtime/critical_screens_evidence_test.dart"
 test -f "$runtime_driver"
 
-if grep -Fq 'images.unsplash.com' "$runtime_driver"; then
-  echo "FAIL: editorial stock media must not appear in runtime fixtures" >&2
+grep -Fq 'HopeJob _jobFixture({bool editorialMedia = false})' "$runtime_driver"
+grep -Fq "if (editorialMedia)" "$runtime_driver"
+if grep -Fq "_jobFixture(editorialMedia: true)" "$runtime_driver"; then
+  echo "FAIL: stock editorial media must not be injected into any full-page evidence screen" >&2
   exit 1
 fi
+grep -Fq "JobDetailPage(job: _jobFixture())" "$runtime_driver"
+grep -Fq "HopeJob get _job => _jobFixture();" "$runtime_driver"
 if grep -Fq "HOPE Runtime" "$runtime_driver" || grep -Fq "runtime@example.invalid" "$runtime_driver"; then
-  echo "FAIL: legacy demo identity must not appear in runtime fixtures" >&2
+  echo "FAIL: artificial runtime identity must not appear in evidence fixtures" >&2
   exit 1
 fi
 
-# The fixture must still provide a complete job object for all evidence screens.
-grep -Fq "HopeJob _jobFixture({bool editorialMedia = false})" "$runtime_driver"
-grep -Fq "'title': 'طراحی رابط موبایل حرفه‌ای'" "$runtime_driver"
-grep -Fq "'category': 'طراحی'" "$runtime_driver"
-
-echo "PASS: runtime fixture is deterministic, non-stock, and non-demo"
+echo "PASS: captured screens use category fallback art and non-artificial identities"

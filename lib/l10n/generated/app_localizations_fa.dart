@@ -36,6 +36,42 @@ class AppLocalizationsFa extends AppLocalizations {
   String get loginButton => 'ورود به HOPE';
 
   @override
+  String get categorySoftware => "نرم‌افزار";
+
+  @override
+  String get categoryDesign => "طراحی";
+
+  @override
+  String get categoryMarketing => "بازاریابی";
+
+  @override
+  String get categoryContentTranslation => "محتوا و ترجمه";
+
+  @override
+  String get categoryFinanceAccounting => "مالی و حسابداری";
+
+  @override
+  String get categoryEducation => "آموزش";
+
+  @override
+  String get categorySupport => "پشتیبانی";
+
+  @override
+  String get categoryConstructionTechnical => "ساخت‌وساز و فنی";
+
+  @override
+  String get categoryVideoAudio => "تولید ویدیو و صدا";
+
+  @override
+  String get categoryDataAI => "داده و هوش مصنوعی";
+
+  @override
+  String get categorySales => "فروش";
+
+  @override
+  String get categoryOther => "سایر";
+
+  @override
   String get signInWithGoogle => 'ورود با Google';
 
   @override

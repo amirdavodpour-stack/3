@@ -111,7 +111,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               page: HopePageId.notificationDevices,

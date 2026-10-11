@@ -6,6 +6,7 @@ import '../../core/application/application_registry_context.dart';
 import '../../core/marketplace/saved_search_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/hope_v2_design.dart';
 
@@ -208,13 +209,19 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
     }
   }
 
+  String _categoryLabel(HopeSavedSearch item) =>
+      hopeCategoryLabel(context, item.category, unknownAsOther: true);
   String _scope(HopeSavedSearch item) {
     final parts = <String>[];
-    if (item.query.isNotEmpty) parts.add(item.query);
-    if (item.city.isNotEmpty && item.city != 'AUTO') parts.add(item.city);
+    // Isolate user-entered or Latin-script values so they cannot reorder
+    // adjacent Persian filter labels and separators in the RTL summary.
+    if (item.query.isNotEmpty) parts.add('\u2068${item.query}\u2069');
+    if (item.city.isNotEmpty && item.city != 'AUTO') {
+      parts.add('\u2068${item.city}\u2069');
+    }
     if (item.kind != 'ALL') parts.add(_kindLabel(item));
     if (item.visibility != 'ALL') parts.add(_visibilityLabel(item));
-    if (item.category != 'ALL') parts.add(item.category);
+    if (item.category != 'ALL') parts.add(_categoryLabel(item));
     return parts.isEmpty
         ? _t('بدون فیلتر اضافی', 'No additional filters')
         : parts.join(' • ');
@@ -223,17 +230,12 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _edit(),
-        icon: const HopeIcon(HopeV2Icons.add, size: 20),
-        label: Text(_t('جست‌وجوی جدید', 'New search')),
-      ),
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 104),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               page: HopePageId.savedSearches,
@@ -263,11 +265,14 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             if (!_loading && _error == null && _items.isNotEmpty)
               PremiumStatCard(
                 label: _t('جست‌وجوهای فعال', 'Saved searches'),
-                value: _items.length.toString(),
+                value: HopeDisplayFormatter.integer(
+                  _items.length,
+                  locale: Localizations.localeOf(context).languageCode,
+                ),
                 icon: HopeV2Icons.savedSearches,
                 accent: Theme.of(context).colorScheme.primary,
                 compact: true,
@@ -277,7 +282,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 ),
               ),
             if (!_loading && _error == null && _items.isNotEmpty)
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             if (_loading)
               const PremiumPanel(
                 child: SizedBox(
@@ -293,7 +298,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                     const HopeIcon(HopeV2Icons.pending, size: 36),
                     const SizedBox(height: 10),
                     Text(_error!, textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: _load,
                       icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
@@ -303,25 +308,13 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                 ),
               )
             else if (_items.isEmpty)
-              PremiumPanel(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    const HopeIcon(HopeV2Icons.savedSearches, size: 40),
-                    const SizedBox(height: 12),
-                    Text(
-                      _t('هنوز جست‌وجوی ذخیره‌شده‌ای ندارید.',
-                          'You have no saved searches yet.'),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _t('از بخش Explore یک جست‌وجو را ذخیره کنید یا یک جست‌وجوی جدید بسازید.',
-                          'Save a search from Explore or start with the button below.'),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+              PremiumEmptyState(
+                icon: HopeV2Icons.savedSearches,
+                title: _t('هنوز جست‌وجوی ذخیره‌شده‌ای ندارید.',
+                    'You have no saved searches yet.'),
+                message: _t(
+                  'از بخش کاوش یک جست‌وجو را ذخیره کنید یا با دکمهٔ پایین اولین جست‌وجو را بسازید.',
+                  'Save a search from Explore or create your first one with the button below.',
                 ),
               )
             else
@@ -366,6 +359,21 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                   }).toList(),
                 ),
               ),
+            if (!_loading && _error == null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('saved-search-create-cta'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: () => _edit(),
+                  icon: const HopeIcon(HopeV2Icons.add, size: 20),
+                  label: Text(_t('جست‌وجوی جدید', 'New search')),
+                ),
+              ),
+            ],
             ],
           ),
         ),

@@ -1,3 +1,4 @@
+# [runtime-capture-fa] exact-head certification retry after restoring Run #1765 capture contracts
 name: HOPE UI Runtime Evidence
 # [runtime-capture-fa] visual convergence wave jobs-wallet 2026-10-06
 
@@ -30,9 +31,9 @@ on:
 # [runtime-capture-fa] validate compile-fix before next visual evidence wave.
 # [runtime-capture-fa] validate explicit page-canvas surface after shared frame hardening.
 
-  push:
-    branches:
-      - feat/google-sign-in-2026-09-20
+  # Runtime capture is intentionally NOT push-triggered. A capture request is
+  # represented by the PR title marker (or explicit workflow_dispatch) so a
+  # single HEAD cannot launch duplicate runtime captures through push + PR.
 
   # Temporary observable PR trigger: title marker is toggled only for a
   # one-shot capture run because the GitHub connector exposes no dispatch mutation.
@@ -40,9 +41,9 @@ on:
     types: [edited, synchronize]
 
 concurrency:
-  # Capture commits are intentionally serialized. Non-capture feature pushes
-  # use an isolated group so they cannot cancel an active runtime evidence run.
-  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'capture' || github.run_id }}
+  # Serialize by the actual requested HEAD, independent of PR event shape.
+  # This prevents duplicate captures for the same HEAD.
+  group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -50,13 +51,24 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (contains(github.event.head_commit.message, '[runtime-capture]') || contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]'))) || (github.event_name == 'pull_request' && github.head_ref == 'feat/google-sign-in-2026-09-20' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]') || contains(github.event.pull_request.title, '[runtime-capture-en-scale]'))) }}
     name: Critical screens Android runtime evidence
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+
+      - name: Align PR runtime checkout to exact feature HEAD
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          exact_head="$(git rev-parse HEAD^2)"
+          git checkout --detach "$exact_head"
+          test "$(git rev-parse HEAD)" = "$exact_head"
+          echo "HOPE_RUNTIME_EXACT_HEAD:$exact_head"
+          echo "HOPE_RUNTIME_EXACT_HEAD=$exact_head" >> "$GITHUB_ENV"
 
       - name: Checkout pinned Android Emulator Runner
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -84,7 +96,7 @@ jobs:
       - name: Test Home source integrity
         run: sh test/runtime/home_source_integrity_test.sh
       - name: Test premium visual composition wave source integrity
-        run: sh test/runtime/premium_visual_wave_source_test.sh
+        run: bash test/runtime/premium_visual_wave_source_test.sh
 
       - name: Setup Flutter 3.47.2
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -120,6 +132,10 @@ jobs:
       - name: Prepare Flutter dependencies
         run: flutter pub get --enforce-lockfile
 
+      # A green exact-HEAD static gate owns the sole consolidated Flutter invocation; [flutter-preverified] prevents a duplicate runtime test run.
+      - name: Flutter visual wave focused gate
+        if: ${{ !contains(github.event.pull_request.title, '[flutter-preverified]') }}
+        run: flutter test --no-pub test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_display_formatters_test.dart test/features/wallet/wave22_compact_wallet_test.dart test/features/jobs/saved_searches_page_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/employer_candidate_matches_page_test.dart test/features/jobs/job_satisfaction_page_test.dart
       - name: Validate runtime evidence script syntax
         run: bash -n tools/hope-wallet-runtime-evidence.sh
 
@@ -138,14 +154,15 @@ jobs:
           test -r /dev/kvm
           test -w /dev/kvm
 
-      # Use the pinned runner that produced the fully green 15-screen certification
+      # Use the pinned runner that produced the fully green baseline certification; the full locale matrix is now 19 baseline + 6 responsive
       # on Run #35741811401. Keep the proven memory/AVD lifecycle contract intact.
       - name: Android runtime evidence
         uses: ./.ci/android-emulator-runner
         env:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
-          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]') && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
+          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
+          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
           HOPE_RUNTIME_STRICT_VALIDATION: '0'
           HOPE_CAPTURE_HOME_ONLY: ${{ ((github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture-fa-home]'))) && '1' || '0' }}
         with:
@@ -154,17 +171,35 @@ jobs:
           target: default
           profile: pixel_2
           # Recreate the AVD from the cached API-35 system image to avoid stale/corrupt AVD state.
-          # Use the runner's explicit swiftshader_indirect software renderer rather than the generic software alias.
-          # The generic alias was correlated with the native PixelCopy capture boundary dropping ADB offline.
-          # Current evidence also shows gfxstream/Vulkan SwiftShader active when the transport drops; disable Vulkan for this capture lane.
+          # Use the current SwiftShader software renderer mode supported by modern Emulator releases.
+          # Keep Vulkan explicitly disabled for deterministic GLES/PixelCopy capture on the headless lane.
           force-avd-creation: false
           cores: 4
           ram-size: 8192M
           disable-linux-hw-accel: false
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          emulator-options: -no-window -no-snapshot -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
+
+      - name: Validate runtime evidence artifact contents
+        if: ${{ success() && !(github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
+        env:
+          HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
+          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
+        run: |
+          test -d docs/audit/evidence/android-runtime
+          png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
+          # Full capture gate: 19 baseline + 6 responsive screenshots.
+          test "${png_count}" -ge 25
+          jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" \
+            '.sha == $sha and .capture_locale == $locale and .text_scale == $scale and .screens == 19 and .responsive_screens == 6 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy"' \
+            docs/audit/evidence/android-runtime/metadata.json
+
+      - name: Validate home-only diagnostic artifact contents
+        if: ${{ success() && github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]') }}
+        run: |
+          test -s docs/audit/evidence/android-runtime/home-fa-rtl.png
 
       - name: Upload critical-screen runtime evidence
         if: ${{ always() }}
@@ -174,7 +209,7 @@ jobs:
           path: |
             docs/audit/evidence/android-runtime/**
             ${{ runner.temp }}/hope-*-runtime.log
-          if-no-files-found: warn
+          if-no-files-found: error
 # [runtime-capture-fa] Compact mobile density visual wave — exact-head capture.
 # [runtime-capture-fa] iconography + navigation dock + shared shape-language wave — exact-head capture.
 # [runtime-capture-fa] navigation active-state calibration — exact-head capture.

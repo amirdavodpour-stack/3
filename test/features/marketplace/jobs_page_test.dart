@@ -7,7 +7,6 @@ import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
-import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -106,8 +105,13 @@ class _Repo implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
-Future<void> _pump(WidgetTester tester, _Repo repo,
-    {HopeSettingsController? settings}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  _Repo repo, {
+  HopeSettingsController? settings,
+  double textScale = 1,
+  Locale locale = const Locale('fa'),
+}) async {
   HopeSettingsController resolvedSettings;
   if (settings != null) {
     resolvedSettings = settings;
@@ -118,7 +122,7 @@ Future<void> _pump(WidgetTester tester, _Repo repo,
   }
   await tester.pumpWidget(MaterialApp(
     theme: ThemeData.light(),
-    locale: const Locale('fa'),
+    locale: locale,
     supportedLocales: const [Locale('fa'), Locale('en')],
     localizationsDelegates: const [
       AppLocalizations.delegate,
@@ -126,12 +130,17 @@ Future<void> _pump(WidgetTester tester, _Repo repo,
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: resolvedSettings),
-        Provider<MarketplaceRepository>.value(value: repo),
-      ],
-      child: const JobsPage(),
+    home: MediaQuery(
+      data: MediaQueryData.fromView(tester.view).copyWith(
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: resolvedSettings),
+          Provider<MarketplaceRepository>.value(value: repo),
+        ],
+        child: const JobsPage(),
+      ),
     ),
   ));
   await tester.pump();
@@ -142,13 +151,26 @@ Future<void> _tapFilter(
   WidgetTester tester,
   String label,
 ) async {
-  final all = find.text(label, skipOffstage: false);
-  expect(all, findsWidgets);
-  final target = all.first;
+  var target = find.descendant(
+    of: find.byType(BottomSheet),
+    matching: find.text(label),
+  );
+  if (target.evaluate().isEmpty) {
+    final launcher = find.byKey(
+      const ValueKey('hope-opportunity-refinement-launcher'),
+    );
+    expect(launcher, findsOneWidget);
+    await tester.tap(launcher);
+    await tester.pumpAndSettle();
+    target = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.text(label),
+    );
+  }
+  expect(target, findsOneWidget);
   await tester.ensureVisible(target);
   await tester.tap(target);
 }
-
 void main() {
   testWidgets('jobs page requests categories and opportunities',
       (tester) async {
@@ -173,7 +195,7 @@ void main() {
     await _pump(tester, repo);
     await tester.pumpAndSettle();
 
-    expect(find.text('فرصت بعدی خود را پیدا کنید'), findsNothing);
+    expect(find.text('فرصت بعدی خود را پیدا کنید'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('hope-explore-result-count')),
       findsOneWidget,
@@ -200,16 +222,73 @@ void main() {
     final featuredFinder = find.byWidgetPredicate(
       (widget) =>
           widget is OpportunityCard &&
-          widget.variant == OpportunityCardVariant.featured,
+          widget.variant == OpportunityCardVariant.featuredScan,
     );
     expect(featuredFinder, findsOneWidget);
     final featuredRect = tester.getRect(featuredFinder);
 
-    expect(filterRect.top, closeTo(searchRect.top, 2));
-    expect(filterRect.bottom, lessThanOrEqualTo(searchRect.bottom + 2));
-    expect(featuredRect.top - searchRect.bottom, lessThan(40));
+    expect(
+      (filterRect.top - searchRect.top).abs(),
+      lessThan(5),
+      reason: 'Compact search and refinement should share a row to recover first-fold height.',
+    );
+    // The kind selector follows the refinement row, then the featured card.
+    final kindFilter = find.byKey(
+      const ValueKey('hope-explore-kind-filters'),
+    );
+    expect(kindFilter, findsOneWidget);
+    final kindRect = tester.getRect(kindFilter);
+    expect(kindRect.top - filterRect.bottom, lessThan(20));
+    expect(featuredRect.top - kindRect.bottom, lessThan(40));
     expect(tester.takeException(), isNull);
-  }
+  });
+
+
+  testWidgets(
+    'compact explore consolidates controls and keeps the first opportunity in the 360x640 viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo());
+      await tester.pumpAndSettle();
+
+      final search = tester.getRect(find.byType(PremiumSearchBar));
+      final filter = tester.getRect(
+        find.byKey(const ValueKey('hope-opportunity-refinement-launcher')),
+      );
+      final resultCount = tester.getRect(
+        find.byKey(const ValueKey('hope-explore-result-count')),
+      );
+      final kindFilter = tester.getRect(
+        find.byKey(const ValueKey('hope-explore-kind-filters')),
+      );
+      final featured = tester.getRect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is OpportunityCard &&
+              widget.variant == OpportunityCardVariant.featuredScan,
+        ),
+      );
+      final dock = tester.getRect(
+        find.byKey(const ValueKey('hope-navigation-dock')),
+      );
+
+      expect((filter.top - search.top).abs(), lessThan(5));
+      expect((resultCount.top - search.top).abs(), lessThan(10));
+      expect(filter.size, const Size(48, 48));
+      expect(kindFilter.height, greaterThanOrEqualTo(48));
+      expect(kindFilter.top - filter.bottom, lessThan(20));
+      expect(
+        featured.top,
+        lessThan(dock.top - 80),
+        reason: 'The first real opportunity must occupy a useful part of the compact first fold.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('compact explore uses a short search hint so the control band stays overflow-free',
       (tester) async {
@@ -225,7 +304,7 @@ void main() {
     expect(find.bySemanticsLabel('جستجو'), findsOneWidget);
     expect(find.bySemanticsLabel('عنوان، شهر یا مهارت...'), findsNothing);
     expect(tester.takeException(), isNull);
-  }
+  });
 
   testWidgets(
       'automatic city context does not count as an active filter, but an explicit city does',
@@ -248,8 +327,8 @@ void main() {
       const ValueKey('hope-opportunity-refinement-active-count'),
     );
     expect(activeCount, findsOneWidget);
-    expect(find.text('1', skipOffstage: false), findsWidgets);
-  }
+    expect(find.text('۱', skipOffstage: false), findsWidgets);
+  });
 
   testWidgets('search narrows the rendered opportunity list', (tester) async {
     final repo = _Repo();
@@ -332,10 +411,7 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.widgetWithText(PremiumFilterChip, 'طراحی'),
-      findsOneWidget,
-    );
+    expect(find.text('طراحی'), findsOneWidget);
     expect(find.text('design'), findsNothing);
     expect(find.text('طراحی گرافیک'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);
@@ -351,6 +427,9 @@ void main() {
     await _tapFilter(tester, 'همه حوزه‌ها');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('اعمال فیلترها'));
     await tester.pumpAndSettle();
 
     await _tapFilter(tester, 'طراحی');
@@ -417,4 +496,143 @@ void main() {
         scrollable: find.byType(Scrollable).first);
     expect(find.text('طراحی در شیراز'), findsOneWidget);
   });
+  testWidgets(
+    'Wave 24 compact Explore kind filter is visible, 48dp high and stateful',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repo = _Repo();
+      await _pump(tester, repo);
+      await tester.pumpAndSettle();
+      final filter = find.byKey(const ValueKey('hope-explore-kind-filters'));
+      expect(filter, findsOneWidget);
+      expect(tester.getSize(filter).height, greaterThanOrEqualTo(48));
+      expect(
+        tester.widget<SegmentedButton<String>>(filter).selected,
+        contains('ALL'),
+      );
+      final rect = tester.getRect(filter);
+      await tester.tapAt(Offset(rect.left + rect.width / 6, rect.center.dy));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<SegmentedButton<String>>(filter).selected,
+        isNot(contains('ALL')),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'Wave 29 final Explore opportunity stays reachable above the fixed dock at 360x640',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo());
+      await tester.pumpAndSettle();
+
+      final lastOpportunity = find.text('طراحی گرافیک');
+      final exploreScrollView = find.byType(CustomScrollView);
+      expect(exploreScrollView, findsOneWidget);
+      for (var attempt = 0;
+          attempt < 8 && lastOpportunity.evaluate().isEmpty;
+          attempt += 1) {
+        await tester.drag(exploreScrollView, const Offset(0, -220));
+        await tester.pumpAndSettle();
+      }
+      expect(
+        lastOpportunity,
+        findsOneWidget,
+        reason: 'The final server-provided opportunity must remain in the scrollable Explore results.',
+      );
+      await tester.ensureVisible(lastOpportunity);
+      await tester.pumpAndSettle();
+
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(lastOpportunity, findsOneWidget);
+      expect(dock, findsOneWidget);
+      final opportunityRect = tester.getRect(lastOpportunity);
+      final dockRect = tester.getRect(dock);
+      expect(
+        opportunityRect.bottom,
+        lessThanOrEqualTo(dockRect.top - 12),
+        reason: 'Final Explore opportunity must clear the dock after scrolling.',
+      );
+      expect(lastOpportunity.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'Wave30 Explore renders English LTR single-column cards with 1.5x system text',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(
+        tester,
+        _Repo(),
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Find your next opportunity'), findsOneWidget);
+      expect(find.text('Recommended for you'), findsOneWidget);
+      final cards = tester.widgetList<OpportunityCard>(
+        find.byType(OpportunityCard),
+      );
+      expect(cards, isNotEmpty);
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compactGrid),
+        isFalse,
+        reason: 'Enlarged English text must not use two-column compact-grid cards.',
+      );
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compact),
+        isFalse,
+        reason: 'Enlarged English text must use readable opportunity summaries.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 26 Explore falls back to a single column at enlarged text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo(), textScale: 1.5);
+      await tester.pumpAndSettle();
+
+      final cards = tester.widgetList<OpportunityCard>(
+        find.byType(OpportunityCard),
+      );
+      expect(cards, isNotEmpty);
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compactGrid),
+        isFalse,
+        reason: 'Enlarged text must prioritize readable single-column opportunity summaries.',
+      );
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compact),
+        isFalse,
+        reason: 'Compressed summaries are not used when system text is enlarged.',
+      );
+      expect(find.text('طراحی اپ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

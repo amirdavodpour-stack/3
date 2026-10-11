@@ -27,6 +27,47 @@ void main() {
     expect(HopeV2Colors.darkText, const Color(0xFFF8FAFC));
   });
 
+  test('wallet balance hero palette is centralized without visual drift', () {
+    expect(HopeV2Colors.walletBalanceHeroStart, const Color(0xFF121726));
+    expect(HopeV2Colors.walletBalanceHeroMiddle, const Color(0xFF1B2748));
+    expect(HopeV2Colors.walletBalanceHeroEnd, const Color(0xFF0E131E));
+    expect(HopeV2Colors.walletBalanceOnHero, const Color(0xFFFFFFFF));
+    expect(HopeV2Colors.walletBalanceOnHeroMuted, const Color(0xB3FFFFFF));
+    expect(HopeV2Colors.walletBalanceOnHeroSubtle, const Color(0x99FFFFFF));
+    expect(HopeV2Colors.walletBalanceMetricFill, const Color(0x0BFFFFFF));
+    expect(HopeV2Colors.walletBalanceMetricBorder, const Color(0x0FFFFFFF));
+    expect(HopeV2Colors.walletBalanceMetricBorderEmphasized, const Color(0x3DFFFFFF));
+  });
+
+  testWidgets('semantic facade resolves error, border and surface from the active theme',
+      (tester) async {
+    late Color semanticError;
+    late Color themeError;
+    late Color semanticBorder;
+    late Color surfaceBorder;
+    late Color semanticSurface;
+    late Color themeSurface;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Builder(
+          builder: (context) {
+            themeError = Theme.of(context).colorScheme.error;
+            semanticError = HopeV2SemanticColors.error(context);
+            surfaceBorder = HopeV2Surfaces.border(context);
+            semanticBorder = HopeV2SemanticColors.border(context);
+            themeSurface = Theme.of(context).colorScheme.surface;
+            semanticSurface = HopeV2SemanticColors.surface(context);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    expect(semanticError, themeError);
+    expect(semanticBorder, surfaceBorder);
+    expect(semanticSurface, themeSurface);
+  });
+
   test('HOPE light surfaces stay lavender-led', () {
     expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0FB));
     expect(HopeV2Colors.pageLight, const Color(0xFFF1EDF8));

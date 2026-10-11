@@ -39,17 +39,26 @@ class PremiumLifecycle extends StatelessWidget {
     if (steps.isEmpty) return const SizedBox.shrink();
     return PremiumPanel(
       semanticLabel: title,
-      padding: EdgeInsets.all(compact ? HopeV2Spacing.md : HopeV2Spacing.lg),
+      quiet: true,
+      padding: EdgeInsets.all(compact ? 10 : HopeV2Spacing.md),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (title != null) ...[
             Text(title!, style: HopeV2Type.section(context)),
             if (subtitle != null) ...[
               const SizedBox(height: HopeV2Spacing.xs),
-              Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                subtitle!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? HopeV2Colors.darkMuted
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ],
-            SizedBox(height: compact ? 6 : HopeV2Spacing.lg),
+            SizedBox(height: compact ? 5 : HopeV2Spacing.md),
           ],
           ...List.generate(steps.length, (index) {
             final step = steps[index];
@@ -71,12 +80,13 @@ class _StepRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final highlighted = step.active || step.complete;
     final iconColor = step.complete
         ? HopeV2Colors.success
         : step.active
             ? Theme.of(context).colorScheme.primary
-            : HopeV2Colors.muted;
+            : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -87,22 +97,24 @@ class _StepRow extends StatelessWidget {
               Semantics(
                 label: step.label,
                 child: Container(
-                  width: compact ? 28 : 34,
-                  height: compact ? 28 : 34,
+                  width: compact ? 24 : 34,
+                  height: compact ? 24 : 34,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: highlighted
                         ? iconColor.withValues(alpha: .12)
-                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                        : (dark ? HopeV2Colors.panelDark : Theme.of(context).colorScheme.surfaceContainerHighest),
                     border: Border.all(
                       color: highlighted
                           ? iconColor.withValues(alpha: .35)
-                          : Theme.of(context).dividerColor,
+                          : (dark
+                              ? Colors.white.withValues(alpha: .12)
+                              : Theme.of(context).dividerColor),
                     ),
                   ),
                   child: HopeIcon(
                     step.complete ? Icons.check_rounded : step.icon,
-                    size: compact ? 15 : 18,
+                    size: compact ? 14 : 18,
                     color: iconColor,
                   ),
                 ),
@@ -110,9 +122,9 @@ class _StepRow extends StatelessWidget {
               if (!last)
                 Container(
                   width: 2,
-                  height: compact ? 18 : 34,
-                  margin: EdgeInsets.symmetric(vertical: compact ? 2 : 4),
-                  color: Theme.of(context).dividerColor,
+                  height: compact ? 3 : 28,
+                  margin: EdgeInsets.symmetric(vertical: compact ? 1 : 4),
+                  color: dark ? HopeV2Colors.darkDivider : Theme.of(context).dividerColor,
                 ),
             ],
           ),
@@ -120,7 +132,7 @@ class _StepRow extends StatelessWidget {
         SizedBox(width: compact ? HopeV2Spacing.sm : HopeV2Spacing.md),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(bottom: compact ? 6 : HopeV2Spacing.lg),
+            padding: EdgeInsets.only(bottom: compact ? 3 : HopeV2Spacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -132,7 +144,14 @@ class _StepRow extends StatelessWidget {
                 ),
                 if (step.caption != null) ...[
                   const SizedBox(height: HopeV2Spacing.xs),
-                  Text(step.caption!, style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    step.caption!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: dark
+                          ? HopeV2Colors.darkMuted
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ],
             ),

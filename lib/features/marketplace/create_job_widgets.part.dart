@@ -8,9 +8,10 @@ class _TypeHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     return PremiumPanel(
       highlight: true,
-      padding: const EdgeInsets.all(17),
+      padding: EdgeInsets.all(compact ? 12 : 17),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -23,13 +24,7 @@ class _TypeHero extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              PremiumTag(
-                icon: HopeV2Icons.route,
-                label: Localizations.localeOf(context).languageCode == 'en'
-                    ? 'Step 1 of 5'
-                    : 'مرحله ۱ از ۵',
-                color: Theme.of(context).colorScheme.primary,
-              ),
+
             ],
           ),
           const SizedBox(height: 10),
@@ -54,7 +49,11 @@ class _TypeHero extends StatelessWidget {
                 ),
               ];
 
-              if (constraints.maxWidth < 320) {
+              final enlargedText =
+                  MediaQuery.textScalerOf(context).scale(1) > 1.2;
+              // Keep both choices side-by-side at normal text sizes; enlarged
+              // text gets a vertical reading order rather than compressed copy.
+              if (constraints.maxWidth < 240 || enlargedText) {
                 return Column(
                   children: [
                     tiles[0],
@@ -85,6 +84,7 @@ class _TypeHero extends StatelessWidget {
     String title,
     String sub,
   ) {
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final selected = kind == value;
 
     return PressableScale(
@@ -95,7 +95,7 @@ class _TypeHero extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.md),
           color: selected
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: .12)
+              ? Theme.of(context).colorScheme.primaryContainer
               : HopeV2Surfaces.panel(context),
           border: Border.all(
             color: selected
@@ -107,14 +107,14 @@ class _TypeHero extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(compact ? 10 : 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   HopeIcon(
                     icon,
-                    color: selected ? Colors.white : AppColors.primary,
-                    size: 25,
+                    color: selected ? Theme.of(context).colorScheme.onPrimaryContainer : AppColors.primary,
+                    size: compact ? 22 : 25,
                     strokeWidth: 2.0,
                   ),
                   const SizedBox(height: 8),
@@ -122,7 +122,7 @@ class _TypeHero extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      color: selected ? Colors.white : null,
+                      color: selected ? Theme.of(context).colorScheme.onPrimaryContainer : null,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -131,7 +131,7 @@ class _TypeHero extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.35,
-                      color: selected ? Colors.white70 : null,
+                      color: selected ? Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: .78) : null,
                     ),
                   ),
                 ],
@@ -225,6 +225,8 @@ class _CreateJobForm extends StatelessWidget {
     required this.deadline,
     required this.acceptanceCriteria,
     required this.busy,
+    required this.activeStep,
+    required this.onStepChanged,
     required this.kind,
     required this.visibility,
     required this.schedule,
@@ -251,6 +253,8 @@ class _CreateJobForm extends StatelessWidget {
   final TextEditingController deadline;
   final TextEditingController acceptanceCriteria;
   final bool busy;
+  final int activeStep;
+  final ValueChanged<int> onStepChanged;
   final String kind;
   final String visibility;
   final String schedule;
@@ -270,56 +274,22 @@ class _CreateJobForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final sectionGap = compact ? 12.0 : 20.0;
     return ListView(
-        padding: const EdgeInsets.fromLTRB(20, 6, 20, 40),
+        key: ValueKey('create-opportunity-step-$activeStep'),
+        padding: HopeV2Navigation.scrollEndPadding(
+          context,
+          horizontal: 20,
+          top: 6,
+        ),
         children: [
+          HopeCreationProgress(activeIndex: activeStep),
+          const SizedBox(height: 2),
+          if (activeStep == 0) ...[
           _TypeHero(
             kind: kind,
             onChanged: onKindChanged,
-          ),
-          const SizedBox(height: 10),
-          Theme(
-            data: Theme.of(context).copyWith(
-              dividerColor: Colors.transparent,
-            ),
-            child: ExpansionTile(
-              key: const ValueKey('opportunity-live-preview-peek'),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 2),
-              childrenPadding: EdgeInsets.zero,
-              initiallyExpanded: false,
-              leading: const HopeIconTile(
-                HopeV2Icons.insights,
-                size: 38,
-                filled: true,
-              ),
-              title: Text(
-                translate('پیش‌نمایش زنده', 'Live preview'),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              subtitle: Text(
-                translate(
-                  'برای بررسی خلاصه فرصت باز کنید.',
-                  'Open to review the opportunity summary.',
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              children: [
-                HopeOpportunityLivePreview(
-                  kind: kind,
-                  visibility: visibility,
-                  schedule: schedule,
-                  city: city,
-                  titleController: title,
-                  descriptionController: description,
-                  minBudgetController: minBudget,
-                  maxBudgetController: maxBudget,
-                  salaryController: salary,
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 12),
           PremiumSectionHeader(
@@ -350,7 +320,7 @@ class _CreateJobForm extends StatelessWidget {
                 ),
               ];
 
-              if (constraints.maxWidth < 500) {
+              if (constraints.maxWidth < 360) {
                 return Column(
                   children: [
                     cards[0],
@@ -369,7 +339,9 @@ class _CreateJobForm extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 20),
+          ],
+          if (activeStep == 1) ...[
+          SizedBox(height: sectionGap),
           PremiumSectionHeader(
             page: HopePageId.createOpportunity,
             domain: HopeProductDomain.work,
@@ -479,7 +451,9 @@ class _CreateJobForm extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          ],
+          if (activeStep == 2) ...[
+          SizedBox(height: sectionGap),
           PremiumSectionHeader(
             title: kind == 'MISSION'
                 ? HopeCopy.of(context).copy_price_time_4d31a36
@@ -605,7 +579,9 @@ class _CreateJobForm extends StatelessWidget {
                 ),
               ],
             ),
-          const SizedBox(height: 20),
+          ],
+          if (activeStep == 3) ...[
+          SizedBox(height: sectionGap),
           PremiumSectionHeader(
             page: HopePageId.createOpportunity,
             domain: HopeProductDomain.finance,
@@ -637,7 +613,7 @@ class _CreateJobForm extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: sectionGap),
           PremiumSectionHeader(
             page: HopePageId.createOpportunity,
             domain: HopeProductDomain.trust,
@@ -658,19 +634,132 @@ class _CreateJobForm extends StatelessWidget {
               prefixIcon: const HopeIcon(HopeV2Icons.completed, size: 20),
             ),
           ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: busy ? null : onSubmit,
-            icon: const HugeIcon(icon: HopeV2Icons.featured, size: 20),
-            label: busy
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    HopeCopy.of(context).copy_publish_opportunity_9993b91,
+          ],
+          if (activeStep == 4) ...[
+            SizedBox(height: sectionGap),
+            PremiumSectionHeader(
+              page: HopePageId.createOpportunity,
+              domain: HopeProductDomain.trust,
+              title: translate('بازبینی نهایی', 'Final review'),
+              subtitle: translate(
+                'پیش از انتشار، خلاصهٔ داده‌های واردشده را بررسی کنید.',
+                'Review the details you entered before publishing.',
+              ),
+            ),
+            const SizedBox(height: 10),
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                        ),
+                        child: ExpansionTile(
+                          key: const ValueKey('opportunity-live-preview-peek'),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 2),
+                          childrenPadding: EdgeInsets.zero,
+                          initiallyExpanded: true,
+                          leading: const HopeIconTile(
+                            HopeV2Icons.insights,
+                            size: 38,
+                            filled: true,
+                          ),
+                          title: Text(
+                            translate('پیش‌نمایش زنده', 'Live preview'),
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                          subtitle: Text(
+                            translate(
+                              'برای بررسی خلاصه فرصت باز کنید.',
+                              'Open to review the opportunity summary.',
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          children: [
+                            HopeOpportunityLivePreview(
+                              kind: kind,
+                              visibility: visibility,
+                              schedule: schedule,
+                              city: city,
+                              titleController: title,
+                              descriptionController: description,
+                              minBudgetController: minBudget,
+                              maxBudgetController: maxBudget,
+                              salaryController: salary,
+                            ),
+                          ],
+                        ),
+                      ),
+            
+            const SizedBox(height: 10),
+            PremiumPanel(
+              quiet: true,
+              padding: const EdgeInsets.all(13),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const HopeIcon(HopeV2Icons.secure, size: 20),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(translate(
+                      'با انتخاب انتشار، اطلاعات فرم از مسیر فعلی ثبت و سپس منتشر می‌شود؛ مقادیر مالی و شرایط از همان ورودی‌های شما گرفته می‌شوند.',
+                      'Publish submits the current form through the existing create-and-publish flow; financial values and conditions come from your entries.',
+                    )),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: const ValueKey('create-opportunity-previous-step'),
+                  onPressed: activeStep == 0 || busy
+                      ? null
+                      : () => onStepChanged(activeStep - 1),
+                  icon: HugeIcon(
+                    icon: Directionality.of(context) == ui.TextDirection.rtl
+                        ? HopeV2Icons.arrowRight
+                        : HopeV2Icons.arrowLeft,
+                    size: 18,
+                  ),
+                  label: Text(translate('مرحلهٔ قبل', 'Back')),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  key: const ValueKey('create-opportunity-next-step'),
+                  onPressed: busy
+                      ? null
+                      : activeStep < 4
+                          ? () => onStepChanged(activeStep + 1)
+                          : onSubmit,
+                  icon: busy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : HugeIcon(
+                          icon: activeStep < 4
+                              ? (Directionality.of(context) == ui.TextDirection.rtl
+                                  ? HopeV2Icons.arrowLeft
+                                  : HopeV2Icons.arrowRight)
+                              : HopeV2Icons.featured,
+                          size: 18,
+                        ),
+                  label: Text(
+                    activeStep < 4
+                        ? translate('ادامه', 'Continue')
+                        : HopeCopy.of(context).copy_publish_opportunity_9993b91,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       );

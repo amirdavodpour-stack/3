@@ -1,8 +1,6 @@
 import '../../core/router/app_routes.dart';
-import '../../core/router/app_router.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/copy.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +13,7 @@ import '../../core/marketplace/job.dart';
 import '../../core/marketplace/saved_search_repository.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/opportunity_card.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
 import '../../core/theme/hope_v2_design.dart';
@@ -351,7 +350,7 @@ class _JobsPageState extends State<JobsPage> {
     if (index == 1) return;
     if (index == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => AppRouter()),
+        HopeRoutes.home(),
         (_) => false,
       );
       return;
@@ -383,7 +382,7 @@ class _JobsPageState extends State<JobsPage> {
               compact ? 16 : 20,
               compact ? 6 : 14,
               compact ? 16 : 20,
-              72,
+              24,
             ),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -447,6 +446,11 @@ class _JobsPageState extends State<JobsPage> {
                   isLoading:
                       snapshot.connectionState == ConnectionState.waiting,
                   hasError: snapshot.hasError,
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: HopeV2Navigation.scrollEndPadding(context).bottom,
+                  ),
                 ),
               ],
             ),

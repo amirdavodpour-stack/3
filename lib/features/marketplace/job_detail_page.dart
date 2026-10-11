@@ -13,6 +13,7 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/marketplace/employer_candidate_matching_repository.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/ui/components.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_signature_components.dart';
 import '../../core/ui/hope_async_state.dart';
@@ -22,6 +23,52 @@ import '../../core/ui/copy.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
+
+String _budgetRangeLabel(BuildContext context, HopeJob job) {
+  final locale = Localizations.localeOf(context).languageCode;
+  final minimum = HopeDisplayFormatter.parseInteger(job.budgetMin);
+  final maximum = HopeDisplayFormatter.parseInteger(job.budgetMax);
+  if (minimum == null && maximum == null) return '—';
+  if (minimum == null) {
+    return HopeDisplayFormatter.money(maximum, locale: locale);
+  }
+  if (maximum == null) {
+    return HopeDisplayFormatter.money(minimum, locale: locale);
+  }
+  return HopeDisplayFormatter.amount(
+    '$minimum - $maximum',
+    locale: locale,
+  );
+}
+String _opportunityStatusLabel(BuildContext context, String? raw) {
+  final english = Localizations.localeOf(context).languageCode == 'en';
+  return switch (raw?.toUpperCase()) {
+    'DRAFT' => english ? 'Draft' : 'پیش‌نویس',
+    'PUBLISHED' => english ? 'Published' : 'منتشر شده',
+    'FUNDED' => english ? 'Funded' : 'تأمین وجه شده',
+    'IN_PROGRESS' => english ? 'In progress' : 'در حال انجام',
+    'DELIVERED' => english ? 'Delivered' : 'تحویل شده',
+    'UNDER_REVIEW' => english ? 'Under review' : 'در حال بررسی',
+    'COMPLETED' => english ? 'Completed' : 'تکمیل شده',
+    'CANCELLED' => english ? 'Cancelled' : 'لغو شده',
+    _ => english ? 'Needs review' : 'نیازمند بررسی',
+  };
+}
+
+String _opportunityLocationLabel(BuildContext context, HopeJob job) {
+  final city = job.city?.trim();
+  if (city != null && city.isNotEmpty) return city;
+
+  final rawWorkMode = job.raw['workMode'] ??
+      job.raw['mode'] ??
+      job.raw['locationType'] ??
+      job.raw['work_mode'];
+  final english = Localizations.localeOf(context).languageCode == 'en';
+  if (rawWorkMode?.toString().trim().toUpperCase() == 'REMOTE') {
+    return english ? 'Remote' : 'دورکاری';
+  }
+  return english ? 'Location not specified' : 'مکان مشخص نشده';
+}
 
 class _OpportunitySnapshot extends StatelessWidget {
   const _OpportunitySnapshot({required this.job});
@@ -41,36 +88,28 @@ class _OpportunitySnapshot extends StatelessWidget {
         label: isJob ? _t(context, 'حقوق ماهانه', 'Monthly pay') : _t(context, 'بودجه', 'Budget'),
         value: isJob
             ? moneyLabel(context, job.monthlySalary ?? job.budgetMin ?? '—')
-            : moneyLabel(context, '${job.budgetMin ?? '—'} تا ${job.budgetMax ?? '—'}'),
+            : _budgetRangeLabel(context, job),
         color: Theme.of(context).colorScheme.primary,
       ),
       (
         id: 'field',
         icon: HopeV2Icons.category,
         label: _t(context, 'زمینه', 'Field'),
-        value: job.category ?? job.categoryId ?? '—',
+        value: hopeCategoryLabel(context, job.category ?? job.categoryId ?? '—'),
         color: secondaryAccent(context),
       ),
       (
         id: 'location',
         icon: HopeV2Icons.location,
         label: _t(context, 'مکان', 'Location'),
-        value: job.city?.trim().isNotEmpty == true ? job.city! : _t(context, 'از راه دور', 'Remote'),
+        value: _opportunityLocationLabel(context, job),
         color: HopeV2Colors.secondary,
-      ),
-      (
-        id: 'deadline',
-        icon: HopeV2Icons.pending,
-        label: isJob ? _t(context, 'مهلت درخواست', 'Application deadline') : _t(context, 'مدت', 'Duration'),
-        value: isJob
-            ? (job.applicationDeadline ?? '—')
-            : '${job.duration ?? '—'} ${HopeCopy.of(context).copy_hours_7408608}',
-        color: AppColors.warning,
       ),
     ];
 
     return PremiumPanel(
-      padding: const EdgeInsets.fromLTRB(15, 14, 15, 13),
+      quiet: true,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       semanticLabel: _t(context, 'خلاصه سریع فرصت', 'Opportunity snapshot'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +130,7 @@ class _OpportunitySnapshot extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth >= 720 ? 4 : constraints.maxWidth >= 360 ? 2 : 1;
-              const gap = 10.0;
+              const gap = 8.0;
               final width = columns == 1 ? constraints.maxWidth : (constraints.maxWidth - gap * (columns - 1)) / columns;
               return Wrap(
                 key: const ValueKey('opportunity-snapshot-facts'),
@@ -206,15 +245,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
     if (repository == null) return;
 
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _EmployerCandidateMatchesLoader(
-          future: repository.listForJob(job.id),
-          jobTitle: job.title,
-        ),
+      HopeRoutes.candidateMatches(
+        future: repository.listForJob(job.id),
+        jobTitle: job.title,
       ),
     );
   }
-
   Future<void> action() async {
     final auth = context.read<AuthController?>();
 
@@ -257,7 +293,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     .copy_add_a_concise_resume_and_relevant_skills_298a4f1,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               TextField(
                 controller: resume,
                 maxLines: 5,
@@ -383,7 +419,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   .copy_send_your_price_and_a_short_message_to_the_3961669,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             TextField(
               controller: price,
               keyboardType: TextInputType.number,
@@ -667,7 +703,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
   Widget build(BuildContext context) {
     final j = widget.job;
     final isJob = j.isJob;
-    final visibility = j.visibility;
     final currentUserId =
         context.read<AuthController?>()?.user?['id']?.toString();
     final isOwner =
@@ -677,8 +712,16 @@ class _JobDetailPageState extends State<JobDetailPage> {
     final canViewFinance = isOwner || isProvider;
     final collaborationChatOpen = (isOwner || isProvider) && ['ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED'].contains(j.status?.toUpperCase());
 
-    final compactViewport =
-        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final rawWorkMode = j.raw['workMode'] ??
+        j.raw['mode'] ??
+        j.raw['locationType'] ??
+        j.raw['work_mode'];
+    final hasExplicitWorkMode =
+        rawWorkMode?.toString().trim().isNotEmpty == true &&
+            rawWorkMode?.toString().trim() != '—';
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final compactViewport = viewportWidth < HopeV2Breakpoints.compact;
+    final denseViewport = viewportWidth < HopeV2Breakpoints.expanded;
     return Scaffold(
       extendBodyBehindAppBar: true,
       bottomNavigationBar: SafeArea(
@@ -701,6 +744,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             : HopeCopy.of(context)
                                 .copy_offer_for_mission_ced8d4c,
                 child: FilledButton.icon(
+                  key: const ValueKey('opportunity-detail-primary-cta'),
                   onPressed: loading
                       ? null
                       : canViewFinance
@@ -742,9 +786,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
       body: PremiumPageFrame(
         page: HopePageId.opportunityDetail,
         maxWidth: 1180,
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 102),
+        padding: EdgeInsets.fromLTRB(
+          compactViewport ? 14 : 18,
+          8,
+          compactViewport ? 14 : 18,
+          compactViewport ? 24 : 32,
+        ),
         child: ListView(
-          padding: EdgeInsets.zero,
+          key: const ValueKey('opportunity-detail-content-list'),
+          padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             Stack(
               clipBehavior: Clip.none,
@@ -756,18 +806,18 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       ? HopeCopy.of(context).copy_job_ce2feba
                       : HopeCopy.of(context).copy_mission_fb4c5e1,
                   title: j.title,
-                  message: [
-                    j.category ?? j.categoryId,
-                    if (j.city != null && j.city!.trim().isNotEmpty) j.city,
-                  ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • '),
+                  // Category and location are carried by the decision strip.
+                  // Keep the hero focused on the opportunity identity.
+                  message: '',
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
-                  height: compactViewport ? 170 : 230,
+                  height: compactViewport ? 132 : denseViewport ? 166 : 214,
+                  compactHero: denseViewport,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
                   top: 10,
-                  start: 10,
+                  end: 10,
                   child: PremiumIconButton(
                     icon: Localizations.localeOf(context).languageCode == 'en'
                         ? HopeV2Icons.arrowLeft
@@ -778,48 +828,51 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      if (j.recommendationScore != null)
-                        KeyedSubtree(
-                          key: const ValueKey('opportunity-detail-hero-match'),
-                          child: PremiumTag(
-                            icon: HopeV2Icons.featured,
-                            label: _t(
-                              '${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% تطبیق',
-                              '${j.recommendationScore!.clamp(0, 100).toStringAsFixed(0)}% Match',
-                            ),
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-
-                    ],
-                  ),
-                  if (j.isRecommended &&
-                      (j.recommendationScore != null ||
-                          j.recommendationReasons.isNotEmpty)) ...[
-                    SizedBox(height: compactViewport ? 8 : 12),
-                    if (compactViewport)
-                      ConstrainedBox(
-                        key: const ValueKey(
-                          'opportunity-match-intelligence-compact-boundary',
-                        ),
-                        constraints: const BoxConstraints(minHeight: 166),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: _MatchIntelligence(job: j, compact: true),
-                        ),
-                      )
-                    else
-                      _MatchIntelligence(job: j),
-                  ],
-                  const SizedBox(height: 10),
-                  HopeOpportunityDnaSignature(job: j),
-                  const SizedBox(height: 12),
-                  PremiumSectionHeader(
+            HopeOpportunityDecisionStrip(
+              matchScore: j.recommendationScore,
+              kind: isJob ? _t('فرصت شغلی', 'Job') : _t('ماموریت', 'Mission'),
+              budget: isJob
+                  ? moneyLabel(context, j.monthlySalary ?? j.budgetMin ?? '—')
+                  : _budgetRangeLabel(context, j),
+              category: hopeCategoryLabel(
+                context,
+                j.category?.trim().isNotEmpty == true
+                    ? j.category!
+                    : j.categoryId ?? '—',
+              ),
+              location: _opportunityLocationLabel(context, j),
+              accent: Theme.of(context).colorScheme.primary,
+              breakdown: j.recommendationComponents,
+            ),
+            Padding(
+              key: const ValueKey('opportunity-quick-status'),
+              padding: EdgeInsets.only(top: compactViewport ? 6 : 8),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: StatusPill(
+                  _opportunityStatusLabel(context, j.status),
+                  icon: HopeV2Icons.pending,
+                  color: j.status?.toUpperCase() == 'CANCELLED'
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+            SizedBox(height: compactViewport ? 6 : 10),
+            if (!compactViewport) ...[
+              if (hasExplicitWorkMode) ...[
+                const SizedBox(height: 8),
+                HopeOpportunityDnaSignature(
+                  job: j,
+                  includeBudget: false,
+                  includeMatch: false,
+                  includeCategory: false,
+                  includeLocation: false,
+                ),
+                const SizedBox(height: 12),
+              ],
+            ],
+            PremiumSectionHeader(
                     domain: HopeProductDomain.discovery,
                     title: _t('شرح فرصت', 'Job description'),
                   ),
@@ -828,11 +881,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     j.description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.55),
                   ),
-                  const SizedBox(height: 14),
-                  _OpportunitySnapshot(job: j),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   PremiumPanel(
-                    padding: const EdgeInsets.all(17),
+                    quiet: true,
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -877,7 +929,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (isJob) ...[
                     const SizedBox(height: 13),
                     PremiumPanel(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -894,7 +946,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ),
                   ],
                   const SizedBox(height: 13),
-                  _JobLifecycleCard(job: j),
+                  KeyedSubtree(
+              key: const ValueKey('opportunity-detail-last-section'),
+              child: _JobLifecycleCard(job: j),
+            ),
                   const SizedBox(height: 13),
                   if (context.read<AuthController?>()?.user?['id'] == (j.ownerId ?? '') &&
                       context.read<EmployerCandidateMatchingRepository?>() != null)
@@ -937,7 +992,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         }
                         if (snapshot.hasError) {
                           return PremiumPanel(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -968,7 +1023,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
 
                         if (list.isEmpty) {
                           return PremiumPanel(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             child: Text(
                               _t(
                                 'هنوز متقاضی‌ای برای نمایش وجود ندارد.',
@@ -980,7 +1035,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         }
 
                         return PremiumPanel(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1157,7 +1212,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ),
                   if (canViewFinance)
                     PremiumPanel(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       highlight: true,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1226,7 +1281,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ),
                   if (collaborationChatOpen)
                     PremiumPanel(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
                           const HugeIcon(icon: HopeV2Icons.message, size: 21),
@@ -1328,31 +1383,93 @@ class _JobLifecycleCard extends StatelessWidget {
     final status = job.status?.toUpperCase() ?? 'UNKNOWN';
 
     return PremiumPanel(
-      padding: const EdgeInsets.all(16),
+      quiet: true,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const HopeIconTile(HopeV2Icons.route, filled: true),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _t(context, 'چرخه عمر فرصت', 'Opportunity lifecycle'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              StatusPill(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackedHeader =
+                  constraints.maxWidth < HopeV2Breakpoints.compact ||
+                      MediaQuery.textScalerOf(context).scale(1) > 1.2;
+              final lifecycleTitle = Text(
+                _t(context, 'چرخه عمر فرصت', 'Opportunity lifecycle'),
+                style: Theme.of(context).textTheme.titleMedium,
+              );
+              final lifecycleStatus = StatusPill(
                 _label(context, status),
                 icon: HopeV2Icons.pending,
                 color: status == 'CANCELLED'
                     ? Theme.of(context).colorScheme.error
                     : Theme.of(context).colorScheme.primary,
-              ),
-            ],
+              );
+
+              if (stackedHeader) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const HopeIconTile(
+                          HopeV2Icons.route,
+                          filled: true,
+                          size: 40,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(child: lifecycleTitle),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: lifecycleStatus,
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  const HopeIconTile(
+                    HopeV2Icons.route,
+                    filled: true,
+                    size: 40,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: lifecycleTitle),
+                  lifecycleStatus,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
-          ...List.generate(stages.length, (index) {
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < HopeV2Breakpoints.compact) {
+                return HopeLifecycleRail(
+                  labels: [for (final stage in stages) _label(context, stage)],
+                  icons: const [
+                    HopeV2Icons.pending,
+                    HopeV2Icons.featured,
+                    HopeV2Icons.wallet,
+                    HopeV2Icons.activity,
+                    HopeV2Icons.activity,
+                    HopeV2Icons.pending,
+                    HopeV2Icons.completed,
+                  ],
+                  current: current,
+                );
+              }
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...List.generate(stages.length, (index) {
             final reached = current >= index;
             final active = current == index;
             return Row(
@@ -1398,7 +1515,12 @@ class _JobLifecycleCard extends StatelessWidget {
                 ),
               ],
             );
-          }),
+
+                  }),
+                ],
+              );
+            },
+          ),
           if (status == 'CANCELLED')
             Text(
               _t(
@@ -1532,7 +1654,10 @@ class _MatchIntelligence extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '${score.clamp(0, 100).toStringAsFixed(0)}%',
+                                  HopeDisplayFormatter.percent(
+                                    score.clamp(0, 100),
+                                    locale: Localizations.localeOf(context).languageCode,
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     height: 1,
@@ -1582,7 +1707,7 @@ class _MatchIntelligence extends StatelessWidget {
                             ),
                           if (confidence != null)
                             Text(
-                              '${(confidence.clamp(0, 1) * 100).round()} ${_t(context, 'درصد اطمینان', '% confidence')}',
+                              '${HopeDisplayFormatter.percent((confidence.clamp(0, 1) * 100).round(), locale: Localizations.localeOf(context).languageCode)} ${_t(context, 'اطمینان', 'confidence')}',
                               key: const ValueKey('match-confidence-note'),
                               style: Theme.of(context)
                                   .textTheme
@@ -1671,9 +1796,10 @@ class _MatchIntelligence extends StatelessWidget {
           child: PremiumPanel(
             key: const ValueKey('opportunity-match-intelligence'),
             padding: compact
-                ? const EdgeInsets.fromLTRB(8, 8, 8, 7)
-                : const EdgeInsets.fromLTRB(10, 10, 10, 8),
-            highlight: true,
+                ? const EdgeInsets.fromLTRB(8, 7, 8, 6)
+                : const EdgeInsets.fromLTRB(10, 8, 10, 7),
+            highlight: false,
+            quiet: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1682,15 +1808,18 @@ class _MatchIntelligence extends StatelessWidget {
                   children: [
                     if (score != null)
                       SizedBox(
-                        width: compact ? 50 : 56,
-                        height: compact ? 50 : 56,
+                        width: compact ? 50 : 52,
+                        height: compact ? 50 : 52,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
                             SizedBox.square(dimension: compact ? 50 : 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.0, color: primary.withValues(alpha: .10))),
-                            SizedBox.square(dimension: compact ? 58 : 64, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: primary)),
+                            SizedBox.square(dimension: compact ? 50 : 52, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: primary)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
-                              Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
+                              Text(HopeDisplayFormatter.percent(
+                                    score.clamp(0, 100),
+                                    locale: Localizations.localeOf(context).languageCode,
+                                  ), style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
                               Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: primary, letterSpacing: .6)),
                             ]),
@@ -1706,21 +1835,21 @@ class _MatchIntelligence extends StatelessWidget {
                           Expanded(child: Text(_t(context, 'هوش تطبیق', 'Match intelligence'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
                         ]),
                         if (fit != null) ...[SizedBox(height: compact ? 2 : 4), Text(fit, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: primary, fontWeight: FontWeight.w800))],
-                        if (confidence != null) ...[SizedBox(height: compact ? 2 : 4), Text('${(confidence.clamp(0, 1) * 100).round()}% ${_t(context, 'اطمینان', 'confidence')}', key: const ValueKey('match-confidence-note'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: HopeV2Colors.muted))],
+                        if (confidence != null) ...[SizedBox(height: compact ? 2 : 4), Text('${HopeDisplayFormatter.percent((confidence.clamp(0, 1) * 100).round(), locale: Localizations.localeOf(context).languageCode)} ${_t(context, 'اطمینان', 'confidence')}', key: const ValueKey('match-confidence-note'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: HopeV2Colors.muted))],
                       ]),
                     ),
                   ],
                 ),
                 if (hasComponents) ...[
-                  SizedBox(height: compact ? 7 : 9),
+                  SizedBox(height: compact ? 6 : 7),
                   Text(_t(context, 'تجزیه تطبیق', 'Match breakdown'), style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
-                  SizedBox(height: compact ? 6 : 8),
+                  SizedBox(height: compact ? 5 : 6),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final columns = constraints.maxWidth >= 320 ? 2 : 1;
-                      const gap = 8.0;
+                      const gap = 6.0;
                       final width = columns == 2 ? (constraints.maxWidth - gap) / 2 : constraints.maxWidth;
-                      return Wrap(spacing: gap, runSpacing: 8, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
+                      return Wrap(spacing: gap, runSpacing: 6, children: [for (final key in breakdownKeys) SizedBox(width: width, child: _breakdownBar(context, key: key, value: _componentValue(key)))]);
                     },
                   ),
                 ],
@@ -1749,22 +1878,22 @@ class _MatchIntelligence extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
-      key: ValueKey('match-breakdown-${key}'),
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 4 : 5),
+      key: ValueKey('match-breakdown-$key'),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 3 : 5),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .45),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),
-        border: Border.all(color: primary.withValues(alpha: .14)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
           Expanded(child: Text(_componentLabel(context, key), style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800))),
-          Text('${percent}%', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: primary, fontWeight: FontWeight.w900)),
+          Text('$percent%', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: primary, fontWeight: FontWeight.w900)),
         ]),
         const SizedBox(height: 5),
         ClipRRect(
           borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-          child: LinearProgressIndicator(minHeight: 5, value: value, backgroundColor: primary.withValues(alpha: .08), valueColor: AlwaysStoppedAnimation<Color>(primary)),
+          child: LinearProgressIndicator(minHeight: compact ? 4 : 5, value: value, backgroundColor: primary.withValues(alpha: .08), valueColor: AlwaysStoppedAnimation<Color>(primary)),
         ),
       ]),
     );
@@ -1798,7 +1927,10 @@ class _MatchIntelligence extends StatelessWidget {
                         child: Stack(alignment: Alignment.center, children: [
                           SizedBox.square(dimension: 88, child: CircularProgressIndicator(value: 1, strokeWidth: 7, color: primary.withValues(alpha: .12))),
                           SizedBox.square(dimension: 88, child: CircularProgressIndicator(value: value, strokeWidth: 7, strokeCap: StrokeCap.round, color: primary)),
-                          Text('${score.clamp(0, 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
+                          Text(HopeDisplayFormatter.percent(
+                                    score.clamp(0, 100),
+                                    locale: Localizations.localeOf(context).languageCode,
+                                  ), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
                         ]),
                       ),
                     if (score != null) const SizedBox(width: 16),
@@ -1832,8 +1964,9 @@ class _MatchIntelligence extends StatelessWidget {
 
 
 
-class _EmployerCandidateMatchesLoader extends StatelessWidget {
-  const _EmployerCandidateMatchesLoader({
+class EmployerCandidateMatchesLoader extends StatelessWidget {
+  const EmployerCandidateMatchesLoader({
+    super.key,
     required this.future,
     required this.jobTitle,
   });

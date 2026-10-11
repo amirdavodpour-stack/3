@@ -1272,5 +1272,17 @@
   "copy_offers": "پیشنهادها",
   "@copy_offers": {
     "description": "Activity navigation destination for offers."
-  }
+  },
+  "categorySoftware": "نرم‌افزار",
+  "categoryDesign": "طراحی",
+  "categoryMarketing": "بازاریابی",
+  "categoryContentTranslation": "محتوا و ترجمه",
+  "categoryFinanceAccounting": "مالی و حسابداری",
+  "categoryEducation": "آموزش",
+  "categorySupport": "پشتیبانی",
+  "categoryConstructionTechnical": "ساخت‌وساز و فنی",
+  "categoryVideoAudio": "تولید ویدیو و صدا",
+  "categoryDataAI": "داده و هوش مصنوعی",
+  "categorySales": "فروش",
+  "categoryOther": "سایر"
 }

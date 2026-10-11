@@ -100,6 +100,20 @@ class _FakeAdminOperations implements AdminRepository {
   @override
   Future<Map<String, dynamic>> getCrashSummary({int days = 30}) async =>
       const {};
+  @override Future<Map<String, dynamic>> grantAdminByEmail(String email) async => const {};
+  @override Future<void> revokeAdministrator(String id) async {}
+  @override Future<void> revokeUserSessions(String id) async {}
+  @override
+  Future<Map<String, dynamic>> getPanelAccess() async => const {
+        'verified': true,
+        'primaryAdmin': true,
+        'permissions': ['admin.resolve_payouts'],
+      };
+  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async => const {'verified': true};
+  @override Future<void> lockPanel() async {}
+  @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
+  @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
+  @override Future<Map<String, dynamic>> resolveDispute(String id, {required String resolution, String? reason}) async => const {};
 }
 
 Widget _host(_FakeAdminOperations repository) => MaterialApp(
