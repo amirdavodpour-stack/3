@@ -38,10 +38,10 @@ class HopeMonthlyCashFlow {
   final String reserved;
   final String net;
 
-  double get inflowValue => double.tryParse(inflow) ?? 0;
-  double get outflowValue => double.tryParse(outflow) ?? 0;
-  double get reservedValue => double.tryParse(reserved) ?? 0;
-  double get netValue => double.tryParse(net) ?? 0;
+  double? get inflowValue => double.tryParse(inflow);
+  double? get outflowValue => double.tryParse(outflow);
+  double? get reservedValue => double.tryParse(reserved);
+  double? get netValue => double.tryParse(net);
 }
 
 class HopeBalancePoint {
@@ -109,10 +109,10 @@ class HopeFinancialInsights {
           .map((item) => HopeMonthlyCashFlow(
                 month: '${item['month'] ?? ''}',
                 label: '${item['label'] ?? item['month'] ?? ''}',
-                inflow: '${item['inflow'] ?? 0}',
-                outflow: '${item['outflow'] ?? 0}',
-                reserved: '${item['reserved'] ?? 0}',
-                net: '${item['net'] ?? 0}',
+                inflow: item['inflow'] == null ? '' : '${item['inflow']}',
+                outflow: item['outflow'] == null ? '' : '${item['outflow']}',
+                reserved: item['reserved'] == null ? '' : '${item['reserved']}',
+                net: item['net'] == null ? '' : '${item['net']}',
               ))
           .toList(growable: false),
       balanceTrend: (map['balanceTrend'] is List
