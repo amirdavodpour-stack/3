@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../finance/toman_formatter.dart';
-import 'hope_display_formatters.dart';
 import 'hope_l10n.dart';
 
 @Deprecated('Use HopeCopy.of(context).<key> for static UI copy.')
@@ -8,9 +7,8 @@ String tx(BuildContext context, String fa, String en) =>
     Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
 String moneyLabel(BuildContext context, Object value) {
-  final grouped = HopeTomanFormatter.grouped(value);
-  final localized = HopeDisplayFormatter.localizeDigits(
-    grouped,
+  final localized = HopeTomanFormatter.groupedForLocale(
+    value,
     locale: Localizations.localeOf(context).languageCode,
   );
   return HopeCopy.of(context).copy_value_irr_ed45261(localized);

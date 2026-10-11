@@ -379,13 +379,16 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   );
                 }
                 final jobs = snapshot.data ?? const <HopeJob>[];
-                return _opportunitySections(context, jobs, settings);
+                return _opportunitySections(
+                  context,
+                  jobs,
+                  settings,
+                  compactPulse: compactFold
+                      ? _homePulse(context, auth, compact: true)
+                      : null,
+                );
               },
             ),
-            if (compactFold) ...[
-              const SizedBox(height: HopeV2Spacing.xs),
-              _homePulse(context, auth),
-            ],
             SizedBox(
               height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
             ),
@@ -420,7 +423,11 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     );
   }
 
-  Widget _homePulse(BuildContext context, AuthController auth) {
+  Widget _homePulse(
+    BuildContext context,
+    AuthController auth, {
+    bool compact = false,
+  }) {
     return FutureBuilder<List<HopeJob>>(
       future: _opportunities,
       builder: (context, snapshot) {
@@ -472,6 +479,77 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             accent: HopeV2Colors.success,
           ),
         ];
+
+        if (compact && !enlargedText) {
+          return PremiumPanel(
+            key: const ValueKey('home-pulse-panel'),
+            semanticLabel: _t(context, 'نمای کلی هوپ', 'HOPE Pulse overview'),
+            quiet: true,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: SizedBox(
+              key: const ValueKey('home-pulse-compact-strip'),
+              height: 36,
+              child: Row(
+                children: [
+                  Text(
+                    'HOPE',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .2,
+                        ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var index = 0; index < stats.length; index++) ...[
+                            if (index > 0) const SizedBox(width: 6),
+                            Container(
+                              constraints: const BoxConstraints(minHeight: 28),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: stats[index].accent.withValues(alpha: .12),
+                                borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  HopeIcon(
+                                    stats[index].icon,
+                                    size: 12,
+                                    color: stats[index].accent,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${stats[index].value} ${stats[index].label}',
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.clip,
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
         return PremiumPanel(
           key: const ValueKey('home-pulse-panel'),
@@ -719,7 +797,12 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     );
   }
 
-  Widget _opportunitySections(BuildContext context, List<HopeJob> jobs, HopeSettingsController settings) {
+  Widget _opportunitySections(
+    BuildContext context,
+    List<HopeJob> jobs,
+    HopeSettingsController settings, {
+    Widget? compactPulse,
+  }) {
     final recommended = jobs.where((j) => j.isRecommended).toList();
     final nearby = jobs
         .where((j) =>
@@ -730,23 +813,32 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     final remaining = jobs.where((j) => !used.contains(j)).toList();
 
     if (jobs.isEmpty) {
-      return PremiumEmptyState(
-        icon: HopeV2Icons.workshop,
-        title: _t(
-          context,
-          'فعلاً فرصت مرتبطی پیدا نشد',
-          'No matching opportunities yet',
-        ),
-        message: _t(
-          context,
-          'می‌توانید در بخش کاوش فیلترها را بازتر کنید.',
-          'Try broadening filters in Explore.',
-        ),
-        action: OutlinedButton.icon(
-          onPressed: widget.onOpenExplore,
-          icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 18),
-          label: Text(_t(context, 'رفتن به کاوش', 'Open Explore')),
-        ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PremiumEmptyState(
+            icon: HopeV2Icons.workshop,
+            title: _t(
+              context,
+              'فعلاً فرصت مرتبطی پیدا نشد',
+              'No matching opportunities yet',
+            ),
+            message: _t(
+              context,
+              'می‌توانید در بخش کاوش فیلترها را بازتر کنید.',
+              'Try broadening filters in Explore.',
+            ),
+            action: OutlinedButton.icon(
+              onPressed: widget.onOpenExplore,
+              icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 18),
+              label: Text(_t(context, 'رفتن به کاوش', 'Open Explore')),
+            ),
+          ),
+          if (compactPulse != null) ...[
+            const SizedBox(height: HopeV2Spacing.sm),
+            compactPulse,
+          ],
+        ],
       );
     }
 
@@ -763,6 +855,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             job: recommended.first,
             variant: OpportunityCardVariant.featured,
           ),
+          if (compactPulse != null) ...[
+            const SizedBox(height: HopeV2Spacing.xs),
+            compactPulse,
+          ],
           const SizedBox(height: HopeV2Spacing.sm),
           if (recommended.length > 1)
             _section(
@@ -781,6 +877,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               '${jobs.length} opportunities',
             ),
           ),
+          if (compactPulse != null) ...[
+            const SizedBox(height: HopeV2Spacing.xs),
+            compactPulse,
+          ],
         ],
         const SizedBox(height: HopeV2Spacing.sm),
         if (nearby.isNotEmpty)

@@ -507,6 +507,49 @@ class _MonthlyCashFlowDetails extends StatelessWidget {
   }
 }
 
+double _cashFlowAxisMaximum(num maximum) {
+  if (maximum < 4) return 4;
+  final targetStep = maximum / 4;
+  final exponent = (math.log(targetStep) / math.ln10).floor();
+  final magnitude = math.pow(10, exponent).toDouble();
+  final fraction = targetStep / magnitude;
+  final niceStep = fraction <= 1
+      ? 1.0
+      : fraction <= 2
+          ? 2.0
+          : fraction <= 2.5
+              ? 2.5
+              : fraction <= 5
+                  ? 5.0
+                  : 10.0;
+  return niceStep * magnitude * 4;
+}
+
+String _cashFlowAxisLabel(int value, String locale) {
+  final fa = locale.toLowerCase().startsWith('fa');
+  if (value >= 1000000000) {
+    return '${_localizeAxisScale(value / 1000000000, locale)}${fa ? 'میلیارد' : 'B'}';
+  }
+  if (value >= 1000000) {
+    return '${_localizeAxisScale(value / 1000000, locale)}${fa ? 'م' : 'M'}';
+  }
+  if (value >= 1000) {
+    return '${_localizeAxisScale(value / 1000, locale)}${fa ? 'هزار' : 'k'}';
+  }
+  return HopeDisplayFormatter.integer(value, locale: locale);
+}
+
+String _localizeAxisScale(double value, String locale) {
+  final rounded = (value * 100).round() / 100;
+  final raw = rounded == rounded.roundToDouble()
+      ? rounded.toInt().toString()
+      : rounded
+          .toStringAsFixed(2)
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
+  return HopeDisplayFormatter.localizeDigits(raw, locale: locale);
+}
+
 class _BarChart extends StatelessWidget {
   const _BarChart({required this.data});
   final List<HopeMonthlyCashFlow> data;
@@ -518,7 +561,20 @@ class _BarChart extends StatelessWidget {
     final inflow = theme.colorScheme.primary;
     final outflow = theme.colorScheme.tertiary;
     final reserved = theme.colorScheme.secondary;
-    final english = Localizations.localeOf(context).languageCode == 'en';
+    final locale = Localizations.localeOf(context).languageCode;
+    final english = locale.toLowerCase().startsWith('en');
+    final values = data
+        .expand((month) => [month.inflowValue, month.outflowValue, month.reservedValue])
+        .toList(growable: false);
+    final maximum = values.isEmpty ? 0 : values.reduce((a, b) => a > b ? a : b);
+    final scaleMaximum = _cashFlowAxisMaximum(maximum);
+    final hasRecordedFlow = data.any(
+      (month) =>
+          month.inflowValue > 0 ||
+          month.outflowValue > 0 ||
+          month.reservedValue > 0,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -546,61 +602,133 @@ class _BarChart extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // Keep each month readable instead of squeezing all labels into
-              // the viewport; the chart becomes horizontally scrollable only
-              // when the real series count needs more width.
-              final textScale = MediaQuery.textScalerOf(context).scale(1);
-              final monthWidth = math.max(58.0, 58.0 * textScale);
-              final chartWidth =
-                  math.max(constraints.maxWidth, data.length * monthWidth).toDouble();
-              return SingleChildScrollView(
-                key: const ValueKey('financial-cashflow-chart-scroll'),
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: chartWidth,
-                  height: constraints.maxHeight,
-                  child: Semantics(
-                    key: const ValueKey('financial-cashflow-chart-semantics'),
-                    container: true,
-                    label: data.isEmpty
+          child: !hasRecordedFlow
+              ? Center(
+                  key: const ValueKey('financial-cashflow-zero-state'),
+                  child: Text(
+                    data.isEmpty
                         ? (english
-                            ? 'Monthly cash flow: no recorded data. Amounts are in TOMAN.'
-                            : 'جریان نقدی ماهانه: داده‌ای ثبت نشده است. مبالغ به تومان هستند.')
+                            ? 'No recorded cash-flow data.'
+                            : 'داده‌ای برای جریان نقدی ثبت نشده است.')
                         : (english
-                            ? 'Monthly cash flow; amounts in TOMAN; ${data.length} recorded months. '
-                            : 'جریان نقدی ماهانه؛ مبالغ به تومان؛ ${data.length} ماه ثبت‌شده. ') +
-                            data.map((month) {
-                              String money(String raw) =>
-                                  HopeDisplayFormatter.money(
-                                    double.tryParse(raw)?.round() ?? 0,
-                                    locale: Localizations.localeOf(context)
-                                        .languageCode,
-                                  );
-                              return english
-                                  ? '${month.month} (${month.label}): inflow ${money(month.inflow)}, outflow ${money(month.outflow)}, reserved ${money(month.reserved)}'
-                                  : '${month.month} (${month.label}): ورودی ${money(month.inflow)}، خروجی ${money(month.outflow)}، رزرو شده ${money(month.reserved)}';
-                            }).join(english ? '. ' : '؛ '),
-                    child: CustomPaint(
-                      painter: _BarChartPainter(
-                        data,
-                        inflow,
-                        outflow,
-                        reserved,
-                        theme.colorScheme.outline,
-                        Directionality.of(context),
-                        textScale,
-                      ),
-                      child: const SizedBox.expand(),
-                    ),
+                            ? 'No cash flow recorded for this period.'
+                            : 'برای این دوره جریان نقدی ثبت‌شده‌ای وجود ندارد.'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                   ),
-                ),
-              );
-            },
-          ),
-        ),
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    const axisWidth = 70.0;
+                    final textScale = MediaQuery.textScalerOf(context).scale(1);
+                    final monthWidth = math.max(58.0, 58.0 * textScale);
+                    final chartWidth = math.max(
+                      constraints.maxWidth - axisWidth,
+                      data.length * monthWidth,
+                    ).toDouble();
+                    final labelHeight = constraints.maxHeight < 150 ? 20.0 : 24.0;
 
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          width: axisWidth,
+                          height: constraints.maxHeight,
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: labelHeight + 3,
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Text(
+                                    english ? 'TOMAN' : 'تومان',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.clip,
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 3),
+                                  child: Column(
+                                    key: const ValueKey('financial-cashflow-y-axis'),
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      for (var tick = 4; tick >= 0; tick--)
+                                        Text(
+                                          _cashFlowAxisLabel(
+                                            (scaleMaximum * tick / 4).round(),
+                                            locale,
+                                          ),
+                                          key: ValueKey('financial-cashflow-y-tick-$tick'),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.end,
+                                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                fontSize: 10,
+                                                height: 1,
+                                                fontWeight: tick == 0 || tick == 4
+                                                    ? FontWeight.w800
+                                                    : FontWeight.w600,
+                                                color: theme.colorScheme.onSurfaceVariant,
+                                              ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            key: const ValueKey('financial-cashflow-chart-scroll'),
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: chartWidth,
+                              height: constraints.maxHeight,
+                              child: Semantics(
+                                key: const ValueKey('financial-cashflow-chart-semantics'),
+                                container: true,
+                                label: english
+                                    ? 'Monthly cash flow; amounts in TOMAN; ${data.length} recorded months. ' +
+                                        data.map((month) =>
+                                          '${month.month} (${month.label}): inflow ${HopeDisplayFormatter.money(month.inflow, locale: locale)}, outflow ${HopeDisplayFormatter.money(month.outflow, locale: locale)}, reserved ${HopeDisplayFormatter.money(month.reserved, locale: locale)}'
+                                        ).join('. ')
+                                    : 'جریان نقدی ماهانه؛ مبالغ به تومان؛ ${data.length} ماه ثبت‌شده. ' +
+                                        data.map((month) =>
+                                          '${month.month} (${month.label}): ورودی ${HopeDisplayFormatter.money(month.inflow, locale: locale)}، خروجی ${HopeDisplayFormatter.money(month.outflow, locale: locale)}، رزرو شده ${HopeDisplayFormatter.money(month.reserved, locale: locale)}'
+                                        ).join('؛ '),
+                                child: CustomPaint(
+                                  painter: _BarChartPainter(
+                                    data,
+                                    inflow,
+                                    outflow,
+                                    reserved,
+                                    theme.colorScheme.outline,
+                                    Directionality.of(context),
+                                    textScale,
+                                    scaleMaximum,
+                                  ),
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+        ),
       ],
     );
   }
@@ -643,6 +771,7 @@ class _BarChartPainter extends CustomPainter {
     this.axisColor,
     this.textDirection, [
     this.textScale = 1,
+    this.scaleMaximum = 1,
   ]);
   final List<HopeMonthlyCashFlow> data;
   final Color inflowColor;
@@ -651,13 +780,11 @@ class _BarChartPainter extends CustomPainter {
   final Color axisColor;
   final TextDirection textDirection;
   final double textScale;
+  final double scaleMaximum;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final values = data
-        .expand((x) => [x.inflowValue, x.outflowValue, x.reservedValue])
-        .toList();
-    final maxValue = values.isEmpty ? 1.0 : math.max(1.0, values.reduce(math.max));
+    final maxValue = math.max(1.0, scaleMaximum);
     final labelHeight = size.height < 150 ? 20.0 : 24.0;
     final plotTop = labelHeight + 3;
     final plotBottom =
@@ -696,6 +823,13 @@ class _BarChartPainter extends CustomPainter {
     final axis = Paint()
       ..color = axisColor.withValues(alpha: .35)
       ..strokeWidth = 1;
+    final grid = Paint()
+      ..color = axisColor.withValues(alpha: .14)
+      ..strokeWidth = 1;
+    for (var tick = 0; tick <= 4; tick++) {
+      final y = plotBottom - plotHeight * tick / 4;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+    }
     canvas.drawLine(Offset(0, plotBottom), Offset(size.width, plotBottom), axis);
     for (var i = 0; i < data.length; i++) {
       final value = data[i].label.trim().isEmpty ? data[i].month : data[i].label;
@@ -728,7 +862,8 @@ class _BarChartPainter extends CustomPainter {
       oldDelegate.reservedColor != reservedColor ||
       oldDelegate.axisColor != axisColor ||
       oldDelegate.textDirection != textDirection ||
-      oldDelegate.textScale != textScale;
+      oldDelegate.textScale != textScale ||
+      oldDelegate.scaleMaximum != scaleMaximum;
 }
 
 class _LineChart extends StatelessWidget {

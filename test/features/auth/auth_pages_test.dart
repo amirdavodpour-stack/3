@@ -76,6 +76,23 @@ void main() {
     expect(find.textContaining('ساخت حساب'), findsOneWidget);
   });
 
+  testWidgets('compact login keeps account creation within the initial viewport',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(await _screen(const LoginPage()));
+    await tester.pumpAndSettle();
+
+    final signup = find.textContaining('ساخت حساب');
+    expect(signup, findsOneWidget);
+    expect(tester.getRect(signup).top, greaterThanOrEqualTo(0));
+    expect(tester.getRect(signup).bottom, lessThanOrEqualTo(640));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('login has no orphaned separator when Google sign-in is unavailable',
       (tester) async {
     await tester.pumpWidget(await _screen(const LoginPage()));

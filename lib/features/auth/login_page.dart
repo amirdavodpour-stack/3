@@ -106,6 +106,10 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final denseAuth =
+        (MediaQuery.sizeOf(context).height < 760 ||
+            MediaQuery.viewInsetsOf(context).bottom > 0) &&
+        MediaQuery.textScalerOf(context).scale(1) <= 1.2;
     return Directionality(
       textDirection: Localizations.localeOf(context).languageCode == 'en'
           ? TextDirection.ltr
@@ -115,7 +119,12 @@ class _LoginPageState extends State<LoginPage> {
           child: PremiumPageFrame(
             page: HopePageId.login,
             maxWidth: 640,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              denseAuth ? 4 : 12,
+              20,
+              denseAuth ? 12 : 30,
+            ),
             child: ListView(
               padding: HopeV2Navigation.scrollEndPadding(context),
               children: [
@@ -135,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                   const HopeMark(size: 34),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: denseAuth ? 6 : 12),
               PremiumHero(
                 page: HopePageId.login,
                 domain: HopeProductDomain.account,
@@ -143,10 +152,10 @@ class _LoginPageState extends State<LoginPage> {
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
-                height: 104,
-                    compactHero: true,
+                height: denseAuth ? 92 : 104,
+                compactHero: true,
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: denseAuth ? 6 : 10),
               AnimatedEntrance(
                 child: PremiumPanel(
                   // Auth is a dense primary surface; avoid a nested GPU blur
@@ -249,7 +258,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: denseAuth ? 8 : 14),
               OutlinedButton.icon(
                 onPressed: loading
                     ? null

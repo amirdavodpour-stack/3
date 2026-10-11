@@ -40,27 +40,8 @@ class PremiumPaymentSummary extends StatelessWidget {
 
   String _money(BuildContext context, dynamic value) {
     if (value == null) return '—';
-    final raw = '$value'.trim();
-    final parsed = num.tryParse(raw);
-    final normalized = parsed != null && parsed == parsed.truncate()
-        ? parsed.toInt().toString()
-        : raw;
-    final amount = int.tryParse(normalized);
-    if (amount == null) {
-      return "$normalized ${_label(context, 'تومان', 'Toman')}";
-    }
     final locale = Localizations.localeOf(context).languageCode;
-    if (locale.toLowerCase().startsWith('fa')) {
-      return HopeDisplayFormatter.money(amount, locale: locale);
-    }
-    final digits = amount.abs().toString();
-    final parts = <String>[];
-    for (var end = digits.length; end > 0; end -= 3) {
-      final start = end - 3 < 0 ? 0 : end - 3;
-      parts.insert(0, digits.substring(start, end));
-    }
-    final grouped = amount < 0 ? '-${parts.join(',')}' : parts.join(',');
-    return "$grouped ${_label(context, 'تومان', 'Toman')}";
+    return HopeDisplayFormatter.money(value, locale: locale);
   }
   Object _statusIcon() {
     switch (payment.status) {

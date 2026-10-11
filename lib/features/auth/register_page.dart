@@ -112,7 +112,12 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Directionality(
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final denseAuth =
+        (mediaQuery.size.height < 760 || mediaQuery.viewInsets.bottom > 0) &&
+        mediaQuery.textScaler.scale(1) <= 1.2;
+    return Directionality(
         textDirection: Localizations.localeOf(context).languageCode == 'en'
             ? TextDirection.ltr
             : TextDirection.rtl,
@@ -121,7 +126,12 @@ class _RegisterPageState extends State<RegisterPage> {
             child: PremiumPageFrame(
               page: HopePageId.register,
               maxWidth: 640,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                denseAuth ? 4 : 12,
+                20,
+                denseAuth ? 12 : 34,
+              ),
               child: ListView(
                 padding: HopeV2Navigation.scrollEndPadding(context),
                 children: [
@@ -141,7 +151,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       const HopeMark(size: 34),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: denseAuth ? 6 : 12),
                   PremiumHero(
                     page: HopePageId.register,
                     domain: HopeProductDomain.account,
@@ -149,10 +159,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
                     icon: HopeV2Icons.userAdd,
-                    height: 112,
+                    height: denseAuth ? 100 : 112,
                     compactHero: true,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: denseAuth ? 8 : 12),
                   PremiumPanel(
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                     child: Column(
@@ -282,4 +292,5 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       );
+  }
 }
