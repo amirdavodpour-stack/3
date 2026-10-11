@@ -371,7 +371,11 @@ class _ChartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
     final shortViewport = MediaQuery.sizeOf(context).height < 800;
-    final chartHeight = shortViewport ? 122.0 : compact ? 156.0 : 172.0;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final baseChartHeight =
+        shortViewport ? 122.0 : compact ? 156.0 : 172.0;
+    final chartHeight =
+        (baseChartHeight + math.max(0.0, textScale - 1.0) * 96.0).toDouble();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -634,9 +638,9 @@ class _BarChart extends StatelessWidget {
                       data.length * monthWidth,
                     ).toDouble();
                     final labelHeight = math.max(
-  constraints.maxHeight < 150 ? 20.0 : 24.0,
-  14.0 * textScale,
-).toDouble();
+                      constraints.maxHeight < 150 ? 20.0 : 24.0,
+                      14.0 * textScale,
+                    ).toDouble();
                     final axisTicks = textScale > 1.2
                         ? const [4, 2, 0]
                         : const [4, 3, 2, 1, 0];
@@ -917,9 +921,9 @@ class _LineChart extends StatelessWidget {
         // Keep both axes and data derived from the same recorded point values.
         final textScale = MediaQuery.textScalerOf(context).scale(1);
         final labelHeight = math.max(
-  constraints.maxHeight < 150 ? 20.0 : 24.0,
-  14.0 * textScale,
-).toDouble();
+          constraints.maxHeight < 150 ? 20.0 : 24.0,
+          14.0 * textScale,
+        ).toDouble();
         final pointWidth = math.max(64.0, 64.0 * textScale);
         final axisWidth =
             math.max(70.0, 70.0 * math.min(textScale, 1.4)).toDouble();
