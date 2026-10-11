@@ -710,12 +710,28 @@ class _WalletPageState extends State<WalletPage> {
       Widget totalBlock() => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _t('کل موجودی', 'Total balance'),
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w800,
-                ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 0,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    _t('کل موجودی', 'Total balance'),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    _t('شامل مبالغ قفل‌شده است', 'Includes locked funds'),
+                    style: const TextStyle(
+                      color: Colors.white60,
+                      fontSize: 12,
+                      height: 1.15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 2),
               Text(
@@ -730,17 +746,7 @@ class _WalletPageState extends State<WalletPage> {
                   letterSpacing: -.7,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                _t('شامل مبالغ قفل‌شده است', 'Includes locked funds'),
-                style: TextStyle(
-                  color: Colors.white60,
-                  fontSize: compact ? 10.5 : 11,
-                  height: 1.15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+             ],
           );
 
       final items = <({

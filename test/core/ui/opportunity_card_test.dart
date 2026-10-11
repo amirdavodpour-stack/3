@@ -483,7 +483,7 @@ void main() {
       if (gradient is! LinearGradient || gradient.colors.isEmpty) {
         return false;
       }
-      return gradient.colors.first == primary.withValues(alpha: .18);
+      return gradient.colors.first == primary.withValues(alpha: .12);
     });
 
     expect(focalGradientFound, isTrue);

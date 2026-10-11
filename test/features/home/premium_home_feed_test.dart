@@ -266,7 +266,7 @@ void main() {
   });
 
   testWidgets(
-      'home pulse stays a quiet rail below the primary match on responsive widths',
+      'home pulse stays a quiet rail before the primary match on responsive widths',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
     tester.view.devicePixelRatio = 1.0;
@@ -288,8 +288,8 @@ void main() {
       final bestMatch = find.text('Best match for you');
       expect(bestMatch, findsOneWidget);
       expect(
-        tester.getTopLeft(bestMatch).dy,
-        lessThan(tester.getTopLeft(find.text('matches')).dy),
+        tester.getTopLeft(pulse).dy,
+        lessThan(tester.getTopLeft(bestMatch).dy),
       );
     } finally {
       tester.view.resetPhysicalSize();
