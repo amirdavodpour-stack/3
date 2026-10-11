@@ -152,6 +152,31 @@ class _MissingBalancePointInsightsRepository implements FinancialInsightsReposit
       });
 }
 
+
+class _MissingSourceAmountInsightsRepository implements FinancialInsightsRepository {
+  const _MissingSourceAmountInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      HopeFinancialInsights.fromMap(const {
+        'currency': 'TOMAN',
+        'range': {'months': 6},
+        'summary': {
+          'availableBalance': 0,
+          'lockedBalance': 0,
+          'totalInflow': 0,
+          'totalOutflow': 0,
+          'totalReserved': 0,
+          'netCashFlow': 0,
+        },
+        'monthlyCashFlow': [],
+        'balanceTrend': [],
+        'bySource': [
+          {'source': 'JOB'},
+        ],
+      });
+}
+
 void main() {
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
@@ -815,5 +840,54 @@ void main() {
     expect(find.byKey(const ValueKey('financial-balance-chart-semantics')), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+
+  testWidgets(
+    'financial source rows do not invent zero amounts or shares when amount is missing',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        tester.view.physicalSize = const Size(360, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _MissingSourceAmountInsightsRepository(),
+            child: MaterialApp(
+              locale: const Locale('en'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(
+          find.text('Financial activity sources'),
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        final row = tester.getSemantics(
+          find.byKey(const ValueKey('financial-source-row-JOB')),
+        );
+        expect(row.label, contains('amount —'));
+        expect(row.label, contains('— of recorded source activity'));
+        expect(row.label, isNot(contains('amount 0 TOMAN')));
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
+    },
+  );
 
 }
