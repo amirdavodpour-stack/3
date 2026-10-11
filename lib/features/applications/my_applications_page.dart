@@ -476,35 +476,85 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     );
   }
 
+  String _timelineStageLabel(String stage) => switch (stage) {
+        'PENDING' => _t('در انتظار', 'Pending'),
+        'SHORTLISTED' => _t('بررسی', 'Shortlist'),
+        'FORWARDED' => _t('ارجاع', 'Forwarded'),
+        'INTERVIEW' => _t('مصاحبه', 'Interview'),
+        'OFFERED' => _t('پیشنهاد', 'Offer'),
+        'ACCEPTED' => _t('پذیرفته', 'Accepted'),
+        _ => _t('مرحله', 'Stage'),
+      };
+
   Widget _timeline(HopeApplication item) {
-    const stages = ['PENDING', 'SHORTLISTED', 'FORWARDED', 'INTERVIEW', 'OFFERED', 'ACCEPTED'];
+    const stages = [
+      'PENDING',
+      'SHORTLISTED',
+      'FORWARDED',
+      'INTERVIEW',
+      'OFFERED',
+      'ACCEPTED',
+    ];
     final current = stages.indexOf(item.status);
+    final stageColor = _statusColor(context, item.status);
+    final colors = Theme.of(context).colorScheme;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(stages.length, (index) {
+        final stage = stages[index];
         final reached = current >= 0 && index <= current;
         final active = index == current;
+        final label = _timelineStageLabel(stage);
         return Expanded(
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: active ? 12 : 9,
-                height: active ? 12 : 9,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: reached
-                      ? _statusColor(context, item.status)
-                      : Theme.of(context).colorScheme.outlineVariant,
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: active ? 12 : 9,
+                    height: active ? 12 : 9,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: reached ? stageColor : colors.outlineVariant,
+                    ),
+                  ),
+                  if (index < stages.length - 1)
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: reached && index < current
+                            ? stageColor
+                            : colors.outlineVariant,
+                      ),
+                    ),
+                ],
               ),
-              if (index < stages.length - 1)
-                Expanded(
-                  child: Container(
-                    height: 2,
-                    color: reached && index < current
-                        ? _statusColor(context, item.status)
-                        : Theme.of(context).colorScheme.outlineVariant,
+              const SizedBox(height: 5),
+              Semantics(
+                key: ValueKey('application-timeline-${item.id}-$stage'),
+                label: label,
+                selected: active,
+                child: Tooltip(
+                  message: label,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 9.5,
+                          height: 1.1,
+                          fontWeight:
+                              active ? FontWeight.w900 : FontWeight.w600,
+                          color: active
+                              ? stageColor
+                              : colors.onSurfaceVariant,
+                        ),
                   ),
                 ),
+              ),
             ],
           ),
         );
