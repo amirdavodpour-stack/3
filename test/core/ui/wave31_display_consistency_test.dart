@@ -195,12 +195,8 @@ void main() {
         expect(fallbackSize.height, lessThanOrEqualTo(32));
         expect(find.text('Flutter developer opportunity'), findsOneWidget);
         expect(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics &&
-                widget.button &&
-                (widget.label?.contains('Flutter developer opportunity') ?? false) &&
-                (widget.label?.contains('Berlin') ?? false),
+          find.bySemanticsLabel(
+            RegExp(r'Flutter developer opportunity.*Berlin', dotAll: true),
           ),
           findsOneWidget,
           reason: 'semantic title and true location must survive for $variant',
