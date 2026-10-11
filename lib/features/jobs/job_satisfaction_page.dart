@@ -303,22 +303,22 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                         ),
                         child: SegmentedButton<bool>(
                           key: const ValueKey('satisfaction-agreement-choice'),
-                        segments: [
-                          ButtonSegment<bool>(
-                            value: true,
-                            label: Text(_t('بله', 'Yes')),
-                            icon: const Icon(Icons.check_rounded),
-                          ),
-                          ButtonSegment<bool>(
-                            value: false,
-                            label: Text(_t('خیر', 'No')),
-                            icon: const Icon(Icons.flag_outlined),
-                          ),
-                        ],
-                        selected: _completedAsAgreed == null
-                            ? <bool>{}
-                            : <bool>{_completedAsAgreed!},
-                        emptySelectionAllowed: true,
+                          segments: [
+                            ButtonSegment<bool>(
+                              value: true,
+                              label: Text(_t('بله', 'Yes')),
+                              icon: const Icon(Icons.check_rounded),
+                            ),
+                            ButtonSegment<bool>(
+                              value: false,
+                              label: Text(_t('خیر', 'No')),
+                              icon: const Icon(Icons.flag_outlined),
+                            ),
+                          ],
+                          selected: _completedAsAgreed == null
+                              ? <bool>{}
+                              : <bool>{_completedAsAgreed!},
+                          emptySelectionAllowed: true,
                           onSelectionChanged: (selected) => setState(
                             () => _completedAsAgreed =
                                 selected.isEmpty ? null : selected.first,
