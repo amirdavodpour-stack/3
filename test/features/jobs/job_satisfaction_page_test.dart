@@ -321,7 +321,7 @@ void main() {
       await tester.ensureVisible(reportFinder);
       await tester.pumpAndSettle();
       await tester.enterText(reportFinder, 'گزارش آزمایشی');
-      await tester.testTextInput.hide();
+      tester.testTextInput.hide();
       await tester.pump();
 
       final submitFinder = find.byKey(
