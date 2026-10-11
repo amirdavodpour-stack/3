@@ -229,6 +229,16 @@ void main() {
     final compactPulse = find.byKey(const ValueKey('home-pulse-compact-strip'));
     expect(compactPulse, findsOneWidget);
     expect(tester.getSize(compactPulse).height, lessThanOrEqualTo(64));
+    final metricsScrollable = find.descendant(
+      of: find.byKey(const ValueKey('home-pulse-compact-metrics')),
+      matching: find.byType(Scrollable),
+    );
+    expect(metricsScrollable, findsOneWidget);
+    expect(
+      tester.state<ScrollableState>(metricsScrollable).position.maxScrollExtent,
+      lessThanOrEqualTo(1),
+      reason: 'All four compact Pulse metric chips must fit without horizontal clipping.',
+    );
     expect(tester.takeException(), isNull);
   });
 

@@ -491,16 +491,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               height: 36,
               child: Row(
                 children: [
-                  Text(
-                    'HOPE',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: .2,
-                        ),
-                  ),
-                  const SizedBox(width: 8),
                   Expanded(
                     child: SingleChildScrollView(
+                      key: const ValueKey('home-pulse-compact-metrics'),
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
