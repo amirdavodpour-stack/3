@@ -353,8 +353,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 title: _t('اعلان‌ها', 'Notifications'),
                 subtitle: unreadCount > 0
                     ? _t(
-                        'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • $unreadCountLabel اعلان جدید',
-                        'Updates for applications, work, and payments • $unreadCountLabel new',
+                        '$unreadCountLabel اعلان خوانده‌نشده در فهرست زیر',
+                        '$unreadCountLabel unread in this list',
                       )
                     : _t(
                         'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند',

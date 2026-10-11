@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # [runtime-capture-fa] exact-head discovery density validation.
 # Grouped visual-wave source guard for the consolidated editorial hierarchy + quiet-surface redesign.
-# [runtime-capture-fa-home] isolate editorial media to the Home discovery capture.
+# Full-page evidence stays on category-specific fallback art; real media remains opt-in.
 # Final verification capture after adding the scoped fixture contract.
 # The restored #1560 baseline does not require a runtime media fixture; editorial media activation remains a separate visual wave.
 set -eu
@@ -158,7 +158,7 @@ grep -Fq 'didExceedMaxLines' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'gy -= gy <= 1600 ? 621 : 1600;' "lib/core/ui/hope_display_formatters.dart"
 grep -Fq "icon: compactHero ? null : icon" "$premium"
 grep -Fq 'find.descendant(' 'test/core/ui/premium_visual_wave_15_test.dart'
-grep -Fq '۱۴۰۵ شهریور ۱۰' 'test/core/ui/hope_display_formatters_test.dart'
+grep -Fq '۱۰ شهریور ۱۴۰۵' 'test/core/ui/hope_display_formatters_test.dart'
 grep -Fq 'در ۱۲ ساعت' 'test/core/ui/hope_display_formatters_test.dart'
 grep -Fq 'offers-status-filter-scroll' "lib/features/offers/offers_page.dart" || grep -Fq 'Wrap(' "lib/features/offers/offers_page.dart"
 # Wave 43: financial metric tiles adapt to actual width and accessibility text scale.

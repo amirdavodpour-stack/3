@@ -260,25 +260,6 @@ class _LoginPageState extends State<LoginPage> {
                 icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(l10n.orDivider),
-                  ),
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => Navigator.push(context, HopeRoutes.register()),

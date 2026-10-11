@@ -93,7 +93,7 @@ void main() {
           locale: 'fa',
           now: now,
         ),
-        '۱۴۰۵ شهریور ۱۰',
+        '۱۰ شهریور ۱۴۰۵',
       );
       expect(
         HopeDisplayFormatter.relativeDateTime(

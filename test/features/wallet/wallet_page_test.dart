@@ -480,6 +480,7 @@ void main() {
 
       expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
       expect(find.text('کل موجودی'), findsOneWidget);
+      expect(find.text('شامل مبالغ قفل‌شده است'), findsOneWidget);
       expect(find.text('قفل‌شده'), findsWidgets);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
       expect(find.text('موجودی مادام‌العمر'), findsNothing);

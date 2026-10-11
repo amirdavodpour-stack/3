@@ -76,6 +76,14 @@ void main() {
     expect(find.textContaining('ساخت حساب'), findsOneWidget);
   });
 
+  testWidgets('login has no orphaned separator when Google sign-in is unavailable',
+      (tester) async {
+    await tester.pumpWidget(await _screen(const LoginPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('یا'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('login keeps the auth surface free of backdrop blur', (tester) async {
     await tester.pumpWidget(await _screen(const LoginPage()));
     await tester.pumpAndSettle();

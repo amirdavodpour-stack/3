@@ -152,7 +152,7 @@ class HopeDisplayFormatter {
       }
       final j = _gregorianToJalali(parsed.year, parsed.month, parsed.day);
       const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-      return localizeDigits('${j.year} ${months[j.month - 1]} ${j.day}', locale: locale);
+      return localizeDigits('${j.day} ${months[j.month - 1]} ${j.year}', locale: locale);
     }
 
     if (diff.inSeconds.abs() < 60) return fa ? 'همین حالا' : 'Just now';

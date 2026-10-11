@@ -198,6 +198,23 @@ void main() {
     expect(find.text('Matches'), findsNothing);
   });
 
+  testWidgets('home snapshot appears before featured recommendations',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final harness = await _host(_SequencedMarketplaceRepository());
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+    final pulse = find.byKey(const ValueKey('home-pulse-panel'));
+    final featured = find.text('Best match for you');
+    expect(pulse, findsOneWidget);
+    expect(featured, findsOneWidget);
+    expect(tester.getTopLeft(pulse).dy, lessThan(tester.getTopLeft(featured).dy));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('settings changes reload home opportunities',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();

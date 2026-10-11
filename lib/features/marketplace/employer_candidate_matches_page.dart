@@ -253,8 +253,14 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
             builder: (context) {
               final best = data.candidates.first;
               final gap = data.candidates.length > 1
-                  ? (best.score - data.candidates[1].score).clamp(0, 100)
+                  ? (best.score - data.candidates[1].score)
+                      .abs()
+                      .clamp(0.0, 100.0)
                   : 0.0;
+              final gapValue = HopeDisplayFormatter.integer(
+                gap.round(),
+                locale: Localizations.localeOf(context).languageCode,
+              );
               return PremiumPanel(
                 key: const ValueKey('candidate-comparison-overview'),
                 quiet: true,
@@ -296,8 +302,8 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       PremiumTag(
                         label: _t(
                           context,
-                          'اختلاف ${_percent(context, gap.round())}',
-                          '${_percent(context, gap.round())} gap',
+                          'اختلاف $gapValue واحد درصد',
+                          '$gapValue percentage-point gap',
                         ),
                         color: HopeV2Colors.secondary,
                       ),

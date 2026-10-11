@@ -326,7 +326,7 @@ void main() {
     await tester.pumpWidget(_app(_Repo()));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('۱ اعلان جدید'), findsOneWidget);
+    expect(find.textContaining('۱ اعلان خوانده‌نشده'), findsOneWidget);
   });
 
 }

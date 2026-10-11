@@ -76,7 +76,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
+        user: {'id': 'runtime-user', 'displayName': 'کاربر نمونه'},
       );
 
   @override
@@ -88,7 +88,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
+        user: {'id': 'runtime-user', 'displayName': 'کاربر نمونه'},
       );
 
   @override
@@ -224,7 +224,7 @@ class _EvidenceTransactionRepository implements TransactionRepository {
 
 class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   final _jobs = <HopeJob>[
-    _jobFixture(editorialMedia: true),
+    _jobFixture(),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-2', 'title': 'توسعه Flutter برای محصول جدید', 'kind': 'JOB', 'recommendationScore': 87, 'recommendationReasons': ['SKILL_MATCH']}),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-3', 'title': 'طراحی هویت بصری استارتاپ', 'kind': 'MISSION', 'recommendationScore': 76, 'recommendationReasons': ['CATEGORY_MATCH']}),
   ];
@@ -542,7 +542,7 @@ class _EvidenceChatRepository implements ChatRepository {
             id: 'message-runtime-2',
             conversationId: conversationId,
             senderId: 'runtime-user',
-            senderName: 'HOPE Runtime',
+            senderName: 'کاربر نمونه',
             body: 'دریافت شد؛ نسخه نهایی را بررسی می‌کنم.',
             createdAt: DateTime.utc(2026, 9, 21, 6, 4),
           ),
@@ -558,7 +558,7 @@ class _EvidenceChatRepository implements ChatRepository {
         id: 'message-runtime-3',
         conversationId: conversationId,
         senderId: 'runtime-user',
-        senderName: 'HOPE Runtime',
+        senderName: 'کاربر نمونه',
         body: message,
         createdAt: DateTime.utc(2026, 9, 21, 6, 5),
       );
@@ -697,8 +697,7 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
     'id': 'runtime-user',
-    'displayName': 'HOPE Runtime',
-    'email': 'runtime@example.invalid',
+    'displayName': 'کاربر نمونه',
   });
   print('HOPE_RUNTIME_PREPARE:google-start');
   await _runtimeGoogleSignIn.initialize();
@@ -1079,7 +1078,7 @@ Future<void> _captureBaselineLocale(
     'login': () => const LoginPage(),
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
-    'job-detail': () => JobDetailPage(job: _jobFixture(editorialMedia: true)),
+    'job-detail': () => JobDetailPage(job: _jobFixture()),
     'applications': () => const MyApplicationsPage(),
     'saved-searches': () => const SavedSearchesPage(),
     'transactions': () =>
@@ -1161,7 +1160,7 @@ Future<void> _captureResponsiveLocale(
   final pages = <String, Widget Function()>{
     'home': () => const HomePage(),
     'jobs': () => const JobsPage(),
-    'job-detail': () => JobDetailPage(job: _jobFixture(editorialMedia: true)),
+    'job-detail': () => JobDetailPage(job: _jobFixture()),
     'transactions': () =>
         TransactionsPage(repository: runtime.registry.transactions),
     'wallet': () => WalletPage(repository: runtime.registry.wallets!),

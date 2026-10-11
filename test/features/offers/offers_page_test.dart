@@ -217,22 +217,31 @@ testWidgets('accepting an offer disables the financial action until completion',
   });
 
   testWidgets(
-    'Wave 34 offer status filters stay in one horizontally scrollable rail',
+    'offer status filters wrap cleanly within a 360dp viewport',
     (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _SequencedOfferRepository();
       await tester.pumpWidget(_host(repository));
       await tester.pumpAndSettle();
 
-      final rail = find.byKey(const ValueKey('offers-status-filter-scroll'));
-      expect(rail, findsOneWidget);
-      expect(
-        tester.widget<SingleChildScrollView>(rail).scrollDirection,
-        Axis.horizontal,
-      );
-      expect(find.textContaining('All ('), findsOneWidget);
-      expect(find.textContaining('Pending ('), findsOneWidget);
-      expect(find.textContaining('Accepted ('), findsOneWidget);
-      expect(find.textContaining('Rejected ('), findsOneWidget);
+      final group = find.byKey(const ValueKey('offers-status-filter-group'));
+      expect(group, findsOneWidget);
+      expect(tester.widget<Wrap>(group).direction, Axis.horizontal);
+      final filterLabels = [
+        find.textContaining('All ('),
+        find.textContaining('Pending ('),
+        find.textContaining('Accepted ('),
+        find.textContaining('Rejected ('),
+      ];
+      for (final filter in filterLabels) {
+        expect(filter, findsOneWidget);
+        final bounds = tester.getRect(filter);
+        expect(bounds.left, greaterThanOrEqualTo(0));
+        expect(bounds.right, lessThanOrEqualTo(360));
+      }
       expect(tester.takeException(), isNull);
     },
   );

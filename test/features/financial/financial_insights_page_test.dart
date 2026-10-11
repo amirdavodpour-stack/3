@@ -188,6 +188,49 @@ void main() {
     },
   );
   testWidgets(
+    'monthly cash-flow chart exposes exact values on demand',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            theme: ThemeData.light(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final exactValues = find.byKey(
+        const ValueKey('financial-cashflow-exact-values-toggle'),
+      );
+      await tester.scrollUntilVisible(
+        exactValues,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(exactValues, findsOneWidget);
+      await tester.tap(exactValues);
+      await tester.pumpAndSettle();
+      expect(find.text('۱۳۰ تومان'), findsOneWidget);
+      expect(find.text('۴۲ تومان'), findsOneWidget);
+      expect(find.text('۲۰ تومان'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Wave 28 keeps the real cash-flow legend inside the initial 360x640 viewport',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);

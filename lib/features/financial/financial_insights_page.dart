@@ -157,6 +157,11 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                               ),
                               child: _BarChart(data: data.monthlyCashFlow),
                             ),
+                            const SizedBox(height: HopeV2Spacing.xs),
+                            _MonthlyCashFlowDetails(
+                              data: data.monthlyCashFlow,
+                              t: _t,
+                            ),
                             const SizedBox(height: HopeV2Spacing.md),
                             _ChartCard(
                               title: _t('روند موجودی', 'Balance trend'),
@@ -404,6 +409,100 @@ class _ChartCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MonthlyCashFlowDetails extends StatelessWidget {
+  const _MonthlyCashFlowDetails({
+    required this.data,
+    required this.t,
+  });
+
+  final List<HopeMonthlyCashFlow> data;
+  final String Function(String, String) t;
+
+  String _money(String raw, String locale) {
+    final parsed = HopeDisplayFormatter.parseInteger(raw);
+    return parsed == null ? '—' : HopeDisplayFormatter.money(parsed, locale: locale);
+  }
+
+  Widget _amountRow(BuildContext context, String label, String amount) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              amount,
+              textAlign: TextAlign.end,
+              maxLines: 2,
+              softWrap: true,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty) return const SizedBox.shrink();
+    final locale = Localizations.localeOf(context).languageCode;
+    return PremiumPanel(
+      quiet: true,
+      padding: EdgeInsets.zero,
+      child: ExpansionTile(
+        key: const ValueKey('financial-cashflow-exact-values-toggle'),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        title: Text(t('مشاهدهٔ مقادیر دقیق', 'View exact values')),
+        subtitle: Text(t('مبالغ هر ماه به تومان', 'Monthly amounts in TOMAN')),
+        children: [
+          for (final month in data.reversed)
+            Container(
+              key: ValueKey('financial-cashflow-details-${month.month}'),
+              padding: const EdgeInsets.symmetric(vertical: 9),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: HopeV2Surfaces.border(context).withValues(alpha: .35),
+                  ),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    month.label.trim().isEmpty ? month.month : month.label,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                  const SizedBox(height: 5),
+                  _amountRow(context, t('ورودی', 'Inflow'), _money(month.inflow, locale)),
+                  _amountRow(context, t('خروجی', 'Outflow'), _money(month.outflow, locale)),
+                  _amountRow(context, t('رزرو شده', 'Reserved'), _money(month.reserved, locale)),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

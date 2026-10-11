@@ -730,6 +730,16 @@ class _WalletPageState extends State<WalletPage> {
                   letterSpacing: -.7,
                 ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                _t('شامل مبالغ قفل‌شده است', 'Includes locked funds'),
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: compact ? 10.5 : 11,
+                  height: 1.15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           );
 

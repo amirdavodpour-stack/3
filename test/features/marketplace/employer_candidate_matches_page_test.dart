@@ -24,6 +24,17 @@ void main() {
           status: 'PENDING',
           skills: 'Flutter Dart',
         ),
+        HopeEmployerCandidateMatch(
+          rank: 2,
+          userId: 'worker-2',
+          displayName: 'Worker Two',
+          score: 86.4,
+          reasons: ['SKILL_MATCH'],
+          components: {'skills': 82, 'experience': 86},
+          applicationId: 'app-2',
+          status: 'PENDING',
+          skills: 'Flutter UI',
+        ),
       ],
     );
 
@@ -49,6 +60,7 @@ void main() {
     expect(find.text('پذیرندگان بر اساس انطباق'), findsOneWidget);
     expect(find.text('Worker One'), findsWidgets);
     expect(find.text('۹۱٫۴٪'), findsWidgets);
+    expect(find.text('اختلاف ۵ واحد درصد'), findsOneWidget);
     expect(find.text('مهارت'), findsWidgets);
     expect(find.text('تجربه'), findsWidgets);
   });

@@ -138,12 +138,12 @@ class OpportunityCard extends StatelessWidget {
                     end: AlignmentDirectional.bottomEnd,
                     colors: Theme.of(context).brightness == Brightness.dark
                         ? [
-                            primary.withValues(alpha: .18),
+                            primary.withValues(alpha: .12),
                             const Color(0xFF101522),
                             Theme.of(context).colorScheme.surface,
                           ]
                         : [
-                            primary.withValues(alpha: .09),
+                            primary.withValues(alpha: .06),
                             Theme.of(context).colorScheme.surface,
                             Theme.of(context).colorScheme.surface,
                           ],
