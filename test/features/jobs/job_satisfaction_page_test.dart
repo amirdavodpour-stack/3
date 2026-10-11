@@ -403,13 +403,30 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        for (final endpoint in [
-          'کاملاً ناراضی',
-          'کاملاً راضی',
-          'بسیار ضعیف',
-          'عالی',
-        ]) {
-          expect(find.text(endpoint), findsOneWidget);
+        for (final endpoint in ['کاملاً ناراضی', 'کاملاً راضی']) {
+          expect(
+            find.text(endpoint),
+            findsOneWidget,
+            reason: 'Overall rating endpoint should remain visible at enlarged text.',
+          );
+        }
+        expect(tester.takeException(), isNull);
+
+        final communicationFinder = find.byKey(
+          const ValueKey('satisfaction-communication-rating'),
+        );
+        await tester.scrollUntilVisible(
+          communicationFinder,
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        for (final endpoint in ['بسیار ضعیف', 'عالی']) {
+          expect(
+            find.text(endpoint),
+            findsOneWidget,
+            reason: 'Communication rating endpoint should remain visible at enlarged text.',
+          );
         }
         expect(tester.takeException(), isNull);
 
