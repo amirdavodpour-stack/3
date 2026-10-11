@@ -177,6 +177,38 @@ class _MissingSourceAmountInsightsRepository implements FinancialInsightsReposit
       });
 }
 
+
+class _NonFiniteCashFlowInsightsRepository implements FinancialInsightsRepository {
+  const _NonFiniteCashFlowInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      HopeFinancialInsights.fromMap(const {
+        'currency': 'TOMAN',
+        'range': {'months': 6},
+        'summary': {
+          'availableBalance': '1200',
+          'lockedBalance': '0',
+          'totalInflow': '0',
+          'totalOutflow': '0',
+          'totalReserved': '0',
+          'netCashFlow': '0',
+        },
+        'monthlyCashFlow': [
+          {
+            'month': '2026-10',
+            'label': 'October',
+            'inflow': 'NaN',
+            'outflow': 'Infinity',
+            'reserved': '-Infinity',
+            'net': 'NaN',
+          },
+        ],
+        'balanceTrend': [],
+        'bySource': [],
+      });
+}
+
 void main() {
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
@@ -887,6 +919,77 @@ void main() {
       } finally {
         handle.dispose();
       }
+    },
+  );
+
+
+  testWidgets(
+    'non-finite cash-flow amounts stay unrecorded and cannot poison chart scaling',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _NonFiniteCashFlowInsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'NaN and infinite amounts must not reach chart scale calculations.',
+      );
+
+      final noRecordedValues = find.byKey(
+        const ValueKey('financial-cashflow-zero-state'),
+      );
+      await tester.scrollUntilVisible(
+        noRecordedValues,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(noRecordedValues, findsOneWidget);
+      expect(
+        find.text('No cash-flow amounts were recorded for this period.'),
+        findsOneWidget,
+      );
+
+      final exactValues = find.byKey(
+        const ValueKey('financial-cashflow-exact-values-toggle'),
+      );
+      await tester.scrollUntilVisible(
+        exactValues,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(exactValues);
+      await tester.pumpAndSettle();
+
+      final details = find.byKey(
+        const ValueKey('financial-cashflow-details-2026-10'),
+      );
+      expect(
+        find.descendant(of: details, matching: find.text('—')),
+        findsNWidgets(3),
+      );
+      expect(find.textContaining('NaN'), findsNothing);
+      expect(find.textContaining('Infinity'), findsNothing);
+      expect(tester.takeException(), isNull);
     },
   );
 
