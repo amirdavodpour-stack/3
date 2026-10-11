@@ -18,6 +18,7 @@ HopeOffer _offer({required String id, required String status}) => HopeOffer(
   status: status,
   createdAt: null,
   updatedAt: null,
+  jobTitle: id,
 );
 
 class _SequencedOfferRepository implements OfferRepository {
@@ -93,6 +94,33 @@ class _RefreshFailureOfferRepository implements OfferRepository {
   Future<Map<String, dynamic>> accept(String offerId) => throw UnimplementedError();
 }
 
+
+class _FixedOfferRepository implements OfferRepository {
+  _FixedOfferRepository(this.offers);
+
+  final List<HopeOffer> offers;
+
+  @override
+  Future<List<HopeOffer>> listMine() async => offers;
+
+  @override
+  Future<List<HopeOffer>> listForJob(String jobId) async => offers;
+
+  @override
+  Future<HopeOffer> get(String offerId) => throw UnimplementedError();
+
+  @override
+  Future<HopeOffer> submit(
+    String jobId, {
+    required String price,
+    String message = '',
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Map<String, dynamic>> accept(String offerId) =>
+      throw UnimplementedError();
+}
+
 Widget _host(OfferRepository repository) => MaterialApp(
   locale: const Locale('en'),
   supportedLocales: const [Locale('fa'), Locale('en')],
@@ -154,7 +182,9 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final refresh = find.byTooltip('Refresh');
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
     await tester.pump();
     expect(repository.calls, 2);
 
@@ -162,13 +192,13 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpAndSettle();
 
     expect(repository.calls, 3);
-    expect(find.bySemanticsLabel(RegExp('Offer fresh')), findsOneWidget);
+    expect(find.text('fresh'), findsOneWidget);
 
     repository.staleRefresh.complete([repository.stale]);
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer fresh')), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('Offer stale')), findsNothing);
+    expect(find.text('fresh'), findsOneWidget);
+    expect(find.text('stale'), findsNothing);
   });
 
   testWidgets('offer refresh failure preserves existing rows and shows retry state', (tester) async {
@@ -176,13 +206,87 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer existing')), findsOneWidget);
+    expect(find.text('existing'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Refresh'));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer existing')), findsOneWidget);
+    expect(find.text('existing'), findsOneWidget);
     expect(find.text('Offers unavailable'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Wave 34 offer status filters stay in one horizontally scrollable rail',
+    (tester) async {
+      final repository = _SequencedOfferRepository();
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(const ValueKey('offers-status-filter-scroll'));
+      expect(rail, findsOneWidget);
+      expect(
+        tester.widget<SingleChildScrollView>(rail).scrollDirection,
+        Axis.horizontal,
+      );
+      expect(find.textContaining('All ('), findsOneWidget);
+      expect(find.textContaining('Pending ('), findsOneWidget);
+      expect(find.textContaining('Accepted ('), findsOneWidget);
+      expect(find.textContaining('Rejected ('), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('offers empty state is explicit when repository returns zero rows',
+      (tester) async {
+    final repository = _FixedOfferRepository(const []);
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No offers'), findsOneWidget);
+    expect(find.text('All (0)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('offers filter isolates each status within a multi-row result',
+      (tester) async {
+    final repository = _FixedOfferRepository([
+      _offer(id: 'pending-offer', status: 'PENDING'),
+      _offer(id: 'accepted-offer', status: 'ACCEPTED'),
+      _offer(id: 'rejected-offer', status: 'REJECTED'),
+    ]);
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+
+    // The page uses a lazily built ListView. Do not require off-screen cards
+    // to exist in the widget tree before scrolling; the total and status
+    // counts are derived from the complete repository result.
+    expect(find.text('3 offers'), findsOneWidget);
+    expect(find.text('All (3)'), findsOneWidget);
+    expect(find.text('Pending (1)'), findsOneWidget);
+    expect(find.text('Accepted (1)'), findsOneWidget);
+    expect(find.text('Rejected (1)'), findsOneWidget);
+
+    await tester.tap(find.text('Accepted (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('accepted-offer'), findsOneWidget);
+    expect(find.text('pending-offer'), findsNothing);
+    expect(find.text('rejected-offer'), findsNothing);
+    // This header intentionally reports the total loaded records, not the
+    // currently filtered subset.
+    expect(find.text('3 offers'), findsOneWidget);
+
+    await tester.tap(find.text('Rejected (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('rejected-offer'), findsOneWidget);
+    expect(find.text('pending-offer'), findsNothing);
+    expect(find.text('accepted-offer'), findsNothing);
+
+    await tester.tap(find.text('Pending (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('pending-offer'), findsOneWidget);
+    expect(find.text('accepted-offer'), findsNothing);
+    expect(find.text('rejected-offer'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -3,6 +3,7 @@ import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/marketplace/employer_candidate_matching_repository.dart';
 import '../../core/theme/hope_v2_design.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 
 class EmployerCandidateMatchesPage extends StatelessWidget {
@@ -18,6 +19,13 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  String _percent(BuildContext context, num value, {int fractionDigits = 0}) =>
+      HopeDisplayFormatter.percent(
+        value,
+        locale: Localizations.localeOf(context).languageCode,
+        fractionDigits: fractionDigits,
+      );
+
   String _reason(BuildContext context, String value) => switch (value) {
         'SKILL_MATCH' => _t(context, 'مهارت', 'Skills'),
         'EXPERIENCE_MATCH' => _t(context, 'تجربه', 'Experience'),
@@ -31,11 +39,200 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
         _ => value,
       };
 
+  String _componentLabel(BuildContext context, String key) => switch (key) {
+    'skills' => _t(context, 'مهارت', 'Skills'),
+    'experience' => _t(context, 'تجربه', 'Experience'),
+    'location' => _t(context, 'مکان', 'Location'),
+    'salary' => _t(context, 'درآمد', 'Salary'),
+    _ => key,
+  };
+
+  Widget _componentBreakdown(BuildContext context, HopeEmployerCandidateMatch candidate) {
+    const keys = ['skills', 'experience', 'location', 'salary'];
+    final values = <MapEntry<String, double>>[];
+    for (final key in keys) {
+      final value = candidate.components[key];
+      if (value != null) values.add(MapEntry(key, value <= 1 ? value : value / 100));
+    }
+    if (values.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth < 360
+            ? constraints.maxWidth
+            : (constraints.maxWidth - 7) / 2;
+        return Wrap(
+          spacing: 7,
+          runSpacing: 5,
+          children: values.map((entry) {
+            final ratio = entry.value.clamp(0.0, 1.0);
+            return SizedBox(
+              key: ValueKey('candidate-signal-${entry.key}'),
+              width: width,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _componentLabel(context, entry.key),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? HopeV2Colors.darkMuted
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                      Text(
+                        _percent(context, (ratio * 100).round()),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(
+                      minHeight: 3,
+                      value: ratio,
+                      backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .35),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(growable: false),
+        );
+      },
+    );
+  }
+
+  Widget _comparisonMatrix(BuildContext context) {
+    final candidates = data.candidates.take(3).toList(growable: false);
+    const keys = ['skills', 'experience', 'location', 'salary'];
+    final widths = <int, TableColumnWidth>{
+      0: const FixedColumnWidth(86),
+    };
+    for (var index = 0; index < candidates.length; index++) {
+      widths[index + 1] = const FixedColumnWidth(110);
+    }
+
+    Widget cell(String value, {bool heading = false}) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: heading
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontWeight: heading ? FontWeight.w900 : FontWeight.w700,
+                ),
+          ),
+        );
+
+    String valueFor(HopeEmployerCandidateMatch candidate, String key) {
+      final value = candidate.components[key];
+      if (value != null) {
+        final normalized = value <= 1 ? value * 100 : value;
+        return _percent(context, normalized.clamp(0.0, 100.0).round());
+      }
+      if (key == 'skills' && (candidate.skills ?? '').trim().isNotEmpty) {
+        return candidate.skills!.trim();
+      }
+      return '—';
+    }
+
+    return PremiumPanel(
+      key: const ValueKey('candidate-comparison-matrix'),
+      quiet: true,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _t(context, 'مقایسهٔ سریع نامزدها', 'Quick candidate comparison'),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 5),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Table(
+              columnWidths: widths,
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              border: TableBorder(
+                horizontalInside: BorderSide(
+                  color: HopeV2Surfaces.border(context).withValues(alpha: .38),
+                ),
+              ),
+              children: [
+                TableRow(
+                  children: [
+                    cell(_t(context, 'شاخص', 'Metric'), heading: true),
+                    for (final candidate in candidates)
+                      cell(
+                        candidate.displayName.trim().isEmpty
+                            ? _t(
+                                context,
+                                'نامزد ${HopeDisplayFormatter.integer(candidate.rank, locale: Localizations.localeOf(context).languageCode)}',
+                                'Candidate ${HopeDisplayFormatter.integer(candidate.rank, locale: Localizations.localeOf(context).languageCode)}',
+                              )
+                            : candidate.displayName.trim(),
+                        heading: true,
+                      ),
+                  ],
+                ),
+                for (final key in keys)
+                  TableRow(
+                    children: [
+                      cell(_componentLabel(context, key), heading: true),
+                      for (final candidate in candidates)
+                        cell(valueFor(candidate, key)),
+                    ],
+                  ),
+                TableRow(
+                  children: [
+                    cell(_t(context, 'انطباق', 'Match'), heading: true),
+                    for (final candidate in candidates)
+                      cell(
+                        _percent(
+                          context,
+                          candidate.score,
+                          fractionDigits: candidate.score == candidate.score.roundToDouble() ? 0 : 1,
+                        ),
+                        heading: true,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return PremiumPageFrame(
+      page: HopePageId.candidateMatches,
+      domain: HopeProductDomain.intelligence,
+      maxWidth: 920,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-      children: [
+      child: ListView(
+        padding: HopeV2Navigation.scrollEndPadding(context),
+        children: [
         PremiumSectionHeader(
           page: HopePageId.candidateMatches,
           domain: HopeProductDomain.intelligence,
@@ -51,6 +248,71 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        if (data.candidates.isNotEmpty)
+          Builder(
+            builder: (context) {
+              final best = data.candidates.first;
+              final gap = data.candidates.length > 1
+                  ? (best.score - data.candidates[1].score).clamp(0, 100)
+                  : 0.0;
+              return PremiumPanel(
+                key: const ValueKey('candidate-comparison-overview'),
+                quiet: true,
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _t(context, 'بهترین تطابق', 'Best fit'),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? HopeV2Colors.darkMuted
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            best.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PremiumTag(
+                      icon: HopeV2Icons.match,
+                      label: _percent(context, best.score.round()),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    if (data.candidates.length > 1) ...[
+                      const SizedBox(width: 7),
+                      PremiumTag(
+                        label: _t(
+                          context,
+                          'اختلاف ${_percent(context, gap.round())}',
+                          '${_percent(context, gap.round())} gap',
+                        ),
+                        color: HopeV2Colors.secondary,
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        if (data.candidates.length > 1) ...[
+          _comparisonMatrix(context),
+          const SizedBox(height: 8),
+        ],
+        if (data.candidates.isNotEmpty)
+          const SizedBox(height: 8),
         if (data.candidates.isEmpty)
           PremiumPanel(
             padding: const EdgeInsets.all(16),
@@ -87,9 +349,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
           ...data.candidates.map(
             (candidate) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: PremiumPanel(
-                glass: false,
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: HopeV2Surfaces.divider(context).withValues(alpha: .70),
+                    ),
+                  ),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -105,7 +373,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              '${candidate.rank}',
+                              HopeDisplayFormatter.integer(candidate.rank, locale: Localizations.localeOf(context).languageCode),
                               style: const TextStyle(fontWeight: FontWeight.w900,
                                 fontSize: 13),
                             ),
@@ -130,16 +398,34 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 _t(context, 'میزان انطباق', 'Compatibility'),
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? HopeV2Colors.darkMuted
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        Text(
-                          '${candidate.score.toStringAsFixed(candidate.score == candidate.score.roundToDouble() ? 0 : 1)}٪',
-                          style: HopeV2Type.metric(context).copyWith(
-                            color: HopeV2Colors.primary,
-                            fontSize: 22,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: HopeV2Colors.primary.withValues(alpha: .12),
+                            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                            border: Border.all(
+                              color: HopeV2Colors.primary.withValues(alpha: .20),
+                            ),
+                          ),
+                          child: Text(
+                            _percent(
+                          context,
+                          candidate.score,
+                          fractionDigits: candidate.score == candidate.score.roundToDouble() ? 0 : 1,
+                        ),
+                            style: HopeV2Type.metric(context).copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 22,
+                            ),
                           ),
                         ),
                       ],
@@ -151,23 +437,24 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                         runSpacing: 6,
                         children: candidate.reasons
                             .map(
-                              (reason) => Chip(
-                                avatar: const HugeIcon(
-                                  icon: HopeV2Icons.match,
-                                  size: 15,
-                                ),
-                                label: Text(_reason(context, reason)),
-                                visualDensity: VisualDensity.compact,
+                              (reason) => PremiumTag(
+                                icon: HopeV2Icons.match,
+                                label: _reason(context, reason),
+                                color: HopeV2Colors.secondary,
                               ),
                             )
                             .toList(growable: false),
                       ),
                     ],
-                    if ((candidate.skills ?? '').trim().isNotEmpty) ...[
+                    if (candidate.components.isNotEmpty) ...[
                       const SizedBox(height: 10),
+                      _componentBreakdown(context, candidate),
+                    ],
+                    if ((candidate.skills ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 8),
                       Text(
                         candidate.skills!.trim(),
-                        maxLines: 2,
+                        maxLines: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
@@ -175,8 +462,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                     if (candidate.offerPrice != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        _t(context, 'پیشنهاد مالی: ', 'Offer: ') +
-                            '${candidate.offerPrice} تومان',
+                        '${_t(context, 'پیشنهاد مالی: ', 'Offer: ')}${candidate.offerPrice} تومان',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
@@ -187,7 +473,8 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

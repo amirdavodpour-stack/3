@@ -25,6 +25,7 @@ test('job chat is provisioned on agreement and closed with financial settlement'
 test('AI chat endpoint remains blocked while human messaging has separate endpoints',()=>{
   const ai=read('backend/src/routes/ai_routes.js');
   const chat=read('backend/src/routes/human_chat_routes.js');
-  assert.match(ai,/AI_USER_ACCESS_DISABLED/);
+  assert.match(ai,/assertAutomatedAiAccess/);
+  assert.match(ai,/source:\s*['"]USER['"]/);
   assert.match(chat,/messaging/);
 });

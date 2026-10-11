@@ -14,6 +14,7 @@ import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/ui/copy.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/home/premium_home_feed.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,10 +23,10 @@ import 'package:provider/provider.dart';
 class _FakeOpportunityAgent implements OpportunityAgentRepository {
   @override
   Future<HopeOpportunityAgentState> getState() async =>
-      HopeOpportunityAgentState(
+      const HopeOpportunityAgentState(
         profileCompleteness: HopeOpportunityAgentProfileCompleteness(score: 1),
-        activity: const HopeOpportunityAgentActivity(),
-        actions: const [
+        activity: HopeOpportunityAgentActivity(),
+        actions: [
           HopeOpportunityAgentAction(
             type: 'FOLLOW_UP_APPLICATION',
             title: 'Review your next opportunity',
@@ -118,6 +119,7 @@ class _HomeHarness {
 Future<_HomeHarness> _host(
   _SequencedMarketplaceRepository repository, {
   bool authenticated = false,
+  double textScale = 1,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
@@ -141,6 +143,14 @@ Future<_HomeHarness> _host(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        if (textScale <= 1) return child!;
+        final media = MediaQueryData.fromView(View.of(context));
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        );
+      },
       home: MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: settings),
@@ -167,6 +177,16 @@ Future<_HomeHarness> _host(
 void _noop() {}
 
 void main() {
+  testWidgets('home identity header is neutral rather than time-based',
+      (tester) async {
+    final harness = await _host(_SequencedMarketplaceRepository(), authenticated: true);
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('Good evening, Ali'), findsNothing);
+  });
+
   testWidgets('single recommendation does not reserve an empty matches section',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();
@@ -194,10 +214,10 @@ void main() {
   });
 
   testWidgets(
-      'home pulse uses four compact columns above the inner width threshold',
+      'home pulse uses a single horizontal scanline at wide widths',
       (tester) async {
     tester.view.physicalSize = const Size(1179, 2556);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();
@@ -205,10 +225,12 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final stats = List.generate(
-        4,
-        (index) => find.byKey(ValueKey('home-pulse-stat-$index')),
-      );
+      final stats = [
+        find.text('matches'),
+        find.text('new'),
+        find.text('active'),
+        find.text('Held in escrow'),
+      ];
       for (final stat in stats) {
         expect(stat, findsOneWidget);
       }
@@ -227,10 +249,10 @@ void main() {
   });
 
   testWidgets(
-      'home pulse stays compact enough to keep the first match in the first fold',
+      'home pulse stays a quiet rail below the primary match on responsive widths',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();
@@ -238,15 +260,20 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final pulse = find.ancestor(
-        of: find.text('HOPE Pulse'),
-        matching: find.byType(PremiumPanel),
-      ).first;
-      expect(tester.getSize(pulse).height, lessThanOrEqualTo(105));
+      final pulse = find.byKey(const ValueKey('home-pulse-panel'));
+      final pulseSize = tester.getSize(pulse);
+      final statGridWidth = tester.getSize(
+        find.byKey(const ValueKey('home-pulse-stat-grid')),
+      ).width;
+      final expectedMaximumHeight = statGridWidth >= 800 ? 70.0 : 140.0;
+      expect(pulseSize.height, lessThanOrEqualTo(expectedMaximumHeight));
 
       final bestMatch = find.text('Best match for you');
       expect(bestMatch, findsOneWidget);
-      expect(tester.getTopLeft(bestMatch).dy, lessThan(230));
+      expect(
+        tester.getTopLeft(bestMatch).dy,
+        lessThan(tester.getTopLeft(find.text('matches')).dy),
+      );
     } finally {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
@@ -254,10 +281,10 @@ void main() {
   });
 
   testWidgets(
-      'home pulse stays in one visual row at the 720x1280 responsive viewport',
+      'home pulse adapts its metric rows to the actual responsive rail width at 720x1280',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();
@@ -265,23 +292,68 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final stats = List.generate(
-        4,
-        (index) => find.byKey(ValueKey('home-pulse-stat-$index')),
-      );
+      final stats = [
+        find.text('matches'),
+        find.text('new'),
+        find.text('active'),
+        find.text('Held in escrow'),
+      ];
       final tops = stats
           .map((finder) => tester.getTopLeft(finder).dy)
           .toList(growable: false);
+      final gridWidth = tester.getSize(
+        find.byKey(const ValueKey('home-pulse-stat-grid')),
+      ).width;
 
-      expect(
-        tops.every((top) => (top - tops.first).abs() < 1.0),
-        isTrue,
-      );
+      if (gridWidth >= 800) {
+        expect(tops.every((top) => (top - tops.first).abs() < 1.0), isTrue);
+      } else {
+        expect((tops[0] - tops[1]).abs(), lessThan(1.0));
+        expect((tops[2] - tops[3]).abs(), lessThan(1.0));
+        expect(tops[2], greaterThan(tops[0]));
+      }
     } finally {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     }
   });
+
+
+  testWidgets(
+    'Wave30 Home Pulse reflows into two readable rows at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _SequencedMarketplaceRepository(),
+        textScale: 1.5,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final keys = [
+        'home-pulse-stat-matches',
+        'home-pulse-stat-new',
+        'home-pulse-stat-active',
+        'home-pulse-stat-Held in escrow',
+      ].map((key) => find.byKey(ValueKey(key))).toList(growable: false);
+      for (final stat in keys) {
+        expect(stat, findsOneWidget);
+      }
+      final rects = keys.map((finder) => tester.getRect(finder)).toList(growable: false);
+      expect((rects[0].top - rects[1].top).abs(), lessThan(1.0));
+      expect((rects[2].top - rects[3].top).abs(), lessThan(1.0));
+      expect(rects[2].top, greaterThan(rects[0].top));
+      expect(
+        tester.getSize(find.byKey(const ValueKey('home-pulse-panel'))).height,
+        greaterThan(70),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('home money labels use the canonical Toman copy helper',
       (tester) async {
@@ -309,6 +381,12 @@ void main() {
       );
 
       expect(bestMatch, findsOneWidget);
+      await tester.scrollUntilVisible(
+        intelligence,
+        400,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       expect(intelligence, findsOneWidget);
       expect(
         tester.getTopLeft(bestMatch).dy,

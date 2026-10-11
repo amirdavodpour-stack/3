@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/hope_v2_design.dart';
 import '../transactions/payment.dart';
+import 'hope_display_formatters.dart';
 import 'premium_components.dart';
 import 'components.dart';
 
@@ -48,6 +49,10 @@ class PremiumPaymentSummary extends StatelessWidget {
     if (amount == null) {
       return "$normalized ${_label(context, 'تومان', 'Toman')}";
     }
+    final locale = Localizations.localeOf(context).languageCode;
+    if (locale.toLowerCase().startsWith('fa')) {
+      return HopeDisplayFormatter.money(amount, locale: locale);
+    }
     final digits = amount.abs().toString();
     final parts = <String>[];
     for (var end = digits.length; end > 0; end -= 3) {
@@ -80,20 +85,16 @@ class PremiumPaymentSummary extends StatelessWidget {
     final status = _statusLabel(context);
     return Semantics(
       container: true,
+      excludeSemantics: true,
       label: _label(
         context,
         'وضعیت پرداخت: $status، مبلغ ${_money(context, amount)}',
         'Payment status: $status, amount ${_money(context, amount)}',
       ),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(HopeV2Spacing.lg),
-        highlight: const {
-          'HELD',
-          'RELEASED',
-          'HOLD_PENDING',
-          'RELEASE_PENDING',
-        }.contains(payment.status),
-        semanticLabel: _label(context, 'جزئیات پرداخت، $status', 'Payment details, $status'),
+        quiet: true,
+        padding: const EdgeInsets.fromLTRB(0, 6, 0, 4),
+        highlight: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -118,7 +119,10 @@ class PremiumPaymentSummary extends StatelessWidget {
                 if (amount != null)
                   Text(
                     _money(context, amount),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
               ],
             ),
@@ -163,14 +167,26 @@ class _Metric extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 42),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .55),
+          color: HopeV2Surfaces.panelSoft(context),
           borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+          border: Border.all(
+            color: HopeV2Surfaces.border(context).withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark ? .38 : .68,
+            ),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: Theme.of(context).textTheme.labelSmall),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? HopeV2Colors.darkMuted
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 2),
             Text(
               value,

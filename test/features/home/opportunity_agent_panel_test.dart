@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
@@ -6,14 +8,14 @@ import 'package:hope_mobile/features/home/opportunity_agent_panel.dart';
 
 void main() {
   testWidgets('shows the highest-priority action and approval boundary', (tester) async {
-    final state = HopeOpportunityAgentState(
-      profileCompleteness: const HopeOpportunityAgentProfileCompleteness(
+    const state = HopeOpportunityAgentState(
+      profileCompleteness: HopeOpportunityAgentProfileCompleteness(
         score: 1,
         onboardingCompleted: true,
       ),
-      activity: const HopeOpportunityAgentActivity(),
-      approvalRequired: const ['PREPARE_APPLICATION'],
-      actions: const [
+      activity: HopeOpportunityAgentActivity(),
+      approvalRequired: ['PREPARE_APPLICATION'],
+      actions: [
         HopeOpportunityAgentAction(
           type: 'PREPARE_APPLICATION',
           title: 'Flutter developer',
@@ -27,6 +29,14 @@ void main() {
     var tapped = false;
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: Scaffold(
           body: OpportunityAgentPanel(
             state: state,
@@ -38,9 +48,9 @@ void main() {
 
     expect(find.text('Flutter developer'), findsOneWidget);
     expect(find.text('نیاز به تأیید شما'), findsOneWidget);
-    expect(find.text('بررسی فرصت'), findsOneWidget);
+    expect(find.text('آماده‌سازی درخواست'), findsOneWidget);
 
-    await tester.tap(find.text('بررسی فرصت'));
+    await tester.tap(find.text('آماده‌سازی درخواست'));
     expect(tapped, isTrue);
   });
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 import 'package:hope_mobile/core/marketplace/employer_candidate_matching_repository.dart';
 import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
@@ -29,6 +31,12 @@ void main() {
       MaterialApp(
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: Scaffold(
           body: EmployerCandidateMatchesPage(
             data: data,
@@ -39,10 +47,10 @@ void main() {
     );
 
     expect(find.text('پذیرندگان بر اساس انطباق'), findsOneWidget);
-    expect(find.text('Worker One'), findsOneWidget);
-    expect(find.text('91.4٪'), findsOneWidget);
-    expect(find.text('مهارت'), findsOneWidget);
-    expect(find.text('تجربه'), findsOneWidget);
+    expect(find.text('Worker One'), findsWidgets);
+    expect(find.text('۹۱٫۴٪'), findsWidgets);
+    expect(find.text('مهارت'), findsWidgets);
+    expect(find.text('تجربه'), findsWidgets);
   });
 
   testWidgets('shows empty state when no workers accepted the opportunity',
@@ -55,6 +63,14 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: Scaffold(
           body: EmployerCandidateMatchesPage(
             data: data,
@@ -66,4 +82,163 @@ void main() {
 
     expect(find.text('هنوز پذیرنده‌ای برای این موقعیت نیست.'), findsOneWidget);
   });
+  testWidgets('wide candidate view compares real component scores in one matrix',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const data = HopeEmployerCandidateMatchList(
+      jobId: 'job-compare',
+      kind: 'JOB',
+      candidates: [
+        HopeEmployerCandidateMatch(
+          rank: 1,
+          userId: 'worker-1',
+          displayName: 'Candidate One',
+          score: 94.0,
+          reasons: ['SKILL_MATCH'],
+          components: {'skills': 98.0, 'experience': 90.0, 'location': 94.0, 'salary': 87.0},
+          applicationId: 'app-1',
+          status: 'PENDING',
+          skills: 'Flutter, Dart',
+        ),
+        HopeEmployerCandidateMatch(
+          rank: 2,
+          userId: 'worker-2',
+          displayName: 'Candidate Two',
+          score: 91.0,
+          reasons: ['EXPERIENCE_MATCH'],
+          components: {'skills': 90.0, 'experience': 92.0, 'location': 91.0, 'salary': 89.0},
+          applicationId: 'app-2',
+          status: 'PENDING',
+          skills: 'Flutter, UI',
+        ),
+        HopeEmployerCandidateMatch(
+          rank: 3,
+          userId: 'worker-3',
+          displayName: 'Candidate Three',
+          score: 84.0,
+          reasons: ['LOCATION_MATCH'],
+          components: {'skills': 84.0, 'experience': 83.0, 'location': 95.0, 'salary': 82.0},
+          applicationId: 'app-3',
+          status: 'PENDING',
+          skills: 'Dart, design',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: EmployerCandidateMatchesPage(
+            data: data,
+            onRetry: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('candidate-comparison-matrix')),
+      findsOneWidget,
+    );
+    expect(find.text('Candidate One'), findsWidgets);
+    expect(find.text('Candidate Two'), findsWidgets);
+    expect(find.text('Candidate Three'), findsWidgets);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-comparison-matrix')),
+        matching: find.text('۹۸٪'),
+      ),
+      findsOneWidget,
+      reason: 'Matrix percentages must use the shared Persian display formatter.',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-comparison-matrix')),
+        matching: find.text('98٪'),
+      ),
+      findsNothing,
+      reason: 'Raw Latin digits must not leak into the Persian comparison matrix.',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+
+  testWidgets(
+    'Wave 34 compact phones can compare real candidate values in a horizontal matrix',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-compact-compare',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-1',
+            displayName: 'Candidate One',
+            score: 94,
+            reasons: ['SKILL_MATCH'],
+            components: {'skills': 98, 'experience': 90, 'location': 94, 'salary': 87},
+            applicationId: 'app-1',
+            status: 'PENDING',
+            skills: 'Flutter, Dart',
+          ),
+          HopeEmployerCandidateMatch(
+            rank: 2,
+            userId: 'worker-2',
+            displayName: 'Candidate Two',
+            score: 91,
+            reasons: ['EXPERIENCE_MATCH'],
+            components: {'skills': 90, 'experience': 92, 'location': 91, 'salary': 89},
+            applicationId: 'app-2',
+            status: 'PENDING',
+            skills: 'Flutter, UI',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final matrix = find.byKey(const ValueKey('candidate-comparison-matrix'));
+      expect(matrix, findsOneWidget);
+      final horizontalScroll = find.descendant(
+        of: matrix,
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(horizontalScroll, findsOneWidget);
+      expect(find.text('Candidate Two'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

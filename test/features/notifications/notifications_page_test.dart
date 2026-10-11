@@ -214,12 +214,15 @@ void main() {
 
     expect(find.text('عنوان اعلان'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('بازخوانی'));
+    final refreshIndicator =
+        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator).first);
+    final firstRefresh = refreshIndicator.onRefresh();
     await tester.pump();
     expect(repo.listCalls, 2);
 
-    await tester.tap(find.byTooltip('بازخوانی'));
+    final secondRefresh = refreshIndicator.onRefresh();
     await tester.pumpAndSettle();
+    await secondRefresh;
 
     expect(repo.listCalls, 3);
     expect(find.text('Fresh notification'), findsOneWidget);
@@ -237,6 +240,7 @@ void main() {
       ],
       unreadCount: 1,
     ));
+    await firstRefresh;
     await tester.pumpAndSettle();
 
     expect(find.text('Fresh notification'), findsOneWidget);
@@ -264,16 +268,65 @@ void main() {
     expect(find.text('جدید'), findsNothing);
   });
 
+  testWidgets(
+    'refresh failure keeps the current notifications visible with a retry action',
+    (tester) async {
+      final repo = _Repo();
+      await tester.pumpWidget(_app(repo));
+      await tester.pumpAndSettle();
+
+      final existing = find.byKey(const ValueKey('notification-card-n1'));
+      expect(existing, findsOneWidget);
+      expect(find.text('عنوان اعلان'), findsOneWidget);
+
+      repo.failList = true;
+      final refresh = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator).first,
+      );
+      await refresh.onRefresh();
+      await tester.pumpAndSettle();
+
+      expect(find.text('اعلان‌ها قابل تازه‌سازی نیستند'), findsOneWidget);
+      expect(find.text('تلاش دوباره'), findsOneWidget);
+      expect(existing, findsOneWidget);
+      expect(find.text('عنوان اعلان'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      repo.failList = false;
+      await tester.tap(find.text('تلاش دوباره'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('اعلان‌ها قابل تازه‌سازی نیستند'), findsNothing);
+      expect(existing, findsOneWidget);
+      expect(find.text('عنوان اعلان'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('empty notification state disables mark-all control',
       (tester) async {
     final repo = _Repo()..items = [];
     await tester.pumpWidget(_app(repo));
     await tester.pumpAndSettle();
-    final markAll = find.byTooltip('همه را خواندم');
+    final menu = find.byTooltip('اقدامات اعلان');
+    expect(menu, findsOneWidget);
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    final markAll = find.text('همه را خواندم');
     expect(markAll, findsOneWidget);
-    final markAllButton =
-        find.ancestor(of: markAll, matching: find.byType(IconButton));
-    expect(markAllButton, findsOneWidget);
-    expect(tester.widget<IconButton>(markAllButton).onPressed, isNull);
+    final item = tester.widget<PopupMenuItem<String>>(
+      find.ancestor(
+        of: markAll,
+        matching: find.byType(PopupMenuItem<String>),
+      ),
+    );
+    expect(item.enabled, isFalse);
   });
+  testWidgets('notification unread counts use Persian digits', (tester) async {
+    await tester.pumpWidget(_app(_Repo()));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('۱ اعلان جدید'), findsOneWidget);
+  });
+
 }

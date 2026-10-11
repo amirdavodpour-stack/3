@@ -34,7 +34,7 @@ Future<void> _pump(WidgetTester tester, {required String? role}) async {
 
   await tester.pumpWidget(
     MaterialApp(
-      home: Provider<AuthController>.value(
+      home: ChangeNotifierProvider<AuthController>.value(
         value: auth,
         child: const AdminOnly(
           child: Text('ADMIN CONTENT'),

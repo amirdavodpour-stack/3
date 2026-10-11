@@ -17,7 +17,7 @@ extension on _TransactionPageState {
 
     return PremiumPanel(
       key: const ValueKey('transaction-payment-lifecycle'),
-      padding: const EdgeInsets.fromLTRB(10, 7, 10, 5),
+      padding: EdgeInsets.fromLTRB(10, compact ? 6 : 7, 10, compact ? 6 : 5),
       highlight: paymentStatus == 'HELD' ||
           paymentStatus == 'RELEASED' ||
           paymentStatus == 'HOLD_PENDING' ||
@@ -102,7 +102,7 @@ extension on _TransactionPageState {
   }) {
     final scheme = Theme.of(context).colorScheme;
     final safeCurrent = current.clamp(0, total - 1);
-    final progress = total <= 1 ? 1.0 : safeCurrent / (total - 1);
+    final progress = total <= 1 ? 1.0 : (safeCurrent + 1) / total;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -111,8 +111,8 @@ extension on _TransactionPageState {
             Expanded(
               child: Text(
                 _t(
-                  'مرحله ${safeCurrent + 1} از ${total}',
-                  'Stage ${safeCurrent + 1} of ${total}',
+                  'مرحله ${safeCurrent + 1} از $total',
+                  'Stage ${safeCurrent + 1} of $total',
                 ),
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w800,
@@ -427,7 +427,7 @@ extension on _TransactionPageState {
             onRefresh: refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
+              padding: HopeV2Navigation.scrollEndPadding(context),
               children: [
               if (error != null) ...[
                 HopeAsyncState(
@@ -456,18 +456,18 @@ extension on _TransactionPageState {
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          payment?.id == null
-                              ? _t(
-                                  'پرداخت هنوز ساخته نشده',
-                                  'Payment has not been created yet',
-                                )
-                              : _t('شناسه پرداخت: ${payment?.id ?? ""}', 'Payment ID: ${payment?.id ?? ""}'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                        if (payment?.id == null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _t(
+                              'پرداخت هنوز ساخته نشده',
+                              'Payment has not been created yet',
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -484,14 +484,7 @@ extension on _TransactionPageState {
                   ),
                 ],
               ),
-              if (job != null) ...[
-                const SizedBox(height: 7),
-                StatusPill(
-                  _jobStatusLabel(job.status),
-                  color: AppColors.muted,
-                  icon: HopeV2Icons.job,
-                ),
-              ],
+
               const SizedBox(height: 12),
               PremiumPanel(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -523,12 +516,7 @@ extension on _TransactionPageState {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        PremiumTag(
-                          icon: _statusIcon(status),
-                          label: _statusLabel(status),
-                          color: _statusColor(status),
-                        ),
+
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -537,16 +525,14 @@ extension on _TransactionPageState {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 4),
-                    FittedBox(
-                      alignment: AlignmentDirectional.centerStart,
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        moneyLabel(context, payment?.amount ?? '—'),
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: compact ? 25 : null,
-                              letterSpacing: -.8,
-                            ),
+                    Text(
+                      moneyLabel(context, payment?.amount ?? '—'),
+                      softWrap: true,
+                      maxLines: 2,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: compact ? 25 : null,
+                        letterSpacing: -.8,
                       ),
                     ),
                     if (status == 'HELD' ||
@@ -561,7 +547,8 @@ extension on _TransactionPageState {
                         ),
                       ),
                     ],
-                    if (!compact && (payment?.providerRef?.trim().isNotEmpty ?? false)) ...[
+                    if (!compact &&
+                        (payment?.providerRef?.trim().isNotEmpty ?? false)) ...[
                       const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,

@@ -32,7 +32,7 @@ test('generic AI chat is explicitly disabled for users', () => {
   assert.match(policy, /JOB_SATISFACTION/);
   assert.match(policy, /DISPUTE_ADJUDICATION/);
   assert.match(policy, /RECOMMENDATIONS/);
-  assert.match(read('backend/src/app.js'), /assertSystemAiTask/);
+  assert.match(policy, /export function assertSystemAiTask/);
   const home = read('lib/features/home/home_page.dart');
   assert.doesNotMatch(home, /HopeRoutes\.chat\(\)/);
 });

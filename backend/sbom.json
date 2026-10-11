@@ -189,9 +189,156 @@
     },
     {
       "type": "library",
+      "name": "agent-base",
+      "version": "7.1.4",
+      "purl": "pkg:npm/agent-base@7.1.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "base64-js",
+      "version": "1.5.1",
+      "purl": "pkg:npm/base64-js@1.5.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "bignumber.js",
+      "version": "9.3.1",
+      "purl": "pkg:npm/bignumber.js@9.3.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
       "name": "bowser",
       "version": "2.14.1",
       "purl": "pkg:npm/bowser@2.14.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "buffer-equal-constant-time",
+      "version": "1.0.1",
+      "purl": "pkg:npm/buffer-equal-constant-time@1.0.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "data-uri-to-buffer",
+      "version": "4.0.1",
+      "purl": "pkg:npm/data-uri-to-buffer@4.0.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "debug",
+      "version": "4.4.3",
+      "purl": "pkg:npm/debug@4.4.3",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "ecdsa-sig-formatter",
+      "version": "1.0.11",
+      "purl": "pkg:npm/ecdsa-sig-formatter@1.0.11",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "extend",
+      "version": "3.0.2",
+      "purl": "pkg:npm/extend@3.0.2",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "fetch-blob",
+      "version": "3.2.0",
+      "purl": "pkg:npm/fetch-blob@3.2.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "formdata-polyfill",
+      "version": "4.0.10",
+      "purl": "pkg:npm/formdata-polyfill@4.0.10",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "gaxios",
+      "version": "7.3.1",
+      "purl": "pkg:npm/gaxios@7.3.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "gcp-metadata",
+      "version": "9.0.4",
+      "purl": "pkg:npm/gcp-metadata@9.0.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "google-auth-library",
+      "version": "11.1.0",
+      "purl": "pkg:npm/google-auth-library@11.1.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "google-logging-utils",
+      "version": "2.0.1",
+      "purl": "pkg:npm/google-logging-utils@2.0.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "https-proxy-agent",
+      "version": "7.0.6",
+      "purl": "pkg:npm/https-proxy-agent@7.0.6",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "json-bigint",
+      "version": "1.0.0",
+      "purl": "pkg:npm/json-bigint@1.0.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "jwa",
+      "version": "2.0.1",
+      "purl": "pkg:npm/jwa@2.0.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "jws",
+      "version": "4.0.1",
+      "purl": "pkg:npm/jws@4.0.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "ms",
+      "version": "2.1.3",
+      "purl": "pkg:npm/ms@2.1.3",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "node-domexception",
+      "version": "1.0.0",
+      "purl": "pkg:npm/node-domexception@1.0.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "node-fetch",
+      "version": "3.3.2",
+      "purl": "pkg:npm/node-fetch@3.3.2",
       "scope": "required"
     },
     {
@@ -280,6 +427,13 @@
     },
     {
       "type": "library",
+      "name": "safe-buffer",
+      "version": "5.2.1",
+      "purl": "pkg:npm/safe-buffer@5.2.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
       "name": "split2",
       "version": "4.2.0",
       "purl": "pkg:npm/split2@4.2.0",
@@ -290,6 +444,13 @@
       "name": "tslib",
       "version": "2.8.1",
       "purl": "pkg:npm/tslib@2.8.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "web-streams-polyfill",
+      "version": "3.3.3",
+      "purl": "pkg:npm/web-streams-polyfill@3.3.3",
       "scope": "required"
     },
     {

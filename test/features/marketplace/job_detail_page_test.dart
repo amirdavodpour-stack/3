@@ -163,20 +163,25 @@ HopeJob _job({
   String? ownerId = 'u1',
   String? city = 'Tehran',
   String? title,
+  String? category,
+  String? description,
+  String? acceptanceCriteria,
+  String? workMode,
   String status = 'PUBLISHED',
 }) =>
     HopeJob.fromMap({
       'id': id,
       'title': title ?? (kind == 'JOB' ? 'Flutter developer' : 'Design a logo'),
-      'description': 'A clear, concise deliverable description for the page.',
+      'description': description ?? 'A clear, concise deliverable description for the page.',
       'categoryId': 'c1',
-      'category': 'Design',
+      'category': category ?? 'Design',
       'jobType': kind == 'JOB' ? 'HOURLY' : 'FIXED',
       'budgetType': 'FIXED',
       'budgetMin': '1000000',
       'budgetMax': '1500000',
       'duration': '8',
-      'acceptanceCriteria': 'Acceptance criteria are listed here.',
+      'acceptanceCriteria': acceptanceCriteria ?? 'Acceptance criteria are listed here.',
+      'workMode': workMode,
       'status': status,
       'ownerId': ownerId,
       'providerId': 'p1',
@@ -208,6 +213,9 @@ Future<void> _pump(
   String userId = 'u9',
   double width = 900,
   double height = 3400,
+  double textScale = 1.0,
+  double? bottomSafeAreaInset,
+  Locale locale = const Locale('en'),
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -217,7 +225,7 @@ Future<void> _pump(
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
-  await settings.setLanguage('en');
+  await settings.setLanguage(locale.languageCode);
   final auth = AuthController(_AuthRepo(), SecureStore());
   await auth.applyRefreshedUser({'id': userId, 'displayName': 'Ali'});
 
@@ -234,7 +242,7 @@ Future<void> _pump(
     ],
     child: MaterialApp(
       theme: ThemeData.light(),
-      locale: const Locale('en'),
+      locale: locale,
       supportedLocales: const [Locale('en'), Locale('fa')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -242,6 +250,22 @@ Future<void> _pump(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        if (textScale <= 1 && bottomSafeAreaInset == null) return child!;
+        final media = MediaQueryData.fromView(View.of(context));
+        return MediaQuery(
+          data: media.copyWith(
+            textScaler: TextScaler.linear(textScale),
+            padding: bottomSafeAreaInset == null
+                ? media.padding
+                : media.padding.copyWith(bottom: bottomSafeAreaInset),
+            viewPadding: bottomSafeAreaInset == null
+                ? media.viewPadding
+                : media.viewPadding.copyWith(bottom: bottomSafeAreaInset),
+          ),
+          child: child!,
+        );
+      },
       home: JobDetailPage(job: job),
     ),
   ));
@@ -252,41 +276,86 @@ void main() {
   testWidgets('mission details render pricing, duration and action entry',
       (tester) async {
     await _pump(tester, job: _job());
-    expect(find.text('Mission details'), findsOneWidget);
+    expect(find.text('Job description'), findsOneWidget);
     expect(
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
       'Design a logo',
     );
-    expect(find.text('Mission budget'), findsOneWidget);
+    expect(find.text('Budget'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.text('Duration'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
 
+  testWidgets(
+    'Wave 36 known job categories stay localized across hero and decision strip',
+    (tester) async {
+      await _pump(
+        tester,
+        job: _job(kind: 'JOB', category: 'Software'),
+        width: 360,
+        height: 1800,
+        locale: const Locale('fa'),
+      );
+
+      expect(find.textContaining('نرم‌افزار'), findsOneWidget);
+      expect(find.text('نرم‌افزار • Tehran'), findsNothing);
+      expect(find.text('Software'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+      'Wave 38 job detail surfaces the real lifecycle status near the decision summary',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', status: 'PUBLISHED'),
+      width: 360,
+      height: 1200,
+      locale: const Locale('fa'),
+    );
+
+    final status = find.byKey(const ValueKey('opportunity-quick-status'));
+    expect(status, findsOneWidget);
+    expect(
+      find.descendant(of: status, matching: find.text('منتشر شده')),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(status).dy,
+      lessThan(tester.getTopLeft(find.text('شرح فرصت')).dy),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('job details render monthly pay, deadline and admin banner',
       (tester) async {
     await _pump(tester, job: _job(kind: 'JOB'));
-    expect(find.text('Job details'), findsOneWidget);
+    expect(find.text('Job description'), findsOneWidget);
     expect(
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
       'Flutter developer',
     );
-    expect(find.text('Monthly pay'), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
+    expect(find.textContaining('12,000,000'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.textContaining('2026-09-30'), findsOneWidget);
     expect(find.textContaining('reviewed by an admin'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
   });
 
-  testWidgets('match breakdown compresses into a two-column decision grid on compact mobile',
+  testWidgets('decision strip renders all four breakdown dimensions in a compact grid',
       (tester) async {
     await _pump(tester, job: _job(), width: 390, height: 844);
 
-    final skills = find.byKey(const ValueKey('match-breakdown-skills'));
-    final category = find.byKey(const ValueKey('match-breakdown-category'));
-    final location = find.byKey(const ValueKey('match-breakdown-location'));
-    final salary = find.byKey(const ValueKey('match-breakdown-salary'));
+    final skills = find.byKey(const ValueKey('opportunity-decision-breakdown-skills'));
+    final category = find.byKey(const ValueKey('opportunity-decision-breakdown-category'));
+    final location = find.byKey(const ValueKey('opportunity-decision-breakdown-location'));
+    final salary = find.byKey(const ValueKey('opportunity-decision-breakdown-salary'));
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
     expect(skills, findsOneWidget);
     expect(category, findsOneWidget);
     expect(location, findsOneWidget);
@@ -299,39 +368,119 @@ void main() {
       (tester.getTopLeft(salary).dy - tester.getTopLeft(location).dy).abs(),
       lessThan(90),
     );
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('opportunity hero preserves a stronger editorial focal height',
+  testWidgets('opportunity hero uses the shared responsive height contract',
       (tester) async {
-    await _pump(tester, job: _job());
-    final hero = find.byType(PremiumHero);
-    expect(hero, findsOneWidget);
-    expect(tester.getSize(hero).height, greaterThanOrEqualTo(180));
+    await _pump(tester, job: _job(), width: 900, height: 1200);
+    expect(find.byType(PremiumHero), findsOneWidget);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 166);
+
+    await _pump(tester, job: _job(), width: 1280, height: 1200);
+    expect(find.byType(PremiumHero), findsOneWidget);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 280);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-      'compact opportunity detail keeps a painted match surface in the tight runtime viewport',
+      'compact opportunity detail keeps the active decision strip visible in a narrow viewport',
       (tester) async {
     await _pump(tester, job: _job(), width: 274, height: 457);
 
-    final match = find.byKey(
-      const ValueKey('opportunity-match-intelligence-compact-surface'),
-    );
+    final decision = find.byKey(const ValueKey('opportunity-decision-strip'));
     final hero = find.byType(PremiumHero);
-    expect(match, findsOneWidget);
-    final matchBoundary = find.byKey(
-      const ValueKey('opportunity-match-intelligence-compact-boundary'),
-    );
-    expect(matchBoundary, findsOneWidget);
-    expect(tester.getSize(matchBoundary).height, greaterThanOrEqualTo(160));
-    expect(tester.getSize(hero).height, lessThanOrEqualTo(170));
-    expect(find.text('94% Match'), findsOneWidget);
-    expect(find.text('Match intelligence'), findsOneWidget);
-    expect(tester.getTopLeft(match).dy, lessThan(280));
-    expect(tester.getSize(match).height, greaterThanOrEqualTo(160));
-    expect(tester.getSize(match).width, greaterThan(240));
-    expect(find.text('Match signals'), findsNothing);
+    expect(decision, findsOneWidget);
+    expect(hero, findsOneWidget);
+    expect(tester.getSize(hero).height, 132);
+    expect(tester.getSize(decision).width, greaterThan(220));
+    expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
+    expect(find.text('94%'), findsOneWidget);
+    expect(find.text('Quick decision'), findsOneWidget);
+    expect(find.text('Match signals'), findsOneWidget);
+    expect(tester.getTopLeft(decision).dy, lessThan(300));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Wave 42 final Job Detail section remains reachable above the fixed CTA at 1.5x text',
+      (tester) async {
+    const finalSectionKey = ValueKey('opportunity-detail-last-section');
+    const listKey = ValueKey('opportunity-detail-content-list');
+    const ctaKey = ValueKey('opportunity-detail-primary-cta');
+
+    for (final width in <double>[274, 360, 390]) {
+      await _pump(
+        tester,
+        job: _job(
+          kind: 'JOB',
+          ownerId: 'u1',
+          city: 'تهران',
+          title: 'طراحی فرصت Flutter برای همکاری بین‌المللی ABC-123',
+          category: 'Software',
+          description:
+              'شرح فارسی طولانی برای بررسی چیدمان در اندازه متن بزرگ. '
+              'شناسه لاتین ABC-123 و مسیر /api/v1/jobs باید کامل و خوانا بمانند. '
+              'این متن برای آزمون اسکرول، شکست خط و جهت نوشتار ترکیبی است.',
+          acceptanceCriteria:
+              'شرح نهایی: FINAL_ACCEPTANCE_MARKER — بررسی ABC-123 و /api/v1/jobs '
+              'بدون تغییر داده‌های واقعی یا جابه‌جایی دکمه اصلی.',
+          status: 'PUBLISHED',
+        ),
+        userId: 'u9',
+        width: width,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+
+      final initialException = tester.takeException();
+      expect(
+        initialException,
+        isNull,
+        reason: 'Initial Job Detail layout at $width dp / 1.5x: '
+            '${initialException is FlutterError ? initialException.diagnostics.map((node) => node.toString()).join(' | ') : initialException}',
+      );
+
+      final list = find.byKey(listKey);
+      final finalSection = find.byKey(finalSectionKey);
+      final cta = find.byKey(ctaKey);
+      expect(list, findsOneWidget);
+      expect(cta, findsOneWidget);
+
+      final listScroller = find.descendant(
+        of: list,
+        matching: find.byType(Scrollable),
+      ).first;
+      await tester.scrollUntilVisible(
+        finalSection,
+        180,
+        scrollable: listScroller,
+        maxScrolls: 80,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(finalSection);
+      await tester.pumpAndSettle();
+
+      // ListView builds distant children lazily; assert presence after scrolling.
+      expect(finalSection, findsOneWidget);
+      final viewportRect = tester.getRect(list);
+      final finalRect = tester.getRect(finalSection);
+      final ctaRect = tester.getRect(cta);
+
+      expect(finalRect.top, greaterThanOrEqualTo(viewportRect.top));
+      expect(finalRect.bottom, lessThanOrEqualTo(viewportRect.bottom));
+      expect(viewportRect.bottom, lessThanOrEqualTo(ctaRect.top));
+      expect(ctaRect.height, greaterThanOrEqualTo(48));
+      expect(ctaRect.bottom, lessThanOrEqualTo(tester.view.physicalSize.height));
+      final tailException = tester.takeException();
+      expect(
+        tailException,
+        isNull,
+        reason: 'Job Detail after scroll at $width dp / 1.5x: '
+            '${tailException is FlutterError ? tailException.diagnostics.map((node) => node.toString()).join(' | ') : tailException}',
+      );
+    }
   });
 
   testWidgets('long opportunity titles stay contained in the hero',
@@ -462,65 +611,138 @@ void main() {
   });
 
   testWidgets(
-      'match intelligence exposes four visual breakdown bars and a trust note',
+      'Wave 39 match breakdown exposes each localized component and percentage to semantics',
       (tester) async {
-    await _pump(
-      tester,
-      job: _job(kind: 'JOB', ownerId: 'u1'),
-      userId: 'u9',
-    );
+    final handle = tester.ensureSemantics();
+    try {
+      await _pump(
+        tester,
+        job: _job(kind: 'JOB', ownerId: 'u1'),
+        userId: 'u9',
+        width: 390,
+        height: 1200,
+        locale: const Locale('fa'),
+      );
 
-    expect(find.byKey(const ValueKey('match-breakdown-skills')), findsOneWidget);
-    expect(find.byKey(const ValueKey('match-breakdown-category')), findsOneWidget);
-    expect(find.byKey(const ValueKey('match-breakdown-location')), findsOneWidget);
-    expect(find.byKey(const ValueKey('match-breakdown-salary')), findsOneWidget);
-    expect(find.text('92% confidence'), findsOneWidget);
-    expect(find.text('Match signals'), findsOneWidget);
-  });
-
-  testWidgets('match intelligence opens a detailed evidence sheet', (tester) async {
-    await _pump(
-      tester,
-      job: _job(kind: 'JOB', ownerId: 'u1'),
-      userId: 'u9',
-    );
-
-    expect(find.text('Match intelligence'), findsOneWidget);
-    await tester.tap(find.text('See details'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Why this opportunity fits'), findsOneWidget);
-    expect(find.text('Match signals'), findsOneWidget);
-    final sheet = find.byType(BottomSheet);
-    expect(
-      find.descendant(of: sheet, matching: find.text('Skill match')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: sheet, matching: find.text('Work mode fit')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: sheet, matching: find.text('Category match')),
-      findsOneWidget,
-    );
-    expect(find.text('94%'), findsWidgets);
+      final expected = <String, List<String>>{
+        'skills': ['مهارت', '۹۶٪'],
+        'category': ['دسته‌بندی', '۱۰۰٪'],
+        'location': ['مکان', '۸۸٪'],
+        'salary': ['درآمد', '۸۲٪'],
+      };
+      for (final entry in expected.entries) {
+        final node = tester.getSemantics(
+          find.byKey(ValueKey('opportunity-decision-breakdown-${entry.key}')),
+        );
+        for (final token in entry.value) {
+          expect(node.label, contains(token), reason: entry.key);
+        }
+      }
+      expect(tester.takeException(), isNull);
+    } finally {
+      handle.dispose();
+    }
   });
 
   testWidgets(
-      'opportunity snapshot renders as a compact flat fact strip',
+      'active compact decision strip exposes real recommendation dimensions and values',
       (tester) async {
     await _pump(
       tester,
       job: _job(kind: 'JOB', ownerId: 'u1'),
       userId: 'u9',
+      width: 390,
+      height: 1200,
     );
 
-    expect(find.byKey(const ValueKey('opportunity-snapshot-facts')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-budget')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-field')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-location')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-deadline')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-skills')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-category')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-location')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-decision-breakdown-salary')), findsOneWidget);
+    expect(find.text('94%'), findsOneWidget);
+    expect(find.text('96%'), findsOneWidget);
+    expect(find.text('100%'), findsOneWidget);
+    expect(find.text('88%'), findsOneWidget);
+    expect(find.text('82%'), findsOneWidget);
+    expect(find.text('Match signals'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('compact Job Detail uses the active decision surface without a retired modal',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      userId: 'u9',
+      width: 390,
+      height: 1200,
+    );
+
+    expect(find.byKey(const ValueKey('opportunity-decision-strip')), findsOneWidget);
+    expect(find.text('94%'), findsOneWidget);
+    expect(find.text('Quick decision'), findsOneWidget);
+    expect(find.text('Match signals'), findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.text('Why this opportunity fits'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Opportunity DNA stays absent when no distinct real work-mode fact exists',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      userId: 'u9',
+      width: 900,
+      height: 1200,
+    );
+
+    expect(find.byKey(const ValueKey('opportunity-dna-signature')), findsNothing);
+    expect(find.text('Design'), findsOneWidget);
+    expect(find.text('Tehran'), findsOneWidget);
+    expect(find.textContaining('12,000,000'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Wave 40 Job Detail keeps category/location on the decision surface and only unique work mode in DNA',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    try {
+      await _pump(
+        tester,
+        job: _job(
+          kind: 'JOB',
+          category: 'Software',
+          city: 'Tehran',
+          workMode: 'HYBRID',
+        ),
+        width: 900,
+        height: 1600,
+        locale: const Locale('fa'),
+      );
+
+      expect(find.byKey(const ValueKey('opportunity-dna-signature')), findsOneWidget);
+      expect(find.text('نرم‌افزار'), findsOneWidget);
+      expect(find.text('Tehran'), findsOneWidget);
+
+      final workMode = tester.getSemantics(
+        find.byKey(const ValueKey('opportunity-dna-fact-work-mode')),
+      );
+      expect(workMode.label, contains('نوع همکاری'));
+      expect(workMode.label, contains('هیبریدی'));
+
+      final dna = find.byKey(const ValueKey('opportunity-dna-signature'));
+      expect(find.descendant(of: dna, matching: find.text('دسته‌بندی')), findsNothing);
+      expect(find.descendant(of: dna, matching: find.text('مکان')), findsNothing);
+      expect(find.descendant(of: dna, matching: find.text('بودجه')), findsNothing);
+      expect(find.descendant(of: dna, matching: find.text('تطبیق')), findsNothing);
+      expect(tester.takeException(), isNull);
+    } finally {
+      handle.dispose();
+    }
   });
 
   testWidgets('unknown job lifecycle status is presented safely', (tester) async {
@@ -530,7 +752,14 @@ void main() {
       userId: 'u1',
     );
 
-    expect(find.text('Needs review'), findsOneWidget);
+    final quickStatus = find.byKey(
+      const ValueKey('opportunity-quick-status'),
+    );
+    expect(
+      find.descendant(of: quickStatus, matching: find.text('Needs review')),
+      findsOneWidget,
+    );
+    expect(find.text('Needs review'), findsNWidgets(2));
     expect(find.text('FUTURE_STATE'), findsNothing);
   });
   testWidgets('unknown lifecycle status does not mark a stage complete', (tester) async {
@@ -542,7 +771,14 @@ void main() {
 
     final draft = tester.widget<Text>(find.text('Draft'));
     expect(draft.style?.fontWeight, isNot(FontWeight.w800));
-    expect(find.text('Needs review'), findsOneWidget);
+    final quickStatus = find.byKey(
+      const ValueKey('opportunity-quick-status'),
+    );
+    expect(
+      find.descendant(of: quickStatus, matching: find.text('Needs review')),
+      findsOneWidget,
+    );
+    expect(find.text('Needs review'), findsNWidgets(2));
   });
 
   testWidgets('non-owner never sees the candidate pipeline', (tester) async {
@@ -576,4 +812,112 @@ void main() {
   });
 
   // Runtime certification trigger: Wave G-3A compact Match Intelligence.
+
+
+  testWidgets(
+    'Job Detail does not infer remote location when city and work mode are missing',
+    (tester) async {
+      await _pump(
+        tester,
+        job: _job(city: null, workMode: null),
+        width: 360,
+        height: 1200,
+        locale: const Locale('fa'),
+      );
+
+      expect(find.text('مکان مشخص نشده'), findsOneWidget);
+      expect(find.text('دورکاری'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Job Detail displays Remote only when workMode explicitly says REMOTE',
+    (tester) async {
+      await _pump(
+        tester,
+        job: _job(city: null, workMode: 'REMOTE'),
+        width: 360,
+        height: 1200,
+        locale: const Locale('en'),
+      );
+
+      expect(find.text('Remote'), findsOneWidget);
+      expect(find.text('Location not specified'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 2 final Job Detail section and fixed CTA respect a 24dp system bottom inset at 1.5x',
+    (tester) async {
+      const bottomInset = 24.0;
+      const finalSectionKey = ValueKey('opportunity-detail-last-section');
+      const listKey = ValueKey('opportunity-detail-content-list');
+      const ctaKey = ValueKey('opportunity-detail-primary-cta');
+
+      await _pump(
+        tester,
+        job: _job(
+          kind: 'JOB',
+          ownerId: 'u1',
+          city: 'تهران',
+          title: 'فرصت Flutter با حاشیه امن سیستم',
+          description:
+              'آزمون هندسه در حضور inset واقعی سیستم و متن بزرگ. '
+              'شناسه SAFE-AREA-24 و مسیر /safe-area باید خوانا بمانند.',
+          acceptanceCriteria:
+              'SAFE_AREA_FINAL_MARKER — آخرین بخش باید بالای اقدام ثابت قابل‌دسترسی بماند.',
+          status: 'PUBLISHED',
+        ),
+        userId: 'u9',
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+        bottomSafeAreaInset: bottomInset,
+        locale: const Locale('fa'),
+      );
+
+      final detailContext = tester.element(find.byType(JobDetailPage));
+      expect(MediaQuery.paddingOf(detailContext).bottom, bottomInset);
+      expect(MediaQuery.viewPaddingOf(detailContext).bottom, bottomInset);
+
+      final list = find.byKey(listKey);
+      final finalSection = find.byKey(finalSectionKey);
+      final cta = find.byKey(ctaKey);
+      expect(list, findsOneWidget);
+      expect(cta, findsOneWidget);
+
+      // The final section is a lazy list child; it must be built by scrolling.
+      final listScroller = find.descendant(
+        of: list,
+        matching: find.byType(Scrollable),
+      ).first;
+      await tester.scrollUntilVisible(
+        finalSection,
+        150,
+        scrollable: listScroller,
+        maxScrolls: 80,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(finalSection);
+      await tester.pumpAndSettle();
+
+      final viewportRect = tester.getRect(list);
+      final finalRect = tester.getRect(finalSection);
+      final ctaRect = tester.getRect(cta);
+      expect(finalRect.top, greaterThanOrEqualTo(viewportRect.top));
+      expect(finalRect.bottom, lessThanOrEqualTo(viewportRect.bottom));
+      expect(viewportRect.bottom, lessThanOrEqualTo(ctaRect.top));
+      expect(ctaRect.height, greaterThanOrEqualTo(48));
+      expect(
+        ctaRect.bottom,
+        lessThanOrEqualTo(tester.view.physicalSize.height - bottomInset),
+        reason: 'The fixed CTA must remain above the 24dp system bottom inset.',
+      );
+      expect(cta.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

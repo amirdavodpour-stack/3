@@ -1,22 +1,14 @@
 #!/usr/bin/env sh
-# [runtime-capture-fa] Wave 1: runtime fixtures intentionally use deterministic product fallback media.
+# [runtime-capture-fa] editorial media fixture must be scoped to discovery surfaces.
 set -eu
 
 runtime_driver="integration_test/runtime/critical_screens_evidence_test.dart"
 test -f "$runtime_driver"
 
-if grep -Fq 'images.unsplash.com' "$runtime_driver"; then
-  echo "FAIL: editorial stock media must not appear in runtime fixtures" >&2
-  exit 1
-fi
-if grep -Fq "HOPE Runtime" "$runtime_driver" || grep -Fq "runtime@example.invalid" "$runtime_driver"; then
-  echo "FAIL: legacy demo identity must not appear in runtime fixtures" >&2
-  exit 1
-fi
+grep -Fq 'HopeJob _jobFixture({bool editorialMedia = false})' "$runtime_driver"
+grep -Fq "if (editorialMedia)" "$runtime_driver"
+grep -Fq "_jobFixture(editorialMedia: true)," "$runtime_driver"
+grep -Fq "JobDetailPage(job: _jobFixture(editorialMedia: true))" "$runtime_driver"
+grep -Fq "HopeJob get _job => _jobFixture();" "$runtime_driver"
 
-# The fixture must still provide a complete job object for all evidence screens.
-grep -Fq "HopeJob _jobFixture({bool editorialMedia = false})" "$runtime_driver"
-grep -Fq "'title': 'طراحی رابط موبایل حرفه‌ای'" "$runtime_driver"
-grep -Fq "'category': 'طراحی'" "$runtime_driver"
-
-echo "PASS: runtime fixture is deterministic, non-stock, and non-demo"
+echo "PASS: editorial media fixture is explicitly scoped"

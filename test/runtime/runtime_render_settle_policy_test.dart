@@ -12,9 +12,8 @@ void main() {
           home: Column(
             children: [
               CircularProgressIndicator(value: 0.94),
-              SizedBox(
+              CircularProgressIndicator(
                 key: ValueKey('indeterminate'),
-                child: CircularProgressIndicator(),
               ),
             ],
           ),

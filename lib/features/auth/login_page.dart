@@ -117,7 +117,7 @@ class _LoginPageState extends State<LoginPage> {
             maxWidth: 640,
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: HopeV2Navigation.scrollEndPadding(context),
               children: [
               Row(
                 children: [
@@ -143,7 +143,8 @@ class _LoginPageState extends State<LoginPage> {
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
-                height: 164,
+                height: 104,
+                    compactHero: true,
               ),
               const SizedBox(height: 10),
               AnimatedEntrance(
@@ -151,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                   // Auth is a dense primary surface; avoid a nested GPU blur
                   // here so the first Android frame remains deterministic.
                   glass: false,
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -159,8 +160,22 @@ class _LoginPageState extends State<LoginPage> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF1F1F1F),
+                              side: const BorderSide(color: Color(0xFFDADCE0)),
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                             onPressed: loading ? null : submitGoogle,
-                            icon: const HugeIcon(icon: HopeV2Icons.userAdd, size: 19),
+                            icon: Image.asset(
+                              'assets/branding/google_g.png',
+                              width: 20,
+                              height: 20,
+                              excludeFromSemantics: true,
+                            ),
                             label: Text(l10n.signInWithGoogle),
                           ),
                         ),
@@ -183,7 +198,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.emailLabel,
-                          prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 20),
+                          prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -193,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
-                          prefixIcon: const HopeIcon(HopeV2Icons.password, size: 20),
+                          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
                           suffixIcon: IconButton(
                             icon: HugeIcon(
                               icon: obscure

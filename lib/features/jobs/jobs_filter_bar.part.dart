@@ -197,8 +197,8 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                       label: Text(
                         _t(
                           context,
-                          'جستجوهای ذخیره‌شده · $savedSearchCount',
-                          'Saved searches · $savedSearchCount',
+                          'جستجوهای ذخیره‌شده · ${HopeDisplayFormatter.integer(savedSearchCount, locale: Localizations.localeOf(context).languageCode)}',
+                          'Saved searches · ${HopeDisplayFormatter.integer(savedSearchCount, locale: Localizations.localeOf(context).languageCode)}',
                         ),
                       ),
                     ),
@@ -258,7 +258,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                 ),
                 key: const ValueKey('hope-opportunity-refinement-active-count'),
                 child: Text(
-                  '$activeCount',
+                  HopeDisplayFormatter.integer(activeCount, locale: Localizations.localeOf(context).languageCode),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
@@ -319,6 +319,7 @@ class _JobsFilterHeader extends StatelessWidget {
     final copy = HopeCopy.of(context);
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final filterCount = [
       if (kind != 'ALL') 1,
       if (visibility != 'ALL') 1,
@@ -353,8 +354,8 @@ class _JobsFilterHeader extends StatelessWidget {
     );
     final resultLabel = Container(
       key: const ValueKey('hope-explore-result-count'),
-      constraints: const BoxConstraints(minHeight: 38),
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 8),
+      constraints: const BoxConstraints(minHeight: 36),
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 7, 10, 7),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
@@ -363,7 +364,7 @@ class _JobsFilterHeader extends StatelessWidget {
         ),
       ),
       child: Text(
-        '$resultCount ${copy.copy_results_2d120a3}',
+        '${HopeDisplayFormatter.integer(resultCount, locale: Localizations.localeOf(context).languageCode)} ${copy.copy_results_2d120a3}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -388,14 +389,14 @@ class _JobsFilterHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                HopeIcon(
+                const HopeIcon(
                   HopeV2Icons.filter,
                   size: 15,
                   color: HopeV2Colors.secondaryStrong,
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  '$filterCount ${_t(context, 'فیلتر فعال', 'active filters')}',
+                  '${HopeDisplayFormatter.integer(filterCount, locale: Localizations.localeOf(context).languageCode)} ${_t(context, 'فیلتر فعال', 'active filters')}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: HopeV2Colors.secondaryStrong,
                         fontWeight: FontWeight.w900,
@@ -409,16 +410,47 @@ class _JobsFilterHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (compact) ...[
-          searchField,
-          const SizedBox(height: 10),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              resultLabel,
+              Expanded(child: searchField),
               const SizedBox(width: 7),
-              if (activeState != null) activeState,
-              const Spacer(),
+              resultLabel,
+              const SizedBox(width: 6),
               refinement,
             ],
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            key: const ValueKey('hope-explore-kind-filters'),
+            segments: [
+              ButtonSegment<String>(
+                value: 'ALL',
+                label: Text(copy.copy_all_ba7d5b6),
+              ),
+              ButtonSegment<String>(
+                value: 'JOB',
+                label: Text(copy.copy_jobs_ebf9a80),
+                icon: const HopeIcon(HopeV2Icons.job, size: 15),
+              ),
+              ButtonSegment<String>(
+                value: 'MISSION',
+                label: Text(copy.copy_missions_a833d13),
+                icon: const HopeIcon(HopeV2Icons.mission, size: 15),
+              ),
+            ],
+            selected: {kind},
+            onSelectionChanged: (selected) {
+              if (selected.isNotEmpty) onKindChanged(selected.first);
+            },
+            style: ButtonStyle(
+              minimumSize: WidgetStatePropertyAll(
+                Size(0, enlargedText ? 56 : 48),
+              ),
+              padding: const WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 7),
+              ),
+            ),
           ),
         ] else
           Row(
@@ -451,20 +483,5 @@ class _JobsFilterHeader extends StatelessWidget {
     );
   }
 
-  Widget _chip(
-    BuildContext context,
-    String text,
-    bool selected,
-    VoidCallback onTap, {
-    Object? icon,
-  }) =>
-      Padding(
-        padding: const EdgeInsetsDirectional.only(end: HopeV2Spacing.sm),
-        child: PremiumFilterChip(
-          label: text,
-          selected: selected,
-          onTap: onTap,
-          icon: icon,
-        ),
-      );
+
 }

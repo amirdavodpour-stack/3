@@ -90,9 +90,10 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
-    expect(find.text('HOPE Pulse'), findsOneWidget);
-    expect(find.bySemanticsLabel('منو'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('تطابق'), findsOneWidget);
+    expect(find.text('جدید'), findsOneWidget);
+    expect(find.bySemanticsLabel('منوی برنامه'), findsOneWidget);
+    expect(find.byType(PremiumNavigationBar), findsOneWidget);
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.byType(HopeNavigationGlyph), findsWidgets);
     final selectedHome = tester.widget<HopeNavigationGlyph>(

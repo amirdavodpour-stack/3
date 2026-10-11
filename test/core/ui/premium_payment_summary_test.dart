@@ -98,6 +98,31 @@ void main() {
     expect(find.text('2000000.0 Toman'), findsNothing);
   });
 
+
+  testWidgets(
+      'PremiumPaymentSummary formats Persian Toman with Persian digits',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: PremiumPaymentSummary(payment: _payment(currency: 'TOMAN')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('۱٬۰۰۰٬۰۰۰ تومان'), findsWidgets);
+    expect(find.textContaining('1,000,000 تومان'), findsNothing);
+  });
+
   testWidgets(
       'PremiumPaymentSummary always presents the current internal ledger as Toman',
       (tester) async {
@@ -131,6 +156,7 @@ void main() {
 
   testWidgets('PremiumPaymentSummary exposes one financial summary semantics boundary',
       (tester) async {
+    final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
@@ -148,20 +174,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final semantics = tester.ensureSemantics();
-    try {
-      expect(
-        find.bySemanticsLabel(
-          'Payment status: Funds held, amount 1,000,000 Toman',
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.bySemanticsLabel('Payment details, Funds held'),
-        findsNothing,
-      );
-    } finally {
-      semantics.dispose();
-    }
+    await tester.pump();
+    expect(
+      find.bySemanticsLabel(
+        'Payment status: Funds held, amount 1,000,000 Toman',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Payment details, Funds held'),
+      findsNothing,
+    );
+    semantics.dispose();
   });
 }

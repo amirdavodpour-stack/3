@@ -125,8 +125,10 @@ test('payment idempotency is normalized consistently across header and body', ()
   assert.match(source, /readIdempotencyKey/);
   assert.match(validationSource, /export function readIdempotencyKey/);
   assert.match(source, /bodyIdempotencyKey/);
-  assert.match(source, /Header and body idempotency keys must match/);
-  assert.match(source, /IDEMPOTENCY_CONFLICT/);
+  assert.match(source, /validateIdempotencyPair/);
+  const paymentPolicy = fs.readFileSync(new URL('../src/application/payment_policy.js', import.meta.url), 'utf8');
+  assert.match(paymentPolicy, /Header and body idempotency keys must match/);
+  assert.match(paymentPolicy, /IDEMPOTENCY_CONFLICT|INVALID_IDEMPOTENCY_KEY/);
 });
 
 test('multipart parsing cleans temporary files on parse failures', () => {

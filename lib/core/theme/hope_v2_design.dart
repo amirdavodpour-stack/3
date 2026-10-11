@@ -16,6 +16,13 @@ class HopeV2Colors {
   const HopeV2Colors._();
 
   static const primary = Color(0xFF6366F1);
+  static const primaryAction = Color(0xFF4F46E5);
+  static const primaryOnLight = Color(0xFF4F46E5);
+  static const successOnLight = Color(0xFF047857);
+  static const warningOnLight = Color(0xFF92400E);
+  static const dangerOnLight = Color(0xFFB91C1C);
+  static const secondaryAction = Color(0xFF0F766E);
+
   static const primaryDark = Color(0xFF818CF8);
   static const secondary = Color(0xFF14B8A6);
   static const secondaryStrong = Color(0xFF0D9488);
@@ -45,11 +52,11 @@ class HopeV2Colors {
   static const darkMuted = Color(0xFFA5ADBD);
 
   static const pageLight = Color(0xFFF1EDF8);
-  static const pageDark = Color(0xFF0B0F18);
+  static const pageDark = Color(0xFF070A12);
   static const panelLight = Color(0xFFFFFFFF);
   static const panelDark = Color(0xFF101522);
   static const panelSoftLight = Color(0xFFFBF9FE);
-  static const panelSoftDark = Color(0xFF151B2A);
+  static const panelSoftDark = Color(0xFF121726);
   static const chipLight = Color(0xFFEFEBF8);
   static const chipDark = Color(0x20FFFFFF);
   static const chipSelectedDark = Color(0x356366F1);
@@ -62,9 +69,9 @@ class HopeV2Colors {
   static const navigationIndicatorLight = Color(0xFFE5DFFF);
   static const navigationIndicatorDark = Color(0x3A6366F1);
   static const inputDark = Color(0xFF0D1320);
-  static const darkBorder = Color(0x20FFFFFF);
-  static const darkBorderStrong = Color(0x2DFFFFFF);
-  static const darkDivider = Color(0x16FFFFFF);
+  static const darkBorder = Color(0x1FFFFFFF);
+  static const darkBorderStrong = Color(0x2BFFFFFF);
+  static const darkDivider = Color(0x18FFFFFF);
   static const cardBorderLight = Color(0xFFE5E0EF);
   /// Light warm-brown accent used only as a restrained atmospheric underlay.
   static const warmHalo = Color(0xFFC2A487);
@@ -154,7 +161,7 @@ class HopeV2Radii {
   static const md = 14.0;
   static const lg = 16.0;
   static const xl = 20.0;
-  static const hero = 24.0;
+  static const hero = 28.0;
   static const input = 12.0;
   static const button = 12.0;
   static const navigation = 12.0;
@@ -197,9 +204,28 @@ class HopeV2Touch {
 class HopeV2Navigation {
   const HopeV2Navigation._();
 
-  static const barHeight = 61.0;
-  static const dockRadius = 16.0;
-  static const itemRadius = 10.0;
+  static const barHeight = 68.0;
+  /// Scroll tail for the final meaningful item above the fixed dock.
+  static const scrollEndGap = 12.0;
+
+  /// Tail padding for scrollable content. Scaffold reserves the dock height;
+  /// this adds final breathing room and any system inset not consumed by SafeArea.
+  static EdgeInsets scrollEndPadding(
+    BuildContext context, {
+    double horizontal = 0,
+    double top = 0,
+  }) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return EdgeInsets.fromLTRB(
+      horizontal,
+      top,
+      horizontal,
+      bottomInset + scrollEndGap,
+    );
+  }
+
+  static const dockRadius = 18.0;
+  static const itemRadius = 12.0;
   static const itemWidth = 42.0;
   static const itemHeight = 28.0;
   static const railMinWidth = 88.0;
@@ -236,10 +262,11 @@ class HopeV2Surfaces {
       begin: AlignmentDirectional.topEnd,
       end: AlignmentDirectional.bottomStart,
       colors: [
-        HopeV2Colors.warmHalo,
+        Color(0x0DC2A487),
+        Colors.transparent,
         Colors.transparent,
       ],
-      stops: [0.0, 0.42],
+      stops: [0.0, 0.42, 1.0],
     );
   }
 
@@ -405,7 +432,7 @@ class HopeV2Type {
   static TextStyle display(BuildContext context) => Theme.of(context)
       .textTheme
       .displaySmall!
-      .copyWith(fontSize: 28, letterSpacing: -.65, height: 1.08);
+      .copyWith(fontSize: 30, letterSpacing: -.7, height: 1.1);
 
   static TextStyle hero(BuildContext context) => Theme.of(context)
       .textTheme
@@ -416,7 +443,7 @@ class HopeV2Type {
       .textTheme
       .titleLarge!
       .copyWith(
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: FontWeight.w900,
         letterSpacing: -.45,
         height: 1.0,
@@ -425,10 +452,10 @@ class HopeV2Type {
   static TextStyle section(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
-      .copyWith(fontSize: 17, letterSpacing: -.15);
+      .copyWith(fontSize: 18, letterSpacing: -.2, height: 1.18);
 
   static TextStyle eyebrow(BuildContext context) => Theme.of(context)
       .textTheme
       .labelLarge!
-      .copyWith(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: .65);
+      .copyWith(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: .55);
 }

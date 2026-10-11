@@ -93,9 +93,13 @@ class _RegisterPageState extends State<RegisterPage> {
           .read<AuthController>()
           .register(email.text.trim(), password.text, name.text.trim());
       if (mounted) {
-        await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
-        if (mounted && Navigator.of(context).canPop()) {
+        if (widget.returnIntent != null) {
           Navigator.of(context).pop(widget.returnIntent);
+        } else {
+          await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
+          if (mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(widget.returnIntent);
+          }
         }
       }
     } catch (error) {
@@ -119,7 +123,7 @@ class _RegisterPageState extends State<RegisterPage> {
               maxWidth: 640,
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
               child: ListView(
-                padding: EdgeInsets.zero,
+                padding: HopeV2Navigation.scrollEndPadding(context),
                 children: [
                   Row(
                     children: [
@@ -145,19 +149,34 @@ class _RegisterPageState extends State<RegisterPage> {
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
                     icon: HopeV2Icons.userAdd,
-                    height: 164,
+                    height: 112,
+                    compactHero: true,
                   ),
                   const SizedBox(height: 12),
                   PremiumPanel(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                     child: Column(
                       children: [
                         if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF1F1F1F),
+                                side: const BorderSide(color: Color(0xFFDADCE0)),
+                                minimumSize: const Size.fromHeight(48),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                               onPressed: loading ? null : submitGoogle,
-                              icon: const HopeIcon(HopeV2Icons.userAdd, size: 19),
+                              icon: Image.asset(
+                                'assets/branding/google_g.png',
+                                width: 20,
+                                height: 20,
+                                excludeFromSemantics: true,
+                              ),
                               label: Text(
                                 AppLocalizations.of(context).signInWithGoogle,
                               ),
@@ -192,7 +211,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_full_name_c7448f1,
-                            prefixIcon: const HopeIcon(HopeV2Icons.userAdd, size: 20),
+                            prefixIcon: const Icon(Icons.person_add_alt_1_rounded, size: 18, key: ValueKey('auth-name-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -203,7 +222,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 20),
+                            prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -213,7 +232,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_password_656eabe,
-                            prefixIcon: const HopeIcon(HopeV2Icons.password, size: 20),
+                            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
                             suffixIcon: IconButton(
                               icon: HugeIcon(
                                 icon: obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,

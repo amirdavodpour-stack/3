@@ -12,7 +12,7 @@ import 'hope_l10n.dart';
 import 'premium_components.dart';
 
 // Core marketplace card pattern for the HOPE visual system.
-enum OpportunityCardVariant { compact, standard, featured, featuredScan, expanded }
+enum OpportunityCardVariant { compact, compactGrid, standard, featured, featuredScan, expanded }
 
 class OpportunityCard extends StatelessWidget {
   const OpportunityCard({
@@ -31,6 +31,30 @@ class OpportunityCard extends StatelessWidget {
         value,
         locale: Localizations.localeOf(context).languageCode,
       );
+
+  // Compact discovery tiles retain the exact range while showing the
+  // currency unit once, so narrow cards have room for both amounts.
+  String _formatCompactGridAmount(String value, BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final parts = value.trim().split(RegExp(r'\s*[–-]\s*'));
+    if (parts.length != 2) return _formatAmount(value, context);
+
+    final first = HopeDisplayFormatter.parseInteger(parts.first);
+    final second = HopeDisplayFormatter.parseInteger(parts.last);
+    if (first == null || second == null) {
+      return _formatAmount(value, context);
+    }
+
+    if (first == second) {
+      return HopeDisplayFormatter.money(first, locale: locale);
+    }
+
+    final values = [first, second]..sort();
+    return '${HopeDisplayFormatter.integer(values[0], locale: locale)}\n'
+        '${_t(context, 'تا', '–')} '
+        '${HopeDisplayFormatter.integer(values[1], locale: locale)}\n'
+        '${_t(context, 'تومان', 'TOMAN')}';
+  }
   String _reason(BuildContext context, String value) {
     final copy = HopeCopy.of(context);
     return switch (value) {
@@ -53,14 +77,24 @@ class OpportunityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = variant == OpportunityCardVariant.compact;
+    final compactGrid = variant == OpportunityCardVariant.compactGrid;
     final featured = variant == OpportunityCardVariant.featured;
     final featuredScan = variant == OpportunityCardVariant.featuredScan;
     final expanded = variant == OpportunityCardVariant.expanded;
     final copy = HopeCopy.of(context);
-    final city = job.city?.trim().isNotEmpty == true ? job.city! : copy.copy_remote_dcbb625;
+    final explicitWorkMode = _workMode(context);
+    final city = job.city?.trim().isNotEmpty == true
+        ? job.city!.trim()
+        : (explicitWorkMode == _t(context, 'دورکاری', 'Remote')
+            ? explicitWorkMode!
+            : _t(context, 'مکان مشخص نشده', 'Location not specified'));
     final amount = job.isMission
         ? [job.budgetMin, job.budgetMax].where((v) => v?.isNotEmpty == true).join(' – ')
-        : (job.monthlySalary ?? job.budgetMin ?? '');
+        : (job.monthlySalary?.isNotEmpty == true
+            ? job.monthlySalary!
+            : [job.budgetMin, job.budgetMax]
+                .where((v) => v?.isNotEmpty == true)
+                .join(' – '));
     final title = job.title.trim().isEmpty ? copy.copy_untitled_d89410e : job.title;
     final primary = featured
         ? HopeV2Colors.primary
@@ -70,13 +104,33 @@ class OpportunityCard extends StatelessWidget {
       ...job.recommendationReasons,
     ].take(3).toList(growable: false);
     final mediaUrl = _mediaUrl(job);
+    final locale = Localizations.localeOf(context).languageCode;
+    final categoryValue = _categoryValue();
+    final category = categoryValue == null
+        ? ''
+        : hopeCategoryLabel(context, categoryValue);
+    final opportunityKind = job.isMission
+        ? _t(context, 'ماموریت', 'Mission')
+        : _t(context, 'فرصت شغلی', 'Job');
+    final rawScore = job.recommendationScore;
+    final scoreLabel = rawScore == null
+        ? ''
+        : '${HopeDisplayFormatter.percent(
+            (rawScore <= 1 ? rawScore * 100 : rawScore).round(),
+            locale: locale,
+          )} ${_t(context, 'تطابق', 'match')}';
 
-    return Semantics(
-      button: true,
-      label: '$title, $city${amount.isEmpty ? '' : ', $amount'}',
-      child: PressableScale(
-        onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
-        child: Container(
+    return PressableScale(
+      semanticLabel: [
+        title,
+        opportunityKind,
+        if (category.isNotEmpty) category,
+        city,
+        if (amount.isNotEmpty) _formatAmount(amount, context),
+        if (scoreLabel.isNotEmpty) scoreLabel,
+      ].join(', '),
+      onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
+      child: Container(
           decoration: BoxDecoration(
             gradient: featured || featuredScan
                 ? LinearGradient(
@@ -84,7 +138,7 @@ class OpportunityCard extends StatelessWidget {
                     end: AlignmentDirectional.bottomEnd,
                     colors: Theme.of(context).brightness == Brightness.dark
                         ? [
-                            primary.withValues(alpha: .10),
+                            primary.withValues(alpha: .18),
                             const Color(0xFF101522),
                             Theme.of(context).colorScheme.surface,
                           ]
@@ -96,9 +150,9 @@ class OpportunityCard extends StatelessWidget {
                     stops: const [0, .44, 1],
                   )
                 : null,
-            color: featured ? null : Theme.of(context).colorScheme.surface,
+            color: featured || featuredScan ? null : Colors.transparent,
             borderRadius: BorderRadius.circular(
-              HopeV2Radii.lg,
+              featured || featuredScan ? HopeV2Radii.lg : HopeV2Radii.md,
             ),
             border: Border.all(
               color: featured || featuredScan
@@ -107,27 +161,29 @@ class OpportunityCard extends StatelessWidget {
                           ? (featuredScan ? .18 : .21)
                           : .18,
                     )
-                  : (Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withValues(alpha: .055)
-                      : HopeV2Surfaces.border(context).withValues(alpha: .60)),
+                  : HopeV2Surfaces.border(context).withValues(alpha: .08),
             ),
             boxShadow: Theme.of(context).brightness == Brightness.dark
                 ? [
                     if (featured || featuredScan)
                       BoxShadow(
-                        color: primary.withValues(alpha: .015),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
+                        color: primary.withValues(alpha: .035),
+                        blurRadius: 22,
+                        offset: const Offset(0, 9),
                       ),
                   ]
-                : HopeV2Shadows.card,
+                : const <BoxShadow>[],
           ),
           padding: EdgeInsets.all(
-            featured ? 11 : (featuredScan ? 11 : (compact ? 11 : 13)),
+            featured
+                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 8 : 10)
+                : (featuredScan ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 8 : 10) : (compact ? 7 : 6)),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
-              : _standard(
+              : compactGrid
+                  ? _compactGrid(context, title, city, amount, primary, mediaUrl, copy)
+                  : _standard(
                   context,
                   title,
                   city,
@@ -140,23 +196,54 @@ class OpportunityCard extends StatelessWidget {
                   mediaUrl,
                   copy,
                 ),
-        ),
       ),
     );
   }
 
+  bool _isWebImageUrl(String value) {
+    final uri = Uri.tryParse(value);
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
+
+  String? _categoryValue() {
+    final category = job.category?.trim();
+    if (category != null && category.isNotEmpty) return category;
+    final categoryId = job.categoryId?.trim();
+    return categoryId != null && categoryId.isNotEmpty ? categoryId : null;
+  }
+
+  // Listing cards use only absolute HTTP(S) media from the opportunity payload.
+  // When no usable media exists, the localized category identity becomes the visual fallback.
   String? _mediaUrl(HopeJob job) {
-    const keys = <String>[
-      'imageUrl',
-      'coverUrl',
-      'thumbnailUrl',
-      'image',
-      'coverImage',
-      'mediaUrl',
+    final candidates = <dynamic>[
+      job.raw['imageUrl'],
+      job.raw['image_url'],
+      job.raw['coverImageUrl'],
+      job.raw['heroImageUrl'],
+      job.raw['thumbnailUrl'],
+      job.raw['mediaUrl'],
+      job.raw['media_url'],
     ];
-    for (final key in keys) {
-      final value = job.raw[key];
-      if (value is String && value.trim().isNotEmpty) return value.trim();
+    for (final candidate in candidates) {
+      if (candidate is String && candidate.trim().isNotEmpty) {
+        final value = candidate.trim();
+        if (_isWebImageUrl(value)) return value;
+      }
+    }
+    final media = job.raw['media'];
+    if (media is List) {
+      for (final item in media) {
+        if (item is! Map) continue;
+        for (final key in const ['url', 'src', 'imageUrl', 'image_url']) {
+          final candidate = item[key];
+          if (candidate is String && candidate.trim().isNotEmpty) {
+            final value = candidate.trim();
+            if (_isWebImageUrl(value)) return value;
+          }
+        }
+      }
     }
     return null;
   }
@@ -171,16 +258,20 @@ class OpportunityCard extends StatelessWidget {
     required String? mediaUrl,
     required double? score,
     required bool featured,
+    bool showTitle = true,
   }) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final hasMedia = mediaUrl?.trim().isNotEmpty == true;
     final percent = score == null ? null : (score <= 1 ? score * 100 : score);
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
         key: const ValueKey('opportunity-media-header'),
         height: featured
-            ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 136 : 150)
-            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 76 : 92),
+            ? (hasMedia
+                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 108 : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 128 : 152))
+                : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 64 : 76))
+            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 78 : 92),
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -188,6 +279,7 @@ class OpportunityCard extends StatelessWidget {
             if (mediaUrl != null)
               Image.network(
                 mediaUrl,
+                key: const ValueKey('opportunity-media-image'),
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
               )
@@ -210,8 +302,8 @@ class OpportunityCard extends StatelessWidget {
               ),
             ),
             PositionedDirectional(
-              start: 10,
-              top: 10,
+              start: 8,
+              top: 8,
               child: PremiumTag(
                 icon: HopeV2Icons.featured,
                 label: percent == null
@@ -221,28 +313,29 @@ class OpportunityCard extends StatelessWidget {
                 inverse: true,
               ),
             ),
-            PositionedDirectional(
-              start: 14,
-              end: 14,
-              bottom: 9,
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.5,
-                  height: 1.08,
-                  fontWeight: FontWeight.w900,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black54,
-                      blurRadius: 8,
-                    ),
-                  ],
+            if (showTitle && hasMedia)
+              PositionedDirectional(
+                start: 12,
+                end: 12,
+                bottom: 8,
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 15.0 : 16.0,
+                    height: 1.06,
+                    fontWeight: FontWeight.w900,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -250,142 +343,171 @@ class OpportunityCard extends StatelessWidget {
   }
 
   Widget _fallbackMedia(BuildContext context, Color primary) {
+    final categoryValue = _categoryValue();
+    final categoryKey = (categoryValue ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', '-')
+        .replaceAll('  ', ' ');
+    final (accent, icon) = switch (categoryKey) {
+      'software' || 'software-development' || 'development' || 'نرم‌افزار' || 'نرم افزار' =>
+        (HopeV2Colors.primary, HopeV2Icons.web),
+      'design' || 'graphic-design' || 'طراحی' =>
+        (const Color(0xFF8B5CF6), HopeV2Icons.featured),
+      'marketing' || 'بازاریابی' =>
+        (HopeV2Colors.accent, HopeV2Icons.insights),
+      'content' || 'translation' || 'content-translation' || 'محتوا و ترجمه' =>
+        (const Color(0xFF0EA5E9), HopeV2Icons.description),
+      'finance' || 'accounting' || 'finance-accounting' || 'مالی و حسابداری' =>
+        (HopeV2Colors.successDark, HopeV2Icons.payments),
+      'education' || 'آموزش' =>
+        (const Color(0xFF38BDF8), HopeV2Icons.skills),
+      'support' || 'پشتیبانی' =>
+        (HopeV2Colors.secondaryDark, HopeV2Icons.message),
+      'construction' || 'technical' || 'construction-technical' || 'ساخت‌وساز و فنی' =>
+        (const Color(0xFFF97316), HopeV2Icons.workshop),
+      'video' || 'audio' || 'video-audio' || 'video-production' || 'تولید ویدیو و صدا' =>
+        (const Color(0xFFEC4899), HopeV2Icons.featured),
+      'data' || 'ai' || 'data-ai' || 'artificial-intelligence' || 'داده و هوش مصنوعی' =>
+        (const Color(0xFF06B6D4), HopeV2Icons.insights),
+      'sales' || 'فروش' =>
+        (const Color(0xFF22C55E), HopeV2Icons.workshop),
+      _ => (primary, HopeV2Icons.category),
+    };
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final baseSurface =
+        dark ? HopeV2Colors.darkCard : theme.colorScheme.surface;
+
     return DecoratedBox(
+      key: const ValueKey('opportunity-fallback-media-surface'),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: AlignmentDirectional.topEnd,
           end: AlignmentDirectional.bottomStart,
           colors: [
-            primary.withValues(alpha: .34),
-            const Color(0xFF151A31),
-            const Color(0xFF090C14),
+            accent.withValues(alpha: dark ? .09 : .05),
+            baseSurface,
           ],
-          stops: const [0, .44, 1],
         ),
       ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          PositionedDirectional(
-            end: -28,
-            top: -36,
-            child: Container(
-              width: 150,
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: .11),
-                ),
-              ),
-              child: Row(
-                children: [
-                  for (var i = 0; i < 3; i++)
-                    Expanded(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: BorderDirectional(
-                            start: i == 0
-                                ? BorderSide.none
-                                : BorderSide(
-                                    color: Colors.white.withValues(alpha: .06),
-                                  ),
-                          ),
-                        ),
+      child: Center(
+        child: Container(
+          key: const ValueKey('opportunity-fallback-icon-container'),
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: dark ? .07 : .04),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: accent.withValues(alpha: dark ? .13 : .10),
+            ),
+          ),
+          child: Center(
+            child: HopeIcon(
+              icon,
+              color: accent.withValues(alpha: dark ? .92 : 1),
+              size: 16,
+              strokeWidth: 1.6,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _compactGrid(
+    BuildContext context,
+    String title,
+    String city,
+    String amount,
+    Color primary,
+    String? mediaUrl,
+    HopeCopy copy,
+  ) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final mediaHeight = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 46.0 : 54.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          child: SizedBox(
+            height: mediaHeight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (mediaUrl != null)
+                  Image.network(
+                    mediaUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
+                  )
+                else
+                  _fallbackMedia(context, primary),
+                PositionedDirectional(
+                  top: 5,
+                  start: 5,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: (dark ? Colors.black : Colors.white).withValues(alpha: .82),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                ],
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            start: -22,
-            bottom: -30,
-            child: Container(
-              width: 105,
-              height: 70,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                color: HopeV2Colors.secondary.withValues(alpha: .08),
-                border: Border.all(
-                  color: HopeV2Colors.secondary.withValues(alpha: .12),
-                ),
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            start: 16,
-            bottom: 16,
-            child: Container(
-              width: 82,
-              height: 28,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .055),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: .07),
-                ),
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            start: 24,
-            bottom: 24,
-            child: Container(
-              width: 44,
-              height: 8,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .11),
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          Align(
-            alignment: AlignmentDirectional.center,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: primary.withValues(alpha: .20),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: .13),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: primary.withValues(alpha: .18),
-                    blurRadius: 18,
                   ),
-                ],
-              ),
-              child: const Center(
-                child: HopeIcon(
-                  HopeV2Icons.featured,
-                  color: Colors.white,
-                  size: 18,
-                  strokeWidth: 1.6,
                 ),
-              ),
+              ],
             ),
           ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: AlignmentDirectional.topCenter,
-                  end: AlignmentDirectional.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: .02),
-                    Colors.black.withValues(alpha: .20),
-                    Colors.black.withValues(alpha: .52),
-                  ],
-                  stops: const [0, .55, 1],
-                ),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontSize: 14,
+            height: 1.18,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            HopeIcon(HopeV2Icons.location, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, strokeWidth: 1.8),
+            const SizedBox(width: 3),
+            Expanded(
+              child: Text(
+                city,
+                key: const ValueKey('opportunity-card-compact-grid-location'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11.5),
               ),
             ),
+          ],
+        ),
+        const Spacer(),
+        if (amount.isNotEmpty)
+          Text(
+            _formatCompactGridAmount(amount, context),
+            key: const ValueKey('opportunity-card-compact-grid-budget'),
+            maxLines: 3,
+            softWrap: true,
+            overflow: TextOverflow.clip,
+            style: TextStyle(fontSize: 10.5, height: 1.12, fontWeight: FontWeight.w900, color: primary),
           ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -398,11 +520,13 @@ class OpportunityCard extends StatelessWidget {
     String? mediaUrl,
     HopeCopy copy,
   ) {
+    final locationColor = Theme.of(context).colorScheme.onSurfaceVariant;
     final media = ClipRRect(
+      key: const ValueKey('opportunity-compact-media'),
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 70,
-        height: 70,
+        width: 72,
+        height: 72,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
@@ -413,49 +537,60 @@ class OpportunityCard extends StatelessWidget {
       ),
     );
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         media,
-        const SizedBox(width: 10),
+        const SizedBox(width: 11),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14.5,
+                      height: 1.22,
                     ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                city,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(height: 5),
+              Row(
+                children: [
+                  HopeIcon(HopeV2Icons.location, size: 13, color: locationColor, strokeWidth: 1.8),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      city,
+                      key: const ValueKey('opportunity-card-compact-location'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: locationColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                ],
               ),
+              if (amount.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _formatAmount(amount, context),
+                  key: const ValueKey('opportunity-card-compact-budget'),
+                  maxLines: 3,
+                  softWrap: true,
+                  overflow: TextOverflow.clip,
+                  textAlign: TextAlign.start,
+                  style: TextStyle(fontSize: 13, height: 1.2, fontWeight: FontWeight.w900, color: primary),
+                ),
+              ],
             ],
           ),
         ),
-        if (amount.isNotEmpty) ...[
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              '${_formatAmount(amount, context)} ${copy.copy_toman}',
-              maxLines: 2,
-              overflow: TextOverflow.clip,
-              softWrap: true,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                color: primary,
-              ),
-            ),
-          ),
-        ],
         const SizedBox(width: 4),
         HugeIcon(
           icon: Directionality.of(context) == ui.TextDirection.rtl
@@ -479,9 +614,11 @@ class OpportunityCard extends StatelessWidget {
     required String? mediaUrl,
     required HopeCopy copy,
   }) {
+    final hasMedia = mediaUrl?.trim().isNotEmpty == true;
     final company = _companyName();
     final mode = _workMode(context);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _mediaHeader(
@@ -491,11 +628,29 @@ class OpportunityCard extends StatelessWidget {
           mediaUrl: mediaUrl,
           score: score,
           featured: true,
+          showTitle: hasMedia,
         ),
-        const SizedBox(height: HopeV2Spacing.sm),
+        if (!hasMedia) ...[
+          const SizedBox(height: 8),
+          Text(
+            title,
+            key: const ValueKey('opportunity-featured-fallback-title'),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: MediaQuery.sizeOf(context).width <
+                          HopeV2Breakpoints.medium
+                      ? 16
+                      : 18,
+                  height: 1.15,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ],
+        const SizedBox(height: 6),
         LayoutBuilder(
           builder: (context, constraints) {
-            final narrowMeta = constraints.maxWidth < 280;
+            final narrowMeta = constraints.maxWidth < 420;
             final tags = Wrap(
               spacing: HopeV2Spacing.sm,
               runSpacing: HopeV2Spacing.xs,
@@ -513,7 +668,7 @@ class OpportunityCard extends StatelessWidget {
                     label: company,
                     color: HopeV2Colors.muted,
                   ),
-                if (mode != null)
+                if (mode != null && mode != city)
                   PremiumTag(
                     icon: HopeV2Icons.workshop,
                     label: mode,
@@ -530,8 +685,9 @@ class OpportunityCard extends StatelessWidget {
             final amountText = amount.isEmpty
                 ? null
                 : Text(
-                    '${_formatAmount(amount, context)} ${copy.copy_toman}',
-                    maxLines: narrowMeta ? 1 : 2,
+                    _formatAmount(amount, context),
+                    key: const ValueKey('opportunity-card-standard-budget'),
+                    maxLines: 3,
                     overflow: TextOverflow.clip,
                     softWrap: true,
                     textAlign: TextAlign.end,
@@ -572,7 +728,7 @@ class OpportunityCard extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(height: HopeV2Spacing.sm),
+        const SizedBox(height: 6),
         Semantics(
           container: true,
           label: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium
@@ -629,6 +785,18 @@ class OpportunityCard extends StatelessWidget {
     String? mediaUrl,
     HopeCopy copy,
   ) {
+    if (featured && MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact) {
+      return _scanStandard(
+        context,
+        title: title,
+        city: city,
+        amount: amount,
+        primary: primary,
+        mediaUrl: mediaUrl,
+        copy: copy,
+      );
+    }
+
     if (featured) {
       return _featuredStandard(
         context,
@@ -637,18 +805,6 @@ class OpportunityCard extends StatelessWidget {
         amount: amount,
         primary: primary,
         score: job.recommendationScore,
-        mediaUrl: mediaUrl,
-        copy: copy,
-      );
-    }
-
-    if (featuredScan) {
-      return _scanStandard(
-        context,
-        title: title,
-        city: city,
-        amount: amount,
-        primary: primary,
         mediaUrl: mediaUrl,
         copy: copy,
       );
@@ -707,7 +863,7 @@ class OpportunityCard extends StatelessWidget {
     final score = job.recommendationScore;
     if (score == null) return null;
     final percent = score <= 1 ? score * 100 : score;
-    return "${percent.round()} ${_t(context, 'تطابق', 'match')}";
+    return "${percent.round()}% ${_t(context, 'تطابق', 'match')}";
   }
 
   Widget _scanStandard(
@@ -724,10 +880,11 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 72.0 : 88.0;
+    final mediaSize = compactViewport ? 64.0 : 88.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
+        key: const ValueKey('opportunity-scan-media'),
         width: mediaSize,
         height: mediaSize,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
@@ -745,10 +902,10 @@ class OpportunityCard extends StatelessWidget {
       spacing: HopeV2Spacing.sm,
       runSpacing: HopeV2Spacing.xs,
       children: [
-        if ((job.category ?? '').isNotEmpty)
+        if (_categoryValue() != null)
           PremiumTag(
             icon: HopeV2Icons.category,
-            label: job.category!,
+            label: hopeCategoryLabel(context, _categoryValue()!),
             color: HopeV2Colors.muted,
           ),
         if (job.visibility == 'SPECIALIZED')
@@ -767,20 +924,12 @@ class OpportunityCard extends StatelessWidget {
     );
 
     final meta = <Widget>[
-      if (mode != null)
+      if (mode != null && mode != city)
         _metaText(
           context,
           HopeV2Icons.workshop,
           mode,
           secondaryAccent(context),
-        ),
-      if (amount.isNotEmpty)
-        _metaText(
-          context,
-          HopeV2Icons.payments,
-          '${_formatAmount(amount, context)} ${copy.copy_toman}',
-          primary,
-          emphasize: true,
         ),
       if (city.trim().isNotEmpty)
         _metaText(
@@ -792,6 +941,7 @@ class OpportunityCard extends StatelessWidget {
     ];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -850,57 +1000,55 @@ class OpportunityCard extends StatelessWidget {
             ),
           ],
         ),
-        if (meta.isNotEmpty) ...[
+        if (amount.isNotEmpty) ...[
           SizedBox(height: compactViewport ? 5 : 7),
-          if (compactViewport && amount.isNotEmpty && city.trim().isNotEmpty)
-            Row(
-              children: [
-                Expanded(
-                  child: _metaText(
-                    context,
-                    HopeV2Icons.payments,
-                    '${_formatAmount(amount, context)} ${copy.copy_toman}',
-                    primary,
-                    emphasize: true,
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HugeIcon(
+                icon: HopeV2Icons.payments,
+                size: 15,
+                color: primary,
+                strokeWidth: 1.8,
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  _formatAmount(amount, context),
+                  key: const ValueKey('opportunity-card-budget-amount'),
+                  maxLines: 3,
+                  softWrap: true,
+                  overflow: TextOverflow.clip,
+                  textAlign: TextAlign.start,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: primary,
+                        fontSize: compactViewport ? 12 : 13,
+                        height: 1.18,
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _metaText(
-                    context,
-                    HopeV2Icons.location,
-                    city,
-                    secondaryAccent(context),
-                  ),
-                ),
-              ],
-            )
-          else
-            Wrap(
-              spacing: HopeV2Spacing.sm,
-              runSpacing: HopeV2Spacing.xs,
-              children: meta,
-            ),
-          if (compactViewport && mode != null) ...[
-            const SizedBox(height: 4),
-            _metaText(
-              context,
-              HopeV2Icons.workshop,
-              mode,
-              secondaryAccent(context),
-            ),
-          ],
+              ),
+            ],
+          ),
+        ],
+        if (meta.isNotEmpty) ...[
+          SizedBox(height: compactViewport ? 4 : 7),
+          Wrap(
+            spacing: HopeV2Spacing.sm,
+            runSpacing: HopeV2Spacing.xs,
+            children: meta,
+          ),
         ],
         if (tags.children.isNotEmpty && !compactViewport) ...[
-          SizedBox(height: HopeV2Spacing.sm),
+          const SizedBox(height: HopeV2Spacing.sm),
           tags,
         ],
-        SizedBox(height: compactViewport ? 6 : HopeV2Spacing.sm),
+        SizedBox(height: compactViewport ? 4 : HopeV2Spacing.sm),
         ConstrainedBox(
           key: const ValueKey('opportunity-card-cta'),
           constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
           child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 2, 6),
+            padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 2, 4),
             child: Row(
               children: [
                 Expanded(
@@ -979,6 +1127,8 @@ class OpportunityCard extends StatelessWidget {
     required String? mediaUrl,
     required HopeCopy copy,
   }) {
+    final compactViewport =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -989,6 +1139,7 @@ class OpportunityCard extends StatelessWidget {
           mediaUrl: mediaUrl,
           score: job.recommendationScore,
           featured: false,
+          showTitle: false,
         ),
         const SizedBox(height: HopeV2Spacing.md),
         Row(
@@ -1070,10 +1221,10 @@ class OpportunityCard extends StatelessWidget {
               label: city,
               color: secondaryAccent(context),
             ),
-            if ((job.category ?? '').isNotEmpty)
+            if (_categoryValue() != null)
               PremiumTag(
                 icon: HopeV2Icons.category,
-                label: job.category!,
+                label: hopeCategoryLabel(context, _categoryValue()!),
                 color: HopeV2Colors.muted,
               ),
             if (job.distanceKm != null)
@@ -1124,11 +1275,14 @@ class OpportunityCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${_formatAmount(amount, context)} ${copy.copy_toman}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        _formatAmount(amount, context),
+                        key: const ValueKey('opportunity-card-expanded-budget'),
+                        maxLines: compactViewport ? 3 : 2,
+                        softWrap: true,
+                        overflow: TextOverflow.clip,
                         style: HopeV2Type.metric(context).copyWith(
-                          fontSize: 18,
+                          fontSize: compactViewport ? 14 : 18,
+                          height: compactViewport ? 1.15 : 1.05,
                           color: primary,
                         ),
                       ),

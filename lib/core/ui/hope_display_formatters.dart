@@ -16,10 +16,32 @@ class HopeDisplayFormatter {
 
   static String localizeDigits(String value, {required String locale}) {
     if (!locale.toLowerCase().startsWith('fa')) return value;
-    return value.replaceAll('0', '۰').replaceAll('1', '۱').replaceAll('2', '۲')
-        .replaceAll('3', '۳').replaceAll('4', '۴').replaceAll('5', '۵')
-        .replaceAll('6', '۶').replaceAll('7', '۷').replaceAll('8', '۸')
-        .replaceAll('9', '۹').replaceAll(',', '٬').replaceAll('.', '٫');
+    return value
+        .replaceAll('0', '۰')
+        .replaceAll('1', '۱')
+        .replaceAll('2', '۲')
+        .replaceAll('3', '۳')
+        .replaceAll('4', '۴')
+        .replaceAll('5', '۵')
+        .replaceAll('6', '۶')
+        .replaceAll('7', '۷')
+        .replaceAll('8', '۸')
+        .replaceAll('9', '۹')
+        .replaceAll(',', '٬')
+        .replaceAll('.', '٫')
+        .replaceAll('%', '٪');
+  }
+
+  /// Formats a server-issued public reference; never derives one from an internal ID.
+  /// Returns null for UUIDs, database IDs and unknown reference formats.
+  static String? humanRef(Object? value, {required String locale}) {
+    final raw = value?.toString().trim();
+    if (raw == null || raw.isEmpty) return null;
+    final normalized = raw.startsWith('#') ? raw.substring(1) : raw;
+    if (!RegExp(r'^HP-\d{4,}$', caseSensitive: false).hasMatch(normalized)) {
+      return null;
+    }
+    return '#${normalized.toUpperCase()}';
   }
 
   static int? parseInteger(Object? value) {
@@ -28,16 +50,50 @@ class HopeDisplayFormatter {
     if (!RegExp(r'^[+-]?\d+$').hasMatch(normalized)) return null;
     return int.tryParse(normalized);
   }
-
   static String integer(Object? value, {required String locale}) {
     final parsed = parseInteger(value);
-    if (parsed == null) return value.toString();
+    if (parsed == null) return '—';
     return localizeDigits(NumberFormat.decimalPattern('en_US').format(parsed), locale: locale);
+  }
+
+  /// Formats a ledger amount without changing stored values or wallet arithmetic.
+  /// Persian output is isolated LTR so the sign and unit remain in a stable order.
+  static String signedMoney(
+    Object? value, {
+    required bool positive,
+    required String locale,
+    bool short = false,
+  }) {
+    final parsed = parseInteger(value);
+    if (parsed == null) return '—';
+    final sign = positive ? '+' : '-';
+    final formatted = '$sign${money(parsed.abs(), locale: locale, short: short)}';
+    return locale.toLowerCase().startsWith('fa')
+        ? '\u2066$formatted\u2069'
+        : formatted;
+  }
+
+  static String percent(
+    Object? value, {
+    required String locale,
+    int fractionDigits = 0,
+  }) {
+    if (value == null || fractionDigits < 0 || fractionDigits > 6) return '—';
+    final raw = _asciiDigits(value.toString().trim())
+        .replaceAll(',', '')
+        .replaceAll('٬', '')
+        .replaceAll('٫', '.');
+    final parsed = value is num ? value : num.tryParse(raw);
+    if (parsed == null || !parsed.isFinite) return '—';
+    return localizeDigits(
+      '${parsed.toStringAsFixed(fractionDigits)}%',
+      locale: locale,
+    );
   }
 
   static String money(Object? value, {required String locale, bool short = false}) {
     final parsed = parseInteger(value);
-    if (parsed == null) return value.toString();
+    if (parsed == null) return '—';
     final fa = locale.toLowerCase().startsWith('fa');
     if (short) {
       final abs = parsed.abs();
@@ -45,24 +101,37 @@ class HopeDisplayFormatter {
       if (abs >= 1000000) {
         final whole = abs ~/ 1000000;
         final decimal = (abs % 1000000) ~/ 100000;
-        final compact = decimal == 0 ? whole.toString() : whole.toString() + '.' + decimal.toString();
-        return localizeDigits(sign + compact, locale: locale) + ' ' + (fa ? 'میلیون تومان' : 'million Toman');
+        final compact = decimal == 0 ? whole.toString() : '$whole.$decimal';
+        final displayed = fa ? localizeDigits('$sign$compact', locale: locale) : '$sign$compact';
+        return '$displayed ${fa ? 'میلیون تومان' : 'million TOMAN'}';
       }
     }
-    return integer(parsed, locale: locale) + ' ' + (fa ? 'تومان' : 'Toman');
+    return '${integer(parsed, locale: locale)} ${fa ? 'تومان' : 'TOMAN'}';
   }
 
   static String amount(Object? value, {required String locale, bool short = false}) {
-    final raw = value.toString().trim();
-    final parts = raw.split(RegExp(r'\s*[–-]\s*')).map(parseInteger).whereType<int>().toList();
+    final raw = value?.toString().trim() ?? '';
+    final normalized = _asciiDigits(raw).replaceAll('٬', ',');
+    if (!RegExp(
+      r'^\s*[+-]?\d[\d,]*(?:\s*[–-]\s*[+-]?\d[\d,]*)?\s*$',
+    ).hasMatch(normalized)) {
+      return '—';
+    }
+    final parts = normalized
+        .split(RegExp(r'\s*[–-]\s*'))
+        .map(parseInteger)
+        .whereType<int>()
+        .toList();
     if (parts.length == 2) {
       parts.sort();
+      if (parts.first == parts.last) {
+        return money(parts.first, locale: locale, short: short);
+      }
       final separator = locale.toLowerCase().startsWith('fa') ? 'تا' : '–';
-      return money(parts.first, locale: locale, short: short) + ' ' + separator + ' ' +
-          money(parts.last, locale: locale, short: short);
+      return '${money(parts.first, locale: locale, short: short)} $separator ${money(parts.last, locale: locale, short: short)}';
     }
-    final single = parseInteger(raw);
-    return single == null ? raw : money(single, locale: locale, short: short);
+    final single = parseInteger(normalized);
+    return single == null ? '—' : money(single, locale: locale, short: short);
   }
 
   static String? relativeDateTime(String? raw, {required String locale, DateTime? now}) {
@@ -72,31 +141,52 @@ class HopeDisplayFormatter {
     final current = now ?? DateTime.now();
     final diff = current.difference(parsed);
     final fa = locale.toLowerCase().startsWith('fa');
+    String digits(int value) => localizeDigits('$value', locale: locale);
+    String calendarDate() {
+      if (!fa) {
+        const months = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        ];
+        return '${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
+      }
+      final j = _gregorianToJalali(parsed.year, parsed.month, parsed.day);
+      const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+      return localizeDigits('${j.year} ${months[j.month - 1]} ${j.day}', locale: locale);
+    }
+
     if (diff.inSeconds.abs() < 60) return fa ? 'همین حالا' : 'Just now';
     if (diff.isNegative) {
-      final minutes = (-diff.inMinutes).clamp(1, 59);
-      return fa ? 'در ' + localizeDigits(minutes.toString(), locale: locale) + ' دقیقه' : 'in ' + minutes.toString() + ' min';
+      final ahead = parsed.difference(current);
+      if (ahead.inMinutes < 60) {
+        return fa ? 'در ${digits(ahead.inMinutes)} دقیقه' : 'in ${ahead.inMinutes} min';
+      }
+      if (ahead.inHours < 24) {
+        return fa ? 'در ${digits(ahead.inHours)} ساعت' : 'in ${ahead.inHours} hours';
+      }
+      if (ahead.inDays < 2) return fa ? 'فردا' : 'Tomorrow';
+      if (ahead.inDays < 7) {
+        return fa ? 'در ${digits(ahead.inDays)} روز' : 'in ${ahead.inDays} days';
+      }
+      return calendarDate();
     }
     if (diff.inMinutes < 60) {
-      return fa ? localizeDigits(diff.inMinutes.toString(), locale: locale) + ' دقیقه پیش' : diff.inMinutes.toString() + 'm ago';
+      return fa ? '${digits(diff.inMinutes)} دقیقه پیش' : '${diff.inMinutes}m ago';
     }
     if (diff.inHours < 24) {
-      return fa ? localizeDigits(diff.inHours.toString(), locale: locale) + ' ساعت پیش' : diff.inHours.toString() + 'h ago';
+      return fa ? '${digits(diff.inHours)} ساعت پیش' : '${diff.inHours}h ago';
     }
     if (diff.inHours < 48) return fa ? 'دیروز' : 'Yesterday';
     if (diff.inDays < 7) {
-      return fa ? localizeDigits(diff.inDays.toString(), locale: locale) + ' روز پیش' : diff.inDays.toString() + 'd ago';
+      return fa ? '${digits(diff.inDays)} روز پیش' : '${diff.inDays}d ago';
     }
-    if (!fa) return DateFormat('MMM d, y', 'en').format(parsed);
-    final j = _gregorianToJalali(parsed.year, parsed.month, parsed.day);
-    const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-    return localizeDigits(j.year.toString(), locale: locale) + ' ' + months[j.month - 1] + ' ' +
-        localizeDigits(j.day.toString(), locale: locale);
+    return calendarDate();
   }
 
   static ({int year, int month, int day}) _gregorianToJalali(int gy, int gm, int gd) {
     final gdm = [0,31,59,90,120,151,181,212,243,273,304,334];
     var jy = gy <= 1600 ? 0 : 979;
+    gy -= gy <= 1600 ? 621 : 1600;
     var gy2 = gm > 2 ? gy + 1 : gy;
     var days = 365 * gy + (gy2 + 3) ~/ 4 - (gy2 + 99) ~/ 100 + (gy2 + 399) ~/ 400 - 80 + gd + gdm[gm - 1];
     jy += 33 * (days ~/ 12053);

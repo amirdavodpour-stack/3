@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../transactions/wallet.dart';
 import '../marketplace/job.dart';
@@ -7,6 +6,7 @@ import '../theme/hope_v2_design.dart';
 import 'components.dart';
 import 'premium_components.dart';
 import 'hope_display_formatters.dart';
+import 'hope_l10n.dart';
 
 /// Shared visual signature for the creation flow. It mirrors only values that
 /// the user has already entered; it never invents marketplace data.
@@ -212,9 +212,8 @@ class HopeOpportunityLivePreview extends StatelessWidget {
   }
 }
 
-/// Financial signature used on the Wallet surface. Values are taken directly
-/// from the internal ledger model, so the visual never implies a nonexistent
-/// fee or external payout provider.
+/// Compact, data-preserving explanation of the internal money lifecycle.
+/// Detailed balances remain in the wallet summary so fields are not repeated.
 class HopeWalletFlowSignature extends StatelessWidget {
   const HopeWalletFlowSignature({
     super.key,
@@ -226,45 +225,35 @@ class HopeWalletFlowSignature extends StatelessWidget {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _money(BuildContext context, int value) {
-    return "${NumberFormat.decimalPattern('en_US').format(value)} ${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'Toman') : wallet.currency}";
-  }
-
   @override
   Widget build(BuildContext context) {
-    final nodes = <({
-      Object icon,
-      String label,
-      String value,
-      Color color,
-    })>[
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final compact =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact &&
+            !enlargedText;
+    final currencyLabel = wallet.currency == 'TOMAN'
+        ? _t(context, 'تومان داخلی', 'Internal Toman')
+        : wallet.currency;
+    const compactFa = ['دفترکل', 'رزرو', 'آزادسازی'];
+    const compactEn = ['Ledger', 'Hold', 'Release'];
+    final steps = <({Object icon, String fa, String en, Color color})>[
       (
         icon: HopeV2Icons.wallet,
-        label: _t(context, 'کل موجودی', 'Total'),
-        value: _money(context, wallet.totalBalance),
+        fa: 'ثبت دفترکل',
+        en: 'Ledger entry',
         color: HopeV2Colors.primary,
       ),
       (
         icon: HopeV2Icons.protectedFunds,
-        label: _t(context, 'محافظت‌شده', 'Protected'),
-        value: _money(context, wallet.lockedBalance),
+        fa: 'رزرو تا تأیید',
+        en: 'Hold for approval',
         color: HopeV2Colors.warningDark,
       ),
       (
-        icon: HopeV2Icons.payments,
-        label: _t(context, 'قابل استفاده', 'Available'),
-        value: _money(context, wallet.availableBalance),
-        color: HopeV2Colors.secondary,
-      ),
-      (
         icon: HopeV2Icons.completed,
-        label: _t(context, 'وضعیت', 'Status'),
-        value: wallet.isActive
-            ? _t(context, 'فعال', 'Active')
-            : wallet.status,
-        color: wallet.isActive
-            ? HopeV2Colors.success
-            : HopeV2Colors.warning,
+        fa: 'آزادسازی وجه',
+        en: 'Release funds',
+        color: HopeV2Colors.secondary,
       ),
     ];
 
@@ -272,122 +261,221 @@ class HopeWalletFlowSignature extends StatelessWidget {
       key: const ValueKey('wallet-money-flow-signature'),
       glass: false,
       quiet: true,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 10 : 12,
+        compact ? 3 : 11,
+        compact ? 10 : 12,
+        compact ? 3 : 11,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const HopeIcon(
-                HopeV2Icons.route,
-                size: 18,
-                color: HopeV2Colors.secondary,
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(
-                  _t(context, 'نمای مالی دفترکل', 'Ledger flow'),
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-              ),
-              PremiumTag(
-                icon: HopeV2Icons.secure,
-                label: _t(
-                  context,
-                  'داخلی و محافظت‌شده',
-                  'Internal & protected',
-                ),
-                color: HopeV2Colors.success,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 520 ? 4 : 2;
-              const gap = 7.0;
-              final width = columns == 4
-                  ? (constraints.maxWidth - gap * 3) / 4
-                  : (constraints.maxWidth - gap) / 2;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: [
-                  for (final node in nodes)
-                    SizedBox(
-                      width: width,
-                      child: _FlowNode(
-                        icon: node.icon,
-                        label: node.label,
-                        value: node.value,
-                        color: node.color,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FlowNode extends StatelessWidget {
-  const _FlowNode({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final Object icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 62),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .055),
-        borderRadius: BorderRadius.circular(HopeV2Radii.md),
-        border: Border.all(color: color.withValues(alpha: .13)),
-      ),
-      child: Row(
-        children: [
-          HopeIcon(icon, size: 17, color: color, strokeWidth: 1.9),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+          if (compact)
+            Row(
               children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: HopeV2Colors.muted,
-                        fontWeight: FontWeight.w700,
-                      ),
+                HopeIcon(
+                  HopeV2Icons.route,
+                  size: 12,
+                  color: HopeV2Colors.secondary,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    _t(context, 'گردش وجه', 'Money flow'),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
+          if (!compact) ...[
+            if (enlargedText)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: HopeIcon(
+                          HopeV2Icons.route,
+                          size: 20,
+                          color: HopeV2Colors.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          _t(context, 'گردش وجه در دفترکل', 'Money flow in the ledger'),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  PremiumTag(
+                    icon: HopeV2Icons.secure,
+                    label: currencyLabel,
+                    color: HopeV2Colors.success,
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  HopeIcon(
+                    HopeV2Icons.route,
+                    size: compact ? 12 : 18,
+                    color: HopeV2Colors.secondary,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      _t(
+                        context,
+                        compact ? 'گردش وجه' : 'گردش وجه در دفترکل',
+                        compact ? 'Money flow' : 'Money flow in the ledger',
+                      ),
+                      style: (compact
+                              ? Theme.of(context).textTheme.labelMedium
+                              : Theme.of(context).textTheme.titleSmall)
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (!compact)
+                    PremiumTag(
+                      icon: HopeV2Icons.secure,
+                      label: currencyLabel,
+                      color: HopeV2Colors.success,
+                    ),
+                ],
+              ),
+          ],
+          if (!compact) const SizedBox(height: 6),
+          if (!compact)
+            Text(
+              _t(
+                context,
+                compact
+                  ? 'رزرو وجه تا تأیید کار'
+                  : 'تغییرات موجودی در دفترکل داخلی ثبت می‌شود؛ وجه رزروشده پس از تأیید کار آزاد می‌شود.',
+              compact
+                  ? 'Funds held until work approval'
+                  : 'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
+            ),
+            maxLines: enlargedText ? null : (compact ? 1 : 2),
+            overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
+            style: (compact
+                    ? Theme.of(context).textTheme.labelSmall
+                    : Theme.of(context).textTheme.bodySmall)
+                ?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: compact ? 1.2 : 1.35,
+                ),
           ),
+          if (!compact) const SizedBox(height: 9),
+          if (enlargedText)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var index = 0; index < steps.length; index++) ...[
+                  if (index > 0) const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: steps[index].color.withValues(alpha: .07),
+                      borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                      border: Border.all(
+                        color: steps[index].color.withValues(alpha: .16),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: HopeIcon(
+                            steps[index].icon,
+                            size: 20,
+                            color: steps[index].color,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _t(context, steps[index].fa, steps[index].en),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            )
+          else
+            Row(
+              children: [
+                for (var index = 0; index < steps.length; index++) ...[
+                  if (index > 0) const SizedBox(width: 6),
+                  Expanded(
+                    child: Container(
+                      constraints: BoxConstraints(minHeight: compact ? 26 : 43),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 2 : 5,
+                        vertical: compact ? 2 : 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: steps[index].color.withValues(alpha: .07),
+                        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                        border: Border.all(
+                          color: steps[index].color.withValues(alpha: .16),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          HopeIcon(
+                            steps[index].icon,
+                            size: compact ? 12 : 16,
+                            color: steps[index].color,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              _t(
+                                context,
+                                compact ? compactFa[index] : steps[index].fa,
+                                compact ? compactEn[index] : steps[index].en,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.clip,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
         ],
       ),
     );
@@ -400,9 +488,17 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
   const HopeOpportunityDnaSignature({
     super.key,
     required this.job,
+    this.includeBudget = true,
+    this.includeMatch = true,
+    this.includeCategory = true,
+    this.includeLocation = true,
   });
 
   final HopeJob job;
+  final bool includeBudget;
+  final bool includeMatch;
+  final bool includeCategory;
+  final bool includeLocation;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -410,82 +506,154 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
   String _categoryLabel(BuildContext context, String? raw) {
     final value = raw?.trim();
     if (value == null || value.isEmpty) return '—';
-    const fa = <String, String>{
-      'software': 'نرم‌افزار',
-      'design': 'طراحی',
-      'marketing': 'بازاریابی',
-      'content': 'محتوا و ترجمه',
-      'finance': 'مالی و حسابداری',
-      'education': 'آموزش',
-      'support': 'پشتیبانی',
-      'construction': 'ساخت‌وساز و فنی',
-      'video': 'تولید ویدیو و صدا',
-      'ai': 'داده و هوش مصنوعی',
-      'data': 'داده و هوش مصنوعی',
-      'sales': 'فروش',
-      'other': 'سایر',
-    };
-    const en = <String, String>{
-      'نرم‌افزار': 'Software',
-      'طراحی': 'Design',
-      'بازاریابی': 'Marketing',
-      'محتوا و ترجمه': 'Content & Translation',
-      'مالی و حسابداری': 'Finance & Accounting',
-      'آموزش': 'Education',
-      'پشتیبانی': 'Support',
-      'ساخت‌وساز و فنی': 'Construction & Technical',
-      'تولید ویدیو و صدا': 'Video & Audio',
-      'داده و هوش مصنوعی': 'Data & AI',
-      'فروش': 'Sales',
-      'سایر': 'Other',
-    };
-    final faValue = fa[value.toLowerCase()] ?? value;
-    return Localizations.localeOf(context).languageCode == 'en'
-        ? (en[faValue] ?? faValue)
-        : faValue;
+    return hopeCategoryLabel(context, value);
   }
 
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final secondary = HopeV2Colors.secondary;
-    final dimensions = <({String label, String value, Color color})>[
+    final locale = Localizations.localeOf(context).languageCode;
+    const secondary = HopeV2Colors.secondary;
+    String amountLabel(String? raw) {
+      final value = raw?.trim() ?? '';
+      if (value.isEmpty) return '—';
+      final formatted = HopeDisplayFormatter.amount(value, locale: locale);
+      return formatted == '—' ? value : formatted;
+    }
+    final dimensions = <({String id, String label, String value, Color color})>[
       (
+        id: 'work-mode',
         label: _t(context, 'نوع همکاری', 'Work mode'),
         value: _workMode(context),
         color: primary,
       ),
-      (
-        label: _t(context, 'دسته‌بندی', 'Category'),
-        value: _categoryLabel(context, job.category?.trim().isNotEmpty == true
-            ? job.category
-            : job.categoryId),
-        color: secondary,
-      ),
-      (
-        label: _t(context, 'مکان', 'Location'),
-        value: job.city?.trim().isNotEmpty == true
-            ? job.city!.trim()
-            : _t(context, 'دورکاری', 'Remote'),
-        color: HopeV2Colors.secondary,
-      ),
-      (
-        label: _t(context, 'تطبیق', 'Match'),
-        value: job.recommendationScore == null
-            ? _t(context, 'ثبت نشده', 'Not scored')
-            : '${job.recommendationScore!.clamp(0, 100).round()}%',
-        color: primary,
-      ),
-      (
-        label: _t(context, 'بودجه', 'Budget'),
-        value: job.isMission
-            ? [job.budgetMin, job.budgetMax]
-                .where((v) => v?.trim().isNotEmpty == true)
-                .join(' – ')
-            : (job.monthlySalary ?? job.budgetMin ?? '—'),
-        color: HopeV2Colors.warning,
-      ),
+      if (includeCategory)
+        (
+          id: 'category',
+          label: _t(context, 'دسته‌بندی', 'Category'),
+          value: _categoryLabel(context, job.category?.trim().isNotEmpty == true
+              ? job.category
+              : job.categoryId),
+          color: secondary,
+        ),
+      if (includeLocation)
+        (
+          id: 'location',
+          label: _t(context, 'مکان', 'Location'),
+          value: job.city?.trim().isNotEmpty == true
+              ? job.city!.trim()
+              : _t(context, 'دورکاری', 'Remote'),
+          color: HopeV2Colors.secondary,
+        ),
+      if (includeMatch)
+        (
+          id: 'match',
+          label: _t(context, 'تطبیق', 'Match'),
+          value: job.recommendationScore == null
+              ? _t(context, 'ثبت نشده', 'Not scored')
+              : HopeDisplayFormatter.percent(
+                  job.recommendationScore!.clamp(0, 100),
+                  locale: locale,
+                ),
+          color: primary,
+        ),
+      if (includeBudget)
+        (
+          id: 'budget',
+          label: _t(context, 'بودجه', 'Budget'),
+          value: amountLabel(
+            job.isMission
+                ? [job.budgetMin, job.budgetMax]
+                    .where((v) => v?.trim().isNotEmpty == true)
+                    .join(' – ')
+                : job.monthlySalary ?? job.budgetMin,
+          ),
+          color: HopeV2Colors.warning,
+        ),
     ];
+
+    if (dimensions.isEmpty) return const SizedBox.shrink();
+
+    if (dimensions.length == 1) {
+      final dimension = dimensions.single;
+      final factLabel =
+          '${dimension.label}: ${dimension.value.isEmpty ? '—' : dimension.value}';
+      return Semantics(
+        key: const ValueKey('opportunity-dna-signature'),
+        container: true,
+        label: _t(
+          context,
+          'ویژگی متمایز فرصت، $factLabel',
+          'Distinct opportunity trait, $factLabel',
+        ),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Semantics(
+            key: ValueKey('opportunity-dna-fact-${dimension.id}'),
+            container: true,
+            label: factLabel,
+            child: ExcludeSemantics(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 320,
+                  minHeight: HopeV2Touch.minimum,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: dimension.color.withValues(alpha: .055),
+                    borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                    border: Border.all(
+                      color: dimension.color.withValues(alpha: .16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: dimension.color,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dimension.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: HopeV2Colors.muted,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              dimension.value.isEmpty ? '—' : dimension.value,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return PremiumPanel(
       key: const ValueKey('opportunity-dna-signature'),
@@ -526,6 +694,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
           const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
+              final compact = constraints.maxWidth < 400;
               final columns = constraints.maxWidth >= 560 ? 5 : 2;
               const gap = 7.0;
               final width = columns == 5
@@ -536,38 +705,46 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
                 runSpacing: gap,
                 children: [
                   for (final dimension in dimensions)
-                    SizedBox(
-                      width: width,
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 58),
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: dimension.color.withValues(alpha: .055),
-                          borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                          border: Border.all(color: dimension.color.withValues(alpha: .13)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dimension.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: HopeV2Colors.muted,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              dimension.value.isEmpty ? '—' : dimension.value,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                            ),
-                          ],
+                    Semantics(
+                      key: ValueKey('opportunity-dna-fact-${dimension.id}'),
+                      container: true,
+                      label: '${dimension.label}: ${dimension.value.isEmpty ? '—' : dimension.value}',
+                      child: SizedBox(
+                        width: width,
+                        child: Container(
+                          constraints: BoxConstraints(minHeight: compact ? 50 : 58),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 8 : 9,
+                            vertical: compact ? 6 : 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: dimension.color.withValues(alpha: .055),
+                            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                            border: Border.all(color: dimension.color.withValues(alpha: .13)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                dimension.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: HopeV2Colors.muted,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                dimension.value.isEmpty ? '—' : dimension.value,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

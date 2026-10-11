@@ -1227,5 +1227,17 @@
   "copy_offers": "Offers",
   "@copy_offers": {
     "description": "Activity navigation destination for offers."
-  }
+  },
+  "categorySoftware": "Software",
+  "categoryDesign": "Design",
+  "categoryMarketing": "Marketing",
+  "categoryContentTranslation": "Content & translation",
+  "categoryFinanceAccounting": "Finance & accounting",
+  "categoryEducation": "Education",
+  "categorySupport": "Support",
+  "categoryConstructionTechnical": "Construction & technical",
+  "categoryVideoAudio": "Video & audio",
+  "categoryDataAI": "Data & AI",
+  "categorySales": "Sales",
+  "categoryOther": "Other"
 }

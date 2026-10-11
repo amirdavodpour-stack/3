@@ -1,6 +1,11 @@
 // ignore_for_file: avoid_print
 
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui';
+
+import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,6 +14,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:hope_mobile/core/application/application_registry.dart';
+import 'package:hope_mobile/core/chat/chat_repository.dart';
+import 'package:hope_mobile/core/financial/financial_insights_repository.dart';
+import 'package:hope_mobile/core/jobs/job_satisfaction_repository.dart';
+import 'package:hope_mobile/core/marketplace/employer_candidate_matching_repository.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
@@ -38,13 +47,17 @@ import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/transactions/wallet_repository.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
 import 'package:hope_mobile/features/applications/my_applications_page.dart';
+import 'package:hope_mobile/features/chat/chat_page.dart';
+import 'package:hope_mobile/features/financial/financial_insights_page.dart';
 import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/auth/password_reset_page.dart';
 import 'package:hope_mobile/features/auth/register_page.dart';
 import 'package:hope_mobile/features/home/home_page.dart';
+import 'package:hope_mobile/features/jobs/job_satisfaction_page.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
 import 'package:hope_mobile/features/jobs/saved_searches_page.dart';
 import 'package:hope_mobile/features/marketplace/create_job_page.dart';
+import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
 import 'package:hope_mobile/features/marketplace/job_detail_page.dart';
 import 'package:hope_mobile/features/notifications/notifications_page.dart';
 import 'package:hope_mobile/features/offers/offers_page.dart';
@@ -63,7 +76,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'علی رضایی'},
+        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
       );
 
   @override
@@ -75,7 +88,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'علی رضایی'},
+        user: {'id': 'runtime-user', 'displayName': 'HOPE Runtime'},
       );
 
   @override
@@ -211,7 +224,7 @@ class _EvidenceTransactionRepository implements TransactionRepository {
 
 class _EvidenceMarketplaceRepository implements MarketplaceRepository {
   final _jobs = <HopeJob>[
-    _jobFixture(),
+    _jobFixture(editorialMedia: true),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-2', 'title': 'توسعه Flutter برای محصول جدید', 'kind': 'JOB', 'recommendationScore': 87, 'recommendationReasons': ['SKILL_MATCH']}),
     HopeJob.fromMap({..._jobFixture().toMap(), 'id': 'job-runtime-3', 'title': 'طراحی هویت بصری استارتاپ', 'kind': 'MISSION', 'recommendationScore': 76, 'recommendationReasons': ['CATEGORY_MATCH']}),
   ];
@@ -382,7 +395,7 @@ class _EvidenceNotificationRepository implements NotificationRepository {
           HopeNotification(
             id: 'notification-1',
             type: 'PAYMENT_UPDATE',
-            title: 'پرداخت فرصت به‌روزرسانی شد',
+            title: 'پرداخت پروژه به‌روزرسانی شد',
             body: 'پرداخت در وضعیت قفل‌شده قرار گرفت.',
             createdAt: '2026-09-21T06:00:00Z',
             readAt: null,
@@ -436,13 +449,172 @@ class _EvidenceNotificationRepository implements NotificationRepository {
   Future<void> disableDevice(String id) async {}
 }
 
+class _EvidenceFinancialInsightsRepository implements FinancialInsightsRepository {
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      HopeFinancialInsights.fromMap({
+        'currency': 'TOMAN',
+        'range': {'months': months},
+        'summary': {
+          'availableBalance': 2500000,
+          'lockedBalance': 1000000,
+          'totalInflow': 4200000,
+          'totalOutflow': 1700000,
+          'totalReserved': 1000000,
+          'netCashFlow': 2500000,
+        },
+        'monthlyCashFlow': [
+          {'month': '2026-04', 'label': 'فروردین', 'inflow': 600000, 'outflow': 240000, 'reserved': 200000, 'net': 360000},
+          {'month': '2026-05', 'label': 'اردیبهشت', 'inflow': 900000, 'outflow': 380000, 'reserved': 250000, 'net': 520000},
+          {'month': '2026-06', 'label': 'خرداد', 'inflow': 750000, 'outflow': 310000, 'reserved': 180000, 'net': 440000},
+          {'month': '2026-07', 'label': 'تیر', 'inflow': 1100000, 'outflow': 420000, 'reserved': 220000, 'net': 680000},
+          {'month': '2026-08', 'label': 'مرداد', 'inflow': 500000, 'outflow': 210000, 'reserved': 100000, 'net': 290000},
+          {'month': '2026-09', 'label': 'شهریور', 'inflow': 350000, 'outflow': 140000, 'reserved': 50000, 'net': 210000},
+        ],
+        'balanceTrend': [
+          {'date': '2026-04-01', 'balance': 1100000},
+          {'date': '2026-05-01', 'balance': 1550000},
+          {'date': '2026-06-01', 'balance': 1780000},
+          {'date': '2026-07-01', 'balance': 2200000},
+          {'date': '2026-08-01', 'balance': 2380000},
+          {'date': '2026-09-01', 'balance': 2500000},
+        ],
+        'bySource': [
+          {'source': 'JOB', 'credit': 3000000, 'debit': 1500000, 'amount': 1500000},
+          {'source': 'MISSION', 'credit': 1200000, 'debit': 200000, 'amount': 1000000},
+        ],
+      });
+}
+
+class _EvidenceJobSatisfactionRepository implements JobSatisfactionRepository {
+  @override
+  Future<JobSatisfactionState> getState(String jobId) async =>
+      JobSatisfactionState.fromMap({
+        'jobId': jobId,
+        'role': 'WORKER',
+        'submitted': false,
+        'questions': const [],
+        'progress': {'submittedCount': 0, 'requiredCount': 2},
+      });
+
+  @override
+  Future<Map<String, dynamic>> submit({
+    required String jobId,
+    required int overallRating,
+    required bool completedAsAgreed,
+    required int communicationRating,
+    required String report,
+  }) async =>
+      const {};
+
+  @override
+  Future<List<HopeJobSatisfaction>> history() async => const [];
+}
+
+class _EvidenceChatRepository implements ChatRepository {
+  final _conversation = const HopeChatConversation(
+    id: 'chat-runtime-1',
+    kind: 'JOB',
+    jobId: 'job-runtime-1',
+    status: 'OPEN',
+    title: 'همکاری طراحی رابط موبایل',
+    otherUserName: 'استودیو هُپ',
+  );
+
+  @override
+  Future<List<HopeChatConversation>> listConversations() async =>
+      [_conversation];
+
+  @override
+  Future<HopeChatThread> getMessages(String conversationId) async =>
+      HopeChatThread(
+        conversation: _conversation,
+        messages: [
+          HopeChatMessage(
+            id: 'message-runtime-1',
+            conversationId: conversationId,
+            senderId: 'runtime-owner',
+            senderName: 'استودیو هُپ',
+            body: 'فایل‌های طراحی برای بازبینی آماده شد.',
+            createdAt: DateTime.utc(2026, 9, 21, 6),
+          ),
+          HopeChatMessage(
+            id: 'message-runtime-2',
+            conversationId: conversationId,
+            senderId: 'runtime-user',
+            senderName: 'HOPE Runtime',
+            body: 'دریافت شد؛ نسخه نهایی را بررسی می‌کنم.',
+            createdAt: DateTime.utc(2026, 9, 21, 6, 4),
+          ),
+        ],
+      );
+
+  @override
+  Future<HopeChatMessage> sendMessage(
+    String conversationId,
+    String message,
+  ) async =>
+      HopeChatMessage(
+        id: 'message-runtime-3',
+        conversationId: conversationId,
+        senderId: 'runtime-user',
+        senderName: 'HOPE Runtime',
+        body: message,
+        createdAt: DateTime.utc(2026, 9, 21, 6, 5),
+      );
+}
+
+HopeEmployerCandidateMatchList _candidateMatchFixture() =>
+    HopeEmployerCandidateMatchList.fromMap({
+      'jobId': 'job-runtime-1',
+      'kind': 'JOB',
+      'candidates': [
+        {
+          'rank': 1,
+          'userId': 'candidate-user-1',
+          'displayName': 'دانا رضایی',
+          'score': 92,
+          'matchReasons': ['SKILL_MATCH', 'EXPERIENCE_MATCH', 'WORK_MODE_MATCH'],
+          'matchComponents': {
+            'skills': 96,
+            'experience': 90,
+            'location': 88,
+            'salary': 94,
+          },
+          'application': {
+            'id': 'application-runtime-1',
+            'status': 'SHORTLISTED',
+            'resumeHighlights': 'Flutter, Dart, accessibility',
+            'skills': 'Flutter, Dart, UX',
+          },
+        },
+        {
+          'rank': 2,
+          'userId': 'candidate-user-2',
+          'displayName': 'نیما احمدی',
+          'score': 87,
+          'matchReasons': ['CATEGORY_MATCH', 'LOCATION_MATCH'],
+          'matchComponents': {
+            'skills': 88,
+            'experience': 86,
+            'location': 93,
+          },
+          'application': {
+            'id': 'application-runtime-2',
+            'status': 'PENDING',
+            'skills': 'Flutter, UI',
+          },
+        },
+      ],
+    });
+
 HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
       'id': 'job-runtime-1',
       'title': 'طراحی رابط موبایل حرفه‌ای',
       'description':
           'بازطراحی یک اپلیکیشن موبایل با تمرکز بر تجربه کاربری، دسترس‌پذیری و عملکرد.',
       'categoryId': 'cat-1',
-      'category': 'طراحی',
+      'category': 'Software',
       'jobType': 'FIXED',
       'budgetType': 'FIXED',
       'budgetMin': '1500000',
@@ -472,7 +644,10 @@ HopeJob _jobFixture({bool editorialMedia = false}) => HopeJob.fromMap({
         'salary': 82,
       },
       'aiRecommendationConfidence': 0.92,
-      'editorialMedia': editorialMedia,
+      // Runtime-only editorial media fixture: exercises the existing real media branch.
+      if (editorialMedia)
+        'imageUrl':
+          'https://images.unsplash.com/photo-1758876022836-70b89d3e6944?auto=format&fit=crop&fm=jpg&q=60&w=1600',
     });
 
 HopeApplication _applicationFixture() => HopeApplication.fromMap({
@@ -482,7 +657,7 @@ HopeApplication _applicationFixture() => HopeApplication.fromMap({
       'jobCity': 'تهران',
       'jobKind': 'JOB',
       'resumeText': 'Mobile engineer',
-      'skills': 'طراحی رابط کاربری، تجربه کاربری، دسترس‌پذیری',
+      'skills': 'Flutter, Dart, UX',
       'status': 'SHORTLISTED',
       'createdAt': '2026-09-20T06:00:00Z',
       'updatedAt': '2026-09-21T06:00:00Z',
@@ -522,8 +697,8 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
     'id': 'runtime-user',
-    'displayName': 'علی رضایی',
-    'email': 'ali.test@hope.local',
+    'displayName': 'HOPE Runtime',
+    'email': 'runtime@example.invalid',
   });
   print('HOPE_RUNTIME_PREPARE:google-start');
   await _runtimeGoogleSignIn.initialize();
@@ -571,6 +746,8 @@ class _EvidenceHost extends StatelessWidget {
         Provider<ProfileRepository>.value(value: runtime.registry.profile!),
         Provider<NotificationRepository>.value(value: runtime.registry.notifications!),
         Provider<OfferRepository>.value(value: _EvidenceOfferRepository()),
+        Provider<FinancialInsightsRepository>.value(value: _EvidenceFinancialInsightsRepository()),
+        Provider<JobSatisfactionRepository>.value(value: _EvidenceJobSatisfactionRepository()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -589,7 +766,10 @@ class _EvidenceHost extends StatelessWidget {
           final media = MediaQuery.of(context);
           return PremiumAppCanvas(
             child: MediaQuery(
-              data: media.copyWith(disableAnimations: true),
+              data: media.copyWith(
+                disableAnimations: true,
+                textScaler: TextScaler.linear(_captureTextScale),
+              ),
               child: appChild!,
             ),
           );
@@ -611,6 +791,12 @@ const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
+const _captureTextScaleRaw = String.fromEnvironment(
+  'HOPE_CAPTURE_TEXT_SCALE',
+  defaultValue: '1.0',
+);
+final double _captureTextScale =
+    double.tryParse(_captureTextScaleRaw) ?? 1.0;
 const _captureHomeOnly =
     bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
 const _responsiveBatch =
@@ -660,11 +846,48 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
   print('HOPE_SCREENSHOT_SURFACE_CONVERT_DONE');
 }
 
-Future<void> _captureRuntimeScreenshot(String marker) async {
+const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');
+
+Future<void> _captureHopeNativeScreenshot(
+  IntegrationTestWidgetsFlutterBinding binding,
+  String marker,
+) async {
+  const integrationTestChannel =
+      MethodChannel('plugins.flutter.io/integration_test');
+  integrationTestChannel.setMethodCallHandler((call) async {
+    if (call.method == 'scheduleFrame') {
+      PlatformDispatcher.instance.scheduleFrame();
+    }
+  });
+
+  final bytes = await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(
+    'captureScreenshot',
+    <String, Object?>{'name': marker},
+  );
+  if (bytes == null || bytes.isEmpty) {
+    throw StateError('HOPE native screenshot returned no PNG bytes.');
+  }
+
+  binding.reportData ??= <String, dynamic>{};
+  final screenshots =
+      binding.reportData!['screenshots'] as List<dynamic>? ?? <dynamic>[];
+  screenshots.add(<String, dynamic>{
+    'screenshotName': marker,
+    'bytes': bytes,
+  });
+  binding.reportData!['screenshots'] = screenshots;
+}
+
+Future<void> _captureRuntimeScreenshot(
+  String marker, {
+  bool useHopeNativeTransport = false,
+}) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  await binding.takeScreenshot(marker);
-  print('HOPE_SCREENSHOT_SOURCE:flutter-driver:$marker');
+  // Android CI can stall inside VM-service request_data before a Dart timeout
+  // can fire. Native capture avoids that transport entirely.
+  await _captureHopeNativeScreenshot(binding, marker);
+  print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
   print('HOPE_SCREENSHOT_READY:$marker');
 }
 
@@ -776,7 +999,42 @@ Future<void> _captureRuntimeScreen(
         'Runtime Wallet capture reached screenshot boundary before the loaded financial state.',
       );
     }
+    expect(
+      find.text('۳٬۵۰۰٬۰۰۰ تومان'),
+      findsOneWidget,
+      reason: 'Wallet total must match the runtime fixture exactly.',
+    );
+    expect(
+      find.text('۲٬۵۰۰٬۰۰۰ تومان'),
+      findsOneWidget,
+      reason: 'Wallet available balance must match the runtime fixture exactly.',
+    );
     print('HOPE_RUNTIME_WALLET_LOADED_STATE_ASSERTED:$marker');
+    await _captureRuntimeScreenshot(marker);
+    return;
+  }
+  if (child is FinancialInsightsPage) {
+    await _waitForRuntimeRenderToSettle(tester);
+    final fixtureValues = <String>[
+      locale.languageCode == 'fa' ? '۲٬۵۰۰٬۰۰۰ تومان' : '2,500,000 TOMAN',
+      locale.languageCode == 'fa' ? '۱٬۰۰۰٬۰۰۰ تومان' : '1,000,000 TOMAN',
+      locale.languageCode == 'fa' ? '۴٬۲۰۰٬۰۰۰ تومان' : '4,200,000 TOMAN',
+      locale.languageCode == 'fa' ? '۱٬۷۰۰٬۰۰۰ تومان' : '1,700,000 TOMAN',
+    ];
+    final renderedMoney = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((widget) => widget.data ?? widget.textSpan?.toPlainText() ?? '')
+        .where((value) => value.contains('تومان') || value.contains('TOMAN'))
+        .toList(growable: false);
+    print('HOPE_RUNTIME_FINANCIAL_WIDGET_MONEY:$marker:${renderedMoney.join(' | ')}');
+    for (final value in fixtureValues) {
+      expect(
+        find.text(value),
+        findsWidgets,
+        reason: 'Financial Insights must render the exact runtime fixture value at least once: $value',
+      );
+    }
+    print('HOPE_RUNTIME_FINANCIAL_WIDGET_VALUES_ASSERTED:$marker');
     await _captureRuntimeScreenshot(marker);
     return;
   }
@@ -838,6 +1096,17 @@ Future<void> _captureBaselineLocale(
     'create-job': () => const CreateJobPage(),
     'register': () => const RegisterPage(),
     'password-reset': () => const PasswordResetPage(),
+    // Extended visual-wave targets captured in addition to the 15 core baseline pages.
+    'financial-insights': () => const FinancialInsightsPage(),
+    'job-satisfaction': () => const JobSatisfactionPage(jobId: 'job-runtime-1'),
+    'candidate-matches': () => EmployerCandidateMatchesPage(
+          data: _candidateMatchFixture(),
+          onRetry: () {},
+        ),
+    'chat': () => ChatPage(
+          repository: _EvidenceChatRepository(),
+          jobId: 'job-runtime-1',
+        ),
   };
   final capturePages = _captureHomeOnly
       ? <String, Widget Function()>{'home': () => const HomePage()}
@@ -869,19 +1138,7 @@ Future<void> _captureBaselineLocale(
                               ? Map<String, Widget Function()>.fromEntries(
                                   pages.entries.skip(12).take(3),
                                 )
-                              : _baselineBatch == 'g'
-                                  ? Map<String, Widget Function()>.fromEntries(
-                                      pages.entries.skip(12).take(1),
-                                    )
-                              : _baselineBatch == 'e'
-                                  ? Map<String, Widget Function()>.fromEntries(
-                                      pages.entries.skip(13).take(1),
-                                    )
-                                  : _baselineBatch == 'f'
-                                      ? Map<String, Widget Function()>.fromEntries(
-                                          pages.entries.skip(14).take(1),
-                                        )
-                                      : pages;
+                              : pages;
   for (final entry in capturePages.entries) {
     print('HOPE_RUNTIME_PAGE_START:${entry.key}-$suffix');
     await _captureRuntimeScreen(
@@ -937,7 +1194,13 @@ void main() {
       'HOPE_CAPTURE_LOCALE must be supplied as fa or en for exact-locale runtime evidence.',
     );
   }
+  if (![1.0, 1.25, 1.5, 2.0].contains(_captureTextScale)) {
+    throw StateError(
+      'HOPE_CAPTURE_TEXT_SCALE must be one of 1.0, 1.25, 1.5, or 2.0.',
+    );
+  }
   print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
+  print('HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale');
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {

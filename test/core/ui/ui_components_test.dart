@@ -22,28 +22,33 @@ MaterialApp _app(Widget home) => MaterialApp(
 void main() {
   testWidgets("premium components render with accessible semantics",
       (tester) async {
-    await tester.pumpWidget(
-      _app(
-        const Scaffold(
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                StatusPill("منتشر شده",
-                    icon: Icons.check_circle_outline_rounded),
-                HopeIconTile(Icons.work_rounded),
-                SearchField(onChanged: _noop),
-              ],
+    final semanticsHandle = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        _app(
+          const Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  StatusPill("منتشر شده",
+                      icon: Icons.check_circle_outline_rounded),
+                  HopeIconTile(Icons.work_rounded),
+                  SearchField(onChanged: _noop),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    expect(find.text("منتشر شده"), findsOneWidget);
-    expect(find.byIcon(Icons.work_rounded), findsOneWidget);
-    expect(find.bySemanticsLabel("جست‌وجو..."), findsOneWidget);
+      expect(find.text("منتشر شده"), findsOneWidget);
+      expect(find.byIcon(Icons.work_rounded), findsOneWidget);
+      expect(find.bySemanticsLabel("جست‌وجو..."), findsOneWidget);
+    } finally {
+      semanticsHandle.dispose();
+    }
   });
 
   testWidgets("premium hero follows RTL text alignment", (tester) async {
@@ -262,7 +267,6 @@ void main() {
       findsNothing,
     );
   });
-}
 
 testWidgets('opportunity skeleton stays overflow-safe in narrow cards',
     (tester) async {
@@ -282,6 +286,8 @@ testWidgets('opportunity skeleton stays overflow-safe in narrow cards',
   await tester.pump();
   expect(tester.takeException(), isNull);
 });
+}
+
 
 void _noop(String _) {}
 void _noopAction() {}

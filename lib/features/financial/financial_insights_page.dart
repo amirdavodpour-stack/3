@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../core/financial/financial_insights_repository.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/hope_async_state.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/hope_v2_design.dart';
 
@@ -31,17 +32,26 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _money(int value) {
-    final formatter = MaterialLocalizations.of(context);
-    return '${formatter.formatDecimal(value)} ${_t('تومان', 'TOMAN')}';
-  }
+  String _money(int value) => HopeDisplayFormatter.money(
+        value,
+        locale: Localizations.localeOf(context).languageCode,
+      );
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final viewport = MediaQuery.sizeOf(context);
+    final compactWidth = viewport.width < HopeV2Breakpoints.medium;
+    final shortViewport = viewport.height < 800;
+    return Scaffold(
         body: SafeArea(
           child: PremiumPageFrame(
             maxWidth: 1100,
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 72),
+            padding: EdgeInsets.fromLTRB(
+              compactWidth ? 12 : 20,
+              shortViewport ? 8 : 18,
+              compactWidth ? 12 : 20,
+              shortViewport ? 24 : 72,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -50,10 +60,12 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                   domain: HopeProductDomain.finance,
                   eyebrow: _t('مالی', 'FINANCE'),
                   title: _t('تحلیل مالی', 'Financial insights'),
-                  subtitle: _t(
-                    'تصویر مالی شما بر پایه لجر داخلی تومان و فعالیت‌های ثبت‌شده در HOPE.',
-                    'A ledger-based view of your balance and recorded financial activity in HOPE.',
-                  ),
+                  subtitle: shortViewport
+                      ? _t('بر پایه لجر داخلی تومان.', 'Internal TOMAN ledger.')
+                      : _t(
+                          'تصویر مالی شما بر پایه لجر داخلی تومان و فعالیت‌های ثبت‌شده در HOPE.',
+                          'A ledger-based view of your balance and recorded financial activity in HOPE.',
+                        ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -73,7 +85,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: HopeV2Spacing.lg),
+                SizedBox(height: shortViewport ? 8 : HopeV2Spacing.lg),
                 Expanded(
                   child: FutureBuilder<HopeFinancialInsights>(
                     future: _future,
@@ -113,19 +125,28 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                           await _future;
                         },
                         child: ListView(
+                          key: const ValueKey('financial-insights-list'),
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
                           children: [
-                            _SummaryCard(data: data, money: _money, t: _t),
-                            const SizedBox(height: HopeV2Spacing.section),
+                            _SummaryCard(data: data, money: _money, t: _t, compact: shortViewport),
+                            SizedBox(
+                              height: shortViewport
+                                  ? 8
+                                  : MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact
+                                      ? HopeV2Spacing.md
+                                      : HopeV2Spacing.section,
+                            ),
                             PremiumSectionHeader(
                               page: HopePageId.financialInsights,
                               domain: HopeProductDomain.finance,
                               title: _t('روندهای مالی', 'Financial trends'),
-                              subtitle: _t(
-                                'جریان نقدی، موجودی و منابع فعالیت را در یک نمای واحد ببینید.',
-                                'Review cash flow, balance, and activity sources in one view.',
-                              ),
+                              subtitle: shortViewport
+                                  ? _t('شش ماه ثبت‌شده', 'Six recorded months')
+                                  : _t(
+                                      'جریان نقدی، موجودی و منابع فعالیت را در یک نمای واحد ببینید.',
+                                      'Review cash flow, balance, and activity sources in one view.',
+                                    ),
                             ),
                             const SizedBox(height: HopeV2Spacing.md),
                             _ChartCard(
@@ -165,50 +186,100 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
           ),
         ),
       );
+  }
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.data, required this.money, required this.t});
+  const _SummaryCard({required this.data, required this.money, required this.t, required this.compact});
+
   final HopeFinancialInsights data;
   final String Function(int) money;
   final String Function(String, String) t;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final summary = data.summary;
+    final compact = this.compact || MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
+    final metrics = <({String label, String value, bool highlight})>[
+      (
+        label: t('قابل استفاده', 'Available'),
+        value: money(summary.available),
+        highlight: true,
+      ),
+      (
+        label: t('قفل‌شده', 'Locked'),
+        value: money(summary.locked),
+        highlight: false,
+      ),
+      (
+        label: t('ورودی', 'Inflow'),
+        value: money(int.tryParse(summary.totalInflow) ?? 0),
+        highlight: false,
+      ),
+      (
+        label: t('خروجی', 'Outflow'),
+        value: money(int.tryParse(summary.totalOutflow) ?? 0),
+        highlight: false,
+      ),
+      (
+        label: t('کل رزرو‌شده', 'Total reserved'),
+        value: money(int.tryParse(summary.totalReserved) ?? 0),
+        highlight: false,
+      ),
+      (
+        label: t('خالص جریان نقدی', 'Net cash flow'),
+        value: money(int.tryParse(summary.netCashFlow) ?? 0),
+        highlight: false,
+      ),
+    ];
+
     return PremiumPanel(
       highlight: true,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(compact ? 12 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             t('تصویر مالی', 'Financial snapshot'),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            style: (compact ? Theme.of(context).textTheme.titleMedium : Theme.of(context).textTheme.titleLarge)?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: compact ? 4 : 6),
           Text(t(
-            'بر پایه لجر داخلی TOMAN و بدون تخمین‌های خارج از تراکنش‌ها.',
-            'Based on the internal TOMAN ledger only; no off-ledger estimates.',
+            compact ? 'لجر داخلی تومان؛ بدون تخمین.' : 'بر پایه لجر داخلی TOMAN و بدون تخمین‌های خارج از تراکنش‌ها.',
+            compact ? 'Internal TOMAN ledger only.' : 'Based on the internal TOMAN ledger only; no off-ledger estimates.',
           )),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _Metric(label: t('قابل استفاده', 'Available'), value: money(summary.available)),
-              _Metric(label: t('قفل‌شده', 'Locked'), value: money(summary.locked)),
-              _Metric(
-                label: t('ورودی', 'Inflow'),
-                value: money(int.tryParse(summary.totalInflow) ?? 0),
-              ),
-              _Metric(
-                label: t('خروجی', 'Outflow'),
-                value: money(int.tryParse(summary.totalOutflow) ?? 0),
-              ),
-            ],
+          SizedBox(height: compact ? 8 : 13),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 8.0;
+              final textScale = MediaQuery.textScalerOf(context).scale(1);
+              final columns = compact &&
+                      constraints.maxWidth >= 300 &&
+                      textScale <= 1.2
+                  ? 3
+                  : 2;
+              final metricWidth =
+                  (constraints.maxWidth - gap * (columns - 1)) / columns;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final metric in metrics)
+                    SizedBox(
+                      width: metricWidth,
+                      child: _Metric(
+                        label: metric.label,
+                        value: metric.value,
+                        compact: compact,
+                        highlight: metric.highlight,
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -217,34 +288,68 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value});
+  const _Metric({
+    required this.label,
+    required this.value,
+    required this.compact,
+    this.highlight = false,
+  });
+
   final String label;
   final String value;
+  final bool compact;
+  final bool highlight;
 
   @override
-  Widget build(BuildContext context) => Container(
-        constraints: const BoxConstraints(minWidth: 145),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(HopeV2Radii.md),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = Theme.of(context).colorScheme.primary;
+    return Container(
+      constraints: BoxConstraints(minHeight: compact ? 60 : 74),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 12,
+        vertical: compact ? 6 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: highlight
+            ? accent.withValues(alpha: dark ? .14 : .07)
+            : HopeV2Surfaces.panelSoft(context),
+        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        border: Border.all(
+          color: highlight
+              ? accent.withValues(alpha: dark ? .30 : .22)
+              : HopeV2Surfaces.border(context).withValues(alpha: dark ? .42 : .65),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: Theme.of(context).textTheme.labelMedium),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-          ],
-        ),
-      );
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? HopeV2Colors.darkMuted
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            maxLines: 2,
+            softWrap: true,
+            overflow: TextOverflow.clip,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ChartCard extends StatelessWidget {
@@ -258,20 +363,49 @@ class _ChartCard extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => PremiumPanel(
-        glass: true,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 14),
-            SizedBox(height: 190, child: child),
-          ],
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
+    final shortViewport = MediaQuery.sizeOf(context).height < 800;
+    final chartHeight = shortViewport ? 122.0 : compact ? 156.0 : 172.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
         ),
-      );
+        const SizedBox(height: 3),
+        Text(
+          subtitle,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 7),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .32),
+            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+            border: Border.all(
+              color: HopeV2Surfaces.border(context).withValues(alpha: .52),
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              10,
+              shortViewport ? 4 : compact ? 8 : 10,
+              10,
+              shortViewport ? 4 : compact ? 8 : 10,
+            ),
+            child: SizedBox(
+              height: chartHeight,
+              child: child,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _BarChart extends StatelessWidget {
@@ -279,25 +413,145 @@ class _BarChart extends StatelessWidget {
   final List<HopeMonthlyCashFlow> data;
 
   @override
-  Widget build(BuildContext context) => CustomPaint(
-        painter: _BarChartPainter(
-          data,
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.tertiary,
-          Theme.of(context).colorScheme.secondary,
-          Theme.of(context).colorScheme.outline,
+  Widget build(BuildContext context) {
+    final shortViewport = MediaQuery.sizeOf(context).height < 800;
+    final theme = Theme.of(context);
+    final inflow = theme.colorScheme.primary;
+    final outflow = theme.colorScheme.tertiary;
+    final reserved = theme.colorScheme.secondary;
+    final english = Localizations.localeOf(context).languageCode == 'en';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: shortViewport ? 3 : 5),
+        Wrap(
+          key: const ValueKey('financial-cashflow-legend'),
+          spacing: shortViewport ? 5 : HopeV2Spacing.sm,
+          runSpacing: shortViewport ? 2 : HopeV2Spacing.xs,
+          children: [
+            _FinancialLegendItem(
+              color: inflow,
+              icon: Icons.call_received_rounded,
+              label: english ? 'Inflow' : 'ورودی',
+            ),
+            _FinancialLegendItem(
+              color: outflow,
+              icon: Icons.call_made_rounded,
+              label: english ? 'Outflow' : 'خروجی',
+            ),
+            _FinancialLegendItem(
+              color: reserved,
+              icon: Icons.lock_outline_rounded,
+              label: english ? 'Reserved' : 'رزرو شده',
+            ),
+          ],
         ),
-        child: const SizedBox.expand(),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Keep each month readable instead of squeezing all labels into
+              // the viewport; the chart becomes horizontally scrollable only
+              // when the real series count needs more width.
+              final textScale = MediaQuery.textScalerOf(context).scale(1);
+              final monthWidth = math.max(58.0, 58.0 * textScale);
+              final chartWidth =
+                  math.max(constraints.maxWidth, data.length * monthWidth).toDouble();
+              return SingleChildScrollView(
+                key: const ValueKey('financial-cashflow-chart-scroll'),
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: chartWidth,
+                  height: constraints.maxHeight,
+                  child: Semantics(
+                    key: const ValueKey('financial-cashflow-chart-semantics'),
+                    container: true,
+                    label: data.isEmpty
+                        ? (english
+                            ? 'Monthly cash flow: no recorded data. Amounts are in TOMAN.'
+                            : 'جریان نقدی ماهانه: داده‌ای ثبت نشده است. مبالغ به تومان هستند.')
+                        : (english
+                            ? 'Monthly cash flow; amounts in TOMAN; ${data.length} recorded months. '
+                            : 'جریان نقدی ماهانه؛ مبالغ به تومان؛ ${data.length} ماه ثبت‌شده. ') +
+                            data.map((month) {
+                              String money(String raw) =>
+                                  HopeDisplayFormatter.money(
+                                    double.tryParse(raw)?.round() ?? 0,
+                                    locale: Localizations.localeOf(context)
+                                        .languageCode,
+                                  );
+                              return english
+                                  ? '${month.month} (${month.label}): inflow ${money(month.inflow)}, outflow ${money(month.outflow)}, reserved ${money(month.reserved)}'
+                                  : '${month.month} (${month.label}): ورودی ${money(month.inflow)}، خروجی ${money(month.outflow)}، رزرو شده ${money(month.reserved)}';
+                            }).join(english ? '. ' : '؛ '),
+                    child: CustomPaint(
+                      painter: _BarChartPainter(
+                        data,
+                        inflow,
+                        outflow,
+                        reserved,
+                        theme.colorScheme.outline,
+                        Directionality.of(context),
+                        textScale,
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+      ],
+    );
+  }
+}
+
+class _FinancialLegendItem extends StatelessWidget {
+  const _FinancialLegendItem({
+    required this.color,
+    required this.icon,
+    required this.label,
+  });
+
+  final Color color;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ],
       );
 }
 
 class _BarChartPainter extends CustomPainter {
-  _BarChartPainter(this.data, this.inflowColor, this.outflowColor, this.reservedColor, this.axisColor);
+  _BarChartPainter(
+    this.data,
+    this.inflowColor,
+    this.outflowColor,
+    this.reservedColor,
+    this.axisColor,
+    this.textDirection, [
+    this.textScale = 1,
+  ]);
   final List<HopeMonthlyCashFlow> data;
   final Color inflowColor;
   final Color outflowColor;
   final Color reservedColor;
   final Color axisColor;
+  final TextDirection textDirection;
+  final double textScale;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -305,6 +559,11 @@ class _BarChartPainter extends CustomPainter {
         .expand((x) => [x.inflowValue, x.outflowValue, x.reservedValue])
         .toList();
     final maxValue = values.isEmpty ? 1.0 : math.max(1.0, values.reduce(math.max));
+    final labelHeight = size.height < 150 ? 20.0 : 24.0;
+    final plotTop = labelHeight + 3;
+    final plotBottom =
+        math.max(plotTop + 1, size.height - 3).toDouble();
+    final plotHeight = math.max(1.0, plotBottom - plotTop).toDouble();
     final groupWidth = size.width / math.max(1, data.length);
     final paints = [
       Paint()..color = inflowColor.withValues(alpha: .72),
@@ -319,12 +578,12 @@ class _BarChartPainter extends CustomPainter {
         data[i].reservedValue,
       ];
       for (var j = 0; j < bars.length; j++) {
-        final height = size.height * bars[j] / maxValue;
+        final height = plotHeight * bars[j] / maxValue;
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromLTWH(
               i * groupWidth + groupWidth * (.12 + j * .24),
-              size.height - height - 2,
+              plotBottom - height,
               groupWidth * .18,
               height,
             ),
@@ -338,11 +597,28 @@ class _BarChartPainter extends CustomPainter {
     final axis = Paint()
       ..color = axisColor.withValues(alpha: .35)
       ..strokeWidth = 1;
-    canvas.drawLine(
-      Offset(0, size.height - 1),
-      Offset(size.width, size.height - 1),
-      axis,
-    );
+    canvas.drawLine(Offset(0, plotBottom), Offset(size.width, plotBottom), axis);
+    for (var i = 0; i < data.length; i++) {
+      final value = data[i].label.trim().isEmpty ? data[i].month : data[i].label;
+      final painter = TextPainter(
+        text: TextSpan(
+          text: value,
+          style: TextStyle(
+            color: axisColor.withValues(alpha: .92),
+            fontSize: (12.0 * textScale).toDouble(),
+            height: 1.1,
+          ),
+        ),
+        textDirection: textDirection,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        ellipsis: '…',
+      )..layout(maxWidth: math.max(1.0, groupWidth - 2).toDouble());
+      final x = (i * groupWidth + (groupWidth - painter.width) / 2)
+          .clamp(0.0, math.max(0.0, size.width - painter.width))
+          .toDouble();
+      painter.paint(canvas, Offset(x, 0));
+    }
   }
 
   @override
@@ -350,7 +626,10 @@ class _BarChartPainter extends CustomPainter {
       oldDelegate.data != data ||
       oldDelegate.inflowColor != inflowColor ||
       oldDelegate.outflowColor != outflowColor ||
-      oldDelegate.reservedColor != reservedColor;
+      oldDelegate.reservedColor != reservedColor ||
+      oldDelegate.axisColor != axisColor ||
+      oldDelegate.textDirection != textDirection ||
+      oldDelegate.textScale != textScale;
 }
 
 class _LineChart extends StatelessWidget {
@@ -358,21 +637,70 @@ class _LineChart extends StatelessWidget {
   final List<HopeBalancePoint> points;
 
   @override
-  Widget build(BuildContext context) => CustomPaint(
-        painter: _LineChartPainter(
-          points,
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.primary.withValues(alpha: .12),
-        ),
-        child: const SizedBox.expand(),
-      );
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // A stable minimum plot width prevents date labels from colliding on
+        // narrow screens while retaining the exact backend point sequence.
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final pointWidth = math.max(64.0, 64.0 * textScale);
+        final chartWidth =
+            math.max(constraints.maxWidth, points.length * pointWidth).toDouble();
+        return SingleChildScrollView(
+          key: const ValueKey('financial-balance-chart-scroll'),
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: chartWidth,
+            height: constraints.maxHeight,
+            child: Semantics(
+              key: const ValueKey('financial-balance-chart-semantics'),
+              container: true,
+              label: points.isEmpty
+                  ? (Localizations.localeOf(context).languageCode == 'en'
+                      ? 'Balance trend: no recorded closing balances. Amounts are in TOMAN.'
+                      : 'روند موجودی: مانده پایانی ثبت‌شده‌ای وجود ندارد. مبالغ به تومان هستند.')
+                  : (Localizations.localeOf(context).languageCode == 'en'
+                          ? 'Balance trend; recorded closing balance in TOMAN. '
+                          : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
+                      points.map((point) {
+                        final value = HopeDisplayFormatter.money(
+                          point.value.round(),
+                          locale: Localizations.localeOf(context).languageCode,
+                        );
+                        return '${point.date}: $value';
+                      }).join('؛ '),
+              child: CustomPaint(
+                painter: _LineChartPainter(
+                  points,
+                  color,
+                  color.withValues(alpha: .12),
+                  Directionality.of(context),
+                  textScale,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _LineChartPainter extends CustomPainter {
-  _LineChartPainter(this.points, this.color, this.fillColor);
+  _LineChartPainter(
+    this.points,
+    this.color,
+    this.fillColor,
+    this.textDirection,
+    this.textScale,
+  );
   final List<HopeBalancePoint> points;
   final Color color;
   final Color fillColor;
+  final TextDirection textDirection;
+  final double textScale;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -381,14 +709,17 @@ class _LineChartPainter extends CustomPainter {
     final maxValue = math.max(1.0, values.reduce(math.max));
     final minValue = values.reduce(math.min);
     final range = math.max(1.0, maxValue - minValue);
+    final labelHeight = size.height < 150 ? 20.0 : 24.0;
+    final plotHeight = math.max(1.0, size.height - labelHeight).toDouble();
+    final labelWidth = math.max(1.0, size.width / math.max(1, points.length) - 2).toDouble();
     final path = Path();
 
     for (var i = 0; i < points.length; i++) {
       final x = points.length == 1
           ? size.width / 2
           : i * size.width / (points.length - 1);
-      final y = size.height -
-          ((points[i].value - minValue) / range) * (size.height - 14) -
+      final y = plotHeight -
+          ((points[i].value - minValue) / range) * (plotHeight - 14) -
           7;
       if (i == 0) {
         path.moveTo(x, y);
@@ -406,8 +737,8 @@ class _LineChartPainter extends CustomPainter {
 
     if (points.length > 1) {
       final fill = Path.from(path)
-        ..lineTo(size.width, size.height)
-        ..lineTo(0, size.height)
+        ..lineTo(size.width, plotHeight)
+        ..lineTo(0, plotHeight)
         ..close();
       canvas.drawPath(
         fill,
@@ -416,19 +747,68 @@ class _LineChartPainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
     }
+    for (var i = 0; i < points.length; i++) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: points[i].date,
+          style: TextStyle(
+            color: color.withValues(alpha: .92),
+            fontSize: (12.0 * textScale).toDouble(),
+            height: 1.1,
+          ),
+        ),
+        textDirection: textDirection,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        ellipsis: '…',
+      )..layout(maxWidth: labelWidth);
+      final pointX = points.length == 1 ? size.width / 2 : i * size.width / (points.length - 1);
+      final x = (pointX - painter.width / 2)
+          .clamp(0.0, math.max(0.0, size.width - painter.width))
+          .toDouble();
+      painter.paint(canvas, Offset(x, plotHeight + 1));
+    }
   }
 
   @override
   bool shouldRepaint(covariant _LineChartPainter oldDelegate) =>
       oldDelegate.points != points ||
       oldDelegate.color != color ||
-      oldDelegate.fillColor != fillColor;
+      oldDelegate.fillColor != fillColor ||
+      oldDelegate.textDirection != textDirection ||
+      oldDelegate.textScale != textScale;
 }
 
 class _SourceChart extends StatelessWidget {
   const _SourceChart({required this.data, required this.t});
   final List<HopeFinancialSource> data;
   final String Function(String, String) t;
+
+  String _sourceLabel(String raw) {
+    switch (raw.trim().toUpperCase()) {
+      case 'JOB':
+        return t('فرصت شغلی', 'Job');
+      case 'MISSION':
+        return t('ماموریت', 'Mission');
+      case 'TRANSFER':
+      case 'WALLET_TRANSFER':
+        return t('انتقال داخلی', 'Internal transfer');
+      case 'TOP_UP':
+      case 'TOPUP':
+      case 'DEPOSIT':
+        return t('واریز', 'Top-up');
+      case 'PAYOUT':
+      case 'WITHDRAWAL':
+        return t('برداشت', 'Withdrawal');
+      case 'REFUND':
+        return t('بازپرداخت', 'Refund');
+      case 'FEE':
+      case 'PLATFORM_FEE':
+        return t('کارمزد', 'Fee');
+      default:
+        return t('سایر', 'Other');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -437,6 +817,8 @@ class _SourceChart extends StatelessWidget {
         child: Text(t('داده کافی وجود ندارد.', 'Not enough data yet.')),
       );
     }
+    final locale = Localizations.localeOf(context).languageCode;
+    final english = locale == 'en';
     final total = math.max(
       1.0,
       data.fold<double>(0, (sum, item) => sum + item.value),
@@ -448,27 +830,54 @@ class _SourceChart extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = data[index];
         final ratio = item.value / total;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
+        final sourceLabel = _sourceLabel(item.source);
+        final amount = HopeDisplayFormatter.money(
+          item.value.round(),
+          locale: locale,
+        );
+        final share = HopeDisplayFormatter.percent(
+          ratio * 100,
+          locale: locale,
+        );
+        final semanticLabel = english
+            ? '$sourceLabel: amount $amount; $share of recorded source activity.'
+            : '$sourceLabel؛ مبلغ $amount؛ سهم $share از منابع ثبت‌شده';
+        return Semantics(
+          key: ValueKey('financial-source-row-${item.source.trim().toUpperCase()}'),
+          container: true,
+          label: semanticLabel,
+          child: ExcludeSemantics(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Text(
-                    item.source,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        sourceLabel,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    Text(share),
+                  ],
                 ),
-                Text('${(ratio * 100).toStringAsFixed(0)}%'),
+                const SizedBox(height: 3),
+                Text(
+                  english ? 'Amount: $amount' : 'مبلغ: $amount',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 5),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(value: ratio, minHeight: 8),
+                ),
               ],
             ),
-            const SizedBox(height: 5),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(value: ratio, minHeight: 8),
-            ),
-          ],
+          ),
         );
       },
     );

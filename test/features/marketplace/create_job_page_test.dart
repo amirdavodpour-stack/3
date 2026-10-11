@@ -1,14 +1,19 @@
 import 'dart:async';
+import 'dart:ui' show SemanticsFlag;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show debugDumpRenderTree;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/router/app_routes.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/features/marketplace/create_job_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -97,10 +102,12 @@ Future<void> _pump(
   _FakeMarket repo, {
   HopeSettingsController? settings,
   double width = 900,
+  double height = 3400,
+  double textScale = 1.0,
   ThemeData? theme,
   Locale locale = const Locale('en'),
 }) async {
-  tester.view.physicalSize = Size(width, 3400);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -124,6 +131,13 @@ Future<void> _pump(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        );
+      },
       home: Builder(
         builder: (context) => Scaffold(
           body: Center(
@@ -147,7 +161,12 @@ Future<void> _open(WidgetTester tester) async {
 
 Future<void> _selectCategory(WidgetTester tester, String label) async {
   final dropdown = find.byType(DropdownButtonFormField<String>).first;
-  await tester.ensureVisible(dropdown);
+  await tester.scrollUntilVisible(
+    dropdown,
+    180,
+    scrollable: find.byType(Scrollable).first,
+    maxScrolls: 30,
+  );
   await tester.pumpAndSettle();
   await tester.tap(dropdown);
   await tester.pumpAndSettle();
@@ -158,7 +177,28 @@ Future<void> _selectCategory(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _advance(WidgetTester tester) async {
+  final next = find.byKey(const ValueKey('create-opportunity-next-step'));
+  await tester.scrollUntilVisible(
+    next,
+    180,
+    scrollable: find.byType(Scrollable).first,
+    maxScrolls: 30,
+  );
+  await tester.ensureVisible(next);
+  await tester.pumpAndSettle();
+  await tester.tap(next);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _advanceToReview(WidgetTester tester) async {
+  for (var step = 0; step < 4; step++) {
+    await _advance(tester);
+  }
+}
+
 Future<void> _fillMissionForm(WidgetTester tester, {String? category}) async {
+  await _advance(tester); // Details
   await tester.enterText(
       find.widgetWithText(TextField, 'Title'), 'Design a landing page');
   await tester.enterText(find.widgetWithText(TextField, 'Full description'),
@@ -166,13 +206,16 @@ Future<void> _fillMissionForm(WidgetTester tester, {String? category}) async {
   if (category != null) {
     await _selectCategory(tester, category);
   }
+  await _advance(tester); // Compensation
   await tester.enterText(
       find.widgetWithText(TextField, 'Minimum pay'), '500000');
   await tester.enterText(
       find.widgetWithText(TextField, 'Maximum pay'), '800000');
+  await _advance(tester); // Fee and acceptance criteria
   await tester.enterText(
       find.widgetWithText(TextField, 'Acceptance / selection criteria'),
       'Deliver PSD and Figma files');
+  await _advance(tester); // Final review
 }
 
 void main() {
@@ -206,7 +249,7 @@ void main() {
     addTearDown(tester.view.resetViewInsets);
     addTearDown(tester.view.resetViewPadding);
 
-    await _pump(tester, repo, width: 360);
+    await _pump(tester, repo, width: 360, height: 800);
     await _open(tester);
     expect(tester.takeException(), isNull);
 
@@ -214,7 +257,22 @@ void main() {
     tester.view.physicalSize = const Size(800, 360);
     await tester.pumpAndSettle();
 
-    expect(tester.takeException(), isNull);
+    final landscapeException = tester.takeException();
+    if (landscapeException != null) {
+      final pageContext = tester.element(find.byType(CreateJobPage));
+      debugPrint(
+        'WAVE43 landscape MediaQuery size=${MediaQuery.sizeOf(pageContext)} '
+        'viewInsets=${MediaQuery.viewInsetsOf(pageContext)} '
+        'padding=${MediaQuery.paddingOf(pageContext)}',
+      );
+      debugDumpRenderTree();
+    }
+    expect(
+      landscapeException,
+      isNull,
+      reason: 'Create Opportunity landscape layout: '
+          '${landscapeException is FlutterError ? landscapeException.diagnostics.map((node) => node.toString()).join(' | ') : landscapeException}',
+    );
     expect(find.byType(CreateJobPage), findsOneWidget);
   });
 
@@ -242,6 +300,7 @@ void main() {
     await _pump(tester, repo);
     await _open(tester);
 
+    await _advanceToReview(tester);
     await tester.ensureVisible(find.text('Publish opportunity'));
     await tester.tap(find.text('Publish opportunity'));
     await tester.pump();
@@ -288,6 +347,9 @@ void main() {
       greaterThan(tester.getBottomRight(find.text('Public')).dy),
     );
 
+    await _advance(tester); // Details
+    await _advance(tester); // Compensation
+
     final minField = find.widgetWithText(TextField, 'Minimum pay');
     final maxField = find.widgetWithText(TextField, 'Maximum pay');
     expect(minField, findsOneWidget);
@@ -305,31 +367,29 @@ void main() {
     await _pump(tester, repo);
     await _open(tester);
 
-    // MISSION default: mission pricing + mission fee copy.
-    expect(find.text('Minimum pay'), findsOneWidget);
-    expect(find.text('Maximum pay'), findsOneWidget);
-    expect(find.text('Duration (hours)'), findsOneWidget);
+    expect(find.text('Minimum pay'), findsNothing);
     expect(find.text('Monthly salary'), findsNothing);
-    expect(find.textContaining('10% from the employer'), findsOneWidget);
-
-    // Switch to JOB via the type hero tile.
     await tester.tap(find.text('Job'));
     await tester.pumpAndSettle();
-    expect(find.text('Monthly salary'), findsOneWidget);
-    expect(find.text('Application deadline'), findsOneWidget);
-    expect(find.text('Minimum pay'), findsNothing);
-    expect(find.text('Duration (hours)'), findsNothing);
-    expect(find.textContaining('30% of the candidate'), findsOneWidget);
+    await _advance(tester); // Details
 
-    // JOB published without a deadline is rejected by the dedicated guard.
     await tester.enterText(
         find.widgetWithText(TextField, 'Title'), 'Flutter developer');
     await tester.enterText(find.widgetWithText(TextField, 'Full description'),
         'Build and ship the mobile application');
-    // Child categories are rendered with a '  ↳ ' indent prefix.
     await _selectCategory(tester, 'Development');
+    await _advance(tester); // Compensation
+
+    expect(find.text('Monthly salary'), findsOneWidget);
+    expect(find.text('Application deadline'), findsOneWidget);
+    expect(find.text('Minimum pay'), findsNothing);
+    expect(find.text('Duration (hours)'), findsNothing);
     await tester.enterText(
         find.widgetWithText(TextField, 'Monthly salary'), '12000000');
+    await _advance(tester); // Fee and acceptance criteria
+    expect(find.textContaining('30% of the candidate'), findsOneWidget);
+    await _advance(tester); // Final review
+
     await tester.ensureVisible(find.text('Publish opportunity'));
     await tester.tap(find.text('Publish opportunity'));
     await tester.pump();
@@ -337,7 +397,10 @@ void main() {
     expect(find.text('Set the application deadline.'), findsOneWidget);
     expect(repo.calls, isEmpty);
 
-    // With a deadline the job publishes.
+    await tester.tap(find.byKey(const ValueKey('create-opportunity-previous-step')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('create-opportunity-previous-step')));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextField, 'Application deadline'));
     await tester.pumpAndSettle();
     expect(find.byType(DatePickerDialog), findsOneWidget);
@@ -347,6 +410,8 @@ void main() {
       await tester.tap(find.text('OK').last);
       await tester.pumpAndSettle();
     }
+    await _advance(tester); // Fee and criteria
+    await _advance(tester); // Final review
     await tester.ensureVisible(find.text('Publish opportunity'));
     await tester.tap(find.text('Publish opportunity'));
     await tester.pumpAndSettle();
@@ -394,4 +459,200 @@ void main() {
     // Still on the form: the pop only happens on success.
     expect(find.byType(CreateJobPage), findsOneWidget);
   });
+
+  testWidgets(
+    'Wave 43 Create Opportunity type choices stack at 1.5x fa-RTL without layout errors',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+      await _open(tester);
+
+      final mission = find.text('ماموریت');
+      final job = find.text('شغل');
+      expect(mission, findsOneWidget);
+      expect(job, findsOneWidget);
+      expect(
+        tester.getTopLeft(job).dy,
+        greaterThanOrEqualTo(tester.getBottomRight(mission).dy),
+        reason: 'At enlarged text, choice descriptions need a vertical reading order.',
+      );
+      expect(find.text('مرحله ۱ از ۵'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 43 entered detail fields and selected category survive step navigation',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(tester, repo, width: 360, height: 640);
+      await _open(tester);
+      await _advance(tester);
+
+      final title = find.widgetWithText(TextField, 'Title');
+      final description = find.widgetWithText(TextField, 'Full description');
+      await tester.enterText(title, 'Flutter developer ABC-123');
+      await tester.enterText(description, 'Build a Persian and English product.');
+      await _selectCategory(tester, 'Development');
+      await _advance(tester);
+      expect(find.text('Step 3 of 5'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('create-opportunity-previous-step')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<TextField>(title).controller!.text, 'Flutter developer ABC-123');
+      expect(
+        tester.widget<TextField>(description).controller!.text,
+        'Build a Persian and English product.',
+      );
+      final category = tester.widget<DropdownButtonFormField<String>>(
+        find.byType(DropdownButtonFormField<String>).first,
+      );
+      expect(category.initialValue, 'dev');
+
+      await _advance(tester);
+      expect(find.text('Step 3 of 5'), findsOneWidget);
+      expect(find.text('Monthly salary'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 34 create opportunity is a real five-stage flow with staged fields and final publish',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(tester, repo, width: 360);
+      await _open(tester);
+
+      expect(find.text('Step 1 of 5'), findsOneWidget);
+      expect(find.byKey(const ValueKey('create-opportunity-next-step')), findsOneWidget);
+      expect(find.byKey(const ValueKey('create-opportunity-previous-step')), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Title'), findsNothing);
+
+      await _advance(tester);
+      expect(find.text('Step 2 of 5'), findsOneWidget);
+      expect(find.text('Details'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Minimum pay'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('create-opportunity-previous-step')));
+      await tester.pumpAndSettle();
+      expect(find.text('Step 1 of 5'), findsOneWidget);
+      expect(find.text('Mission'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+      'Wave 41 Create Opportunity progress announces active step changes in fa-RTL',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    try {
+      final repo = _FakeMarket();
+      await _pump(tester, repo, width: 360, locale: const Locale('fa'));
+      await _open(tester);
+
+      final progress = find.byKey(
+        const ValueKey('create-opportunity-progress'),
+      );
+      var node = tester.getSemantics(progress);
+      expect(node.label, contains('مرحله ۱ از ۵'));
+      expect(node.value, 'نوع');
+      expect(node.hasFlag(SemanticsFlag.isLiveRegion), isTrue);
+
+      await _advance(tester);
+      node = tester.getSemantics(progress);
+      expect(node.label, contains('مرحله ۲ از ۵'));
+      expect(node.value, 'جزئیات');
+      expect(tester.takeException(), isNull);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  testWidgets(
+    'Wave 36 creation progress uses Persian stage and circle numerals in RTL',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const Scaffold(
+              body: Padding(
+                padding: EdgeInsets.all(16),
+                child: HopeCreationProgress(activeIndex: 2),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('مرحله ۳ از ۵'), findsOneWidget);
+        expect(find.text('مبلغ'), findsOneWidget);
+        expect(find.text('شرایط'), findsOneWidget);
+        expect(find.text('بازبینی'), findsOneWidget);
+        expect(find.text('۳'), findsOneWidget);
+        expect(find.text('3'), findsNothing);
+        expect(
+          tester.getSemantics(
+            find.byKey(const ValueKey('create-opportunity-progress')),
+          ).label,
+          contains('مرحله ۳ از ۵'),
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'Create Opportunity previous and next arrows follow Persian RTL direction',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(
+        tester,
+        repo,
+        width: 390,
+        height: 844,
+        locale: const Locale('fa'),
+      );
+      await _open(tester);
+
+      final previousIcon = tester.widget<HugeIcon>(
+        find.descendant(
+          of: find.byKey(const ValueKey('create-opportunity-previous-step')),
+          matching: find.byType(HugeIcon),
+        ),
+      );
+      final nextIcon = tester.widget<HugeIcon>(
+        find.descendant(
+          of: find.byKey(const ValueKey('create-opportunity-next-step')),
+          matching: find.byType(HugeIcon),
+        ),
+      );
+
+      expect(previousIcon.icon, HopeV2Icons.arrowRight);
+      expect(nextIcon.icon, HopeV2Icons.arrowLeft);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

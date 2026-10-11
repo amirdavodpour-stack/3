@@ -37,6 +37,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginButton => 'Log in to HOPE';
 
   @override
+  String get categorySoftware => "Software";
+
+  @override
+  String get categoryDesign => "Design";
+
+  @override
+  String get categoryMarketing => "Marketing";
+
+  @override
+  String get categoryContentTranslation => "Content & translation";
+
+  @override
+  String get categoryFinanceAccounting => "Finance & accounting";
+
+  @override
+  String get categoryEducation => "Education";
+
+  @override
+  String get categorySupport => "Support";
+
+  @override
+  String get categoryConstructionTechnical => "Construction & technical";
+
+  @override
+  String get categoryVideoAudio => "Video & audio";
+
+  @override
+  String get categoryDataAI => "Data & AI";
+
+  @override
+  String get categorySales => "Sales";
+
+  @override
+  String get categoryOther => "Other";
+
+  @override
   String get signInWithGoogle => 'Continue with Google';
 
   @override
