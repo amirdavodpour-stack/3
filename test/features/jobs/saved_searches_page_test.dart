@@ -29,6 +29,7 @@ HopeSavedSearch _search(
 class _SequencedSavedSearchRepository implements SavedSearchRepository {
   int calls = 0;
   List<HopeSavedSearch>? itemsOverride;
+  final List<String> deletedIds = [];
   final Completer<List<HopeSavedSearch>> firstRefresh =
       Completer<List<HopeSavedSearch>>();
 
@@ -49,7 +50,9 @@ class _SequencedSavedSearchRepository implements SavedSearchRepository {
       Future.value(search);
 
   @override
-  Future<void> delete(String id) async {}
+  Future<void> delete(String id) async {
+    deletedIds.add(id);
+  }
 }
 
 Widget _host(_SequencedSavedSearchRepository repository) {
@@ -169,4 +172,72 @@ void main() {
     expect(find.text('Fresh search'), findsOneWidget);
     expect(find.text('Stale search'), findsNothing);
   });
+
+  testWidgets(
+    'saved-search zero state gives a truthful next action instead of a blank list',
+    (tester) async {
+      final repository = _SequencedSavedSearchRepository()
+        ..itemsOverride = const [];
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      expect(find.text('You have no saved searches yet.'), findsOneWidget);
+      expect(
+        find.text(
+          'Save a search from Explore or create your first one with the button below.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('saved-search-create-cta')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('saved-search-list')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'saved-search multi-row state retains other records after confirming one deletion',
+    (tester) async {
+      final repository = _SequencedSavedSearchRepository()
+        ..itemsOverride = [
+          _search('one', 'One search'),
+          _search('two', 'Two search'),
+          _search('three', 'Three search'),
+        ];
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('saved-search-list')), findsOneWidget);
+      expect(find.text('One search'), findsOneWidget);
+      expect(find.text('Two search'), findsOneWidget);
+      expect(find.text('Three search'), findsOneWidget);
+      expect(find.byTooltip('Edit'), findsNWidgets(3));
+      expect(find.byTooltip('Delete'), findsNWidgets(3));
+      expect(
+        find.byKey(const ValueKey('saved-search-create-cta')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byTooltip('Delete').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Delete saved search'), findsOneWidget);
+      expect(
+        find.text('Delete “One search” from your saved searches?'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(repository.deletedIds, ['one']);
+      expect(find.text('One search'), findsNothing);
+      expect(find.text('Two search'), findsOneWidget);
+      expect(find.text('Three search'), findsOneWidget);
+      expect(find.byTooltip('Delete'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
