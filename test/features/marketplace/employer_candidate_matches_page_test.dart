@@ -23,6 +23,7 @@ void main() {
           applicationId: 'app-1',
           status: 'PENDING',
           skills: 'Flutter Dart',
+          offerPrice: '1250000',
         ),
         HopeEmployerCandidateMatch(
           rank: 2,
@@ -63,6 +64,11 @@ void main() {
     expect(find.text('اختلاف ۵ واحد درصد'), findsOneWidget);
     expect(find.text('مهارت'), findsWidgets);
     expect(find.text('تجربه'), findsWidgets);
+    expect(
+      find.text('۱٬۲۵۰٬۰۰۰ تومان'),
+      findsOneWidget,
+      reason: 'Offer amounts on candidate cards must use the shared fa-RTL Toman formatter.',
+    );
   });
 
   testWidgets('shows empty state when no workers accepted the opportunity',
@@ -133,7 +139,7 @@ void main() {
           displayName: 'Candidate Three',
           score: 84.0,
           reasons: ['LOCATION_MATCH'],
-          components: {'skills': 84.0, 'experience': 83.0, 'location': 95.0, 'salary': 82.0},
+          components: {'skills': 84.0, 'experience': 83.0, 'location': 95.0},
           applicationId: 'app-3',
           status: 'PENDING',
           skills: 'Dart, design',
@@ -183,6 +189,14 @@ void main() {
       ),
       findsNothing,
       reason: 'Raw Latin digits must not leak into the Persian comparison matrix.',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-comparison-matrix')),
+        matching: find.text('ثبت نشده'),
+      ),
+      findsOneWidget,
+      reason: 'Missing score data must be identified as unavailable, never presented as zero or left as an ambiguous dash.',
     );
     expect(tester.takeException(), isNull);
   });
