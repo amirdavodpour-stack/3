@@ -167,6 +167,16 @@ void main() {
         find.byKey(const ValueKey('satisfaction-agreement-choice')),
       );
       expect(agreement.selected, isEmpty);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'کار مطابق توافق انجام شد؟' &&
+              widget.properties.value == 'انتخاب نشده' &&
+              widget.properties.hint == 'بله یا خیر را انتخاب کنید',
+        ),
+        findsOneWidget,
+      );
       final submitFinder = find.byKey(
         const ValueKey('job-satisfaction-submit'),
       );
@@ -250,6 +260,16 @@ void main() {
         find.byKey(const ValueKey('satisfaction-agreement-choice')),
       );
       expect(agreement.selected, isEmpty);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'Was the work completed as agreed?' &&
+              widget.properties.value == 'Not selected' &&
+              widget.properties.hint == 'Choose Yes or No',
+        ),
+        findsOneWidget,
+      );
       final submitFinder = find.byKey(
         const ValueKey('job-satisfaction-submit'),
       );
@@ -313,6 +333,16 @@ void main() {
         find.descendant(of: agreement, matching: find.text('خیر')),
       );
       await tester.pump();
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'کار مطابق توافق انجام شد؟' &&
+              widget.properties.value == 'خیر' &&
+              widget.properties.hint == 'بله یا خیر را انتخاب کنید',
+        ),
+        findsOneWidget,
+      );
 
       final communicationField = find.byKey(
         const ValueKey('satisfaction-communication-rating'),
