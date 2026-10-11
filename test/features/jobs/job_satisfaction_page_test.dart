@@ -391,6 +391,9 @@ void main() {
         tester.view.devicePixelRatio = 1;
         await tester.pumpWidget(
           MaterialApp(
+            key: ValueKey(
+              'satisfaction-responsive-${scenario.size.width}-${scenario.scale}',
+            ),
             locale: const Locale('fa'),
             supportedLocales: const [Locale('fa'), Locale('en')],
             localizationsDelegates: const [
