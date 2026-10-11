@@ -397,10 +397,63 @@ class _OffersPageState extends State<OffersPage> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(_t('پذیرش پیشنهاد؟', 'Accept this offer?')),
-          content: Text(_t(
-            'پذیرش پیشنهاد یک اقدام مالی/قراردادی است. قبل از تأیید مبلغ و شرایط را بررسی کنید.',
-            'Accepting an offer is a contractual/financial action. Review the amount and terms before confirming.',
-          )),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _t('فرصت', 'Opportunity'),
+                  style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  o.jobTitle?.trim().isNotEmpty == true
+                      ? o.jobTitle!.trim()
+                      : _t('پیشنهاد همکاری', 'Work offer'),
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _t('مبلغ پیشنهاد', 'Offer amount'),
+                  style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _money(o.price),
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(ctx).colorScheme.primary,
+                      ),
+                ),
+                if (o.message.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _t('شرایط پیشنهاد', 'Offer terms'),
+                    style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(o.message),
+                ],
+                const SizedBox(height: 12),
+                Text(_t(
+                  'پذیرش پیشنهاد یک اقدام مالی/قراردادی است. قبل از تأیید مبلغ و شرایط را بررسی کنید.',
+                  'Accepting an offer is a contractual/financial action. Review the amount and terms before confirming.',
+                )),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
