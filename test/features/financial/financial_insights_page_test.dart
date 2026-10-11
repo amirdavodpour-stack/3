@@ -44,6 +44,28 @@ class _Wave24InsightsRepository implements FinancialInsightsRepository {
       );
 }
 
+class _MalformedSummaryInsightsRepository implements FinancialInsightsRepository {
+  const _MalformedSummaryInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      const HopeFinancialInsights(
+        currency: 'TOMAN',
+        months: 6,
+        summary: HopeFinancialSummary(
+          availableBalance: '1200000',
+          lockedBalance: '150000',
+          totalInflow: 'not-recorded',
+          totalOutflow: 'malformed',
+          totalReserved: '',
+          netCashFlow: '12.5',
+        ),
+        monthlyCashFlow: [],
+        balanceTrend: [],
+        bySource: [],
+      );
+}
+
 class _EmptyBalanceInsightsRepository implements FinancialInsightsRepository {
   const _EmptyBalanceInsightsRepository();
 
@@ -67,6 +89,42 @@ class _EmptyBalanceInsightsRepository implements FinancialInsightsRepository {
 }
 
 void main() {
+  testWidgets(
+    'malformed financial summary values stay explicitly unrecorded instead of becoming zero',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _MalformedSummaryInsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Total inflow'), findsOneWidget);
+      expect(find.text('Total outflow'), findsOneWidget);
+      expect(find.text('Total reserved'), findsOneWidget);
+      expect(find.text('Net cash flow'), findsOneWidget);
+      expect(find.text('0 TOMAN'), findsNothing);
+      expect(find.text('—'), findsNWidgets(4));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
     (tester) async {
