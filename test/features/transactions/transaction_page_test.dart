@@ -249,6 +249,13 @@ void main() {
     expect(find.text('Protected by HOPE'), findsOneWidget);
     expect(find.text('Start work'), findsOneWidget);
     expect(find.text('Stage 2 of 6'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is PremiumTag && widget.label == 'Funds held',
+      ),
+      findsOneWidget,
+      reason: 'The canonical payment status is already shown in the page heading.',
+    );
   });
 
   testWidgets(
