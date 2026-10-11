@@ -355,7 +355,7 @@ class OpportunityCard extends StatelessWidget {
       'design' || 'graphic-design' || 'طراحی' =>
         (const Color(0xFF8B5CF6), HopeV2Icons.featured),
       'marketing' || 'بازاریابی' =>
-        (HopeV2Colors.accent, HopeV2Icons.insights),
+        (HopeV2Colors.accent, HopeV2Icons.activity),
       'content' || 'translation' || 'content-translation' || 'محتوا و ترجمه' =>
         (const Color(0xFF0EA5E9), HopeV2Icons.description),
       'finance' || 'accounting' || 'finance-accounting' || 'مالی و حسابداری' =>
@@ -367,11 +367,11 @@ class OpportunityCard extends StatelessWidget {
       'construction' || 'technical' || 'construction-technical' || 'ساخت‌وساز و فنی' =>
         (const Color(0xFFF97316), HopeV2Icons.workshop),
       'video' || 'audio' || 'video-audio' || 'video-production' || 'تولید ویدیو و صدا' =>
-        (const Color(0xFFEC4899), HopeV2Icons.featured),
+        (const Color(0xFFEC4899), HopeV2Icons.device),
       'data' || 'ai' || 'data-ai' || 'artificial-intelligence' || 'داده و هوش مصنوعی' =>
         (const Color(0xFF06B6D4), HopeV2Icons.insights),
       'sales' || 'فروش' =>
-        (const Color(0xFF22C55E), HopeV2Icons.workshop),
+        (const Color(0xFF22C55E), HopeV2Icons.activitySelected),
       _ => (primary, HopeV2Icons.category),
     };
     final theme = Theme.of(context);
