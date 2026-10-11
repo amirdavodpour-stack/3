@@ -383,4 +383,66 @@ void main() {
       }
     },
   );
+
+  testWidgets(
+    'Wave 3 recorded net cash flow matches the corresponding source activity amount',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        tester.view.physicalSize = const Size(360, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _Wave24InsightsRepository(),
+            child: MaterialApp(
+              locale: const Locale('en'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Total inflow'), findsOneWidget);
+        expect(find.text('500,000 TOMAN'), findsOneWidget);
+        expect(find.text('Total outflow'), findsOneWidget);
+        expect(find.text('120,000 TOMAN'), findsOneWidget);
+        expect(find.text('Net cash flow'), findsOneWidget);
+
+        final netValueFinder = find.text('380,000 TOMAN');
+        expect(netValueFinder, findsOneWidget);
+        final snapshotNetValue = tester.widget<Text>(netValueFinder).data!;
+        expect(snapshotNetValue, '380,000 TOMAN');
+
+        // Scroll to the independent source rollup and compare it to the
+        // exact net value captured from the snapshot above.
+        await tester.scrollUntilVisible(
+          find.text('Financial activity sources'),
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        final sourceSemantics = tester.getSemantics(
+          find.byKey(const ValueKey('financial-source-row-JOB')),
+        );
+        expect(sourceSemantics.label, contains('Job'));
+        expect(sourceSemantics.label, contains('amount $snapshotNetValue'));
+        expect(sourceSemantics.label, contains('100%'));
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
+    },
+  );
+
 }
