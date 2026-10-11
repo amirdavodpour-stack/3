@@ -2178,9 +2178,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
         HopeDisplayFormatter.matchPercentage(matchScore);
     final score = normalizedScore?.round();
     final locale = Localizations.localeOf(context).languageCode;
-    final scoreLabel = score == null
-        ? '—'
-        : HopeDisplayFormatter.percent(score, locale: locale);
+    final scoreLabel = score == null ? '—' : HopeDisplayFormatter.percent(score, locale: locale);
 
     Widget fact(String label, String value, Object icon, Color color) {
       if (value.trim().isEmpty || value.trim() == '—') {
