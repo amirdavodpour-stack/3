@@ -411,4 +411,54 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'application timeline exposes a visible label for every stage',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Provider<ApplicationRegistry>.value(
+            value: ApplicationRegistry(profile: _ManyApplicationsRepository()),
+            child: const MyApplicationsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      const stages = <String, String>{
+        'PENDING': 'Pending',
+        'SHORTLISTED': 'Shortlist',
+        'FORWARDED': 'Forwarded',
+        'INTERVIEW': 'Interview',
+        'OFFERED': 'Offer',
+        'ACCEPTED': 'Accepted',
+      };
+      for (final entry in stages.entries) {
+        final label = find.byKey(
+          ValueKey('application-timeline-pending-app-${entry.key}'),
+        );
+        expect(
+          label,
+          findsOneWidget,
+          reason: 'The ${entry.value} marker needs a visible stage label.',
+        );
+        expect(find.descendant(of: label, matching: find.text(entry.value)), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
