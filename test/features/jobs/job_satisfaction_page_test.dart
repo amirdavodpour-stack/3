@@ -112,9 +112,16 @@ void main() {
         find.byKey(const ValueKey('satisfaction-agreement-choice')),
       );
       expect(agreement.selected, isEmpty);
-      final submit = tester.widget<FilledButton>(
-        find.byKey(const ValueKey('job-satisfaction-submit')),
+      final submitFinder = find.byKey(
+        const ValueKey('job-satisfaction-submit'),
       );
+      await tester.scrollUntilVisible(
+        submitFinder,
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      final submit = tester.widget<FilledButton>(submitFinder);
       expect(submit.onPressed, isNull);
       expect(repository.submitted, isFalse);
       expect(tester.takeException(), isNull);
