@@ -55,6 +55,21 @@ class _FakeJobSatisfactionRepository implements JobSatisfactionRepository {
   Future<List<HopeJobSatisfaction>> history() async => const [];
 }
 
+void expectRenderedSemantics(
+  WidgetTester tester, {
+  required String label,
+  required String value,
+  required String hint,
+}) {
+  final finder = find.byWidgetPredicate(
+    (widget) => widget is Semantics && widget.properties.label == label,
+  );
+  final node = tester.getSemantics(finder);
+  expect(node.label, label);
+  expect(node.value, value);
+  expect(node.hint, hint);
+}
+
 void main() {
   testWidgets(
     'satisfaction form never preselects positive answers or permits an incomplete submit',
@@ -64,7 +79,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _FakeJobSatisfactionRepository();
-      final semantics = SemanticsTester(tester);
+      final semantics = tester.ensureSemantics();
       addTearDown(semantics.dispose);
 
       await tester.pumpWidget(
@@ -91,21 +106,17 @@ void main() {
           .toList(growable: false);
       expect(ratings, hasLength(2));
       expect(ratings.every((rating) => rating.selected.isEmpty), isTrue);
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'رضایت کلی',
-          value: 'انتخاب نشده',
-          hint: 'از ۱ (کاملاً ناراضی) تا ۵ (کاملاً راضی) انتخاب کنید',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'رضایت کلی',
+        value: 'انتخاب نشده',
+        hint: 'از ۱ (کاملاً ناراضی) تا ۵ (کاملاً راضی) انتخاب کنید',
       );
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'ارتباط و هماهنگی',
-          value: 'انتخاب نشده',
-          hint: 'از ۱ (بسیار ضعیف) تا ۵ (عالی) انتخاب کنید',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'ارتباط و هماهنگی',
+        value: 'انتخاب نشده',
+        hint: 'از ۱ (بسیار ضعیف) تا ۵ (عالی) انتخاب کنید',
       );
       expect(
         find.byWidgetPredicate(
@@ -146,13 +157,11 @@ void main() {
 
       await tester.tap(find.text('۳').first);
       await tester.pump();
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'رضایت کلی',
-          value: '۳',
-          hint: 'از ۱ (کاملاً ناراضی) تا ۵ (کاملاً راضی) انتخاب کنید',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'رضایت کلی',
+        value: '۳',
+        hint: 'از ۱ (کاملاً ناراضی) تا ۵ (کاملاً راضی) انتخاب کنید',
       );
       expect(
         tester.widgetList<SegmentedButton<int>>(
@@ -173,13 +182,11 @@ void main() {
       );
       await tester.tap(find.text('۳').first);
       await tester.pump();
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'رضایت کلی',
-          value: 'انتخاب نشده',
-          hint: 'از ۱ (کاملاً ناراضی) تا ۵ (کاملاً راضی) انتخاب کنید',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'رضایت کلی',
+        value: 'انتخاب نشده',
+        hint: 'از ۱ (کاملاً ناراضی) تا ۵ (کاملاً راضی) انتخاب کنید',
       );
       expect(
         tester.widgetList<SegmentedButton<int>>(
@@ -201,13 +208,11 @@ void main() {
         find.byKey(const ValueKey('satisfaction-agreement-choice')),
       );
       expect(agreement.selected, isEmpty);
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'کار مطابق توافق انجام شد؟',
-          value: 'انتخاب نشده',
-          hint: 'بله یا خیر را انتخاب کنید',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'کار مطابق توافق انجام شد؟',
+        value: 'انتخاب نشده',
+        hint: 'بله یا خیر را انتخاب کنید',
       );
       expect(
         find.byWidgetPredicate(
@@ -243,7 +248,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _FakeJobSatisfactionRepository();
-      final semantics = SemanticsTester(tester);
+      final semantics = tester.ensureSemantics();
       addTearDown(semantics.dispose);
 
       await tester.pumpWidget(
@@ -270,21 +275,17 @@ void main() {
           .toList(growable: false);
       expect(ratings, hasLength(2));
       expect(ratings.every((rating) => rating.selected.isEmpty), isTrue);
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'Overall satisfaction',
-          value: 'Not selected',
-          hint: 'Choose a rating from 1 (Very dissatisfied) to 5 (Very satisfied)',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'Overall satisfaction',
+        value: 'Not selected',
+        hint: 'Choose a rating from 1 (Very dissatisfied) to 5 (Very satisfied)',
       );
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'Communication and coordination',
-          value: 'Not selected',
-          hint: 'Choose a rating from 1 (Very poor) to 5 (Excellent)',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'Communication and coordination',
+        value: 'Not selected',
+        hint: 'Choose a rating from 1 (Very poor) to 5 (Excellent)',
       );
       expect(
         find.byWidgetPredicate(
@@ -320,13 +321,11 @@ void main() {
         find.byKey(const ValueKey('satisfaction-agreement-choice')),
       );
       expect(agreement.selected, isEmpty);
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'Was the work completed as agreed?',
-          value: 'Not selected',
-          hint: 'Choose Yes or No',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'Was the work completed as agreed?',
+        value: 'Not selected',
+        hint: 'Choose Yes or No',
       );
       expect(
         find.byWidgetPredicate(
@@ -362,7 +361,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _FakeJobSatisfactionRepository();
-      final semantics = SemanticsTester(tester);
+      final semantics = tester.ensureSemantics();
       addTearDown(semantics.dispose);
 
       await tester.pumpWidget(
@@ -403,13 +402,11 @@ void main() {
         find.descendant(of: agreement, matching: find.text('خیر')),
       );
       await tester.pump();
-      expect(
-        semantics,
-        includesNodeWith(
-          label: 'کار مطابق توافق انجام شد؟',
-          value: 'خیر',
-          hint: 'بله یا خیر را انتخاب کنید',
-        ),
+      expectRenderedSemantics(
+        tester,
+        label: 'کار مطابق توافق انجام شد؟',
+        value: 'خیر',
+        hint: 'بله یا خیر را انتخاب کنید',
       );
       expect(
         find.byWidgetPredicate(
