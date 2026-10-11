@@ -204,4 +204,34 @@ void main() {
     }
   });
 
+
+  testWidgets(
+    'register submit remains reachable above the keyboard on compact viewports',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+
+      await tester.pumpWidget(await _screen(const RegisterPage()));
+      await tester.pumpAndSettle();
+
+      final submit = find.byType(FilledButton);
+      expect(submit, findsOneWidget);
+      await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
+
+      final submitRect = tester.getRect(submit);
+      expect(submitRect.top, greaterThanOrEqualTo(0));
+      expect(
+        submitRect.bottom,
+        lessThanOrEqualTo(360),
+        reason: 'The 280dp keyboard inset must not obscure the registration CTA.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
