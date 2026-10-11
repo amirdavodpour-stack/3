@@ -32,7 +32,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  String _money(int value) => HopeDisplayFormatter.money(
+  String _money(Object? value) => HopeDisplayFormatter.money(
         value,
         locale: Localizations.localeOf(context).languageCode,
       );
@@ -219,22 +219,22 @@ class _SummaryCard extends StatelessWidget {
       ),
       (
         label: t('ورودی', 'Inflow'),
-        value: money(int.tryParse(summary.totalInflow) ?? 0),
+        value: money(summary.totalInflow),
         highlight: false,
       ),
       (
         label: t('خروجی', 'Outflow'),
-        value: money(int.tryParse(summary.totalOutflow) ?? 0),
+        value: money(summary.totalOutflow),
         highlight: false,
       ),
       (
         label: t('کل رزرو‌شده', 'Total reserved'),
-        value: money(int.tryParse(summary.totalReserved) ?? 0),
+        value: money(summary.totalReserved),
         highlight: false,
       ),
       (
         label: t('خالص جریان نقدی', 'Net cash flow'),
-        value: money(int.tryParse(summary.netCashFlow) ?? 0),
+        value: money(summary.netCashFlow),
         highlight: false,
       ),
     ];
