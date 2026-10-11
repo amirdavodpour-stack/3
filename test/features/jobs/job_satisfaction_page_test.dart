@@ -414,6 +414,16 @@ void main() {
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            'این فرم فقط برای همین همکاری است. هیچ چت عمومی یا درخواست آزاد از هوش مصنوعی در اختیار شما نیست.',
+          ),
+          findsOneWidget,
+          reason: 'The loaded satisfaction form should replace the async loading state.',
+        );
+        expect(find.byType(ListView), findsOneWidget);
 
         final overallFinder = find.byKey(
           const ValueKey('satisfaction-overall-rating'),
