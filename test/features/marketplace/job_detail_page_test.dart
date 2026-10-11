@@ -874,9 +874,9 @@ void main() {
       final finalSection = find.byKey(finalSectionKey);
       final cta = find.byKey(ctaKey);
       expect(list, findsOneWidget);
-      expect(finalSection, findsOneWidget);
       expect(cta, findsOneWidget);
 
+      // The final section is a lazy list child; it must be built by scrolling.
       final listScroller = find.descendant(
         of: list,
         matching: find.byType(Scrollable),
