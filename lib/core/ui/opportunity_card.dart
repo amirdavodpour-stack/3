@@ -1016,9 +1016,9 @@ class OpportunityCard extends StatelessWidget {
                 child: Text(
                   _formatAmount(amount, context),
                   key: const ValueKey('opportunity-card-budget-amount'),
-                  maxLines: 3,
+                  // Financial ranges must wrap completely at accessibility text
+                  // scales; a fixed line cap silently discards part of the value.
                   softWrap: true,
-                  overflow: TextOverflow.clip,
                   textAlign: TextAlign.start,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: primary,
