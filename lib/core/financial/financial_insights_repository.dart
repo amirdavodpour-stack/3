@@ -65,7 +65,10 @@ class HopeFinancialSource {
   final String credit;
   final String debit;
   final String amount;
-  double get value => double.tryParse(amount) ?? 0;
+  double? get value {
+    final parsed = double.tryParse(amount);
+    return parsed != null && parsed.isFinite ? parsed : null;
+  }
 }
 
 class HopeFinancialInsights {
@@ -133,7 +136,7 @@ class HopeFinancialInsights {
                 source: '${item['source'] ?? 'OTHER'}',
                 credit: '${item['credit'] ?? 0}',
                 debit: '${item['debit'] ?? 0}',
-                amount: '${item['amount'] ?? 0}',
+                amount: item['amount'] == null ? '' : '${item['amount']}',
               ))
           .toList(growable: false),
     );
