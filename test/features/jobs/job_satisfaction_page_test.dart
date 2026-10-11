@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +11,7 @@ import 'package:provider/provider.dart';
 class _FakeJobSatisfactionRepository implements JobSatisfactionRepository {
   bool submitted = false;
   bool failNextSubmit = false;
+  Completer<Map<String, dynamic>>? pendingSubmit;
   int submitAttempts = 0;
   String? submittedJobId;
   int? submittedOverallRating;
@@ -46,6 +49,11 @@ class _FakeJobSatisfactionRepository implements JobSatisfactionRepository {
     if (failNextSubmit) {
       failNextSubmit = false;
       throw StateError('simulated submit failure');
+    }
+    if (pendingSubmit != null) {
+      final result = await pendingSubmit!.future;
+      submitted = true;
+      return result;
     }
     submitted = true;
     return <String, dynamic>{};
@@ -473,7 +481,8 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      final repository = _FakeJobSatisfactionRepository();
+      final repository = _FakeJobSatisfactionRepository()
+        ..pendingSubmit = Completer<Map<String, dynamic>>();
       final semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
@@ -589,10 +598,20 @@ void main() {
       await revealLazyListChild(tester, submitFinder);
       expect(tester.widget<FilledButton>(submitFinder).onPressed, isNotNull);
 
-      await tester.tap(submitFinder);
+      final submitAction = tester.widget<FilledButton>(submitFinder).onPressed!;
+      submitAction();
+      submitAction();
+      await tester.pump();
+      expect(repository.submitAttempts, 1);
+      expect(repository.submitted, isFalse);
+      expect(tester.widget<FilledButton>(submitFinder).onPressed, isNull);
+      expect(find.text('در حال ثبت...'), findsOneWidget);
+
+      repository.pendingSubmit!.complete(<String, dynamic>{});
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
+      expect(repository.submitAttempts, 1);
       expect(repository.submitted, isTrue);
       expect(repository.submittedJobId, 'job-1');
       expect(repository.submittedOverallRating, 4);
