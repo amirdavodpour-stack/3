@@ -26,20 +26,9 @@ extension on _TransactionPageState {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _t('مسیر مالی و انجام کار', 'Payment & job flow'),
-                  style: HopeV2Type.section(context),
-                ),
-              ),
-              PremiumTag(
-                icon: _statusIcon(paymentStatus),
-                label: _statusLabel(paymentStatus),
-                color: _statusColor(paymentStatus),
-              ),
-            ],
+          Text(
+            _t('مسیر مالی و انجام کار', 'Payment & job flow'),
+            style: HopeV2Type.section(context),
           ),
           const SizedBox(height: 5),
           _lifecycleProgress(
