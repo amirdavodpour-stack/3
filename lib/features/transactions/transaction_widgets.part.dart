@@ -375,6 +375,10 @@ extension on _TransactionPageState {
     final status = payment?.status ?? 'NO_TRANSACTION';
     final job = payment?.job;
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final publicReference = HopeDisplayFormatter.humanRef(
+      payment?.providerRef,
+      locale: Localizations.localeOf(context).languageCode,
+    );
     return Directionality(
       textDirection: Localizations.localeOf(context).languageCode == 'en'
           ? TextDirection.ltr
@@ -536,8 +540,7 @@ extension on _TransactionPageState {
                         ),
                       ),
                     ],
-                    if (!compact &&
-                        (payment?.providerRef?.trim().isNotEmpty ?? false)) ...[
+                    if (!compact && publicReference != null) ...[
                       const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,7 +556,7 @@ extension on _TransactionPageState {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              payment!.providerRef!.trim(),
+                              publicReference,
                               softWrap: true,
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
