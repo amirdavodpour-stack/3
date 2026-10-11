@@ -4,10 +4,87 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
+  testWidgets(
+    'category fallback uses distinct semantic icons for every supported category',
+    (tester) async {
+      const categories = <({String slug, Object icon})>[
+        (slug: 'software', icon: HopeV2Icons.web),
+        (slug: 'design', icon: HopeV2Icons.featured),
+        (slug: 'marketing', icon: HopeV2Icons.activity),
+        (slug: 'content', icon: HopeV2Icons.description),
+        (slug: 'finance', icon: HopeV2Icons.payments),
+        (slug: 'education', icon: HopeV2Icons.skills),
+        (slug: 'support', icon: HopeV2Icons.message),
+        (slug: 'construction', icon: HopeV2Icons.workshop),
+        (slug: 'video', icon: HopeV2Icons.device),
+        (slug: 'data', icon: HopeV2Icons.insights),
+        (slug: 'sales', icon: HopeV2Icons.activitySelected),
+      ];
+      final resolvedIcons = <Object>[];
+
+      for (final category in categories) {
+        final job = HopeJob.fromMap({
+          'id': 'category-fallback-${category.slug}',
+          'title': 'Opportunity ${category.slug}',
+          'categoryId': category.slug,
+          'kind': 'JOB',
+          'status': 'OPEN',
+          'visibility': 'PUBLIC',
+        });
+
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: ThemeData(brightness: Brightness.dark),
+            home: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(12),
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.compact,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final fallback = find.byKey(
+          const ValueKey('opportunity-fallback-icon-container'),
+        );
+        expect(fallback, findsOneWidget, reason: category.slug);
+
+        final iconFinder = find.descendant(
+          of: fallback,
+          matching: find.byType(HopeIcon),
+        );
+        expect(iconFinder, findsOneWidget, reason: category.slug);
+        final actualIcon = tester.widget<HopeIcon>(iconFinder).icon;
+        expect(actualIcon, category.icon, reason: category.slug);
+        resolvedIcons.add(actualIcon);
+        expect(tester.takeException(), isNull, reason: category.slug);
+      }
+
+      expect(
+        resolvedIcons.toSet(),
+        hasLength(categories.length),
+        reason: 'Each supported category needs a distinct fallback icon.',
+      );
+    },
+  );
+
   testWidgets('compact opportunity cards give media and value a non-competing editorial stack', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1.0;
