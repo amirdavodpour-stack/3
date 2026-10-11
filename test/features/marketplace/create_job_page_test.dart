@@ -655,4 +655,55 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'Wave 5 English LTR Create Opportunity keeps the active title field above a 320dp keyboard at 1.5x',
+    (tester) async {
+      final repo = _FakeMarket();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 16);
+      addTearDown(tester.view.resetViewInsets);
+      addTearDown(tester.view.resetViewPadding);
+
+      await _pump(
+        tester,
+        repo,
+        width: 390,
+        height: 844,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await _open(tester);
+
+      expect(find.text('Step 1 of 5'), findsOneWidget);
+      var pageContext = tester.element(find.byType(CreateJobPage));
+      expect(MediaQuery.viewInsetsOf(pageContext).bottom, 320);
+
+      await _advance(tester);
+      expect(find.text('Step 2 of 5'), findsOneWidget);
+
+      final titleField = find.widgetWithText(TextField, 'Title');
+      await tester.ensureVisible(titleField);
+      await tester.tap(titleField);
+      await tester.pumpAndSettle();
+
+      pageContext = tester.element(find.byType(CreateJobPage));
+      expect(MediaQuery.viewInsetsOf(pageContext).bottom, 320);
+      final keyboardTop =
+          tester.view.physicalSize.height - MediaQuery.viewInsetsOf(pageContext).bottom;
+      final titleRect = tester.getRect(titleField);
+      expect(
+        titleRect.bottom,
+        lessThanOrEqualTo(keyboardTop),
+        reason: 'The active field must stay above the simulated keyboard.',
+      );
+      expect(titleField.hitTestable(), findsOneWidget);
+
+      await tester.enterText(titleField, 'Keyboard-safe opportunity');
+      expect(find.text('Keyboard-safe opportunity'), findsOneWidget);
+      expect(find.text('Step 2 of 5'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
