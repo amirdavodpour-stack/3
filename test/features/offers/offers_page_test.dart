@@ -163,6 +163,19 @@ testWidgets('accepting an offer disables the financial action until completion',
 
     await tester.tap(acceptButton);
     await tester.pump();
+    final confirmation = find.byType(AlertDialog);
+    expect(
+      find.descendant(of: confirmation, matching: find.text('pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: confirmation, matching: find.text('Offer amount')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: confirmation, matching: find.text('2,500,000 TOMAN')),
+      findsOneWidget,
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
     await tester.pump();
 

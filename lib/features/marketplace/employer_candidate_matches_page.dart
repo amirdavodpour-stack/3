@@ -149,7 +149,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       if (key == 'skills' && (candidate.skills ?? '').trim().isNotEmpty) {
         return candidate.skills!.trim();
       }
-      return '—';
+      return _t(context, 'ثبت نشده', 'Not provided');
     }
 
     return PremiumPanel(
@@ -468,7 +468,10 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                     if (candidate.offerPrice != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        '${_t(context, 'پیشنهاد مالی: ', 'Offer: ')}${candidate.offerPrice} تومان',
+                        '${_t(context, 'پیشنهاد مالی: ', 'Offer: ')}${HopeDisplayFormatter.money(
+                          candidate.offerPrice,
+                          locale: Localizations.localeOf(context).languageCode,
+                        )}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
