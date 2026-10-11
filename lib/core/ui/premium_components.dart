@@ -1477,7 +1477,7 @@ class PremiumHero extends StatelessWidget {
                 horizontal: horizontal,
                 // Compact auth heroes have short fixed heights; the full-size
                 // vertical gutter can force wrapped copy to overflow at 360dp.
-                vertical: compactHero ? 12 : horizontal,
+                vertical: compactHero ? 4 : horizontal,
               ),
               child: Align(
                 alignment: AlignmentDirectional.bottomStart,
