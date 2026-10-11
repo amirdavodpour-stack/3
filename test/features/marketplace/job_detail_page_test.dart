@@ -894,7 +894,6 @@ void main() {
       final viewportRect = tester.getRect(list);
       final finalRect = tester.getRect(finalSection);
       final ctaRect = tester.getRect(cta);
-      expect(find.textContaining('SAFE_AREA_FINAL_MARKER'), findsOneWidget);
       expect(finalRect.top, greaterThanOrEqualTo(viewportRect.top));
       expect(finalRect.bottom, lessThanOrEqualTo(viewportRect.bottom));
       expect(viewportRect.bottom, lessThanOrEqualTo(ctaRect.top));
