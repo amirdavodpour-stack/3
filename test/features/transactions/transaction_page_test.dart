@@ -165,6 +165,7 @@ Future<void> _pump(
   String ownerId = 'u1',
   double width = 900,
   bool disableAnimations = false,
+  bool useActualViewportMetrics = false,
 }) async {
   tester.view.physicalSize = Size(width, 2200);
   tester.view.devicePixelRatio = 1.0;
@@ -185,7 +186,11 @@ Future<void> _pump(
       GlobalCupertinoLocalizations.delegate,
     ],
     home: MediaQuery(
-      data: MediaQueryData(disableAnimations: disableAnimations),
+      data: MediaQueryData(
+        size: useActualViewportMetrics ? Size(width, 2200) : Size.zero,
+        devicePixelRatio: 1.0,
+        disableAnimations: disableAnimations,
+      ),
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: auth),
@@ -569,7 +574,12 @@ void main() {
           'providerRef': 'internal-ledger-reference-compact',
           'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
         }));
-      await _pump(tester, internalRepo);
+      await _pump(
+        tester,
+        internalRepo,
+        width: 1200,
+        useActualViewportMetrics: true,
+      );
 
       expect(find.text('internal-ledger-reference-compact'), findsNothing);
       expect(find.text('Reference'), findsNothing);
@@ -582,7 +592,12 @@ void main() {
           'providerRef': 'HP-1042',
           'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
         }));
-      await _pump(tester, publicRepo);
+      await _pump(
+        tester,
+        publicRepo,
+        width: 1200,
+        useActualViewportMetrics: true,
+      );
 
       expect(find.text('Reference'), findsOneWidget);
       expect(find.text('#HP-1042'), findsOneWidget);
