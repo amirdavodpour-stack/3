@@ -51,6 +51,24 @@ void main() {
       );
     });
 
+    test('normalizes fractional and whole recommendation scores to 0–100', () {
+      expect(HopeDisplayFormatter.matchPercentage(0.94), 94);
+      expect(HopeDisplayFormatter.matchPercentage('0.94'), 94);
+      expect(HopeDisplayFormatter.matchPercentage(94), 94);
+      expect(HopeDisplayFormatter.matchPercentage('۹۴'), 94);
+      expect(HopeDisplayFormatter.matchPercentage(0), 0);
+      expect(HopeDisplayFormatter.matchPercentage(1), 100);
+    });
+
+    test('does not manufacture match scores from invalid or out-of-range values', () {
+      expect(HopeDisplayFormatter.matchPercentage(null), isNull);
+      expect(HopeDisplayFormatter.matchPercentage(double.nan), isNull);
+      expect(HopeDisplayFormatter.matchPercentage(double.infinity), isNull);
+      expect(HopeDisplayFormatter.matchPercentage(-0.1), isNull);
+      expect(HopeDisplayFormatter.matchPercentage(100.1), isNull);
+      expect(HopeDisplayFormatter.matchPercentage('not-a-score'), isNull);
+    });
+
     test('formats English money without Persian digits', () {
       expect(
         HopeDisplayFormatter.money('1500000', locale: 'en'),

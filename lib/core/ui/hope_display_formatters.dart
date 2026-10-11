@@ -73,6 +73,29 @@ class HopeDisplayFormatter {
         : formatted;
   }
 
+  /// Normalizes the API's supported recommendation-score scales to 0–100.
+  /// Values in [0, 1] are fractions; values above 1 are percentage points.
+  /// Invalid or out-of-range values stay absent rather than becoming synthetic scores.
+  static double? matchPercentage(Object? value) {
+    if (value == null) return null;
+    final raw = _asciiDigits(value.toString().trim())
+        .replaceAll(',', '')
+        .replaceAll('٬', '')
+        .replaceAll('٫', '.');
+    final parsed = value is num ? value.toDouble() : double.tryParse(raw);
+    if (parsed == null ||
+        !parsed.isFinite ||
+        parsed < 0 ||
+        parsed > 100) {
+      return null;
+    }
+    final normalized = parsed <= 1 ? parsed * 100 : parsed;
+    if (!normalized.isFinite || normalized < 0 || normalized > 100) {
+      return null;
+    }
+    return normalized;
+  }
+
   static String percent(
     Object? value, {
     required String locale,

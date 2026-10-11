@@ -1585,7 +1585,7 @@ class _MatchIntelligence extends StatelessWidget {
   }
 
   Widget _compactSurface(BuildContext context) {
-    final score = job.recommendationScore;
+    final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
     final primary = Theme.of(context).colorScheme.primary;
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     final fit = score == null
@@ -1770,7 +1770,7 @@ class _MatchIntelligence extends StatelessWidget {
     if (compact) {
       return _compactSurface(context);
     }
-    final score = job.recommendationScore;
+    final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
     final primary = Theme.of(context).colorScheme.primary;
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     final fit = score == null ? null : score >= 90
@@ -1900,7 +1900,7 @@ class _MatchIntelligence extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context) {
-    final score = job.recommendationScore;
+    final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
     final primary = Theme.of(context).colorScheme.primary;
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     showModalBottomSheet<void>(

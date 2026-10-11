@@ -112,11 +112,12 @@ class OpportunityCard extends StatelessWidget {
     final opportunityKind = job.isMission
         ? _t(context, 'ماموریت', 'Mission')
         : _t(context, 'فرصت شغلی', 'Job');
-    final rawScore = job.recommendationScore;
-    final scoreLabel = rawScore == null
+    final matchPercent =
+        HopeDisplayFormatter.matchPercentage(job.recommendationScore);
+    final scoreLabel = matchPercent == null
         ? ''
         : '${HopeDisplayFormatter.percent(
-            (rawScore <= 1 ? rawScore * 100 : rawScore).round(),
+            matchPercent.round(),
             locale: locale,
           )} ${_t(context, 'تطابق', 'match')}';
 
@@ -262,7 +263,7 @@ class OpportunityCard extends StatelessWidget {
   }) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final hasMedia = mediaUrl?.trim().isNotEmpty == true;
-    final percent = score == null ? null : (score <= 1 ? score * 100 : score);
+    final percent = HopeDisplayFormatter.matchPercentage(score);
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
@@ -860,10 +861,13 @@ class OpportunityCard extends StatelessWidget {
   }
 
   String? _matchLabel(BuildContext context) {
-    final score = job.recommendationScore;
-    if (score == null) return null;
-    final percent = score <= 1 ? score * 100 : score;
-    return "${percent.round()}% ${_t(context, 'تطابق', 'match')}";
+    final percent =
+        HopeDisplayFormatter.matchPercentage(job.recommendationScore);
+    if (percent == null) return null;
+    return "${HopeDisplayFormatter.percent(
+      percent.round(),
+      locale: Localizations.localeOf(context).languageCode,
+    )} ${_t(context, 'تطابق', 'match')}";
   }
 
   Widget _scanStandard(
@@ -1129,6 +1133,8 @@ class OpportunityCard extends StatelessWidget {
   }) {
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final matchPercent =
+        HopeDisplayFormatter.matchPercentage(job.recommendationScore);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1188,13 +1194,13 @@ class OpportunityCard extends StatelessWidget {
                             : HopeV2Icons.job,
                         color: primary,
                       ),
-                      if (job.recommendationScore != null)
+                      if (matchPercent != null)
                         PremiumTag(
                           icon: HopeV2Icons.match,
-                          label: '${((job.recommendationScore! <= 1
-                                      ? job.recommendationScore! * 100
-                                      : job.recommendationScore!))
-                                  .round()}% ${_t(context, 'تطابق', 'match')}',
+                          label: '${HopeDisplayFormatter.percent(
+                            matchPercent.round(),
+                            locale: Localizations.localeOf(context).languageCode,
+                          )} ${_t(context, 'تطابق', 'match')}',
                           color: HopeV2Colors.success,
                         ),
                     ],
