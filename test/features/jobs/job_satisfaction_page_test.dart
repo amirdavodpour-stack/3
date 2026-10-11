@@ -70,6 +70,28 @@ void expectRenderedSemantics(
   expect(node.hint, hint);
 }
 
+Future<void> revealLazyListChild(
+  WidgetTester tester,
+  Finder target, {
+  double scrollStep = 160,
+  int maxAttempts = 24,
+}) async {
+  final list = find.byType(ListView).first;
+  var attempts = 0;
+  while (target.evaluate().isEmpty && attempts < maxAttempts) {
+    await tester.drag(list, Offset(0, -scrollStep));
+    await tester.pumpAndSettle();
+    attempts += 1;
+  }
+  expect(
+    target,
+    findsOneWidget,
+    reason: 'Lazy list child should be built after scrolling the viewport.',
+  );
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets(
     'satisfaction form never preselects positive answers or permits an incomplete submit',
@@ -396,12 +418,7 @@ void main() {
         final overallFinder = find.byKey(
           const ValueKey('satisfaction-overall-rating'),
         );
-        await tester.scrollUntilVisible(
-          overallFinder,
-          160,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.pumpAndSettle();
+        await revealLazyListChild(tester, overallFinder);
 
         for (final endpoint in ['کاملاً ناراضی', 'کاملاً راضی']) {
           expect(
@@ -415,12 +432,7 @@ void main() {
         final communicationFinder = find.byKey(
           const ValueKey('satisfaction-communication-rating'),
         );
-        await tester.scrollUntilVisible(
-          communicationFinder,
-          160,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.pumpAndSettle();
+        await revealLazyListChild(tester, communicationFinder);
         for (final endpoint in ['بسیار ضعیف', 'عالی']) {
           expect(
             find.text(endpoint),
@@ -433,12 +445,7 @@ void main() {
         final submitFinder = find.byKey(
           const ValueKey('job-satisfaction-submit'),
         );
-        await tester.scrollUntilVisible(
-          submitFinder,
-          160,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.pumpAndSettle();
+        await revealLazyListChild(tester, submitFinder);
         expect(submitFinder, findsOneWidget);
         expect(tester.widget<FilledButton>(submitFinder).onPressed, isNull);
         expect(tester.takeException(), isNull);
