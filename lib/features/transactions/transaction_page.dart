@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import '../evidence/evidence_picker.dart';
