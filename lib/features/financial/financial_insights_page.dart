@@ -1184,26 +1184,19 @@ class _SourceChart extends StatelessWidget {
     }
     final locale = Localizations.localeOf(context).languageCode;
     final english = locale == 'en';
-    final total = math.max(
-      1.0,
-      data.fold<double>(0, (sum, item) => sum + item.value),
-    );
+    final recordedAmounts = data.map((item) => item.value).whereType<double>().toList(growable: false);
+    final total = math.max(1.0, recordedAmounts.fold<double>(0, (sum, value) => sum + value));
     return ListView.separated(
       physics: const NeverScrollableScrollPhysics(),
       itemCount: math.min(5, data.length),
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final item = data[index];
-        final ratio = item.value / total;
+        final amountValue = item.value;
+        final ratio = amountValue == null ? null : amountValue / total;
         final sourceLabel = _sourceLabel(item.source);
-        final amount = HopeDisplayFormatter.money(
-          item.value.round(),
-          locale: locale,
-        );
-        final share = HopeDisplayFormatter.percent(
-          ratio * 100,
-          locale: locale,
-        );
+        final amount = amountValue == null ? '—' : HopeDisplayFormatter.money(amountValue.round(), locale: locale);
+        final share = ratio == null ? '—' : HopeDisplayFormatter.percent(ratio * 100, locale: locale);
         final semanticLabel = english
             ? '$sourceLabel: amount $amount; $share of recorded source activity.'
             : '$sourceLabel؛ مبلغ $amount؛ سهم $share از منابع ثبت‌شده';
@@ -1235,11 +1228,13 @@ class _SourceChart extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                 ),
-                const SizedBox(height: 5),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
-                  child: LinearProgressIndicator(value: ratio, minHeight: 8),
-                ),
+                if (ratio != null) ...[
+                  const SizedBox(height: 5),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(value: ratio, minHeight: 8),
+                  ),
+                ],
               ],
             ),
           ),
