@@ -86,7 +86,7 @@ void main() {
         find.byWidgetPredicate(
           (widget) =>
               widget is Semantics &&
-              widget.properties.label == 'کیفیت ارتباط' &&
+              widget.properties.label == 'ارتباط و هماهنگی' &&
               widget.properties.value == 'انتخاب نشده' &&
               widget.properties.hint == 'از ۱ تا ۵ انتخاب کنید',
         ),
