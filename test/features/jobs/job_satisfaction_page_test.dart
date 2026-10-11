@@ -108,6 +108,127 @@ void main() {
           reason: 'Both Persian rating controls should localize digit $digit.',
         );
       }
+
+      await tester.tap(find.text('۳').first);
+      await tester.pump();
+      expect(
+        tester.widgetList<SegmentedButton<int>>(
+          find.byType(SegmentedButton<int>),
+        ).first.selected,
+        <int>{3},
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'رضایت کلی' &&
+              widget.properties.value == '۳' &&
+              widget.properties.hint ==
+                  'از ۱ (کاملاً ناراضی) تا ۵ (کاملاً راضی) انتخاب کنید',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('۳').first);
+      await tester.pump();
+      expect(
+        tester.widgetList<SegmentedButton<int>>(
+          find.byType(SegmentedButton<int>),
+        ).first.selected,
+        isEmpty,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'رضایت کلی' &&
+              widget.properties.value == 'انتخاب نشده',
+        ),
+        findsOneWidget,
+      );
+
+      final agreement = tester.widget<SegmentedButton<bool>>(
+        find.byKey(const ValueKey('satisfaction-agreement-choice')),
+      );
+      expect(agreement.selected, isEmpty);
+      final submitFinder = find.byKey(
+        const ValueKey('job-satisfaction-submit'),
+      );
+      await tester.scrollUntilVisible(
+        submitFinder,
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      final submit = tester.widget<FilledButton>(submitFinder);
+      expect(submit.onPressed, isNull);
+      expect(repository.submitted, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'English rating controls expose endpoint guidance and keep incomplete submit disabled',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = _FakeJobSatisfactionRepository();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Provider<JobSatisfactionRepository>.value(
+            value: repository,
+            child: const JobSatisfactionPage(jobId: 'job-1'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final ratings = tester
+          .widgetList<SegmentedButton<int>>(find.byType(SegmentedButton<int>))
+          .toList(growable: false);
+      expect(ratings, hasLength(2));
+      expect(ratings.every((rating) => rating.selected.isEmpty), isTrue);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'Overall satisfaction' &&
+              widget.properties.value == 'Not selected' &&
+              widget.properties.hint ==
+                  'Choose a rating from 1 (Very dissatisfied) to 5 (Very satisfied)',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'Communication and coordination' &&
+              widget.properties.value == 'Not selected' &&
+              widget.properties.hint ==
+                  'Choose a rating from 1 (Very poor) to 5 (Excellent)',
+        ),
+        findsOneWidget,
+      );
+      for (final endpoint in [
+        'Very dissatisfied',
+        'Very satisfied',
+        'Very poor',
+        'Excellent',
+      ]) {
+        expect(find.text(endpoint), findsOneWidget);
+      }
       final agreement = tester.widget<SegmentedButton<bool>>(
         find.byKey(const ValueKey('satisfaction-agreement-choice')),
       );
