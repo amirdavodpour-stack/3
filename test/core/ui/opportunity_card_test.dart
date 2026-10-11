@@ -1322,8 +1322,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // The default standard variant intentionally renders the compact scan
+      // surface on this viewport; assert against that real amount paragraph.
       final amount = find.byKey(
-        const ValueKey('opportunity-card-standard-budget'),
+        const ValueKey('opportunity-card-budget-amount'),
       );
       expect(amount, findsOneWidget);
       final paragraph = tester.renderObject<RenderParagraph>(amount);
