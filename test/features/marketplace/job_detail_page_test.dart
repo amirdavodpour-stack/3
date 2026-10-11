@@ -214,6 +214,7 @@ Future<void> _pump(
   double width = 900,
   double height = 3400,
   double textScale = 1.0,
+  double? bottomSafeAreaInset,
   Locale locale = const Locale('en'),
 }) async {
   tester.view.physicalSize = Size(width, height);
@@ -250,10 +251,18 @@ Future<void> _pump(
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, child) {
-        if (textScale <= 1) return child!;
+        if (textScale <= 1 && bottomSafeAreaInset == null) return child!;
         final media = MediaQueryData.fromView(View.of(context));
         return MediaQuery(
-          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          data: media.copyWith(
+            textScaler: TextScaler.linear(textScale),
+            padding: bottomSafeAreaInset == null
+                ? media.padding
+                : media.padding.copyWith(bottom: bottomSafeAreaInset),
+            viewPadding: bottomSafeAreaInset == null
+                ? media.viewPadding
+                : media.viewPadding.copyWith(bottom: bottomSafeAreaInset),
+          ),
           child: child!,
         );
       },
@@ -842,9 +851,7 @@ void main() {
   testWidgets(
     'Wave 2 final Job Detail section and fixed CTA respect a 24dp system bottom inset at 1.5x',
     (tester) async {
-      tester.view.viewPadding = FakeViewPadding(bottom: 24);
-      addTearDown(tester.view.resetViewPadding);
-
+      const bottomInset = 24.0;
       const finalSectionKey = ValueKey('opportunity-detail-last-section');
       const listKey = ValueKey('opportunity-detail-content-list');
       const ctaKey = ValueKey('opportunity-detail-primary-cta');
@@ -867,8 +874,13 @@ void main() {
         width: 360,
         height: 640,
         textScale: 1.5,
+        bottomSafeAreaInset: bottomInset,
         locale: const Locale('fa'),
       );
+
+      final detailContext = tester.element(find.byType(JobDetailPage));
+      expect(MediaQuery.paddingOf(detailContext).bottom, bottomInset);
+      expect(MediaQuery.viewPaddingOf(detailContext).bottom, bottomInset);
 
       final list = find.byKey(listKey);
       final finalSection = find.byKey(finalSectionKey);
@@ -900,7 +912,7 @@ void main() {
       expect(ctaRect.height, greaterThanOrEqualTo(48));
       expect(
         ctaRect.bottom,
-        lessThanOrEqualTo(tester.view.physicalSize.height - 24),
+        lessThanOrEqualTo(tester.view.physicalSize.height - bottomInset),
         reason: 'The fixed CTA must remain above the 24dp system bottom inset.',
       );
       expect(cta.hitTestable(), findsOneWidget);
