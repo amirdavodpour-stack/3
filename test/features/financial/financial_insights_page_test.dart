@@ -129,6 +129,29 @@ class _MissingCashFlowSeriesInsightsRepository implements FinancialInsightsRepos
       });
 }
 
+
+class _MissingBalancePointInsightsRepository implements FinancialInsightsRepository {
+  const _MissingBalancePointInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      HopeFinancialInsights.fromMap(const {
+        'currency': 'TOMAN',
+        'range': {'months': 6},
+        'summary': {
+          'availableBalance': 0,
+          'lockedBalance': 0,
+          'totalInflow': 0,
+          'totalOutflow': 0,
+          'totalReserved': 0,
+          'netCashFlow': 0,
+        },
+        'monthlyCashFlow': [],
+        'balanceTrend': [{'date': '2026-10'}],
+        'bySource': [],
+      });
+}
+
 void main() {
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
@@ -764,5 +787,33 @@ void main() {
       }
     },
   );
+
+
+  testWidgets('balance-trend points without a recorded amount are not plotted as zero', (tester) async {
+    tester.view.physicalSize = const Size(360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(Provider<FinancialInsightsRepository>.value(
+      value: const _MissingBalancePointInsightsRepository(),
+      child: MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: const FinancialInsightsPage(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Balance trend'), 160,
+      scrollable: find.byType(Scrollable).first);
+    expect(find.text('No closing balance recorded for this period.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('financial-balance-chart-semantics')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
 }
