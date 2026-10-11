@@ -412,9 +412,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Inflow'), findsOneWidget);
+        // Snapshot labels precede the chart legend, which repeats these labels.
+        expect(find.text('Inflow').first, findsOneWidget);
         expect(find.text('500,000 TOMAN'), findsOneWidget);
-        expect(find.text('Outflow'), findsOneWidget);
+        expect(find.text('Outflow').first, findsOneWidget);
         expect(find.text('120,000 TOMAN'), findsOneWidget);
         expect(find.text('Net cash flow'), findsOneWidget);
 
