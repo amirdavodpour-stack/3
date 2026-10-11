@@ -198,7 +198,7 @@ class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.data, required this.money, required this.t, required this.compact});
 
   final HopeFinancialInsights data;
-  final String Function(int) money;
+  final String Function(Object?) money;
   final String Function(String, String) t;
   final bool compact;
 
@@ -219,22 +219,22 @@ class _SummaryCard extends StatelessWidget {
       ),
       (
         label: t('ورودی', 'Inflow'),
-        value: _money(summary.totalInflow),
+        value: money(summary.totalInflow),
         highlight: false,
       ),
       (
         label: t('خروجی', 'Outflow'),
-        value: _money(summary.totalOutflow),
+        value: money(summary.totalOutflow),
         highlight: false,
       ),
       (
         label: t('کل رزرو‌شده', 'Total reserved'),
-        value: _money(summary.totalReserved),
+        value: money(summary.totalReserved),
         highlight: false,
       ),
       (
         label: t('خالص جریان نقدی', 'Net cash flow'),
-        value: _money(summary.netCashFlow),
+        value: money(summary.netCashFlow),
         highlight: false,
       ),
     ];
