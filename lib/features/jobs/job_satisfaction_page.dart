@@ -264,6 +264,8 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                 _RatingField(
                   key: const ValueKey('satisfaction-overall-rating'),
                   label: _t('رضایت کلی', 'Overall satisfaction'),
+                  lowEndpoint: _t('کاملاً ناراضی', 'Very dissatisfied'),
+                  highEndpoint: _t('کاملاً راضی', 'Very satisfied'),
                   value: _overallRating,
                   onChanged: (value) => setState(() => _overallRating = value),
                 ),
@@ -316,6 +318,8 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                     'ارتباط و هماهنگی',
                     'Communication and coordination',
                   ),
+                  lowEndpoint: _t('بسیار ضعیف', 'Very poor'),
+                  highEndpoint: _t('عالی', 'Excellent'),
                   value: _communicationRating,
                   onChanged: (value) =>
                       setState(() => _communicationRating = value),
@@ -381,11 +385,15 @@ class _RatingField extends StatelessWidget {
   const _RatingField({
     super.key,
     required this.label,
+    required this.lowEndpoint,
+    required this.highEndpoint,
     required this.value,
     required this.onChanged,
   });
 
   final String label;
+  final String lowEndpoint;
+  final String highEndpoint;
   final int? value;
   final ValueChanged<int?> onChanged;
 
@@ -416,8 +424,8 @@ class _RatingField extends StatelessWidget {
                       locale: Localizations.localeOf(context).languageCode,
                     ),
               hint: Localizations.localeOf(context).languageCode == 'en'
-                  ? 'Choose a rating from 1 to 5'
-                  : 'از ۱ تا ۵ انتخاب کنید',
+                  ? 'Choose a rating from 1 ($lowEndpoint) to 5 ($highEndpoint)'
+                  : 'از ۱ ($lowEndpoint) تا ۵ ($highEndpoint) انتخاب کنید',
               child: SegmentedButton<int>(
                 segments: List.generate(
                   5,
@@ -439,6 +447,30 @@ class _RatingField extends StatelessWidget {
                 onSelectionChanged: (selected) =>
                     onChanged(selected.isEmpty ? null : selected.first),
               ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    lowEndpoint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    highEndpoint,
+                    textAlign: TextAlign.end,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
