@@ -403,8 +403,21 @@ class _RatingField extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 9),
-            SegmentedButton<int>(
-              segments: List.generate(
+            Semantics(
+              label: label,
+              value: value == null
+                  ? _t('انتخاب نشده', 'Not selected')
+                  : HopeDisplayFormatter.integer(
+                      value!,
+                      locale:
+                          Localizations.localeOf(context).languageCode,
+                    ),
+              hint: _t(
+                'از ۱ تا ۵ انتخاب کنید',
+                'Choose a rating from 1 to 5',
+              ),
+              child: SegmentedButton<int>(
+                segments: List.generate(
                 5,
                 (index) {
                   final number = index + 1;
@@ -421,8 +434,9 @@ class _RatingField extends StatelessWidget {
               ),
               selected: value == null ? <int>{} : <int>{value!},
               emptySelectionAllowed: true,
-              onSelectionChanged: (selected) =>
-                  onChanged(selected.isEmpty ? null : selected.first),
+                onSelectionChanged: (selected) =>
+                    onChanged(selected.isEmpty ? null : selected.first),
+              ),
             ),
           ],
         ),
