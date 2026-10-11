@@ -8,6 +8,14 @@ import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 
+double _contrastRatio(Color foreground, Color background) {
+  final luminances = [
+    foreground.computeLuminance(),
+    background.computeLuminance(),
+  ]..sort();
+  return (luminances.last + 0.05) / (luminances.first + 0.05);
+}
+
 void main() {
   test('HOPE theme compatibility facade resolves from the token source', () {
     expect(AppColors.primary, HopeV2Colors.primary);
@@ -15,6 +23,24 @@ void main() {
     expect(AppColors.warning, HopeV2Colors.warning);
     expect(HopeV2Touch.minimum, 48.0);
     expect(HopeV2Motion.standard, const Duration(milliseconds: 240));
+  });
+
+  test('FilledButton theme roles meet WCAG AA contrast in light and dark modes', () {
+    final light = AppTheme.light().colorScheme;
+    expect(light.primary, AppColors.primaryAction);
+    expect(light.onPrimary, Colors.white);
+    expect(
+      _contrastRatio(light.onPrimary, light.primary),
+      greaterThanOrEqualTo(4.5),
+    );
+
+    final dark = AppTheme.dark().colorScheme;
+    expect(dark.primary, AppColors.primaryDark);
+    expect(dark.onPrimary, AppColors.ink);
+    expect(
+      _contrastRatio(dark.onPrimary, dark.primary),
+      greaterThanOrEqualTo(4.5),
+    );
   });
 
   test('HOPE reference palette stays locked to the current visual North Star', () {
