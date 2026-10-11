@@ -488,57 +488,64 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: SizedBox(
               key: const ValueKey('home-pulse-compact-strip'),
-              height: 36,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      key: const ValueKey('home-pulse-compact-metrics'),
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (var index = 0; index < stats.length; index++) ...[
-                            if (index > 0) const SizedBox(width: 6),
-                            Container(
-                              constraints: const BoxConstraints(minHeight: 28),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: stats[index].accent.withValues(alpha: .12),
-                                borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  HopeIcon(
-                                    stats[index].icon,
-                                    size: 12,
-                                    color: stats[index].accent,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${stats[index].value} ${stats[index].label}',
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.clip,
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w800,
-                                          color: Theme.of(context).colorScheme.onSurface,
-                                        ),
-                                  ),
-                                ],
+              height: 64,
+              width: double.infinity,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final chipWidth = (constraints.maxWidth - 6) / 2;
+                  return Wrap(
+                    key: const ValueKey('home-pulse-compact-metrics'),
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      for (var index = 0; index < stats.length; index++)
+                        Semantics(
+                          label: '${stats[index].label}: ${stats[index].value}',
+                          child: Tooltip(
+                            message: '${stats[index].label}: ${stats[index].value}',
+                            child: SizedBox(
+                              key: ValueKey('home-pulse-compact-metric-$index'),
+                              width: chipWidth,
+                              child: Container(
+                                constraints: const BoxConstraints(minHeight: 28),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: stats[index].accent.withValues(alpha: .12),
+                                  borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+                                ),
+                                child: Row(
+                                  children: [
+                                    HopeIcon(
+                                      stats[index].icon,
+                                      size: 11,
+                                      color: stats[index].accent,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        '${stats[index].value} ${index == 3 ? _t(context, 'امانت', 'Escrow') : stats[index].label}',
+                                        maxLines: 1,
+                                        softWrap: false,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           );

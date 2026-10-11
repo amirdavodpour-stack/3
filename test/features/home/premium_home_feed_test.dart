@@ -229,15 +229,23 @@ void main() {
     final compactPulse = find.byKey(const ValueKey('home-pulse-compact-strip'));
     expect(compactPulse, findsOneWidget);
     expect(tester.getSize(compactPulse).height, lessThanOrEqualTo(64));
-    final metricsScrollable = find.descendant(
-      of: find.byKey(const ValueKey('home-pulse-compact-metrics')),
-      matching: find.byType(Scrollable),
-    );
-    expect(metricsScrollable, findsOneWidget);
+    final metrics = find.byKey(const ValueKey('home-pulse-compact-metrics'));
+    expect(metrics, findsOneWidget);
+    final metricsRect = tester.getRect(metrics);
+    final chipRects = <Rect>[];
+    for (var index = 0; index < 4; index++) {
+      final chip = find.byKey(ValueKey('home-pulse-compact-metric-$index'));
+      expect(chip, findsOneWidget);
+      final rect = tester.getRect(chip);
+      chipRects.add(rect);
+      expect(rect.left, greaterThanOrEqualTo(metricsRect.left));
+      expect(rect.right, lessThanOrEqualTo(metricsRect.right));
+      expect(rect.height, lessThanOrEqualTo(32));
+    }
     expect(
-      tester.state<ScrollableState>(metricsScrollable).position.maxScrollExtent,
-      lessThanOrEqualTo(1),
-      reason: 'All four compact Pulse metric chips must fit without horizontal clipping.',
+      chipRects.map((rect) => rect.top.round()).toSet().length,
+      2,
+      reason: 'Compact Pulse should arrange its four complete metrics in two rows.',
     );
     expect(tester.takeException(), isNull);
   });
