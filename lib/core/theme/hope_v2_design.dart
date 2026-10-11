@@ -76,6 +76,18 @@ class HopeV2Colors {
   /// Light warm-brown accent used only as a restrained atmospheric underlay.
   static const warmHalo = Color(0xFFC2A487);
   static const warmHaloDark = Color(0xFF826D59);
+
+  // Wallet balance hero roles. These aliases preserve the established deep
+  // slate-blue identity while keeping page-specific colors out of widgets.
+  static const walletBalanceHeroStart = Color(0xFF121726);
+  static const walletBalanceHeroMiddle = Color(0xFF1B2748);
+  static const walletBalanceHeroEnd = Color(0xFF0E131E);
+  static const walletBalanceOnHero = Color(0xFFFFFFFF);
+  static const walletBalanceOnHeroMuted = Color(0xB3FFFFFF);
+  static const walletBalanceOnHeroSubtle = Color(0x99FFFFFF);
+  static const walletBalanceMetricFill = Color(0x0BFFFFFF);
+  static const walletBalanceMetricBorder = Color(0x0FFFFFFF);
+  static const walletBalanceMetricBorderEmphasized = Color(0x3DFFFFFF);
 }
 
 /// Canonical icon vocabulary. Keep navigation and recurring product concepts

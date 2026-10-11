@@ -679,7 +679,7 @@ class _WalletPageState extends State<WalletPage> {
                 maxLines: 2,
                 softWrap: true,
                 style: TextStyle(
-                  color: emphasized ? Colors.white : Colors.white70,
+                  color: emphasized ? HopeV2Colors.walletBalanceOnHero : HopeV2Colors.walletBalanceOnHeroMuted,
                   fontSize: 12,
                   height: 1.12,
                   fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
@@ -691,7 +691,7 @@ class _WalletPageState extends State<WalletPage> {
                 maxLines: 2,
                 softWrap: true,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: HopeV2Colors.walletBalanceOnHero,
                   fontSize: emphasized ? 14 : 12,
                   height: 1.05,
                   fontWeight: FontWeight.w900,
@@ -718,14 +718,14 @@ class _WalletPageState extends State<WalletPage> {
                   Text(
                     _t('کل موجودی', 'Total balance'),
                     style: const TextStyle(
-                      color: Colors.white70,
+                      color: HopeV2Colors.walletBalanceOnHeroMuted,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   Text(
                     _t('شامل مبالغ قفل‌شده است', 'Includes locked funds'),
                     style: const TextStyle(
-                      color: Colors.white60,
+                      color: HopeV2Colors.walletBalanceOnHeroSubtle,
                       fontSize: 12,
                       height: 1.15,
                       fontWeight: FontWeight.w600,
@@ -739,7 +739,7 @@ class _WalletPageState extends State<WalletPage> {
                 maxLines: 2,
                 softWrap: true,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: HopeV2Colors.walletBalanceOnHero,
                   fontSize: compact ? 24 : (denseViewport ? 27 : 36),
                   height: 1.02,
                   fontWeight: FontWeight.w900,
@@ -796,12 +796,12 @@ class _WalletPageState extends State<WalletPage> {
           decoration: BoxDecoration(
             color: item.emphasized
                 ? HopeV2Colors.primary.withValues(alpha: .16)
-                : Colors.white.withValues(alpha: .045),
+                : HopeV2Colors.walletBalanceMetricFill,
             borderRadius: BorderRadius.circular(HopeV2Radii.sm),
             border: Border.all(
-              color: Colors.white.withValues(
-                alpha: item.emphasized ? .24 : .06,
-              ),
+              color: item.emphasized
+                  ? HopeV2Colors.walletBalanceMetricBorderEmphasized
+                  : HopeV2Colors.walletBalanceMetricBorder,
             ),
           ),
           child: Column(
@@ -813,7 +813,7 @@ class _WalletPageState extends State<WalletPage> {
                 softWrap: true,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: item.emphasized ? Colors.white : Colors.white70,
+                  color: item.emphasized ? HopeV2Colors.walletBalanceOnHero : HopeV2Colors.walletBalanceOnHeroMuted,
                   fontSize: 12,
                   height: 1.1,
                   fontWeight: FontWeight.w800,
@@ -826,7 +826,7 @@ class _WalletPageState extends State<WalletPage> {
                 softWrap: true,
                 overflow: TextOverflow.clip,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: HopeV2Colors.walletBalanceOnHero,
                   fontSize: item.emphasized ? 12.5 : 12,
                   height: 1.12,
                   fontWeight: FontWeight.w900,
@@ -869,9 +869,9 @@ class _WalletPageState extends State<WalletPage> {
             begin: AlignmentDirectional.topStart,
             end: AlignmentDirectional.bottomEnd,
             colors: [
-              Color(0xFF121726),
-              Color(0xFF1B2748),
-              Color(0xFF0E131E),
+              HopeV2Colors.walletBalanceHeroStart,
+              HopeV2Colors.walletBalanceHeroMiddle,
+              HopeV2Colors.walletBalanceHeroEnd,
             ],
             stops: [0, .58, 1],
           ),
@@ -899,7 +899,7 @@ class _WalletPageState extends State<WalletPage> {
                         child: Text(
                           _providerLabel('INTERNAL'),
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                color: Colors.white,
+                                color: HopeV2Colors.walletBalanceOnHero,
                                 fontWeight: FontWeight.w800,
                               ),
                         ),
@@ -914,7 +914,7 @@ class _WalletPageState extends State<WalletPage> {
                           ? HopeV2Icons.verified
                           : HopeV2Icons.pending,
                       label: _walletStatusLabel(wallet.status),
-                      color: Colors.white,
+                      color: HopeV2Colors.walletBalanceOnHero,
                       inverse: true,
                     ),
                   ),
@@ -941,7 +941,7 @@ class _WalletPageState extends State<WalletPage> {
                         ? HopeV2Icons.verified
                         : HopeV2Icons.pending,
                     label: _walletStatusLabel(wallet.status),
-                    color: Colors.white,
+                    color: HopeV2Colors.walletBalanceOnHero,
                     inverse: true,
                   ),
                 ],
