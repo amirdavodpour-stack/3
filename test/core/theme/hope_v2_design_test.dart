@@ -39,6 +39,35 @@ void main() {
     expect(HopeV2Colors.walletBalanceMetricBorderEmphasized, const Color(0x3DFFFFFF));
   });
 
+  testWidgets('semantic facade resolves error, border and surface from the active theme',
+      (tester) async {
+    late Color semanticError;
+    late Color themeError;
+    late Color semanticBorder;
+    late Color surfaceBorder;
+    late Color semanticSurface;
+    late Color themeSurface;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Builder(
+          builder: (context) {
+            themeError = Theme.of(context).colorScheme.error;
+            semanticError = HopeV2SemanticColors.error(context);
+            surfaceBorder = HopeV2Surfaces.border(context);
+            semanticBorder = HopeV2SemanticColors.border(context);
+            themeSurface = Theme.of(context).colorScheme.surface;
+            semanticSurface = HopeV2SemanticColors.surface(context);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    expect(semanticError, themeError);
+    expect(semanticBorder, surfaceBorder);
+    expect(semanticSurface, themeSurface);
+  });
+
   test('HOPE light surfaces stay lavender-led', () {
     expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0FB));
     expect(HopeV2Colors.pageLight, const Color(0xFFF1EDF8));
