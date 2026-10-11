@@ -564,15 +564,21 @@ class _BarChart extends StatelessWidget {
     final locale = Localizations.localeOf(context).languageCode;
     final english = locale.toLowerCase().startsWith('en');
     final values = data
-        .expand((month) => [month.inflowValue, month.outflowValue, month.reservedValue])
+        .expand((month) => [
+              month.inflowValue,
+              month.outflowValue,
+              month.reservedValue,
+            ])
+        .whereType<double>()
         .toList(growable: false);
     final maximum = values.isEmpty ? 0 : values.reduce((a, b) => a > b ? a : b);
     final scaleMaximum = _cashFlowAxisMaximum(maximum);
     final hasRecordedFlow = data.any(
-      (month) =>
-          month.inflowValue > 0 ||
-          month.outflowValue > 0 ||
-          month.reservedValue > 0,
+      (month) => [
+        month.inflowValue,
+        month.outflowValue,
+        month.reservedValue,
+      ].whereType<double>().any((value) => value > 0),
     );
 
     return Column(
@@ -807,7 +813,9 @@ class _BarChartPainter extends CustomPainter {
         data[i].reservedValue,
       ];
       for (var j = 0; j < bars.length; j++) {
-        final height = plotHeight * bars[j] / maxValue;
+        final amount = bars[j];
+        if (amount == null) continue;
+        final height = plotHeight * amount / maxValue;
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromLTWH(
