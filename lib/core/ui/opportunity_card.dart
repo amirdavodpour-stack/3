@@ -120,9 +120,8 @@ class OpportunityCard extends StatelessWidget {
             locale: locale,
           )} ${_t(context, 'تطابق', 'match')}';
 
-    return Semantics(
-      button: true,
-      label: [
+    return PressableScale(
+      semanticLabel: [
         title,
         opportunityKind,
         if (category.isNotEmpty) category,
@@ -130,9 +129,8 @@ class OpportunityCard extends StatelessWidget {
         if (amount.isNotEmpty) _formatAmount(amount, context),
         if (scoreLabel.isNotEmpty) scoreLabel,
       ].join(', '),
-      child: PressableScale(
-        onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
-        child: Container(
+      onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
+      child: Container(
           decoration: BoxDecoration(
             gradient: featured || featuredScan
                 ? LinearGradient(
@@ -198,7 +196,6 @@ class OpportunityCard extends StatelessWidget {
                   mediaUrl,
                   copy,
                 ),
-        ),
       ),
     );
   }
