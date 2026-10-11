@@ -682,8 +682,28 @@ void main() {
       await _advance(tester);
       expect(find.text('Step 2 of 5'), findsOneWidget);
 
-      final titleField = find.widgetWithText(TextField, 'Title');
+      final stepTwoList = find.byKey(
+        const ValueKey('create-opportunity-step-1'),
+      );
+      final stepTwoScrollable = find.descendant(
+        of: stepTwoList,
+        matching: find.byType(Scrollable),
+      ).first;
+      final titleField = find.descendant(
+        of: stepTwoList,
+        matching: find.widgetWithText(TextField, 'Title'),
+      );
+      await tester.scrollUntilVisible(
+        titleField,
+        140,
+        scrollable: stepTwoScrollable,
+        maxScrolls: 30,
+      );
       await tester.ensureVisible(titleField);
+      expect(
+        tester.widget<TextField>(titleField).decoration?.labelText,
+        'Title',
+      );
       await tester.tap(titleField);
       await tester.pumpAndSettle();
 
