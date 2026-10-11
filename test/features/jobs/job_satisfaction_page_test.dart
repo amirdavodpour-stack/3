@@ -78,7 +78,8 @@ void main() {
               widget is Semantics &&
               widget.properties.label == 'رضایت کلی' &&
               widget.properties.value == 'انتخاب نشده' &&
-              widget.properties.hint == 'از ۱ تا ۵ انتخاب کنید',
+              widget.properties.hint ==
+                  'از ۱ (کاملاً ناراضی) تا ۵ (کاملاً راضی) انتخاب کنید',
         ),
         findsOneWidget,
       );
@@ -88,10 +89,18 @@ void main() {
               widget is Semantics &&
               widget.properties.label == 'ارتباط و هماهنگی' &&
               widget.properties.value == 'انتخاب نشده' &&
-              widget.properties.hint == 'از ۱ تا ۵ انتخاب کنید',
+              widget.properties.hint ==
+                  'از ۱ (بسیار ضعیف) تا ۵ (عالی) انتخاب کنید',
         ),
         findsOneWidget,
       );
+      for (final endpoint in ['کاملاً ناراضی', 'کاملاً راضی', 'بسیار ضعیف', 'عالی']) {
+        expect(
+          find.text(endpoint),
+          findsOneWidget,
+          reason: 'Rating scales should explain endpoint $endpoint in visible copy.',
+        );
+      }
       for (final digit in ['۱', '۲', '۳', '۴', '۵']) {
         expect(
           find.text(digit),
