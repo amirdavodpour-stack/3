@@ -38,10 +38,15 @@ class HopeMonthlyCashFlow {
   final String reserved;
   final String net;
 
-  double? get inflowValue => double.tryParse(inflow);
-  double? get outflowValue => double.tryParse(outflow);
-  double? get reservedValue => double.tryParse(reserved);
-  double? get netValue => double.tryParse(net);
+  double? _recordedFiniteValue(String raw) {
+    final parsed = double.tryParse(raw);
+    return parsed != null && parsed.isFinite ? parsed : null;
+  }
+
+  double? get inflowValue => _recordedFiniteValue(inflow);
+  double? get outflowValue => _recordedFiniteValue(outflow);
+  double? get reservedValue => _recordedFiniteValue(reserved);
+  double? get netValue => _recordedFiniteValue(net);
 }
 
 class HopeBalancePoint {
