@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
@@ -1267,4 +1268,72 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'large financial ranges remain fully visible at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'long-budget-range',
+        'title': 'طراحی محصول',
+        'description': 'Long-value rendering regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'jobType': 'FIXED',
+        'budgetMin': '123456789012',
+        'budgetMax': '987654321098',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 224,
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.standard,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final amount = find.byKey(
+        const ValueKey('opportunity-card-standard-budget'),
+      );
+      expect(amount, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(amount);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'The complete financial range must remain visible at 2x text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
