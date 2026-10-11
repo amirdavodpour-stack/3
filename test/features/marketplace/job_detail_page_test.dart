@@ -645,6 +645,29 @@ void main() {
   });
 
   testWidgets(
+      'fractional recommendation scores normalize the same way as opportunity cards',
+      (tester) async {
+    final base = _job(kind: 'JOB', ownerId: 'u1');
+    final job = HopeJob.fromMap({
+      ...base.raw,
+      'recommendationScore': 0.94,
+    });
+
+    await _pump(
+      tester,
+      job: job,
+      userId: 'u9',
+      width: 390,
+      height: 1200,
+      locale: const Locale('en'),
+    );
+
+    expect(find.text('94%'), findsWidgets);
+    expect(find.text('1%'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
       'active compact decision strip exposes real recommendation dimensions and values',
       (tester) async {
     await _pump(
