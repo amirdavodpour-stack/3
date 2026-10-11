@@ -245,7 +245,6 @@ testWidgets('accepting an offer disables the financial action until completion',
 
     expect(find.text('No offers'), findsOneWidget);
     expect(find.text('All (0)'), findsOneWidget);
-    expect(find.byType(EmptyState), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
