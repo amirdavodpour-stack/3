@@ -123,4 +123,91 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'image-less opportunity variants stay readable at 390dp in English LTR at 1.5x',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'wave1-en-ltr-no-media',
+        'title': 'Flutter developer opportunity',
+        'description': 'No-media English LTR and large-text regression.',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'categoryId': 'software',
+        'category': 'Software',
+        'city': 'Berlin',
+        'monthlySalary': '2500000',
+        'recommendationScore': 0.94,
+      });
+
+      const variants = <OpportunityCardVariant>[
+        OpportunityCardVariant.compact,
+        OpportunityCardVariant.compactGrid,
+        OpportunityCardVariant.standard,
+        OpportunityCardVariant.featured,
+        OpportunityCardVariant.featuredScan,
+      ];
+
+      for (final variant in variants) {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: ThemeData(brightness: Brightness.dark),
+            home: MediaQuery(
+              data: MediaQueryData.fromView(tester.view).copyWith(
+                textScaler: const TextScaler.linear(1.5),
+              ),
+              child: Scaffold(
+                body: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: SizedBox(
+                      height: 300,
+                      child: OpportunityCard(job: job, variant: variant),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final fallback = find.byKey(
+          const ValueKey('opportunity-fallback-icon-container'),
+        );
+        expect(fallback, findsOneWidget, reason: 'variant: $variant');
+        final fallbackSize = tester.getSize(fallback);
+        expect(fallbackSize.width, lessThanOrEqualTo(32));
+        expect(fallbackSize.height, lessThanOrEqualTo(32));
+        expect(find.text('Flutter developer opportunity'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.button &&
+                (widget.label?.contains('Flutter developer opportunity') ?? false) &&
+                (widget.label?.contains('Berlin') ?? false),
+          ),
+          findsOneWidget,
+          reason: 'semantic title and true location must survive for $variant',
+        );
+        expect(tester.takeException(), isNull, reason: 'variant: $variant');
+      }
+    },
+  );
+
 }
