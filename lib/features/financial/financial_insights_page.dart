@@ -633,7 +633,10 @@ class _BarChart extends StatelessWidget {
                       constraints.maxWidth - axisWidth,
                       data.length * monthWidth,
                     ).toDouble();
-                    final labelHeight = constraints.maxHeight < 150 ? 20.0 : 24.0;
+                    final labelHeight = math.max(
+  constraints.maxHeight < 150 ? 20.0 : 24.0,
+  14.0 * textScale,
+).toDouble();
                     final axisTicks = textScale > 1.2
                         ? const [4, 2, 0]
                         : const [4, 3, 2, 1, 0];
@@ -793,7 +796,10 @@ class _BarChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final maxValue = math.max(1.0, scaleMaximum);
-    final labelHeight = size.height < 150 ? 20.0 : 24.0;
+    final labelHeight = math.max(
+      size.height < 150 ? 20.0 : 24.0,
+      14.0 * textScale,
+    ).toDouble();
     final plotTop = labelHeight + 3;
     final plotBottom =
         math.max(plotTop + 1, size.height - 3).toDouble();
@@ -910,7 +916,10 @@ class _LineChart extends StatelessWidget {
       builder: (context, constraints) {
         // Keep both axes and data derived from the same recorded point values.
         final textScale = MediaQuery.textScalerOf(context).scale(1);
-        final labelHeight = constraints.maxHeight < 150 ? 20.0 : 24.0;
+        final labelHeight = math.max(
+  constraints.maxHeight < 150 ? 20.0 : 24.0,
+  14.0 * textScale,
+).toDouble();
         final pointWidth = math.max(64.0, 64.0 * textScale);
         final axisWidth =
             math.max(70.0, 70.0 * math.min(textScale, 1.4)).toDouble();
