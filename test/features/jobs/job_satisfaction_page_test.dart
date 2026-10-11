@@ -80,7 +80,6 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _FakeJobSatisfactionRepository();
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -237,6 +236,7 @@ void main() {
       expect(submit.onPressed, isNull);
       expect(repository.submitted, isFalse);
       expect(tester.takeException(), isNull);
+      semantics.dispose();
     },
   );
 
@@ -249,7 +249,6 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _FakeJobSatisfactionRepository();
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -350,6 +349,7 @@ void main() {
       expect(submit.onPressed, isNull);
       expect(repository.submitted, isFalse);
       expect(tester.takeException(), isNull);
+      semantics.dispose();
     },
   );
 
@@ -362,7 +362,6 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _FakeJobSatisfactionRepository();
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -458,6 +457,7 @@ void main() {
       expect(repository.submittedCommunicationRating, 5);
       expect(repository.submittedReport, 'گزارش آزمایشی');
       expect(tester.takeException(), isNull);
+      semantics.dispose();
     },
   );
 
