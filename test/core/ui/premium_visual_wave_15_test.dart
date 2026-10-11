@@ -168,13 +168,17 @@ void main() {
     );
     expect(budgetAmount, findsOneWidget);
     final budgetText = tester.widget<Text>(budgetAmount);
-    expect(budgetText.maxLines, 3);
+    expect(
+      budgetText.maxLines,
+      isNull,
+      reason: 'Financial ranges must not be truncated by a fixed line cap at larger text scales.',
+    );
     expect(budgetText.softWrap, isTrue);
     expect(budgetText.data, contains('۲٬۵۰۰٬۰۰۰ تومان'));
     expect(
       tester.renderObject<RenderParagraph>(budgetAmount).didExceedMaxLines,
       isFalse,
-      reason: 'The featured card must expose the complete financial range, not an ellipsis.',
+      reason: 'The card must expose the complete financial range without max-line clipping.',
     );
     expect(tester.takeException(), isNull);
 
