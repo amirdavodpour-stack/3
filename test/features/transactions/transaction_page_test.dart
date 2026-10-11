@@ -584,6 +584,11 @@ void main() {
       expect(find.text('internal-ledger-reference-compact'), findsNothing);
       expect(find.text('Reference'), findsNothing);
 
+      // Force a fresh State/controller for the public-reference phase rather
+      // than reusing the internal-reference page's already-loaded payment.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
       final publicRepo = _FakeTx()
         ..payment = Future.value(HopePayment.fromMap({
           'id': 'payment-public-reference',
