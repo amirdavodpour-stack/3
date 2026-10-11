@@ -209,12 +209,12 @@ class _SummaryCard extends StatelessWidget {
     final metrics = <({String label, String value, bool highlight})>[
       (
         label: t('قابل استفاده', 'Available'),
-        value: money(summary.available),
+        value: money(summary.availableBalance),
         highlight: true,
       ),
       (
         label: t('قفل‌شده', 'Locked'),
-        value: money(summary.locked),
+        value: money(summary.lockedBalance),
         highlight: false,
       ),
       (
