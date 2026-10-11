@@ -551,12 +551,42 @@ void main() {
       final submitFinder = find.byKey(
         const ValueKey('job-satisfaction-submit'),
       );
-      await tester.scrollUntilVisible(
-        submitFinder,
-        240,
-        scrollable: find.byType(Scrollable).first,
+      await revealLazyListChild(tester, submitFinder);
+      expect(tester.widget<FilledButton>(submitFinder).onPressed, isNotNull);
+
+      // Clearing a previously selected agreement must return the semantic
+      // value to "Not selected" and disable submission even with both ratings.
+      await revealLazyListChild(tester, agreement);
+      await tester.tap(
+        find.descendant(of: agreement, matching: find.text('خیر')),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      expectRenderedSemantics(
+        tester,
+        label: 'کار مطابق توافق انجام شد؟',
+        value: 'انتخاب نشده',
+        hint: 'بله یا خیر را انتخاب کنید',
+      );
+      expect(
+        tester.widget<SegmentedButton<bool>>(agreement).selected,
+        isEmpty,
+      );
+
+      await revealLazyListChild(tester, submitFinder);
+      expect(tester.widget<FilledButton>(submitFinder).onPressed, isNull);
+
+      await revealLazyListChild(tester, agreement);
+      await tester.tap(
+        find.descendant(of: agreement, matching: find.text('خیر')),
+      );
+      await tester.pump();
+      expectRenderedSemantics(
+        tester,
+        label: 'کار مطابق توافق انجام شد؟',
+        value: 'خیر',
+        hint: 'بله یا خیر را انتخاب کنید',
+      );
+      await revealLazyListChild(tester, submitFinder);
       expect(tester.widget<FilledButton>(submitFinder).onPressed, isNotNull);
 
       await tester.tap(submitFinder);
