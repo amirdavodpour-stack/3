@@ -886,7 +886,10 @@ class _LineChart extends StatelessWidget {
     final color = Theme.of(context).colorScheme.primary;
     final locale = Localizations.localeOf(context).languageCode;
     final english = locale.toLowerCase().startsWith('en');
-    if (points.isEmpty) {
+    final recordedPoints = points
+        .where((point) => point.value != null)
+        .toList(growable: false);
+    if (recordedPoints.isEmpty) {
       return Center(
         key: const ValueKey('financial-balance-zero-state'),
         child: Padding(
@@ -912,7 +915,9 @@ class _LineChart extends StatelessWidget {
         final pointWidth = math.max(64.0, 64.0 * textScale);
         final axisWidth =
             math.max(70.0, 70.0 * math.min(textScale, 1.4)).toDouble();
-        final values = points.map((point) => point.value.toDouble()).toList();
+        final values = recordedPoints
+            .map((point) => point.value!)
+            .toList(growable: false);
         final rawMinimum = values.reduce((a, b) => a < b ? a : b);
         final rawMaximum = values.reduce((a, b) => a > b ? a : b);
         var scaleMinimum = rawMinimum;
@@ -939,7 +944,7 @@ class _LineChart extends StatelessWidget {
         ];
         final chartWidth = math.max(
           math.max(0.0, constraints.maxWidth - axisWidth),
-          points.length * pointWidth,
+          recordedPoints.length * pointWidth,
         ).toDouble();
 
         return Row(
@@ -996,16 +1001,16 @@ class _LineChart extends StatelessWidget {
                     label: (english
                             ? 'Balance trend; recorded closing balance in TOMAN. '
                             : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
-                        points.map((point) {
+                        recordedPoints.map((point) {
                           final value = HopeDisplayFormatter.money(
-                            point.value.round(),
+                            point.value!.round(),
                             locale: locale,
                           );
                           return '${point.date}: $value';
                         }).join('. '),
                     child: CustomPaint(
                       painter: _LineChartPainter(
-                        points,
+                        recordedPoints,
                         color,
                         color.withValues(alpha: .12),
                         Directionality.of(context),
@@ -1074,7 +1079,7 @@ class _LineChartPainter extends CustomPainter {
           ? size.width / 2
           : i * size.width / (points.length - 1);
       final y = plotBottom -
-          ((points[i].value - scaleMinimum) / range) * plotHeight;
+          ((points[i].value! - scaleMinimum) / range) * plotHeight;
       if (i == 0) {
         path.moveTo(x, y);
       } else {
