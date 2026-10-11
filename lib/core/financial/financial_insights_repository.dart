@@ -48,7 +48,10 @@ class HopeBalancePoint {
   const HopeBalancePoint({required this.date, required this.balance});
   final String date;
   final String balance;
-  double get value => double.tryParse(balance) ?? 0;
+  double? get value {
+    final parsed = double.tryParse(balance);
+    return parsed != null && parsed.isFinite ? parsed : null;
+  }
 }
 
 class HopeFinancialSource {
@@ -121,7 +124,7 @@ class HopeFinancialInsights {
           .whereType<Map>()
           .map((item) => HopeBalancePoint(
                 date: '${item['date'] ?? ''}',
-                balance: '${item['balance'] ?? 0}',
+                balance: item['balance'] == null ? '' : '${item['balance']}',
               ))
           .toList(growable: false),
       bySource: (map['bySource'] is List ? map['bySource'] as List : const [])
