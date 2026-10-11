@@ -94,6 +94,33 @@ class _RefreshFailureOfferRepository implements OfferRepository {
   Future<Map<String, dynamic>> accept(String offerId) => throw UnimplementedError();
 }
 
+
+class _FixedOfferRepository implements OfferRepository {
+  _FixedOfferRepository(this.offers);
+
+  final List<HopeOffer> offers;
+
+  @override
+  Future<List<HopeOffer>> listMine() async => offers;
+
+  @override
+  Future<List<HopeOffer>> listForJob(String jobId) async => offers;
+
+  @override
+  Future<HopeOffer> get(String offerId) => throw UnimplementedError();
+
+  @override
+  Future<HopeOffer> submit(
+    String jobId, {
+    required String price,
+    String message = '',
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Map<String, dynamic>> accept(String offerId) =>
+      throw UnimplementedError();
+}
+
 Widget _host(OfferRepository repository) => MaterialApp(
   locale: const Locale('en'),
   supportedLocales: const [Locale('fa'), Locale('en')],
@@ -209,4 +236,41 @@ testWidgets('accepting an offer disables the financial action until completion',
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('offers empty state is explicit when repository returns zero rows',
+      (tester) async {
+    final repository = _FixedOfferRepository(const []);
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No offers'), findsOneWidget);
+    expect(find.text('All (0)'), findsOneWidget);
+    expect(find.byType(EmptyState), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('offers filter isolates one status within a multi-row result',
+      (tester) async {
+    final repository = _FixedOfferRepository([
+      _offer(id: 'pending-offer', status: 'PENDING'),
+      _offer(id: 'accepted-offer', status: 'ACCEPTED'),
+      _offer(id: 'rejected-offer', status: 'REJECTED'),
+    ]);
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('pending-offer'), findsOneWidget);
+    expect(find.text('accepted-offer'), findsOneWidget);
+    expect(find.text('rejected-offer'), findsOneWidget);
+    expect(find.text('3 offers'), findsOneWidget);
+
+    await tester.tap(find.text('Accepted (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('accepted-offer'), findsOneWidget);
+    expect(find.text('pending-offer'), findsNothing);
+    expect(find.text('rejected-offer'), findsNothing);
+    expect(find.text('1 offers'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
