@@ -248,7 +248,7 @@ testWidgets('accepting an offer disables the financial action until completion',
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('offers filter isolates one status within a multi-row result',
+  testWidgets('offers filter isolates each status within a multi-row result',
       (tester) async {
     final repository = _FixedOfferRepository([
       _offer(id: 'pending-offer', status: 'PENDING'),
@@ -258,18 +258,35 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    expect(find.text('pending-offer'), findsOneWidget);
-    expect(find.text('accepted-offer'), findsOneWidget);
-    expect(find.text('rejected-offer'), findsOneWidget);
+    // The page uses a lazily built ListView. Do not require off-screen cards
+    // to exist in the widget tree before scrolling; the total and status
+    // counts are derived from the complete repository result.
     expect(find.text('3 offers'), findsOneWidget);
+    expect(find.text('All (3)'), findsOneWidget);
+    expect(find.text('Pending (1)'), findsOneWidget);
+    expect(find.text('Accepted (1)'), findsOneWidget);
+    expect(find.text('Rejected (1)'), findsOneWidget);
 
     await tester.tap(find.text('Accepted (1)'));
     await tester.pumpAndSettle();
-
     expect(find.text('accepted-offer'), findsOneWidget);
     expect(find.text('pending-offer'), findsNothing);
     expect(find.text('rejected-offer'), findsNothing);
-    expect(find.text('1 offers'), findsOneWidget);
+    // This header intentionally reports the total loaded records, not the
+    // currently filtered subset.
+    expect(find.text('3 offers'), findsOneWidget);
+
+    await tester.tap(find.text('Rejected (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('rejected-offer'), findsOneWidget);
+    expect(find.text('pending-offer'), findsNothing);
+    expect(find.text('accepted-offer'), findsNothing);
+
+    await tester.tap(find.text('Pending (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('pending-offer'), findsOneWidget);
+    expect(find.text('accepted-offer'), findsNothing);
+    expect(find.text('rejected-offer'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
