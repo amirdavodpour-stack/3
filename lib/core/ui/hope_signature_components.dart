@@ -520,6 +520,8 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
       final formatted = HopeDisplayFormatter.amount(value, locale: locale);
       return formatted == '—' ? value : formatted;
     }
+    final matchPercent =
+        HopeDisplayFormatter.matchPercentage(job.recommendationScore);
     final dimensions = <({String id, String label, String value, Color color})>[
       (
         id: 'work-mode',
@@ -549,10 +551,10 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
         (
           id: 'match',
           label: _t(context, 'تطبیق', 'Match'),
-          value: job.recommendationScore == null
+          value: matchPercent == null
               ? _t(context, 'ثبت نشده', 'Not scored')
               : HopeDisplayFormatter.percent(
-                  job.recommendationScore!.clamp(0, 100),
+                  matchPercent.round(),
                   locale: locale,
                 ),
           color: primary,

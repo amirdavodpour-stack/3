@@ -167,7 +167,7 @@ void main() {
 
     expect(find.text('طراحی اپ محصول'), findsOneWidget);
     expect(find.text('استودیو هُپ'), findsOneWidget);
-    expect(find.text('91% تطابق'), findsOneWidget);
+    expect(find.text('۹۱٪ تطابق'), findsOneWidget);
     expect(find.text('دورکاری'), findsOneWidget);
     expect(find.text('تهران'), findsOneWidget);
     expect(find.text('1.5 km'), findsOneWidget);
@@ -381,7 +381,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('توسعه‌دهنده Flutter'), findsOneWidget);
-      expect(find.text('94% تطابق'), findsOneWidget);
+      expect(find.text('۹۴٪ تطابق'), findsOneWidget);
       expect(
         tester.getSize(find.byType(OpportunityCard)).height,
         lessThan(280),
