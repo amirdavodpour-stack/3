@@ -85,16 +85,22 @@ class HopeFinancialInsights {
   factory HopeFinancialInsights.fromMap(Map<String, dynamic> map) {
     final rawSummary = map['summary'];
     final rawRange = map['range'];
+    String summaryValue(String key) {
+      if (rawSummary is! Map) return '';
+      final value = rawSummary[key];
+      return value == null ? '' : '$value';
+    }
+
     return HopeFinancialInsights(
       currency: '${map['currency'] ?? 'TOMAN'}',
       months: int.tryParse('${rawRange is Map ? rawRange['months'] : 6}') ?? 6,
       summary: HopeFinancialSummary(
-        availableBalance: '${rawSummary is Map ? rawSummary['availableBalance'] : 0}',
-        lockedBalance: '${rawSummary is Map ? rawSummary['lockedBalance'] : 0}',
-        totalInflow: '${rawSummary is Map ? rawSummary['totalInflow'] : 0}',
-        totalOutflow: '${rawSummary is Map ? rawSummary['totalOutflow'] : 0}',
-        totalReserved: '${rawSummary is Map ? rawSummary['totalReserved'] : 0}',
-        netCashFlow: '${rawSummary is Map ? rawSummary['netCashFlow'] : 0}',
+        availableBalance: summaryValue('availableBalance'),
+        lockedBalance: summaryValue('lockedBalance'),
+        totalInflow: summaryValue('totalInflow'),
+        totalOutflow: summaryValue('totalOutflow'),
+        totalReserved: summaryValue('totalReserved'),
+        netCashFlow: summaryValue('netCashFlow'),
       ),
       monthlyCashFlow: (map['monthlyCashFlow'] is List
               ? map['monthlyCashFlow'] as List
