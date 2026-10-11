@@ -44,6 +44,28 @@ class _Wave24InsightsRepository implements FinancialInsightsRepository {
       );
 }
 
+class _EmptyBalanceInsightsRepository implements FinancialInsightsRepository {
+  const _EmptyBalanceInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      const HopeFinancialInsights(
+        currency: 'TOMAN',
+        months: 6,
+        summary: HopeFinancialSummary(
+          availableBalance: '0',
+          lockedBalance: '0',
+          totalInflow: '0',
+          totalOutflow: '0',
+          totalReserved: '0',
+          netCashFlow: '0',
+        ),
+        monthlyCashFlow: [],
+        balanceTrend: [],
+        bySource: [],
+      );
+}
+
 void main() {
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
@@ -419,6 +441,14 @@ void main() {
           await tester.drag(pageList, const Offset(0, -400));
           await tester.pumpAndSettle();
         }
+        final balanceAxis = find.byKey(
+          const ValueKey('financial-balance-y-axis'),
+        );
+        expect(balanceAxis, findsOneWidget);
+        expect(
+          find.descendant(of: balanceAxis, matching: find.byType(Text)),
+          findsNWidgets(3),
+        );
         final balance = tester.getSemantics(
           find.byKey(const ValueKey('financial-balance-chart-semantics')),
         );
@@ -433,6 +463,49 @@ void main() {
       } finally {
         handle.dispose();
       }
+    },
+  );
+
+  testWidgets(
+    'balance trend shows an explicit no-data state when no closing balances exist',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _EmptyBalanceInsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final zeroState = find.byKey(
+        const ValueKey('financial-balance-zero-state'),
+      );
+      await tester.scrollUntilVisible(
+        zeroState,
+        160,
+        scrollable: find.byKey(const ValueKey('financial-insights-list')),
+      );
+      expect(zeroState, findsOneWidget);
+      expect(
+        find.text('No closing balance recorded for this period.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 

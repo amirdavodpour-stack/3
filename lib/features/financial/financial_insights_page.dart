@@ -166,8 +166,8 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                             _ChartCard(
                               title: _t('روند موجودی', 'Balance trend'),
                               subtitle: _t(
-                                'آخرین موجودی ثبت‌شده در لجر',
-                                'Recorded closing balance from the ledger',
+                                'آخرین موجودی ثبت‌شده در لجر (تومان)',
+                                'Recorded closing balance from the ledger (TOMAN)',
                               ),
                               child: _LineChart(points: data.balanceTrend),
                             ),
@@ -876,49 +876,140 @@ class _LineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
+    final locale = Localizations.localeOf(context).languageCode;
+    final english = locale.toLowerCase().startsWith('en');
+    if (points.isEmpty) {
+      return Center(
+        key: const ValueKey('financial-balance-zero-state'),
+        child: Padding(
+          padding: const EdgeInsets.all(HopeV2Spacing.sm),
+          child: Text(
+            english
+                ? 'No closing balance recorded for this period.'
+                : 'برای این دوره مانده پایانی ثبت نشده است.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        // A stable minimum plot width prevents date labels from colliding on
-        // narrow screens while retaining the exact backend point sequence.
+        // Keep both axes and data derived from the same recorded point values.
         final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final labelHeight = constraints.maxHeight < 150 ? 20.0 : 24.0;
         final pointWidth = math.max(64.0, 64.0 * textScale);
-        final chartWidth =
-            math.max(constraints.maxWidth, points.length * pointWidth).toDouble();
-        return SingleChildScrollView(
-          key: const ValueKey('financial-balance-chart-scroll'),
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: chartWidth,
-            height: constraints.maxHeight,
-            child: Semantics(
-              key: const ValueKey('financial-balance-chart-semantics'),
-              container: true,
-              label: points.isEmpty
-                  ? (Localizations.localeOf(context).languageCode == 'en'
-                      ? 'Balance trend: no recorded closing balances. Amounts are in TOMAN.'
-                      : 'روند موجودی: مانده پایانی ثبت‌شده‌ای وجود ندارد. مبالغ به تومان هستند.')
-                  : (Localizations.localeOf(context).languageCode == 'en'
-                          ? 'Balance trend; recorded closing balance in TOMAN. '
-                          : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
-                      points.map((point) {
-                        final value = HopeDisplayFormatter.money(
-                          point.value.round(),
-                          locale: Localizations.localeOf(context).languageCode,
-                        );
-                        return '${point.date}: $value';
-                      }).join('؛ '),
-              child: CustomPaint(
-                painter: _LineChartPainter(
-                  points,
-                  color,
-                  color.withValues(alpha: .12),
-                  Directionality.of(context),
-                  textScale,
-                ),
-                child: const SizedBox.expand(),
+        final axisWidth = math.max(70.0, 70.0 * math.min(textScale, 1.4));
+        final values = points.map((point) => point.value.toDouble()).toList();
+        final rawMinimum = values.reduce(math.min);
+        final rawMaximum = values.reduce(math.max);
+        var scaleMinimum = rawMinimum;
+        var scaleMaximum = rawMaximum;
+
+        // A flat series still needs a meaningful visual range; these are axis
+        // bounds only and never replace or alter the recorded balance values.
+        if (rawMinimum == rawMaximum) {
+          if (rawMaximum == 0) {
+            scaleMinimum = 0;
+            scaleMaximum = 4;
+          } else {
+            final padding = math.max(1.0, rawMaximum.abs() * .1);
+            scaleMinimum = rawMinimum >= 0
+                ? math.max(0.0, rawMinimum - padding)
+                : rawMinimum - padding;
+            scaleMaximum = rawMaximum + padding;
+          }
+        }
+        final axisValues = <int>[
+          scaleMaximum.round(),
+          ((scaleMaximum + scaleMinimum) / 2).round(),
+          scaleMinimum.round(),
+        ];
+        final chartWidth = math.max(
+          math.max(0.0, constraints.maxWidth - axisWidth),
+          points.length * pointWidth,
+        ).toDouble();
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: axisWidth,
+              height: constraints.maxHeight,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: labelHeight),
+                      child: Column(
+                        key: const ValueKey('financial-balance-y-axis'),
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final tick in axisValues)
+                            Text(
+                              _cashFlowAxisLabel(tick, locale),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    fontSize: 10,
+                                    height: 1,
+                                    fontWeight: FontWeight.w700,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+            Expanded(
+              child: SingleChildScrollView(
+                key: const ValueKey('financial-balance-chart-scroll'),
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: chartWidth,
+                  height: constraints.maxHeight,
+                  child: Semantics(
+                    key: const ValueKey('financial-balance-chart-semantics'),
+                    container: true,
+                    label: 'Balance trend; recorded closing balance in TOMAN. ' +
+                        points.map((point) {
+                          final value = HopeDisplayFormatter.money(
+                            point.value.round(),
+                            locale: locale,
+                          );
+                          return '${point.date}: $value';
+                        }).join('. '),
+                    child: CustomPaint(
+                      painter: _LineChartPainter(
+                        points,
+                        color,
+                        color.withValues(alpha: .12),
+                        Directionality.of(context),
+                        textScale,
+                        scaleMinimum,
+                        scaleMaximum,
+                        labelHeight,
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -932,32 +1023,45 @@ class _LineChartPainter extends CustomPainter {
     this.fillColor,
     this.textDirection,
     this.textScale,
+    this.scaleMinimum,
+    this.scaleMaximum,
+    this.labelHeight,
   );
+
   final List<HopeBalancePoint> points;
   final Color color;
   final Color fillColor;
   final TextDirection textDirection;
   final double textScale;
+  final double scaleMinimum;
+  final double scaleMaximum;
+  final double labelHeight;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (points.isEmpty) return;
-    final values = points.map((p) => p.value).toList();
-    final maxValue = math.max(1.0, values.reduce(math.max));
-    final minValue = values.reduce(math.min);
-    final range = math.max(1.0, maxValue - minValue);
-    final labelHeight = size.height < 150 ? 20.0 : 24.0;
-    final plotHeight = math.max(1.0, size.height - labelHeight).toDouble();
-    final labelWidth = math.max(1.0, size.width / math.max(1, points.length) - 2).toDouble();
-    final path = Path();
+    final range = math.max(1.0, scaleMaximum - scaleMinimum);
+    final plotTop = 7.0;
+    final plotBottom = math.max(plotTop + 1, size.height - labelHeight - 7);
+    final plotHeight = math.max(1.0, plotBottom - plotTop);
+    final labelWidth =
+        math.max(1.0, size.width / math.max(1, points.length) - 2).toDouble();
 
+    final grid = Paint()
+      ..color = color.withValues(alpha: .14)
+      ..strokeWidth = 1;
+    for (var tick = 0; tick <= 2; tick++) {
+      final y = plotBottom - plotHeight * tick / 2;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+    }
+
+    final path = Path();
     for (var i = 0; i < points.length; i++) {
       final x = points.length == 1
           ? size.width / 2
           : i * size.width / (points.length - 1);
-      final y = plotHeight -
-          ((points[i].value - minValue) / range) * (plotHeight - 14) -
-          7;
+      final y = plotBottom -
+          ((points[i].value - scaleMinimum) / range) * plotHeight;
       if (i == 0) {
         path.moveTo(x, y);
       } else {
@@ -974,8 +1078,8 @@ class _LineChartPainter extends CustomPainter {
 
     if (points.length > 1) {
       final fill = Path.from(path)
-        ..lineTo(size.width, plotHeight)
-        ..lineTo(0, plotHeight)
+        ..lineTo(size.width, plotBottom)
+        ..lineTo(0, plotBottom)
         ..close();
       canvas.drawPath(
         fill,
@@ -984,6 +1088,7 @@ class _LineChartPainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
     }
+
     for (var i = 0; i < points.length; i++) {
       final painter = TextPainter(
         text: TextSpan(
@@ -999,11 +1104,13 @@ class _LineChartPainter extends CustomPainter {
         maxLines: 1,
         ellipsis: '…',
       )..layout(maxWidth: labelWidth);
-      final pointX = points.length == 1 ? size.width / 2 : i * size.width / (points.length - 1);
+      final pointX = points.length == 1
+          ? size.width / 2
+          : i * size.width / (points.length - 1);
       final x = (pointX - painter.width / 2)
           .clamp(0.0, math.max(0.0, size.width - painter.width))
           .toDouble();
-      painter.paint(canvas, Offset(x, plotHeight + 1));
+      painter.paint(canvas, Offset(x, size.height - labelHeight + 1));
     }
   }
 
@@ -1013,7 +1120,10 @@ class _LineChartPainter extends CustomPainter {
       oldDelegate.color != color ||
       oldDelegate.fillColor != fillColor ||
       oldDelegate.textDirection != textDirection ||
-      oldDelegate.textScale != textScale;
+      oldDelegate.textScale != textScale ||
+      oldDelegate.scaleMinimum != scaleMinimum ||
+      oldDelegate.scaleMaximum != scaleMaximum ||
+      oldDelegate.labelHeight != labelHeight;
 }
 
 class _SourceChart extends StatelessWidget {
