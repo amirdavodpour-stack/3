@@ -563,6 +563,9 @@ void main() {
         find.text('No closing balance recorded for this period.'),
         findsOneWidget,
       );
+      // A recorded zero remains zero; only malformed/missing values use the
+      // explicit unrecorded fallback covered by the adjacent regression test.
+      expect(find.text('0 TOMAN'), findsNWidgets(6));
       expect(tester.takeException(), isNull);
     },
   );
