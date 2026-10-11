@@ -839,7 +839,7 @@ class _WalletPageState extends State<WalletPage> {
 
       Widget metricsBlock() => LayoutBuilder(
             builder: (context, constraints) {
-              const gap = 6.0;
+              const gap = 4.0;
               final cellWidth = (constraints.maxWidth - gap) / 2;
               return Wrap(
                 spacing: gap,
@@ -859,9 +859,9 @@ class _WalletPageState extends State<WalletPage> {
         key: const ValueKey('wallet-balance-hero'),
         padding: EdgeInsets.fromLTRB(
           14,
-          compact ? 4 : 10,
+          compact ? 2 : 10,
           14,
-          compact ? 4 : 10,
+          compact ? 2 : 10,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
@@ -946,7 +946,7 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                 ],
               ),
-            SizedBox(height: denseViewport ? 4 : 8),
+            SizedBox(height: denseViewport ? 2 : 8),
             if (mediumViewport)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -958,7 +958,7 @@ class _WalletPageState extends State<WalletPage> {
               )
             else ...[
               totalBlock(),
-              SizedBox(height: compact ? 3 : 6),
+              SizedBox(height: compact ? 1 : 6),
               metricsBlock(),
             ],
           ],
