@@ -104,6 +104,31 @@ class _MissingSummaryInsightsRepository implements FinancialInsightsRepository {
       });
 }
 
+
+class _MissingCashFlowSeriesInsightsRepository implements FinancialInsightsRepository {
+  const _MissingCashFlowSeriesInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      HopeFinancialInsights.fromMap(const {
+        'currency': 'TOMAN',
+        'range': {'months': 6},
+        'summary': {
+          'availableBalance': 0,
+          'lockedBalance': 0,
+          'totalInflow': 0,
+          'totalOutflow': 0,
+          'totalReserved': 0,
+          'netCashFlow': 0,
+        },
+        'monthlyCashFlow': [
+          {'month': '2026-10', 'label': 'October', 'outflow': '120'},
+        ],
+        'balanceTrend': [],
+        'bySource': [],
+      });
+}
+
 void main() {
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
@@ -672,6 +697,71 @@ void main() {
       expect(find.text('0 TOMAN'), findsNothing);
       expect(find.text('—'), findsNWidgets(6));
       expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'missing monthly cash-flow series remain unrecorded in details and chart semantics',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        tester.view.physicalSize = const Size(360, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _MissingCashFlowSeriesInsightsRepository(),
+            child: MaterialApp(
+              locale: const Locale('en'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final toggle = find.byKey(
+          const ValueKey('financial-cashflow-exact-values-toggle'),
+        );
+        await tester.scrollUntilVisible(
+          toggle,
+          140,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(toggle);
+        await tester.pumpAndSettle();
+
+        final details = find.byKey(
+          const ValueKey('financial-cashflow-details-2026-10'),
+        );
+        expect(
+          find.descendant(of: details, matching: find.text('—')),
+          findsNWidgets(2),
+        );
+        expect(
+          find.descendant(of: details, matching: find.text('120 TOMAN')),
+          findsOneWidget,
+        );
+
+        final chart = tester.getSemantics(
+          find.byKey(const ValueKey('financial-cashflow-chart-semantics')),
+        );
+        expect(chart.label, contains('inflow —'));
+        expect(chart.label, contains('outflow 120 TOMAN'));
+        expect(chart.label, contains('reserved —'));
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
     },
   );
 
