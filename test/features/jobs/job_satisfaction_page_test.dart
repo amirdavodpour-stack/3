@@ -354,6 +354,72 @@ void main() {
   );
 
   testWidgets(
+    'rating endpoints remain readable and submit stays reachable on compact enlarged-text layouts',
+    (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = _FakeJobSatisfactionRepository();
+      final scenarios = <({Size size, double scale})>[
+        (size: const Size(320, 568), scale: 1.5),
+        (size: const Size(360, 640), scale: 2.0),
+      ];
+
+      for (final scenario in scenarios) {
+        tester.view.physicalSize = scenario.size;
+        tester.view.devicePixelRatio = 1;
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: scenario.size,
+                devicePixelRatio: 1,
+                textScaler: TextScaler.linear(scenario.scale),
+              ),
+              child: Provider<JobSatisfactionRepository>.value(
+                value: repository,
+                child: const JobSatisfactionPage(jobId: 'job-responsive'),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        for (final endpoint in [
+          'کاملاً ناراضی',
+          'کاملاً راضی',
+          'بسیار ضعیف',
+          'عالی',
+        ]) {
+          expect(find.text(endpoint), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+
+        final submitFinder = find.byKey(
+          const ValueKey('job-satisfaction-submit'),
+        );
+        await tester.scrollUntilVisible(
+          submitFinder,
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        expect(submitFinder, findsOneWidget);
+        expect(tester.widget<FilledButton>(submitFinder).onPressed, isNull);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
     'complete satisfaction feedback enables submit and forwards exact values',
     (tester) async {
       tester.view.physicalSize = const Size(420, 1000);
