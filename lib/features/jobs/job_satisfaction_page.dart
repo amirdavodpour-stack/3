@@ -404,36 +404,38 @@ class _RatingField extends StatelessWidget {
             ),
             const SizedBox(height: 9),
             Semantics(
+              container: true,
+              explicitChildNodes: true,
               label: label,
               value: value == null
-                  ? _t('انتخاب نشده', 'Not selected')
+                  ? (Localizations.localeOf(context).languageCode == 'en'
+                      ? 'Not selected'
+                      : 'انتخاب نشده')
                   : HopeDisplayFormatter.integer(
                       value!,
-                      locale:
-                          Localizations.localeOf(context).languageCode,
+                      locale: Localizations.localeOf(context).languageCode,
                     ),
-              hint: _t(
-                'از ۱ تا ۵ انتخاب کنید',
-                'Choose a rating from 1 to 5',
-              ),
+              hint: Localizations.localeOf(context).languageCode == 'en'
+                  ? 'Choose a rating from 1 to 5'
+                  : 'از ۱ تا ۵ انتخاب کنید',
               child: SegmentedButton<int>(
                 segments: List.generate(
-                5,
-                (index) {
-                  final number = index + 1;
-                  return ButtonSegment<int>(
-                    value: number,
-                    label: Text(
-                      HopeDisplayFormatter.integer(
-                        number,
-                        locale: Localizations.localeOf(context).languageCode,
+                  5,
+                  (index) {
+                    final number = index + 1;
+                    return ButtonSegment<int>(
+                      value: number,
+                      label: Text(
+                        HopeDisplayFormatter.integer(
+                          number,
+                          locale: Localizations.localeOf(context).languageCode,
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              selected: value == null ? <int>{} : <int>{value!},
-              emptySelectionAllowed: true,
+                    );
+                  },
+                ),
+                selected: value == null ? <int>{} : <int>{value!},
+                emptySelectionAllowed: true,
                 onSelectionChanged: (selected) =>
                     onChanged(selected.isEmpty ? null : selected.first),
               ),
