@@ -230,7 +230,7 @@ testWidgets('accepting an offer disables the financial action until completion',
   });
 
   testWidgets(
-    'offer status filters wrap cleanly within a 360dp viewport',
+    'offer status filters stay in one horizontal rail within a 360dp viewport',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1;
@@ -240,9 +240,20 @@ testWidgets('accepting an offer disables the financial action until completion',
       await tester.pumpWidget(_host(repository));
       await tester.pumpAndSettle();
 
-      final group = find.byKey(const ValueKey('offers-status-filter-group'));
-      expect(group, findsOneWidget);
-      expect(tester.widget<Wrap>(group).direction, Axis.horizontal);
+      final rail = find.byKey(
+        const ValueKey('offers-status-filter-scroll'),
+      );
+      expect(rail, findsOneWidget);
+      expect(
+        tester.widget<SingleChildScrollView>(rail).scrollDirection,
+        Axis.horizontal,
+      );
+      expect(
+        tester.getSize(rail).height,
+        lessThan(64),
+        reason: 'The status filters should not wrap into a second row above offers.',
+      );
+
       final filterLabels = [
         find.textContaining('All ('),
         find.textContaining('Pending ('),
@@ -251,6 +262,8 @@ testWidgets('accepting an offer disables the financial action until completion',
       ];
       for (final filter in filterLabels) {
         expect(filter, findsOneWidget);
+        await tester.ensureVisible(filter);
+        await tester.pumpAndSettle();
         final bounds = tester.getRect(filter);
         expect(bounds.left, greaterThanOrEqualTo(0));
         expect(bounds.right, lessThanOrEqualTo(360));
