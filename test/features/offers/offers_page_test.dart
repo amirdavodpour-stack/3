@@ -311,4 +311,56 @@ testWidgets('accepting an offer disables the financial action until completion',
     expect(find.text('rejected-offer'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'offers status filters remain a single horizontal rail on compact viewports',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _host(
+          _FixedOfferRepository([
+            _offer(id: 'pending-offer', status: 'PENDING'),
+            _offer(id: 'accepted-offer', status: 'ACCEPTED'),
+            _offer(id: 'rejected-offer', status: 'REJECTED'),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(
+        const ValueKey('offers-status-filter-scroll'),
+      );
+      expect(rail, findsOneWidget);
+      expect(
+        tester.widget<SingleChildScrollView>(rail).scrollDirection,
+        Axis.horizontal,
+      );
+      expect(
+        tester.getSize(rail).height,
+        lessThan(64),
+        reason: 'Status filters must not consume a second wrapping row above offers.',
+      );
+
+      for (final label in [
+        'All (3)',
+        'Pending (1)',
+        'Accepted (1)',
+        'Rejected (1)',
+      ]) {
+        expect(find.text(label), findsOneWidget);
+      }
+
+      await tester.ensureVisible(find.text('Rejected (1)'));
+      await tester.pumpAndSettle();
+      final rejectedBounds = tester.getRect(find.text('Rejected (1)'));
+      expect(rejectedBounds.left, greaterThanOrEqualTo(0));
+      expect(rejectedBounds.right, lessThanOrEqualTo(360));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
