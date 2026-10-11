@@ -191,6 +191,56 @@ Future<void> _advance(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _advanceActiveStep(WidgetTester tester) async {
+  Finder? activeStepList;
+  var activeStepIndex = -1;
+  for (var index = 0; index < 5; index++) {
+    final candidate = find.byKey(
+      ValueKey('create-opportunity-step-$index'),
+    );
+    if (candidate.evaluate().isNotEmpty) {
+      activeStepList = candidate;
+      activeStepIndex = index;
+      break;
+    }
+  }
+  expect(activeStepList, isNotNull, reason: 'An active creation step must be mounted.');
+
+  final activeList = activeStepList!;
+  final next = find.descendant(
+    of: activeList,
+    matching: find.byKey(const ValueKey('create-opportunity-next-step')),
+  );
+  final activeScrollable = find.descendant(
+    of: activeList,
+    matching: find.byType(Scrollable),
+  ).first;
+
+  await tester.scrollUntilVisible(
+    next,
+    140,
+    scrollable: activeScrollable,
+    maxScrolls: 30,
+  );
+  await tester.ensureVisible(next);
+  await tester.pumpAndSettle();
+  expect(
+    next.hitTestable(),
+    findsOneWidget,
+    reason: 'Next must be hit-testable within active step $activeStepIndex.',
+  );
+  await tester.tap(next);
+  await tester.pumpAndSettle();
+
+  expect(
+    find.byKey(
+      ValueKey('create-opportunity-step-${activeStepIndex + 1}'),
+    ),
+    findsOneWidget,
+    reason: 'Next must mount step ${activeStepIndex + 1} of 5.',
+  );
+}
+
 Future<void> _advanceToReview(WidgetTester tester) async {
   for (var step = 0; step < 4; step++) {
     await _advance(tester);
@@ -679,7 +729,7 @@ void main() {
       var pageContext = tester.element(find.byType(CreateJobPage));
       expect(MediaQuery.viewInsetsOf(pageContext).bottom, 320);
 
-      await _advance(tester);
+      await _advanceActiveStep(tester);
       expect(find.text('Step 2 of 5'), findsOneWidget);
 
       final stepTwoList = find.byKey(
