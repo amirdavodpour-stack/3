@@ -838,4 +838,75 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'Wave 2 final Job Detail section and fixed CTA respect a 24dp system bottom inset at 1.5x',
+    (tester) async {
+      tester.view.viewPadding = FakeViewPadding(bottom: 24);
+      addTearDown(tester.view.resetViewPadding);
+
+      const finalSectionKey = ValueKey('opportunity-detail-last-section');
+      const listKey = ValueKey('opportunity-detail-content-list');
+      const ctaKey = ValueKey('opportunity-detail-primary-cta');
+
+      await _pump(
+        tester,
+        job: _job(
+          kind: 'JOB',
+          ownerId: 'u1',
+          city: 'تهران',
+          title: 'فرصت Flutter با حاشیه امن سیستم',
+          description:
+              'آزمون هندسه در حضور inset واقعی سیستم و متن بزرگ. '
+              'شناسه SAFE-AREA-24 و مسیر /safe-area باید خوانا بمانند.',
+          acceptanceCriteria:
+              'SAFE_AREA_FINAL_MARKER — آخرین بخش باید بالای اقدام ثابت قابل‌دسترسی بماند.',
+          status: 'PUBLISHED',
+        ),
+        userId: 'u9',
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+
+      final list = find.byKey(listKey);
+      final finalSection = find.byKey(finalSectionKey);
+      final cta = find.byKey(ctaKey);
+      expect(list, findsOneWidget);
+      expect(finalSection, findsOneWidget);
+      expect(cta, findsOneWidget);
+
+      final listScroller = find.descendant(
+        of: list,
+        matching: find.byType(Scrollable),
+      ).first;
+      await tester.scrollUntilVisible(
+        finalSection,
+        150,
+        scrollable: listScroller,
+        maxScrolls: 80,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(finalSection);
+      await tester.pumpAndSettle();
+
+      final viewportRect = tester.getRect(list);
+      final finalRect = tester.getRect(finalSection);
+      final ctaRect = tester.getRect(cta);
+      expect(find.textContaining('SAFE_AREA_FINAL_MARKER'), findsOneWidget);
+      expect(finalRect.top, greaterThanOrEqualTo(viewportRect.top));
+      expect(finalRect.bottom, lessThanOrEqualTo(viewportRect.bottom));
+      expect(viewportRect.bottom, lessThanOrEqualTo(ctaRect.top));
+      expect(ctaRect.height, greaterThanOrEqualTo(48));
+      expect(
+        ctaRect.bottom,
+        lessThanOrEqualTo(tester.view.physicalSize.height - 24),
+        reason: 'The fixed CTA must remain above the 24dp system bottom inset.',
+      );
+      expect(cta.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
