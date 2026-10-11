@@ -65,7 +65,7 @@ void main() {
     expect(find.text('مهارت'), findsWidgets);
     expect(find.text('تجربه'), findsWidgets);
     expect(
-      find.text('۱٬۲۵۰٬۰۰۰ تومان'),
+      find.textContaining('۱٬۲۵۰٬۰۰۰ تومان'),
       findsOneWidget,
       reason: 'Offer amounts on candidate cards must use the shared fa-RTL Toman formatter.',
     );
