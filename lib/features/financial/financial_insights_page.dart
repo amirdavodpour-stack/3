@@ -573,13 +573,8 @@ class _BarChart extends StatelessWidget {
         .toList(growable: false);
     final maximum = values.isEmpty ? 0 : values.reduce((a, b) => a > b ? a : b);
     final scaleMaximum = _cashFlowAxisMaximum(maximum);
-    final hasRecordedFlow = data.any(
-      (month) => [
-        month.inflowValue,
-        month.outflowValue,
-        month.reservedValue,
-      ].whereType<double>().any((value) => value > 0),
-    );
+    final hasRecordedAmounts = values.isNotEmpty;
+    final hasRecordedFlow = values.any((value) => value > 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -616,9 +611,13 @@ class _BarChart extends StatelessWidget {
                         ? (english
                             ? 'No recorded cash-flow data.'
                             : 'داده‌ای برای جریان نقدی ثبت نشده است.')
-                        : (english
-                            ? 'No cash flow recorded for this period.'
-                            : 'برای این دوره جریان نقدی ثبت‌شده‌ای وجود ندارد.'),
+                        : !hasRecordedAmounts
+                            ? (english
+                                ? 'No cash-flow amounts were recorded for this period.'
+                                : 'برای این دوره مبلغی برای جریان نقدی ثبت نشده است.')
+                            : (english
+                                ? 'No cash flow recorded for this period.'
+                                : 'برای این دوره جریان نقدی ثبت‌شده‌ای وجود ندارد.'),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
