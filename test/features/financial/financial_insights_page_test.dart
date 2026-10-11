@@ -993,4 +993,92 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'financial charts reserve enough x-axis label height at 2x scale on a compact viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: child!,
+            ),
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cashFlowChart = find.byKey(
+        const ValueKey('financial-cashflow-chart-scroll'),
+      );
+      await tester.scrollUntilVisible(
+        cashFlowChart,
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final cashFlowChartRow = find.ancestor(
+        of: cashFlowChart,
+        matching: find.byType(Row),
+      ).first;
+      final xAxisLabelRegion = find.descendant(
+        of: cashFlowChartRow,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is SizedBox &&
+              widget.height != null &&
+              widget.height! < 40 &&
+              widget.child is Align,
+        ),
+      );
+      expect(xAxisLabelRegion, findsOneWidget);
+      expect(
+        tester.widget<SizedBox>(xAxisLabelRegion).height!,
+        greaterThanOrEqualTo(29.4),
+        reason: 'A 2x-scaled 12sp label needs at least 26.4dp plus the 3dp plot gap.',
+      );
+
+      final balanceChart = find.byKey(
+        const ValueKey('financial-balance-chart-scroll'),
+      );
+      await tester.scrollUntilVisible(
+        balanceChart,
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final balanceYAxis = find.byKey(
+        const ValueKey('financial-balance-y-axis'),
+      );
+      final labelPaddingFinder = find.ancestor(
+        of: balanceYAxis,
+        matching: find.byType(Padding),
+      ).first;
+      final bottomLabelPadding =
+          (tester.widget<Padding>(labelPaddingFinder).padding as EdgeInsets).bottom;
+      expect(
+        bottomLabelPadding,
+        greaterThanOrEqualTo(26.4),
+        reason: 'The balance plot must reserve the full 2x-scaled x-axis label height.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
