@@ -412,9 +412,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Total inflow'), findsOneWidget);
+        expect(find.text('Inflow'), findsOneWidget);
         expect(find.text('500,000 TOMAN'), findsOneWidget);
-        expect(find.text('Total outflow'), findsOneWidget);
+        expect(find.text('Outflow'), findsOneWidget);
         expect(find.text('120,000 TOMAN'), findsOneWidget);
         expect(find.text('Net cash flow'), findsOneWidget);
 
