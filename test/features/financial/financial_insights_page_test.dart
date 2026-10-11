@@ -113,6 +113,15 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        final cashflowAxis = find.byKey(
+          const ValueKey('financial-cashflow-y-axis'),
+        );
+        expect(cashflowAxis, findsOneWidget);
+        expect(
+          find.descendant(of: cashflowAxis, matching: find.byType(Text)),
+          findsNWidgets(5),
+        );
+
         expect(find.text('Job'), findsOneWidget);
         expect(find.text('JOB'), findsNothing);
         expect(find.textContaining('380,000 TOMAN'), findsOneWidget);

@@ -213,6 +213,9 @@ void main() {
     expect(pulse, findsOneWidget);
     expect(featured, findsOneWidget);
     expect(tester.getTopLeft(featured).dy, lessThan(tester.getTopLeft(pulse).dy));
+    final compactPulse = find.byKey(const ValueKey('home-pulse-compact-strip'));
+    expect(compactPulse, findsOneWidget);
+    expect(tester.getSize(compactPulse).height, lessThanOrEqualTo(64));
     expect(tester.takeException(), isNull);
   });
 
