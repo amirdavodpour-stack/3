@@ -498,7 +498,7 @@ void main() {
       await tester.scrollUntilVisible(
         zeroState,
         160,
-        scrollable: find.byKey(const ValueKey('financial-insights-list')),
+        scrollable: find.byType(Scrollable).first,
       );
       expect(zeroState, findsOneWidget);
       expect(

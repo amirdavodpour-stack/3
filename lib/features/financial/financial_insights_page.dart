@@ -902,10 +902,11 @@ class _LineChart extends StatelessWidget {
         final textScale = MediaQuery.textScalerOf(context).scale(1);
         final labelHeight = constraints.maxHeight < 150 ? 20.0 : 24.0;
         final pointWidth = math.max(64.0, 64.0 * textScale);
-        final axisWidth = math.max(70.0, 70.0 * math.min(textScale, 1.4));
+        final axisWidth =
+            math.max(70.0, 70.0 * math.min(textScale, 1.4)).toDouble();
         final values = points.map((point) => point.value.toDouble()).toList();
-        final rawMinimum = values.reduce(math.min);
-        final rawMaximum = values.reduce(math.max);
+        final rawMinimum = values.reduce((a, b) => a < b ? a : b);
+        final rawMaximum = values.reduce((a, b) => a > b ? a : b);
         var scaleMinimum = rawMinimum;
         var scaleMaximum = rawMaximum;
 
@@ -918,7 +919,7 @@ class _LineChart extends StatelessWidget {
           } else {
             final padding = math.max(1.0, rawMaximum.abs() * .1);
             scaleMinimum = rawMinimum >= 0
-                ? math.max(0.0, rawMinimum - padding)
+                ? math.max(0.0, rawMinimum - padding).toDouble()
                 : rawMinimum - padding;
             scaleMaximum = rawMaximum + padding;
           }
@@ -984,7 +985,9 @@ class _LineChart extends StatelessWidget {
                   child: Semantics(
                     key: const ValueKey('financial-balance-chart-semantics'),
                     container: true,
-                    label: 'Balance trend; recorded closing balance in TOMAN. ' +
+                    label: (english
+                            ? 'Balance trend; recorded closing balance in TOMAN. '
+                            : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
                         points.map((point) {
                           final value = HopeDisplayFormatter.money(
                             point.value.round(),
@@ -1040,10 +1043,12 @@ class _LineChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (points.isEmpty) return;
-    final range = math.max(1.0, scaleMaximum - scaleMinimum);
+    final range =
+        math.max(1.0, scaleMaximum - scaleMinimum).toDouble();
     final plotTop = 7.0;
-    final plotBottom = math.max(plotTop + 1, size.height - labelHeight - 7);
-    final plotHeight = math.max(1.0, plotBottom - plotTop);
+    final plotBottom =
+        math.max(plotTop + 1, size.height - labelHeight - 7).toDouble();
+    final plotHeight = math.max(1.0, plotBottom - plotTop).toDouble();
     final labelWidth =
         math.max(1.0, size.width / math.max(1, points.length) - 2).toDouble();
 
