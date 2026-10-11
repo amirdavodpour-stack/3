@@ -583,6 +583,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _FakeJobSatisfactionRepository()
         ..failNextSubmit = true;
+      final semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
         MaterialApp(
@@ -622,6 +623,12 @@ void main() {
         find.descendant(of: agreement, matching: find.text('بله')),
       );
       await tester.pump();
+      expectRenderedSemantics(
+        tester,
+        label: 'کار مطابق توافق انجام شد؟',
+        value: 'بله',
+        hint: 'بله یا خیر را انتخاب کنید',
+      );
 
       final communicationField = find.byKey(
         const ValueKey('satisfaction-communication-rating'),
@@ -670,6 +677,7 @@ void main() {
       expect(repository.submittedCommunicationRating, 5);
       expect(repository.submittedReport, 'گزارش قابل تکرار');
       expect(tester.takeException(), isNull);
+      semantics.dispose();
     },
   );
 }
