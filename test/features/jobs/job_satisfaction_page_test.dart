@@ -393,6 +393,16 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        final overallFinder = find.byKey(
+          const ValueKey('satisfaction-overall-rating'),
+        );
+        await tester.scrollUntilVisible(
+          overallFinder,
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
         for (final endpoint in [
           'کاملاً ناراضی',
           'کاملاً راضی',
