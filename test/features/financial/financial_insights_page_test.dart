@@ -89,6 +89,21 @@ class _MalformedSummaryInsightsRepository implements FinancialInsightsRepository
       );
 }
 
+
+class _MissingSummaryInsightsRepository implements FinancialInsightsRepository {
+  const _MissingSummaryInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      HopeFinancialInsights.fromMap(const {
+        'currency': 'TOMAN',
+        'range': {'months': 6},
+        'monthlyCashFlow': [],
+        'balanceTrend': [],
+        'bySource': [],
+      });
+}
+
 void main() {
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
@@ -623,6 +638,39 @@ void main() {
 
       expect(find.text('0 TOMAN'), findsNothing);
       expect(find.text('—'), findsNWidgets(4));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'a missing financial summary stays unrecorded instead of manufacturing six zero balances',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _MissingSummaryInsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('0 TOMAN'), findsNothing);
+      expect(find.text('—'), findsNWidgets(6));
       expect(tester.takeException(), isNull);
     },
   );
