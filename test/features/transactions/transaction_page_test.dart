@@ -557,4 +557,38 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+
+  testWidgets(
+    'transaction details hide internal provider references but retain public references',
+    (tester) async {
+      final internalRepo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'payment-internal-id',
+          'status': 'HELD',
+          'amount': 1650000,
+          'providerRef': 'internal-ledger-reference-compact',
+          'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        }));
+      await _pump(tester, internalRepo);
+
+      expect(find.text('internal-ledger-reference-compact'), findsNothing);
+      expect(find.text('Reference'), findsNothing);
+
+      final publicRepo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'payment-public-reference',
+          'status': 'HELD',
+          'amount': 1650000,
+          'providerRef': 'HP-1042',
+          'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        }));
+      await _pump(tester, publicRepo);
+
+      expect(find.text('Reference'), findsOneWidget);
+      expect(find.text('#HP-1042'), findsOneWidget);
+      expect(find.text('HP-1042'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
