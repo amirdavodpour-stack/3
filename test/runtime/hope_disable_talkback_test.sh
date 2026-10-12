@@ -21,8 +21,8 @@ case "${1:-}:${2:-}:${3:-}:${4:-}" in
     if [[ -s "$FAKE_ADB_STATE/services" ]]; then cat "$FAKE_ADB_STATE/services"; else printf '%s\n' 'null'; fi
     ;;
   settings:put:secure:accessibility_enabled) printf '%s\n' "${5:-}" > "$FAKE_ADB_STATE/enabled" ;;
-  settings:put:secure:enabled_accessibility_services)
-    printf '%s' "${5:-}" > "$FAKE_ADB_STATE/services"
+  settings:delete:secure:enabled_accessibility_services)
+    : > "$FAKE_ADB_STATE/services"
     if [[ "${FAKE_ADB_STAY_BOUND:-0}" != "1" ]]; then : > "$FAKE_ADB_STATE/bound"; fi
     ;;
   dumpsys:accessibility:*)

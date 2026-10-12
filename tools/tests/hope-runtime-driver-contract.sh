@@ -67,7 +67,7 @@ if ! bash -n "$talkback_disable_helper"; then
   exit 1
 fi
 grep_fixed -Fq -- 'settings put secure accessibility_enabled 0' "$talkback_disable_helper"
-grep_fixed -Fq -- 'settings put secure enabled_accessibility_services ""' "$talkback_disable_helper"
+grep_fixed -Fq -- 'settings delete secure enabled_accessibility_services' "$talkback_disable_helper"
 grep_fixed -Fq -- 'talkback-service-bound-before-capture.txt' "$talkback_disable_helper"
 grep_fixed -Fq -- 'accessibility-disabled-for-capture.txt' "$talkback_disable_helper"
 grep_fixed -Fq -- 'bash tools/hope-disable-talkback.sh' "$script"

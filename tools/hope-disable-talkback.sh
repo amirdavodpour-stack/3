@@ -13,7 +13,7 @@ adb_call() {
 adb_call shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled-before.txt" 2>&1 || true
 adb_call shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services-before.txt" 2>&1 || true
 adb_call shell settings put secure accessibility_enabled 0
-adb_call shell settings put secure enabled_accessibility_services ""
+adb_call shell settings delete secure enabled_accessibility_services
 disabled=false
 for attempt in $(seq 1 30); do
   adb_call shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled-disabled-check.txt" 2>&1 || true
