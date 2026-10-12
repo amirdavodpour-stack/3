@@ -322,7 +322,7 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotCapturePhase = "pixelcopy-pending"
         Log.i(
             HOPE_SCREENSHOT_LOG_TAG,
-            "HOPE_SCREENSHOT_PIXELCOPY_START:\${flutterView.width}x\${flutterView.height}",
+            "HOPE_SCREENSHOT_PIXELCOPY_START:${flutterView.width}x${flutterView.height}",
         )
         val bitmap = try {
             Bitmap.createBitmap(
@@ -406,7 +406,7 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotInProgress.set(false)
         hopeScreenshotCapturePhase = "completed"
         clearHopeScreenshotCaptureWatchdogs()
-        Log.i(HOPE_SCREENSHOT_LOG_TAG, "HOPE_SCREENSHOT_CAPTURE_COMPLETE:bytes=\${bytes.size}")
+        Log.i(HOPE_SCREENSHOT_LOG_TAG, "HOPE_SCREENSHOT_CAPTURE_COMPLETE:bytes=${bytes.size}")
         result.success(bytes)
     }
 
