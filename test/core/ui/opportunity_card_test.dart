@@ -10,7 +10,7 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets(
-    'category fallback uses distinct semantic icons for every supported category',
+    'category fallback uses distinct icons and artwork for supported and unknown categories',
     (tester) async {
       const categories = <({String slug, Object icon})>[
         (slug: 'software', icon: HopeV2Icons.web),
@@ -24,6 +24,7 @@ void main() {
         (slug: 'video', icon: HopeV2Icons.device),
         (slug: 'data', icon: HopeV2Icons.insights),
         (slug: 'sales', icon: HopeV2Icons.activitySelected),
+        (slug: 'other-category', icon: HopeV2Icons.category),
       ];
       final resolvedIcons = <Object>[];
 
@@ -871,6 +872,15 @@ void main() {
           const ValueKey('opportunity-fallback-icon-container'),
         );
         expect(fallback, findsOneWidget, reason: 'missing-media placeholder must exist');
+        final artwork = find.byKey(
+          const ValueKey('opportunity-fallback-category-artwork-software'),
+        );
+        expect(artwork, findsOneWidget, reason: 'artwork must exist for $variant');
+        expect(
+          tester.widget<CustomPaint>(artwork).painter,
+          isA<CustomPainter>(),
+          reason: 'artwork must keep its stable painter for $variant',
+        );
         final size = tester.getSize(fallback);
         expect(
           size.width,
@@ -894,6 +904,11 @@ void main() {
         const ValueKey('opportunity-fallback-icon-container'),
       );
       expect(featuredFallback, findsOneWidget);
+      final wideArtwork = find.byKey(
+        const ValueKey('opportunity-fallback-category-artwork-software'),
+      );
+      expect(wideArtwork, findsOneWidget);
+      expect(tester.widget<CustomPaint>(wideArtwork).painter, isA<CustomPainter>());
       final featuredSize = tester.getSize(featuredFallback);
       expect(featuredSize.width, lessThanOrEqualTo(32));
       expect(featuredSize.height, lessThanOrEqualTo(32));
