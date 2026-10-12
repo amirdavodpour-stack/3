@@ -257,6 +257,29 @@ void main() {
     expect(find.text('جدید'), findsOneWidget);
   });
 
+  testWidgets(
+    'payment notification without a routeable job id does not show a dead-end CTA',
+    (tester) async {
+      final repo = _Repo()..items = [
+        const HopeNotification(
+          id: 'payment-without-job',
+          type: 'PAYMENT_UPDATE',
+          title: 'Payment update',
+          body: 'Payment details are unavailable.',
+          createdAt: null,
+          readAt: 'now',
+          data: {'paymentId': 'payment-123'},
+        ),
+      ];
+      await tester.pumpWidget(_app(repo));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Payment update'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'مشاهده پرداخت'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('tapping an unread notification marks it read and reloads',
       (tester) async {
     final repo = _Repo();
