@@ -350,30 +350,30 @@ class OpportunityCard extends StatelessWidget {
         .toLowerCase()
         .replaceAll('_', '-')
         .replaceAll('  ', ' ');
-    final (accent, icon) = switch (categoryKey) {
+    final (accent, icon, artworkStyle) = switch (categoryKey) {
       'software' || 'software-development' || 'development' || 'نرم‌افزار' || 'نرم افزار' =>
-        (HopeV2Colors.primary, HopeV2Icons.web),
+        (HopeV2Colors.primary, HopeV2Icons.web, _CategoryArtworkStyle.software),
       'design' || 'graphic-design' || 'طراحی' =>
-        (const Color(0xFF8B5CF6), HopeV2Icons.featured),
+        (const Color(0xFF8B5CF6), HopeV2Icons.featured, _CategoryArtworkStyle.design),
       'marketing' || 'بازاریابی' =>
-        (HopeV2Colors.accent, HopeV2Icons.activity),
+        (HopeV2Colors.accent, HopeV2Icons.activity, _CategoryArtworkStyle.marketing),
       'content' || 'translation' || 'content-translation' || 'محتوا و ترجمه' =>
-        (const Color(0xFF0EA5E9), HopeV2Icons.description),
+        (const Color(0xFF0EA5E9), HopeV2Icons.description, _CategoryArtworkStyle.content),
       'finance' || 'accounting' || 'finance-accounting' || 'مالی و حسابداری' =>
-        (HopeV2Colors.successDark, HopeV2Icons.payments),
+        (HopeV2Colors.successDark, HopeV2Icons.payments, _CategoryArtworkStyle.finance),
       'education' || 'آموزش' =>
-        (const Color(0xFF38BDF8), HopeV2Icons.skills),
+        (const Color(0xFF38BDF8), HopeV2Icons.skills, _CategoryArtworkStyle.education),
       'support' || 'پشتیبانی' =>
-        (HopeV2Colors.secondaryDark, HopeV2Icons.message),
+        (HopeV2Colors.secondaryDark, HopeV2Icons.message, _CategoryArtworkStyle.support),
       'construction' || 'technical' || 'construction-technical' || 'ساخت‌وساز و فنی' =>
-        (const Color(0xFFF97316), HopeV2Icons.workshop),
+        (const Color(0xFFF97316), HopeV2Icons.workshop, _CategoryArtworkStyle.construction),
       'video' || 'audio' || 'video-audio' || 'video-production' || 'تولید ویدیو و صدا' =>
-        (const Color(0xFFEC4899), HopeV2Icons.device),
+        (const Color(0xFFEC4899), HopeV2Icons.device, _CategoryArtworkStyle.media),
       'data' || 'ai' || 'data-ai' || 'artificial-intelligence' || 'داده و هوش مصنوعی' =>
-        (const Color(0xFF06B6D4), HopeV2Icons.insights),
+        (const Color(0xFF06B6D4), HopeV2Icons.insights, _CategoryArtworkStyle.data),
       'sales' || 'فروش' =>
-        (const Color(0xFF22C55E), HopeV2Icons.activitySelected),
-      _ => (primary, HopeV2Icons.category),
+        (const Color(0xFF22C55E), HopeV2Icons.activitySelected, _CategoryArtworkStyle.sales),
+      _ => (primary, HopeV2Icons.category, _CategoryArtworkStyle.general),
     };
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
@@ -392,24 +392,32 @@ class OpportunityCard extends StatelessWidget {
           ],
         ),
       ),
-      child: Center(
-        child: Container(
-          key: const ValueKey('opportunity-fallback-icon-container'),
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: dark ? .07 : .04),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: accent.withValues(alpha: dark ? .13 : .10),
+      child: CustomPaint(
+        key: ValueKey('opportunity-fallback-category-artwork-$categoryKey'),
+        painter: _CategoryFallbackPainter(
+          style: artworkStyle,
+          accent: accent,
+          dark: dark,
+        ),
+        child: Center(
+          child: Container(
+            key: const ValueKey('opportunity-fallback-icon-container'),
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: dark ? .07 : .04),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: accent.withValues(alpha: dark ? .13 : .10),
+              ),
             ),
-          ),
-          child: Center(
-            child: HopeIcon(
-              icon,
-              color: accent.withValues(alpha: dark ? .92 : 1),
-              size: 16,
-              strokeWidth: 1.6,
+            child: Center(
+              child: HopeIcon(
+                icon,
+                color: accent.withValues(alpha: dark ? .92 : 1),
+                size: 16,
+                strokeWidth: 1.6,
+              ),
             ),
           ),
         ),
@@ -1354,4 +1362,229 @@ class OpportunityCard extends StatelessWidget {
     );
   }
 
+}
+
+enum _CategoryArtworkStyle {
+  software, design, marketing, content, finance, education,
+  support, construction, media, data, sales, general,
+}
+
+/// Deterministic vector artwork for missing/failed opportunity media.
+/// Real server media remains authoritative; the artwork carries no metric data.
+class _CategoryFallbackPainter extends CustomPainter {
+  const _CategoryFallbackPainter({
+    required this.style,
+    required this.accent,
+    required this.dark,
+  });
+
+  final _CategoryArtworkStyle style;
+  final Color accent;
+  final bool dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+    canvas.save();
+    canvas.scale(size.width / 320, size.height / 92);
+
+    final soft = Paint()
+      ..color = accent.withValues(alpha: dark ? .10 : .055);
+    final fill = Paint()
+      ..color = accent.withValues(alpha: dark ? .17 : .095);
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.1
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = accent.withValues(alpha: dark ? .46 : .32);
+    final thin = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.35
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = accent.withValues(alpha: dark ? .34 : .22);
+
+    void line(double x1, double y1, double x2, double y2, Paint paint) =>
+        canvas.drawLine(Offset(x1, y1), Offset(x2, y2), paint);
+    void circle(double x, double y, double r, Paint paint) =>
+        canvas.drawCircle(Offset(x, y), r, paint);
+    void box(double x, double y, double w, double h, Paint paint,
+        {double radius = 5}) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, y, w, h),
+          Radius.circular(radius),
+        ),
+        paint,
+      );
+    }
+
+    circle(289, 12, 36, soft);
+    circle(31, 82, 25, soft);
+    circle(126, 13, 2.2, fill);
+    circle(198, 78, 2.2, fill);
+
+    switch (style) {
+      case _CategoryArtworkStyle.software:
+        line(38, 22, 75, 67, thin);
+        line(75, 67, 113, 29, thin);
+        line(113, 29, 139, 42, thin);
+        line(183, 43, 211, 26, thin);
+        line(211, 26, 251, 65, thin);
+        line(251, 65, 290, 25, thin);
+        for (final point in const [
+          Offset(38, 22), Offset(75, 67), Offset(113, 29),
+          Offset(211, 26), Offset(251, 65), Offset(290, 25),
+        ]) {
+          circle(point.dx, point.dy, 5.2, fill);
+          circle(point.dx, point.dy, 8.2, thin);
+        }
+        break;
+      case _CategoryArtworkStyle.design:
+        circle(59, 45, 25, stroke);
+        circle(59, 45, 15, fill);
+        box(88, 12, 39, 26, thin, radius: 4);
+        box(31, 59, 31, 19, fill, radius: 4);
+        box(231, 13, 52, 27, stroke, radius: 4);
+        box(252, 50, 37, 27, fill, radius: 4);
+        circle(224, 70, 7, stroke);
+        break;
+      case _CategoryArtworkStyle.marketing:
+        box(26, 57, 13, 23, fill, radius: 3);
+        box(47, 45, 13, 35, fill, radius: 3);
+        box(68, 31, 13, 49, fill, radius: 3);
+        box(89, 20, 13, 60, fill, radius: 3);
+        line(208, 65, 237, 48, stroke);
+        line(237, 48, 263, 51, stroke);
+        line(263, 51, 295, 19, stroke);
+        line(283, 19, 295, 19, thin);
+        line(295, 19, 295, 32, thin);
+        break;
+      case _CategoryArtworkStyle.content:
+        box(24, 12, 65, 68, stroke);
+        box(32, 20, 50, 9, fill, radius: 2);
+        line(34, 38, 78, 38, thin);
+        line(34, 46, 72, 46, thin);
+        line(34, 54, 78, 54, thin);
+        line(34, 62, 65, 62, thin);
+        box(226, 19, 60, 56, fill);
+        line(238, 34, 274, 34, stroke);
+        line(238, 43, 268, 43, thin);
+        line(238, 52, 274, 52, thin);
+        line(238, 61, 260, 61, thin);
+        break;
+      case _CategoryArtworkStyle.finance:
+        box(25, 52, 15, 28, fill, radius: 3);
+        box(47, 40, 15, 40, fill, radius: 3);
+        box(69, 27, 15, 53, fill, radius: 3);
+        box(91, 17, 15, 63, fill, radius: 3);
+        circle(260, 29, 16, stroke);
+        circle(260, 29, 8, thin);
+        circle(285, 59, 12, fill);
+        line(240, 74, 297, 74, thin);
+        break;
+      case _CategoryArtworkStyle.education:
+        line(25, 22, 72, 16, stroke);
+        line(72, 16, 150, 35, stroke);
+        line(150, 35, 150, 78, stroke);
+        line(25, 22, 25, 70, stroke);
+        line(25, 70, 72, 61, stroke);
+        line(72, 61, 150, 78, stroke);
+        line(170, 35, 248, 16, stroke);
+        line(248, 16, 295, 22, stroke);
+        line(295, 22, 295, 70, stroke);
+        line(295, 70, 248, 61, stroke);
+        line(248, 61, 170, 78, stroke);
+        line(170, 35, 170, 78, stroke);
+        line(39, 34, 75, 30, thin);
+        line(39, 44, 82, 40, thin);
+        line(238, 30, 280, 34, thin);
+        line(232, 40, 280, 44, thin);
+        break;
+      case _CategoryArtworkStyle.support:
+        box(23, 14, 83, 43, stroke, radius: 11);
+        line(40, 57, 33, 69, stroke);
+        line(33, 69, 53, 57, stroke);
+        circle(45, 35, 3, fill);
+        circle(63, 35, 3, fill);
+        circle(81, 35, 3, fill);
+        box(229, 36, 67, 39, fill, radius: 10);
+        line(274, 75, 284, 83, thin);
+        line(284, 83, 283, 73, thin);
+        circle(247, 55, 2.6, stroke);
+        circle(262, 55, 2.6, stroke);
+        circle(277, 55, 2.6, stroke);
+        break;
+      case _CategoryArtworkStyle.construction:
+        line(22, 80, 75, 13, stroke);
+        line(75, 13, 128, 80, stroke);
+        line(35, 62, 115, 62, thin);
+        line(45, 45, 102, 45, thin);
+        line(210, 80, 255, 15, stroke);
+        line(255, 15, 300, 80, stroke);
+        line(221, 62, 289, 62, thin);
+        line(232, 45, 277, 45, thin);
+        line(234, 33, 276, 71, thin);
+        line(276, 33, 234, 71, thin);
+        break;
+      case _CategoryArtworkStyle.media:
+        box(22, 17, 66, 57, stroke, radius: 6);
+        circle(55, 45, 13, fill);
+        circle(55, 45, 4, stroke);
+        const waveHeights = <double>[12, 28, 39, 18, 32, 22, 12];
+        for (var index = 0; index < waveHeights.length; index++) {
+          final x = 213.0 + index * 12;
+          final height = waveHeights[index];
+          line(x, 46 - height / 2, x, 46 + height / 2, stroke);
+        }
+        line(215, 77, 291, 77, thin);
+        break;
+      case _CategoryArtworkStyle.data:
+        line(38, 22, 69, 48, thin);
+        line(69, 48, 104, 18, thin);
+        line(69, 48, 105, 76, thin);
+        line(104, 18, 135, 36, thin);
+        line(216, 20, 248, 48, thin);
+        line(248, 48, 287, 23, thin);
+        line(248, 48, 282, 76, thin);
+        for (final point in const [
+          Offset(38, 22), Offset(69, 48), Offset(104, 18), Offset(105, 76),
+          Offset(135, 36), Offset(216, 20), Offset(248, 48), Offset(287, 23),
+          Offset(282, 76),
+        ]) {
+          circle(point.dx, point.dy, 5, fill);
+          circle(point.dx, point.dy, 7.5, thin);
+        }
+        break;
+      case _CategoryArtworkStyle.sales:
+        box(23, 58, 13, 22, fill, radius: 3);
+        box(45, 45, 13, 35, fill, radius: 3);
+        box(67, 32, 13, 48, fill, radius: 3);
+        box(89, 19, 13, 61, fill, radius: 3);
+        line(213, 68, 239, 54, stroke);
+        line(239, 54, 261, 57, stroke);
+        line(261, 57, 295, 22, stroke);
+        line(283, 22, 295, 22, thin);
+        line(295, 22, 295, 34, thin);
+        break;
+      case _CategoryArtworkStyle.general:
+        circle(60, 45, 26, stroke);
+        circle(60, 45, 14, thin);
+        circle(60, 45, 4, fill);
+        circle(260, 45, 22, stroke);
+        circle(260, 45, 9, fill);
+        line(222, 45, 237, 45, thin);
+        line(283, 45, 300, 45, thin);
+        break;
+    }
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _CategoryFallbackPainter oldDelegate) =>
+      oldDelegate.style != style ||
+      oldDelegate.accent != accent ||
+      oldDelegate.dark != dark;
 }
