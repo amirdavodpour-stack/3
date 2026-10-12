@@ -71,7 +71,7 @@ grep -Fq ': > "$log_path"' "$script_file"
 # In force-fresh mode, consume that queued frame before registering the listener, then
 # request a new Flutter frame and do not run the immediate stale-frame probe.
 fresh_frame_marker_line="$(grep -nF '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' "$main_activity" | head -n1 | cut -d: -f1)"
-listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | head -n1 | cut -d: -f1)"
+listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | sed -n '2p' | cut -d: -f1)"
 if [ -z "$fresh_frame_marker_line" ] || [ -z "$listener_line" ] || [ "$fresh_frame_marker_line" -ge "$listener_line" ]; then
   echo "FAIL: force-fresh capture must drain the previous frame before registering the listener" >&2
   exit 1
@@ -93,7 +93,7 @@ fi
 # probe the current FlutterImageView surface. Home can already have a rendered
 # ImageReader frame when capture starts; waiting only for a fresh callback blocks.
 immediate_frame_line="$(grep -nF '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT' "$main_activity" | head -n1 | cut -d: -f1)"
-listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | head -n1 | cut -d: -f1)"
+listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | sed -n '2p' | cut -d: -f1)"
 fresh_frame_line="$(grep -nF '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' "$main_activity" | head -n1 | cut -d: -f1)"
 if [ -z "$fresh_frame_line" ] || [ "$fresh_frame_line" -ge "$listener_line" ]; then
   echo "FAIL: stale-frame drain must happen before registering the ImageReader listener" >&2
