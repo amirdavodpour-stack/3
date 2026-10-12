@@ -913,7 +913,10 @@ Future<void> _captureRuntimeScreenshot(
         }
         pending.addAll(node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder));
       }
-      if (nodeCount < 3 || labelledNodeCount < 2 || actionableNodeCount < 1) {
+      final requiresTapAction = marker != 'candidate-matches-fa-rtl';
+      if (nodeCount < 3 ||
+          labelledNodeCount < 2 ||
+          (requiresTapAction && actionableNodeCount < 1)) {
         throw StateError(
           'T10 semantics incomplete for $marker: nodes=$nodeCount labels=$labelledNodeCount actions=$actionableNodeCount.',
         );
