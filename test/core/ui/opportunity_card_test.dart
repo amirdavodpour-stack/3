@@ -986,6 +986,65 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'image-less fallback artwork uses stable categoryId over a display label',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'category-artwork-stable-id',
+        'title': 'توسعه‌دهنده Flutter',
+        'categoryId': 'software',
+        'category': 'توسعه نرم‌افزار',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.compact,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final artwork = find.byKey(
+        const ValueKey('opportunity-fallback-category-artwork-software'),
+      );
+      expect(artwork, findsOneWidget);
+      final icon = find.descendant(
+        of: find.byKey(
+          const ValueKey('opportunity-fallback-icon-container'),
+        ),
+        matching: find.byType(HopeIcon),
+      );
+      expect(tester.widget<HopeIcon>(icon).icon, HopeV2Icons.web);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'featured no-media opportunity uses a shorter hero with a separate title',
     (tester) async {
