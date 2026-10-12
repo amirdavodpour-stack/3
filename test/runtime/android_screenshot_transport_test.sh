@@ -63,14 +63,18 @@ fi
 grep -Fq ': > "$log_path"' "$script_file"
 
 # Regression: a rebuilt static page can leave the previous ImageReader frame queued.
-# Always request a fresh Flutter frame before listener/probe logic so PixelCopy cannot
-# silently repeat the preceding screen's PNG.
-fresh_frame_request_line="$(grep -nF '// HOPE_SCREENSHOT_FRESH_FRAME_REQUEST' "$main_activity" | head -n1 | cut -d: -f1)"
+# In force-fresh mode, consume that queued frame before registering the listener, then
+# request a new Flutter frame and do not run the immediate stale-frame probe.
+fresh_frame_marker_line="$(grep -nF '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' "$main_activity" | head -n1 | cut -d: -f1)"
 listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | head -n1 | cut -d: -f1)"
-if [ -z "$fresh_frame_request_line" ] || [ -z "$listener_line" ] || [ "$fresh_frame_request_line" -ge "$listener_line" ]; then
-  echo "FAIL: native screenshot must request a fresh Flutter frame before registering the image listener" >&2
+if [ -z "$fresh_frame_marker_line" ] || [ -z "$listener_line" ] || [ "$fresh_frame_marker_line" -ge "$listener_line" ]; then
+  echo "FAIL: force-fresh capture must drain the previous frame before registering the listener" >&2
   exit 1
 fi
+fresh_frame_block="$(sed -n "$((fresh_frame_marker_line - 2)),$((listener_line - 1))p" "$main_activity")"
+grep -Fq 'flutterView.acquireLatestImageViewFrame()' <<<"$fresh_frame_block"
+grep -Fq 'requestHopeFrame()' "$main_activity"
+grep -Fq 'forceFreshFrame: _runtimeHasCapturedScreenshot' "$test_file"
 # Protect the ImageReader capture boundary: register the listener first, then
 # probe the current FlutterImageView surface. Home can already have a rendered
 # ImageReader frame when capture starts; waiting only for a fresh callback blocks.
