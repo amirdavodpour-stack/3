@@ -251,7 +251,20 @@ class _JobDetailPageState extends State<JobDetailPage> {
       ),
     );
   }
+  bool _primaryActionActive = false;
+
   Future<void> action() async {
+    // Guard the callback synchronously; a second tap may arrive before CTA rebuild.
+    if (_primaryActionActive || loading) return;
+    _primaryActionActive = true;
+    try {
+      await _performPrimaryAction();
+    } finally {
+      _primaryActionActive = false;
+    }
+  }
+
+  Future<void> _performPrimaryAction() async {
     final auth = context.read<AuthController?>();
 
     if (auth == null || !auth.isAuthenticated) {
