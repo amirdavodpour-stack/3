@@ -137,14 +137,15 @@ class _JobsPageState extends State<JobsPage> {
   Future<void> _saveCurrentSearch() async {
     if (_savedSearchMutationBusy) return;
     setState(() => _savedSearchMutationBusy = true);
-    final controller = TextEditingController(text: _savedSearchName());
+    var suggestedName = _savedSearchName();
     try {
       final name = await showDialog<String>(
         context: context,
       builder: (context) => AlertDialog(
         title: Text(HopeCopy.of(context).copy_save_search),
-        content: TextField(
-          controller: controller,
+        content: TextFormField(
+          initialValue: suggestedName,
+          onChanged: (value) => suggestedName = value,
           autofocus: true,
           maxLength: 60,
           decoration: InputDecoration(hintText: HopeCopy.of(context).copy_search_name),
@@ -155,7 +156,7 @@ class _JobsPageState extends State<JobsPage> {
             child: Text(HopeCopy.of(context).copy_cancel_9955c4b),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            onPressed: () => Navigator.pop(context, suggestedName.trim()),
             child: Text(HopeCopy.of(context).copy_save_search),
           ),
         ],
@@ -187,7 +188,6 @@ class _JobsPageState extends State<JobsPage> {
         );
       }
     } finally {
-      controller.dispose();
       if (mounted) setState(() => _savedSearchMutationBusy = false);
     }
   }
