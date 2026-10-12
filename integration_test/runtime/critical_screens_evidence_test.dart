@@ -852,10 +852,13 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
 
 const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');
 
+var _runtimeHasCapturedScreenshot = false;
+
 Future<void> _captureHopeNativeScreenshot(
   IntegrationTestWidgetsFlutterBinding binding,
-  String marker,
-) async {
+  String marker, {
+  required bool forceFreshFrame,
+}) async {
   const integrationTestChannel =
       MethodChannel('plugins.flutter.io/integration_test');
   integrationTestChannel.setMethodCallHandler((call) async {
@@ -866,7 +869,10 @@ Future<void> _captureHopeNativeScreenshot(
 
   final bytes = await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(
     'captureScreenshot',
-    <String, Object?>{'name': marker},
+    <String, Object?>{
+      'name': marker,
+      'forceFreshFrame': forceFreshFrame,
+    },
   );
   if (bytes == null || bytes.isEmpty) {
     throw StateError('HOPE native screenshot returned no PNG bytes.');
@@ -932,7 +938,12 @@ Future<void> _captureRuntimeScreenshot(
   try {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-    await _captureHopeNativeScreenshot(binding, marker);
+    await _captureHopeNativeScreenshot(
+      binding,
+      marker,
+      forceFreshFrame: _runtimeHasCapturedScreenshot,
+    );
+    _runtimeHasCapturedScreenshot = true;
     print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
     print('HOPE_SCREENSHOT_READY:$marker');
   } finally {
