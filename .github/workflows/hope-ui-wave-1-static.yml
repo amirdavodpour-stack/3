@@ -60,6 +60,8 @@ jobs:
         run: bash test/runtime/premium_visual_wave_source_test.sh
       - name: Runtime driver contract
         run: bash tools/tests/hope-runtime-driver-contract.sh
+      - name: Android runtime screenshot and TalkBack contract
+        run: bash test/runtime/android_screenshot_transport_test.sh
       - name: Flutter analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
       # Bound the wave lane: a failing widget test must never consume 10-minute defaults.

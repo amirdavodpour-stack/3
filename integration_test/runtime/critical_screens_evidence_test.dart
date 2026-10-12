@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -796,6 +797,10 @@ const _captureTextScaleRaw = String.fromEnvironment(
 );
 final double _captureTextScale =
     double.tryParse(_captureTextScaleRaw) ?? 1.0;
+const bool _talkbackRequired = bool.fromEnvironment(
+  'HOPE_TALKBACK_REQUIRED',
+  defaultValue: false,
+);
 const _captureHomeOnly =
     bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
 const _responsiveBatch =
@@ -879,15 +884,130 @@ Future<void> _captureHopeNativeScreenshot(
 
 Future<void> _captureRuntimeScreenshot(
   String marker, {
-  bool useHopeNativeTransport = false,
+  required WidgetTester tester,
 }) async {
-  final binding = IntegrationTestWidgetsFlutterBinding.instance;
-  print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
-  // Android CI can stall inside VM-service request_data before a Dart timeout
-  // can fire. Native capture avoids that transport entirely.
-  await _captureHopeNativeScreenshot(binding, marker);
-  print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
-  print('HOPE_SCREENSHOT_READY:$marker');
+  SemanticsHandle? semanticsHandle;
+  if (_talkbackRequired && !marker.startsWith('scroll-end-')) {
+    semanticsHandle = tester.ensureSemantics();
+    try {
+      await tester.pump();
+      final root = tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
+      if (root == null) {
+        throw StateError('T10 semantics tree is missing for $marker.');
+      }
+      var nodeCount = 0;
+      var labelledNodeCount = 0;
+      var actionableNodeCount = 0;
+      final pending = <SemanticsNode>[root];
+      while (pending.isNotEmpty) {
+        final node = pending.removeLast();
+        nodeCount++;
+        final data = node.getSemanticsData();
+        if (data.label.trim().isNotEmpty ||
+            data.value.trim().isNotEmpty ||
+            data.hint.trim().isNotEmpty) {
+          labelledNodeCount++;
+        }
+        if (data.actions.contains(SemanticsAction.tap)) {
+          actionableNodeCount++;
+        }
+        pending.addAll(node.childrenInTraversalOrder);
+      }
+      if (nodeCount < 3 || labelledNodeCount < 2 || actionableNodeCount < 1) {
+        throw StateError(
+          'T10 semantics incomplete for $marker: nodes=$nodeCount labels=$labelledNodeCount actions=$actionableNodeCount.',
+        );
+      }
+      print(
+        'HOPE_T10_SEMANTICS_PASS:$marker:nodes=$nodeCount:labels=$labelledNodeCount:actions=$actionableNodeCount',
+      );
+    } catch (_) {
+      semanticsHandle.dispose();
+      rethrow;
+    }
+  }
+  try {
+    final binding = IntegrationTestWidgetsFlutterBinding.instance;
+    print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+    await _captureHopeNativeScreenshot(binding, marker);
+    print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
+    print('HOPE_SCREENSHOT_READY:$marker');
+  } finally {
+    semanticsHandle?.dispose();
+  }
+}
+
+bool _runtimeNeedsScrollEnd(String marker) {
+  const audited = <String>{
+    'home-fa-rtl',
+    'jobs-fa-rtl',
+    'job-detail-fa-rtl',
+    'transactions-fa-rtl',
+    'wallet-fa-rtl',
+    'profile-fa-rtl',
+  };
+  return !marker.startsWith('responsive-') && audited.contains(marker);
+}
+
+Future<void> _captureScrollEndEvidence(
+  WidgetTester tester,
+  String marker,
+) async {
+  await tester.pump(const Duration(milliseconds: 250));
+  final candidates = find.byType(Scrollable).evaluate().where((element) {
+    final state = element.state;
+    return state is ScrollableState &&
+        state.position.axisDirection == AxisDirection.down;
+  }).toList(growable: false);
+  if (candidates.isEmpty) {
+    throw StateError('T10 scroll-end check found no vertical Scrollable for $marker.');
+  }
+  Element? selectedElement;
+  ScrollableState? selectedState;
+  var greatestExtent = -1.0;
+  for (final element in candidates) {
+    final state = element.state as ScrollableState;
+    final position = state.position;
+    if (position.viewportDimension > 0 &&
+        position.maxScrollExtent >= greatestExtent) {
+      greatestExtent = position.maxScrollExtent;
+      selectedElement = element;
+      selectedState = state;
+    }
+  }
+  if (selectedElement == null || selectedState == null) {
+    throw StateError('T10 could not select a vertical viewport for $marker.');
+  }
+  final scrollableFinder = find.byElementPredicate(
+    (element) => identical(element, selectedElement),
+    skipOffstage: false,
+  );
+  var swipes = 0;
+  while (swipes < 20 && selectedState.position.extentAfter > 1.0) {
+    final position = selectedState.position;
+    final before = position.pixels;
+    await tester.drag(
+      scrollableFinder,
+      Offset(0, -position.viewportDimension * 0.72),
+    );
+    await tester.pump(const Duration(milliseconds: 180));
+    swipes++;
+    if (selectedState.position.pixels <= before + 0.5 &&
+        selectedState.position.extentAfter > 1.0) {
+      break;
+    }
+  }
+  await tester.pump(const Duration(milliseconds: 250));
+  final finalPosition = selectedState.position;
+  if (finalPosition.extentAfter > 1.0) {
+    throw StateError(
+      'T10 scroll-end check did not reach the bottom of $marker after $swipes swipes (remaining=${finalPosition.extentAfter}).',
+    );
+  }
+  print(
+    'HOPE_T10_SCROLL_END_PASS:$marker:swipes=$swipes:maxScrollExtent=${finalPosition.maxScrollExtent}',
+  );
+  await _captureRuntimeScreenshot('scroll-end-$marker', tester: tester);
 }
 
 Future<void> _signalRuntimeTestBodyComplete() async {
@@ -958,7 +1078,10 @@ Future<void> _captureRuntimeScreen(
     // repeatedly stalled the headless VM-service driver before takeScreenshot.
     // Capture immediately after the proven surface-commit boundary.
     print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker');
-    await _captureRuntimeScreenshot(marker);
+    await _captureRuntimeScreenshot(marker, tester: tester);
+    if (_runtimeNeedsScrollEnd(marker)) {
+      await _captureScrollEndEvidence(tester, marker);
+    }
     return;
   }
   // Register can legitimately keep an indeterminate auth-state indicator alive
@@ -968,7 +1091,10 @@ Future<void> _captureRuntimeScreen(
   // Capture immediately after the proven surface-commit boundary, like Login.
   if (child is RegisterPage) {
     print('HOPE_RUNTIME_REGISTER_DIRECT_CAPTURE:$marker');
-    await _captureRuntimeScreenshot(marker);
+    await _captureRuntimeScreenshot(marker, tester: tester);
+    if (_runtimeNeedsScrollEnd(marker)) {
+      await _captureScrollEndEvidence(tester, marker);
+    }
     return;
   }
   // PasswordResetPage is a static auth surface. Surface preparation above
@@ -976,7 +1102,10 @@ Future<void> _captureRuntimeScreen(
   // deterministic and avoid an extra timed/async pump.
   if (child is PasswordResetPage) {
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
-    await _captureRuntimeScreenshot(marker);
+    await _captureRuntimeScreenshot(marker, tester: tester);
+    if (_runtimeNeedsScrollEnd(marker)) {
+      await _captureScrollEndEvidence(tester, marker);
+    }
     return;
   }
   // WalletPage can hit the same headless VM-service boundary as the
@@ -1009,7 +1138,10 @@ Future<void> _captureRuntimeScreen(
       reason: 'Wallet available balance must match the runtime fixture exactly.',
     );
     print('HOPE_RUNTIME_WALLET_LOADED_STATE_ASSERTED:$marker');
-    await _captureRuntimeScreenshot(marker);
+    await _captureRuntimeScreenshot(marker, tester: tester);
+    if (_runtimeNeedsScrollEnd(marker)) {
+      await _captureScrollEndEvidence(tester, marker);
+    }
     return;
   }
   if (child is FinancialInsightsPage) {
@@ -1034,7 +1166,10 @@ Future<void> _captureRuntimeScreen(
       );
     }
     print('HOPE_RUNTIME_FINANCIAL_WIDGET_VALUES_ASSERTED:$marker');
-    await _captureRuntimeScreenshot(marker);
+    await _captureRuntimeScreenshot(marker, tester: tester);
+    if (_runtimeNeedsScrollEnd(marker)) {
+      await _captureScrollEndEvidence(tester, marker);
+    }
     return;
   }
   // TransactionsPage is the heaviest current Work Center surface. A second
@@ -1050,7 +1185,10 @@ Future<void> _captureRuntimeScreen(
       await Future<void>.delayed(const Duration(milliseconds: 120));
     }
     print('HOPE_RUNTIME_TRANSACTION_FAST_SETTLE_DONE:$marker');
-    await _captureRuntimeScreenshot(marker);
+    await _captureRuntimeScreenshot(marker, tester: tester);
+    if (_runtimeNeedsScrollEnd(marker)) {
+      await _captureScrollEndEvidence(tester, marker);
+    }
     return;
   }
   await tester.pump();
@@ -1062,7 +1200,10 @@ Future<void> _captureRuntimeScreen(
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
 
-  await _captureRuntimeScreenshot(marker);
+  await _captureRuntimeScreenshot(marker, tester: tester);
+  if (_runtimeNeedsScrollEnd(marker)) {
+    await _captureScrollEndEvidence(tester, marker);
+  }
 }
 
 Future<void> _captureBaselineLocale(

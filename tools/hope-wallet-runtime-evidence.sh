@@ -52,8 +52,13 @@ esac
 echo "HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build"
 echo "HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$CAPTURE_TEXT_SCALE"
 
-adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
-adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
+adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled-before.txt" 2>&1 || true
+adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services-before.txt" 2>&1 || true
+talkback_setup_status=0
+if ! bash tools/hope-enable-talkback.sh; then
+  echo "HOPE_TALKBACK_SETUP_FAILED: the required TalkBack service could not be installed and bound." >&2
+  talkback_setup_status=1
+fi
 
 capture_android_diagnostics() {
   local prefix="$1"
@@ -323,6 +328,7 @@ run_host_batch_session() {
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_TEXT_SCALE="${CAPTURE_TEXT_SCALE}" \
+    --dart-define=HOPE_TALKBACK_REQUIRED=true \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
     --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
     --dart-define=HOPE_BASELINE_BATCH="${baseline_batch}" \
@@ -614,6 +620,35 @@ else
   CAPTURED_LOCALE_LABEL="fa-RTL,en-LTR"
 fi
 
+talkback_enabled=false
+if [[ "$(tr -d '\r\n' < "$evidence_dir/accessibility-enabled.txt" 2>/dev/null || true)" == "1" ]]; then
+  talkback_enabled=true
+fi
+talkback_service_bound=false
+if [[ "$(tr -d '\r\n' < "$evidence_dir/talkback-service-bound.txt" 2>/dev/null || true)" == "true" ]]; then
+  talkback_service_bound=true
+fi
+talkback_semantics_screens=0
+talkback_semantics_output="$(grep -h 'HOPE_T10_SEMANTICS_PASS:' "$runner_temp"/hope-*-runtime.log 2>/dev/null || true)"
+if [[ -n "$talkback_semantics_output" ]]; then
+  talkback_semantics_screens="$(printf '%s\n' "$talkback_semantics_output" | sed -n 's/.*HOPE_T10_SEMANTICS_PASS:\([^:]*\).*/\1/p' | grep -v '^scroll-end-' | sort -u | wc -l | tr -d ' ')"
+fi
+scroll_end_screens=0
+scroll_end_output="$(grep -h 'HOPE_T10_SCROLL_END_PASS:' "$runner_temp"/hope-*-runtime.log 2>/dev/null || true)"
+if [[ -n "$scroll_end_output" ]]; then
+  scroll_end_screens="$(printf '%s\n' "$scroll_end_output" | sed -n 's/.*HOPE_T10_SCROLL_END_PASS:\([^:]*\).*/\1/p' | sort -u | wc -l | tr -d ' ')"
+fi
+talkback_source_sha="$(tr -d '\r\n' < "$evidence_dir/talkback-source-sha.txt" 2>/dev/null || true)"
+talkback_apk_sha256="$(tr -d '\r\n' < "$evidence_dir/talkback-apk-sha256.txt" 2>/dev/null || true)"
+talkback_required=false
+if [[ "${HOPE_TALKBACK_REQUIRED:-0}" == "1" ]]; then
+  talkback_required=true
+  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 6 ]]; then
+    echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens" >&2
+    test_status=1
+  fi
+fi
+
 cat > "$evidence_dir/metadata.json" <<EOF
 {
   "workflow": "$GITHUB_WORKFLOW",
@@ -655,7 +690,16 @@ cat > "$evidence_dir/metadata.json" <<EOF
     "EmployerCandidateMatchesPage",
     "ChatPage"
   ],
-  "target_extension_screens": 4
+  "target_extension_screens": 4,
+  "talkback_required": $talkback_required,
+  "talkback_enabled": $talkback_enabled,
+  "talkback_service_bound": $talkback_service_bound,
+  "talkback_package": "com.android.talkback",
+  "talkback_service_component": "com.android.talkback/com.google.android.marvin.talkback.TalkBackService",
+  "talkback_source_sha": "$talkback_source_sha",
+  "talkback_apk_sha256": "$talkback_apk_sha256",
+  "talkback_semantics_screens": $talkback_semantics_screens,
+  "scroll_end_screens": $scroll_end_screens
 }
 EOF
 

@@ -70,6 +70,14 @@ jobs:
           echo "HOPE_RUNTIME_EXACT_HEAD:$exact_head"
           echo "HOPE_RUNTIME_EXACT_HEAD=$exact_head" >> "$GITHUB_ENV"
 
+      - name: Checkout pinned Google TalkBack source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: google/talkback
+          ref: 229212fdf5842191d0a93fc95d9ca1423b346866
+          path: .ci/talkback
+          fetch-depth: 1
+
       - name: Checkout pinned Android Emulator Runner
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -126,6 +134,40 @@ jobs:
             ~/.android/adb*
           key: hope-android-avd-api35-default-pixel2-${{ runner.os }}-v2
 
+      - name: Build pinned Google TalkBack accessibility service
+        env:
+          TALKBACK_SOURCE_SHA: 229212fdf5842191d0a93fc95d9ca1423b346866
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          test "$(git -C .ci/talkback rev-parse HEAD)" = "$TALKBACK_SOURCE_SHA"
+          grep -Fq 'talkbackApplicationId = "com.android.talkback"' .ci/talkback/shared.gradle
+          grep -Fq 'com.google.android.marvin.talkback.TalkBackService' .ci/talkback/talkback/src/main/AndroidManifest.xml
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+          # Patch only this disposable upstream checkout to include x86_64 for CI.
+          sed -i 's/abiFilters "armeabi-v7a", "arm64-v8a"/abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"/' .ci/talkback/shared.gradle
+          grep -Fq 'abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"' .ci/talkback/shared.gradle
+          printf 'sdk.dir=%s\n' "$SDK_ROOT" > .ci/talkback/local.properties
+          ./android/gradlew --no-daemon --stacktrace -p .ci/talkback assemblePhoneDebug
+          APK_PATH=".ci/talkback/build/outputs/apk/phone/debug/talkback-phone-debug.apk"
+          if [[ ! -s "$APK_PATH" ]]; then
+            find .ci/talkback -path '*/build/outputs/apk/*/*.apk' -type f -print
+            echo "FAIL: pinned TalkBack debug APK was not produced at expected path." >&2
+            exit 1
+          fi
+          AAPT="$SDK_ROOT/build-tools/36.0.0/aapt"
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK_PATH" | grep -Fq "package: name='com.android.talkback'"
+          "$AAPT" dump xmltree "$APK_PATH" AndroidManifest.xml | grep -Fq 'com.google.android.marvin.talkback.TalkBackService'
+          mkdir -p "$RUNNER_TEMP"
+          cp "$APK_PATH" "$RUNNER_TEMP/hope-talkback.apk"
+          printf '%s\n' "$TALKBACK_SOURCE_SHA" > "$RUNNER_TEMP/hope-talkback-source-sha.txt"
+          sha256sum "$RUNNER_TEMP/hope-talkback.apk" | awk '{print $1}' > "$RUNNER_TEMP/hope-talkback-apk-sha256.txt"
+          echo "HOPE_TALKBACK_BUILD_PASS:$TALKBACK_SOURCE_SHA:$(cat "$RUNNER_TEMP/hope-talkback-apk-sha256.txt")"
+
       - name: Verify HOPE design/runtime guardrails
         run: bash tools/verify-design-quality.sh
 
@@ -164,6 +206,9 @@ jobs:
           HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
           HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
           HOPE_RUNTIME_STRICT_VALIDATION: '0'
+          HOPE_TALKBACK_REQUIRED: '1'
+          HOPE_TALKBACK_APK: ${{ runner.temp }}/hope-talkback.apk
+          HOPE_TALKBACK_SOURCE_SHA: 229212fdf5842191d0a93fc95d9ca1423b346866
           HOPE_CAPTURE_HOME_ONLY: ${{ ((github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture-fa-home]'))) && '1' || '0' }}
         with:
           api-level: 35
@@ -191,9 +236,9 @@ jobs:
           test -d docs/audit/evidence/android-runtime
           png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
           # Full capture gate: 19 baseline + 6 responsive screenshots.
-          test "${png_count}" -ge 25
-          jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" \
-            '.sha == $sha and .capture_locale == $locale and .text_scale == $scale and .screens == 19 and .responsive_screens == 6 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy"' \
+          test "${png_count}" -ge 31
+          jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" --arg talkback_sha "229212fdf5842191d0a93fc95d9ca1423b346866" \
+            '.sha == $sha and .capture_locale == $locale and .text_scale == $scale and .screens == 19 and .responsive_screens == 6 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy" and .talkback_required == true and .talkback_enabled == true and .talkback_service_bound == true and .talkback_source_sha == $talkback_sha and (.talkback_apk_sha256 | length == 64) and .talkback_semantics_screens == 25 and .scroll_end_screens == 6' \
             docs/audit/evidence/android-runtime/metadata.json
 
       - name: Validate home-only diagnostic artifact contents
