@@ -88,7 +88,11 @@ if grep -Fq 'swiftshader_indirect' ".github/workflows/hope-ui-runtime-evidence.y
   exit 1
 fi
 grep -Fq "contains(github.event.pull_request.title, '[runtime-capture-fa]')" ".github/workflows/hope-ui-runtime-evidence.yml"
-grep -Fq 'test "${png_count}" -ge 25' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'test "${png_count}" -ge 31' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'Build pinned Google TalkBack accessibility service' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq '.talkback_service_bound == true' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq '"scroll_end_screens": $scroll_end_screens' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"financial-insights-fa-rtl"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"job-satisfaction-fa-rtl"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"candidate-matches-fa-rtl"' "tools/hope-wallet-runtime-evidence.sh"
