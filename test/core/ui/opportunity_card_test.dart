@@ -1043,6 +1043,14 @@ void main() {
       expect(fallbackTitle, findsOneWidget);
       expect(find.text(title), findsOneWidget);
       expect(
+        find.descendant(
+          of: header,
+          matching: find.text('۹۳٪ تطابق'),
+        ),
+        findsOneWidget,
+        reason: 'Featured match tag must localize Persian digits and percent glyph.',
+      );
+      expect(
         tester.getRect(fallbackTitle).top,
         greaterThanOrEqualTo(tester.getRect(header).bottom),
       );
