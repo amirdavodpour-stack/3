@@ -883,6 +883,8 @@ void main() {
       final submit =
           find.descendant(of: sheet, matching: find.byType(FilledButton));
       expect(submit, findsOneWidget);
+      await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
       final submitRect = tester.getRect(submit);
       expect(
         submitRect.bottom,
