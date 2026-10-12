@@ -215,6 +215,14 @@ class OpportunityCard extends StatelessWidget {
     return categoryId != null && categoryId.isNotEmpty ? categoryId : null;
   }
 
+  // Artwork variants use the stable taxonomy key, not localized display copy.
+  String? _artworkCategoryValue() {
+    final categoryId = job.categoryId?.trim();
+    if (categoryId != null && categoryId.isNotEmpty) return categoryId;
+    final category = job.category?.trim();
+    return category != null && category.isNotEmpty ? category : null;
+  }
+
   // Listing cards use only absolute HTTP(S) media from the opportunity payload.
   // When no usable media exists, the localized category identity becomes the visual fallback.
   String? _mediaUrl(HopeJob job) {
@@ -347,7 +355,7 @@ class OpportunityCard extends StatelessWidget {
   }
 
   Widget _fallbackMedia(BuildContext context, Color primary) {
-    final categoryValue = _categoryValue();
+    final categoryValue = _artworkCategoryValue();
     final categoryKey = (categoryValue ?? '')
         .trim()
         .toLowerCase()
