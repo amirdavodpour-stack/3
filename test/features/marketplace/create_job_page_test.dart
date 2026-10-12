@@ -26,6 +26,8 @@ class _FakeMarket implements MarketplaceRepository {
 
   bool failCreate = false;
 
+  int failPublishCount = 0;
+
   /// When set, createOpportunity waits on this gate so the busy state can be
   /// observed deterministically.
   Completer<HopeJob>? createGate;
@@ -81,6 +83,10 @@ class _FakeMarket implements MarketplaceRepository {
   @override
   Future<void> publishOpportunity(String id) async {
     calls.add('publish:$id');
+    if (failPublishCount > 0) {
+      failPublishCount--;
+      throw Exception('publish boom');
+    }
   }
 
   @override
@@ -545,6 +551,57 @@ void main() {
     expect(find.text('Opportunity published.'), findsOneWidget);
     expect(repo.calls, contains('publish:job-new'));
   });
+
+  testWidgets(
+    'retry after publish failure reuses the created opportunity',
+    (tester) async {
+      final repo = _FakeMarket()..failPublishCount = 1;
+      await _pump(tester, repo);
+      await _open(tester);
+      await _fillMissionForm(tester, category: 'Design');
+
+      final submit =
+          find.byKey(const ValueKey('create-opportunity-next-step'));
+      await tester.ensureVisible(submit);
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
+
+      expect(
+        repo.calls.where((call) => call.startsWith('create:')).length,
+        1,
+      );
+      expect(
+        repo.calls.where((call) => call.startsWith('publish:')).toList(),
+        ['publish:job-new'],
+      );
+
+      final retry =
+          find.byKey(const ValueKey('create-opportunity-retry-publish'));
+      if (retry.evaluate().isNotEmpty) {
+        await tester.tap(retry);
+      } else {
+        // Current behavior retries the whole form; the regression below
+        // proves this creates a duplicate instead of republishing job-new.
+        final oldSubmit =
+            find.byKey(const ValueKey('create-opportunity-next-step'));
+        await tester.ensureVisible(oldSubmit);
+        await tester.tap(oldSubmit);
+      }
+      await tester.pumpAndSettle();
+
+      expect(
+        repo.calls.where((call) => call.startsWith('create:')).length,
+        1,
+        reason: 'Retrying a failed publication must reuse the already-created ID.',
+      );
+      expect(
+        repo.calls.where((call) => call.startsWith('publish:')).toList(),
+        ['publish:job-new', 'publish:job-new'],
+        reason: 'Retry should reattempt publication on the same opportunity.',
+      );
+      expect(find.byType(CreateJobPage), findsNothing);
+    },
+  );
 
   testWidgets('create failure surfaces server error snackbar', (tester) async {
     final repo = _FakeMarket()..failCreate = true;
