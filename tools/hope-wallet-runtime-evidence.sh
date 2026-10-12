@@ -54,11 +54,11 @@ echo "HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$CAPTURE_TEXT_SCALE"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled-before.txt" 2>&1 || true
 adb shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services-before.txt" 2>&1 || true
-talkback_setup_status=0
-if ! bash tools/hope-enable-talkback.sh; then
-  echo "HOPE_TALKBACK_SETUP_FAILED: the required TalkBack service could not be installed and bound." >&2
-  talkback_setup_status=1
+if ! bash tools/hope-disable-talkback.sh; then
+  echo "HOPE_TALKBACK_DISABLE_FAILED: cannot guarantee overlay-free visual capture." >&2
+  exit 12
 fi
+talkback_setup_status=0
 
 capture_android_diagnostics() {
   local prefix="$1"
@@ -225,6 +225,36 @@ validate_capture_set() {
   return 0
 }
 
+validate_semantics_set() {
+  local set_name="$1"
+  local log_path="$2"
+  shift 2
+  local marker
+  for marker in "$@"; do
+    if ! grep -Fq -- "HOPE_T10_SEMANTICS_PASS:$marker:" "$log_path"; then
+      echo "HOPE_T10_SEMANTICS_FAILED:$set_name:$marker:missing-pass-marker" >&2
+      return 1
+    fi
+    echo "HOPE_T10_SEMANTICS_VALIDATED:$marker"
+  done
+  return 0
+}
+
+validate_scroll_end_set() {
+  local set_name="$1"
+  local log_path="$2"
+  shift 2
+  local marker
+  for marker in "$@"; do
+    if ! grep -Fq -- "HOPE_T10_SCROLL_END_PASS:$marker:" "$log_path"; then
+      echo "HOPE_T10_SCROLL_END_FAILED:$set_name:$marker:missing-pass-marker" >&2
+      return 1
+    fi
+    echo "HOPE_T10_SCROLL_END_VALIDATED:$marker"
+  done
+  return 0
+}
+
 extended_screens_fa=(
   "financial-insights-fa-rtl"
   "job-satisfaction-fa-rtl"
@@ -287,20 +317,27 @@ run_host_batch_session() {
   local responsive_only="false"
   local responsive_batch="all"
   local baseline_batch="all"
+  local semantics_only="false"
   case "$mode" in
+    semantics-only) launch_mode="baseline"; semantics_only="true" ;;
+    semantics-responsive-a) launch_mode="responsive-a"; semantics_only="true" ;;
+    semantics-responsive-b) launch_mode="responsive-b"; semantics_only="true" ;;
+    semantics-responsive-c) launch_mode="responsive-c"; semantics_only="true" ;;
+  esac
+  case "$launch_mode" in
     baseline-a) baseline_batch="a" ;;
     baseline-b) baseline_batch="b" ;;
     baseline-c) baseline_batch="c" ;;
     baseline-d) baseline_batch="d" ;;
   esac
-  if [ "$mode" = "responsive-a" ] || [ "$mode" = "responsive-b" ] || [ "$mode" = "responsive-c" ]; then
+  if [ "$launch_mode" = "responsive-a" ] || [ "$launch_mode" = "responsive-b" ] || [ "$launch_mode" = "responsive-c" ]; then
     responsive_only="true"
-    case "$mode" in
+    case "$launch_mode" in
       responsive-a) responsive_batch="1" ;;
       responsive-b) responsive_batch="2" ;;
       responsive-c) responsive_batch="3" ;;
     esac
-  elif [ "$CAPTURE_HOME_ONLY" = "1" ] && [ "$mode" = "baseline" ]; then
+  elif [ "$CAPTURE_HOME_ONLY" = "1" ] && [ "$launch_mode" = "baseline" ]; then
     launch_mode="home-only"
   fi
   local process_pid
@@ -329,6 +366,7 @@ run_host_batch_session() {
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_TEXT_SCALE="${CAPTURE_TEXT_SCALE}" \
     --dart-define=HOPE_TALKBACK_REQUIRED=true \
+    --dart-define=HOPE_T10_SEMANTICS_ONLY="${semantics_only}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
     --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
     --dart-define=HOPE_BASELINE_BATCH="${baseline_batch}" \
@@ -371,37 +409,35 @@ run_host_batch_session() {
   fi
 
   if [ "$completion_status" -eq 0 ]; then
-    # The official integration_test driver processes screenshot payloads after
-    # the test result/no-op response is returned. Wait for the host files to be
-    # written before terminating the driver; otherwise screenshots can be lost
-    # even though the Flutter test body completed successfully.
-    local screenshot_flush_deadline=$((SECONDS + SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS))
-    local screenshot_flush_status=1
-    while (( SECONDS < screenshot_flush_deadline )); do
-      screenshot_flush_status=0
-      for marker in "${markers[@]}"; do
-        if ! test -s "$evidence_dir/$marker.png"; then
-          screenshot_flush_status=1
-          break
-        fi
-      done
-      if [ "$screenshot_flush_status" -eq 0 ]; then
-        echo "HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE:$mode"
-        break
-      fi
-      sleep 0.2
-    done
-    if [ "$screenshot_flush_status" -ne 0 ]; then
-      echo "HOPE_HOST_SCREENSHOT_FLUSH_FAILED:$mode" >&2
-      capture_status=1
-    fi
-    # Let the official integration_test driver complete its own VM-service
-    # teardown. An unconditional host-side kill can interrupt the VM-service
-    # response/engine shutdown boundary and destabilize the next session.
-    if [ "$screenshot_flush_status" -eq 0 ]; then
+    if [ "$semantics_only" = "true" ]; then
+      echo "HOPE_T10_SEMANTICS_ONLY_BODY_COMPLETE:$mode"
       echo "HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT:$mode"
     else
-      echo "HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT_AFTER_CAPTURE_FAILURE:$mode"
+      local screenshot_flush_deadline=$((SECONDS + SCREENSHOT_FRESHNESS_TIMEOUT_SECONDS))
+      local screenshot_flush_status=1
+      while (( SECONDS < screenshot_flush_deadline )); do
+        screenshot_flush_status=0
+        for marker in "${markers[@]}"; do
+          if ! test -s "$evidence_dir/$marker.png"; then
+            screenshot_flush_status=1
+            break
+          fi
+        done
+        if [ "$screenshot_flush_status" -eq 0 ]; then
+          echo "HOPE_HOST_SCREENSHOT_FLUSH_COMPLETE:$mode"
+          break
+        fi
+        sleep 0.2
+      done
+      if [ "$screenshot_flush_status" -ne 0 ]; then
+        echo "HOPE_HOST_SCREENSHOT_FLUSH_FAILED:$mode" >&2
+        capture_status=1
+      fi
+      if [ "$screenshot_flush_status" -eq 0 ]; then
+        echo "HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT:$mode"
+      else
+        echo "HOPE_HOST_RUNTIME_DRIVER_WAIT_FOR_NATURAL_EXIT_AFTER_CAPTURE_FAILURE:$mode"
+      fi
     fi
   fi
 
@@ -597,6 +633,60 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   fi
 fi
 
+# Visual PNGs are captured first with the accessibility service explicitly unbound.
+# Then run the same screen set with real TalkBack attached, emitting no PNG payloads.
+talkback_setup_status=0
+if ! bash tools/hope-enable-talkback.sh; then
+  echo "HOPE_TALKBACK_SETUP_FAILED: the required TalkBack service could not be installed and bound." >&2
+  talkback_setup_status=1
+fi
+semantics_status=0
+if [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$talkback_setup_status" -eq 0 ]; then
+  run_host_batch_session semantics-only "${baseline_screens[@]}" || semantics_status=$?
+  if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-semantics-only-runtime.log" "${baseline_screens[@]}"; then semantics_status=1; fi
+  scroll_suffix="en-ltr"
+  if [ "$CAPTURE_LOCALE" = "fa" ]; then scroll_suffix="fa-rtl"; fi
+  semantics_scroll_end_screens=(
+    "home-$scroll_suffix" "jobs-$scroll_suffix" "job-detail-$scroll_suffix"
+    "transactions-$scroll_suffix" "wallet-$scroll_suffix" "profile-$scroll_suffix"
+  )
+  if [ "$semantics_status" -eq 0 ] && ! validate_scroll_end_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-semantics-only-runtime.log" "${semantics_scroll_end_screens[@]}"; then semantics_status=1; fi
+
+  if [ "$CAPTURE_LOCALE" = "en" ]; then
+    semantics_responsive_screens=(
+      "responsive-720x1280-home-en-ltr" "responsive-720x1280-jobs-en-ltr"
+      "responsive-720x1280-job-detail-en-ltr" "responsive-720x1280-transactions-en-ltr"
+      "responsive-720x1280-wallet-en-ltr" "responsive-720x1280-profile-en-ltr"
+    )
+  else
+    semantics_responsive_screens=(
+      "responsive-720x1280-home-fa-rtl" "responsive-720x1280-jobs-fa-rtl"
+      "responsive-720x1280-job-detail-fa-rtl" "responsive-720x1280-transactions-fa-rtl"
+      "responsive-720x1280-wallet-fa-rtl" "responsive-720x1280-profile-fa-rtl"
+    )
+  fi
+  semantics_responsive_first=("${semantics_responsive_screens[@]:0:3}")
+  semantics_responsive_second=("${semantics_responsive_screens[@]:3:1}")
+  semantics_responsive_third=("${semantics_responsive_screens[@]:4:2}")
+  if [ "$semantics_status" -eq 0 ]; then
+    run_host_batch_session semantics-responsive-a "${semantics_responsive_first[@]}" || semantics_status=$?
+    if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "responsive-$CAPTURE_LOCALE-a" "$runner_temp/hope-semantics-responsive-a-runtime.log" "${semantics_responsive_first[@]}"; then semantics_status=1; fi
+  fi
+  if [ "$semantics_status" -eq 0 ]; then
+    hope_android_device_ready "$RUNTIME_SERIAL"
+    run_host_batch_session semantics-responsive-b "${semantics_responsive_second[@]}" || semantics_status=$?
+    if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-semantics-responsive-b-runtime.log" "${semantics_responsive_second[@]}"; then semantics_status=1; fi
+  fi
+  if [ "$semantics_status" -eq 0 ]; then
+    hope_android_device_ready "$RUNTIME_SERIAL"
+    run_host_batch_session semantics-responsive-c "${semantics_responsive_third[@]}" || semantics_status=$?
+    if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "responsive-$CAPTURE_LOCALE-c" "$runner_temp/hope-semantics-responsive-c-runtime.log" "${semantics_responsive_third[@]}"; then semantics_status=1; fi
+  fi
+else
+  semantics_status=1
+fi
+if [ "$semantics_status" -ne 0 ] && [ "$test_status" -eq 0 ]; then test_status="$semantics_status"; fi
+
 adb shell getprop ro.build.version.release > "$evidence_dir/android-version.txt" 2>&1 || true
 adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || true
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
@@ -620,6 +710,13 @@ else
   CAPTURED_LOCALE_LABEL="fa-RTL,en-LTR"
 fi
 
+visual_capture_accessibility_disabled=false
+if [[ "$(tr -d '\r\n' < "$evidence_dir/accessibility-disabled-for-capture.txt" 2>/dev/null || true)" == "true" ]]; then
+  visual_capture_accessibility_disabled=true
+else
+  echo "HOPE_VISUAL_ACCESSIBILITY_DISABLE_NOT_VERIFIED" >&2
+  test_status=1
+fi
 talkback_enabled=false
 if [[ "$(tr -d '\r\n' < "$evidence_dir/accessibility-enabled.txt" 2>/dev/null || true)" == "1" ]]; then
   talkback_enabled=true
@@ -629,12 +726,12 @@ if [[ "$(tr -d '\r\n' < "$evidence_dir/talkback-service-bound.txt" 2>/dev/null |
   talkback_service_bound=true
 fi
 talkback_semantics_screens=0
-talkback_semantics_output="$(grep -h 'HOPE_T10_SEMANTICS_PASS:' "$runner_temp"/hope-*-runtime.log 2>/dev/null || true)"
+talkback_semantics_output="$(grep -h 'HOPE_T10_SEMANTICS_PASS:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
 if [[ -n "$talkback_semantics_output" ]]; then
   talkback_semantics_screens="$(printf '%s\n' "$talkback_semantics_output" | sed -n 's/.*HOPE_T10_SEMANTICS_PASS:\([^:]*\).*/\1/p' | grep -v '^scroll-end-' | sort -u | wc -l | tr -d ' ')"
 fi
 scroll_end_screens=0
-scroll_end_output="$(grep -h 'HOPE_T10_SCROLL_END_PASS:' "$runner_temp"/hope-*-runtime.log 2>/dev/null || true)"
+scroll_end_output="$(grep -h 'HOPE_T10_SCROLL_END_PASS:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
 if [[ -n "$scroll_end_output" ]]; then
   scroll_end_screens="$(printf '%s\n' "$scroll_end_output" | sed -n 's/.*HOPE_T10_SCROLL_END_PASS:\([^:]*\).*/\1/p' | sort -u | wc -l | tr -d ' ')"
 fi
@@ -667,6 +764,10 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "theme": "dark",
   "interactive_target_contract": "48px",
   "capture_transport": "native_android_pixelcopy",
+  "visual_capture_accessibility_service": "disabled",
+  "visual_capture_talkback_enabled": false,
+  "visual_capture_accessibility_disable_verified": $visual_capture_accessibility_disabled,
+  "talkback_semantics_mode": "separate_bound_service_pass",
   "prebuilt_apk": false,
   "test_exit_code": $test_status,
   "screen_set": [
