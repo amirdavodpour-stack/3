@@ -446,7 +446,7 @@ void main() {
   });
 
   testWidgets(
-    'unknown saved-search category uses localized fallback when taxonomy is unavailable',
+    'saved-search category slug localizes when taxonomy is unavailable',
     (tester) async {
       final repo = _Repo()..failCategories = true;
       final savedSearches = _SavedSearchFixture([
@@ -487,7 +487,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('software-development'), findsNothing);
-      expect(find.text('Other'), findsOneWidget);
+      expect(find.text('Software'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
