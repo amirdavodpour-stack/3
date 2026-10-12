@@ -908,10 +908,10 @@ Future<void> _captureRuntimeScreenshot(
             data.hint.trim().isNotEmpty) {
           labelledNodeCount++;
         }
-        if (data.actions.contains(SemanticsAction.tap)) {
+        if (data.hasAction(SemanticsAction.tap)) {
           actionableNodeCount++;
         }
-        pending.addAll(node.childrenInTraversalOrder);
+        pending.addAll(node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder));
       }
       if (nodeCount < 3 || labelledNodeCount < 2 || actionableNodeCount < 1) {
         throw StateError(
@@ -955,6 +955,9 @@ Future<void> _captureScrollEndEvidence(
 ) async {
   await tester.pump(const Duration(milliseconds: 250));
   final candidates = find.byType(Scrollable).evaluate().where((element) {
+    if (element is! StatefulElement) {
+      return false;
+    }
     final state = element.state;
     return state is ScrollableState &&
         state.position.axisDirection == AxisDirection.down;
@@ -966,7 +969,7 @@ Future<void> _captureScrollEndEvidence(
   ScrollableState? selectedState;
   var greatestExtent = -1.0;
   for (final element in candidates) {
-    final state = element.state as ScrollableState;
+    final state = (element as StatefulElement).state as ScrollableState;
     final position = state.position;
     if (position.viewportDimension > 0 &&
         position.maxScrollExtent >= greatestExtent) {
