@@ -490,23 +490,29 @@ void main() {
       submit();
       await tester.pump();
 
-      expect(
-        repo.calls.where((call) => call.startsWith('create:')).length,
-        1,
-        reason: 'One user intent must not create multiple opportunities.',
-      );
-      expect(
-        repo.calls.where((call) => call.startsWith('publish:')),
-        isEmpty,
-        reason: 'Publishing should wait for the single create result.',
-      );
+      final createCallsBeforeRelease =
+          repo.calls.where((call) => call.startsWith('create:')).length;
+      final publishCallsBeforeRelease =
+          repo.calls.where((call) => call.startsWith('publish:')).length;
 
+      // Always resolve the gate before asserting so a RED result cannot strand async work.
       repo.createGate!.complete(HopeJob.fromMap({
         'id': 'job-new',
         'title': 'Design a landing page',
         'status': 'DRAFT',
       }));
       await tester.pumpAndSettle();
+
+      expect(
+        createCallsBeforeRelease,
+        1,
+        reason: 'One user intent must not create multiple opportunities.',
+      );
+      expect(
+        publishCallsBeforeRelease,
+        0,
+        reason: 'Publishing should wait for the single create result.',
+      );
       expect(
         repo.calls.where((call) => call.startsWith('publish:')).length,
         1,
