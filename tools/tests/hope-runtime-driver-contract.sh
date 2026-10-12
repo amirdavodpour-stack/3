@@ -85,6 +85,7 @@ workflow_file=".github/workflows/hope-ui-runtime-evidence.yml"
 grep_fixed -Fq -- 'Checkout pinned Google TalkBack source' "$workflow_file"
 grep_fixed -Fq -- '229212fdf5842191d0a93fc95d9ca1423b346866' "$workflow_file"
 grep_fixed -Fq -- 'Build pinned Google TalkBack accessibility service' "$workflow_file"
+grep_fixed -Fq -- 'ndk;28.2.13676358' "$workflow_file"
 grep_fixed -Fq -- "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 
 echo "PASS: official Flutter integration_test screenshot transport contract"
