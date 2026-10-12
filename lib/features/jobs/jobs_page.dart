@@ -319,7 +319,10 @@ class _JobsPageState extends State<JobsPage> {
     for (final c in _categories) {
       if (c.slug == _category) return c.label(isEn);
     }
-    return _category;
+    // Saved searches may outlive a category-list failure or refer to a slug
+    // unknown to the server. Reuse the canonical local taxonomy labels and
+    // never expose raw transport slugs in the visible filter summary.
+    return hopeCategoryLabel(context, _category, unknownAsOther: true);
   }
 
   List<HopeJob> _filter(List<HopeJob> jobs) {
