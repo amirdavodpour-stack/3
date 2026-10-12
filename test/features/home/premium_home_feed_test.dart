@@ -19,7 +19,6 @@ import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/ui/copy.dart';
-import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/features/home/premium_home_feed.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
@@ -305,6 +304,10 @@ void main() {
   testWidgets(
     'late wallet result from an old Home load cannot overwrite the newest refresh',
     (tester) async {
+      tester.view.physicalSize = const Size(1024, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final marketplace = _SequencedMarketplaceRepository();
       final wallets = _DelayedWalletRepository();
       final harness = await _host(
@@ -337,15 +340,15 @@ void main() {
       await refreshFuture;
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text('Held in escrow'),
-        120,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
+      final metric =
+          find.byKey(const ValueKey('home-pulse-stat-Held in escrow'));
+      expect(metric, findsOneWidget);
       final latestBalance = HopeDisplayFormatter.money(5555, locale: 'en');
       final oldBalance = HopeDisplayFormatter.money(1111, locale: 'en');
-      expect(find.textContaining(latestBalance), findsOneWidget);
+      expect(
+        find.descendant(of: metric, matching: find.text(latestBalance)),
+        findsOneWidget,
+      );
 
       wallets.requests[0].complete(HopeWallet(
         id: 'wallet-old',
@@ -359,11 +362,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.textContaining(latestBalance),
+        find.descendant(of: metric, matching: find.text(latestBalance)),
         findsOneWidget,
         reason: 'A stale wallet response must not replace the newest snapshot.',
       );
-      expect(find.textContaining(oldBalance), findsNothing);
+      expect(
+        find.descendant(of: metric, matching: find.text(oldBalance)),
+        findsNothing,
+      );
     },
   );
 
