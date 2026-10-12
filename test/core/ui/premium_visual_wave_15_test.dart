@@ -106,9 +106,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Match score remains a headline score; per-dimension values follow
-    // the active fa-RTL locale and use Persian digits plus the Persian percent sign.
-    for (final value in ['92%', '۹۶٪', '۸۸٪', '۷۲٪', '۸۴٪']) {
+    // Both headline and per-dimension scores follow the active fa-RTL locale
+    // and use Persian digits plus the Persian percent sign.
+    for (final value in ['۹۲٪', '۹۶٪', '۸۸٪', '۷۲٪', '۸۴٪']) {
       expect(find.text(value), findsOneWidget,
           reason: 'Wave 15 must render the real localized numeric score $value');
     }
