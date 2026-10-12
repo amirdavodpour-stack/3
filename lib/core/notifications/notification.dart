@@ -20,7 +20,10 @@ class HopeNotification {
   bool get isUnread => readAt == null;
   String? get jobId => data['jobId'] == null ? null : '${data['jobId']}';
   String? get paymentId => data['paymentId'] == null ? null : '${data['paymentId']}';
-  bool get hasAction => jobId != null || paymentId != null;
+  // The current action router can open a transaction or job detail only
+  // when it has a non-empty job ID. A payment ID by itself cannot navigate
+  // anywhere, so it must not advertise an actionable CTA.
+  bool get hasAction => jobId?.isNotEmpty == true;
   String get actionLabel {
     switch (type.toUpperCase()) {
       case 'PAYMENT_UPDATE': return 'مشاهده پرداخت';
