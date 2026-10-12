@@ -222,7 +222,7 @@ grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 # A static candidate-match fixture intentionally exposes no tap callbacks; its
 # semantic labels/nodes remain required, while actionable semantics stay
 # mandatory on all other captured surfaces.
-grep -Fq "marker == 'candidate-matches-fa-rtl'" "$test_file"
+grep -Fq "final requiresTapAction = marker != 'candidate-matches-fa-rtl';" "$test_file"
 grep -Fq 'actionableNodeCount < 1' "$test_file"
 
 echo "PASS: Flutter rendered-screenshot transport contract"
