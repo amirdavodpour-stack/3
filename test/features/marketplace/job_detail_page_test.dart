@@ -822,6 +822,40 @@ void main() {
     expect(detail.calls, isEmpty);
   });
 
+  testWidgets(
+    'duplicate primary CTA callbacks cannot stack multiple application sheets',
+    (tester) async {
+      await _pump(tester, job: _job(kind: 'JOB'), detail: _FakeDetail());
+
+      final cta =
+          find.byKey(const ValueKey('opportunity-detail-primary-cta'));
+      expect(cta, findsOneWidget);
+      final handler = tester.widget<FilledButton>(cta).onPressed;
+      expect(handler, isNotNull);
+
+      // Fire the same still-enabled callback twice before a rebuild.
+      handler!();
+      handler();
+      await tester.pumpAndSettle();
+
+      final visibleSheets = find.byType(BottomSheet).evaluate().length;
+      expect(visibleSheets, greaterThanOrEqualTo(1));
+
+      // Dismiss every sheet even on RED so the test never leaks controllers/routes.
+      while (find.byType(BottomSheet).evaluate().isNotEmpty) {
+        Navigator.of(tester.element(find.byType(BottomSheet).first)).pop();
+        await tester.pumpAndSettle();
+      }
+
+      expect(
+        visibleSheets,
+        1,
+        reason: 'One CTA intent must not stack multiple application dialogs.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('owner mission opens the transaction route intent',
       (tester) async {
     await _pump(tester,
