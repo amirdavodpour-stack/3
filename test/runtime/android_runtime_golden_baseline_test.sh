@@ -53,6 +53,8 @@ require_line "$test_file" "required bool forceFreshFrame,"
 require_line "$test_file" "'forceFreshFrame': forceFreshFrame,"
 require_line "$test_file" "var _runtimeHasCapturedScreenshot = false;"
 require_line "$test_file" "forceFreshFrame: _runtimeHasCapturedScreenshot,"
+require_line "$test_file" "HOPE_T10_SEMANTICS_ONLY_SCREEN_COMPLETE:"
+require_line "$test_file" "bool.fromEnvironment('HOPE_T10_SEMANTICS_ONLY'"
 require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
 require_line "$test_file" "HOPE_SCREENSHOT_SOURCE:native-primary:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
@@ -86,6 +88,9 @@ if grep -Fq 'HOPE_HOST_RUNTIME_DRIVER_STOP_AFTER_COMPLETE' "$runtime"; then
 fi
 require_line "$runtime" 'RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"'
 require_line "$runtime" 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build'
+require_line "$runtime" 'bash tools/hope-disable-talkback.sh'
+require_line "$runtime" 'bash tools/hope-enable-talkback.sh'
+require_line "$runtime" '--dart-define=HOPE_T10_SEMANTICS_ONLY="${semantics_only}"'
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"'
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_MODE="${launch_mode}"'
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"'
@@ -108,6 +113,9 @@ fi
 
 # Runtime evidence must reject byte-identical PNGs under different screen names.
 require_line "$runtime" 'duplicate-png-hash'
+require_line "$runtime" 'validate_semantics_set'
+require_line "$runtime" 'validate_scroll_end_set'
+require_line "$runtime" 'talkback_semantics_mode": "separate_bound_service_pass'
 
 echo "PASS: Android runtime screenshot baseline contract is locked."
 
