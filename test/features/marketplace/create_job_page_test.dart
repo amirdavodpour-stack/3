@@ -469,6 +469,52 @@ void main() {
     expect(repo.calls, contains('publish:job-new'));
   });
 
+  testWidgets(
+    'publish handler ignores duplicate callbacks before the busy rebuild',
+    (tester) async {
+      final repo = _FakeMarket()..createGate = Completer<HopeJob>();
+      await _pump(tester, repo);
+      await _open(tester);
+      await _fillMissionForm(tester, category: 'Design');
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('create-opportunity-next-step')),
+      );
+
+      final submitFinder =
+          find.byKey(const ValueKey('create-opportunity-next-step'));
+      final submit = tester.widget<FilledButton>(submitFinder).onPressed;
+      expect(submit, isNotNull);
+
+      // Simulate two activations before Flutter rebuilds the busy/disabled state.
+      submit!();
+      submit();
+      await tester.pump();
+
+      expect(
+        repo.calls.where((call) => call.startsWith('create:')).length,
+        1,
+        reason: 'One user intent must not create multiple opportunities.',
+      );
+      expect(
+        repo.calls.where((call) => call.startsWith('publish:')),
+        isEmpty,
+        reason: 'Publishing should wait for the single create result.',
+      );
+
+      repo.createGate!.complete(HopeJob.fromMap({
+        'id': 'job-new',
+        'title': 'Design a landing page',
+        'status': 'DRAFT',
+      }));
+      await tester.pumpAndSettle();
+      expect(
+        repo.calls.where((call) => call.startsWith('publish:')).length,
+        1,
+        reason: 'A duplicate callback must not publish the same opportunity twice.',
+      );
+    },
+  );
+
   testWidgets('busy state disables the submit action while in flight',
       (tester) async {
     final repo = _FakeMarket()..createGate = Completer<HopeJob>();
