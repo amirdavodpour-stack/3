@@ -57,6 +57,33 @@ for forbidden in revertFlutterImage HOPE_SCREENSHOT_SYNC_ROOT HOPE_ADB_SCREENSHO
 done
 
 # T10/runtime interaction acceptance must be tied to a real, bound TalkBack service.
+talkback_disable_helper="tools/hope-disable-talkback.sh"
+if [[ ! -s "$talkback_disable_helper" ]]; then
+  echo "FAIL: visual capture needs a TalkBack disable/unbind verifier" >&2
+  exit 1
+fi
+if ! bash -n "$talkback_disable_helper"; then
+  echo "FAIL: TalkBack disable helper has a shell syntax error." >&2
+  exit 1
+fi
+grep_fixed -Fq -- 'settings put secure accessibility_enabled 0' "$talkback_disable_helper"
+grep_fixed -Fq -- 'settings put secure enabled_accessibility_services ""' "$talkback_disable_helper"
+grep_fixed -Fq -- 'talkback-service-bound-before-capture.txt' "$talkback_disable_helper"
+grep_fixed -Fq -- 'accessibility-disabled-for-capture.txt' "$talkback_disable_helper"
+grep_fixed -Fq -- 'bash tools/hope-disable-talkback.sh' "$script"
+disable_line="$(grep -nF 'bash tools/hope-disable-talkback.sh' "$script" | head -n 1 | cut -d: -f1)"
+visual_start_line="$(grep -nF 'run_host_batch_session baseline "${baseline_screens[@]}"' "$script" | head -n 1 | cut -d: -f1)"
+enable_line="$(grep -nF 'bash tools/hope-enable-talkback.sh' "$script" | tail -n 1 | cut -d: -f1)"
+semantics_line="$(grep -nF 'run_host_batch_session semantics-only' "$script" | head -n 1 | cut -d: -f1)"
+test "$disable_line" -lt "$visual_start_line"
+test "$visual_start_line" -lt "$enable_line"
+test "$enable_line" -lt "$semantics_line"
+grep_fixed -Fq -- 'validate_semantics_set' "$script"
+grep_fixed -Fq -- 'validate_scroll_end_set' "$script"
+grep_fixed -Fq -- 'visual_capture_accessibility_service": "disabled' "$script"
+grep_fixed -Fq -- 'visual_capture_talkback_enabled": false' "$script"
+grep_fixed -Fq -- 'visual_capture_accessibility_disable_verified": $visual_capture_accessibility_disabled' "$script"
+grep_fixed -Fq -- 'talkback_semantics_mode": "separate_bound_service_pass' "$script"
 talkback_helper="tools/hope-enable-talkback.sh"
 if [[ ! -s "$talkback_helper" ]]; then
   echo "FAIL: T10 needs a TalkBack install/enable/verify helper" >&2
@@ -76,7 +103,13 @@ grep_fixed -Fq -- 'dumpsys accessibility' "$talkback_helper"
 grep_fixed -Fq -- 'bash tools/hope-enable-talkback.sh' "$script"
 grep_fixed -Fq -- 'HOPE_TALKBACK_REQUIRED' "$script"
 grep_fixed -Fq -- 'HOPE_T10_SEMANTICS_PASS:' "$test_file"
+grep_fixed -Fq -- "bool.fromEnvironment('HOPE_T10_SEMANTICS_ONLY'" "$test_file"
+grep_fixed -Fq -- 'if (_talkbackRequired && _semanticsOnly && !marker.startsWith' "$test_file"
+grep_fixed -Fq -- 'HOPE_T10_SEMANTICS_ONLY_SCREEN_COMPLETE:' "$test_file"
+grep_fixed -Fq -- 'HOPE_T10_SEMANTICS_ONLY_SURFACE_SKIPPED' "$test_file"
 grep_fixed -Fq -- 'HOPE_T10_SCROLL_END_PASS:' "$test_file"
+grep_fixed -Fq -- '--dart-define=HOPE_T10_SEMANTICS_ONLY="${semantics_only}"' "$script"
+grep_fixed -Fq -- 'if [ "$semantics_only" = "true" ]' "$script"
 grep_fixed -Fq -- 'tester.ensureSemantics()' "$test_file"
 grep_fixed -Fq -- "'scroll-end-\$marker'" "$test_file"
 grep_fixed -Fq -- 'talkback_service_bound' "$script"
@@ -88,4 +121,5 @@ grep_fixed -Fq -- 'Build pinned Google TalkBack accessibility service' "$workflo
 grep_fixed -Fq -- 'ndk;28.2.13676358' "$workflow_file"
 grep_fixed -Fq -- "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 
+bash test/runtime/hope_disable_talkback_test.sh
 echo "PASS: official Flutter integration_test screenshot transport contract"
