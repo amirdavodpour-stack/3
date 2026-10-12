@@ -861,6 +861,7 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
 const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');
 
 var _runtimeHasCapturedScreenshot = false;
+const _nativeScreenshotCaptureTimeout = Duration(seconds: 18);
 
 Future<void> _captureHopeNativeScreenshot(
   IntegrationTestWidgetsFlutterBinding binding,
@@ -957,6 +958,13 @@ Future<void> _captureRuntimeScreenshot(
       binding,
       marker,
       forceFreshFrame: _runtimeHasCapturedScreenshot,
+    ).timeout(
+      _nativeScreenshotCaptureTimeout,
+      onTimeout: () {
+        throw StateError(
+          "HOPE native screenshot capture timed out for $marker.",
+        );
+      },
     );
     _runtimeHasCapturedScreenshot = true;
     print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
@@ -973,6 +981,38 @@ bool _runtimeNeedsScrollEnd(String marker) {
   final localeSuffix = _captureLocale == 'en' ? '-en-ltr' : '-fa-rtl';
   return !marker.startsWith('responsive-') &&
       auditedPages.any((page) => marker == '$page$localeSuffix');
+}
+
+Future<bool> _dragScrollableTowardEndWithFallbackOffsets(
+  WidgetTester tester,
+  Finder scrollableFinder,
+  ScrollableState selectedState, {
+  required void Function() recordSwipe,
+}) async {
+  final initialPixels = selectedState.position.pixels;
+  // Try separate safe points in the visible viewport. A single center drag can
+  // hit an overlaid affordance even when the selected Scrollable can advance.
+  const startFractions = <double>[0.64, 0.45, 0.76];
+  for (final fraction in startFractions) {
+    if (selectedState.position.extentAfter <= 1.0) {
+      return true;
+    }
+    final rect = tester.getRect(scrollableFinder);
+    if (rect.isEmpty) {
+      continue;
+    }
+    final start = Offset(rect.center.dx, rect.top + rect.height * fraction);
+    recordSwipe();
+    await tester.dragFrom(
+      start,
+      Offset(0, -selectedState.position.viewportDimension * 0.68),
+    );
+    await tester.pump(const Duration(milliseconds: 180));
+    if (selectedState.position.pixels > initialPixels + 0.5) {
+      return true;
+    }
+  }
+  return selectedState.position.pixels > initialPixels + 0.5;
 }
 
 Future<void> _captureScrollEndEvidence(
@@ -1013,17 +1053,17 @@ Future<void> _captureScrollEndEvidence(
   );
   var swipes = 0;
   while (swipes < 20 && selectedState.position.extentAfter > 1.0) {
-    final position = selectedState.position;
-    final before = position.pixels;
-    await tester.drag(
+    final moved = await _dragScrollableTowardEndWithFallbackOffsets(
+      tester,
       scrollableFinder,
-      Offset(0, -position.viewportDimension * 0.72),
+      selectedState,
+      recordSwipe: () => swipes++,
     );
-    await tester.pump(const Duration(milliseconds: 180));
-    swipes++;
-    if (selectedState.position.pixels <= before + 0.5 &&
-        selectedState.position.extentAfter > 1.0) {
-      break;
+    if (!moved && selectedState.position.extentAfter > 1.0) {
+      throw StateError(
+        'T10 scroll-end retry did not advance $marker after $swipes gestures '
+        '(remaining=${selectedState.position.extentAfter}).',
+      );
     }
   }
   await tester.pump(const Duration(milliseconds: 250));
