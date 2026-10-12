@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
+import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/transactions/wallet.dart';
@@ -103,6 +104,27 @@ class _FakeWallet implements WalletRepository {
     required String idempotencyKey,
   }) async =>
       const {};
+}
+
+class _StaticBackendCapabilitiesRepository
+    implements BackendCapabilitiesRepository {
+  const _StaticBackendCapabilitiesRepository({
+    this.walletWithdraw = true,
+    this.walletDeposit = false,
+    this.walletTransfer = true,
+  });
+
+  final bool walletWithdraw;
+  final bool walletDeposit;
+  final bool walletTransfer;
+
+  @override
+  Future<BackendCapabilities> load() async => BackendCapabilities(
+        wallet: true,
+        walletWithdraw: walletWithdraw,
+        walletDeposit: walletDeposit,
+        walletTransfer: walletTransfer,
+      );
 }
 
 class _PagedWallet implements WalletRepository {
@@ -239,6 +261,52 @@ class _AuthRepo implements AuthRepository {
 }
 
 void main() {
+  testWidgets(
+    'wallet obeys server capability flags for financial actions',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+      const capabilities = _StaticBackendCapabilitiesRepository(
+        walletWithdraw: false,
+        walletDeposit: false,
+        walletTransfer: false,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: capabilities,
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Withdraw'), findsNothing);
+      await tester.tap(find.byTooltip('Wallet actions'));
+      await tester.pumpAndSettle();
+      final transferItem = tester.widget<PopupMenuItem<String>>(
+        find.widgetWithText(PopupMenuItem<String>, 'Transfer'),
+      );
+      expect(transferItem.enabled, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'Wave 43 payout amount and status stay consistent between history row and details',
