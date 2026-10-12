@@ -536,6 +536,55 @@ void main() {
     },
   );
 
+  testWidgets(
+    'saved-search default name uses localized labels instead of transport tokens',
+    (tester) async {
+      final repo = _Repo();
+      final savedSearches = _SavedSearchFixture([]);
+      await _pump(
+        tester,
+        repo,
+        savedSearches: savedSearches,
+      );
+      await tester.pumpAndSettle();
+
+      final launcher = find.byKey(
+        const ValueKey('hope-opportunity-refinement-launcher'),
+      );
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+      await _tapFilter(tester, 'ماموریت‌ها');
+      await tester.pumpAndSettle();
+      await _tapFilter(tester, 'تخصصی');
+      await tester.pumpAndSettle();
+      await _tapFilter(tester, 'همه حوزه‌ها');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ذخیره این جستجو'));
+      await tester.pumpAndSettle();
+
+      final dialog = find.byType(AlertDialog);
+      expect(dialog, findsOneWidget);
+      final nameField = find.descendant(
+        of: dialog,
+        matching: find.byType(TextField),
+      );
+      expect(nameField, findsOneWidget);
+      final suggestedName = tester.widget<TextField>(nameField).controller!.text;
+      expect(suggestedName, contains('ماموریت'));
+      expect(suggestedName, contains('تخصصی'));
+      expect(suggestedName, contains('طراحی'));
+      expect(suggestedName, isNot(contains('MISSION')));
+      expect(suggestedName, isNot(contains('SPECIALIZED')));
+      expect(suggestedName, isNot(contains('design')));
+
+      await tester.tap(find.text('لغو'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('choosing "همه حوزه‌ها" again clears the category filter',
       (tester) async {
     final repo = _Repo();
