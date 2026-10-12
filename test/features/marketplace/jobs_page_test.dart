@@ -130,6 +130,21 @@ class _SavedSearchFixture implements SavedSearchRepository {
   }
 }
 
+class _SequencedSavedSearchFixture extends _SavedSearchFixture {
+  _SequencedSavedSearchFixture() : super([]);
+
+  final Completer<List<HopeSavedSearch>> staleInitialLoad =
+      Completer<List<HopeSavedSearch>>();
+  int listCalls = 0;
+
+  @override
+  Future<List<HopeSavedSearch>> list() {
+    listCalls += 1;
+    if (listCalls == 1) return staleInitialLoad.future;
+    return Future.value(List.unmodifiable(items));
+  }
+}
+
 Future<void> _pump(
   WidgetTester tester,
   _Repo repo, {
@@ -537,21 +552,6 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
-
-class _SequencedSavedSearchFixture extends _SavedSearchFixture {
-  _SequencedSavedSearchFixture() : super([]);
-
-  final Completer<List<HopeSavedSearch>> staleInitialLoad =
-      Completer<List<HopeSavedSearch>>();
-  int listCalls = 0;
-
-  @override
-  Future<List<HopeSavedSearch>> list() {
-    listCalls += 1;
-    if (listCalls == 1) return staleInitialLoad.future;
-    return Future.value(List.unmodifiable(items));
-  }
-}
 
   testWidgets(
     'late initial saved-search load cannot erase a just-saved search',
