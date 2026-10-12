@@ -34,7 +34,7 @@ class _AuthRepo implements AuthRepository {
   Future<void> requestPasswordReset(String email) async {}
 }
 
-Future<Widget> _screen(Widget child) async {
+Future<Widget> _screen(Widget child, {double textScale = 1}) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -43,6 +43,12 @@ Future<Widget> _screen(Widget child) async {
     theme: ThemeData.light(),
     locale: const Locale('fa'),
     supportedLocales: const [Locale('fa'), Locale('en')],
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: child!,
+    ),
     localizationsDelegates: const [
       AppLocalizations.delegate,
       GlobalMaterialLocalizations.delegate,
@@ -204,6 +210,37 @@ void main() {
     }
   });
 
+
+  testWidgets(
+    'login submit remains reachable above a compact keyboard at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+
+      await tester.pumpWidget(
+        await _screen(const LoginPage(), textScale: 1.5),
+      );
+      await tester.pumpAndSettle();
+
+      final submit = find.byType(FilledButton);
+      expect(submit, findsOneWidget);
+      await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
+      final submitRect = tester.getRect(submit);
+      expect(submitRect.top, greaterThanOrEqualTo(0));
+      expect(
+        submitRect.bottom,
+        lessThanOrEqualTo(360),
+        reason: 'The 280dp keyboard inset must not obscure the login CTA at 1.5x text.',
+      );
+      expect(submit.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'register submit remains reachable above the keyboard on compact viewports',
