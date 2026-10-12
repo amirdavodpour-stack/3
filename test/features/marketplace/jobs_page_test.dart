@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
+import 'package:hope_mobile/core/marketplace/saved_search_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -14,7 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _Repo implements MarketplaceRepository {
   final calls = <String>[];
-
+  bool failCategories = false;
   /// All jobs this fake server "knows about", spread across a couple of
   /// cities plus one online job -- used so tests can tell apart "server
   /// filtered by city" from "server ignored the filter", the way a real
@@ -78,6 +79,7 @@ class _Repo implements MarketplaceRepository {
   @override
   Future<List<HopeCategory>> listCategories() async {
     calls.add('categories');
+    if (failCategories) throw StateError('category taxonomy unavailable');
     return [techCategory, designCategory];
   }
 
@@ -105,12 +107,34 @@ class _Repo implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
+class _SavedSearchFixture implements SavedSearchRepository {
+  _SavedSearchFixture(this.items);
+
+  final List<HopeSavedSearch> items;
+
+  @override
+  Future<List<HopeSavedSearch>> list() async => List.unmodifiable(items);
+
+  @override
+  Future<HopeSavedSearch> upsert(HopeSavedSearch search) async {
+    items.removeWhere((item) => item.id == search.id || item.name == search.name);
+    items.insert(0, search);
+    return search;
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    items.removeWhere((item) => item.id == id);
+  }
+}
+
 Future<void> _pump(
   WidgetTester tester,
   _Repo repo, {
   HopeSettingsController? settings,
   double textScale = 1,
   Locale locale = const Locale('fa'),
+  SavedSearchRepository? savedSearches,
 }) async {
   HopeSettingsController resolvedSettings;
   if (settings != null) {
@@ -138,6 +162,8 @@ Future<void> _pump(
         providers: [
           ChangeNotifierProvider.value(value: resolvedSettings),
           Provider<MarketplaceRepository>.value(value: repo),
+          if (savedSearches != null)
+            Provider<SavedSearchRepository>.value(value: savedSearches),
         ],
         child: const JobsPage(),
       ),
@@ -418,6 +444,53 @@ void main() {
     expect(find.text('استخدام Flutter'), findsNothing);
     expect(find.text('کار آنلاین'), findsNothing);
   });
+
+  testWidgets(
+    'unknown saved-search category uses localized fallback when taxonomy is unavailable',
+    (tester) async {
+      final repo = _Repo()..failCategories = true;
+      final savedSearches = _SavedSearchFixture([
+        HopeSavedSearch(
+          id: 'saved-unknown-category',
+          name: 'Engineering roles',
+          query: '',
+          kind: 'ALL',
+          visibility: 'ALL',
+          city: 'AUTO',
+          category: 'software-development',
+          updatedAt: '2026-10-12T00:00:00Z',
+        ),
+      ]);
+      await _pump(
+        tester,
+        repo,
+        locale: const Locale('en'),
+        savedSearches: savedSearches,
+      );
+      await tester.pumpAndSettle();
+
+      final launcher = find.byKey(
+        const ValueKey('hope-opportunity-refinement-launcher'),
+      );
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Saved searches · 1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Engineering roles'));
+      await tester.pumpAndSettle();
+
+      // Saved-search selection closes only the saved-search sheet. Close the
+      // underlying refinement sheet, then reopen it to inspect the current label.
+      await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+      await tester.pumpAndSettle();
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+
+      expect(find.text('software-development'), findsNothing);
+      expect(find.text('Other'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('choosing "همه حوزه‌ها" again clears the category filter',
       (tester) async {
