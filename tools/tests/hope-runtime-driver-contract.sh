@@ -56,4 +56,29 @@ for forbidden in revertFlutterImage HOPE_SCREENSHOT_SYNC_ROOT HOPE_ADB_SCREENSHO
   fi
 done
 
+# T10/runtime interaction acceptance must be tied to a real, bound TalkBack service.
+talkback_helper="tools/hope-enable-talkback.sh"
+if [[ ! -s "$talkback_helper" ]]; then
+  echo "FAIL: T10 needs a TalkBack install/enable/verify helper" >&2
+  exit 1
+fi
+grep_fixed -Fq -- 'com.android.talkback' "$talkback_helper"
+grep_fixed -Fq -- 'com.google.android.marvin.talkback.TalkBackService' "$talkback_helper"
+grep_fixed -Fq -- 'settings put secure enabled_accessibility_services' "$talkback_helper"
+grep_fixed -Fq -- 'settings put secure accessibility_enabled 1' "$talkback_helper"
+grep_fixed -Fq -- 'dumpsys accessibility' "$talkback_helper"
+grep_fixed -Fq -- 'bash tools/hope-enable-talkback.sh' "$script"
+grep_fixed -Fq -- 'HOPE_TALKBACK_REQUIRED' "$script"
+grep_fixed -Fq -- 'HOPE_T10_SEMANTICS_PASS:' "$test_file"
+grep_fixed -Fq -- 'HOPE_T10_SCROLL_END_PASS:' "$test_file"
+grep_fixed -Fq -- 'tester.ensureSemantics()' "$test_file"
+grep_fixed -Fq -- "'scroll-end-\$marker'" "$test_file"
+grep_fixed -Fq -- 'talkback_service_bound' "$script"
+grep_fixed -Fq -- 'scroll_end_screens' "$script"
+workflow_file=".github/workflows/hope-ui-runtime-evidence.yml"
+grep_fixed -Fq -- 'Checkout pinned Google TalkBack source' "$workflow_file"
+grep_fixed -Fq -- '229212fdf5842191d0a93fc95d9ca1423b346866' "$workflow_file"
+grep_fixed -Fq -- 'Build pinned Google TalkBack accessibility service' "$workflow_file"
+grep_fixed -Fq -- "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
+
 echo "PASS: official Flutter integration_test screenshot transport contract"
