@@ -40,6 +40,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Future<HopeOpportunityAgentState>? _agentState;
   String? _error;
   int _refreshRequestId = 0;
+  int _loadRequestId = 0;
   String? _loadSignature;
   int? _activeJobCount;
 
@@ -63,6 +64,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   }
 
   void _load() {
+    final loadRequestId = ++_loadRequestId;
     final settings = context.read<HopeSettingsController>();
     final registry = applicationRegistryOf(context);
     _error = null;
@@ -91,14 +93,14 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       try {
         _activeJobs = registry.listMyJobs();
         _activeJobs!.then((jobs) {
-          if (!mounted) return;
+          if (!mounted || loadRequestId != _loadRequestId) return;
           setState(() => _activeJobCount = jobs.where((job) =>
               {'ASSIGNED', 'IN_PROGRESS', 'DELIVERED', 'UNDER_REVIEW'}
                   .contains(job.status?.toUpperCase())).length);
         }).catchError((_) {});
         _wallet = registry.walletsOrThrow.getWallet();
         _wallet!.then((wallet) {
-          if (!mounted) return;
+          if (!mounted || loadRequestId != _loadRequestId) return;
           setState(() => _walletData = wallet);
         }).catchError((_) {});
       } catch (_) {
