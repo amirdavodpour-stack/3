@@ -956,7 +956,7 @@ class _LineChart extends StatelessWidget {
         ];
         final chartWidth = math.max(
           math.max(0.0, constraints.maxWidth - axisWidth),
-          recordedPoints.length * pointWidth,
+          points.length * pointWidth,
         ).toDouble();
 
         return Row(
@@ -1013,16 +1013,22 @@ class _LineChart extends StatelessWidget {
                     label: (english
                             ? 'Balance trend; recorded closing balance in TOMAN. '
                             : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
-                        recordedPoints.map((point) {
+                        points.map((point) {
+                          final recordedValue = point.value;
+                          if (recordedValue == null) {
+                            return english
+                                ? '${point.date}: no closing balance recorded'
+                                : '${point.date}: مانده پایانی ثبت نشده';
+                          }
                           final value = HopeDisplayFormatter.money(
-                            point.value!.round(),
+                            recordedValue.round(),
                             locale: locale,
                           );
                           return '${point.date}: $value';
                         }).join('. '),
                     child: CustomPaint(
                       painter: _LineChartPainter(
-                        recordedPoints,
+                        points,
                         color,
                         color.withValues(alpha: .12),
                         Directionality.of(context),
@@ -1086,17 +1092,25 @@ class _LineChartPainter extends CustomPainter {
     }
 
     final path = Path();
+    var segmentOpen = false;
     for (var i = 0; i < points.length; i++) {
+      final value = points[i].value;
+      if (value == null) {
+        // Preserve the original month slot and break the trend across missing data.
+        segmentOpen = false;
+        continue;
+      }
       final x = points.length == 1
           ? size.width / 2
           : i * size.width / (points.length - 1);
       final y = plotBottom -
-          ((points[i].value! - scaleMinimum) / range) * plotHeight;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
+          ((value - scaleMinimum) / range) * plotHeight;
+      if (segmentOpen) {
         path.lineTo(x, y);
+      } else {
+        path.moveTo(x, y);
       }
+      segmentOpen = true;
     }
 
     final stroke = Paint()
@@ -1106,7 +1120,7 @@ class _LineChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawPath(path, stroke);
 
-    if (points.length > 1) {
+    if (points.length > 1 && points.every((point) => point.value != null)) {
       final fill = Path.from(path)
         ..lineTo(size.width, plotBottom)
         ..lineTo(0, plotBottom)
