@@ -49,6 +49,7 @@ class _JobsPageState extends State<JobsPage> {
   List<HopeSavedSearch> _savedSearches = const [];
   String? _categoryError;
   bool _savedSearchMutationBusy = false;
+  int _savedSearchesLoadRequestId = 0;
   Timer? _searchDebounce;
   @override
   void dispose() {
@@ -93,11 +94,16 @@ class _JobsPageState extends State<JobsPage> {
 
 
   Future<void> _loadSavedSearches() async {
+    final requestId = ++_savedSearchesLoadRequestId;
     try {
       final items = await _applicationRegistry(context).savedSearches.list();
-      if (mounted) setState(() => _savedSearches = items);
+      if (mounted && requestId == _savedSearchesLoadRequestId) {
+        setState(() => _savedSearches = items);
+      }
     } catch (_) {
-      if (mounted) setState(() => _savedSearches = const []);
+      if (mounted && requestId == _savedSearchesLoadRequestId) {
+        setState(() => _savedSearches = const [];)
+      }
     }
   }
 
