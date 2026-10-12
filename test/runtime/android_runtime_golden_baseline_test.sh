@@ -49,7 +49,10 @@ fi
 driver_file="test_driver/hope_runtime_screenshot_driver.dart"
 
 require_line "$test_file" "await binding.convertFlutterSurfaceToImage();"
-require_line "$test_file" "await _captureHopeNativeScreenshot(binding, marker);"
+require_line "$test_file" "required bool forceFreshFrame,"
+require_line "$test_file" "'forceFreshFrame': forceFreshFrame,"
+require_line "$test_file" "var _runtimeHasCapturedScreenshot = false;"
+require_line "$test_file" "forceFreshFrame: _runtimeHasCapturedScreenshot,"
 require_line "$test_file" "HOPE_SCREENSHOT_CAPTURE_START:"
 require_line "$test_file" "HOPE_SCREENSHOT_SOURCE:native-primary:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
