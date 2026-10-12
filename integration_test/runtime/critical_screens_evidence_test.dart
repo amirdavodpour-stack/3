@@ -1052,7 +1052,18 @@ Future<void> _captureScrollEndEvidence(
     skipOffstage: false,
   );
   var swipes = 0;
-  while (swipes < 20 && selectedState.position.extentAfter > 1.0) {
+  var sweeps = 0;
+  var stableAtBottomFrames = 0;
+  while (sweeps < 20 && stableAtBottomFrames < 2) {
+    sweeps++;
+    // Lazy lists can extend maxScrollExtent on the frame after reaching the
+    // apparent bottom. Observe layout again before accepting scroll-end evidence.
+    await tester.pump(const Duration(milliseconds: 250));
+    if (selectedState.position.extentAfter <= 1.0) {
+      stableAtBottomFrames++;
+      continue;
+    }
+    stableAtBottomFrames = 0;
     final moved = await _dragScrollableTowardEndWithFallbackOffsets(
       tester,
       scrollableFinder,
@@ -1066,15 +1077,16 @@ Future<void> _captureScrollEndEvidence(
       );
     }
   }
-  await tester.pump(const Duration(milliseconds: 250));
   final finalPosition = selectedState.position;
-  if (finalPosition.extentAfter > 1.0) {
+  if (stableAtBottomFrames < 2 || finalPosition.extentAfter > 1.0) {
     throw StateError(
-      'T10 scroll-end check did not reach the bottom of $marker after $swipes swipes (remaining=${finalPosition.extentAfter}).',
+      'T10 scroll-end check did not stabilize at the bottom of $marker after '
+      '$swipes swipes/$sweeps layout sweeps '
+      '(remaining=${finalPosition.extentAfter}, stableFrames=$stableAtBottomFrames).',
     );
   }
   print(
-    'HOPE_T10_SCROLL_END_PASS:$marker:swipes=$swipes:maxScrollExtent=${finalPosition.maxScrollExtent}',
+    'HOPE_T10_SCROLL_END_PASS:$marker:swipes=$swipes:stableFrames=$stableAtBottomFrames:maxScrollExtent=${finalPosition.maxScrollExtent}',
   );
   await _captureRuntimeScreenshot('scroll-end-$marker', tester: tester);
 }

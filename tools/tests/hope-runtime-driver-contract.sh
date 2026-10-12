@@ -48,6 +48,10 @@ grep_fixed -Fq -- 'TextScaler.linear(_captureTextScale)' "$test_file"
 grep_fixed -Fq -- 'HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale' "$test_file"
 grep_fixed -Fq -- 'find.byType(SkeletonBox).evaluate().isNotEmpty' "$test_file"
 grep_fixed -Fq -- 'HOPE_SCREENSHOT_READY:$marker' "$test_file"
+grep_fixed -Fq -- 'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
+grep_fixed -Fq -- 'HOPE_SCREENSHOT_TIMEOUT:phase=' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
+grep_fixed -Fq -- 'stableAtBottomFrames < 2' "$test_file"
+grep_fixed -Fq -- 'stableFrames=$stableAtBottomFrames' "$test_file"
 
 for forbidden in revertFlutterImage HOPE_SCREENSHOT_SYNC_ROOT HOPE_ADB_SCREENSHOT_CAPTURE files/hope-screen-sync- test-complete.ready completion_request= 'adb exec-out screencap -p' 'run-as com.hope.marketplace'; do
   if grep_fixed -Fq -- "$forbidden" "$script" "$test_file"; then

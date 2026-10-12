@@ -17,6 +17,11 @@ runtime_contracts=(
   'hopeScreenshotFrameCaptured.compareAndSet(false, true)'
   'private const val HOPE_SCREENSHOT_FRAME_TIMEOUT_MS'
   'private const val HOPE_SCREENSHOT_FRAME_RETRY_INTERVAL_MS'
+  'private const val HOPE_SCREENSHOT_LOG_TAG'
+  'private var hopeScreenshotCapturePhase = "idle"'
+  'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED'
+  'HOPE_SCREENSHOT_PIXELCOPY_START:'
+  'HOPE_SCREENSHOT_PIXELCOPY_CALLBACK:'
   'private fun scheduleHopeFreshFrameRetry('
   'private fun clearHopeScreenshotCaptureWatchdogs('
   'hopeScreenshotResultCompleted.compareAndSet(false, true)'
@@ -67,46 +72,34 @@ if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evi
 fi
 grep -Fq ': > "$log_path"' "$script_file"
 
-# Regression: a rebuilt static page can leave the previous ImageReader frame queued.
-# In force-fresh mode, consume that queued frame before registering the listener, then
-# request a new Flutter frame and do not run the immediate stale-frame probe.
-fresh_frame_marker_line="$(grep -nF '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' "$main_activity" | head -n1 | cut -d: -f1)"
+# Regression: use the target page's already committed ImageReader frame if present.
+# Register first so a racing new frame is not lost; only request an additional frame
+# when no current target frame can be acquired. This prevents static Home deadlocks.
 listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | sed -n '2p' | cut -d: -f1)"
-if [ -z "$fresh_frame_marker_line" ] || [ -z "$listener_line" ] || [ "$fresh_frame_marker_line" -ge "$listener_line" ]; then
-  echo "FAIL: force-fresh capture must drain the previous frame before registering the listener" >&2
+current_target_line="$(grep -nF 'val currentTargetFrameAvailable = flutterView.acquireLatestImageViewFrame()' "$main_activity" | cut -d: -f1)"
+if [ -z "$listener_line" ] || [ -z "$current_target_line" ] || [ "$listener_line" -ge "$current_target_line" ]; then
+  echo "FAIL: force-fresh capture must register its ImageReader listener before checking the target frame" >&2
   exit 1
 fi
-fresh_frame_block="$(sed -n "$((fresh_frame_marker_line - 2)),$((listener_line - 1))p" "$main_activity")"
-grep -Fq 'flutterView.acquireLatestImageViewFrame()' <<<"$fresh_frame_block"
-grep -Fq 'requestHopeFrame()' "$main_activity"
+target_frame_block="$(sed -n "$((current_target_line - 3)),$((current_target_line + 15))p" "$main_activity")"
+grep -Fq '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' <<<"$target_frame_block"
+grep -Fq 'currentTargetFrameAvailable &&' <<<"$target_frame_block"
+grep -Fq 'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED' <<<"$target_frame_block"
+grep -Fq 'scheduleHopeFreshFrameRetry(' "$main_activity"
+grep -Fq 'HOPE_SCREENSHOT_TIMEOUT:phase=' "$main_activity"
 grep -Fq 'forceFreshFrame: _runtimeHasCapturedScreenshot' "$test_file"
 grep -Fq 'const _nativeScreenshotCaptureTimeout = Duration(seconds: 18);' "$test_file"
 grep -Fq ').timeout(' "$test_file"
 grep -Fq '_nativeScreenshotCaptureTimeout,' "$test_file"
 grep -Fq 'Future<bool> _dragScrollableTowardEndWithFallbackOffsets(' "$test_file"
 grep -Fq 'await _dragScrollableTowardEndWithFallbackOffsets(' "$test_file"
+grep -Fq 'var stableAtBottomFrames = 0;' "$test_file"
+grep -Fq 'while (sweeps < 20 && stableAtBottomFrames < 2)' "$test_file"
+grep -Fq 'stableFrames=$stableAtBottomFrames' "$test_file"
 if grep -Fq 'if (selectedState.position.pixels <= before + 0.5 &&' "$test_file"; then
   echo "FAIL: T10 scroll-end must not abort on the first no-progress drag; it must try alternate offsets." >&2
   exit 1
 fi
-# Protect the ImageReader capture boundary: register the listener first, then
-# probe the current FlutterImageView surface. Home can already have a rendered
-# ImageReader frame when capture starts; waiting only for a fresh callback blocks.
-immediate_frame_line="$(grep -nF '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT' "$main_activity" | head -n1 | cut -d: -f1)"
-listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | sed -n '2p' | cut -d: -f1)"
-fresh_frame_line="$(grep -nF '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' "$main_activity" | head -n1 | cut -d: -f1)"
-if [ -z "$fresh_frame_line" ] || [ "$fresh_frame_line" -ge "$listener_line" ]; then
-  echo "FAIL: stale-frame drain must happen before registering the ImageReader listener" >&2
-  exit 1
-fi
-if [ -z "$immediate_frame_line" ] || [ -z "$listener_line" ] || [ "$immediate_frame_line" -le "$listener_line" ]; then
-  echo "FAIL: native screenshot must register the ImageReader listener before the immediate current-frame probe" >&2
-  exit 1
-fi
-immediate_block="$(sed -n "$((immediate_frame_line - 2)),$((immediate_frame_line + 12))p" "$main_activity")"
-grep -Fq 'tryAcquireHopeScreenshotFrame(' <<<"$immediate_block"
-grep -Fq 'hopeScreenshotFrameCaptured.compareAndSet(false, true)' "$main_activity"
-
 if grep -Fq -- '--use-application-binary' "$script_file"; then
   echo "FAIL: runtime evidence must not use --use-application-binary" >&2
   exit 1
