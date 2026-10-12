@@ -102,7 +102,7 @@ class _JobsPageState extends State<JobsPage> {
       }
     } catch (_) {
       if (mounted && requestId == _savedSearchesLoadRequestId) {
-        setState(() => _savedSearches = const [];)
+        setState(() => _savedSearches = const []);
       }
     }
   }
