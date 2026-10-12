@@ -345,9 +345,16 @@ void main() {
       expect(metric, findsOneWidget);
       final latestBalance = HopeDisplayFormatter.money(5555, locale: 'en');
       final oldBalance = HopeDisplayFormatter.money(1111, locale: 'en');
+      final visibleMetricText = tester
+          .widgetList<Text>(
+            find.descendant(of: metric, matching: find.byType(Text)),
+          )
+          .map((widget) => widget.data ?? '')
+          .toList();
       expect(
-        find.descendant(of: metric, matching: find.text(latestBalance)),
-        findsOneWidget,
+        visibleMetricText,
+        contains(latestBalance),
+        reason: 'Current metric texts: ${visibleMetricText.join(' | ')}',
       );
 
       wallets.requests[0].complete(HopeWallet(
