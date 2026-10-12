@@ -153,8 +153,6 @@ class _MissingBalancePointInsightsRepository implements FinancialInsightsReposit
 }
 
 
-class _MissingSourceAmountInsightsRepository implements FinancialInsightsRepository {
-
 class _GappedBalanceTrendInsightsRepository implements FinancialInsightsRepository {
   const _GappedBalanceTrendInsightsRepository();
 
@@ -181,6 +179,7 @@ class _GappedBalanceTrendInsightsRepository implements FinancialInsightsReposito
       });
 }
 
+class _MissingSourceAmountInsightsRepository implements FinancialInsightsRepository {
   const _MissingSourceAmountInsightsRepository();
 
   @override
