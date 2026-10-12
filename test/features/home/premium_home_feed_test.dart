@@ -10,6 +10,11 @@ import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
+import 'package:hope_mobile/core/transactions/payment.dart';
+import 'package:hope_mobile/core/transactions/transaction_repository.dart';
+import 'package:hope_mobile/core/transactions/wallet.dart';
+import 'package:hope_mobile/core/transactions/wallet_repository.dart';
+import 'package:hope_mobile/core/ui/hope_display_formatters.dart';
 import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
@@ -110,6 +115,49 @@ HopeJob _job(String id, String title, {bool recommended = false}) =>
           recommended ? ['SKILL_MATCH'] : const <String>[],
     });
 
+class _ImmediateTransactions implements TransactionRepository {
+  @override
+  Future<List<HopeJob>> listMyJobs() async => const <HopeJob>[];
+
+  @override
+  Future<HopePayment> getPayment(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopePayment> fundPayment(String jobId, {String? idempotencyKey}) async => throw UnimplementedError();
+  @override
+  Future<HopePayment> refundPayment(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopePayment> releasePayment(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopeJob> startJob(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopeJob> deliverJob(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopeJob> acceptJob(String jobId) async => throw UnimplementedError();
+  @override
+  Future<void> submitEvidence(String jobId, {required String uri, required String notes, required String type}) async => throw UnimplementedError();
+}
+
+class _DelayedWalletRepository implements WalletRepository {
+  final requests = <Completer<HopeWallet>>[];
+
+  @override
+  Future<HopeWallet> getWallet() {
+    final gate = Completer<HopeWallet>();
+    requests.add(gate);
+    return gate.future;
+  }
+
+  @override
+  Future<WalletTransactionsPage> listTransactions({int limit = 30, String? cursor}) async => throw UnimplementedError();
+  @override
+  Future<List<HopePayout>> listPayouts() async => throw UnimplementedError();
+  @override
+  Future<Map<String, dynamic>> transfer({required String destinationWalletId, required int amount, required String idempotencyKey}) async => throw UnimplementedError();
+  @override
+  Future<Map<String, dynamic>> requestPayout({required int amount, required String idempotencyKey}) async => throw UnimplementedError();
+  @override
+  Future<Map<String, dynamic>> topUp({required int amount, required String idempotencyKey}) async => throw UnimplementedError();
+}
 class _HomeHarness {
   const _HomeHarness(this.widget, this.settings);
 
@@ -122,6 +170,8 @@ Future<_HomeHarness> _host(
   bool authenticated = false,
   double textScale = 1,
   String locale = 'en',
+  TransactionRepository? transactions,
+  WalletRepository? wallets,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
@@ -160,6 +210,8 @@ Future<_HomeHarness> _host(
           Provider<ApplicationRegistry>.value(
             value: ApplicationRegistry(
               marketplace: repository,
+              transactions: transactions,
+              wallets: wallets,
               opportunityAgent:
                   authenticated ? _FakeOpportunityAgent() : null,
             ),
@@ -249,6 +301,65 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'late wallet result from an old Home load cannot overwrite the newest refresh',
+    (tester) async {
+      final marketplace = _SequencedMarketplaceRepository();
+      final wallets = _DelayedWalletRepository();
+      final harness = await _host(
+        marketplace,
+        authenticated: true,
+        transactions: _ImmediateTransactions(),
+        wallets: wallets,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+      expect(wallets.requests, hasLength(1));
+
+      final refresh = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      final refreshFuture = refresh.onRefresh();
+      await tester.pump();
+      expect(wallets.requests, hasLength(2));
+
+      wallets.requests[1].complete(HopeWallet(
+        id: 'wallet-new',
+        userId: 'u1',
+        currency: 'TOMAN',
+        availableBalance: 0,
+        lockedBalance: 0,
+        status: 'ACTIVE',
+        escrowBalance: 5555,
+      ));
+      marketplace.staleRefresh.complete([marketplace.fresh]);
+      await refreshFuture;
+      await tester.pumpAndSettle();
+
+      final latestBalance = HopeDisplayFormatter.money(5555, locale: 'en');
+      final oldBalance = HopeDisplayFormatter.money(1111, locale: 'en');
+      expect(find.text(latestBalance), findsOneWidget);
+
+      wallets.requests[0].complete(HopeWallet(
+        id: 'wallet-old',
+        userId: 'u1',
+        currency: 'TOMAN',
+        availableBalance: 0,
+        lockedBalance: 0,
+        status: 'ACTIVE',
+        escrowBalance: 1111,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(latestBalance),
+        findsOneWidget,
+        reason: 'A stale wallet response must not replace the newest snapshot.',
+      );
+      expect(find.text(oldBalance), findsNothing);
+    },
+  );
 
   testWidgets('settings changes reload home opportunities',
       (tester) async {
