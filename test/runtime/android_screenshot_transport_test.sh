@@ -9,6 +9,7 @@ script_file="$repo_root/tools/hope-wallet-runtime-evidence.sh"
 main_activity="$repo_root/android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt"
 runtime_contracts=(
   'private const val HOPE_SCREENSHOT_CHANNEL = "hope.runtime/screenshot"'
+  '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME'
   'getCurrentImageSurface()'
   'setOnImageAvailableListener'
   'acquireLatestImageViewFrame()'
@@ -27,6 +28,7 @@ dart_contracts=(
   "const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');"
   "invokeMethod<Uint8List>("
   "'screenshotName': marker"
+  "'forceFreshFrame': forceFreshFrame"
   'required WidgetTester tester'
 )
 for contract in "${dart_contracts[@]}"; do
@@ -37,7 +39,9 @@ for contract in "${dart_contracts[@]}"; do
 done
 
 
-grep -Fq 'await _captureHopeNativeScreenshot(binding, marker);' "$test_file"
+grep -Fq 'await _captureHopeNativeScreenshot(binding, marker, forceFreshFrame: _runtimeHasCapturedScreenshot);' "$test_file"
+grep -Fq 'var _runtimeHasCapturedScreenshot = false;' "$test_file"
+grep -Fq 'call.argument<Boolean>("forceFreshFrame") ?: false' "$main_activity"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:native-primary:' "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_READY:' "$test_file"
 if grep -Fq 'await binding.takeScreenshot(marker)' "$test_file"; then
@@ -63,6 +67,11 @@ grep -Fq ': > "$log_path"' "$script_file"
 # ImageReader frame when capture starts; waiting only for a fresh callback blocks.
 immediate_frame_line="$(grep -nF '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT' "$main_activity" | head -n1 | cut -d: -f1)"
 listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | head -n1 | cut -d: -f1)"
+fresh_frame_line="$(grep -nF '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' "$main_activity" | head -n1 | cut -d: -f1)"
+if [ -z "$fresh_frame_line" ] || [ "$fresh_frame_line" -ge "$listener_line" ]; then
+  echo "FAIL: stale-frame drain must happen before registering the ImageReader listener" >&2
+  exit 1
+fi
 if [ -z "$immediate_frame_line" ] || [ -z "$listener_line" ] || [ "$immediate_frame_line" -le "$listener_line" ]; then
   echo "FAIL: native screenshot must register the ImageReader listener before the immediate current-frame probe" >&2
   exit 1
