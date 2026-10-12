@@ -292,12 +292,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
             20,
             MediaQuery.of(context).viewInsets.bottom + 24,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                HopeCopy.of(context).copy_apply_to_this_job_923b353,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  HopeCopy.of(context).copy_apply_to_this_job_923b353,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
@@ -335,7 +336,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   HopeCopy.of(context).copy_submit_application_43b8707,
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -418,12 +420,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
           20,
           MediaQuery.of(context).viewInsets.bottom + 24,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              HopeCopy.of(context).copy_offer_for_this_mission_f50b00a,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                HopeCopy.of(context).copy_offer_for_this_mission_f50b00a,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
@@ -466,7 +469,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   Navigator.pop(context, [price.text, message.text]),
               child: Text(HopeCopy.of(context).copy_send_offer_8aa1351),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
