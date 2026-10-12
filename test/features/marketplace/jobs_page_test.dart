@@ -579,7 +579,12 @@ void main() {
       expect(suggestedName, isNot(contains('SPECIALIZED')));
       expect(suggestedName, isNot(contains('design')));
 
-      await tester.tap(find.text('لغو'));
+      await tester.tap(
+        find.descendant(
+          of: dialog,
+          matching: find.byType(TextButton),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     },
