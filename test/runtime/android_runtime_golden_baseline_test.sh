@@ -116,6 +116,8 @@ require_line "$runtime" 'duplicate-png-hash'
 require_line "$runtime" 'validate_semantics_set'
 require_line "$runtime" 'validate_scroll_end_set'
 require_line "$runtime" 'talkback_semantics_mode": "separate_bound_service_pass'
+require_line "$runtime" 'HOPE_T10_RESPONSIVE_SEMANTICS_VIEWPORT_BEGIN:720x1280:320dpi'
+require_line "$runtime" 'HOPE_T10_RESPONSIVE_SEMANTICS_VIEWPORT_END'
 
 echo "PASS: Android runtime screenshot baseline contract is locked."
 
