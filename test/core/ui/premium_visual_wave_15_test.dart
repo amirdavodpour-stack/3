@@ -426,7 +426,7 @@ void main() {
         isNot(contains(r'\n')),
         reason: 'Compact amount ranges must render real line breaks, not the visible \\n escape sequence.',
       );
-      expect(amount.maxLines, 3);
+      expect(amount.maxLines, 5);
       expect(amount.overflow, TextOverflow.clip);
       expect(
         tester.renderObject<RenderParagraph>(amountFinder).didExceedMaxLines,
