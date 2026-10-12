@@ -582,10 +582,18 @@ void main() {
       await tester.tap(
         find.descendant(
           of: dialog,
-          matching: find.byType(TextButton),
+          matching: find.byType(FilledButton),
         ),
       );
       await tester.pumpAndSettle();
+
+      expect(savedSearches.items, hasLength(1));
+      final saved = savedSearches.items.single;
+      expect(saved.name, suggestedName.trim());
+      expect(saved.kind, 'MISSION');
+      expect(saved.visibility, 'SPECIALIZED');
+      expect(saved.category, 'design');
+      expect(saved.city, 'AUTO');
       expect(tester.takeException(), isNull);
     },
   );
