@@ -190,4 +190,33 @@ if printf '%s\n' "$login_capture_block" | grep -Fq 'await tester.pump('; then
   exit 1
 fi
 
+# T10: require a real TalkBack service and a live Flutter semantics tree.
+talkback_helper="$repo_root/tools/hope-enable-talkback.sh"
+if [ ! -s "$talkback_helper" ]; then
+  echo "FAIL: T10 needs a TalkBack install/enable/verify helper" >&2
+  exit 1
+fi
+grep -Fq 'com.android.talkback' "$talkback_helper"
+grep -Fq 'com.google.android.marvin.talkback.TalkBackService' "$talkback_helper"
+grep -Fq 'settings put secure enabled_accessibility_services' "$talkback_helper"
+grep -Fq 'settings put secure accessibility_enabled 1' "$talkback_helper"
+grep -Fq 'dumpsys accessibility' "$talkback_helper"
+grep -Fq 'accessibility-enabled.txt' "$talkback_helper"
+grep -Fq 'accessibility-services.txt' "$talkback_helper"
+grep -Fq 'bash tools/hope-enable-talkback.sh' "$script_file"
+grep -Fq 'HOPE_TALKBACK_REQUIRED' "$script_file"
+grep -Fq 'HOPE_T10_SEMANTICS_PASS:' "$test_file"
+grep -Fq 'HOPE_T10_SCROLL_END_PASS:' "$test_file"
+grep -Fq "tester.ensureSemantics()" "$test_file"
+grep -Fq "'scroll-end-\$marker'" "$test_file"
+grep -Fq 'talkback_service_bound' "$script_file"
+grep -Fq 'scroll_end_screens' "$script_file"
+grep -Fq 'accessibility-services.txt' "$script_file"
+
+workflow_file="$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'Checkout pinned Google TalkBack source' "$workflow_file"
+grep -Fq '229212fdf5842191d0a93fc95d9ca1423b346866' "$workflow_file"
+grep -Fq 'Build pinned Google TalkBack accessibility service' "$workflow_file"
+grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
+
 echo "PASS: Flutter rendered-screenshot transport contract"
