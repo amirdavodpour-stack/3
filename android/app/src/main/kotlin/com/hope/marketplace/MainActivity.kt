@@ -58,7 +58,10 @@ class MainActivity : FlutterActivity() {
             HOPE_SCREENSHOT_CHANNEL,
         ).setMethodCallHandler { call, result ->
             when (call.method) {
-                "captureScreenshot" -> captureHopeScreenshot(result)
+                "captureScreenshot" -> captureHopeScreenshot(
+                    result,
+                    call.argument<Boolean>("forceFreshFrame") ?: false,
+                )
                 else -> result.notImplemented()
             }
         }
@@ -74,7 +77,10 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
-    private fun captureHopeScreenshot(result: MethodChannel.Result) {
+    private fun captureHopeScreenshot(
+        result: MethodChannel.Result,
+        forceFreshFrame: Boolean = false,
+    ) {
         if (!hopeScreenshotInProgress.compareAndSet(false, true)) {
             result.error(
                 "CAPTURE_IN_PROGRESS",
@@ -104,6 +110,13 @@ class MainActivity : FlutterActivity() {
             return
         }
 
+        if (forceFreshFrame) {
+            // HOPE_SCREENSHOT_FORCE_FRESH_FRAME
+            // Consume any queued frame from the previous page before listening;
+            // only a subsequent Flutter frame may satisfy this capture request.
+            flutterView.acquireLatestImageViewFrame()
+        }
+
         imageReader.setOnImageAvailableListener(
             {
                 mainHandler.post {
@@ -122,21 +135,27 @@ class MainActivity : FlutterActivity() {
             backgroundHandler,
         )
 
-        // Register the listener first, then probe the current surface. A screen
-        // can already have a rendered ImageReader frame when capture starts (as
-        // happened on Home after Login); waiting only for a new callback blocks.
-        // HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT
-        mainHandler.post {
-            if (!hopeScreenshotInProgress.get()) {
-                return@post
+        if (forceFreshFrame) {
+            // The old buffer was consumed above; request a new Flutter frame and
+            // let the ImageReader callback capture that page rather than stale UI.
+            requestHopeFrame()
+        } else {
+            // Register the listener first, then probe the current surface. A screen
+            // can already have a rendered ImageReader frame when capture starts (as
+            // happened on Home after Login); waiting only for a new callback blocks.
+            // HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT
+            mainHandler.post {
+                if (!hopeScreenshotInProgress.get()) {
+                    return@post
+                }
+                tryAcquireHopeScreenshotFrame(
+                    flutterView,
+                    imageReader,
+                    mainHandler,
+                    backgroundHandler,
+                    result,
+                )
             }
-            tryAcquireHopeScreenshotFrame(
-                flutterView,
-                imageReader,
-                mainHandler,
-                backgroundHandler,
-                result,
-            )
         }
     }
 
