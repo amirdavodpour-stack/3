@@ -522,7 +522,10 @@ class OpportunityCard extends StatelessWidget {
           Text(
             _formatCompactGridAmount(amount, context),
             key: const ValueKey('opportunity-card-compact-grid-budget'),
-            maxLines: 3,
+            // The range formatter uses three logical lines. Enlarged text can
+            // wrap either bound into extra visual lines; allow those lines so
+            // the upper bound and currency unit are not silently clipped.
+            maxLines: 5,
             softWrap: true,
             overflow: TextOverflow.clip,
             style: TextStyle(fontSize: 10.5, height: 1.12, fontWeight: FontWeight.w900, color: primary),
