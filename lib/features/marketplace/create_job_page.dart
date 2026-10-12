@@ -42,6 +42,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
   final accept = TextEditingController();
 
   bool busy = false;
+  String? _pendingPublishId;
   int activeStep = 0;
   String kind = 'MISSION';
   String visibility = 'PUBLIC';
@@ -80,7 +81,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
 
   Future<void> submit() async {
     // A stale/double-activated callback must not duplicate create + publish.
-    if (busy) return;
+    if (busy || _pendingPublishId != null) return;
     final effectiveMin = kind == 'JOB' ? salary.text : min.text;
     final effectiveMax = kind == 'JOB' ? salary.text : max.text;
     final selectedCategory = categoryId;
@@ -117,6 +118,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
       return;
     }
     setState(() => busy = true);
+    String? createdOpportunityId;
     try {
       final body = buildCreateOpportunityPayload(CreateJobPayloadInput(
         title: title.text,
@@ -137,13 +139,54 @@ class _CreateJobPageState extends State<CreateJobPage> {
       ));
       final useCase = _applicationRegistry(context).createOpportunity;
       final created = await useCase(body);
+      createdOpportunityId = created.id;
+      // Lock the created record before awaiting publication.
+      if (mounted) setState(() => _pendingPublishId = created.id);
       await useCase.publish(created.id);
       if (!mounted) return;
       HopeFeedback.show(context, HopeCopy.of(context).copy_opportunity_published_81a9fd1, tone: HopeFeedbackTone.success);
       Navigator.pop(context);
     } catch (error) {
       if (!mounted) return;
+      final pendingId = createdOpportunityId;
+      if (pendingId != null &&
+          pendingId.trim().isNotEmpty &&
+          _pendingPublishId != pendingId) {
+        setState(() => _pendingPublishId = pendingId);
+      }
       HopeFeedback.show(context, apiErrorMessage(error, fallback: HopeCopy.of(context).copy_the_server_did_not_return_data_try_again_bccfbb3), tone: HopeFeedbackTone.error);
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> retryPendingPublication() async {
+    if (busy) return;
+    final pendingId = _pendingPublishId;
+    if (pendingId == null || pendingId.trim().isEmpty) return;
+
+    setState(() => busy = true);
+    try {
+      await _applicationRegistry(context).createOpportunity.publish(pendingId);
+      if (!mounted) return;
+      _pendingPublishId = null;
+      HopeFeedback.show(
+        context,
+        HopeCopy.of(context).copy_opportunity_published_81a9fd1,
+        tone: HopeFeedbackTone.success,
+      );
+      Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) return;
+      HopeFeedback.show(
+        context,
+        apiErrorMessage(
+          error,
+          fallback: HopeCopy.of(context)
+              .copy_the_server_did_not_return_data_try_again_bccfbb3,
+        ),
+        tone: HopeFeedbackTone.error,
+      );
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -216,7 +259,8 @@ class _CreateJobPageState extends State<CreateJobPage> {
               ),
               SizedBox(height: shortViewport ? 2 : HopeV2Spacing.sm),
               Expanded(
-                child: _CreateJobForm(
+                child: _pendingPublishId == null
+                    ? _CreateJobForm(
                   title: title,
                   description: desc,
                   minBudget: min,
@@ -250,7 +294,12 @@ class _CreateJobPageState extends State<CreateJobPage> {
                   onPickDeadline: _pickDeadline,
                   onSubmit: submit,
                   translate: _t,
-                ),
+                      )
+                    : _CreatePublishRetryState(
+                        busy: busy,
+                        onRetry: retryPendingPublication,
+                        translate: _t,
+                      ),
               ),
             ],
           ),
@@ -259,3 +308,80 @@ class _CreateJobPageState extends State<CreateJobPage> {
     );
   }
 }
+
+class _CreatePublishRetryState extends StatelessWidget {
+  const _CreatePublishRetryState({
+    required this.busy,
+    required this.onRetry,
+    required this.translate,
+  });
+
+  final bool busy;
+  final Future<void> Function() onRetry;
+  final String Function(String, String) translate;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+        key: const ValueKey('create-opportunity-publish-retry-state'),
+        padding: HopeV2Navigation.scrollEndPadding(
+          context,
+          horizontal: 20,
+          top: 16,
+        ),
+        children: [
+          PremiumPanel(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: HopeIconTile(
+                    HopeV2Icons.pending,
+                    size: 52,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  translate(
+                    'فرصت ثبت شد؛ انتشار تکمیل نشد',
+                    'Opportunity created; publication incomplete',
+                  ),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  translate(
+                    'فرصت یک بار ایجاد شده است. برای جلوگیری از ثبت تکراری، اطلاعات فرم قفل شده و تلاش دوباره فقط همین فرصت را منتشر می‌کند.',
+                    'The opportunity has already been created. To avoid a duplicate, its details are locked and retry will publish this same opportunity only.',
+                  ),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  key: const ValueKey('create-opportunity-retry-publish'),
+                  onPressed: busy ? null : () => onRetry(),
+                  icon: busy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const HugeIcon(
+                          icon: HopeV2Icons.refresh,
+                          size: 18,
+                        ),
+                  label: Text(
+                    busy
+                        ? translate('در حال انتشار...', 'Publishing...')
+                        : translate('تلاش دوباره برای انتشار', 'Retry publication'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+}
+
