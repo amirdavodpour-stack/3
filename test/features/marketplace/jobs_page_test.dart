@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -532,6 +534,66 @@ void main() {
 
       expect(find.text('custom-finance-area-77'), findsNothing);
       expect(find.text('Other'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+class _SequencedSavedSearchFixture extends _SavedSearchFixture {
+  _SequencedSavedSearchFixture() : super([]);
+
+  final Completer<List<HopeSavedSearch>> staleInitialLoad =
+      Completer<List<HopeSavedSearch>>();
+  int listCalls = 0;
+
+  @override
+  Future<List<HopeSavedSearch>> list() {
+    listCalls += 1;
+    if (listCalls == 1) return staleInitialLoad.future;
+    return Future.value(List.unmodifiable(items));
+  }
+}
+
+  testWidgets(
+    'late initial saved-search load cannot erase a just-saved search',
+    (tester) async {
+      final repo = _Repo();
+      final savedSearches = _SequencedSavedSearchFixture();
+      await _pump(
+        tester,
+        repo,
+        locale: const Locale('en'),
+        savedSearches: savedSearches,
+      );
+      await tester.pumpAndSettle();
+      expect(savedSearches.listCalls, 1);
+
+      final launcher = find.byKey(
+        const ValueKey('hope-opportunity-refinement-launcher'),
+      );
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save this search'));
+      await tester.pumpAndSettle();
+
+      final dialog = find.byType(AlertDialog);
+      expect(dialog, findsOneWidget);
+      await tester.tap(
+        find.descendant(of: dialog, matching: find.byType(FilledButton)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(savedSearches.items, hasLength(1));
+      expect(savedSearches.listCalls, 2);
+      await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+      await tester.pumpAndSettle();
+
+      // Complete the old initial request after the save refresh has committed.
+      savedSearches.staleInitialLoad.complete(const <HopeSavedSearch>[]);
+      await tester.pumpAndSettle();
+
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+      expect(find.text('Saved searches · 1'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
