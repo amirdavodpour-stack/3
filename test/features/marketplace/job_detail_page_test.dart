@@ -856,6 +856,44 @@ void main() {
     },
   );
 
+  testWidgets(
+    'application sheet keeps its submit action reachable above a compact keyboard at 1.5x text',
+    (tester) async {
+      const keyboardHeight = 280.0;
+      tester.view.viewInsets = const FakeViewPadding(bottom: keyboardHeight);
+      addTearDown(() {
+        tester.view.viewInsets = const FakeViewPadding();
+      });
+      await _pump(
+        tester,
+        job: _job(kind: 'JOB'),
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+      );
+
+      final pageCta =
+          find.byKey(const ValueKey('opportunity-detail-primary-cta'));
+      expect(pageCta.hitTestable(), findsOneWidget);
+      await tester.tap(pageCta);
+      await tester.pumpAndSettle();
+
+      final sheet = find.byType(BottomSheet);
+      expect(sheet, findsOneWidget);
+      final submit =
+          find.descendant(of: sheet, matching: find.byType(FilledButton));
+      expect(submit, findsOneWidget);
+      final submitRect = tester.getRect(submit);
+      expect(
+        submitRect.bottom,
+        lessThanOrEqualTo(tester.view.physicalSize.height - keyboardHeight),
+        reason: 'Apply submit must remain above the simulated on-screen keyboard.',
+      );
+      expect(submit.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('owner mission opens the transaction route intent',
       (tester) async {
     await _pump(tester,
