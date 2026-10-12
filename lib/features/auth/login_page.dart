@@ -152,7 +152,11 @@ class _LoginPageState extends State<LoginPage> {
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
-                height: denseAuth ? 92 : 104,
+                // Keep the compact auth hero tall enough for 1.5x text. Its
+                // title and subtitle can each wrap to two lines in fa-RTL.
+                height: MediaQuery.textScalerOf(context).scale(1) > 1.2
+                    ? 156
+                    : (denseAuth ? 92 : 104),
                 compactHero: true,
               ),
               SizedBox(height: denseAuth ? 6 : 10),
