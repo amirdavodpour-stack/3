@@ -492,6 +492,50 @@ void main() {
     },
   );
 
+  testWidgets(
+    'unknown saved-search category uses localized Other fallback when taxonomy is unavailable',
+    (tester) async {
+      final repo = _Repo()..failCategories = true;
+      final savedSearches = _SavedSearchFixture([
+        HopeSavedSearch(
+          id: 'saved-custom-category',
+          name: 'Specialized roles',
+          query: '',
+          kind: 'ALL',
+          visibility: 'ALL',
+          city: 'AUTO',
+          category: 'custom-finance-area-77',
+          updatedAt: '2026-10-12T00:00:00Z',
+        ),
+      ]);
+      await _pump(
+        tester,
+        repo,
+        locale: const Locale('en'),
+        savedSearches: savedSearches,
+      );
+      await tester.pumpAndSettle();
+
+      final launcher = find.byKey(
+        const ValueKey('hope-opportunity-refinement-launcher'),
+      );
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Saved searches · 1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Specialized roles'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+      await tester.pumpAndSettle();
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+
+      expect(find.text('custom-finance-area-77'), findsNothing);
+      expect(find.text('Other'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('choosing "همه حوزه‌ها" again clears the category filter',
       (tester) async {
     final repo = _Repo();
