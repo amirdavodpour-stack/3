@@ -15,6 +15,11 @@ runtime_contracts=(
   'acquireLatestImageViewFrame()'
   '// HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT'
   'hopeScreenshotFrameCaptured.compareAndSet(false, true)'
+  'private const val HOPE_SCREENSHOT_FRAME_TIMEOUT_MS'
+  'private const val HOPE_SCREENSHOT_FRAME_RETRY_INTERVAL_MS'
+  'private fun scheduleHopeFreshFrameRetry('
+  'private fun clearHopeScreenshotCaptureWatchdogs('
+  'hopeScreenshotResultCompleted.compareAndSet(false, true)'
   'BuildConfig.DEBUG'
 )
 for contract in "${runtime_contracts[@]}"; do
@@ -75,6 +80,14 @@ fresh_frame_block="$(sed -n "$((fresh_frame_marker_line - 2)),$((listener_line -
 grep -Fq 'flutterView.acquireLatestImageViewFrame()' <<<"$fresh_frame_block"
 grep -Fq 'requestHopeFrame()' "$main_activity"
 grep -Fq 'forceFreshFrame: _runtimeHasCapturedScreenshot' "$test_file"
+grep -Fq 'const _nativeScreenshotCaptureTimeout = Duration(seconds: 18);' "$test_file"
+grep -Fq '.timeout(_nativeScreenshotCaptureTimeout' "$test_file"
+grep -Fq 'Future<bool> _dragScrollableTowardEndWithFallbackOffsets(' "$test_file"
+grep -Fq 'await _dragScrollableTowardEndWithFallbackOffsets(' "$test_file"
+if grep -Fq 'if (selectedState.position.pixels <= before + 0.5 &&' "$test_file"; then
+  echo "FAIL: T10 scroll-end must not abort on the first no-progress drag; it must try alternate offsets." >&2
+  exit 1
+fi
 # Protect the ImageReader capture boundary: register the listener first, then
 # probe the current FlutterImageView surface. Home can already have a rendered
 # ImageReader frame when capture starts; waiting only for a fresh callback blocks.
