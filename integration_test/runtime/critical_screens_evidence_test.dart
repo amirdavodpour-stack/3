@@ -801,6 +801,10 @@ const bool _talkbackRequired = bool.fromEnvironment(
   'HOPE_TALKBACK_REQUIRED',
   defaultValue: false,
 );
+const bool _semanticsOnly = bool.fromEnvironment(
+  'HOPE_T10_SEMANTICS_ONLY',
+  defaultValue: false,
+);
 const _captureHomeOnly =
     bool.fromEnvironment('HOPE_CAPTURE_HOME_ONLY', defaultValue: false);
 const _responsiveBatch =
@@ -836,6 +840,10 @@ typedef _Runtime = ({
 var _runtimeScreenshotSurfacePrepared = false;
 
 Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
+  if (_semanticsOnly) {
+    print('HOPE_T10_SEMANTICS_ONLY_SURFACE_SKIPPED');
+    return;
+  }
   if (_runtimeScreenshotSurfacePrepared) {
     return;
   }
@@ -893,7 +901,7 @@ Future<void> _captureRuntimeScreenshot(
   required WidgetTester tester,
 }) async {
   SemanticsHandle? semanticsHandle;
-  if (_talkbackRequired && !marker.startsWith('scroll-end-')) {
+  if (_talkbackRequired && _semanticsOnly && !marker.startsWith('scroll-end-')) {
     semanticsHandle = tester.ensureSemantics();
     try {
       await tester.pump();
@@ -935,6 +943,13 @@ Future<void> _captureRuntimeScreenshot(
       rethrow;
     }
   }
+  if (_semanticsOnly) {
+    // Never write a screenshot in the TalkBack-bound pass: focus outlines must
+    // not be mixed into the clean visual-baseline image set.
+    semanticsHandle?.dispose();
+    print('HOPE_T10_SEMANTICS_ONLY_SCREEN_COMPLETE:$marker');
+    return;
+  }
   try {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
@@ -952,15 +967,12 @@ Future<void> _captureRuntimeScreenshot(
 }
 
 bool _runtimeNeedsScrollEnd(String marker) {
-  const audited = <String>{
-    'home-fa-rtl',
-    'jobs-fa-rtl',
-    'job-detail-fa-rtl',
-    'transactions-fa-rtl',
-    'wallet-fa-rtl',
-    'profile-fa-rtl',
+  const auditedPages = <String>{
+    'home', 'jobs', 'job-detail', 'transactions', 'wallet', 'profile',
   };
-  return !marker.startsWith('responsive-') && audited.contains(marker);
+  final localeSuffix = _captureLocale == 'en' ? '-en-ltr' : '-fa-rtl';
+  return !marker.startsWith('responsive-') &&
+      auditedPages.any((page) => marker == '$page$localeSuffix');
 }
 
 Future<void> _captureScrollEndEvidence(
@@ -1349,6 +1361,11 @@ void main() {
   if (_captureLocale != 'fa' && _captureLocale != 'en') {
     throw StateError(
       'HOPE_CAPTURE_LOCALE must be supplied as fa or en for exact-locale runtime evidence.',
+    );
+  }
+  if (_semanticsOnly && !_talkbackRequired) {
+    throw StateError(
+      'HOPE_T10_SEMANTICS_ONLY requires HOPE_TALKBACK_REQUIRED=true and a separately verified bound service.',
     );
   }
   if (![1.0, 1.25, 1.5, 2.0].contains(_captureTextScale)) {
