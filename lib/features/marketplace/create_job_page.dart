@@ -79,6 +79,8 @@ class _CreateJobPageState extends State<CreateJobPage> {
   }
 
   Future<void> submit() async {
+    // A stale/double-activated callback must not duplicate create + publish.
+    if (busy) return;
     final effectiveMin = kind == 'JOB' ? salary.text : min.text;
     final effectiveMax = kind == 'JOB' ? salary.text : max.text;
     final selectedCategory = categoryId;
