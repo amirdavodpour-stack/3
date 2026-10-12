@@ -345,7 +345,7 @@ void main() {
       await tester.pumpAndSettle();
       final latestBalance = HopeDisplayFormatter.money(5555, locale: 'en');
       final oldBalance = HopeDisplayFormatter.money(1111, locale: 'en');
-      expect(find.text(latestBalance), findsOneWidget);
+      expect(find.textContaining(latestBalance), findsOneWidget);
 
       wallets.requests[0].complete(HopeWallet(
         id: 'wallet-old',
@@ -359,11 +359,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(latestBalance),
+        find.textContaining(latestBalance),
         findsOneWidget,
         reason: 'A stale wallet response must not replace the newest snapshot.',
       );
-      expect(find.text(oldBalance), findsNothing);
+      expect(find.textContaining(oldBalance), findsNothing);
     },
   );
 
