@@ -66,6 +66,20 @@ void main() {
         );
         expect(fallback, findsOneWidget, reason: category.slug);
 
+        final artwork = find.byKey(
+          ValueKey('opportunity-fallback-category-artwork-${category.slug}'),
+        );
+        expect(
+          artwork,
+          findsOneWidget,
+          reason: '${category.slug} needs its deterministic vector cover artwork.',
+        );
+        expect(
+          tester.widget<CustomPaint>(artwork).painter,
+          isA<CustomPainter>(),
+          reason: '${category.slug} artwork must be rendered by a stable painter.',
+        );
+
         final iconFinder = find.descendant(
           of: fallback,
           matching: find.byType(HopeIcon),
