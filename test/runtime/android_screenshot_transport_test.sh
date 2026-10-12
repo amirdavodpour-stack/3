@@ -211,7 +211,7 @@ grep -Fq "tester.ensureSemantics()" "$test_file"
 grep -Fq "'scroll-end-\$marker'" "$test_file"
 grep -Fq 'talkback_service_bound' "$script_file"
 grep -Fq 'scroll_end_screens' "$script_file"
-grep -Fq 'accessibility-services.txt' "$script_file"
+grep -Fq 'accessibility-services.txt' "$talkback_helper"
 
 workflow_file="$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'Checkout pinned Google TalkBack source' "$workflow_file"
