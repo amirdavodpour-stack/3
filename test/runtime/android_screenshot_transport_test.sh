@@ -62,6 +62,15 @@ if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evi
 fi
 grep -Fq ': > "$log_path"' "$script_file"
 
+# Regression: a rebuilt static page can leave the previous ImageReader frame queued.
+# Always request a fresh Flutter frame before listener/probe logic so PixelCopy cannot
+# silently repeat the preceding screen's PNG.
+fresh_frame_request_line="$(grep -nF '// HOPE_SCREENSHOT_FRESH_FRAME_REQUEST' "$main_activity" | head -n1 | cut -d: -f1)"
+listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | head -n1 | cut -d: -f1)"
+if [ -z "$fresh_frame_request_line" ] || [ -z "$listener_line" ] || [ "$fresh_frame_request_line" -ge "$listener_line" ]; then
+  echo "FAIL: native screenshot must request a fresh Flutter frame before registering the image listener" >&2
+  exit 1
+fi
 # Protect the ImageReader capture boundary: register the listener first, then
 # probe the current FlutterImageView surface. Home can already have a rendered
 # ImageReader frame when capture starts; waiting only for a fresh callback blocks.
