@@ -104,10 +104,16 @@ class _JobsPageState extends State<JobsPage> {
   String _savedSearchName() {
     final parts = <String>[];
     if (_query.trim().isNotEmpty) parts.add(_query.trim());
-    if (_kind != 'ALL') parts.add(_kind);
-    if (_visibility != 'ALL') parts.add(_visibility);
-    if (_category != 'ALL') parts.add(_category);
-    if (_city != 'AUTO') parts.add(_city);
+    if (_kind != 'ALL') parts.add(opportunityKindLabel(context, _kind));
+    if (_visibility != 'ALL') {
+      parts.add(opportunityVisibilityLabel(context, _visibility));
+    }
+    if (_category != 'ALL') parts.add(_categoryLabel(context));
+    if (_city != 'AUTO') {
+      parts.add(
+        _city == 'همه' ? HopeCopy.of(context).copy_all_cities : _city,
+      );
+    }
     return parts.isEmpty
         ? HopeCopy.of(context).copy_all_opportunities
         : parts.join(' • ');
