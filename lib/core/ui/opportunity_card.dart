@@ -309,7 +309,10 @@ class OpportunityCard extends StatelessWidget {
                 icon: HopeV2Icons.featured,
                 label: percent == null
                     ? _t(context, 'پیشنهاد ویژه', 'Featured')
-                    : '${percent.round()}% ${_t(context, 'تطابق', 'match')}',
+                    : '${HopeDisplayFormatter.percent(
+                        percent.round(),
+                        locale: Localizations.localeOf(context).languageCode,
+                      )} ${_t(context, 'تطابق', 'match')}',
                 color: HopeV2Colors.secondaryDark,
                 inverse: true,
               ),
