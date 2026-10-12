@@ -154,6 +154,33 @@ class _MissingBalancePointInsightsRepository implements FinancialInsightsReposit
 
 
 class _MissingSourceAmountInsightsRepository implements FinancialInsightsRepository {
+
+class _GappedBalanceTrendInsightsRepository implements FinancialInsightsRepository {
+  const _GappedBalanceTrendInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      HopeFinancialInsights.fromMap(const {
+        'currency': 'TOMAN',
+        'range': {'months': 3},
+        'summary': {
+          'availableBalance': 0,
+          'lockedBalance': 0,
+          'totalInflow': 0,
+          'totalOutflow': 0,
+          'totalReserved': 0,
+          'netCashFlow': 0,
+        },
+        'monthlyCashFlow': [],
+        'balanceTrend': [
+          {'date': '2026-08', 'balance': '100000'},
+          {'date': '2026-09'},
+          {'date': '2026-10', 'balance': '300000'},
+        ],
+        'bySource': [],
+      });
+}
+
   const _MissingSourceAmountInsightsRepository();
 
   @override
@@ -519,6 +546,68 @@ void main() {
       }
       expect(balanceChart, findsOneWidget);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'balance trend preserves a missing month instead of compressing the timeline',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        tester.view.physicalSize = const Size(240, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _GappedBalanceTrendInsightsRepository(),
+            child: MaterialApp(
+              locale: const Locale('fa'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final balanceScroll = find.byKey(
+          const ValueKey('financial-balance-chart-scroll'),
+        );
+        await tester.scrollUntilVisible(
+          balanceScroll,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        final chartSemantics = tester.getSemantics(
+          find.byKey(const ValueKey('financial-balance-chart-semantics')),
+        );
+        expect(chartSemantics.label, contains('2026-08'));
+        expect(chartSemantics.label, contains('2026-09'));
+        expect(chartSemantics.label, contains('2026-10'));
+        expect(chartSemantics.label, contains('مانده پایانی ثبت نشده'));
+
+        final chartSurface = find.descendant(
+          of: balanceScroll,
+          matching: find.byType(SizedBox),
+        ).first;
+        expect(
+          tester.getSize(chartSurface).width,
+          greaterThanOrEqualTo(192),
+          reason: 'Keep all three month slots even when the middle value is absent.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
     },
   );
 
