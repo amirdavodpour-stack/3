@@ -62,6 +62,12 @@ if [[ ! -s "$talkback_helper" ]]; then
   echo "FAIL: T10 needs a TalkBack install/enable/verify helper" >&2
   exit 1
 fi
+# Treat the helper and runtime launcher as executable source: syntax must be clean
+# in Static, before the one-shot Android Runtime is armed.
+if ! bash -n "$talkback_helper" "$script"; then
+  echo "FAIL: TalkBack helper/runtime launcher has a shell syntax error." >&2
+  exit 1
+fi
 grep_fixed -Fq -- 'com.android.talkback' "$talkback_helper"
 grep_fixed -Fq -- 'com.google.android.marvin.talkback.TalkBackService' "$talkback_helper"
 grep_fixed -Fq -- 'settings put secure enabled_accessibility_services' "$talkback_helper"
