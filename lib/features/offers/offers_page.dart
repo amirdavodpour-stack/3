@@ -324,6 +324,12 @@ class _OffersPageState extends State<OffersPage> {
     try {
       final detail = await context.read<OfferRepository>().get(summary.id);
       if (!mounted) return;
+      final locale = Localizations.localeOf(context).languageCode;
+      final createdAtLabel = HopeDisplayFormatter.relativeDateTime(
+        detail.createdAt,
+        locale: locale,
+      );
+      final opportunityTitle = detail.jobTitle?.trim();
       await showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
@@ -356,18 +362,19 @@ class _OffersPageState extends State<OffersPage> {
                     title: Text(_t('پیام','Message')),
                     subtitle: Text(detail.message),
                   ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const HopeIcon(HopeV2Icons.job, size: 20),
-                  title: Text(_t('فرصت','Opportunity')),
-                  subtitle: Text(detail.jobId),
-                ),
-                if (detail.createdAt != null)
+                if (opportunityTitle != null && opportunityTitle.isNotEmpty)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const HopeIcon(HopeV2Icons.job, size: 20),
+                    title: Text(_t('فرصت','Opportunity')),
+                    subtitle: Text(opportunityTitle),
+                  ),
+                if (createdAtLabel != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const HopeIcon(HopeV2Icons.pending, size: 20),
                     title: Text(_t('ایجاد شده','Created')),
-                    subtitle: Text(detail.createdAt!),
+                    subtitle: Text(createdAtLabel),
                   ),
                 if (widget.jobId != null && detail.isPending)
                   FilledButton.icon(

@@ -299,10 +299,24 @@ testWidgets('accepting an offer disables the financial action until completion',
       await tester.pumpAndSettle();
 
       expect(find.text('Offer details'), findsOneWidget);
-      expect(find.text(publicTitle), findsWidgets);
-      expect(find.text('Jan 2, 2020'), findsOneWidget);
-      expect(find.text(rawCreatedAt), findsNothing);
-      expect(find.text(internalJobId), findsNothing);
+      final bottomSheet = find.byType(BottomSheet);
+      expect(bottomSheet, findsOneWidget);
+      expect(
+        find.descendant(of: bottomSheet, matching: find.text(publicTitle)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: bottomSheet, matching: find.text('Jan 2, 2020')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: bottomSheet, matching: find.text(rawCreatedAt)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: bottomSheet, matching: find.text(internalJobId)),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
     },
   );
