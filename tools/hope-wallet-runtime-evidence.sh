@@ -669,18 +669,28 @@ if [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$talkback_setup_status" -eq 0 ]; then
   semantics_responsive_second=("${semantics_responsive_screens[@]:3:1}")
   semantics_responsive_third=("${semantics_responsive_screens[@]:4:2}")
   if [ "$semantics_status" -eq 0 ]; then
+    # The image-capture pass reset the emulator to its default size. Reapply
+    # the exact responsive viewport for service-bound semantics T10 as well.
+    adb shell wm size 720x1280
+    adb shell wm density 320
+    adb shell sleep 1 >/dev/null 2>&1 || true
+    echo "HOPE_T10_RESPONSIVE_SEMANTICS_VIEWPORT_BEGIN:720x1280:320dpi"
     run_host_batch_session semantics-responsive-a "${semantics_responsive_first[@]}" || semantics_status=$?
     if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "responsive-$CAPTURE_LOCALE-a" "$runner_temp/hope-semantics-responsive-a-runtime.log" "${semantics_responsive_first[@]}"; then semantics_status=1; fi
-  fi
-  if [ "$semantics_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL"
-    run_host_batch_session semantics-responsive-b "${semantics_responsive_second[@]}" || semantics_status=$?
-    if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-semantics-responsive-b-runtime.log" "${semantics_responsive_second[@]}"; then semantics_status=1; fi
-  fi
-  if [ "$semantics_status" -eq 0 ]; then
-    hope_android_device_ready "$RUNTIME_SERIAL"
-    run_host_batch_session semantics-responsive-c "${semantics_responsive_third[@]}" || semantics_status=$?
-    if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "responsive-$CAPTURE_LOCALE-c" "$runner_temp/hope-semantics-responsive-c-runtime.log" "${semantics_responsive_third[@]}"; then semantics_status=1; fi
+    if [ "$semantics_status" -eq 0 ]; then
+      hope_android_device_ready "$RUNTIME_SERIAL"
+      run_host_batch_session semantics-responsive-b "${semantics_responsive_second[@]}" || semantics_status=$?
+      if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "responsive-$CAPTURE_LOCALE-b" "$runner_temp/hope-semantics-responsive-b-runtime.log" "${semantics_responsive_second[@]}"; then semantics_status=1; fi
+    fi
+    if [ "$semantics_status" -eq 0 ]; then
+      hope_android_device_ready "$RUNTIME_SERIAL"
+      run_host_batch_session semantics-responsive-c "${semantics_responsive_third[@]}" || semantics_status=$?
+      if [ "$semantics_status" -eq 0 ] && ! validate_semantics_set "responsive-$CAPTURE_LOCALE-c" "$runner_temp/hope-semantics-responsive-c-runtime.log" "${semantics_responsive_third[@]}"; then semantics_status=1; fi
+    fi
+    adb shell wm size reset || true
+    adb shell wm density reset || true
+    adb shell sleep 1 >/dev/null 2>&1 || true
+    echo "HOPE_T10_RESPONSIVE_SEMANTICS_VIEWPORT_END"
   fi
 else
   semantics_status=1
