@@ -107,7 +107,8 @@ class _FixedOfferRepository implements OfferRepository {
   Future<List<HopeOffer>> listForJob(String jobId) async => offers;
 
   @override
-  Future<HopeOffer> get(String offerId) => throw UnimplementedError();
+  Future<HopeOffer> get(String offerId) async =>
+      offers.firstWhere((offer) => offer.id == offerId);
 
   @override
   Future<HopeOffer> submit(
@@ -268,6 +269,40 @@ testWidgets('accepting an offer disables the financial action until completion',
         expect(bounds.left, greaterThanOrEqualTo(0));
         expect(bounds.right, lessThanOrEqualTo(360));
       }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'offer details use a localized date and never show the internal job id',
+    (tester) async {
+      const rawCreatedAt = '2020-01-02T03:04:05.000Z';
+      const internalJobId = 'job-internal-uuid-should-not-render';
+      const publicTitle = 'Senior Flutter Engineer';
+      final offer = HopeOffer(
+        id: 'offer-details-1',
+        jobId: internalJobId,
+        providerId: 'provider-1',
+        price: '2500000',
+        message: 'Offer message',
+        status: 'PENDING',
+        createdAt: rawCreatedAt,
+        updatedAt: null,
+        jobTitle: publicTitle,
+      );
+      final repository = _FixedOfferRepository([offer]);
+
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(publicTitle).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Offer details'), findsOneWidget);
+      expect(find.text(publicTitle), findsWidgets);
+      expect(find.text('Jan 2, 2020'), findsOneWidget);
+      expect(find.text(rawCreatedAt), findsNothing);
+      expect(find.text(internalJobId), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
