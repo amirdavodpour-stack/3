@@ -1238,6 +1238,74 @@ void main() {
   );
 
   testWidgets(
+    'compact-grid long financial ranges stay fully visible at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'compact-grid-long-range',
+        'title': 'طراحی رابط کاربری حرفه‌ای',
+        'categoryId': 'design',
+        'category': 'طراحی',
+        'kind': 'MISSION',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '123456789012',
+        'budgetMax': '987654321098',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          theme: ThemeData.light(),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 156,
+                height: 270,
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.compactGrid,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final budget = find.byKey(
+        const ValueKey('opportunity-card-compact-grid-budget'),
+      );
+      expect(budget, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(budget);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Long financial ranges must retain the upper bound and TOMAN unit in compact grid cards.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Wave 35 recognized opportunity categories use the active locale',
     (tester) async {
       tester.view.physicalSize = const Size(600, 900);
