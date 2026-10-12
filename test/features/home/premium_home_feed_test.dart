@@ -337,6 +337,12 @@ void main() {
       await refreshFuture;
       await tester.pumpAndSettle();
 
+      await tester.scrollUntilVisible(
+        find.text('Held in escrow'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       final latestBalance = HopeDisplayFormatter.money(5555, locale: 'en');
       final oldBalance = HopeDisplayFormatter.money(1111, locale: 'en');
       expect(find.text(latestBalance), findsOneWidget);
