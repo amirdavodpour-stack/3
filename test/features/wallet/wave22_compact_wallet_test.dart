@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
+import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
@@ -80,6 +81,17 @@ class _Wave22WalletRepository implements WalletRepository {
       const {};
 }
 
+class _Wave22CapabilitiesRepository implements BackendCapabilitiesRepository {
+  const _Wave22CapabilitiesRepository();
+
+  @override
+  Future<BackendCapabilities> load() async => const BackendCapabilities(
+        wallet: true,
+        walletWithdraw: true,
+        walletTransfer: true,
+      );
+}
+
 class _Wave22AuthRepository implements AuthRepository {
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
@@ -127,6 +139,9 @@ void main() {
             providers: [
               ChangeNotifierProvider.value(value: auth),
               Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: const _Wave22CapabilitiesRepository(),
+              ),
             ],
             child: WalletPage(repository: wallet),
           ),
@@ -237,6 +252,9 @@ void main() {
             providers: [
               ChangeNotifierProvider.value(value: auth),
               Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: const _Wave22CapabilitiesRepository(),
+              ),
             ],
             child: WalletPage(repository: wallet),
           ),
@@ -338,6 +356,9 @@ void main() {
               providers: [
                 ChangeNotifierProvider.value(value: auth),
                 Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: const _Wave22CapabilitiesRepository(),
+              ),
               ],
               child: WalletPage(repository: wallet),
             ),
