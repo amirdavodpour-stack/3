@@ -803,8 +803,8 @@ class _WalletPageState extends State<WalletPage> {
               const SizedBox(height: 2),
               Text(
                 _money(wallet.totalBalance),
-                maxLines: 2,
                 softWrap: true,
+                overflow: TextOverflow.visible,
                 style: TextStyle(
                   color: HopeV2Colors.walletBalanceOnHero,
                   fontSize: compact ? 24 : (denseViewport ? 27 : 36),
@@ -876,9 +876,11 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Text(
                 item.label,
-                maxLines: 2,
+                maxLines: enlargedText ? null : 2,
                 softWrap: true,
-                overflow: TextOverflow.ellipsis,
+                overflow: enlargedText
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 style: TextStyle(
                   color: item.emphasized ? HopeV2Colors.walletBalanceOnHero : HopeV2Colors.walletBalanceOnHeroMuted,
                   fontSize: 12,
@@ -889,9 +891,9 @@ class _WalletPageState extends State<WalletPage> {
               const SizedBox(height: 2),
               Text(
                 item.value,
-                maxLines: 2,
+                maxLines: null,
                 softWrap: true,
-                overflow: TextOverflow.clip,
+                overflow: TextOverflow.visible,
                 style: TextStyle(
                   color: HopeV2Colors.walletBalanceOnHero,
                   fontSize: item.emphasized ? 12.5 : 12,
@@ -907,7 +909,11 @@ class _WalletPageState extends State<WalletPage> {
       Widget metricsBlock() => LayoutBuilder(
             builder: (context, constraints) {
               const gap = 4.0;
-              final cellWidth = (constraints.maxWidth - gap) / 2;
+              final singleColumnMetrics = enlargedText ||
+                  items.any((item) => item.value.length > 18);
+              final cellWidth = singleColumnMetrics
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - gap) / 2;
               return Wrap(
                 spacing: gap,
                 runSpacing: gap,

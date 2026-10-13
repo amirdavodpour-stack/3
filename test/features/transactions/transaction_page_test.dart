@@ -164,6 +164,7 @@ Future<void> _pump(
   _FakeTx repo, {
   String ownerId = 'u1',
   double width = 900,
+  double textScale = 1.0,
   bool disableAnimations = false,
   bool useActualViewportMetrics = false,
 }) async {
@@ -189,6 +190,7 @@ Future<void> _pump(
       data: MediaQueryData(
         size: useActualViewportMetrics ? Size(width, 2200) : Size.zero,
         devicePixelRatio: 1.0,
+        textScaler: TextScaler.linear(textScale),
         disableAnimations: disableAnimations,
       ),
       child: MultiProvider(
@@ -447,32 +449,82 @@ void main() {
     expect(repo2.calls, contains('refund:j1'));
   });
 
-  testWidgets('transaction summary contains long values on narrow screens',
-      (tester) async {
-    final repo = _FakeTx()
-      ..payment = Future.value(HopePayment.fromMap({
-        'id': 'p1',
-        'status': 'RELEASE_PENDING',
-        'amount': '9000000000000000',
-        'providerRef':
-            'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
-        'job': _job('j1', 'COMPLETED').toMap(),
-      }));
+  testWidgets(
+    'Wave 45 transaction summary preserves full TOMAN amount and fee values at 1.5x',
+    (tester) async {
+      final repo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'p1',
+          'status': 'RELEASE_PENDING',
+          'amount': '9000000000000000',
+          'providerRef':
+              'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
+          'fees': {
+            'baseAmount': '8999999999000000',
+            'employerFee': '1000000',
+            'workerFee': '500000',
+            'platformFee': '0',
+            'employerCharge': '9000000000000000',
+            'providerPayout': '8999999998500000',
+          },
+          'job': _job('j1', 'COMPLETED').toMap(),
+        }));
 
-    await _pump(tester, repo, ownerId: 'u1', width: 360);
-    await tester.pumpAndSettle();
+      await _pump(
+        tester,
+        repo,
+        ownerId: 'u1',
+        width: 360,
+        textScale: 1.5,
+        useActualViewportMetrics: true,
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Payment status'), findsOneWidget);
-    expect(find.text('Amount'), findsOneWidget);
-    expect(find.text('Reference'), findsNothing);
-    expect(
-      find.text(
-        'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
-      ),
-      findsNothing,
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.text('Payment status'), findsOneWidget);
+      expect(find.text('Amount'), findsOneWidget);
+      expect(find.text('Reference'), findsNothing);
+      expect(
+        find.text(
+          'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
+        ),
+        findsNothing,
+      );
+
+      final mainAmount = find.byKey(
+        const ValueKey('transaction-payment-amount'),
+      );
+      expect(mainAmount, findsOneWidget);
+      final mainAmountText = tester.widget<Text>(mainAmount);
+      expect(mainAmountText.data!.replaceAll(',', ''), '9000000000000000 TOMAN');
+      expect(mainAmountText.maxLines, isNull);
+      expect(mainAmountText.softWrap, isTrue);
+      expect(mainAmountText.overflow, TextOverflow.visible);
+      expect(tester.getRect(mainAmount).right, lessThanOrEqualTo(360));
+
+      Finder moneyTextWithoutCommas(String digits) => find.byWidgetPredicate(
+            (widget) =>
+                widget is Text &&
+                widget.data != null &&
+                widget.data!.replaceAll(',', '') == '$digits TOMAN',
+          );
+
+      final feeAmount = moneyTextWithoutCommas('8999999999000000');
+      await tester.scrollUntilVisible(
+        feeAmount,
+        180,
+        scrollable: find.byType(ListView).first,
+        maxScrolls: 30,
+      );
+      await tester.pumpAndSettle();
+      expect(feeAmount, findsOneWidget);
+      final feeAmountText = tester.widget<Text>(feeAmount);
+      expect(feeAmountText.maxLines, isNull);
+      expect(feeAmountText.softWrap, isTrue);
+      expect(feeAmountText.overflow, TextOverflow.visible);
+      expect(tester.getRect(feeAmount).right, lessThanOrEqualTo(360));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('completed and released payment shows settled copy',
       (tester) async {

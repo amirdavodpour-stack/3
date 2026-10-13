@@ -404,3 +404,10 @@ grep -Fq "ValueKey('create-opportunity-action-dock')" "lib/features/marketplace/
 grep -Fq "child: HopeCreationProgress(activeIndex: activeStep)" "lib/features/marketplace/create_job_widgets.part.dart"
 grep -Fq "Wave 44 progress and action dock remain fixed while the active step scrolls" "test/features/marketplace/create_job_page_test.dart"
 echo "PASS: Wave44 Create Opportunity sticky progress/action dock and responsive form contracts"
+
+# Wave45: wallet and transaction detail keep full TOMAN amounts visible on compact/enlarged layouts.
+grep -Fq "final singleColumnMetrics = enlargedText ||" "lib/features/wallet/wallet_page.dart"
+grep -Fq "Wave 45 Wallet preserves full long TOMAN totals and available balance values" "test/features/wallet/wave22_compact_wallet_test.dart"
+grep -Fq "final compactLayout = constraints.maxWidth < 380 ||" "lib/features/transactions/transaction_page.dart"
+grep -Fq "Wave 45 transaction summary preserves full TOMAN amount and fee values at 1.5x" "test/features/transactions/transaction_page_test.dart"
+echo "PASS: Wave45 exact monetary value readability on Wallet and Transaction Detail"

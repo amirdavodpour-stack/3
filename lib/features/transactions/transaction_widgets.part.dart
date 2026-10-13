@@ -549,9 +549,10 @@ extension on _TransactionPageState {
                     ),
                     const SizedBox(height: 4),
                     Text(
+                      key: const ValueKey('transaction-payment-amount'),
                       moneyLabel(context, payment?.amount ?? '—'),
                       softWrap: true,
-                      maxLines: 2,
+                      overflow: TextOverflow.visible,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w900,
                         fontSize: compact ? 25 : null,

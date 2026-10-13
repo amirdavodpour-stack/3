@@ -16,6 +16,9 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class _Wave22WalletRepository implements WalletRepository {
+  _Wave22WalletRepository({this.largeBalances = false});
+
+  final bool largeBalances;
   final Completer<WalletTransactionsPage> olderPage = Completer();
   int transactionCalls = 0;
 
@@ -35,10 +38,11 @@ class _Wave22WalletRepository implements WalletRepository {
         'id': 'wave22-wallet',
         'userId': 'u1',
         'currency': 'TOMAN',
-        'availableBalance': 2500000,
+        'availableBalance':
+            largeBalances ? 8999999999000000 : 2500000,
         'lockedBalance': 1000000,
         'escrowBalance': 0,
-        'totalBalance': 3500000,
+        'totalBalance': largeBalances ? 9000000000000000 : 3500000,
         'status': 'ACTIVE',
       });
 
@@ -113,6 +117,74 @@ class _Wave22AuthRepository implements AuthRepository {
 }
 
 void main() {
+  testWidgets(
+    'Wave 45 Wallet preserves full long TOMAN totals and available balance values',
+    (tester) async {
+      final auth = AuthController(_Wave22AuthRepository(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _Wave22WalletRepository(largeBalances: true);
+
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: const _Wave22CapabilitiesRepository(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final hero = find.byKey(const ValueKey('wallet-balance-hero'));
+      final total = find.text('9,000,000,000,000,000 TOMAN');
+      final availableMetric = find.byKey(
+        const ValueKey('wallet-balance-metric-available'),
+      );
+      final available = find.descendant(
+        of: availableMetric,
+        matching: find.text('8,999,999,999,000,000 TOMAN'),
+      );
+
+      expect(hero, findsOneWidget);
+      expect(total, findsOneWidget);
+      expect(availableMetric, findsOneWidget);
+      expect(available, findsOneWidget);
+
+      final totalText = tester.widget<Text>(total);
+      final availableText = tester.widget<Text>(available);
+      expect(totalText.maxLines, isNull);
+      expect(totalText.overflow, TextOverflow.visible);
+      expect(availableText.maxLines, isNull);
+      expect(availableText.overflow, TextOverflow.visible);
+
+      final heroRect = tester.getRect(hero);
+      expect(
+        tester.getRect(availableMetric).width,
+        greaterThan(heroRect.width - 44),
+        reason: 'Long real ledger amounts should use the full hero content width.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Wave 22 compact wallet exposes the history heading and every filter above navigation',
     (tester) async {
@@ -366,6 +438,34 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      final hero = find.byKey(const ValueKey('wallet-balance-hero'));
+      expect(hero, findsOneWidget);
+      final heroRect = tester.getRect(hero);
+      for (final key in [
+        'wallet-balance-metric-available',
+        'wallet-balance-metric-protected',
+        'wallet-balance-metric-pending',
+        'wallet-balance-metric-locked-total',
+      ]) {
+        final metric = find.byKey(ValueKey(key));
+        expect(metric, findsOneWidget, reason: 'Missing metric $key');
+        expect(
+          tester.getRect(metric).width,
+          greaterThan(heroRect.width - 44),
+          reason: 'At 1.5x, $key should use the full hero content width.',
+        );
+        final texts = tester.widgetList<Text>(
+          find.descendant(of: metric, matching: find.byType(Text)),
+        );
+        expect(texts, isNotEmpty);
+        expect(
+          texts.every((text) =>
+              text.maxLines == null && text.overflow == TextOverflow.visible),
+          isTrue,
+          reason: 'All $key text must remain complete at 1.5x.',
+        );
+      }
 
       final signature = find.byKey(
         const ValueKey('wallet-money-flow-signature'),
