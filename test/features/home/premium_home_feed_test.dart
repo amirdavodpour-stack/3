@@ -272,7 +272,10 @@ void main() {
       expect(find.text('Active work is temporarily unavailable'), findsOneWidget);
       expect(find.byKey(const ValueKey('home-active-work-retry')), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('home-active-work-retry')));
+      final retry = find.byKey(const ValueKey('home-active-work-retry'));
+      await tester.ensureVisible(retry);
+      await tester.pumpAndSettle();
+      await tester.tap(retry);
       await tester.pumpAndSettle();
 
       expect(transactions.listCalls, 2);
