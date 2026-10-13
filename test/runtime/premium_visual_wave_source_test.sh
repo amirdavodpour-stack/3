@@ -443,3 +443,10 @@ grep -Fq "test/features/chat/chat_page_test.dart" ".github/workflows/hope-ui-wav
 grep -Fq "test/features/profile/profile_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
 grep -Fq "test/features/auth/auth_pages_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
 echo "PASS: Wave47 Chat/Profile/Auth recovery and state-truth contracts"
+
+# Wave48: actual Wallet + Work Center viewport/locale matrix; keep the executable guard mode.
+grep -Fq "Wave48 Wallet adapts hero/action composition across FA-RTL and EN-LTR viewports" "test/features/wallet/wave22_compact_wallet_test.dart"
+grep -Fq "Wave48 Work Center preserves lifecycle reachability across widths and locales" "test/features/transactions/transactions_page_test.dart"
+grep -Fq "test/features/wallet/wave22_compact_wallet_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "test/features/transactions/transactions_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+echo "PASS: Wave48 Wallet and Work Center responsive/locale matrix contracts"

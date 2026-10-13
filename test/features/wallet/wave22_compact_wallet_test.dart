@@ -116,7 +116,165 @@ class _Wave22AuthRepository implements AuthRepository {
   Future<void> requestPasswordReset(String email) async {}
 }
 
+Future<void> _pumpWalletResponsiveMatrix(
+  WidgetTester tester, {
+  required double width,
+  required double height,
+  required Locale locale,
+  double textScale = 1,
+}) async {
+  tester.view.physicalSize = Size(width, height);
+  tester.view.devicePixelRatio = 1.0;
+  final auth = AuthController(_Wave22AuthRepository(), SecureStore());
+  await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+  final wallet = _Wave22WalletRepository();
+
+  await tester.pumpWidget(
+    MaterialApp(
+      locale: locale,
+      supportedLocales: const [Locale('fa'), Locale('en')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: MediaQuery(
+        data: MediaQueryData.fromView(tester.view).copyWith(
+          textScaler: TextScaler.linear(textScale),
+        ),
+        child: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+            Provider<BackendCapabilitiesRepository>.value(
+              value: const _Wave22CapabilitiesRepository(),
+            ),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  testWidgets(
+    'Wave48 Wallet adapts hero/action composition across FA-RTL and EN-LTR viewports',
+    (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final cases = <({
+        double width,
+        double height,
+        Locale locale,
+        double textScale,
+      })>[];
+      for (final width in const [320.0, 360.0, 390.0, 600.0, 900.0, 1200.0]) {
+        final height = width <= 390 ? 640.0 : 900.0;
+        for (final locale in const [Locale('fa'), Locale('en')]) {
+          cases.add((
+            width: width,
+            height: height,
+            locale: locale,
+            textScale: 1,
+          ));
+        }
+      }
+      for (final width in const [320.0, 390.0]) {
+        final height = width == 320 ? 640.0 : 844.0;
+        for (final locale in const [Locale('fa'), Locale('en')]) {
+          cases.add((
+            width: width,
+            height: height,
+            locale: locale,
+            textScale: 1.5,
+          ));
+        }
+      }
+
+      for (final item in cases) {
+        await _pumpWalletResponsiveMatrix(
+          tester,
+          width: item.width,
+          height: item.height,
+          locale: item.locale,
+          textScale: item.textScale,
+        );
+        final contextLabel =
+            '${item.width.toInt()}dp/${item.locale.languageCode}/${item.textScale}x';
+        final hero = find.byKey(const ValueKey('wallet-balance-hero'));
+        final actions = find.byKey(const ValueKey('wallet-actions-panel'));
+        expect(hero, findsOneWidget, reason: 'Wallet hero missing at $contextLabel');
+        expect(
+          Directionality.of(tester.element(find.byType(WalletPage))),
+          item.locale.languageCode == 'fa' ? TextDirection.rtl : TextDirection.ltr,
+          reason: 'Incorrect direction at $contextLabel',
+        );
+
+        if (item.textScale == 1) {
+          expect(actions, findsOneWidget, reason: 'Wallet actions missing at $contextLabel');
+          if (item.width >= 900) {
+            final heroRect = tester.getRect(hero);
+            final actionRect = tester.getRect(actions);
+            expect(
+              (heroRect.top - actionRect.top).abs(),
+              lessThanOrEqualTo(2),
+              reason: 'Wide Wallet hero/actions should align on one row at $contextLabel',
+            );
+            expect(
+              heroRect.overlaps(actionRect),
+              isFalse,
+              reason: 'Wide Wallet hero/actions overlap at $contextLabel',
+            );
+            if (item.locale.languageCode == 'fa') {
+              expect(heroRect.left, greaterThan(actionRect.right),
+                  reason: 'RTL hero/action order is reversed at $contextLabel');
+            } else {
+              expect(heroRect.right, lessThan(actionRect.left),
+                  reason: 'LTR hero/action order is incorrect at $contextLabel');
+            }
+          } else {
+            final heroRect = tester.getRect(hero);
+            final actionRect = tester.getRect(actions);
+            expect(
+              actionRect.top,
+              greaterThanOrEqualTo(heroRect.bottom - 1),
+              reason: 'Compact/mid-width Wallet should stack hero/actions at $contextLabel',
+            );
+          }
+        } else {
+          await tester.scrollUntilVisible(
+            actions,
+            160,
+            scrollable: find.byType(Scrollable).first,
+            maxScrolls: 20,
+          );
+          await tester.pumpAndSettle();
+          expect(actions, findsOneWidget,
+              reason: 'Enlarged-text Wallet actions unreachable at $contextLabel');
+        }
+
+        final filters = find.byKey(const ValueKey('wallet-history-filters'));
+        await tester.scrollUntilVisible(
+          filters,
+          180,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 30,
+        );
+        await tester.pumpAndSettle();
+        expect(filters, findsOneWidget, reason: 'Wallet filters unreachable at $contextLabel');
+        final filterRect = tester.getRect(filters);
+        expect(filterRect.top, greaterThanOrEqualTo(0), reason: 'Filter top clipped at $contextLabel');
+        expect(filterRect.bottom, lessThanOrEqualTo(item.height),
+            reason: 'Wallet filters exceed viewport at $contextLabel');
+        expect(tester.takeException(), isNull, reason: 'Wallet render error at $contextLabel');
+      }
+    },
+  );
+
   testWidgets(
     'Wave 45 Wallet preserves full long TOMAN totals and available balance values',
     (tester) async {

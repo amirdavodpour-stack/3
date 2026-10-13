@@ -133,6 +133,105 @@ HopeJob _job(String id, {String status = 'OPEN'}) => HopeJob.fromMap({
 // Wave 1 regression harness: numeric/status assertions stay scoped to the compact work-center composition.
 
 void main() {
+  testWidgets(
+    'Wave48 Work Center preserves lifecycle reachability across widths and locales',
+    (tester) async {
+      const widths = [320.0, 360.0, 390.0, 600.0, 900.0, 1200.0];
+      final cases = <({
+        double width,
+        double height,
+        Locale locale,
+        double textScale,
+      })>[];
+      for (final width in widths) {
+        final height = width <= 390 ? 640.0 : 900.0;
+        for (final locale in const [Locale('fa'), Locale('en')]) {
+          cases.add((
+            width: width,
+            height: height,
+            locale: locale,
+            textScale: 1,
+          ));
+        }
+      }
+      for (final width in const [320.0, 390.0]) {
+        final height = width == 320 ? 640.0 : 844.0;
+        for (final locale in const [Locale('fa'), Locale('en')]) {
+          cases.add((
+            width: width,
+            height: height,
+            locale: locale,
+            textScale: 1.5,
+          ));
+        }
+      }
+
+      for (final item in cases) {
+        final repository = _Transactions()
+          ..jobs = [
+            _job('matrix-active', status: 'OPEN'),
+            _job('matrix-settled', status: 'COMPLETED'),
+          ];
+        await _pump(
+          tester,
+          repository,
+          width: item.width,
+          height: item.height,
+          textScale: item.textScale,
+          locale: item.locale,
+        );
+        final contextLabel =
+            '${item.width.toInt()}dp/${item.locale.languageCode}/${item.textScale}x';
+        expect(find.byType(TransactionsPage), findsOneWidget);
+        expect(
+          Directionality.of(tester.element(find.byType(TransactionsPage))),
+          item.locale.languageCode == 'fa' ? TextDirection.rtl : TextDirection.ltr,
+          reason: 'Incorrect direction at $contextLabel',
+        );
+
+        final lifecycle = find.byKey(
+          const ValueKey('work-center-lifecycle-matrix-active'),
+        );
+        await tester.scrollUntilVisible(
+          lifecycle,
+          180,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 35,
+        );
+        await tester.pumpAndSettle();
+        expect(lifecycle, findsOneWidget,
+            reason: 'Active lifecycle not reachable at $contextLabel');
+        final lifecycleRect = tester.getRect(lifecycle);
+        expect(lifecycleRect.left, greaterThanOrEqualTo(0),
+            reason: 'Lifecycle clips at leading edge for $contextLabel');
+        expect(lifecycleRect.right, lessThanOrEqualTo(item.width),
+            reason: 'Lifecycle clips at trailing edge for $contextLabel');
+        expect(lifecycleRect.top, greaterThanOrEqualTo(0),
+            reason: 'Lifecycle scroll target is above viewport at $contextLabel');
+
+        if (item.width < 1200) {
+          final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+          expect(dock, findsOneWidget,
+              reason: 'Compact/medium primary dock missing at $contextLabel');
+          if (item.textScale == 1) {
+            expect(
+              lifecycleRect.bottom,
+              lessThanOrEqualTo(
+                tester.getRect(dock).top - HopeV2Navigation.scrollEndGap,
+              ),
+              reason: 'Work Center dock occludes lifecycle at $contextLabel',
+            );
+          }
+        } else {
+          expect(find.byType(PremiumNavigationRail), findsOneWidget,
+              reason: 'Expanded viewport should use the navigation rail at $contextLabel');
+        }
+        expect(tester.takeException(), isNull,
+            reason: 'Work Center render error at $contextLabel');
+      }
+    },
+  );
+
   testWidgets('guest transactions protect private activity', (tester) async {
     final repo = _Transactions();
     await _pump(tester, repo, guest: true);
