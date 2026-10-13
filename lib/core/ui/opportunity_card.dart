@@ -446,7 +446,8 @@ class OpportunityCard extends StatelessWidget {
     HopeCopy copy,
   ) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final mediaHeight = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 46.0 : 54.0;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.15;
+    final mediaHeight = 40.0;
     final categoryValue = _categoryValue();
     final category = categoryValue == null
         ? ''
@@ -455,58 +456,71 @@ class OpportunityCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(HopeV2Radii.md),
-          child: SizedBox(
-            height: mediaHeight,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (mediaUrl != null)
-                  Image.network(
-                    mediaUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
-                  )
-                else
-                  _fallbackMedia(context, primary),
-                PositionedDirectional(
-                  top: 5,
-                  start: 5,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: (dark ? Colors.black : Colors.white).withValues(alpha: .82),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.onSurface,
+        if (enlargedText)
+          Text(
+            job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
+            key: const ValueKey('opportunity-card-compact-grid-kind'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: primary,
+                ),
+          )
+        else
+          ClipRRect(
+            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+            child: SizedBox(
+              height: mediaHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (mediaUrl != null)
+                    Image.network(
+                      mediaUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
+                    )
+                  else
+                    _fallbackMedia(context, primary),
+                  PositionedDirectional(
+                    top: 5,
+                    start: 5,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: (dark ? Colors.black : Colors.white).withValues(alpha: .82),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if (match != null)
-                  PositionedDirectional(
-                    top: 5,
-                    end: 5,
-                    child: PremiumTag(
-                      icon: HopeV2Icons.match,
-                      label: match,
-                      color: HopeV2Colors.success,
-                      inverse: true,
+                  if (match != null)
+                    PositionedDirectional(
+                      top: 5,
+                      end: 5,
+                      child: PremiumTag(
+                        icon: HopeV2Icons.match,
+                        label: match,
+                        color: HopeV2Colors.success,
+                        inverse: true,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 6),
+        SizedBox(height: enlargedText ? 3 : 4),
         Text(
           title,
           maxLines: 2,
@@ -525,13 +539,13 @@ class OpportunityCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontSize: 12,
+                  fontSize: enlargedText ? 10.5 : 11.5,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
                 ),
           ),
         ],
-        const SizedBox(height: 3),
+        SizedBox(height: enlargedText ? 2 : 3),
         Row(
           children: [
             HopeIcon(HopeV2Icons.location, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, strokeWidth: 1.8),
@@ -548,17 +562,21 @@ class OpportunityCard extends StatelessWidget {
           ],
         ),
         if (amount.isNotEmpty) ...[
-          const SizedBox(height: 5),
+          SizedBox(height: enlargedText ? 3 : 4),
           Text(
             _formatCompactGridAmount(amount, context),
             key: const ValueKey('opportunity-card-compact-grid-budget'),
-            // The range formatter uses three logical lines. Enlarged text can
-            // wrap either bound into extra visual lines; allow those lines so
-            // the upper bound and currency unit are not silently clipped.
-            maxLines: 5,
+            // At enlarged text sizes this visual variant becomes text-first and
+            // the exact Toman range can grow naturally instead of clipping.
+            maxLines: enlargedText ? null : 5,
             softWrap: true,
-            overflow: TextOverflow.clip,
-            style: TextStyle(fontSize: 12, height: 1.12, fontWeight: FontWeight.w900, color: primary),
+            overflow: enlargedText ? TextOverflow.visible : TextOverflow.clip,
+            style: TextStyle(
+              fontSize: enlargedText ? 11.5 : 10.5,
+              height: 1.12,
+              fontWeight: FontWeight.w900,
+              color: primary,
+            ),
           ),
         ],
       ],

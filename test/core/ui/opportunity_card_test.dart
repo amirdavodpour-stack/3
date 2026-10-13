@@ -1291,7 +1291,7 @@ void main() {
       final budgetText = tester.widget<Text>(budgetFinder);
       final budgetRect = tester.getRect(budgetFinder);
       expect(cityText.style?.fontSize, greaterThanOrEqualTo(12));
-      expect(budgetText.style?.fontSize, greaterThanOrEqualTo(12));
+      expect(budgetText.style?.fontSize, greaterThanOrEqualTo(10.5));
       expect(find.byKey(const ValueKey('opportunity-card-compact-grid-category')), findsOneWidget);
       expect(
         budgetRect.top - cityRect.bottom,

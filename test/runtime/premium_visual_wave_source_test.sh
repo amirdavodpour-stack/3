@@ -181,6 +181,11 @@ fi
 grep -Fq '"sha": "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}"' "tools/hope-wallet-runtime-evidence.sh"
 
 
+
+# Compact-grid becomes text-first at enlarged system text to avoid fixed-tile clipping.
+grep -Fq 'final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.15;' "$opportunity"
+grep -Fq 'maxLines: enlargedText ? null : 5,' "$opportunity"
+grep -Fq "opportunity-card-compact-grid-kind" "$opportunity"
 # Batched discovery hierarchy: real recommendation signals only and readable compact scan cards.
 grep -Fq 'if (featuredScan)' "$opportunity"
 grep -Fq "opportunity-featured-scan-layout" "$opportunity"
