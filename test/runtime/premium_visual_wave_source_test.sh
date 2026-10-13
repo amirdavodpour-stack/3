@@ -398,3 +398,9 @@ grep -Fq 'Wave30 Profile language selector uses a readable stacked layout at 1.5
 
 # Wave30: the Profile 1.5x regression must execute inside the consolidated Flutter gate.
 grep -Fq "test/features/profile/wave30_profile_language_scale_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+
+# Wave44: Create Opportunity keeps stage context and primary actions outside the scrolling form.
+grep -Fq "ValueKey('create-opportunity-action-dock')" "lib/features/marketplace/create_job_widgets.part.dart"
+grep -Fq "child: HopeCreationProgress(activeIndex: activeStep)" "lib/features/marketplace/create_job_widgets.part.dart"
+grep -Fq "Wave 44 progress and action dock remain fixed while the active step scrolls" "test/features/marketplace/create_job_page_test.dart"
+echo "PASS: Wave44 Create Opportunity sticky progress/action dock and responsive form contracts"

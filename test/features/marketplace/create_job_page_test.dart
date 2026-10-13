@@ -185,63 +185,42 @@ Future<void> _selectCategory(WidgetTester tester, String label) async {
 
 Future<void> _advance(WidgetTester tester) async {
   final next = find.byKey(const ValueKey('create-opportunity-next-step'));
-  await tester.scrollUntilVisible(
-    next,
-    180,
-    scrollable: find.byType(Scrollable).first,
-    maxScrolls: 30,
+  expect(
+    next.hitTestable(),
+    findsOneWidget,
+    reason: 'The persistent Create Opportunity action must stay available.',
   );
-  await tester.ensureVisible(next);
-  await tester.pumpAndSettle();
   await tester.tap(next);
   await tester.pumpAndSettle();
 }
 
 Future<void> _advanceActiveStep(WidgetTester tester) async {
-  Finder? activeStepList;
   var activeStepIndex = -1;
   for (var index = 0; index < 5; index++) {
-    final candidate = find.byKey(
-      ValueKey('create-opportunity-step-$index'),
-    );
-    if (candidate.evaluate().isNotEmpty) {
-      activeStepList = candidate;
+    if (find.byKey(ValueKey('create-opportunity-step-$index'))
+        .evaluate()
+        .isNotEmpty) {
       activeStepIndex = index;
       break;
     }
   }
-  expect(activeStepList, isNotNull, reason: 'An active creation step must be mounted.');
-
-  final activeList = activeStepList!;
-  final next = find.descendant(
-    of: activeList,
-    matching: find.byKey(const ValueKey('create-opportunity-next-step')),
+  expect(
+    activeStepIndex,
+    greaterThanOrEqualTo(0),
+    reason: 'An active creation step must be mounted.',
   );
-  final activeScrollable = find.descendant(
-    of: activeList,
-    matching: find.byType(Scrollable),
-  ).first;
 
-  await tester.scrollUntilVisible(
-    next,
-    140,
-    scrollable: activeScrollable,
-    maxScrolls: 30,
-  );
-  await tester.ensureVisible(next);
-  await tester.pumpAndSettle();
+  final next = find.byKey(const ValueKey('create-opportunity-next-step'));
   expect(
     next.hitTestable(),
     findsOneWidget,
-    reason: 'Next must be hit-testable within active step $activeStepIndex.',
+    reason: 'Next must stay hit-testable in active step $activeStepIndex.',
   );
   await tester.tap(next);
   await tester.pumpAndSettle();
 
   expect(
-    find.byKey(
-      ValueKey('create-opportunity-step-${activeStepIndex + 1}'),
-    ),
+    find.byKey(ValueKey('create-opportunity-step-${activeStepIndex + 1}')),
     findsOneWidget,
     reason: 'Next must mount step ${activeStepIndex + 1} of 5.',
   );
@@ -307,6 +286,26 @@ void main() {
 
     await _pump(tester, repo, width: 360, height: 800);
     await _open(tester);
+
+    final progress = find.byKey(
+      const ValueKey('create-opportunity-progress'),
+    );
+    final dock = find.byKey(
+      const ValueKey('create-opportunity-action-dock'),
+    );
+    final next = find.byKey(
+      const ValueKey('create-opportunity-next-step'),
+    );
+    final pageContext = tester.element(find.byType(CreateJobPage));
+    final availableBottom = MediaQuery.sizeOf(pageContext).height -
+        MediaQuery.viewInsetsOf(pageContext).bottom;
+    expect(progress, findsOneWidget);
+    expect(next.hitTestable(), findsOneWidget);
+    expect(
+      tester.getRect(dock).bottom,
+      lessThanOrEqualTo(availableBottom),
+      reason: 'The fixed action dock must remain above the open keyboard.',
+    );
     expect(tester.takeException(), isNull);
 
     tester.view.resetViewInsets();
@@ -712,6 +711,64 @@ void main() {
   );
 
   testWidgets(
+    'Wave 44 progress and action dock remain fixed while the active step scrolls',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(tester, repo, width: 360, height: 560);
+      await _open(tester);
+
+      final progress = find.byKey(
+        const ValueKey('create-opportunity-progress'),
+      );
+      final dock = find.byKey(
+        const ValueKey('create-opportunity-action-dock'),
+      );
+      expect(progress, findsOneWidget);
+      expect(dock, findsOneWidget);
+
+      final progressTop = tester.getRect(progress).top;
+      final dockBottom = tester.getRect(dock).bottom;
+
+      await _advanceActiveStep(tester);
+      expect(find.text('Step 2 of 5'), findsOneWidget);
+      final stepTwoList = find.byKey(
+        const ValueKey('create-opportunity-step-1'),
+      );
+      final stepTwoScroll = find.descendant(
+        of: stepTwoList,
+        matching: find.byType(Scrollable),
+      ).first;
+      final titleField = find.descendant(
+        of: stepTwoList,
+        matching: find.widgetWithText(TextField, 'Title'),
+      );
+      final titleTopBeforeScroll = tester.getRect(titleField).top;
+      await tester.drag(stepTwoScroll, const Offset(0, -240));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(titleField).top,
+        lessThan(titleTopBeforeScroll),
+        reason: 'The active form content should scroll independently.',
+      );
+      expect(tester.getRect(progress).top, closeTo(progressTop, 0.1));
+      expect(tester.getRect(dock).bottom, closeTo(dockBottom, 0.1));
+      expect(
+        find.byKey(const ValueKey('create-opportunity-next-step')).hitTestable(),
+        findsOneWidget,
+      );
+
+      for (var nextStep = 2; nextStep < 5; nextStep++) {
+        await _advanceActiveStep(tester);
+        expect(tester.getRect(progress).top, closeTo(progressTop, 0.1));
+        expect(tester.getRect(dock).bottom, closeTo(dockBottom, 0.1));
+      }
+      expect(find.text('Step 5 of 5'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
       'Wave 41 Create Opportunity progress announces active step changes in fa-RTL',
       (tester) async {
     final handle = tester.ensureSemantics();
@@ -868,6 +925,27 @@ void main() {
 
       pageContext = tester.element(find.byType(CreateJobPage));
       expect(MediaQuery.viewInsetsOf(pageContext).bottom, 320);
+      final actionDock = find.byKey(
+        const ValueKey('create-opportunity-action-dock'),
+      );
+      final continueAction = find.byKey(
+        const ValueKey('create-opportunity-next-step'),
+      );
+      expect(actionDock, findsOneWidget);
+      expect(continueAction.hitTestable(), findsOneWidget);
+      expect(
+        tester.getRect(actionDock).bottom,
+        lessThanOrEqualTo(
+          MediaQuery.sizeOf(pageContext).height -
+              MediaQuery.viewInsetsOf(pageContext).bottom,
+        ),
+        reason: 'The action dock must stay above the keyboard at 1.5x.',
+      );
+      expect(
+        find.byKey(const ValueKey('create-opportunity-progress')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
       final keyboardTop =
           tester.view.physicalSize.height - MediaQuery.viewInsetsOf(pageContext).bottom;
       final titleRect = tester.getRect(titleField);
@@ -880,8 +958,11 @@ void main() {
 
       await tester.enterText(titleField, 'Keyboard-safe opportunity');
       expect(find.text('Keyboard-safe opportunity'), findsOneWidget);
-      // The progress header is above the scrolled lazy ListView and need not
-      // remain built after the Title field is reached.
+      // The progress header stays mounted even when the step content scrolls.
+      expect(
+        find.byKey(const ValueKey('create-opportunity-progress')),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const ValueKey('create-opportunity-step-1')),
         findsOneWidget,
