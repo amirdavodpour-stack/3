@@ -116,6 +116,7 @@ class _RecoveringCapabilitiesRepository implements BackendCapabilitiesRepository
 Future<void> _pumpWallet(
   WidgetTester tester, {
   required BackendCapabilitiesRepository capabilities,
+  bool provideCapabilities = true,
 }) async {
   final auth = AuthController(_AuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
@@ -138,7 +139,8 @@ Future<void> _pumpWallet(
         providers: [
           ChangeNotifierProvider<AuthController>.value(value: auth),
           Provider<WalletRepository>.value(value: wallet),
-          Provider<BackendCapabilitiesRepository>.value(value: capabilities),
+          if (provideCapabilities)
+            Provider<BackendCapabilitiesRepository>.value(value: capabilities),
         ],
         child: WalletPage(repository: wallet),
       ),
@@ -266,6 +268,30 @@ void main() {
       expect(capabilities.calls, 2);
       expect(find.byKey(const ValueKey('wallet-capability-error')), findsNothing);
       expect(find.text('Withdraw'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'wallet fails closed when backend capability provider is missing',
+    (tester) async {
+      await _pumpWallet(
+        tester,
+        capabilities: _CapabilitiesRepository.failing(),
+        provideCapabilities: false,
+      );
+
+      expect(find.text('Withdraw'), findsNothing);
+      expect(find.byKey(const ValueKey('wallet-capability-error')), findsOneWidget);
+      expect(find.byKey(const ValueKey('wallet-capability-retry')), findsNothing);
+
+      await tester.tap(find.byTooltip('Wallet actions'));
+      await tester.pumpAndSettle();
+      final transferItem = tester.widget<PopupMenuItem<String>>(
+        find.widgetWithText(PopupMenuItem<String>, 'Transfer'),
+      );
+      expect(transferItem.enabled, isFalse);
       expect(tester.takeException(), isNull);
     },
   );
