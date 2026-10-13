@@ -63,13 +63,18 @@ class _WalletPageState extends State<WalletPage> {
 
   bool get _capabilitiesResolved =>
       !_capabilitiesSourceAvailable || _backendCapabilities != null;
-  bool get _canWithdraw => !_capabilitiesSourceAvailable ||
-      _backendCapabilities?.walletWithdraw == true;
-  bool get _canTransfer => !_capabilitiesSourceAvailable ||
-      _backendCapabilities?.walletTransfer == true;
+  bool get _canWithdraw =>
+      !_capabilitiesSourceAvailable ||
+      (_backendCapabilities?.wallet == true &&
+          _backendCapabilities?.walletWithdraw == true);
+  bool get _canTransfer =>
+      !_capabilitiesSourceAvailable ||
+      (_backendCapabilities?.wallet == true &&
+          _backendCapabilities?.walletTransfer == true);
   bool get _canDeposit => _internalTopUpEnabled &&
       (!_capabilitiesSourceAvailable ||
-          _backendCapabilities?.walletDeposit == true);
+          (_backendCapabilities?.wallet == true &&
+              _backendCapabilities?.walletDeposit == true));
 
   @override
   void didChangeDependencies() {
