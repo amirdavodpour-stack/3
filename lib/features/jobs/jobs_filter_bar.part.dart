@@ -90,8 +90,8 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
     required this.onPickCategory,
     required this.onRetryCategories,
     required this.savedSearchCount,
-    required this.savedSearchesLoadError,
-    required this.onRetrySavedSearches,
+    this.savedSearchesLoadError = false,
+    this.onRetrySavedSearches,
     required this.onSaveSearch,
     required this.onOpenSavedSearches,
   });
@@ -110,7 +110,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
   final VoidCallback onRetryCategories;
   final int savedSearchCount;
   final bool savedSearchesLoadError;
-  final VoidCallback onRetrySavedSearches;
+  final VoidCallback? onRetrySavedSearches;
   final VoidCallback? onSaveSearch;
   final VoidCallback onOpenSavedSearches;
 
