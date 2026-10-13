@@ -96,7 +96,7 @@ class OpportunityCard extends StatelessWidget {
                 .where((v) => v?.isNotEmpty == true)
                 .join(' – '));
     final title = job.title.trim().isEmpty ? copy.copy_untitled_d89410e : job.title;
-    final primary = featured
+    final primary = featured || featuredScan
         ? HopeV2Colors.primary
         : (job.isMission ? HopeV2Colors.primary : secondaryAccent(context));
     final reasons = [
@@ -447,6 +447,11 @@ class OpportunityCard extends StatelessWidget {
   ) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final mediaHeight = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 46.0 : 54.0;
+    final categoryValue = _categoryValue();
+    final category = categoryValue == null
+        ? ''
+        : hopeCategoryLabel(context, categoryValue);
+    final match = _matchLabel(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -486,11 +491,22 @@ class OpportunityCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (match != null)
+                  PositionedDirectional(
+                    top: 5,
+                    end: 5,
+                    child: PremiumTag(
+                      icon: HopeV2Icons.match,
+                      label: match,
+                      color: HopeV2Colors.success,
+                      inverse: true,
+                    ),
+                  ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 6),
         Text(
           title,
           maxLines: 2,
@@ -501,7 +517,21 @@ class OpportunityCard extends StatelessWidget {
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 4),
+        if (category.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            category,
+            key: const ValueKey('opportunity-card-compact-grid-category'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+        const SizedBox(height: 3),
         Row(
           children: [
             HopeIcon(HopeV2Icons.location, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, strokeWidth: 1.8),
@@ -512,13 +542,13 @@ class OpportunityCard extends StatelessWidget {
                 key: const ValueKey('opportunity-card-compact-grid-location'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11.5),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
               ),
             ),
           ],
         ),
-        const Spacer(),
-        if (amount.isNotEmpty)
+        if (amount.isNotEmpty) ...[
+          const SizedBox(height: 5),
           Text(
             _formatCompactGridAmount(amount, context),
             key: const ValueKey('opportunity-card-compact-grid-budget'),
@@ -528,8 +558,9 @@ class OpportunityCard extends StatelessWidget {
             maxLines: 5,
             softWrap: true,
             overflow: TextOverflow.clip,
-            style: TextStyle(fontSize: 10.5, height: 1.12, fontWeight: FontWeight.w900, color: primary),
+            style: TextStyle(fontSize: 12, height: 1.12, fontWeight: FontWeight.w900, color: primary),
           ),
+        ],
       ],
     );
   }
@@ -809,6 +840,18 @@ class OpportunityCard extends StatelessWidget {
     String? mediaUrl,
     HopeCopy copy,
   ) {
+    if (featuredScan) {
+      return _featuredScanStandard(
+        context,
+        title: title,
+        city: city,
+        amount: amount,
+        primary: primary,
+        mediaUrl: mediaUrl,
+        copy: copy,
+      );
+    }
+
     if (featured && MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact) {
       return _scanStandard(
         context,
@@ -891,6 +934,161 @@ class OpportunityCard extends StatelessWidget {
       percent.round(),
       locale: Localizations.localeOf(context).languageCode,
     )} ${_t(context, 'تطابق', 'match')}";
+  }
+
+  Widget _featuredScanStandard(
+    BuildContext context, {
+    required String title,
+    required String city,
+    required String amount,
+    required Color primary,
+    required String? mediaUrl,
+    required HopeCopy copy,
+  }) {
+    final compactViewport =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final mediaSize = compactViewport ? 56.0 : 68.0;
+    final categoryValue = _categoryValue();
+    final category = categoryValue == null
+        ? ''
+        : hopeCategoryLabel(context, categoryValue);
+    final match = _matchLabel(context);
+    final mode = _workMode(context);
+    final tags = <Widget>[
+      PremiumTag(
+        icon: job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
+        label: job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
+        color: primary,
+      ),
+      if (category.isNotEmpty)
+        PremiumTag(
+          icon: HopeV2Icons.category,
+          label: category,
+          color: HopeV2Colors.muted,
+        ),
+      if (match != null)
+        PremiumTag(
+          icon: HopeV2Icons.match,
+          label: match,
+          color: HopeV2Colors.success,
+        ),
+      if (job.visibility == 'SPECIALIZED')
+        PremiumTag(
+          icon: HopeV2Icons.secure,
+          label: copy.copy_specialized_5d1ca04,
+          color: HopeV2Colors.warning,
+        ),
+    ];
+    final media = ClipRRect(
+      borderRadius: BorderRadius.circular(HopeV2Radii.md),
+      child: SizedBox(
+        key: const ValueKey('opportunity-featured-scan-media'),
+        width: mediaSize,
+        height: mediaSize,
+        child: mediaUrl != null && mediaUrl.trim().isNotEmpty
+            ? Image.network(
+                mediaUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _fallbackMedia(context, primary),
+              )
+            : _fallbackMedia(context, primary),
+      ),
+    );
+
+    return Column(
+      key: const ValueKey('opportunity-featured-scan-layout'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            media,
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: HopeV2Spacing.xs,
+                    runSpacing: 3,
+                    children: tags,
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    title,
+                    key: const ValueKey('opportunity-featured-scan-title'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontSize: compactViewport ? 15 : 16,
+                          height: 1.12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                  if (amount.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatAmount(amount, context),
+                      key: const ValueKey('opportunity-featured-scan-budget'),
+                      softWrap: true,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: primary,
+                            fontSize: compactViewport ? 12.5 : 13.5,
+                            height: 1.16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                  ],
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: HopeV2Spacing.sm,
+                    runSpacing: 2,
+                    children: [
+                      if (mode != null && mode != city)
+                        _metaText(
+                          context,
+                          HopeV2Icons.workshop,
+                          mode,
+                          secondaryAccent(context),
+                        ),
+                      _metaText(
+                        context,
+                        HopeV2Icons.location,
+                        city,
+                        secondaryAccent(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _t(context, 'مشاهده جزئیات', 'View details'),
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: primary,
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(width: 4),
+                      HugeIcon(
+                        icon: Directionality.of(context) == ui.TextDirection.rtl
+                            ? HopeV2Icons.arrowLeft
+                            : HopeV2Icons.arrowRight,
+                        size: 17,
+                        color: primary,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _scanStandard(

@@ -102,7 +102,7 @@ class _JobsResultsSliver extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   recommendedLabel,
-                  const SizedBox(height: 8),
+                  const SizedBox(height: HopeV2Spacing.xs),
                   AnimatedEntrance(
                     child: OpportunityCard(
                       job: featuredJob,
@@ -110,7 +110,7 @@ class _JobsResultsSliver extends StatelessWidget {
                     ),
                   ),
                   if (remaining.isNotEmpty)
-                    const SizedBox(height: HopeV2Spacing.md),
+                    const SizedBox(height: HopeV2Spacing.sm),
                   for (var i = 0; i < remaining.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(
@@ -138,20 +138,22 @@ class _JobsResultsSliver extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 recommendedLabel,
-                const SizedBox(height: 8),
+                const SizedBox(height: HopeV2Spacing.xs),
                 OpportunityCard(
                   job: featuredJob,
                   variant: OpportunityCardVariant.featuredScan,
                 ),
                 if (remaining.isNotEmpty)
-                  const SizedBox(height: HopeV2Spacing.md),
+                  const SizedBox(height: HopeV2Spacing.sm),
                 if (remaining.isNotEmpty)
                   Text(
                     _t(context, 'فرصت‌های بیشتر', 'More opportunities'),
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                   ),
                 if (remaining.isNotEmpty)
-                  const SizedBox(height: HopeV2Spacing.md),
+                  const SizedBox(height: HopeV2Spacing.sm),
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -159,7 +161,7 @@ class _JobsResultsSliver extends StatelessWidget {
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: columns,
                     crossAxisSpacing: HopeV2Spacing.md,
-                    mainAxisSpacing: HopeV2Spacing.md,
+                    mainAxisSpacing: HopeV2Spacing.sm,
                     childAspectRatio: columns == 3 ? 1.04 : 0.86,
                   ),
                   itemBuilder: (context, index) => AnimatedEntrance(

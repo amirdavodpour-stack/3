@@ -386,7 +386,7 @@ void main() {
   });
 
   testWidgets(
-      'compact opportunity detail keeps the active decision strip visible in a narrow viewport',
+      'compact opportunity detail returns first-fold room to the active decision strip',
       (tester) async {
     await _pump(tester, job: _job(), width: 274, height: 457);
 
@@ -394,7 +394,7 @@ void main() {
     final hero = find.byType(PremiumHero);
     expect(decision, findsOneWidget);
     expect(hero, findsOneWidget);
-    expect(tester.getSize(hero).height, 120);
+    expect(tester.getSize(hero).height, 112);
     expect(tester.getSize(decision).width, greaterThan(220));
     expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
     expect(find.text('94%'), findsOneWidget);

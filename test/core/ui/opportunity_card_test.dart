@@ -100,6 +100,60 @@ void main() {
     },
   );
 
+  testWidgets(
+      'featured scan opportunity cards prioritize real category, match and budget in a compact composition',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final job = HopeJob.fromMap({
+      'id': 'featured-scan-opportunity',
+      'title': 'طراحی محصول برای بازار کار',
+      'description': 'Real opportunity card fixture.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'kind': 'MISSION',
+      'jobType': 'FIXED',
+      'status': 'OPEN',
+      'visibility': 'PUBLIC',
+      'budgetMin': '1000000',
+      'budgetMax': '1500000',
+      'recommendationScore': 0.94,
+      'city': 'تهران',
+    });
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('fa'),
+      supportedLocales: const [Locale('fa'), Locale('en')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      theme: ThemeData(brightness: Brightness.dark),
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: OpportunityCard(
+            job: job,
+            variant: OpportunityCardVariant.featuredScan,
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('opportunity-featured-scan-layout')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-featured-scan-media')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-featured-scan-title')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-featured-scan-budget')), findsOneWidget);
+    expect(find.text('۹۴٪ تطابق'), findsOneWidget);
+    expect(find.text('طراحی'), findsOneWidget);
+    expect(find.textContaining('تومان'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('compact opportunity cards give media and value a non-competing editorial stack', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1.0;
@@ -1228,14 +1282,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final cityText = tester.widget<Text>(
-        find.byKey(const ValueKey('opportunity-card-compact-grid-location')),
+      final cityFinder =
+          find.byKey(const ValueKey('opportunity-card-compact-grid-location'));
+      final cityText = tester.widget<Text>(cityFinder);
+      final cityRect = tester.getRect(cityFinder);
+      final budgetFinder =
+          find.byKey(const ValueKey('opportunity-card-compact-grid-budget'));
+      final budgetText = tester.widget<Text>(budgetFinder);
+      final budgetRect = tester.getRect(budgetFinder);
+      expect(cityText.style?.fontSize, greaterThanOrEqualTo(12));
+      expect(budgetText.style?.fontSize, greaterThanOrEqualTo(12));
+      expect(find.byKey(const ValueKey('opportunity-card-compact-grid-category')), findsOneWidget);
+      expect(
+        budgetRect.top - cityRect.bottom,
+        lessThan(28),
+        reason: 'Compact grid cards should keep the real amount in the metadata scan path, not pin it to the card bottom.',
       );
-      final budgetText = tester.widget<Text>(
-        find.byKey(const ValueKey('opportunity-card-compact-grid-budget')),
-      );
-      expect(cityText.style?.fontSize, greaterThanOrEqualTo(11.5));
-      expect(budgetText.style?.fontSize, greaterThanOrEqualTo(10.5));
       expect(find.text('طراحی رابط کاربری حرفه‌ای'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
