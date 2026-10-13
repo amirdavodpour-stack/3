@@ -54,8 +54,8 @@ extension on _TransactionPageState {
                   Expanded(
                     child: Text(
                       _t(
-                        'مرحلهٔ چرخه هنوز از وضعیت دریافتی قابل تعیین نیست.',
-                        'Lifecycle stage is unavailable for the reported state.',
+                        'مرحله نامشخص',
+                        'Stage unavailable',
                       ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
