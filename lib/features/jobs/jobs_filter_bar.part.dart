@@ -311,6 +311,8 @@ class _JobsFilterHeader extends StatelessWidget {
     required this.onPickCity,
     required this.onPickCategory,
     required this.savedSearchCount,
+    required this.savedSearchesLoadError,
+    required this.onRetrySavedSearches,
     required this.onSaveSearch,
     required this.onOpenSavedSearches,
   });
@@ -330,6 +332,8 @@ class _JobsFilterHeader extends StatelessWidget {
   final VoidCallback onPickCity;
   final VoidCallback onPickCategory;
   final int savedSearchCount;
+  final bool savedSearchesLoadError;
+  final VoidCallback onRetrySavedSearches;
   final VoidCallback? onSaveSearch;
   final VoidCallback onOpenSavedSearches;
 
