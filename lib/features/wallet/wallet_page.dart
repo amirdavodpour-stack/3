@@ -772,7 +772,10 @@ class _WalletPageState extends State<WalletPage> {
       final scheme = Theme.of(context).colorScheme;
       final width = MediaQuery.sizeOf(context).width;
       final denseViewport = width < 800;
-      final mediumViewport = !compact && width < 760;
+      final totalBalanceValue = _money(wallet.totalBalance);
+      final longTotalBalance = totalBalanceValue.length > 18;
+      final mediumViewport =
+          !compact && width < 760 && !longTotalBalance;
 
       Widget totalBlock() => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,7 +805,7 @@ class _WalletPageState extends State<WalletPage> {
               ),
               const SizedBox(height: 2),
               Text(
-                _money(wallet.totalBalance),
+                totalBalanceValue,
                 softWrap: true,
                 overflow: TextOverflow.visible,
                 style: TextStyle(

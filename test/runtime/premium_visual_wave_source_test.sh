@@ -411,3 +411,10 @@ grep -Fq "Wave 45 Wallet preserves full long TOMAN totals and available balance 
 grep -Fq "final compactLayout = constraints.maxWidth < 380 ||" "lib/features/transactions/transaction_page.dart"
 grep -Fq "Wave 45 transaction summary preserves full TOMAN amount and fee values at 1.5x" "test/features/transactions/transaction_page_test.dart"
 echo "PASS: Wave45 exact monetary value readability on Wallet and Transaction Detail"
+
+# Wave45 follow-up: long total balance avoids the compact mid-width two-column split;
+# transaction identity/status reflows when enlarged text is active.
+grep -Fq "final longTotalBalance = totalBalanceValue.length > 18;" "lib/features/wallet/wallet_page.dart"
+grep -Fq "final enlargedText =" "lib/features/transactions/transaction_widgets.part.dart"
+grep -Fq "children: [statusTag, refreshButton]" "lib/features/transactions/transaction_widgets.part.dart"
+echo "PASS: Wave45 follow-up for long total balances and enlarged transaction headings"

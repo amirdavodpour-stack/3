@@ -465,47 +465,71 @@ extension on _TransactionPageState {
                 ),
                 const SizedBox(height: 14),
               ],
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+              Builder(
+                builder: (context) {
+                  final enlargedText =
+                      MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                  final titleBlock = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job?.title ??
+                            HopeCopy.of(context).copy_transaction_7e0ea3b,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      if (payment?.id == null) ...[
+                        const SizedBox(height: 4),
                         Text(
-                          job?.title ??
-                              HopeCopy.of(context).copy_transaction_7e0ea3b,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        if (payment?.id == null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _t(
-                              'پرداخت هنوز ساخته نشده',
-                              'Payment has not been created yet',
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall,
+                          _t(
+                            'پرداخت هنوز ساخته نشده',
+                            'Payment has not been created yet',
                           ),
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  PremiumTag(
+                    ],
+                  );
+                  final statusTag = PremiumTag(
                     icon: _statusIcon(status),
                     label: _statusLabel(status),
                     color: _statusColor(status),
-                  ),
-                  IconButton(
+                  );
+                  final refreshButton = IconButton(
                     onPressed: loading ? null : refresh,
                     tooltip: _t('به‌روزرسانی وضعیت', 'Refresh status'),
                     icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-                  ),
-                ],
+                  );
+
+                  if (enlargedText) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        titleBlock,
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          alignment: WrapAlignment.spaceBetween,
+                          children: [statusTag, refreshButton],
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(child: titleBlock),
+                      const SizedBox(width: 8),
+                      statusTag,
+                      refreshButton,
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: 12),

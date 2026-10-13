@@ -512,7 +512,7 @@ void main() {
       await tester.scrollUntilVisible(
         feeAmount,
         180,
-        scrollable: find.byType(ListView).first,
+        scrollable: find.byType(Scrollable).first,
         maxScrolls: 30,
       );
       await tester.pumpAndSettle();
