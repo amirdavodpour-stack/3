@@ -27,9 +27,9 @@ sh test/runtime/editorial_media_fixture_scope_test.sh
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
-grep -Fq "final mediaSize = compactViewport ? 64.0 : 88.0;" "$opportunity"
+grep -Fq "final mediaSize = compactViewport ? 56.0 : 88.0;" "$opportunity"
 grep -Fq "height: 72" "$opportunity"
-# Compact media keeps its existing footprint; standard media is the stronger editorial anchor.
+# Narrow standard cards use a 56px thumbnail; compact-grid media stays 72px.
 
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq 'static const darkBorder = Color(0x1FFFFFFF);' "$theme"
