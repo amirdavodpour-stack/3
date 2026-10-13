@@ -86,7 +86,12 @@ class _CreateJobPageState extends State<CreateJobPage> {
     final effectiveMax = kind == 'JOB' ? salary.text : max.text;
     final selectedCategory = categoryId;
     if (selectedCategory == null || selectedCategory.isEmpty) {
-      HopeFeedback.show(context, HopeCopy.of(context).copy_choose_a_professional_category_b4cf5b8, tone: HopeFeedbackTone.warning);
+      HopeFeedback.show(
+        context,
+        HopeCopy.of(context).copy_choose_a_professional_category_b4cf5b8,
+        tone: HopeFeedbackTone.warning,
+        bottomClearance: 112,
+      );
       return;
     }
     final input = CreateJobPayloadInput(
@@ -110,11 +115,21 @@ class _CreateJobPageState extends State<CreateJobPage> {
           HopeCopy.of(context).copy_as_described_in_the_opportunity_836cb3e,
     );
     if (!validation.isValid) {
-      HopeFeedback.show(context, validation.error!, tone: HopeFeedbackTone.warning);
+      HopeFeedback.show(
+        context,
+        validation.error!,
+        tone: HopeFeedbackTone.warning,
+        bottomClearance: 112,
+      );
       return;
     }
     if (kind == 'JOB' && deadline.text.trim().isEmpty) {
-      HopeFeedback.show(context, HopeCopy.of(context).copy_set_an_application_deadline_for_jobs_5fd80f8, tone: HopeFeedbackTone.warning);
+      HopeFeedback.show(
+        context,
+        HopeCopy.of(context).copy_set_an_application_deadline_for_jobs_5fd80f8,
+        tone: HopeFeedbackTone.warning,
+        bottomClearance: 112,
+      );
       return;
     }
     setState(() => busy = true);
