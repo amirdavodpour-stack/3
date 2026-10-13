@@ -3,8 +3,10 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'dart:convert';
 
+import '../../core/config/backend_capabilities.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/transactions/wallet.dart';
 import '../../core/transactions/wallet_repository.dart';
@@ -39,6 +41,10 @@ class _WalletPageState extends State<WalletPage> {
     'HOPE_ENABLE_INTERNAL_TOP_UP',
     defaultValue: false,
   );
+  BackendCapabilities? _backendCapabilities;
+  bool _capabilitiesLookupAttempted = false;
+  bool _capabilitiesSourceAvailable = false;
+  bool _capabilitiesLoadFailed = false;
   HopeWallet? _wallet;
   List<HopeWalletTransaction> _transactions = const [];
   List<HopePayout> _payouts = const [];
@@ -54,6 +60,49 @@ class _WalletPageState extends State<WalletPage> {
   bool get _isEnglish => Localizations.localeOf(context).languageCode == 'en';
 
   String _t(String fa, String en) => _isEnglish ? en : fa;
+
+  bool get _capabilitiesResolved =>
+      !_capabilitiesSourceAvailable || _backendCapabilities != null;
+  bool get _canWithdraw => !_capabilitiesSourceAvailable ||
+      _backendCapabilities?.walletWithdraw == true;
+  bool get _canTransfer => !_capabilitiesSourceAvailable ||
+      _backendCapabilities?.walletTransfer == true;
+  bool get _canDeposit => _internalTopUpEnabled &&
+      (!_capabilitiesSourceAvailable ||
+          _backendCapabilities?.walletDeposit == true);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_capabilitiesLookupAttempted) return;
+    _capabilitiesLookupAttempted = true;
+    try {
+      final repository = context.read<BackendCapabilitiesRepository>();
+      _capabilitiesSourceAvailable = true;
+      unawaited(_loadBackendCapabilities(repository));
+    } on ProviderNotFoundException {
+      _capabilitiesSourceAvailable = false;
+    }
+  }
+
+  Future<void> _loadBackendCapabilities(
+    BackendCapabilitiesRepository repository,
+  ) async {
+    try {
+      final capabilities = await repository.load();
+      if (!mounted) return;
+      setState(() {
+        _backendCapabilities = capabilities;
+        _capabilitiesLoadFailed = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _backendCapabilities = null;
+        _capabilitiesLoadFailed = true;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -640,7 +689,7 @@ class _WalletPageState extends State<WalletPage> {
     }
 
     final wallet = _wallet!;
-    final canAct = !_actionBusy && wallet.isActive;
+    final canAct = !_actionBusy && wallet.isActive && _capabilitiesResolved;
 
     Widget walletHeroMetric(
       BuildContext context,
@@ -1044,7 +1093,7 @@ class _WalletPageState extends State<WalletPage> {
         padding: EdgeInsets.zero,
         child: Row(
           children: [
-            if (_internalTopUpEnabled) ...[
+            if (_canDeposit) ...[
               action(
                 icon: HopeV2Icons.transferIn,
                 fa: 'واریز',
@@ -1053,14 +1102,16 @@ class _WalletPageState extends State<WalletPage> {
               ),
               const SizedBox(width: 6),
             ],
-            action(
-              icon: HopeV2Icons.transferOut,
-              fa: 'برداشت',
-              en: 'Withdraw',
-              onPressed: canAct ? _openWithdraw : null,
-              primary: true,
-            ),
-            const SizedBox(width: 6),
+            if (_canWithdraw) ...[
+              action(
+                icon: HopeV2Icons.transferOut,
+                fa: 'برداشت',
+                en: 'Withdraw',
+                onPressed: canAct ? _openWithdraw : null,
+                primary: true,
+              ),
+              const SizedBox(width: 6),
+            ],
             action(
               icon: HopeV2Icons.completed,
               fa: 'تاریخچه',
@@ -1114,7 +1165,7 @@ class _WalletPageState extends State<WalletPage> {
                 onSelected: (value) {
                   switch (value) {
                     case 'transfer':
-                      if (canAct) _openTransfer();
+                      if (canAct && _canTransfer) _openTransfer();
                       break;
                     case 'insights':
                       Navigator.push(
@@ -1127,7 +1178,7 @@ class _WalletPageState extends State<WalletPage> {
                 itemBuilder: (_) => [
                   PopupMenuItem(
                     value: 'transfer',
-                    enabled: canAct,
+                    enabled: canAct && _canTransfer,
                     child: Text(_t('انتقال داخلی', 'Transfer')),
                   ),
                   PopupMenuItem(
@@ -1154,6 +1205,25 @@ class _WalletPageState extends State<WalletPage> {
               ),
               const SizedBox(height: 8),
             ],
+            if (_capabilitiesLoadFailed)
+              Padding(
+                key: const ValueKey('wallet-capability-error'),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    _t(
+                      'وضعیت عملیات مالی از سرور دریافت نشد؛ عملیات مالی موقتاً غیرفعال است.',
+                      'Wallet actions are temporarily disabled because server capabilities could not be loaded.',
+                    ),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ),
             SizedBox(height: tightViewport ? 2 : HopeV2Spacing.sm),
             LayoutBuilder(
               builder: (context, constraints) {
