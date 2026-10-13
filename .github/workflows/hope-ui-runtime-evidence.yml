@@ -100,6 +100,8 @@ jobs:
         run: bash test/runtime/android_runtime_adb_recovery_test.sh
       - name: Test Android screenshot transport contract
         run: bash test/runtime/android_screenshot_transport_test.sh
+      - name: Test TalkBack bound-service contract
+        run: bash test/runtime/hope_enable_talkback_test.sh
 
       - name: Test Home source integrity
         run: sh test/runtime/home_source_integrity_test.sh

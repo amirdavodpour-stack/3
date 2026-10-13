@@ -32,8 +32,19 @@ if ! grep -Fq 'package:' "$evidence_dir/talkback-package-path.txt"; then
   echo "FAIL: com.android.talkback is not installed on the emulator." >&2
   exit 6
 fi
+# A sideloaded APK starts in Android's stopped/not-launched state. Explicitly open
+# its exported service-settings activity before enabling it, so the system can
+# start the service rather than leaving it indefinitely in "Binding services".
+if ! adb -s "$serial" shell am start -W -n "com.android.talkback/com.android.talkback.TalkBackPreferencesActivity" > "$evidence_dir/talkback-launch.txt" 2>&1 ||
+   ! grep -Fq 'Status: ok' "$evidence_dir/talkback-launch.txt"; then
+  cat "$evidence_dir/talkback-launch.txt" >&2 || true
+  echo "FAIL: TalkBack settings activity could not be launched to clear fresh-install stopped state." >&2
+  exit 7
+fi
 adb -s "$serial" shell dumpsys package com.android.talkback > "$evidence_dir/talkback-package-info.txt" 2>&1 || true
-# Secure settings alone are not accepted; verify the actual bound AccessibilityManager service.
+# Secure settings alone are not accepted; verify the exact component inside the
+# Bound services block. A component listed only under Binding services is pending,
+# not proof that Android has connected the accessibility service.
 adb -s "$serial" shell settings put secure enabled_accessibility_services "$component"
 adb -s "$serial" shell settings put secure accessibility_enabled 1
 bound=false
@@ -43,12 +54,17 @@ for attempt in $(seq 1 30); do
   adb -s "$serial" shell dumpsys accessibility > "$evidence_dir/accessibility-bound-services.txt" 2>&1 || true
   enabled_value="$(tr -d '\r\n' < "$evidence_dir/accessibility-enabled.txt" 2>/dev/null || true)"
   services_value="$(tr -d '\r\n' < "$evidence_dir/accessibility-services.txt" 2>/dev/null || true)"
+  bound_services_block="$(
+    awk '
+      /^[[:space:]]*Bound services:/ { in_bound = 1; print; next }
+      in_bound && /^[[:space:]]*(Enabled services|Binding services|Crashed services):/ { exit }
+      in_bound { print }
+    ' "$evidence_dir/accessibility-bound-services.txt"
+  )"
   if [[ "$enabled_value" == "1" ]] &&
      grep -Fq 'com.android.talkback' <<<"$services_value" &&
      grep -Fq 'com.google.android.marvin.talkback.TalkBackService' <<<"$services_value" &&
-     grep -Eiq 'bound services' "$evidence_dir/accessibility-bound-services.txt" &&
-     grep -Fq 'com.android.talkback' "$evidence_dir/accessibility-bound-services.txt" &&
-     grep -Fq 'com.google.android.marvin.talkback.TalkBackService' "$evidence_dir/accessibility-bound-services.txt"; then
+     grep -Fq "$component" <<<"$bound_services_block"; then
     bound=true
     break
   fi
@@ -58,7 +74,7 @@ printf '%s\n' "$bound" > "$evidence_dir/talkback-service-bound.txt"
 if [[ "$bound" != "true" ]]; then
   echo "FAIL: TalkBack did not bind; secure setting values are insufficient evidence." >&2
   grep -Ei -C 3 'accessibility|talkback|bound service' "$evidence_dir/accessibility-bound-services.txt" >&2 || true
-  exit 7
+  exit 8
 fi
 echo "HOPE_TALKBACK_SERVICE_BOUND:true"
 echo "HOPE_TALKBACK_SOURCE_SHA:$source_sha"
