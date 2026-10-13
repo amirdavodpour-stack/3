@@ -45,6 +45,7 @@ class _WalletPageState extends State<WalletPage> {
   bool _capabilitiesLookupAttempted = false;
   bool _capabilitiesSourceAvailable = false;
   bool _capabilitiesLoadFailed = false;
+  bool _capabilitiesRetrying = false;
   HopeWallet? _wallet;
   List<HopeWalletTransaction> _transactions = const [];
   List<HopePayout> _payouts = const [];
@@ -106,6 +107,17 @@ class _WalletPageState extends State<WalletPage> {
         _backendCapabilities = null;
         _capabilitiesLoadFailed = true;
       });
+    }
+  }
+
+  Future<void> _retryBackendCapabilities() async {
+    if (_capabilitiesRetrying) return;
+    final repository = context.read<BackendCapabilitiesRepository>();
+    setState(() => _capabilitiesRetrying = true);
+    try {
+      await _loadBackendCapabilities(repository);
+    } finally {
+      if (mounted) setState(() => _capabilitiesRetrying = false);
     }
   }
 
@@ -1216,16 +1228,40 @@ class _WalletPageState extends State<WalletPage> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Semantics(
                   liveRegion: true,
-                  child: Text(
-                    _t(
-                      'وضعیت عملیات مالی از سرور دریافت نشد؛ عملیات مالی موقتاً غیرفعال است.',
-                      'Wallet actions are temporarily disabled because server capabilities could not be loaded.',
-                    ),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 12,
-                      height: 1.35,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _t(
+                          'وضعیت عملیات مالی از سرور دریافت نشد؛ عملیات مالی موقتاً غیرفعال است.',
+                          'Wallet actions are temporarily disabled because server capabilities could not be loaded.',
+                        ),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      OutlinedButton.icon(
+                        key: const ValueKey('wallet-capability-retry'),
+                        onPressed: _capabilitiesRetrying
+                            ? null
+                            : _retryBackendCapabilities,
+                        icon: _capabilitiesRetrying
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const HopeIcon(HopeV2Icons.refresh, size: 18),
+                        label: Text(
+                          _capabilitiesRetrying
+                              ? _t('در حال تلاش دوباره…', 'Retrying…')
+                              : _t('تلاش دوباره', 'Retry'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
