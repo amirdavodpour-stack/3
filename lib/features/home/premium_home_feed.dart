@@ -999,6 +999,27 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       future: _activeJobs,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const _PulseSkeleton();
+        if (snapshot.hasError) {
+          return HopeAsyncState(
+            kind: HopeStateKind.error,
+            title: _t(
+              context,
+              'کارهای فعال موقتاً در دسترس نیستند',
+              'Active work is temporarily unavailable',
+            ),
+            message: _t(
+              context,
+              'وضعیت همکاری‌های فعال دریافت نشد. دوباره تلاش کنید.',
+              'We could not load your active collaborations. Try again.',
+            ),
+            action: OutlinedButton.icon(
+              key: const ValueKey('home-active-work-retry'),
+              onPressed: _refresh,
+              icon: const HopeIcon(HopeV2Icons.refresh, size: 18),
+              label: Text(_t(context, 'تلاش دوباره', 'Retry active work')),
+            ),
+          );
+        }
         final jobs = (snapshot.data ?? const <HopeJob>[]).where((j) => {'ASSIGNED','IN_PROGRESS','DELIVERED','UNDER_REVIEW'}.contains(j.status?.toUpperCase())).toList();
         if (jobs.isEmpty) return const SizedBox.shrink();
         final job = jobs.first;
