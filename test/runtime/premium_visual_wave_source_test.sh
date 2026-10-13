@@ -415,6 +415,7 @@ echo "PASS: Wave45 exact monetary value readability on Wallet and Transaction De
 # Wave45 follow-up: long total balance avoids the compact mid-width two-column split;
 # transaction identity/status reflows when enlarged text is active.
 grep -Fq "final longTotalBalance = totalBalanceValue.length > 18;" "lib/features/wallet/wallet_page.dart"
+grep -Fq "if (enlargedText || longTotalBalance)" "lib/features/wallet/wallet_page.dart"
 grep -Fq "final enlargedText =" "lib/features/transactions/transaction_widgets.part.dart"
 grep -Fq "children: [statusTag, refreshButton]" "lib/features/transactions/transaction_widgets.part.dart"
 echo "PASS: Wave45 follow-up for long total balances and enlarged transaction headings"

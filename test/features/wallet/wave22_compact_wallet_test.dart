@@ -155,6 +155,9 @@ void main() {
 
       final hero = find.byKey(const ValueKey('wallet-balance-hero'));
       final total = find.text('9,000,000,000,000,000 TOMAN');
+      final providerStatus = find.byKey(
+        const ValueKey('wallet-provider-status'),
+      );
       final availableMetric = find.byKey(
         const ValueKey('wallet-balance-metric-available'),
       );
@@ -165,6 +168,8 @@ void main() {
 
       expect(hero, findsOneWidget);
       expect(total, findsOneWidget);
+      expect(providerStatus, findsOneWidget);
+      expect(tester.widget(providerStatus), isA<Column>());
       expect(availableMetric, findsOneWidget);
       expect(available, findsOneWidget);
 
