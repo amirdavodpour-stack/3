@@ -45,6 +45,7 @@ class _WalletPageState extends State<WalletPage> {
   bool _capabilitiesLookupAttempted = false;
   bool _capabilitiesSourceAvailable = false;
   bool _capabilitiesLoadFailed = false;
+  bool _capabilitiesProviderMissing = false;
   bool _capabilitiesRetrying = false;
   HopeWallet? _wallet;
   List<HopeWalletTransaction> _transactions = const [];
@@ -62,20 +63,17 @@ class _WalletPageState extends State<WalletPage> {
 
   String _t(String fa, String en) => _isEnglish ? en : fa;
 
-  bool get _capabilitiesResolved =>
-      !_capabilitiesSourceAvailable || _backendCapabilities != null;
+  bool get _capabilitiesResolved => _backendCapabilities != null;
   bool get _canWithdraw =>
-      !_capabilitiesSourceAvailable ||
-      (_backendCapabilities?.wallet == true &&
-          _backendCapabilities?.walletWithdraw == true);
+      _backendCapabilities?.wallet == true &&
+      _backendCapabilities?.walletWithdraw == true;
   bool get _canTransfer =>
-      !_capabilitiesSourceAvailable ||
-      (_backendCapabilities?.wallet == true &&
-          _backendCapabilities?.walletTransfer == true);
-  bool get _canDeposit => _internalTopUpEnabled &&
-      (!_capabilitiesSourceAvailable ||
-          (_backendCapabilities?.wallet == true &&
-              _backendCapabilities?.walletDeposit == true));
+      _backendCapabilities?.wallet == true &&
+      _backendCapabilities?.walletTransfer == true;
+  bool get _canDeposit =>
+      _internalTopUpEnabled &&
+      _backendCapabilities?.wallet == true &&
+      _backendCapabilities?.walletDeposit == true;
 
   @override
   void didChangeDependencies() {
@@ -88,6 +86,8 @@ class _WalletPageState extends State<WalletPage> {
       unawaited(_loadBackendCapabilities(repository));
     } on ProviderNotFoundException {
       _capabilitiesSourceAvailable = false;
+      _capabilitiesProviderMissing = true;
+      _capabilitiesLoadFailed = true;
     }
   }
 
@@ -99,6 +99,7 @@ class _WalletPageState extends State<WalletPage> {
       if (!mounted) return;
       setState(() {
         _backendCapabilities = capabilities;
+        _capabilitiesProviderMissing = false;
         _capabilitiesLoadFailed = false;
       });
     } catch (_) {
@@ -1233,8 +1234,12 @@ class _WalletPageState extends State<WalletPage> {
                     children: [
                       Text(
                         _t(
-                          'وضعیت عملیات مالی از سرور دریافت نشد؛ عملیات مالی موقتاً غیرفعال است.',
-                          'Wallet actions are temporarily disabled because server capabilities could not be loaded.',
+                          _capabilitiesProviderMissing
+                              ? 'پیکربندی قابلیت‌های کیف پول در دسترس نیست؛ عملیات غیرفعال است.'
+                              : 'وضعیت عملیات مالی از سرور دریافت نشد؛ عملیات مالی موقتاً غیرفعال است.',
+                          _capabilitiesProviderMissing
+                              ? 'Wallet actions are disabled because capability configuration is unavailable.'
+                              : 'Wallet actions are temporarily disabled because server capabilities could not be loaded.',
                         ),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
@@ -1242,25 +1247,27 @@ class _WalletPageState extends State<WalletPage> {
                           height: 1.35,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      OutlinedButton.icon(
-                        key: const ValueKey('wallet-capability-retry'),
-                        onPressed: _capabilitiesRetrying
-                            ? null
-                            : _retryBackendCapabilities,
-                        icon: _capabilitiesRetrying
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const HopeIcon(HopeV2Icons.refresh, size: 18),
-                        label: Text(
-                          _capabilitiesRetrying
-                              ? _t('در حال تلاش دوباره…', 'Retrying…')
-                              : _t('تلاش دوباره', 'Retry'),
+                      if (_capabilitiesSourceAvailable) ...[
+                        const SizedBox(height: 6),
+                        OutlinedButton.icon(
+                          key: const ValueKey('wallet-capability-retry'),
+                          onPressed: _capabilitiesRetrying
+                              ? null
+                              : _retryBackendCapabilities,
+                          icon: _capabilitiesRetrying
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const HopeIcon(HopeV2Icons.refresh, size: 18),
+                          label: Text(
+                            _capabilitiesRetrying
+                                ? _t('در حال تلاش دوباره…', 'Retrying…')
+                                : _t('تلاش دوباره', 'Retry'),
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
