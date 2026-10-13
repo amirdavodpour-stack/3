@@ -186,13 +186,24 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final fallback = find.byKey(
-          const ValueKey('opportunity-fallback-icon-container'),
-        );
-        expect(fallback, findsOneWidget, reason: 'variant: $variant');
-        final fallbackSize = tester.getSize(fallback);
-        expect(fallbackSize.width, lessThanOrEqualTo(32));
-        expect(fallbackSize.height, lessThanOrEqualTo(32));
+        if (variant == OpportunityCardVariant.compactGrid) {
+          // At enlarged text scale the compact-grid variant becomes text-first
+          // to preserve real metadata and the complete Toman amount without
+          // forcing artwork into a fixed-height tile.
+          expect(
+            find.byKey(const ValueKey('opportunity-card-compact-grid-kind')),
+            findsOneWidget,
+            reason: 'enlarged text layout should prioritize readable text for $variant',
+          );
+        } else {
+          final fallback = find.byKey(
+            const ValueKey('opportunity-fallback-icon-container'),
+          );
+          expect(fallback, findsOneWidget, reason: 'variant: $variant');
+          final fallbackSize = tester.getSize(fallback);
+          expect(fallbackSize.width, lessThanOrEqualTo(32));
+          expect(fallbackSize.height, lessThanOrEqualTo(32));
+        }
         expect(find.text('Flutter developer opportunity'), findsOneWidget);
         expect(
           find.bySemanticsLabel(
