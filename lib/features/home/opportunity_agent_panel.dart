@@ -20,24 +20,21 @@ class OpportunityAgentPanel extends StatelessWidget {
 
   String _title(BuildContext context, HopeOpportunityAgentAction action) {
     final rawTitle = action.title.trim();
-    switch (action.type) {
-      case 'COMPLETE_PROFILE':
-        return _t(context, 'تکمیل پروفایل کاری', 'Complete your work profile');
-      case 'FOLLOW_UP_APPLICATION':
-        if (rawTitle.toLowerCase() == 'follow up on your application' ||
-            rawTitle.isEmpty) {
-          return _t(context, 'پیگیری درخواست', 'Follow up on your application');
-        }
-      case 'PREPARE_APPLICATION':
-        if (rawTitle.toLowerCase() == 'prepare application' ||
-            rawTitle.isEmpty) {
-          return _t(context, 'آماده‌سازی درخواست', 'Prepare application');
-        }
-      case 'REVIEW_OPPORTUNITY':
-        if (rawTitle.toLowerCase() == 'review opportunity' ||
-            rawTitle.isEmpty) {
-          return _t(context, 'بررسی فرصت پیشنهادی', 'Review opportunity');
-        }
+    if (action.type == 'COMPLETE_PROFILE') {
+      return _t(context, 'تکمیل پروفایل کاری', 'Complete your work profile');
+    }
+    if (action.type == 'FOLLOW_UP_APPLICATION' &&
+        (rawTitle.toLowerCase() == 'follow up on your application' ||
+            rawTitle.isEmpty)) {
+      return _t(context, 'پیگیری درخواست', 'Follow up on your application');
+    }
+    if (action.type == 'PREPARE_APPLICATION' &&
+        (rawTitle.toLowerCase() == 'prepare application' || rawTitle.isEmpty)) {
+      return _t(context, 'آماده‌سازی درخواست', 'Prepare application');
+    }
+    if (action.type == 'REVIEW_OPPORTUNITY' &&
+        (rawTitle.toLowerCase() == 'review opportunity' || rawTitle.isEmpty)) {
+      return _t(context, 'بررسی فرصت پیشنهادی', 'Review opportunity');
     }
     // Job and application titles are user/content data, not machine labels.
     return rawTitle;
