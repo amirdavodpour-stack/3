@@ -1565,8 +1565,8 @@ class _MatchIntelligence extends StatelessWidget {
     const fa = {
       'SKILL_MATCH': 'مهارت مرتبط',
       'CATEGORY_MATCH': 'دسته‌بندی مرتبط',
-      'VERY_NEAR': 'تطابق مکانی',
-      'NEARBY': 'تطابق مکانی',
+      'VERY_NEAR': 'خیلی نزدیک',
+      'NEARBY': 'نزدیک',
       'REMOTE': 'قابل انجام آنلاین',
       'WORK_MODE_MATCH': 'نوع همکاری مناسب',
       'SALARY_FIT': 'تناسب درآمد',
@@ -1576,8 +1576,8 @@ class _MatchIntelligence extends StatelessWidget {
     const en = {
       'SKILL_MATCH': 'Skill match',
       'CATEGORY_MATCH': 'Category match',
-      'VERY_NEAR': 'Location match',
-      'NEARBY': 'Location match',
+      'VERY_NEAR': 'Very near',
+      'NEARBY': 'Nearby',
       'REMOTE': 'Remote',
       'WORK_MODE_MATCH': 'Work mode fit',
       'SALARY_FIT': 'Salary fit',
