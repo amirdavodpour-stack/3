@@ -97,6 +97,22 @@ class _SequencedMarketplaceRepository implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
+class _FailingHomeOpportunitiesRepository extends _SequencedMarketplaceRepository {
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async {
+    throw StateError('opportunities unavailable');
+  }
+}
+
 HopeJob _job(String id, String title, {bool recommended = false}) =>
     HopeJob.fromMap({
       'id': id,
@@ -284,6 +300,36 @@ void main() {
       await tester.pump();
       expect(find.text('Active work is temporarily unavailable'), findsNothing);
       expect(find.byKey(const ValueKey('home-active-work-retry')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Home Pulse does not report zero matches when opportunities fail to load',
+    (tester) async {
+      tester.view.physicalSize = const Size(720, 1280);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _FailingHomeOpportunitiesRepository(),
+        locale: 'en',
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Opportunities are unavailable'), findsOneWidget);
+      final matches = find.byKey(
+        const ValueKey('home-pulse-stat-matches'),
+      );
+      expect(matches, findsOneWidget);
+      final texts = tester
+          .widgetList<Text>(find.descendant(of: matches, matching: find.byType(Text)))
+          .map((widget) => widget.data ?? '')
+          .toList();
+      expect(texts, contains('—'));
+      expect(texts, isNot(contains('0')));
       expect(tester.takeException(), isNull);
     },
   );
