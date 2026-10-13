@@ -574,7 +574,12 @@ void main() {
           updatedAt: '2026-10-13T00:00:00Z',
         ),
       ]);
-      await _pump(tester, repo, savedSearches: savedSearches);
+      await _pump(
+        tester,
+        repo,
+        locale: const Locale('en'),
+        savedSearches: savedSearches,
+      );
       await tester.pumpAndSettle();
 
       expect(savedSearches.listCalls, 1);
