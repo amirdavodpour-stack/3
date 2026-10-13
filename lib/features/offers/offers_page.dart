@@ -241,21 +241,58 @@ class _OffersPageState extends State<OffersPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const HopeIconTile(HopeV2Icons.payments, filled: true),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          (o.jobTitle?.trim().isNotEmpty == true ? o.jobTitle!.trim() : _t('پیشنهاد همکاری', 'Work offer')),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                  Builder(
+                    builder: (context) {
+                      final compactHeading =
+                          MediaQuery.sizeOf(context).width < 380 ||
+                          MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                      final title = Text(
+                        (o.jobTitle?.trim().isNotEmpty == true
+                            ? o.jobTitle!.trim()
+                            : _t('پیشنهاد همکاری', 'Work offer')),
+                        key: ValueKey('offer-title-${o.id}'),
+                        softWrap: true,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      );
+                      final titleWithIcon = Row(
+                        children: [
+                          const HopeIconTile(HopeV2Icons.payments, filled: true),
+                          const SizedBox(width: 10),
+                          Expanded(child: title),
+                        ],
+                      );
+                      final status = KeyedSubtree(
+                        key: ValueKey('offer-status-${o.id}'),
+                        child: StatusPill(
+                          _statusLabel(o.status),
+                          color: _statusColor(context, o.status),
                         ),
-                      ),
-                      StatusPill(
-                        _statusLabel(o.status),
-                        color: _statusColor(context, o.status),
-                      ),
-                    ],
+                      );
+
+                      if (compactHeading) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            titleWithIcon,
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: status,
+                            ),
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: titleWithIcon),
+                          const SizedBox(width: 8),
+                          status,
+                        ],
+                      );
+                    },
                   ),
                   if (o.message.trim().isNotEmpty)
                     Padding(

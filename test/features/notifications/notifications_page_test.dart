@@ -148,9 +148,13 @@ class _SequencedNotificationRepository extends _Repo {
   }
 }
 
-Widget _app(_Repo repo) => MaterialApp(
+Widget _app(
+  _Repo repo, {
+  Locale locale = const Locale('fa'),
+  double textScale = 1,
+}) => MaterialApp(
       theme: ThemeData.light(),
-      locale: const Locale('fa'),
+      locale: locale,
       supportedLocales: const [Locale('fa'), Locale('en')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -158,6 +162,12 @@ Widget _app(_Repo repo) => MaterialApp(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+        ),
+        child: child!,
+      ),
       home: Provider<NotificationRepository>.value(
         value: repo,
         child: const NotificationsPage(),
@@ -165,6 +175,80 @@ Widget _app(_Repo repo) => MaterialApp(
     );
 
 void main() {
+  testWidgets(
+    'Wave49 Notifications preserve title/body at narrow FA-RTL and EN-LTR 1.5x',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const locales = [Locale('fa'), Locale('en')];
+      const widths = [320.0, 360.0, 600.0, 1200.0];
+      for (final locale in locales) {
+        for (final width in widths) {
+          final scales = width <= 360 ? [1.0, 1.5] : [1.0];
+          for (final scale in scales) {
+            final repo = _Repo()
+              ..items = [
+                HopeNotification(
+                  id: 'responsive',
+                  type: 'JOB',
+                  title: locale.languageCode == 'fa'
+                      ? 'اعلان مهم برای بررسی چیدمان در صفحه باریک و متن بزرگ'
+                      : 'An important notification title for the narrow and enlarged responsive layout',
+                  body: locale.languageCode == 'fa'
+                      ? 'این پیام جزئیات اعلان را در عرض کم و اندازه متن بزرگ حفظ می‌کند تا متن مهم پنهان نشود.'
+                      : 'This notification body contains the details needed to understand the event and must remain readable on a narrow viewport with enlarged text.',
+                  createdAt: null,
+                  readAt: null,
+                ),
+              ];
+            tester.view.physicalSize = Size(width, 800);
+            await tester.pumpWidget(
+              _app(repo, locale: locale, textScale: scale),
+            );
+            await tester.pumpAndSettle();
+
+            final titleFinder =
+                find.byKey(const ValueKey('notification-title-responsive'));
+            final bodyFinder =
+                find.byKey(const ValueKey('notification-body-responsive'));
+            final unreadTagFinder = find.byKey(
+              const ValueKey('notification-unread-tag-responsive'),
+            );
+            expect(titleFinder, findsOneWidget);
+            expect(bodyFinder, findsOneWidget);
+            expect(unreadTagFinder, findsOneWidget);
+            final titleWidget = tester.widget<Text>(titleFinder);
+            final bodyWidget = tester.widget<Text>(bodyFinder);
+            final titleRect = tester.getRect(titleFinder);
+            final bodyRect = tester.getRect(bodyFinder);
+            final tagRect = tester.getRect(unreadTagFinder);
+            expect(titleRect.left, greaterThanOrEqualTo(0));
+            expect(titleRect.right, lessThanOrEqualTo(width));
+            expect(bodyRect.left, greaterThanOrEqualTo(0));
+            expect(bodyRect.right, lessThanOrEqualTo(width));
+            expect(tagRect.left, greaterThanOrEqualTo(0));
+            expect(tagRect.right, lessThanOrEqualTo(width));
+            if (width < 380 || scale > 1.2) {
+              expect(titleWidget.maxLines, isNull);
+              expect(bodyWidget.maxLines, isNull);
+              expect(tagRect.top, greaterThan(titleRect.bottom - 1));
+            } else {
+              expect(titleWidget.maxLines, 2);
+              expect(bodyWidget.maxLines, 3);
+            }
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: 'Unexpected notification layout at ${locale.languageCode}, ${width}dp, ${scale}x.',
+            );
+          }
+        }
+      }
+    },
+  );
+
   testWidgets(
     'notifications loading uses the canonical async state inside the page shell',
     (tester) async {

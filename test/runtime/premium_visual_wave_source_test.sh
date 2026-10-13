@@ -415,7 +415,7 @@ echo "PASS: Wave45 exact monetary value readability on Wallet and Transaction De
 # Wave45 follow-up: long total balance avoids the compact mid-width two-column split;
 # transaction identity/status reflows when enlarged text is active.
 grep -Fq "final longTotalBalance = totalBalanceValue.length > 18;" "lib/features/wallet/wallet_page.dart"
-grep -Fq "if (enlargedText || longTotalBalance)" "lib/features/wallet/wallet_page.dart"
+grep -Fq "if (denseViewport || enlargedText || longTotalBalance)" "lib/features/wallet/wallet_page.dart"
 grep -Fq "final enlargedText =" "lib/features/transactions/transaction_widgets.part.dart"
 grep -Fq "children: [statusTag, refreshButton]" "lib/features/transactions/transaction_widgets.part.dart"
 echo "PASS: Wave45 follow-up for long total balances and enlarged transaction headings"
@@ -449,4 +449,17 @@ grep -Fq "Wave48 Wallet adapts hero/action composition across FA-RTL and EN-LTR 
 grep -Fq "Wave48 Work Center preserves lifecycle reachability across widths and locales" "test/features/transactions/transactions_page_test.dart"
 grep -Fq "test/features/wallet/wave22_compact_wallet_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
 grep -Fq "test/features/transactions/transactions_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "item.width < HopeV2Breakpoints.medium" "test/features/transactions/transactions_page_test.dart"
 echo "PASS: Wave48 Wallet and Work Center responsive/locale matrix contracts"
+
+# Wave49: adaptive Offers, Notifications and Chat rows across locale/viewport combinations.
+grep -Fq "final compactHeading =" "lib/features/offers/offers_page.dart"
+grep -Fq "offer-status-${o.id}" "lib/features/offers/offers_page.dart"
+grep -Fq "Wave49 Offers card title and status fit FA-RTL/EN-LTR responsive matrix" "test/features/offers/offers_page_test.dart"
+grep -Fq "final compactText =" "lib/features/notifications/notifications_page.dart"
+grep -Fq "notification-title-${n.id}" "lib/features/notifications/notifications_page.dart"
+grep -Fq "Wave49 Notifications preserve title/body at narrow FA-RTL and EN-LTR 1.5x" "test/features/notifications/notifications_page_test.dart"
+grep -Fq "final compactBanner =" "lib/features/chat/chat_page.dart"
+grep -Fq "chat-send-error-retry" "lib/features/chat/chat_page.dart"
+grep -Fq "Wave49 Chat send failure keeps full error and Retry reachable at 1.5x in both directions" "test/features/chat/chat_page_test.dart"
+echo "PASS: Wave49 adaptive heading and recovery content across locale/viewport matrix"

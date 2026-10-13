@@ -958,7 +958,7 @@ class _WalletPageState extends State<WalletPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (enlargedText || longTotalBalance)
+            if (denseViewport || enlargedText || longTotalBalance)
               Column(
                 key: const ValueKey('wallet-provider-status'),
                 crossAxisAlignment: CrossAxisAlignment.start,

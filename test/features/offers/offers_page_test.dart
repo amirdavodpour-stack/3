@@ -146,8 +146,12 @@ class _InitialFailureOfferRepository extends _FixedOfferRepository {
       Future<List<HopeOffer>>.error(StateError('offers unavailable'));
 }
 
-Widget _host(OfferRepository repository) => MaterialApp(
-  locale: const Locale('en'),
+Widget _host(
+  OfferRepository repository, {
+  Locale locale = const Locale('en'),
+  double textScale = 1,
+}) => MaterialApp(
+  locale: locale,
   supportedLocales: const [Locale('fa'), Locale('en')],
   localizationsDelegates: const [
     AppLocalizations.delegate,
@@ -155,6 +159,12 @@ Widget _host(OfferRepository repository) => MaterialApp(
     GlobalWidgetsLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
   ],
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(
+      textScaler: TextScaler.linear(textScale),
+    ),
+    child: child!,
+  ),
   home: Provider<OfferRepository>.value(
     value: repository,
     child: const OffersPage(),
@@ -177,6 +187,75 @@ Widget _hostWithJob(OfferRepository repository) => MaterialApp(
 );
 
 void main() {
+  testWidgets(
+    'Wave49 Offers card title and status fit FA-RTL/EN-LTR responsive matrix',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const title =
+          'A very detailed collaboration opportunity title that must stay readable at narrow widths';
+      final offer = HopeOffer(
+        id: 'responsive-offer',
+        jobId: 'job-1',
+        providerId: 'provider-1',
+        price: '2500000',
+        message: 'A real test-fixture offer message.',
+        status: 'PENDING',
+        createdAt: null,
+        updatedAt: null,
+        jobTitle: title,
+      );
+      const widths = [320.0, 360.0, 390.0, 600.0, 900.0, 1200.0];
+      const locales = [Locale('fa'), Locale('en')];
+
+      for (final locale in locales) {
+        for (final width in widths) {
+          final scales = width <= 360 ? [1.0, 1.5] : [1.0];
+          for (final scale in scales) {
+            tester.view.physicalSize = Size(width, 800);
+            await tester.pumpWidget(
+              _host(
+                _FixedOfferRepository([offer]),
+                locale: locale,
+                textScale: scale,
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            final titleFinder = find.byKey(
+              const ValueKey('offer-title-responsive-offer'),
+            );
+            final statusFinder = find.byKey(
+              const ValueKey('offer-status-responsive-offer'),
+            );
+            expect(titleFinder, findsOneWidget);
+            expect(statusFinder, findsOneWidget);
+            final titleRect = tester.getRect(titleFinder);
+            final statusRect = tester.getRect(statusFinder);
+            expect(titleRect.left, greaterThanOrEqualTo(0));
+            expect(titleRect.right, lessThanOrEqualTo(width));
+            expect(statusRect.left, greaterThanOrEqualTo(0));
+            expect(statusRect.right, lessThanOrEqualTo(width));
+            if (width < 380 || scale > 1.2) {
+              expect(
+                statusRect.top,
+                greaterThan(titleRect.bottom - 1),
+                reason: 'Offer status should stack below title at ${locale.languageCode}, ${width}dp, ${scale}x.',
+              );
+            }
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: 'Unexpected layout exception at ${locale.languageCode}, ${width}dp, ${scale}x.',
+            );
+          }
+        }
+      }
+    },
+  );
+
 testWidgets(
   'Wave46 offers loading and empty states remain mutually exclusive',
   (tester) async {

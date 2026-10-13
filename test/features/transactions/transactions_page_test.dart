@@ -209,7 +209,7 @@ void main() {
         expect(lifecycleRect.top, greaterThanOrEqualTo(0),
             reason: 'Lifecycle scroll target is above viewport at $contextLabel');
 
-        if (item.width < 1200) {
+        if (item.width < HopeV2Breakpoints.medium) {
           final dock = find.byKey(const ValueKey('hope-navigation-dock'));
           expect(dock, findsOneWidget,
               reason: 'Compact/medium primary dock missing at $contextLabel');

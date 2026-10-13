@@ -243,6 +243,48 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
   Widget _notificationCard(HopeNotification n) {
     final unread = n.isUnread;
+    final compactText = MediaQuery.sizeOf(context).width < 380 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final titleWidget = Text(
+      n.title,
+      key: ValueKey('notification-title-${n.id}'),
+      maxLines: compactText ? null : 2,
+      softWrap: true,
+      overflow: compactText ? TextOverflow.visible : TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.titleMedium,
+    );
+    final unreadTag = KeyedSubtree(
+      key: ValueKey('notification-unread-tag-${n.id}'),
+      child: PremiumTag(
+        label: _t('جدید', 'New'),
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+    final heading = compactText
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleWidget,
+              if (unread)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: unreadTag,
+                  ),
+                ),
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: titleWidget),
+              if (unread) ...[
+                const SizedBox(width: 8),
+                unreadTag,
+              ],
+            ],
+          );
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
@@ -277,31 +319,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              n.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                          if (unread) ...[
-                            const SizedBox(width: 8),
-                            PremiumTag(
-                              label: _t('جدید', 'New'),
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ],
-                        ],
-                      ),
+                      heading,
                       const SizedBox(height: 5),
                       Text(
                         n.body,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
+                        key: ValueKey('notification-body-${n.id}'),
+                        maxLines: compactText ? null : 3,
+                        softWrap: true,
+                        overflow: compactText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       if (n.hasAction) ...[

@@ -298,19 +298,27 @@ class _ChatPageState extends State<ChatPage> {
                         borderRadius: BorderRadius.circular(HopeV2Radii.md),
                       ),
                       padding: const EdgeInsetsDirectional.only(start: 10, end: 4),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline_rounded, size: 16, color: colors.error),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ),
-                          TextButton(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final compactBanner = constraints.maxWidth < 340 ||
+                              MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                          final errorIcon = Icon(
+                            Icons.error_outline_rounded,
+                            size: 16,
+                            color: colors.error,
+                          );
+                          final errorText = Text(
+                            _error!,
+                            key: const ValueKey('chat-send-error-message'),
+                            maxLines: compactBanner ? null : 1,
+                            softWrap: true,
+                            overflow: compactBanner
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          );
+                          final retryAction = TextButton(
+                            key: const ValueKey('chat-send-error-retry'),
                             style: TextButton.styleFrom(
                               minimumSize: const Size(48, 48),
                               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -318,8 +326,36 @@ class _ChatPageState extends State<ChatPage> {
                             ),
                             onPressed: _busy ? null : _load,
                             child: Text(_t('تلاش دوباره', 'Retry')),
-                          ),
-                        ],
+                          );
+
+                          if (compactBanner) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    errorIcon,
+                                    const SizedBox(width: 7),
+                                    Expanded(child: errorText),
+                                  ],
+                                ),
+                                Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: retryAction,
+                                ),
+                              ],
+                            );
+                          }
+                          return Row(
+                            children: [
+                              errorIcon,
+                              const SizedBox(width: 7),
+                              Expanded(child: errorText),
+                              retryAction,
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),

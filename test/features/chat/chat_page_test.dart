@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/chat/chat_repository.dart';
@@ -61,6 +62,70 @@ class FakeChatRepository implements ChatRepository {
 }
 
 void main() {
+  testWidgets(
+    'Wave49 Chat send failure keeps full error and Retry reachable at 1.5x in both directions',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 640);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      for (final locale in const [Locale('fa'), Locale('en')]) {
+        final repository = FakeChatRepository()..failSend = true;
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: locale,
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: ChatPage(repository: repository, jobId: 'job-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byKey(const ValueKey('chat-message-input')),
+          'keep this draft for retry',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('chat-send-button')));
+        await tester.pumpAndSettle();
+
+        final banner = find.byKey(const ValueKey('chat-send-error'));
+        final errorText = find.byKey(
+          const ValueKey('chat-send-error-message'),
+        );
+        final retry = find.byKey(
+          const ValueKey('chat-send-error-retry'),
+        );
+        expect(banner, findsOneWidget);
+        expect(errorText, findsOneWidget);
+        expect(retry, findsOneWidget);
+        expect(tester.widget<Text>(errorText).maxLines, isNull);
+        expect(
+          tester.widget<TextField>(
+            find.byKey(const ValueKey('chat-message-input')),
+          ).controller?.text,
+          'keep this draft for retry',
+        );
+        expect(tester.getRect(banner).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(banner).right, lessThanOrEqualTo(320));
+        expect(tester.getRect(retry).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(retry).right, lessThanOrEqualTo(320));
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('ChatPage sends a human message', (tester) async {
     final repository = FakeChatRepository();
 
