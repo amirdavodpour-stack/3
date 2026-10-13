@@ -17,17 +17,38 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
+  bool failLogin = false;
+  bool failRegister = false;
+  String? lastLoginEmail;
+  String? lastLoginPassword;
+  String? lastRegisteredEmail;
+  String? lastRegisteredPassword;
+  String? lastDisplayName;
+
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
       throw UnimplementedError();
+
   @override
-  Future<AuthSession> login(String email, String password) async =>
-      const AuthSession(accessToken: 'a', refreshToken: 'r', user: {'id': 'u'});
+  Future<AuthSession> login(String email, String password) async {
+    lastLoginEmail = email;
+    lastLoginPassword = password;
+    if (failLogin) throw StateError('credentials rejected');
+    return const AuthSession(accessToken: 'a', refreshToken: 'r', user: {'id': 'u'});
+  }
 
   @override
   Future<AuthSession> register(
-          String email, String password, String displayName) async =>
-      const AuthSession(accessToken: 'a', refreshToken: 'r', user: {'id': 'u'});
+    String email,
+    String password,
+    String displayName,
+  ) async {
+    lastRegisteredEmail = email;
+    lastRegisteredPassword = password;
+    lastDisplayName = displayName;
+    if (failRegister) throw StateError('registration rejected');
+    return const AuthSession(accessToken: 'a', refreshToken: 'r', user: {'id': 'u'});
+  }
 
   @override
   Future<void> logout() async {}
@@ -52,13 +73,14 @@ class _BackendCapabilitiesRepo implements BackendCapabilitiesRepository {
 Future<Widget> _screen(
   Widget child, {
   double textScale = 1,
+  AuthRepository? authRepository,
   GoogleSignInService? googleSignIn,
   BackendCapabilitiesRepository? capabilities,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
-  final auth = AuthController(_AuthRepo(), SecureStore());
+  final auth = AuthController(authRepository ?? _AuthRepo(), SecureStore());
   return MaterialApp(
     theme: ThemeData.light(),
     locale: const Locale('fa'),
@@ -179,6 +201,69 @@ void main() {
 
       expect(find.byKey(const ValueKey('auth-google-sign-in')), findsNothing);
       expect(find.text('یا'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave47 login failure preserves credentials and re-enables the submit action',
+    (tester) async {
+      final repository = _AuthRepo()..failLogin = true;
+      await tester.pumpWidget(
+        await _screen(const LoginPage(), authRepository: repository),
+      );
+      await tester.pumpAndSettle();
+
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'person@example.com');
+      await tester.enterText(fields.at(1), 'correct-horse-battery');
+      await tester.tap(find.byType(FilledButton).first);
+      await tester.pumpAndSettle();
+
+      expect(repository.lastLoginEmail, 'person@example.com');
+      expect(repository.lastLoginPassword, 'correct-horse-battery');
+      expect(tester.widget<TextField>(fields.at(0)).controller?.text,
+          'person@example.com');
+      expect(tester.widget<TextField>(fields.at(1)).controller?.text,
+          'correct-horse-battery');
+      expect(find.byType(LoginPage), findsOneWidget);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.widget<FilledButton>(find.byType(FilledButton).first).onPressed,
+          isNotNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave47 registration failure preserves fields and re-enables the submit action',
+    (tester) async {
+      final repository = _AuthRepo()..failRegister = true;
+      await tester.pumpWidget(
+        await _screen(const RegisterPage(), authRepository: repository),
+      );
+      await tester.pumpAndSettle();
+
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'Amir User');
+      await tester.enterText(fields.at(1), 'person@example.com');
+      await tester.enterText(fields.at(2), 'correct-horse-battery');
+      await tester.tap(find.byType(FilledButton).first);
+      await tester.pumpAndSettle();
+
+      expect(repository.lastDisplayName, 'Amir User');
+      expect(repository.lastRegisteredEmail, 'person@example.com');
+      expect(repository.lastRegisteredPassword, 'correct-horse-battery');
+      expect(tester.widget<TextField>(fields.at(0)).controller?.text, 'Amir User');
+      expect(tester.widget<TextField>(fields.at(1)).controller?.text,
+          'person@example.com');
+      expect(tester.widget<TextField>(fields.at(2)).controller?.text,
+          'correct-horse-battery');
+      expect(find.byType(RegisterPage), findsOneWidget);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.widget<FilledButton>(find.byType(FilledButton).first).onPressed,
+          isNotNull);
       expect(tester.takeException(), isNull);
     },
   );

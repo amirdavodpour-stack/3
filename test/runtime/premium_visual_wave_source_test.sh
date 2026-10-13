@@ -433,3 +433,13 @@ echo "PASS: Wave46 async-state truth across Offers, Notifications and Applicatio
 grep -Fq "ValueKey('applications-status-filter-scroll')" "lib/features/applications/my_applications_page.dart"
 grep -Fq "find.byKey(const ValueKey('applications-status-filter-scroll'))" "test/features/applications/my_applications_page_test.dart"
 echo "PASS: Wave46 Applications filter rail tracks authoritative data state"
+
+# Wave47: Chat empty-state/composer, Profile no-fabricated trust metrics, and auth retry after API failure.
+grep -Fq "Wave47 successful empty chat keeps the composer available" "test/features/chat/chat_page_test.dart"
+grep -Fq "find.text('تأییدشده'), findsNothing" "test/features/profile/profile_page_test.dart"
+grep -Fq "Wave47 login failure preserves credentials and re-enables the submit action" "test/features/auth/auth_pages_test.dart"
+grep -Fq "Wave47 registration failure preserves fields and re-enables the submit action" "test/features/auth/auth_pages_test.dart"
+grep -Fq "test/features/chat/chat_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "test/features/profile/profile_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "test/features/auth/auth_pages_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+echo "PASS: Wave47 Chat/Profile/Auth recovery and state-truth contracts"

@@ -171,6 +171,12 @@ void main() {
       expect(find.text('اطلاعات حرفه‌ای در دسترس نیست'), findsOneWidget);
       expect(find.text('تلاش دوباره'), findsOneWidget);
       expect(find.text('مجری مستقل'), findsNothing);
+      expect(find.text('تأییدشده'), findsNothing);
+      expect(find.text('اعتماد'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('profile-professional-first-fold')),
+        findsNothing,
+      );
 
       repo.failProviderProfile = false;
       await tester.tap(find.text('تلاش دوباره'));

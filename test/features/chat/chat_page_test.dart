@@ -92,6 +92,25 @@ void main() {
   });
 
   testWidgets(
+    'Wave47 successful empty chat keeps the composer available',
+    (tester) async {
+      final repository = FakeChatRepository();
+      await tester.pumpWidget(
+        MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('No messages yet.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-message-list')), findsNothing);
+      expect(find.byKey(const ValueKey('chat-composer-panel')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-message-input')), findsOneWidget);
+      expect(find.text('Loading conversation'), findsNothing);
+      expect(find.text('Conversation unavailable'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'ChatPage keeps load error as the only initial state and clears it after retry',
     (tester) async {
       final repository = FakeChatRepository()..failList = true;
