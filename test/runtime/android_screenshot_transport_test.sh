@@ -254,4 +254,12 @@ grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 grep -Fq "final requiresTapAction = marker != 'candidate-matches-fa-rtl';" "$test_file"
 grep -Fq 'actionableNodeCount < 1' "$test_file"
 
+# T10 regression: service presence under "Binding services" must not count as bound.
+if ! grep -Fq 'Bound services:' "$talkback_helper" ||
+   ! grep -Fq 'awk' "$talkback_helper" ||
+   ! grep -Fq 'HOPE_TALKBACK_BOUND_SECTION_ONLY' "$talkback_helper"; then
+  echo "FAIL: TalkBack binding verification must inspect only the Bound services section." >&2
+  exit 1
+fi
+
 echo "PASS: Flutter rendered-screenshot transport contract"
