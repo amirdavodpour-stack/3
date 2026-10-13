@@ -718,7 +718,8 @@ class _CreateJobForm extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
               ],
-          ],
+            ],
+          ),
         ),
         Container(
           key: const ValueKey('create-opportunity-action-dock'),
