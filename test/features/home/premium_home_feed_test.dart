@@ -136,6 +136,19 @@ class _ImmediateTransactions implements TransactionRepository {
   Future<void> submitEvidence(String jobId, {required String uri, required String notes, required String type}) async => throw UnimplementedError();
 }
 
+class _FailOnceActiveJobsTransactions extends _ImmediateTransactions {
+  int listCalls = 0;
+
+  @override
+  Future<List<HopeJob>> listMyJobs() async {
+    listCalls += 1;
+    if (listCalls == 1) {
+      throw StateError('active work unavailable');
+    }
+    return const <HopeJob>[];
+  }
+}
+
 class _DelayedWalletRepository implements WalletRepository {
   final requests = <Completer<HopeWallet>>[];
 
@@ -239,6 +252,35 @@ void main() {
     expect(find.text('Ali'), findsOneWidget);
     expect(find.text('Good evening, Ali'), findsNothing);
   });
+
+  testWidgets(
+    'Home distinguishes active-work load failure and retries it',
+    (tester) async {
+      final transactions = _FailOnceActiveJobsTransactions();
+      final wallets = _DelayedWalletRepository();
+      final harness = await _host(
+        _SequencedMarketplaceRepository(),
+        authenticated: true,
+        transactions: transactions,
+        wallets: wallets,
+      );
+
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      expect(transactions.listCalls, 1);
+      expect(find.text('Active work is temporarily unavailable'), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-active-work-retry')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('home-active-work-retry')));
+      await tester.pumpAndSettle();
+
+      expect(transactions.listCalls, 2);
+      expect(find.text('Active work is temporarily unavailable'), findsNothing);
+      expect(find.byKey(const ValueKey('home-active-work-retry')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('single recommendation does not reserve an empty matches section',
       (tester) async {
