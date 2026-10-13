@@ -269,8 +269,8 @@ grep -Fq 'minimumSize: WidgetStatePropertyAll(' "lib/features/jobs/jobs_filter_b
 grep -Fq 'Size(0, enlargedText ? 56 : 48)' "lib/features/jobs/jobs_filter_bar.part.dart"
 grid_money_block="$(sed -n '/Widget _compactGrid(/,/Widget _compact(/p' "$opportunity")"
 printf '%s\n' "$grid_money_block" | grep -Fq "ValueKey('opportunity-card-compact-grid-budget')"
-printf '%s\n' "$grid_money_block" | grep -Fq 'maxLines: 5,'
-printf '%s\n' "$grid_money_block" | grep -Fq 'overflow: TextOverflow.clip,'
+printf '%s\n' "$grid_money_block" | grep -Fq 'maxLines: enlargedText ? null : 5,'
+printf '%s\n' "$grid_money_block" | grep -Fq 'overflow: enlargedText ? TextOverflow.visible : TextOverflow.clip,'
 compact_money_block="$(sed -n '/Widget _compact(/,/Widget _standard(/p' "$opportunity")"
 printf '%s\n' "$compact_money_block" | grep -Fq "ValueKey('opportunity-card-compact-budget')"
 printf '%s\n' "$compact_money_block" | grep -Fq 'overflow: TextOverflow.clip,'
