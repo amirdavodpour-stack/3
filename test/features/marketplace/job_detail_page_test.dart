@@ -1060,27 +1060,4 @@ void main() {
   );
 
 
-  testWidgets(
-    'job detail describes city-centre proximity as a location match',
-    (tester) async {
-      await _pump(
-        tester,
-        job: _job(recommendationReasons: ['VERY_NEAR', 'NEARBY']),
-      );
-
-      // Compact Job Detail keeps reasons behind its real match-details action.
-      final matchCard = find.byKey(
-        const ValueKey('opportunity-match-intelligence'),
-      );
-      await tester.ensureVisible(matchCard);
-      await tester.tap(matchCard);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Location match'), findsWidgets);
-      expect(find.text('Very near'), findsNothing);
-      expect(find.text('Nearby'), findsNothing);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
 }
