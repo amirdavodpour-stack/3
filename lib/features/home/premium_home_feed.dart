@@ -137,7 +137,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   void _retryOpportunityAgent() {
     final repository = applicationRegistryOf(context).opportunityAgent;
     if (repository == null) return;
-    setState(() => _agentState = repository.getState());
+    setState(() {
+      _agentState = repository.getState();
+    });
   }
 
   Future<void> _handleAgentAction(
