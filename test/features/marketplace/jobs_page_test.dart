@@ -110,6 +110,37 @@ class _Repo implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
+class _FailOnceExploreRepo extends _Repo {
+  int opportunityCalls = 0;
+
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async {
+    opportunityCalls += 1;
+    if (opportunityCalls == 1) {
+      throw StateError('temporary explore network failure');
+    }
+    return super.listOpportunities(
+      city: city,
+      personalizedRecommendations: personalizedRecommendations,
+      latitude: latitude,
+      longitude: longitude,
+      search: search,
+      kind: kind,
+      visibility: visibility,
+      categoryId: categoryId,
+    );
+  }
+}
+
 class _LongRangeExploreRepo extends _Repo {
   @override
   Future<List<HopeJob>> listOpportunities({
@@ -244,6 +275,27 @@ Future<void> _tapFilter(
   await tester.tap(target);
 }
 void main() {
+  testWidgets(
+    'Explore exposes retry after the opportunities request fails',
+    (tester) async {
+      final repo = _FailOnceExploreRepo();
+      await _pump(tester, repo);
+      await tester.pumpAndSettle();
+
+      expect(repo.opportunityCalls, 1);
+      final retry = find.byKey(const ValueKey('explore-retry-opportunities'));
+      expect(retry, findsOneWidget);
+
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+
+      expect(repo.opportunityCalls, 2);
+      expect(find.byKey(const ValueKey('explore-retry-opportunities')), findsNothing);
+      expect(find.text('طراحی اپ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('jobs page requests categories and opportunities',
       (tester) async {
     final repo = _Repo();
