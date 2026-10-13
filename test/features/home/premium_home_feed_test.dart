@@ -41,6 +41,29 @@ class _FakeOpportunityAgent implements OpportunityAgentRepository {
       );
 }
 
+class _FailOnceOpportunityAgent implements OpportunityAgentRepository {
+  int calls = 0;
+
+  @override
+  Future<HopeOpportunityAgentState> getState() async {
+    calls += 1;
+    if (calls == 1) {
+      throw StateError('opportunity agent temporarily unavailable');
+    }
+    return const HopeOpportunityAgentState(
+      profileCompleteness: HopeOpportunityAgentProfileCompleteness(score: 1),
+      activity: HopeOpportunityAgentActivity(),
+      actions: [
+        HopeOpportunityAgentAction(
+          type: 'REVIEW_OPPORTUNITY',
+          title: 'Review the matched opportunity',
+          reasons: ['SKILL_MATCH'],
+        ),
+      ],
+    );
+  }
+}
+
 class _AuthRepo implements AuthRepository {
   @override
   Future<AuthSession> loginWithGoogle(String _) => throw UnimplementedError();
@@ -200,6 +223,7 @@ Future<_HomeHarness> _host(
   String locale = 'en',
   TransactionRepository? transactions,
   WalletRepository? wallets,
+  OpportunityAgentRepository? agentRepository,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
@@ -240,8 +264,9 @@ Future<_HomeHarness> _host(
               marketplace: repository,
               transactions: transactions,
               wallets: wallets,
-              opportunityAgent:
-                  authenticated ? _FakeOpportunityAgent() : null,
+              opportunityAgent: authenticated
+                  ? (agentRepository ?? _FakeOpportunityAgent())
+                  : null,
             ),
           ),
         ],
@@ -268,6 +293,34 @@ void main() {
     expect(find.text('Ali'), findsOneWidget);
     expect(find.text('Good evening, Ali'), findsNothing);
   });
+
+  testWidgets(
+    'Home exposes retry when Opportunity Agent fails to load',
+    (tester) async {
+      final agent = _FailOnceOpportunityAgent();
+      final harness = await _host(
+        _SequencedMarketplaceRepository(),
+        authenticated: true,
+        agentRepository: agent,
+      );
+
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      expect(agent.calls, 1);
+      expect(find.text('Smart suggestions are temporarily unavailable'), findsOneWidget);
+      final retry = find.byKey(const ValueKey('home-opportunity-agent-retry'));
+      expect(retry, findsOneWidget);
+
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+
+      expect(agent.calls, 2);
+      expect(find.text('Smart suggestions are temporarily unavailable'), findsNothing);
+      expect(find.text('Review the matched opportunity'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'Home distinguishes active-work load failure and retries it',
