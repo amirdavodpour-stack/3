@@ -508,6 +508,8 @@ void main() {
     expect(find.text('EXTERNAL_REVIEW_REQUIRED'), findsNothing);
 
     expect(find.text('Needs review'), findsWidgets);
+    expect(find.text('Stage unavailable'), findsOneWidget);
+    expect(find.text('Stage 1 of 6'), findsNothing);
   });
 
   testWidgets('financial details section renders fee breakdown rows',
