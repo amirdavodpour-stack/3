@@ -176,9 +176,9 @@ class OpportunityCard extends StatelessWidget {
                 : const <BoxShadow>[],
           ),
           padding: EdgeInsets.all(
-            featured
-                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 8 : 10)
-                : (featuredScan ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 8 : 10) : (compact ? 7 : 6)),
+            (featured || featuredScan)
+                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 6 : 10)
+                : (compact ? 7 : 6),
           ),
           child: compact
               ? _compact(context, title, city, amount, primary, mediaUrl, copy)
@@ -907,7 +907,7 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final mediaSize = compactViewport ? 64.0 : 88.0;
+    final mediaSize = compactViewport ? 56.0 : 88.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(

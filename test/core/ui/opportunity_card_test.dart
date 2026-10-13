@@ -296,7 +296,7 @@ void main() {
 
     expect(
       tester.getSize(find.byKey(const ValueKey('opportunity-scan-media'))),
-      const Size(64, 64),
+      const Size(56, 56),
     );
     expect(
       find.byKey(const ValueKey('opportunity-media-header')),

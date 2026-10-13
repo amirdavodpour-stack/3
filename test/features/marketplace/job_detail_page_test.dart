@@ -373,11 +373,11 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('opportunity hero uses the shared responsive height contract',
+  testWidgets('opportunity hero uses the tighter mobile-first height contract',
       (tester) async {
     await _pump(tester, job: _job(), width: 900, height: 1200);
     expect(find.byType(PremiumHero), findsOneWidget);
-    expect(tester.getSize(find.byType(PremiumHero)).height, 166);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 148);
 
     await _pump(tester, job: _job(), width: 1280, height: 1200);
     expect(find.byType(PremiumHero), findsOneWidget);
@@ -394,7 +394,7 @@ void main() {
     final hero = find.byType(PremiumHero);
     expect(decision, findsOneWidget);
     expect(hero, findsOneWidget);
-    expect(tester.getSize(hero).height, 132);
+    expect(tester.getSize(hero).height, 120);
     expect(tester.getSize(decision).width, greaterThan(220));
     expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
     expect(find.text('94%'), findsOneWidget);

@@ -828,7 +828,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   message: '',
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
-                  height: compactViewport ? 132 : denseViewport ? 166 : 214,
+                  height: compactViewport ? 120 : denseViewport ? 148 : 214,
                   compactHero: denseViewport,
                   semanticLabel: j.title,
                 ),
