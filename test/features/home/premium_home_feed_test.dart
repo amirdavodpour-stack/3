@@ -314,6 +314,8 @@ void main() {
       expect(find.text('Smart suggestions are temporarily unavailable'), findsOneWidget);
       final retry = find.byKey(const ValueKey('home-opportunity-agent-retry'));
       expect(retry, findsOneWidget);
+      await tester.ensureVisible(retry);
+      await tester.pumpAndSettle();
 
       await tester.tap(retry);
       await tester.pumpAndSettle();
