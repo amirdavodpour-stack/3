@@ -190,6 +190,21 @@ class _SavedSearchFixture implements SavedSearchRepository {
   }
 }
 
+class _FailOnceSavedSearchFixture extends _SavedSearchFixture {
+  _FailOnceSavedSearchFixture(List<HopeSavedSearch> items) : super(items);
+
+  int listCalls = 0;
+
+  @override
+  Future<List<HopeSavedSearch>> list() async {
+    listCalls += 1;
+    if (listCalls == 1) {
+      throw StateError('temporary saved-search service failure');
+    }
+    return super.list();
+  }
+}
+
 class _SequencedSavedSearchFixture extends _SavedSearchFixture {
   _SequencedSavedSearchFixture() : super([]);
 
@@ -542,6 +557,53 @@ void main() {
     expect(find.text('استخدام Flutter'), findsNothing);
     expect(find.text('کار آنلاین'), findsNothing);
   });
+
+  testWidgets(
+    'Explore exposes recovery when saved searches fail to load',
+    (tester) async {
+      final repo = _Repo();
+      final savedSearches = _FailOnceSavedSearchFixture([
+        HopeSavedSearch(
+          id: 'saved-after-recovery',
+          name: 'Design roles',
+          query: '',
+          kind: 'ALL',
+          visibility: 'ALL',
+          city: 'AUTO',
+          category: 'ALL',
+          updatedAt: '2026-10-13T00:00:00Z',
+        ),
+      ]);
+      await _pump(tester, repo, savedSearches: savedSearches);
+      await tester.pumpAndSettle();
+
+      expect(savedSearches.listCalls, 1);
+      final launcher = find.byKey(
+        const ValueKey('hope-opportunity-refinement-launcher'),
+      );
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+
+      final retry = find.byKey(const ValueKey('saved-searches-retry'));
+      expect(retry, findsOneWidget);
+      expect(find.text('Saved searches · 1'), findsNothing);
+
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(savedSearches.listCalls, 2);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+      await tester.pumpAndSettle();
+      await tester.tap(launcher);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Saved searches · 1'), findsOneWidget);
+      await tester.tap(find.text('Saved searches · 1'));
+      await tester.pumpAndSettle();
+      expect(find.text('Design roles'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'saved-search category slug localizes when taxonomy is unavailable',
