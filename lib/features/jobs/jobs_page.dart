@@ -47,6 +47,7 @@ class _JobsPageState extends State<JobsPage> {
   String _category = 'ALL';
   List<HopeCategory> _categories = const [];
   List<HopeSavedSearch> _savedSearches = const [];
+  bool _savedSearchesLoadError = false;
   String? _categoryError;
   bool _savedSearchMutationBusy = false;
   int _savedSearchesLoadRequestId = 0;
@@ -98,11 +99,17 @@ class _JobsPageState extends State<JobsPage> {
     try {
       final items = await _applicationRegistry(context).savedSearches.list();
       if (mounted && requestId == _savedSearchesLoadRequestId) {
-        setState(() => _savedSearches = items);
+        setState(() {
+          _savedSearches = items;
+          _savedSearchesLoadError = false;
+        });
       }
     } catch (_) {
       if (mounted && requestId == _savedSearchesLoadRequestId) {
-        setState(() => _savedSearches = const []);
+        setState(() {
+          _savedSearches = const [];
+          _savedSearchesLoadError = true;
+        });
       }
     }
   }
@@ -451,6 +458,8 @@ class _JobsPageState extends State<JobsPage> {
                     onPickCity: () => _pickCity(context, settings),
                     onPickCategory: () => _pickCategory(context),
                     savedSearchCount: _savedSearches.length,
+                    savedSearchesLoadError: _savedSearchesLoadError,
+                    onRetrySavedSearches: _loadSavedSearches,
                     onSaveSearch:
                         _savedSearchMutationBusy ? null : _saveCurrentSearch,
                     onOpenSavedSearches: _openSavedSearches,
