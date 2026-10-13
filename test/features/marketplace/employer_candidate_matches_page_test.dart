@@ -174,6 +174,16 @@ void main() {
     expect(find.text('Candidate One'), findsWidgets);
     expect(find.text('Candidate Two'), findsWidgets);
     expect(find.text('Candidate Three'), findsWidgets);
+    final leadingCandidateHeader = tester.widget<Container>(
+      find.byKey(
+        const ValueKey('candidate-comparison-leading-candidate-header'),
+      ),
+    );
+    expect(
+      (leadingCandidateHeader.decoration as BoxDecoration).color,
+      isNotNull,
+      reason: 'The best-ranked real candidate should remain visually identifiable down the comparison matrix.',
+    );
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('candidate-comparison-matrix')),

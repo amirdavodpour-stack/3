@@ -125,20 +125,39 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       widths[index + 1] = const FixedColumnWidth(110);
     }
 
-    Widget cell(String value, {bool heading = false}) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+    Widget cell(
+      String value, {
+      bool heading = false,
+      bool highlight = false,
+      Key? key,
+    }) {
+      final primary = Theme.of(context).colorScheme.primary;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+        child: Container(
+          key: key,
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+          decoration: highlight
+              ? BoxDecoration(
+                  color: primary.withValues(alpha: .075),
+                  borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                  border: Border.all(color: primary.withValues(alpha: .16)),
+                )
+              : null,
           child: Text(
             value,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: heading
-                      ? Theme.of(context).colorScheme.primary
+                      ? primary
                       : Theme.of(context).colorScheme.onSurface,
                   fontWeight: heading ? FontWeight.w900 : FontWeight.w700,
                 ),
           ),
-        );
+        ),
+      );
+    }
 
     String valueFor(HopeEmployerCandidateMatch candidate, String key) {
       final value = candidate.components[key];
@@ -180,16 +199,22 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                 TableRow(
                   children: [
                     cell(_t(context, 'شاخص', 'Metric'), heading: true),
-                    for (final candidate in candidates)
+                    for (var candidateIndex = 0;
+                        candidateIndex < candidates.length;
+                        candidateIndex++)
                       cell(
-                        candidate.displayName.trim().isEmpty
+                        candidates[candidateIndex].displayName.trim().isEmpty
                             ? _t(
                                 context,
-                                'نامزد ${HopeDisplayFormatter.integer(candidate.rank, locale: Localizations.localeOf(context).languageCode)}',
-                                'Candidate ${HopeDisplayFormatter.integer(candidate.rank, locale: Localizations.localeOf(context).languageCode)}',
+                                'نامزد ${HopeDisplayFormatter.integer(candidates[candidateIndex].rank, locale: Localizations.localeOf(context).languageCode)}',
+                                'Candidate ${HopeDisplayFormatter.integer(candidates[candidateIndex].rank, locale: Localizations.localeOf(context).languageCode)}',
                               )
-                            : candidate.displayName.trim(),
+                            : candidates[candidateIndex].displayName.trim(),
                         heading: true,
+                        highlight: candidateIndex == 0,
+                        key: candidateIndex == 0
+                            ? const ValueKey('candidate-comparison-leading-candidate-header')
+                            : null,
                       ),
                   ],
                 ),
@@ -197,21 +222,32 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                   TableRow(
                     children: [
                       cell(_componentLabel(context, key), heading: true),
-                      for (final candidate in candidates)
-                        cell(valueFor(candidate, key)),
+                      for (var candidateIndex = 0;
+                          candidateIndex < candidates.length;
+                          candidateIndex++)
+                        cell(
+                          valueFor(candidates[candidateIndex], key),
+                          highlight: candidateIndex == 0,
+                        ),
                     ],
                   ),
                 TableRow(
                   children: [
                     cell(_t(context, 'انطباق', 'Match'), heading: true),
-                    for (final candidate in candidates)
+                    for (var candidateIndex = 0;
+                        candidateIndex < candidates.length;
+                        candidateIndex++)
                       cell(
                         _percent(
                           context,
-                          candidate.score,
-                          fractionDigits: candidate.score == candidate.score.roundToDouble() ? 0 : 1,
+                          candidates[candidateIndex].score,
+                          fractionDigits: candidates[candidateIndex].score ==
+                                  candidates[candidateIndex].score.roundToDouble()
+                              ? 0
+                              : 1,
                         ),
                         heading: true,
+                        highlight: candidateIndex == 0,
                       ),
                   ],
                 ),
