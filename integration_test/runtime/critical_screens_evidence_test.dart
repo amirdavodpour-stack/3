@@ -174,7 +174,7 @@ class _EvidenceTransactionRepository implements TransactionRepository {
 
   HopePayment get _payment => HopePayment(
         id: 'payment-runtime-1',
-        status: 'LOCKED',
+        status: 'HELD',
         amount: '1500000',
         providerRef: 'internal-ledger',
         job: _job,

@@ -3,7 +3,9 @@ part of 'transaction_page.dart';
 extension on _TransactionPageState {
   Widget _flow(BuildContext context, HopeJob? job, String paymentStatus) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final current = _stepFor(job, paymentStatus).clamp(0, 5);
+    // Unknown backend states must not be visualized as a real lifecycle stage.
+    // _stepFor returns -1 unless payment/job state maps to a documented stage.
+    final current = _stepFor(job, paymentStatus);
     const en = ['Fund', 'Hold', 'Work', 'Deliver', 'Approve', 'Payout'];
     const fa = ['تأمین وجه', 'در امانت', 'در حال انجام', 'تحویل', 'تأیید', 'تسویه'];
     const icons = [
@@ -31,11 +33,39 @@ extension on _TransactionPageState {
             style: HopeV2Type.section(context),
           ),
           const SizedBox(height: 5),
-          _lifecycleProgress(
-            context,
-            current: current,
-            total: en.length,
-          ),
+          if (current >= 0)
+            _lifecycleProgress(
+              context,
+              current: current,
+              total: en.length,
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HopeIcon(
+                    HopeV2Icons.pending,
+                    size: 17,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _t(
+                        'مرحلهٔ چرخه هنوز از وضعیت دریافتی قابل تعیین نیست.',
+                        'Lifecycle stage is unavailable for the reported state.',
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 4),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
