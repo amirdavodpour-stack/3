@@ -82,7 +82,7 @@ class _AuthRepository implements AuthRepository {
 
 class _CapabilitiesRepository implements BackendCapabilitiesRepository {
   const _CapabilitiesRepository(this.capabilities) : error = null;
-  const _CapabilitiesRepository.failing()
+  _CapabilitiesRepository.failing()
       : capabilities = null,
         error = StateError('capabilities endpoint unavailable');
 
@@ -164,7 +164,7 @@ void main() {
     (tester) async {
       await _pumpWallet(
         tester,
-        capabilities: const _CapabilitiesRepository.failing(),
+        capabilities: _CapabilitiesRepository.failing(),
       );
 
       expect(find.byKey(const ValueKey('wallet-capability-error')), findsOneWidget);
