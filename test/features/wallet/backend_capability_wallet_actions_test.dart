@@ -96,6 +96,23 @@ class _CapabilitiesRepository implements BackendCapabilitiesRepository {
   }
 }
 
+class _RecoveringCapabilitiesRepository implements BackendCapabilitiesRepository {
+  int calls = 0;
+
+  @override
+  Future<BackendCapabilities> load() async {
+    calls += 1;
+    if (calls == 1) {
+      throw StateError('temporary capability lookup failure');
+    }
+    return const BackendCapabilities(
+      wallet: true,
+      walletWithdraw: true,
+      walletTransfer: true,
+    );
+  }
+}
+
 Future<void> _pumpWallet(
   WidgetTester tester, {
   required BackendCapabilitiesRepository capabilities,
@@ -227,6 +244,28 @@ void main() {
         find.widgetWithText(PopupMenuItem<String>, 'Transfer'),
       );
       expect(transferItem.enabled, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'wallet retries backend capabilities after a transient lookup failure',
+    (tester) async {
+      final capabilities = _RecoveringCapabilitiesRepository();
+      await _pumpWallet(tester, capabilities: capabilities);
+
+      expect(capabilities.calls, 1);
+      expect(find.byKey(const ValueKey('wallet-capability-error')), findsOneWidget);
+      expect(find.text('Withdraw'), findsNothing);
+      expect(find.byKey(const ValueKey('wallet-capability-retry')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('wallet-capability-retry')));
+      await tester.pumpAndSettle();
+
+      expect(capabilities.calls, 2);
+      expect(find.byKey(const ValueKey('wallet-capability-error')), findsNothing);
+      expect(find.text('Withdraw'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
