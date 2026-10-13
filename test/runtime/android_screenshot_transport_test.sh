@@ -276,8 +276,8 @@ if [ -z "$runtime_job_if_line" ] || [ -z "$runtime_job_concurrency_line" ] || [ 
   echo "FAIL: concurrency must be scoped to the runtime job after its authorization condition." >&2
   exit 1
 fi
-grep -Fq 'github.event.pull_request.head.sha || github.sha' "$workflow_file" || {
-  echo "FAIL: runtime concurrency must be partitioned by exact requested source HEAD." >&2
+grep -Fq 'hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}' "$workflow_file" || {
+  echo "FAIL: authorized runtime captures must remain serialized per PR." >&2
   exit 1
 }
 
