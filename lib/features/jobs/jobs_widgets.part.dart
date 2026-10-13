@@ -11,11 +11,13 @@ class _JobsResultsSliver extends StatelessWidget {
     required this.jobs,
     required this.isLoading,
     required this.hasError,
+    required this.onRetry,
   });
 
   final List<HopeJob> jobs;
   final bool isLoading;
   final bool hasError;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +42,12 @@ class _JobsResultsSliver extends StatelessWidget {
           title: HopeCopy.of(context).copy_connection_failed_1b34bc9,
           message: HopeCopy.of(context)
               .copy_the_server_did_not_return_data_try_again_bccfbb3,
+          action: FilledButton.icon(
+            key: const ValueKey('explore-retry-opportunities'),
+            onPressed: onRetry,
+            icon: const HopeIcon(HopeV2Icons.refresh, size: 18),
+            label: Text(_t(context, 'تلاش دوباره', 'Try again')),
+          ),
         ),
       );
     }
