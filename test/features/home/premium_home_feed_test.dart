@@ -43,17 +43,13 @@ class _FakeOpportunityAgent implements OpportunityAgentRepository {
 
 class _FailOnceOpportunityAgent implements OpportunityAgentRepository {
   int calls = 0;
+  final firstResponse = Completer<HopeOpportunityAgentState>();
 
   @override
-  Future<HopeOpportunityAgentState> getState() async {
+  Future<HopeOpportunityAgentState> getState() {
     calls += 1;
-    // Match a real network-backed failure that arrives after the widget has
-    // subscribed to the returned FutureBuilder future.
-    await Future<void>.delayed(Duration.zero);
-    if (calls == 1) {
-      throw StateError('opportunity agent temporarily unavailable');
-    }
-    return const HopeOpportunityAgentState(
+    if (calls == 1) return firstResponse.future;
+    return Future.value(const HopeOpportunityAgentState(
       profileCompleteness: HopeOpportunityAgentProfileCompleteness(score: 1),
       activity: HopeOpportunityAgentActivity(),
       actions: [
@@ -63,6 +59,12 @@ class _FailOnceOpportunityAgent implements OpportunityAgentRepository {
           reasons: ['SKILL_MATCH'],
         ),
       ],
+    ));
+  }
+
+  void failInitialRequest() {
+    firstResponse.completeError(
+      StateError('opportunity agent temporarily unavailable'),
     );
   }
 }
@@ -308,6 +310,9 @@ void main() {
       );
 
       await tester.pumpWidget(harness.widget);
+      await tester.pump();
+      // Complete the rejected Future only after FutureBuilder has subscribed.
+      agent.failInitialRequest();
       await tester.pumpAndSettle();
 
       expect(agent.calls, 1);
