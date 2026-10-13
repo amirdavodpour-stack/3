@@ -419,7 +419,9 @@ void main() {
   testWidgets('switching types swaps price fields, fee copy and job deadline',
       (tester) async {
     final repo = _FakeMarket();
-    await _pump(tester, repo);
+    // Use a real mobile-height viewport: the wizard actions are anchored to
+    // the visible form frame instead of being part of the scrolling content.
+    await _pump(tester, repo, width: 390, height: 800);
     await _open(tester);
 
     expect(find.text('Minimum pay'), findsNothing);
@@ -452,11 +454,20 @@ void main() {
     expect(find.text('Set the application deadline.'), findsOneWidget);
     expect(repo.calls, isEmpty);
 
-    await tester.tap(find.byKey(const ValueKey('create-opportunity-previous-step')));
+    final previous = find.byKey(
+      const ValueKey('create-opportunity-previous-step'),
+    );
+    expect(previous.hitTestable(), findsOneWidget);
+    await tester.tap(previous);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('create-opportunity-previous-step')));
+    expect(previous.hitTestable(), findsOneWidget);
+    await tester.tap(previous);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextField, 'Application deadline'));
+    final deadlineField =
+        find.widgetWithText(TextField, 'Application deadline');
+    await tester.ensureVisible(deadlineField);
+    expect(deadlineField.hitTestable(), findsOneWidget);
+    await tester.tap(deadlineField);
     await tester.pumpAndSettle();
     expect(find.byType(DatePickerDialog), findsOneWidget);
     await tester.tap(find.text('30').last);
