@@ -204,4 +204,31 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'wallet parent capability blocks child actions when wallet is disabled',
+    (tester) async {
+      await _pumpWallet(
+        tester,
+        capabilities: const _CapabilitiesRepository(
+          BackendCapabilities(
+            wallet: false,
+            walletWithdraw: true,
+            walletDeposit: true,
+            walletTransfer: true,
+          ),
+        ),
+      );
+
+      expect(find.text('Withdraw'), findsNothing);
+      await tester.tap(find.byTooltip('Wallet actions'));
+      await tester.pumpAndSettle();
+      final transferItem = tester.widget<PopupMenuItem<String>>(
+        find.widgetWithText(PopupMenuItem<String>, 'Transfer'),
+      );
+      expect(transferItem.enabled, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
