@@ -263,4 +263,22 @@ if ! grep -Fq 'Bound services:' "$talkback_helper" ||
   exit 1
 fi
 
+# Regression: skipped PR events must not acquire a workflow-level concurrency group
+# and cancel an authorized Android capture that is already running.
+workflow_level_concurrency_line="$(grep -n '^concurrency:' "$workflow_file" | head -n 1 | cut -d: -f1 || true)"
+if [ -n "$workflow_level_concurrency_line" ]; then
+  echo "FAIL: runtime concurrency is workflow-scoped; non-capture PR events can cancel an authorized capture." >&2
+  exit 1
+fi
+runtime_job_if_line="$(grep -nF '    if: ${{ github.event_name == '\''workflow_dispatch'\'' || (github.event_name == '\''pull_request'\'' && github.event.action == '\''edited'\'' && github.event.changes.title.from != null' "$workflow_file" | head -n 1 | cut -d: -f1 || true)"
+runtime_job_concurrency_line="$(grep -n '^    concurrency:' "$workflow_file" | head -n 1 | cut -d: -f1 || true)"
+if [ -z "$runtime_job_if_line" ] || [ -z "$runtime_job_concurrency_line" ] || [ "$runtime_job_if_line" -ge "$runtime_job_concurrency_line" ]; then
+  echo "FAIL: concurrency must be scoped to the runtime job after its authorization condition." >&2
+  exit 1
+fi
+grep -Fq 'github.event.pull_request.head.sha || github.sha' "$workflow_file" || {
+  echo "FAIL: runtime concurrency must be partitioned by exact requested source HEAD." >&2
+  exit 1
+}
+
 echo "PASS: Flutter rendered-screenshot transport contract"
