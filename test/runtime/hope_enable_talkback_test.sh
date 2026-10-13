@@ -50,7 +50,7 @@ ACCESSIBILITY MANAGER (dumpsys accessibility)
 User state[
  attributes:{id=0, touchExplorationEnabled=true}
  Bound services:{
-   Service[label=TalkBack, componentName=$FAKE_TALKBACK_COMPONENT]
+   Service[label=TalkBack_TfP, feedbackType[FEEDBACK_SPOKEN, FEEDBACK_HAPTIC, FEEDBACK_AUDIBLE], capabilities=251, eventTypes=TYPES_ALL_MASK, notificationTimeout=0, requestA11yBtn=false]
  }
  Enabled services:{{$FAKE_TALKBACK_COMPONENT}}
  Binding services:{}
