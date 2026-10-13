@@ -604,7 +604,10 @@ class OpportunityCard extends StatelessWidget {
                 Text(
                   _formatAmount(amount, context),
                   key: const ValueKey('opportunity-card-compact-budget'),
-                  maxLines: 3,
+                  // Long Toman ranges can wrap each bound and unit separately
+                  // at narrow widths and 1.2x text. Preserve the complete
+                  // server-provided range instead of clipping after three lines.
+                  maxLines: 5,
                   softWrap: true,
                   overflow: TextOverflow.clip,
                   textAlign: TextAlign.start,
