@@ -134,6 +134,12 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
     }
   }
 
+  void _retryOpportunityAgent() {
+    final repository = applicationRegistryOf(context).opportunityAgent;
+    if (repository == null) return;
+    setState(() => _agentState = repository.getState());
+  }
+
   Future<void> _handleAgentAction(
     BuildContext context,
     HopeOpportunityAgentAction action,
@@ -403,8 +409,29 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               FutureBuilder<HopeOpportunityAgentState>(
                 future: _agentState,
                 builder: (context, agentSnapshot) {
+                  if (agentSnapshot.hasError) {
+                    return HopeAsyncState(
+                      kind: HopeStateKind.error,
+                      title: _t(
+                        context,
+                        'پیشنهادهای هوشمند موقتاً در دسترس نیستند',
+                        'Smart suggestions are temporarily unavailable',
+                      ),
+                      message: _t(
+                        context,
+                        'نتوانستیم پیشنهاد بعدی را دریافت کنیم. دوباره تلاش کنید.',
+                        'We could not load your next recommendation. Try again.',
+                      ),
+                      action: OutlinedButton.icon(
+                        key: const ValueKey('home-opportunity-agent-retry'),
+                        onPressed: _retryOpportunityAgent,
+                        icon: const HopeIcon(HopeV2Icons.refresh, size: 18),
+                        label: Text(_t(context, 'تلاش دوباره', 'Retry suggestions')),
+                      ),
+                    );
+                  }
                   final state = agentSnapshot.data;
-                  if (state == null || agentSnapshot.hasError || state.actions.isEmpty) {
+                  if (state == null || state.actions.isEmpty) {
                     return const SizedBox.shrink();
                   }
                   return OpportunityAgentPanel(
