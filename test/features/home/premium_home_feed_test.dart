@@ -276,9 +276,12 @@ void main() {
       await tester.ensureVisible(retry);
       await tester.pumpAndSettle();
       await tester.tap(retry);
-      await tester.pumpAndSettle();
-
+      // The Home feed contains animated loading surfaces during refresh.
+      // Advance finite frames rather than requiring every animation to settle.
       expect(transactions.listCalls, 2);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
       expect(find.text('Active work is temporarily unavailable'), findsNothing);
       expect(find.byKey(const ValueKey('home-active-work-retry')), findsNothing);
       expect(tester.takeException(), isNull);
