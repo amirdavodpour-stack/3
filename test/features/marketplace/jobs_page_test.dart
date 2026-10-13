@@ -110,6 +110,37 @@ class _Repo implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
+class _RankedExploreRepo extends _Repo {
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async {
+    final jobs = await super.listOpportunities(
+      city: city,
+      personalizedRecommendations: personalizedRecommendations,
+      latitude: latitude,
+      longitude: longitude,
+      search: search,
+      kind: kind,
+      visibility: visibility,
+      categoryId: categoryId,
+    );
+    return jobs.map((job) {
+      if (job.id != 'm1') return job;
+      final raw = Map<String, dynamic>.from(job.toMap())
+        ..['recommendationScore'] = 0.94;
+      return HopeJob.fromMap(raw);
+    }).toList(growable: false);
+  }
+}
+
 class _FailOnceExploreRepo extends _Repo {
   int opportunityCalls = 0;
 
@@ -323,7 +354,7 @@ void main() {
   });
 
   testWidgets(
-      'explore keeps the control band compact and leads with the featured opportunity',
+      'Explore does not fabricate a recommended opportunity without a real score',
       (tester) async {
     tester.view.physicalSize = const Size(360, 900);
     tester.view.devicePixelRatio = 1;
@@ -358,13 +389,21 @@ void main() {
         const ValueKey('hope-opportunity-refinement-launcher'),
       ),
     );
+    expect(find.text('فرصت‌های موجود'), findsOneWidget);
+    expect(find.text('پیشنهادشده برای شما'), findsNothing);
     final featuredFinder = find.byWidgetPredicate(
       (widget) =>
           widget is OpportunityCard &&
           widget.variant == OpportunityCardVariant.featuredScan,
     );
-    expect(featuredFinder, findsOneWidget);
-    final featuredRect = tester.getRect(featuredFinder);
+    expect(featuredFinder, findsNothing);
+    final firstOpportunityFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is OpportunityCard &&
+          widget.variant == OpportunityCardVariant.compact,
+    ).first;
+    expect(firstOpportunityFinder, findsOneWidget);
+    final firstOpportunityRect = tester.getRect(firstOpportunityFinder);
 
     expect(
       (filterRect.top - searchRect.top).abs(),
@@ -378,10 +417,35 @@ void main() {
     expect(kindFilter, findsOneWidget);
     final kindRect = tester.getRect(kindFilter);
     expect(kindRect.top - filterRect.bottom, lessThan(20));
-    expect(featuredRect.top - kindRect.bottom, lessThan(40));
+    expect(firstOpportunityRect.top - kindRect.bottom, lessThan(40));
     expect(tester.takeException(), isNull);
   });
 
+
+  testWidgets(
+    'Explore promotes a featured card only when a real recommendation score exists',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _RankedExploreRepo());
+      await tester.pumpAndSettle();
+
+      expect(find.text('پیشنهادشده برای شما'), findsOneWidget);
+      expect(find.text('فرصت‌های موجود'), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is OpportunityCard &&
+              widget.variant == OpportunityCardVariant.featuredScan,
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'compact explore consolidates controls and keeps the first opportunity in the 360x640 viewport',
@@ -404,12 +468,14 @@ void main() {
       final kindFilter = tester.getRect(
         find.byKey(const ValueKey('hope-explore-kind-filters')),
       );
-      final featured = tester.getRect(
+      expect(find.text('فرصت‌های موجود'), findsOneWidget);
+      expect(find.text('پیشنهادشده برای شما'), findsNothing);
+      final firstOpportunity = tester.getRect(
         find.byWidgetPredicate(
           (widget) =>
               widget is OpportunityCard &&
-              widget.variant == OpportunityCardVariant.featuredScan,
-        ),
+              widget.variant == OpportunityCardVariant.compact,
+        ).first,
       );
       final dock = tester.getRect(
         find.byKey(const ValueKey('hope-navigation-dock')),
@@ -421,7 +487,7 @@ void main() {
       expect(kindFilter.height, greaterThanOrEqualTo(48));
       expect(kindFilter.top - filter.bottom, lessThan(20));
       expect(
-        featured.top,
+        firstOpportunity.top,
         lessThan(dock.top - 80),
         reason: 'The first real opportunity must occupy a useful part of the compact first fold.',
       );
@@ -975,7 +1041,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Find your next opportunity'), findsOneWidget);
-      expect(find.text('Recommended for you'), findsOneWidget);
+      expect(find.text('Available opportunities'), findsOneWidget);
+      expect(find.text('Recommended for you'), findsNothing);
       final cards = tester.widgetList<OpportunityCard>(
         find.byType(OpportunityCard),
       );

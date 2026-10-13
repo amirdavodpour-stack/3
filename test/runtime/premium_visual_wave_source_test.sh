@@ -172,13 +172,24 @@ grep -Fq '? 3' "lib/features/financial/financial_insights_page.dart"
 grep -Fq ': 2;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq '(constraints.maxWidth - gap * (columns - 1)) / columns;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
-grep -Fq 'height: compactViewport ? 120 : denseViewport ? 148 : 214,' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'height: compactViewport ? 112 : denseViewport ? 148 : 214,' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'HOPE_RUNTIME_EXACT_HEAD=$exact_head' ".github/workflows/hope-ui-runtime-evidence.yml"
 if sed -n '/class HopeWalletFlowSignature/,/Target-aligned opportunity DNA signature/p' "lib/core/ui/hope_signature_components.dart" | grep -Eq 'wallet\.(totalBalance|availableBalance|lockedBalance)'; then
   echo "FAIL: wallet ledger lifecycle panel must not repeat balance values" >&2
   exit 1
 fi
 grep -Fq '"sha": "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}"' "tools/hope-wallet-runtime-evidence.sh"
+
+
+# Batched discovery hierarchy: real recommendation signals only and readable compact scan cards.
+grep -Fq 'if (featuredScan)' "$opportunity"
+grep -Fq "opportunity-featured-scan-layout" "$opportunity"
+grep -Fq "opportunity-card-compact-grid-category" "$opportunity"
+grep -Fq "final recommendedIndex = jobs.indexWhere(" "$jobs_widgets"
+grep -Fq "job.isRecommended && job.recommendationScore != null" "$jobs_widgets"
+grep -Fq "Available opportunities" "$jobs_widgets"
+grep -Fq "Explore does not fabricate a recommended opportunity without a real score" "test/features/marketplace/jobs_page_test.dart"
+grep -Fq "Explore promotes a featured card only when a real recommendation score exists" "test/features/marketplace/jobs_page_test.dart"
 
 # Wave 22 compact-first-fold visual contracts.
 grep -Fq "this.compact = false" "$premium"

@@ -81,17 +81,25 @@ class _JobsResultsSliver extends StatelessWidget {
                     : constraints.maxWidth >= 340
                         ? 2
                         : 1;
-            final featuredJob = jobs.firstWhere(
+            final recommendedIndex = jobs.indexWhere(
               (job) => job.isRecommended && job.recommendationScore != null,
-              orElse: () => jobs.first,
             );
+            final HopeJob? featuredJob = recommendedIndex < 0
+                ? null
+                : jobs[recommendedIndex];
+            // A listing item must not be promoted to "recommended" without a
+            // real server-provided recommendation signal.
             final remaining = [
               for (final job in jobs)
-                if (!identical(job, featuredJob)) job,
+                if (featuredJob == null || !identical(job, featuredJob)) job,
             ];
 
-            final recommendedLabel = Text(
-              _t(context, 'پیشنهادشده برای شما', 'Recommended for you'),
+            final opportunitiesLabel = Text(
+              _t(
+                context,
+                featuredJob == null ? 'فرصت‌های موجود' : 'پیشنهادشده برای شما',
+                featuredJob == null ? 'Available opportunities' : 'Recommended for you',
+              ),
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
@@ -101,15 +109,16 @@ class _JobsResultsSliver extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  recommendedLabel,
+                  opportunitiesLabel,
                   const SizedBox(height: HopeV2Spacing.xs),
-                  AnimatedEntrance(
-                    child: OpportunityCard(
-                      job: featuredJob,
-                      variant: OpportunityCardVariant.featuredScan,
+                  if (featuredJob != null)
+                    AnimatedEntrance(
+                      child: OpportunityCard(
+                        job: featuredJob,
+                        variant: OpportunityCardVariant.featuredScan,
+                      ),
                     ),
-                  ),
-                  if (remaining.isNotEmpty)
+                  if (featuredJob != null && remaining.isNotEmpty)
                     const SizedBox(height: HopeV2Spacing.sm),
                   for (var i = 0; i < remaining.length; i++)
                     Padding(
@@ -137,22 +146,23 @@ class _JobsResultsSliver extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                recommendedLabel,
+                opportunitiesLabel,
                 const SizedBox(height: HopeV2Spacing.xs),
-                OpportunityCard(
-                  job: featuredJob,
-                  variant: OpportunityCardVariant.featuredScan,
-                ),
-                if (remaining.isNotEmpty)
+                if (featuredJob != null)
+                  OpportunityCard(
+                    job: featuredJob,
+                    variant: OpportunityCardVariant.featuredScan,
+                  ),
+                if (featuredJob != null && remaining.isNotEmpty)
                   const SizedBox(height: HopeV2Spacing.sm),
-                if (remaining.isNotEmpty)
+                if (featuredJob != null && remaining.isNotEmpty)
                   Text(
                     _t(context, 'فرصت‌های بیشتر', 'More opportunities'),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
                   ),
-                if (remaining.isNotEmpty)
+                if (featuredJob != null && remaining.isNotEmpty)
                   const SizedBox(height: HopeV2Spacing.sm),
                 GridView.builder(
                   shrinkWrap: true,
