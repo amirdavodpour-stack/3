@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
+import '../../core/config/backend_capabilities.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/google_sign_in_service.dart';
 import '../../core/router/auth_return_intent.dart';
@@ -29,10 +32,44 @@ class _RegisterPageState extends State<RegisterPage> {
   final password = TextEditingController();
   bool obscure = true;
   bool loading = false;
+  bool _capabilitiesLookupAttempted = false;
+  BackendCapabilities? _backendCapabilities;
+
+  bool get _canUseGoogleSignIn =>
+      (context.read<GoogleSignInService?>()?.isConfigured ?? false) &&
+      _backendCapabilities?.googleSignIn == true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_capabilitiesLookupAttempted) return;
+    _capabilitiesLookupAttempted = true;
+    try {
+      final repository = context.read<BackendCapabilitiesRepository>();
+      unawaited(_loadBackendCapabilities(repository));
+    } on ProviderNotFoundException {
+      _backendCapabilities = null;
+    }
+  }
+
+  Future<void> _loadBackendCapabilities(
+    BackendCapabilitiesRepository repository,
+  ) async {
+    try {
+      final capabilities = await repository.load();
+      if (!mounted) return;
+      setState(() => _backendCapabilities = capabilities);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _backendCapabilities = null);
+    }
+  }
 
   Future<void> submitGoogle() async {
     final google = context.read<GoogleSignInService?>();
-    if (google == null || !google.isConfigured) return;
+    if (google == null ||
+        !google.isConfigured ||
+        _backendCapabilities?.googleSignIn != true) return;
     setState(() => loading = true);
     try {
       await context.read<AuthController>().loginWithGoogle(google);
@@ -167,10 +204,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                     child: Column(
                       children: [
-                        if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
+                        if (_canUseGoogleSignIn) ...[
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
+                               key: const ValueKey('auth-google-sign-in'),
                               style: OutlinedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: const Color(0xFF1F1F1F),

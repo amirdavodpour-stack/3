@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/backend_capabilities.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/google_sign_in_service.dart';
 import '../../core/network/api_error_presenter.dart';
@@ -29,6 +32,38 @@ class _LoginPageState extends State<LoginPage> {
   final password = TextEditingController();
   bool obscure = true;
   bool loading = false;
+  bool _capabilitiesLookupAttempted = false;
+  BackendCapabilities? _backendCapabilities;
+
+  bool get _canUseGoogleSignIn =>
+      (context.read<GoogleSignInService?>()?.isConfigured ?? false) &&
+      _backendCapabilities?.googleSignIn == true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_capabilitiesLookupAttempted) return;
+    _capabilitiesLookupAttempted = true;
+    try {
+      final repository = context.read<BackendCapabilitiesRepository>();
+      unawaited(_loadBackendCapabilities(repository));
+    } on ProviderNotFoundException {
+      _backendCapabilities = null;
+    }
+  }
+
+  Future<void> _loadBackendCapabilities(
+    BackendCapabilitiesRepository repository,
+  ) async {
+    try {
+      final capabilities = await repository.load();
+      if (!mounted) return;
+      setState(() => _backendCapabilities = capabilities);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _backendCapabilities = null);
+    }
+  }
 
   @override
   void dispose() {
@@ -40,7 +75,9 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> submitGoogle() async {
     final l10n = AppLocalizations.of(context);
     final google = context.read<GoogleSignInService?>();
-    if (google == null || !google.isConfigured) {
+    if (google == null ||
+        !google.isConfigured ||
+        _backendCapabilities?.googleSignIn != true) {
       if (mounted) {
         HopeFeedback.show(context, l10n.loginFailedGeneric, tone: HopeFeedbackTone.error);
       }
@@ -169,10 +206,11 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
+                      if (_canUseGoogleSignIn) ...[
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
+                            key: const ValueKey('auth-google-sign-in'),
                             style: OutlinedButton.styleFrom(
                               backgroundColor: Colors.white,
                               foregroundColor: const Color(0xFF1F1F1F),

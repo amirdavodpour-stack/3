@@ -15,6 +15,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:hope_mobile/core/application/application_registry.dart';
+import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/chat/chat_repository.dart';
 import 'package:hope_mobile/core/financial/financial_insights_repository.dart';
 import 'package:hope_mobile/core/jobs/job_satisfaction_repository.dart';
@@ -687,6 +688,21 @@ ApplicationRegistry _registry() => ApplicationRegistry(
     );
 
 final GoogleSignInService _runtimeGoogleSignIn = GoogleSignInService();
+
+class _EvidenceBackendCapabilitiesRepository
+    implements BackendCapabilitiesRepository {
+  const _EvidenceBackendCapabilitiesRepository();
+
+  @override
+  Future<BackendCapabilities> load() async => const BackendCapabilities(
+        googleSignIn: true,
+        wallet: true,
+        walletTransfer: true,
+        walletWithdraw: true,
+        walletDeposit: false,
+      );
+}
+
 Future<void>? _runtimeFontLoad;
 
 Future<({AuthController auth, HopeSettingsController settings, ApplicationRegistry registry})>
@@ -737,6 +753,9 @@ class _EvidenceHost extends StatelessWidget {
         ),
         ChangeNotifierProvider<AuthController>.value(value: runtime.auth),
         Provider<GoogleSignInService>.value(value: _runtimeGoogleSignIn),
+        Provider<BackendCapabilitiesRepository>.value(
+          value: const _EvidenceBackendCapabilitiesRepository(),
+        ),
         Provider<ApplicationRegistry>.value(value: runtime.registry),
         Provider<MarketplaceRepository>.value(value: runtime.registry.marketplace!),
         Provider<JobDetailRepository>.value(value: runtime.registry.jobDetail!),

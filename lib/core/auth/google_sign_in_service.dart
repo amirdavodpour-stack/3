@@ -3,20 +3,23 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../network/api_client.dart';
 
 class GoogleSignInService {
-  GoogleSignInService();
+  GoogleSignInService({String? serverClientId})
+      : _serverClientId =
+            serverClientId ?? GoogleSignInService.serverClientId;
 
   static const serverClientId =
       String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
+  final String _serverClientId;
   final GoogleSignIn _signIn = GoogleSignIn.instance;
   Future<void>? _initializeFuture;
 
-  bool get isConfigured => serverClientId.trim().isNotEmpty;
+  bool get isConfigured => _serverClientId.trim().isNotEmpty;
 
   Future<void> initialize() {
     if (!isConfigured) return Future<void>.value();
     return _initializeFuture ??= _signIn.initialize(
-      serverClientId: serverClientId.trim(),
+      serverClientId: _serverClientId.trim(),
     );
   }
 
