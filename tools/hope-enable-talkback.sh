@@ -64,42 +64,13 @@ for attempt in $(seq 1 30); do
   bound_service_confirmed=false
   if grep -Fq "$component" <<<"$bound_services_block"; then
     bound_service_confirmed=true
-  # Android 15/API 35 may report the bound service by its TalkBack label,
-  # not componentName. In that format, corroborate the exact pinned service
-  # via enabled_accessibility_services and require no pending/crashed binding.
-  elif grep -Eq 'Service\[label=TalkBack(_[[:alnum:]_-]+)?,' <<<"$bound_services_block" &&
-       grep -Eq '^[[:space:]]*Binding services:[[:space:]]*\{\}[[:space:]]*
-    bound=true
-    break
-  fi
-  sleep 1
-done
-printf '%s\n' "$bound" > "$evidence_dir/talkback-service-bound.txt"
-if [[ "$bound" != "true" ]]; then
-  echo "FAIL: TalkBack did not bind; secure setting values are insufficient evidence." >&2
-  grep -Ei -C 3 'accessibility|talkback|bound service' "$evidence_dir/accessibility-bound-services.txt" >&2 || true
-  exit 8
-fi
-echo "HOPE_TALKBACK_SERVICE_BOUND:true"
-echo "HOPE_TALKBACK_SOURCE_SHA:$source_sha"
-echo "HOPE_TALKBACK_APK_SHA256:$(cat "$evidence_dir/talkback-apk-sha256.txt")"
- "$evidence_dir/accessibility-bound-services.txt" &&
-       grep -Eq '^[[:space:]]*Crashed services:[[:space:]]*\{\}[[:space:]]*
-    bound=true
-    break
-  fi
-  sleep 1
-done
-printf '%s\n' "$bound" > "$evidence_dir/talkback-service-bound.txt"
-if [[ "$bound" != "true" ]]; then
-  echo "FAIL: TalkBack did not bind; secure setting values are insufficient evidence." >&2
-  grep -Ei -C 3 'accessibility|talkback|bound service' "$evidence_dir/accessibility-bound-services.txt" >&2 || true
-  exit 8
-fi
-echo "HOPE_TALKBACK_SERVICE_BOUND:true"
-echo "HOPE_TALKBACK_SOURCE_SHA:$source_sha"
-echo "HOPE_TALKBACK_APK_SHA256:$(cat "$evidence_dir/talkback-apk-sha256.txt")"
- "$evidence_dir/accessibility-bound-services.txt"; then
+  # Android 15/API 35 may report a bound service by its TalkBack label rather
+  # than componentName. Corroborate the exact enabled component above and
+  # require no pending/crashed binding before accepting this label-only form.
+  elif (grep -Fq "Service[label=TalkBack," <<<"$bound_services_block" ||
+        grep -Fq "Service[label=TalkBack_" <<<"$bound_services_block") &&
+       grep -Fq "Binding services:{}" "$evidence_dir/accessibility-bound-services.txt" &&
+       grep -Fq "Crashed services:{}" "$evidence_dir/accessibility-bound-services.txt"; then
     bound_service_confirmed=true
   fi
   if [[ "$enabled_value" == "1" ]] &&
