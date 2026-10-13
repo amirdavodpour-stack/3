@@ -428,3 +428,8 @@ grep -Fq "if (!_loading && (_loadError == null || _items.isNotEmpty))" "lib/feat
 grep -Fq "Wave46 offers loading and empty states remain mutually exclusive" "test/features/offers/offers_page_test.dart"
 grep -Fq "All (0)" "test/features/applications/my_applications_page_test.dart"
 echo "PASS: Wave46 async-state truth across Offers, Notifications and Applications"
+
+# Wave46 test contract: Applications filter rail exists only for a successful result or retained stale rows.
+grep -Fq "ValueKey('applications-status-filter-scroll')" "lib/features/applications/my_applications_page.dart"
+grep -Fq "find.byKey(const ValueKey('applications-status-filter-scroll'))" "test/features/applications/my_applications_page_test.dart"
+echo "PASS: Wave46 Applications filter rail tracks authoritative data state"

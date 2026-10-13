@@ -189,7 +189,10 @@ void main() {
       profile.initialLoad.complete(const []);
       await tester.pumpAndSettle();
       expect(find.text('You have not submitted any applications yet.'), findsOneWidget);
-      expect(find.text('All (0)'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('applications-status-filter-scroll')),
+        findsOneWidget,
+      );
     },
   );
 
@@ -255,7 +258,10 @@ void main() {
 
     expect(find.text('Could not load applications.'), findsWidgets);
     expect(find.text('Retry'), findsOneWidget);
-    expect(find.text('All (0)'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('applications-status-filter-scroll')),
+      findsNothing,
+    );
     expect(
       find.text('You have not submitted any applications yet.'),
       findsNothing,

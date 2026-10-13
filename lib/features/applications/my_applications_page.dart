@@ -290,6 +290,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
             const SizedBox(height: 10),
             if (!_loading && (_loadError == null || _items.isNotEmpty))
               SingleChildScrollView(
+                key: const ValueKey('applications-status-filter-scroll'),
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
