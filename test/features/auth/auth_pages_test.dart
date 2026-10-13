@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
+import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
+import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
@@ -34,7 +36,25 @@ class _AuthRepo implements AuthRepository {
   Future<void> requestPasswordReset(String email) async {}
 }
 
-Future<Widget> _screen(Widget child, {double textScale = 1}) async {
+class _BackendCapabilitiesRepo implements BackendCapabilitiesRepository {
+  _BackendCapabilitiesRepo(this.capabilities, {this.fail = false});
+
+  final BackendCapabilities? capabilities;
+  final bool fail;
+
+  @override
+  Future<BackendCapabilities> load() async {
+    if (fail) throw StateError('capability endpoint unavailable');
+    return capabilities!;
+  }
+}
+
+Future<Widget> _screen(
+  Widget child, {
+  double textScale = 1,
+  GoogleSignInService? googleSignIn,
+  BackendCapabilitiesRepository? capabilities,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -61,6 +81,10 @@ Future<Widget> _screen(Widget child, {double textScale = 1}) async {
         ChangeNotifierProvider<ThemeController>(
             create: (_) => ThemeController(settings)),
         ChangeNotifierProvider<AuthController>.value(value: auth),
+        if (googleSignIn != null)
+          Provider<GoogleSignInService>.value(value: googleSignIn),
+        if (capabilities != null)
+          Provider<BackendCapabilitiesRepository>.value(value: capabilities),
       ],
       child: child,
     ),
@@ -106,6 +130,58 @@ void main() {
     expect(find.text('یا'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'login hides configured Google sign-in when backend capability is disabled',
+    (tester) async {
+      await tester.pumpWidget(await _screen(
+        const LoginPage(),
+        googleSignIn: GoogleSignInService(serverClientId: 'test-server-client'),
+        capabilities: _BackendCapabilitiesRepo(
+          const BackendCapabilities(googleSignIn: false),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('auth-google-sign-in')), findsNothing);
+      expect(find.text('یا'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'login shows configured Google sign-in only when backend capability is enabled',
+    (tester) async {
+      await tester.pumpWidget(await _screen(
+        const LoginPage(),
+        googleSignIn: GoogleSignInService(serverClientId: 'test-server-client'),
+        capabilities: _BackendCapabilitiesRepo(
+          const BackendCapabilities(googleSignIn: true),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('auth-google-sign-in')), findsOneWidget);
+      expect(find.text('یا'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'register hides configured Google sign-in when backend capability lookup fails',
+    (tester) async {
+      await tester.pumpWidget(await _screen(
+        const RegisterPage(),
+        googleSignIn: GoogleSignInService(serverClientId: 'test-server-client'),
+        capabilities: _BackendCapabilitiesRepo(null, fail: true),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('auth-google-sign-in')), findsNothing);
+      expect(find.text('یا'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('login keeps the auth surface free of backdrop blur', (tester) async {
     await tester.pumpWidget(await _screen(const LoginPage()));
