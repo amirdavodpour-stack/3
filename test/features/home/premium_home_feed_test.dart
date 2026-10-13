@@ -47,6 +47,9 @@ class _FailOnceOpportunityAgent implements OpportunityAgentRepository {
   @override
   Future<HopeOpportunityAgentState> getState() async {
     calls += 1;
+    // Match a real network-backed failure that arrives after the widget has
+    // subscribed to the returned FutureBuilder future.
+    await Future<void>.delayed(Duration.zero);
     if (calls == 1) {
       throw StateError('opportunity agent temporarily unavailable');
     }
