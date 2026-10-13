@@ -437,23 +437,27 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
         final stats = <({String value, String label, Object icon, Color accent})>[
           (
-            value: snapshot.connectionState == ConnectionState.done
-                ? HopeDisplayFormatter.integer(
-                    jobs.where((j) => j.isRecommended).length,
-                    locale: Localizations.localeOf(context).languageCode,
-                  )
-                : '—',
+            value: snapshot.hasError
+                ? '—'
+                : snapshot.connectionState == ConnectionState.done
+                    ? HopeDisplayFormatter.integer(
+                        jobs.where((j) => j.isRecommended).length,
+                        locale: Localizations.localeOf(context).languageCode,
+                      )
+                    : '—',
             label: _t(context, 'تطابق', 'matches'),
             icon: HopeV2Icons.match,
             accent: HopeV2Colors.primary,
           ),
           (
-            value: snapshot.connectionState == ConnectionState.done
-                ? HopeDisplayFormatter.integer(
-                    jobs.where(_isNewOpportunity).length,
-                    locale: Localizations.localeOf(context).languageCode,
-                  )
-                : '—',
+            value: snapshot.hasError
+                ? '—'
+                : snapshot.connectionState == ConnectionState.done
+                    ? HopeDisplayFormatter.integer(
+                        jobs.where(_isNewOpportunity).length,
+                        locale: Localizations.localeOf(context).languageCode,
+                      )
+                    : '—',
             label: _t(context, 'جدید', 'new'),
             icon: HopeV2Icons.job,
             accent: HopeV2Colors.secondary,
