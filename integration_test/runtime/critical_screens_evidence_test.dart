@@ -172,12 +172,19 @@ class _EvidenceWalletRepository implements WalletRepository {
 class _EvidenceTransactionRepository implements TransactionRepository {
   HopeJob get _job => _jobFixture();
 
+  // A held payment belongs to an assigned/funded job, not a published listing.
+  HopeJob get _transactionJob => HopeJob.fromMap({
+        ..._jobFixture().toMap(),
+        'status': 'FUNDED',
+        'providerId': 'runtime-provider',
+      });
+
   HopePayment get _payment => HopePayment(
         id: 'payment-runtime-1',
         status: 'HELD',
         amount: '1500000',
         providerRef: 'internal-ledger',
-        job: _job,
+        job: _transactionJob,
         fees: const HopePaymentFees(
           baseAmount: '1500000',
           employerFee: '30000',
