@@ -168,6 +168,7 @@ HopeJob _job({
   String? acceptanceCriteria,
   String? workMode,
   String status = 'PUBLISHED',
+  List<String>? recommendationReasons,
 }) =>
     HopeJob.fromMap({
       'id': id,
@@ -196,7 +197,8 @@ HopeJob _job({
       'distanceKm': null,
       'isRecommended': true,
       'recommendationScore': 94,
-      'recommendationReasons': ['SKILL_MATCH', 'WORK_MODE_MATCH', 'CATEGORY_MATCH'],
+      'recommendationReasons': recommendationReasons ??
+          ['SKILL_MATCH', 'WORK_MODE_MATCH', 'CATEGORY_MATCH'],
        'recommendationComponents': {
          'skills': 96,
          'category': 100,
@@ -1053,6 +1055,22 @@ void main() {
         reason: 'The fixed CTA must remain above the 24dp system bottom inset.',
       );
       expect(cta.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'job detail describes city-centre proximity as a location match',
+    (tester) async {
+      await _pump(
+        tester,
+        job: _job(recommendationReasons: ['VERY_NEAR', 'NEARBY']),
+      );
+
+      expect(find.text('Location match'), findsWidgets);
+      expect(find.text('Very near'), findsNothing);
+      expect(find.text('Nearby'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

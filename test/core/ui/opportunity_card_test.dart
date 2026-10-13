@@ -185,7 +185,11 @@ void main() {
     expect(find.text('۹۱٪ تطابق'), findsOneWidget);
     expect(find.text('دورکاری'), findsOneWidget);
     expect(find.text('تهران'), findsOneWidget);
-    expect(find.text('1.5 km'), findsOneWidget);
+    expect(
+      find.text('1.5 km'),
+      findsNothing,
+      reason: 'Backend distance is measured to the city centre, not to this opportunity.',
+    );
     expect(find.text('۱٬۰۰۰٬۰۰۰ تومان تا ۱٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
     expect(find.text('طراحی محصول'), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
@@ -697,7 +701,7 @@ void main() {
         'دلایل تطابق',
         'مهارت مرتبط',
         'دسته‌بندی مرتبط',
-        'خیلی نزدیک',
+        'تطابق مکانی',
         'مکان مشخص نشده',
         'مشاهده و اقدام برای ماموریت',
       ],
@@ -709,7 +713,7 @@ void main() {
         'Match signals',
         'Skill match',
         'Category match',
-        'Very near',
+        'Location match',
         'Location not specified',
         'View and act on mission',
       ],
