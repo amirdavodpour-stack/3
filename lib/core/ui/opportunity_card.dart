@@ -60,8 +60,8 @@ class OpportunityCard extends StatelessWidget {
     return switch (value) {
       'SKILL_MATCH' => copy.copy_match_skill,
       'CATEGORY_MATCH' => copy.copy_match_category,
-      'VERY_NEAR' => copy.copy_match_very_near,
-      'NEARBY' => copy.copy_near_1df6db0,
+      'VERY_NEAR' => _t(context, 'تطابق مکانی', 'Location match'),
+      'NEARBY' => _t(context, 'تطابق مکانی', 'Location match'),
       'REMOTE' => copy.copy_remote_dcbb625,
       'WORK_MODE_MATCH' => copy.copy_match_work_mode,
       'SALARY_FIT' => copy.copy_match_salary_fit,
@@ -941,12 +941,6 @@ class OpportunityCard extends StatelessWidget {
             label: copy.copy_specialized_5d1ca04,
             color: HopeV2Colors.warning,
           ),
-        if (job.distanceKm != null)
-          PremiumTag(
-            icon: HopeV2Icons.distance,
-            label: '${job.distanceKm!.toStringAsFixed(1)} km',
-            color: secondaryAccent(context),
-          ),
       ],
     );
 
@@ -1255,12 +1249,6 @@ class OpportunityCard extends StatelessWidget {
                 icon: HopeV2Icons.category,
                 label: hopeCategoryLabel(context, _categoryValue()!),
                 color: HopeV2Colors.muted,
-              ),
-            if (job.distanceKm != null)
-              PremiumTag(
-                icon: HopeV2Icons.distance,
-                label: '${job.distanceKm!.toStringAsFixed(1)} km',
-                color: secondaryAccent(context),
               ),
             if (job.visibility == 'SPECIALIZED')
               PremiumTag(
