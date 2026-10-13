@@ -189,6 +189,7 @@ void main() {
       profile.initialLoad.complete(const []);
       await tester.pumpAndSettle();
       expect(find.text('You have not submitted any applications yet.'), findsOneWidget);
+      expect(find.text('All (0)'), findsOneWidget);
     },
   );
 
@@ -254,6 +255,7 @@ void main() {
 
     expect(find.text('Could not load applications.'), findsWidgets);
     expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('All (0)'), findsNothing);
     expect(
       find.text('You have not submitted any applications yet.'),
       findsNothing,

@@ -351,15 +351,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 dense: true,
                 eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
                 title: _t('اعلان‌ها', 'Notifications'),
-                subtitle: unreadCount > 0
+                subtitle: loading
                     ? _t(
-                        '$unreadCountLabel اعلان خوانده‌نشده در فهرست زیر',
-                        '$unreadCountLabel unread in this list',
+                        'در حال دریافت آخرین اعلان‌ها',
+                        'Loading latest notifications',
                       )
-                    : _t(
-                        'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند',
-                        'Updates for applications, work, and payments • All caught up',
-                      ),
+                    : error != null
+                        ? _t(
+                            'وضعیت اعلان‌ها تازه‌سازی نشد',
+                            'Notification status could not be refreshed',
+                          )
+                        : unreadCount > 0
+                            ? _t(
+                                '$unreadCountLabel اعلان خوانده‌نشده در فهرست زیر',
+                                '$unreadCountLabel unread in this list',
+                              )
+                            : _t(
+                                'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند',
+                                'Updates for applications, work, and payments • All caught up',
+                              ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

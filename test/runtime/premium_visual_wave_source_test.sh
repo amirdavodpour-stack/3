@@ -419,3 +419,12 @@ grep -Fq "if (enlargedText || longTotalBalance)" "lib/features/wallet/wallet_pag
 grep -Fq "final enlargedText =" "lib/features/transactions/transaction_widgets.part.dart"
 grep -Fq "children: [statusTag, refreshButton]" "lib/features/transactions/transaction_widgets.part.dart"
 echo "PASS: Wave45 follow-up for long total balances and enlarged transaction headings"
+
+# Wave46: loading, empty and initial error remain distinct across Offers, Notifications and Applications.
+grep -Fq "if (!_loading && (_loadError == null || _items.isNotEmpty))" "lib/features/offers/offers_page.dart"
+grep -Fq "rows.isEmpty &&" "lib/features/offers/offers_page.dart"
+grep -Fq "'Notification status could not be refreshed'" "lib/features/notifications/notifications_page.dart"
+grep -Fq "if (!_loading && (_loadError == null || _items.isNotEmpty))" "lib/features/applications/my_applications_page.dart"
+grep -Fq "Wave46 offers loading and empty states remain mutually exclusive" "test/features/offers/offers_page_test.dart"
+grep -Fq "All (0)" "test/features/applications/my_applications_page_test.dart"
+echo "PASS: Wave46 async-state truth across Offers, Notifications and Applications"

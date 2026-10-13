@@ -122,6 +122,30 @@ class _FixedOfferRepository implements OfferRepository {
       throw UnimplementedError();
 }
 
+class _PendingOfferRepository extends _FixedOfferRepository {
+  _PendingOfferRepository() : super(const []);
+
+  final Completer<List<HopeOffer>> initialLoad = Completer<List<HopeOffer>>();
+
+  @override
+  Future<List<HopeOffer>> listMine() => initialLoad.future;
+
+  @override
+  Future<List<HopeOffer>> listForJob(String jobId) => initialLoad.future;
+}
+
+class _InitialFailureOfferRepository extends _FixedOfferRepository {
+  _InitialFailureOfferRepository() : super(const []);
+
+  @override
+  Future<List<HopeOffer>> listMine() =>
+      Future<List<HopeOffer>>.error(StateError('offers unavailable'));
+
+  @override
+  Future<List<HopeOffer>> listForJob(String jobId) =>
+      Future<List<HopeOffer>>.error(StateError('offers unavailable'));
+}
+
 Widget _host(OfferRepository repository) => MaterialApp(
   locale: const Locale('en'),
   supportedLocales: const [Locale('fa'), Locale('en')],
@@ -153,6 +177,42 @@ Widget _hostWithJob(OfferRepository repository) => MaterialApp(
 );
 
 void main() {
+testWidgets(
+  'Wave46 offers loading and empty states remain mutually exclusive',
+  (tester) async {
+    final repository = _PendingOfferRepository();
+    await tester.pumpWidget(_host(repository));
+    await tester.pump();
+
+    expect(find.text('Loading offers'), findsOneWidget);
+    expect(find.text('No offers'), findsNothing);
+    expect(find.byKey(const ValueKey('offers-status-filter-scroll')), findsNothing);
+
+    repository.initialLoad.complete(const []);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Loading offers'), findsNothing);
+    expect(find.text('No offers'), findsOneWidget);
+    expect(find.text('All (0)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  },
+);
+
+testWidgets(
+  'Wave46 offers initial failure shows retry without false empty or zero-count filters',
+  (tester) async {
+    await tester.pumpWidget(_host(_InitialFailureOfferRepository()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Offers unavailable'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('No offers'), findsNothing);
+    expect(find.text('All (0)'), findsNothing);
+    expect(find.byKey(const ValueKey('offers-status-filter-scroll')), findsNothing);
+    expect(tester.takeException(), isNull);
+  },
+);
+
 testWidgets('accepting an offer disables the financial action until completion',
       (tester) async {
     final repository = _AcceptGuardOfferRepository();

@@ -176,31 +176,33 @@ class _OffersPageState extends State<OffersPage> {
                 ),
                 const SizedBox(height: 10),
               ],
-              SingleChildScrollView(
-                key: const ValueKey('offers-status-filter-scroll'),
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 8),
-                        child: PremiumFilterChip(
-                          selected: _filter == x,
-                          label: x == 'ALL'
-                              ? '${_t('همه', 'All')} (${all.length})'
-                              : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
-                          color: x == 'ALL'
-                              ? Theme.of(context).colorScheme.primary
-                              : _statusColor(context, x),
-                          onTap: () => setState(() => _filter = x),
+              if (!_loading && (_loadError == null || _items.isNotEmpty))
+                SingleChildScrollView(
+                  key: const ValueKey('offers-status-filter-scroll'),
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8),
+                          child: PremiumFilterChip(
+                            selected: _filter == x,
+                            label: x == 'ALL'
+                                ? '${_t('همه', 'All')} (${all.length})'
+                                : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
+                            color: x == 'ALL'
+                                ? Theme.of(context).colorScheme.primary
+                                : _statusColor(context, x),
+                            onTap: () => setState(() => _filter = x),
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
               const SizedBox(height: 10),
-              if (rows.isEmpty)
+              if (rows.isEmpty &&
+                  (_items.isNotEmpty || (!_loading && _loadError == null)))
                 EmptyState(
                   icon: HopeV2Icons.featured,
                   title: _t('پیشنهادی وجود ندارد', 'No offers'),
@@ -209,7 +211,7 @@ class _OffersPageState extends State<OffersPage> {
                     'There are no offers in this state.',
                   ),
                 )
-              else
+              else if (rows.isNotEmpty)
                 ...rows.map(_card),
             ],
           ),

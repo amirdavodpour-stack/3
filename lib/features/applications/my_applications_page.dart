@@ -288,7 +288,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               ),
             ),
             const SizedBox(height: 10),
-            if (!_loading)
+            if (!_loading && (_loadError == null || _items.isNotEmpty))
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(

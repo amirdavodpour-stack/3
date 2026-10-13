@@ -174,6 +174,10 @@ void main() {
 
       expect(find.byType(HopeAsyncState), findsOneWidget);
       expect(find.text('در حال بارگذاری اعلان‌ها'), findsOneWidget);
+      expect(
+        find.text('به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند'),
+        findsNothing,
+      );
 
       repo.initialLoad.complete(
         const HopeNotificationPage(
@@ -196,6 +200,10 @@ void main() {
 
       expect(find.byType(HopeAsyncState), findsOneWidget);
       expect(find.text('اعلان‌ها در دسترس نیستند'), findsOneWidget);
+      expect(
+        find.text('به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند'),
+        findsNothing,
+      );
 
       repo.failList = false;
       await tester.tap(find.text('تلاش دوباره'));
