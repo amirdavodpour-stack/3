@@ -454,10 +454,10 @@ echo "PASS: Wave48 Wallet and Work Center responsive/locale matrix contracts"
 
 # Wave49: adaptive Offers, Notifications and Chat rows across locale/viewport combinations.
 grep -Fq "final compactHeading =" "lib/features/offers/offers_page.dart"
-grep -Fq "offer-status-${o.id}" "lib/features/offers/offers_page.dart"
+grep -Fq 'offer-status-${o.id}' "lib/features/offers/offers_page.dart"
 grep -Fq "Wave49 Offers card title and status fit FA-RTL/EN-LTR responsive matrix" "test/features/offers/offers_page_test.dart"
 grep -Fq "final compactText =" "lib/features/notifications/notifications_page.dart"
-grep -Fq "notification-title-${n.id}" "lib/features/notifications/notifications_page.dart"
+grep -Fq 'notification-title-${n.id}' "lib/features/notifications/notifications_page.dart"
 grep -Fq "Wave49 Notifications preserve title/body at narrow FA-RTL and EN-LTR 1.5x" "test/features/notifications/notifications_page_test.dart"
 grep -Fq "final compactBanner =" "lib/features/chat/chat_page.dart"
 grep -Fq "chat-send-error-retry" "lib/features/chat/chat_page.dart"
