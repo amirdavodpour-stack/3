@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
@@ -107,6 +108,34 @@ class _Repo implements MarketplaceRepository {
 
   @override
   Future<void> publishOpportunity(String id) async {}
+}
+
+class _LongRangeExploreRepo extends _Repo {
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async =>
+      [
+        job('featured-budget-test', 'فرصت منتخب', 'MISSION', 'تهران'),
+        HopeJob.fromMap({
+          'id': 'long-range-budget-test',
+          'title': 'فرصت با بازه مالی بلند',
+          'description': 'Long financial range must remain fully readable.',
+          'kind': 'MISSION',
+          'visibility': 'PUBLIC',
+          'status': 'OPEN',
+          'city': 'تهران',
+          'budgetMin': '123456789012345',
+          'budgetMax': '987654321098765',
+        }),
+      ];
 }
 
 class _SavedSearchFixture implements SavedSearchRepository {
@@ -872,6 +901,44 @@ void main() {
         reason: 'Compressed summaries are not used when system text is enlarged.',
       );
       expect(find.text('طراحی اپ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact Explore does not clip long financial ranges at 1.2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(
+        tester,
+        _LongRangeExploreRepo(),
+        textScale: 1.2,
+      );
+      await tester.pumpAndSettle();
+
+      final budget = find.byKey(
+        const ValueKey('opportunity-card-compact-budget'),
+      );
+      await tester.scrollUntilVisible(
+        budget,
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      final paragraph = tester.renderObject<RenderParagraph>(budget);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'The compact card must not clip the lower bound, upper bound, or Toman unit.',
+      );
+      expect(
+        paragraph.text.toPlainText(),
+        '۱۲۳٬۴۵۶٬۷۸۹٬۰۱۲٬۳۴۵ تومان تا ۹۸۷٬۶۵۴٬۳۲۱٬۰۹۸٬۷۶۵ تومان',
+      );
       expect(tester.takeException(), isNull);
     },
   );
