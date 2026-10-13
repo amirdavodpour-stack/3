@@ -90,6 +90,8 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
     required this.onPickCategory,
     required this.onRetryCategories,
     required this.savedSearchCount,
+    required this.savedSearchesLoadError,
+    required this.onRetrySavedSearches,
     required this.onSaveSearch,
     required this.onOpenSavedSearches,
   });
@@ -107,6 +109,8 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
   final VoidCallback onPickCategory;
   final VoidCallback onRetryCategories;
   final int savedSearchCount;
+  final bool savedSearchesLoadError;
+  final VoidCallback onRetrySavedSearches;
   final VoidCallback? onSaveSearch;
   final VoidCallback onOpenSavedSearches;
 
@@ -184,13 +188,28 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                 ),
               ],
             ),
-            if (savedSearchCount > 0 || onSaveSearch != null) ...[
+            if (savedSearchCount > 0 ||
+                onSaveSearch != null ||
+                savedSearchesLoadError) ...[
               const SizedBox(height: HopeV2Spacing.md),
               Wrap(
                 spacing: HopeV2Spacing.sm,
                 runSpacing: HopeV2Spacing.xs,
                 children: [
-                  if (savedSearchCount > 0)
+                  if (savedSearchesLoadError)
+                    TextButton.icon(
+                      key: const ValueKey('saved-searches-retry'),
+                      onPressed: onRetrySavedSearches,
+                      icon: const HopeIcon(HopeV2Icons.refresh, size: 18),
+                      label: Text(
+                        _t(
+                          context,
+                          'جستجوهای ذخیره‌شده بارگیری نشدند · تلاش دوباره',
+                          'Saved searches failed to load · Retry',
+                        ),
+                      ),
+                    ),
+                  if (savedSearchCount > 0 && !savedSearchesLoadError)
                     TextButton.icon(
                       onPressed: onOpenSavedSearches,
                       icon: const HopeIcon(HopeV2Icons.savedSearches, size: 18),
@@ -349,6 +368,8 @@ class _JobsFilterHeader extends StatelessWidget {
       onPickCategory: onPickCategory,
       onRetryCategories: onRetryCategories,
       savedSearchCount: savedSearchCount,
+      savedSearchesLoadError: savedSearchesLoadError,
+      onRetrySavedSearches: onRetrySavedSearches,
       onSaveSearch: onSaveSearch,
       onOpenSavedSearches: onOpenSavedSearches,
     );
