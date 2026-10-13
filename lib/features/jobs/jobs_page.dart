@@ -461,6 +461,7 @@ class _JobsPageState extends State<JobsPage> {
                   isLoading:
                       snapshot.connectionState == ConnectionState.waiting,
                   hasError: snapshot.hasError,
+                  onRetry: _refresh,
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
