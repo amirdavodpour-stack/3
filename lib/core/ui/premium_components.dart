@@ -403,7 +403,7 @@ class PremiumPageFrame extends StatelessWidget {
             ? padding.bottom.clamp(0.0, 16.0).toDouble()
             : padding.bottom;
     final resolvedDomain = domain ?? page?.spec.domain;
-    final domainAccent = resolvedDomain?.spec.accent;
+    final domainAccent = resolvedDomain?.spec.accentFor(context);
     final showDomainRail = size.width >= HopeV2Breakpoints.medium;
     final pageColor = HopeV2Surfaces.page(context);
 
@@ -663,7 +663,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
     if (actions.isEmpty) return const SizedBox.shrink();
     final resolvedDomain = domain ?? page?.spec.domain;
     final accent =
-        resolvedDomain?.spec.accent ?? Theme.of(context).colorScheme.primary;
+        resolvedDomain?.spec.accentFor(context) ?? Theme.of(context).colorScheme.primary;
 
     return Semantics(
       container: true,
@@ -895,7 +895,7 @@ class PremiumHeader extends StatelessWidget {
                           eyebrow.toUpperCase(),
                           overflow: TextOverflow.ellipsis,
                           style: HopeV2Type.eyebrow(context).copyWith(
-                            color: resolvedDomain?.spec.accent ??
+                            color: resolvedDomain?.spec.accentFor(context) ??
                                 Theme.of(context).colorScheme.primary,
                           ),
                         ),
@@ -942,7 +942,7 @@ class PremiumHeader extends StatelessWidget {
                     eyebrow.toUpperCase(),
                     overflow: TextOverflow.ellipsis,
                     style: HopeV2Type.eyebrow(context).copyWith(
-                      color: resolvedDomain.spec.accent,
+                      color: resolvedDomain.spec.accentFor(context),
                     ),
                   ),
                 ],
@@ -1366,7 +1366,7 @@ class PremiumHero extends StatelessWidget {
             else
               Positioned.fill(
                 child: _HeroEditorialFallback(
-                  accent: resolvedDomain?.spec.accent ??
+                  accent: resolvedDomain?.spec.accentFor(context) ??
                       Theme.of(context).colorScheme.primary,
                   icon: compactHero ? null : icon,
                   compact: compactHero,
@@ -1498,10 +1498,10 @@ class PremiumHero extends StatelessWidget {
                                     width: 28,
                                     height: 28,
                                     decoration: BoxDecoration(
-                                      color: resolvedDomain.spec.accent.withValues(alpha: .18),
+                                      color: resolvedDomain.spec.accentFor(context).withValues(alpha: .18),
                                       borderRadius: BorderRadius.circular(9),
                                       border: Border.all(
-                                        color: resolvedDomain.spec.accent.withValues(alpha: .34),
+                                        color: resolvedDomain.spec.accentFor(context).withValues(alpha: .34),
                                       ),
                                     ),
                                     child: Center(
@@ -1519,7 +1519,7 @@ class PremiumHero extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: resolvedDomain.spec.accent,
+                                        color: resolvedDomain.spec.accentFor(context),
                                         fontWeight: FontWeight.w900,
                                         fontSize: 10,
                                       ),
@@ -1769,7 +1769,7 @@ class PremiumSectionHeader extends StatelessWidget {
           final compact = constraints.maxWidth < HopeV2Breakpoints.compact;
           final resolvedDomain = domain ?? page?.spec.domain;
           final accent =
-              resolvedDomain?.spec.accent ?? Theme.of(context).colorScheme.primary;
+              resolvedDomain?.spec.accentFor(context) ?? Theme.of(context).colorScheme.primary;
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
