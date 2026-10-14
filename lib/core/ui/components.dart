@@ -721,7 +721,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
     final dark = Theme.of(context).brightness == Brightness.dark;
     _ensureController();
     final base =
-        dark ? Colors.white.withValues(alpha: .06) : const Color(0xFFECEAF2);
+        dark ? Colors.white.withValues(alpha: .06) : HopeV2Colors.disabledLight;
     final highlight = dark ? Colors.white.withValues(alpha: .12) : Colors.white;
     // Honor the system "reduce motion" preference: show a static placeholder.
     if (MediaQuery.disableAnimationsOf(context)) {
