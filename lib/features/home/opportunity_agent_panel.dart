@@ -149,6 +149,13 @@ class OpportunityAgentPanel extends StatelessWidget {
     final requiresApproval = action.requiresApproval;
     final title = _title(context, action);
     final reason = _reason(context, action);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final actionAccent = requiresApproval
+        ? (dark ? HopeV2Colors.warningDark : HopeV2Colors.warning)
+        : (dark ? HopeV2Colors.primaryDark : HopeV2Colors.primary);
+    final actionForeground = requiresApproval
+        ? (dark ? HopeV2Colors.warningDark : HopeV2Colors.warningOnLight)
+        : (dark ? HopeV2Colors.primaryDark : HopeV2Colors.primaryOnLight);
     final icon = switch (action.type) {
       'COMPLETE_PROFILE' => HopeV2Icons.profile,
       'FOLLOW_UP_APPLICATION' => HopeV2Icons.message,
@@ -162,10 +169,7 @@ class OpportunityAgentPanel extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(HopeV2Radii.lg),
         border: Border.all(
-          color: (requiresApproval
-                  ? HopeV2Colors.warningDark
-                  : HopeV2Colors.primary)
-              .withValues(alpha: .22),
+          color: actionAccent.withValues(alpha: .22),
         ),
       ),
       child: PremiumPanel(
@@ -185,18 +189,13 @@ class OpportunityAgentPanel extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: (requiresApproval
-                        ? HopeV2Colors.warningDark
-                        : HopeV2Colors.primary)
-                    .withValues(alpha: .12),
+                color: actionAccent.withValues(alpha: .12),
               ),
               child: Center(
                 child: HugeIcon(
                   icon: icon,
                   size: 19,
-                  color: requiresApproval
-                      ? HopeV2Colors.warningDark
-                      : HopeV2Colors.primaryDark,
+                  color: actionForeground,
                 ),
               ),
             ),
