@@ -582,13 +582,20 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
+  bool _isPendingPayout(String status) => switch (status.toUpperCase()) {
+        'REQUESTED' || 'RESERVED' || 'PROCESSING' || 'UNKNOWN' => true,
+        _ => false,
+      };
+
   Color _payoutColor(BuildContext context, String status) {
-    final colors = Theme.of(context).colorScheme;
     switch (status.toUpperCase()) {
-      case 'SUCCEEDED': return HopeV2Colors.success;
-      case 'FAILED': return colors.error;
-      case 'UNKNOWN': return HopeV2Colors.warning;
-      default: return colors.primary;
+      case 'SUCCEEDED':
+        return HopeV2SemanticColors.success(context);
+      case 'FAILED':
+        return HopeV2SemanticColors.error(context);
+      default:
+        // Pending and unknown payout states are financial status, not actions.
+        return HopeV2SemanticColors.pending(context);
     }
   }
 
@@ -1495,7 +1502,12 @@ padding: const EdgeInsets.all(18),
                         ),
                         title: Text(
                           _money(payout.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: _isPendingPayout(payout.status)
+                                ? HopeV2SemanticColors.pendingAmount(context)
+                                : HopeV2SemanticColors.amount(context),
+                          ),
                         ),
                         subtitle: Text(
                           '${_date(payout.createdAt)}\n${_providerLabel(payout.provider)}',
