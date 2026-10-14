@@ -105,6 +105,14 @@ class AppTheme {
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         ),
       ),
+      listTileTheme: ListTileThemeData(
+        textColor: textColor,
+        iconColor: mutedColor,
+        selectedColor: scheme.primary,
+        selectedTileColor: dark
+            ? HopeV2Colors.darkGreenGlow.withValues(alpha: .16)
+            : HopeV2Colors.warmHalo.withValues(alpha: .10),
+      ),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
