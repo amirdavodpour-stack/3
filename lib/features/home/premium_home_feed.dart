@@ -232,7 +232,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                 errorBuilder: (_, __, ___) => Center(
                                   child: Text(
                                     initial,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: initialColor,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -242,7 +242,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                             : Center(
                                 child: Text(
                                   initial,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: initialColor,
                                     fontWeight: FontWeight.w900,
                                   ),
