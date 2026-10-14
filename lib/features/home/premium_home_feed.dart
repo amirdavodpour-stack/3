@@ -207,8 +207,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         : displayName.trim();
     final identityLabel = safeName;
     final initialColor = Theme.of(context).brightness == Brightness.dark
-        ? HopeV2Colors.primaryDark
-        : HopeV2Colors.primaryOnLight;
+        ? HopeV2Colors.darkText
+        : HopeV2Colors.ink;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
