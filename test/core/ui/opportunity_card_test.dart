@@ -510,6 +510,78 @@ void main() {
   });
 
   testWidgets(
+    'compact budget semantics use one localized currency unit for ranges and single values',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      HopeJob budgetJob(String minimum, String maximum) => HopeJob.fromMap({
+            'id': 'compact-semantic-budget',
+            'title': 'Opportunity range',
+            'description': 'Compact currency semantics contract.',
+            'kind': 'MISSION',
+            'visibility': 'PUBLIC',
+            'status': 'OPEN',
+            'city': 'Tehran',
+            'budgetMin': minimum,
+            'budgetMax': maximum,
+          });
+
+      Future<String> semanticSummary(Locale locale, HopeJob job) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: locale,
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: Scaffold(
+              body: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.compact,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return tester.getSemantics(find.byType(OpportunityCard)).label;
+      }
+
+      try {
+        final faSummary = await semanticSummary(
+          const Locale('fa'),
+          budgetJob('1200000', '2500000'),
+        );
+        expect(faSummary, contains('۱٬۲۰۰٬۰۰۰ تا ۲٬۵۰۰٬۰۰۰ تومان'));
+        expect(faSummary.split('تومان').length - 1, 1);
+
+        final enSummary = await semanticSummary(
+          const Locale('en'),
+          budgetJob('1200000', '2500000'),
+        );
+        expect(enSummary, contains('1,200,000 – 2,500,000 TOMAN'));
+        expect(enSummary.split('TOMAN').length - 1, 1);
+
+        final singleValueSummary = await semanticSummary(
+          const Locale('en'),
+          budgetJob('1200000', '1200000'),
+        );
+        expect(singleValueSummary, contains('1,200,000 TOMAN'));
+        expect(singleValueSummary.split('TOMAN').length - 1, 1);
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
+    },
+  );
+
+  testWidgets(
       'Wave 37 Opportunity Card exposes type, localized category, amount and match score to semantics',
       (tester) async {
     final handle = tester.ensureSemantics();
