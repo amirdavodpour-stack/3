@@ -6,7 +6,7 @@ import 'package:hugeicons/hugeicons.dart';
 /// This is intentionally token-first: screens should consume these values
 /// instead of inventing per-page spacing, radii, or breakpoints.
 
-/// Premium reference contract: deep surfaces, restrained cyan/teal, violet focus.
+/// Premium reference contract: warm-neutral surfaces with restrained forest accents.
 /// Runtime certification batch: compact home, deterministic glass, restrained bloom.
 /// Certification round three: opaque premium surfaces + controlled wallet hero.
 /// Final visual checkpoint: wallet/profile bloom removed; home remains compact.
@@ -15,65 +15,66 @@ import 'package:hugeicons/hugeicons.dart';
 class HopeV2Colors {
   const HopeV2Colors._();
 
-  static const primary = Color(0xFF6366F1);
-  static const primaryAction = Color(0xFF4F46E5);
-  static const primaryOnLight = Color(0xFF4F46E5);
-  static const successOnLight = Color(0xFF047857);
+  static const primary = Color(0xFF6B5733);
+  static const primaryAction = Color(0xFF665126);
+  static const primaryOnLight = Color(0xFF665126);
+  static const successOnLight = Color(0xFF236443);
   static const warningOnLight = Color(0xFF92400E);
   static const dangerOnLight = Color(0xFFB91C1C);
-  static const secondaryAction = Color(0xFF0F766E);
+  static const secondaryAction = Color(0xFF3F624B);
 
-  static const primaryDark = Color(0xFF818CF8);
-  static const secondary = Color(0xFF14B8A6);
-  static const secondaryStrong = Color(0xFF0D9488);
-  static const secondaryDark = Color(0xFF5EEAD4);
-  static const accent = Color(0xFFF59E0B);
+  static const primaryDark = Color(0xFFD0BD92);
+  static const secondary = Color(0xFF55755F);
+  static const secondaryStrong = Color(0xFF3D6148);
+  static const secondaryDark = Color(0xFFA9C5AB);
+  static const accent = Color(0xFFB38A43);
   /// Focus accent for featured/recommended work surfaces; use sparingly.
   static const orange = Color(0xFFF97316);
   static const orangeDark = Color(0xFFFF9A4D);
-  static const inkSoft = Color(0xFF26223A);
-  static const backgroundWarm = Color(0xFFF4F0FB);
-  static const ink = Color(0xFF151326);
-  static const muted = Color(0xFF6B6780);
+  static const inkSoft = Color(0xFF34372D);
+  static const backgroundWarm = Color(0xFFF5F3EA);
+  static const ink = Color(0xFF24271F);
+  static const muted = Color(0xFF6C6D61);
   static const surface = Color(0xFFFFFFFF);
-  static const background = Color(0xFFF0ECF8);
+  static const background = Color(0xFFEFECE3);
   // Match the canonical reference semantic green used for trust/success.
-  static const success = Color(0xFF10B981);
-  static const successDark = Color(0xFF34D8C8);
-  static const warning = Color(0xFFF59E0B);
-  static const warningDark = Color(0xFFFBBF24);
-  static const danger = Color(0xFFEF4444);
-  static const dangerDark = Color(0xFFF87171);
-  static const softPrimary = Color(0xFFE0E7FF);
-  static const darkBackground = Color(0xFF070A12);
-  static const darkSurface = Color(0xFF0F111A);
-  static const darkCard = Color(0xFF111827);
-  static const darkText = Color(0xFFF8FAFC);
-  static const darkMuted = Color(0xFFA5ADBD);
+  static const success = Color(0xFF27764C);
+  static const successDark = Color(0xFF89BD95);
+  static const warning = Color(0xFFB78635);
+  static const warningDark = Color(0xFFD5B56C);
+  static const danger = Color(0xFFC14B43);
+  static const dangerDark = Color(0xFFDC766F);
+  static const softPrimary = Color(0xFFE8E0CD);
+  static const darkBackground = Color(0xFF080D0B);
+  static const darkSurface = Color(0xFF101512);
+  static const darkCard = Color(0xFF121915);
+  static const darkText = Color(0xFFF1F3EC);
+  static const darkMuted = Color(0xFFAEB7AC);
 
-  static const pageLight = Color(0xFFF1EDF8);
-  static const pageDark = Color(0xFF070A12);
+  static const pageLight = Color(0xFFF2F0E8);
+  static const pageDark = Color(0xFF080D0B);
   static const panelLight = Color(0xFFFFFFFF);
-  static const panelDark = Color(0xFF101522);
-  static const panelSoftLight = Color(0xFFFBF9FE);
-  static const panelSoftDark = Color(0xFF121726);
-  static const chipLight = Color(0xFFEFEBF8);
+  static const panelDark = Color(0xFF101612);
+  static const panelSoftLight = Color(0xFFFAF9F4);
+  static const panelSoftDark = Color(0xFF131A16);
+  static const chipLight = Color(0xFFEEECE2);
   static const chipDark = Color(0x20FFFFFF);
-  static const chipSelectedDark = Color(0x356366F1);
-  static const disabledLight = Color(0xFFE8E3F0);
-  static const borderControlLight = Color(0xFFDED9E8);
-  static const dividerLight = Color(0xFFE4E0EA);
-  static const outlinedButtonBorderLight = Color(0xFFDAD4E5);
-  static const navigationLight = Color(0xFFF7F4FC);
-  static const navigationDark = Color(0xF9080B14);
-  static const navigationIndicatorLight = Color(0xFFE5DFFF);
-  static const navigationIndicatorDark = Color(0x3A6366F1);
-  static const inputDark = Color(0xFF0D1320);
+  static const chipSelectedDark = Color(0x2B8EA68A);
+  static const disabledLight = Color(0xFFE5E2D9);
+  static const borderControlLight = Color(0xFFD8D4C8);
+  static const dividerLight = Color(0xFFE6E2D9);
+  static const outlinedButtonBorderLight = Color(0xFFD6D1C4);
+  static const navigationLight = Color(0xFFF9F8F3);
+  static const navigationDark = Color(0xF9080D0B);
+  static const navigationIndicatorLight = Color(0xFFE9E1D0);
+  static const navigationIndicatorDark = Color(0x2B8EA68A);
+  static const inputDark = Color(0xFF0B120E);
   static const darkBorder = Color(0x1FFFFFFF);
   static const darkBorderStrong = Color(0x2BFFFFFF);
   static const darkDivider = Color(0x18FFFFFF);
-  static const cardBorderLight = Color(0xFFE5E0EF);
+  static const cardBorderLight = Color(0xFFE1DDD2);
   /// Light warm-brown accent used only as a restrained atmospheric underlay.
+  static const darkGreenGlow = Color(0xFF264C36);
   static const warmHalo = Color(0xFFC2A487);
   static const warmHaloDark = Color(0xFF826D59);
 
@@ -343,22 +344,22 @@ class HopeV2Gradients {
 
   static const hero = LinearGradient(
     colors: [
-      Color(0xFF5D43E8),
-      Color(0xFF8B73FF),
-      Color(0xFFB09FFF),
+      Color(0xFF5B5343),
+      Color(0xFF827252),
+      Color(0xFFB9A77C),
     ],
     stops: [0, .55, 1],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
 
-  // Runtime visual certification target: flat dark canvas + violet-led hero.
+  // Runtime visual target: flat dark canvas with a restrained neutral hero.
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF171A36),
-      Color(0xFF37318C),
-      Color(0xFF161A32),
-      Color(0xFF0B0E16),
+      Color(0xFF131A16),
+      Color(0xFF1C2920),
+      Color(0xFF131A16),
+      Color(0xFF090F0C),
     ],
     stops: [0, .38, .72, 1],
     begin: Alignment.topRight,
@@ -408,12 +409,12 @@ class HopeV2Shadows {
   // Runtime visual certification target: no cyan spill on dark hero edges.
   static const heroDark = [
     BoxShadow(
-      color: Color(0x3A2E2A72),
+      color: Color(0x30264C36),
       blurRadius: 30,
       offset: Offset(0, 14),
     ),
     BoxShadow(
-      color: Color(0x173F3AA0),
+      color: Color(0x17264C36),
       blurRadius: 42,
       offset: Offset(-8, 18),
     ),
@@ -421,7 +422,7 @@ class HopeV2Shadows {
 
   static const gradientHero = [
     BoxShadow(
-      color: Color(0x2E6366F1),
+      color: Color(0x252B5B42),
       blurRadius: 28,
       offset: Offset(0, 12),
     ),
