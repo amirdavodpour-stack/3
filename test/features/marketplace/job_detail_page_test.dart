@@ -1089,6 +1089,24 @@ void main() {
 
       expect(find.text('Remote'), findsOneWidget);
       expect(find.text('Location not specified'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('opportunity-dna-signature')),
+        findsNothing,
+        reason: 'The decision strip already presents remote as the location.',
+      );
+      expect(tester.takeException(), isNull);
+
+      await _pump(
+        tester,
+        job: _job(city: 'Tehran', workMode: 'REMOTE'),
+        width: 360,
+        height: 1200,
+        locale: const Locale('en'),
+      );
+
+      expect(find.text('Remote'), findsOneWidget);
+      expect(find.byKey(const ValueKey('opportunity-dna-signature')), findsOneWidget);
+      expect(find.text('Tehran'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

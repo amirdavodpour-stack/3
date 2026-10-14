@@ -733,9 +733,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
         j.raw['mode'] ??
         j.raw['locationType'] ??
         j.raw['work_mode'];
+    final normalizedWorkMode = rawWorkMode?.toString().trim().toUpperCase();
     final hasExplicitWorkMode =
-        rawWorkMode?.toString().trim().isNotEmpty == true &&
-            rawWorkMode?.toString().trim() != '—';
+        normalizedWorkMode?.isNotEmpty == true &&
+            normalizedWorkMode != '—';
+    final hasExplicitCity = j.city?.trim().isNotEmpty == true;
+    final remoteModeDuplicatesLocation =
+        !hasExplicitCity && normalizedWorkMode == 'REMOTE';
+    final showDistinctWorkModeDna =
+        hasExplicitWorkMode && !remoteModeDuplicatesLocation;
     final viewportWidth = MediaQuery.sizeOf(context).width;
     final compactViewport = viewportWidth < HopeV2Breakpoints.compact;
     final denseViewport = viewportWidth < HopeV2Breakpoints.expanded;
@@ -877,7 +883,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               ),
             ),
             SizedBox(height: compactViewport ? 6 : 10),
-            if (hasExplicitWorkMode) ...[
+            if (showDistinctWorkModeDna) ...[
               SizedBox(height: compactViewport ? 6 : 8),
               HopeOpportunityDnaSignature(
                 job: j,
