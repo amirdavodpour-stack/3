@@ -31,6 +31,7 @@ class _FakeWallet implements WalletRepository {
     this.payoutCurrency = 'TOMAN',
     this.payoutStatus = 'REQUESTED',
     this.entryType = 'TRANSFER',
+    this.direction = 'CREDIT',
     this.pendingWithdrawalBalance = 0,
   });
 
@@ -39,6 +40,7 @@ class _FakeWallet implements WalletRepository {
   final String payoutCurrency;
   final String payoutStatus;
   final String entryType;
+  final String direction;
   final int pendingWithdrawalBalance;
   Object? transferError;
   bool failLoad = false;
@@ -69,7 +71,7 @@ class _FakeWallet implements WalletRepository {
           HopeWalletTransaction.fromMap({
             'id': 'tx-1',
             'entryType': entryType,
-            'direction': 'CREDIT',
+            'direction': direction,
             'amount': 500000,
             'currency': transactionCurrency,
             'referenceType': 'TRANSFER',
@@ -759,6 +761,58 @@ void main() {
     expect(find.text('400,000 TOMAN'), findsOneWidget);
     expect(find.text('400,000 IRR'), findsNothing);
   });
+  testWidgets('wallet credit and debit amounts use semantic foregrounds in light and dark themes',
+      (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      for (final isCredit in [true, false]) {
+        final auth = AuthController(_AuthRepo(), SecureStore());
+        await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+        final wallet = _FakeWallet(direction: isCredit ? 'CREDIT' : 'DEBIT');
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: brightness == Brightness.dark
+                ? ThemeData.dark()
+                : ThemeData.light(),
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: auth),
+                Provider<WalletRepository>.value(value: wallet),
+              ],
+              child: WalletPage(repository: wallet),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
+        await tester.scrollUntilVisible(
+          find.text(amountLabel),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        final amountFinder = find.text(amountLabel);
+        final amountText = tester.widget<Text>(amountFinder);
+        final amountContext = tester.element(amountFinder);
+        expect(
+          amountText.style?.color,
+          isCredit
+              ? HopeV2SemanticColors.incomingAmount(amountContext)
+              : HopeV2SemanticColors.negativeAmount(amountContext),
+          reason: 'Credit/debit amounts must use semantic foreground roles in $brightness mode.',
+        );
+      }
+    }
+  });
+
   testWidgets('wallet presents backend enums as localized user-facing labels',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
