@@ -78,9 +78,9 @@ void main() {
     late Color darkSecondary;
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: Builder(
+      Theme(
+        data: AppTheme.light(),
+        child: Builder(
           builder: (context) {
             lightPrimary = HopeProductDomain.work.spec.accentFor(context);
             lightSecondary = HopeProductDomain.discovery.spec.accentFor(context);
@@ -90,9 +90,9 @@ void main() {
       ),
     );
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.dark(),
-        home: Builder(
+      Theme(
+        data: AppTheme.dark(),
+        child: Builder(
           builder: (context) {
             darkPrimary = HopeProductDomain.work.spec.accentFor(context);
             darkSecondary = HopeProductDomain.discovery.spec.accentFor(context);
