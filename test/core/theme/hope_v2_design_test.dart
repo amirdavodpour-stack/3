@@ -434,4 +434,43 @@ void main() {
     await pump(Brightness.dark);
   });
 
+
+  testWidgets('semantic status surfaces resolve to distinct light and dark tonal roles',
+      (tester) async {
+    late Map<String, Color> light;
+    late Map<String, Color> dark;
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: Builder(builder: (context) {
+        light = {
+          'info': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.primary),
+          'success': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.success),
+          'warning': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.warning),
+          'danger': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.danger),
+        };
+        return const SizedBox();
+      }),
+    ));
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.dark(),
+      home: Builder(builder: (context) {
+        dark = {
+          'info': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.primaryDark),
+          'success': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.successDark),
+          'warning': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.warningDark),
+          'danger': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.dangerDark),
+        };
+        return const SizedBox();
+      }),
+    ));
+    expect(light['info'], HopeV2Colors.infoSurfaceLight);
+    expect(light['success'], HopeV2Colors.successSurfaceLight);
+    expect(light['warning'], HopeV2Colors.warningSurfaceLight);
+    expect(light['danger'], HopeV2Colors.dangerSurfaceLight);
+    expect(dark['info'], HopeV2Colors.infoSurfaceDark);
+    expect(dark['success'], HopeV2Colors.successSurfaceDark);
+    expect(dark['warning'], HopeV2Colors.warningSurfaceDark);
+    expect(dark['danger'], HopeV2Colors.dangerSurfaceDark);
+  });
+
 }

@@ -265,7 +265,7 @@ class StatusPill extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 30),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: resolved.withValues(alpha: .10),
+        color: HopeV2SemanticColors.statusSurface(context, color),
         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
         border: Border.all(
           color: resolved.withValues(alpha: .08),

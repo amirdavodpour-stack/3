@@ -2029,12 +2029,24 @@ class PremiumFilterChip extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: selected
-                  ? base.withValues(alpha: interactive ? .08 : .04)
+                  ? (base == HopeV2Colors.primary ||
+                          base == HopeV2Colors.primaryAction ||
+                          base == HopeV2Colors.primaryDark
+                      ? (Theme.of(context).brightness == Brightness.dark
+                          ? HopeV2Colors.primaryTintDark
+                          : HopeV2Colors.primaryTintLight)
+                      : base.withValues(alpha: interactive ? .08 : .04))
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(HopeV2Radii.chip),
               border: Border.all(
                 color: selected
-                    ? base.withValues(alpha: interactive ? .22 : .10)
+                    ? (base == HopeV2Colors.primary ||
+                            base == HopeV2Colors.primaryAction ||
+                            base == HopeV2Colors.primaryDark
+                        ? (Theme.of(context).brightness == Brightness.dark
+                            ? HopeV2Colors.primaryBorderDark
+                            : HopeV2Colors.primaryBorderLight)
+                        : base.withValues(alpha: interactive ? .22 : .10))
                     : HopeV2Surfaces.border(context).withValues(alpha: .18),
               ),
             ),

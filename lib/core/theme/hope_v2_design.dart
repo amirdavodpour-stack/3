@@ -419,6 +419,42 @@ class HopeV2SemanticColors {
   static Color error(BuildContext context) => Theme.of(context).colorScheme.error;
 
   /// Contrast-safe text foreground for semantic chips; never pass raw indigo.
+  static Color statusSurface(BuildContext context, Color accent) {
+    if (accent == HopeV2Colors.primary ||
+        accent == HopeV2Colors.primaryDark ||
+        accent == HopeV2Colors.primaryAction ||
+        accent == HopeV2Colors.secondary ||
+        accent == HopeV2Colors.secondaryStrong ||
+        accent == HopeV2Colors.secondaryDark ||
+        accent == HopeV2Colors.secondaryAction) {
+      return _isDark(context)
+          ? HopeV2Colors.infoSurfaceDark
+          : HopeV2Colors.infoSurfaceLight;
+    }
+    if (accent == HopeV2Colors.success ||
+        accent == HopeV2Colors.successDark ||
+        accent == HopeV2Colors.successOnLight) {
+      return _isDark(context)
+          ? HopeV2Colors.successSurfaceDark
+          : HopeV2Colors.successSurfaceLight;
+    }
+    if (accent == HopeV2Colors.warning ||
+        accent == HopeV2Colors.warningDark ||
+        accent == HopeV2Colors.warningOnLight) {
+      return _isDark(context)
+          ? HopeV2Colors.warningSurfaceDark
+          : HopeV2Colors.warningSurfaceLight;
+    }
+    if (accent == HopeV2Colors.danger ||
+        accent == HopeV2Colors.dangerDark ||
+        accent == HopeV2Colors.dangerOnLight) {
+      return _isDark(context)
+          ? HopeV2Colors.dangerSurfaceDark
+          : HopeV2Colors.dangerSurfaceLight;
+    }
+    return accent.withValues(alpha: _isDark(context) ? .12 : .08);
+  }
+
   static Color readableAccent(BuildContext context, Color accent) {
     if (accent == HopeV2Colors.primary ||
         accent == HopeV2Colors.primaryDark ||
