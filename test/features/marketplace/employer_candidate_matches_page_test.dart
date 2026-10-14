@@ -3,6 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
+import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/marketplace/employer_candidate_matching_repository.dart';
 import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
 
@@ -178,6 +180,7 @@ void main() {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
+        theme: AppTheme.dark(),
         home: Scaffold(
           body: EmployerCandidateMatchesPage(
             data: data,
@@ -204,6 +207,20 @@ void main() {
       (leadingCandidateHeader.decoration as BoxDecoration).color,
       isNotNull,
       reason: 'The best-ranked real candidate should remain visually identifiable down the comparison matrix.',
+    );
+    final leadingHeaderText = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-comparison-matrix')),
+        matching: find.text('Candidate One'),
+      ),
+    );
+    final matrixContext = tester.element(
+      find.byKey(const ValueKey('candidate-comparison-matrix')),
+    );
+    expect(
+      leadingHeaderText.style?.color,
+      HopeV2SemanticColors.textPrimary(matrixContext),
+      reason: 'Candidate matrix headings must stay neutral; indigo is reserved for action and selection graphics.',
     );
     expect(
       find.descendant(
