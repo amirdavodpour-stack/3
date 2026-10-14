@@ -388,19 +388,33 @@ class _ChatPageState extends State<ChatPage> {
                                     ),
                                   )
                             : _thread!.messages.isEmpty
-                                ? Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
-                                      child: PremiumEmptyState(
-                                        icon: HopeV2Icons.message,
-                                        title: _t('هنوز پیامی ثبت نشده است.', 'No messages yet.'),
-                                        message: _t(
-                                          'پیام‌های این همکاری پس از شروع گفتگو در این بخش نمایش داده می‌شوند.',
-                                          'Messages for this collaboration will appear here once the conversation starts.',
+                                ? LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return SingleChildScrollView(
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minHeight: constraints.maxHeight,
+                                          ),
+                                          child: Center(
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 14,
+                                                vertical: 18,
+                                              ),
+                                              child: PremiumEmptyState(
+                                                icon: HopeV2Icons.message,
+                                                title: _t('هنوز پیامی ثبت نشده است.', 'No messages yet.'),
+                                                message: _t(
+                                                  'پیام‌های این همکاری پس از شروع گفتگو در این بخش نمایش داده می‌شوند.',
+                                                  'Messages for this collaboration will appear here once the conversation starts.',
+                                                ),
+                                                dense: true,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                        dense: true,
-                                      ),
-                                    ),
+                                      );
+                                    },
                                   )
                                 : PremiumPanel(
                                     key: const ValueKey('chat-message-list-panel'),
