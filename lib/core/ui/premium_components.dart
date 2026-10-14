@@ -2790,7 +2790,7 @@ class HopeLifecycleRail extends StatelessWidget {
                               fontSize: 9,
                               height: 1.05,
                               fontWeight: i == safeCurrent ? FontWeight.w900 : FontWeight.w700,
-                              color: i <= safeCurrent ? primary : muted,
+                              color: i <= safeCurrent ? HopeV2SemanticColors.textPrimary(context) : muted,
                             ),
                       ),
                     ),
