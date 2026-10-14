@@ -243,7 +243,7 @@ void main() {
       (tester) async {
     final repo = _Transactions()..jobs = [];
     await _pump(tester, repo);
-    expect(find.text('هنوز کاری ثبت نشده است'), findsOneWidget);
+    expect(find.text('هنوز فعالیتی ثبت نشده است'), findsOneWidget);
   });
 
   testWidgets('activity metrics fit three compact cells on one narrow row',
