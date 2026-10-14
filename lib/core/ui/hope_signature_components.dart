@@ -161,7 +161,7 @@ class HopeOpportunityLivePreview extends StatelessWidget {
                       icon: HopeV2Icons.payments,
                       label:
                           "${_formatAmount(amount, context)} ${_t(context, 'تومان', 'Toman')}",
-                      color: HopeV2Colors.primary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   if (cityText.isNotEmpty)
                     PremiumTag(
