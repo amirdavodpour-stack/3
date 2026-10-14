@@ -87,7 +87,11 @@ void main() {
               ),
               child: child!,
             ),
-            home: ChatPage(repository: repository, jobId: 'job-1'),
+            home: ChatPage(
+              key: ValueKey('chat-locale-${locale.languageCode}'),
+              repository: repository,
+              jobId: 'job-1',
+            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -121,6 +125,19 @@ void main() {
         expect(tester.getRect(banner).right, lessThanOrEqualTo(320));
         expect(tester.getRect(retry).left, greaterThanOrEqualTo(0));
         expect(tester.getRect(retry).right, lessThanOrEqualTo(320));
+        final headerRect = tester.getRect(
+          find.byKey(const ValueKey('chat-conversation-header')),
+        );
+        final bannerRect = tester.getRect(banner);
+        final retryRect = tester.getRect(retry);
+        final composerRect = tester.getRect(
+          find.byKey(const ValueKey('chat-composer-panel')),
+        );
+        expect(bannerRect.top, greaterThanOrEqualTo(headerRect.bottom));
+        expect(bannerRect.bottom, lessThanOrEqualTo(composerRect.top));
+        expect(retryRect.top, greaterThanOrEqualTo(bannerRect.top));
+        expect(retryRect.bottom, lessThanOrEqualTo(bannerRect.bottom));
+        expect(composerRect.bottom, lessThanOrEqualTo(640));
         expect(tester.takeException(), isNull);
       }
     },

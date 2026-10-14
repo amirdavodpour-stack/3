@@ -288,199 +288,206 @@ class _ChatPageState extends State<ChatPage> {
                     ],
                   ),
                 ),
-                if (_error != null && _thread != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Container(
-                      key: const ValueKey('chat-send-error'),
-                      decoration: BoxDecoration(
-                        color: colors.errorContainer.withValues(alpha: .38),
-                        borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                      ),
-                      padding: const EdgeInsetsDirectional.only(start: 10, end: 4),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final compactBanner = constraints.maxWidth < 340 ||
-                              MediaQuery.textScalerOf(context).scale(1) > 1.2;
-                          final errorIcon = Icon(
-                            Icons.error_outline_rounded,
-                            size: 16,
-                            color: colors.error,
-                          );
-                          final errorText = Text(
-                            _error!,
-                            key: const ValueKey('chat-send-error-message'),
-                            maxLines: compactBanner ? null : 1,
-                            softWrap: true,
-                            overflow: compactBanner
-                                ? TextOverflow.visible
-                                : TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          );
-                          final retryAction = TextButton(
-                            key: const ValueKey('chat-send-error-retry'),
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(48, 48),
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              tapTargetSize: MaterialTapTargetSize.padded,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_error != null && _thread != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Container(
+                            key: const ValueKey('chat-send-error'),
+                            decoration: BoxDecoration(
+                              color: colors.errorContainer.withValues(alpha: .38),
+                              borderRadius: BorderRadius.circular(HopeV2Radii.md),
                             ),
-                            onPressed: _busy ? null : _load,
-                            child: Text(_t('تلاش دوباره', 'Retry')),
-                          );
+                            padding: const EdgeInsetsDirectional.only(start: 10, end: 4),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final compactBanner = constraints.maxWidth < 340 ||
+                                    MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                                final errorIcon = Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 16,
+                                  color: colors.error,
+                                );
+                                final errorText = Text(
+                                  _error!,
+                                  key: const ValueKey('chat-send-error-message'),
+                                  maxLines: compactBanner ? null : 1,
+                                  softWrap: true,
+                                  overflow: compactBanner
+                                      ? TextOverflow.visible
+                                      : TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                );
+                                final retryAction = TextButton(
+                                  key: const ValueKey('chat-send-error-retry'),
+                                  style: TextButton.styleFrom(
+                                    minimumSize: const Size(48, 48),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    tapTargetSize: MaterialTapTargetSize.padded,
+                                  ),
+                                  onPressed: _busy ? null : _load,
+                                  child: Text(_t('تلاش دوباره', 'Retry')),
+                                );
 
-                          if (compactBanner) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                if (compactBanner) {
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          errorIcon,
+                                          const SizedBox(width: 7),
+                                          Expanded(child: errorText),
+                                        ],
+                                      ),
+                                      Align(
+                                        alignment: AlignmentDirectional.centerEnd,
+                                        child: retryAction,
+                                      ),
+                                    ],
+                                  );
+                                }
+                                return Row(
                                   children: [
                                     errorIcon,
                                     const SizedBox(width: 7),
                                     Expanded(child: errorText),
+                                    retryAction,
                                   ],
-                                ),
-                                Align(
-                                  alignment: AlignmentDirectional.centerEnd,
-                                  child: retryAction,
-                                ),
-                              ],
-                            );
-                          }
-                          return Row(
-                            children: [
-                              errorIcon,
-                              const SizedBox(width: 7),
-                              Expanded(child: errorText),
-                              retryAction,
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: _thread == null
-                      ? _error != null
-                          ? Center(
-                              child: HopeAsyncState(
-                                kind: HopeStateKind.error,
-                                title: _t('گفتگو در دسترس نیست', 'Conversation unavailable'),
-                                message: _error!,
-                                action: FilledButton.icon(
-                                  onPressed: _busy ? null : _load,
-                                  icon: const HopeIcon(HopeV2Icons.refresh, size: 18),
-                                  label: Text(_t('تلاش دوباره', 'Retry')),
-                                ),
-                              ),
-                            )
-                          : HopeAsyncState(
-                              kind: HopeStateKind.loading,
-                              title: _t('در حال بارگذاری گفتگو', 'Loading conversation'),
-                              message: _t(
-                                'پیام‌های این گفتگو در حال دریافت هستند.',
-                                'Messages in this conversation are loading.',
-                              ),
-                            )
-                      : _thread!.messages.isEmpty
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
-                                child: PremiumEmptyState(
-                                  icon: HopeV2Icons.message,
-                                  title: _t('هنوز پیامی ثبت نشده است.', 'No messages yet.'),
-                                  message: _t(
-                                    'پیام‌های این همکاری پس از شروع گفتگو در این بخش نمایش داده می‌شوند.',
-                                    'Messages for this collaboration will appear here once the conversation starts.',
-                                  ),
-                                  dense: true,
-                                ),
-                              ),
-                            )
-                          : PremiumPanel(
-                              key: const ValueKey('chat-message-list-panel'),
-                              glass: true,
-                              padding: const EdgeInsets.all(6),
-                              child: ListView.builder(
-                                key: const ValueKey('chat-message-list'),
-                                controller: _scroll,
-                                padding: const EdgeInsets.fromLTRB(6, 8, 6, 12),
-                                itemCount: _thread!.messages.length,
-                                itemBuilder: (context, index) {
-                                  final messages = _thread!.messages;
-                                  final message = messages[index];
-                                  final mine = currentUserId != null && message.senderId == currentUserId;
-                                  final showSender = index == 0 || messages[index - 1].senderId != message.senderId;
-                                  final timestamp = MaterialLocalizations.of(context).formatTimeOfDay(
-                                    TimeOfDay.fromDateTime(message.createdAt.toLocal()),
-                                  );
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: Align(
-                                      alignment: mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .84),
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: mine
-                                                ? colors.primary.withValues(alpha: .11)
-                                                : colors.surfaceContainerHighest.withValues(alpha: .52),
-                                            border: Border.all(color: colors.outlineVariant.withValues(alpha: .48)),
-                                            borderRadius: BorderRadiusDirectional.only(
-                                              topStart: const Radius.circular(14),
-                                              topEnd: const Radius.circular(14),
-                                              bottomStart: Radius.circular(mine ? 14 : 4),
-                                              bottomEnd: Radius.circular(mine ? 4 : 14),
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                if (showSender)
-                                                  Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child: Text(
-                                                          message.senderName,
-                                                          key: ValueKey('chat-sender-${message.id}'),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow.ellipsis,
-                                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      Text(
-                                                        timestamp,
-                                                        key: ValueKey('chat-message-timestamp-${message.id}'),
-                                                        textDirection: TextDirection.ltr,
-                                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                          color: colors.onSurfaceVariant,
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  )
-                                                else
-                                                  Align(
-                                                    alignment: AlignmentDirectional.centerEnd,
-                                                    child: Text(timestamp, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
-                                                  ),
-                                                if (showSender) const SizedBox(height: 5),
-                                                Text(message.body, style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.42)),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: _thread == null
+                            ? _error != null
+                                ? Center(
+                                    child: HopeAsyncState(
+                                      kind: HopeStateKind.error,
+                                      title: _t('گفتگو در دسترس نیست', 'Conversation unavailable'),
+                                      message: _error!,
+                                      action: FilledButton.icon(
+                                        onPressed: _busy ? null : _load,
+                                        icon: const HopeIcon(HopeV2Icons.refresh, size: 18),
+                                        label: Text(_t('تلاش دوباره', 'Retry')),
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
+                                  )
+                                : HopeAsyncState(
+                                    kind: HopeStateKind.loading,
+                                    title: _t('در حال بارگذاری گفتگو', 'Loading conversation'),
+                                    message: _t(
+                                      'پیام‌های این گفتگو در حال دریافت هستند.',
+                                      'Messages in this conversation are loading.',
+                                    ),
+                                  )
+                            : _thread!.messages.isEmpty
+                                ? Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+                                      child: PremiumEmptyState(
+                                        icon: HopeV2Icons.message,
+                                        title: _t('هنوز پیامی ثبت نشده است.', 'No messages yet.'),
+                                        message: _t(
+                                          'پیام‌های این همکاری پس از شروع گفتگو در این بخش نمایش داده می‌شوند.',
+                                          'Messages for this collaboration will appear here once the conversation starts.',
+                                        ),
+                                        dense: true,
+                                      ),
+                                    ),
+                                  )
+                                : PremiumPanel(
+                                    key: const ValueKey('chat-message-list-panel'),
+                                    glass: true,
+                                    padding: const EdgeInsets.all(6),
+                                    child: ListView.builder(
+                                      key: const ValueKey('chat-message-list'),
+                                      controller: _scroll,
+                                      padding: const EdgeInsets.fromLTRB(6, 8, 6, 12),
+                                      itemCount: _thread!.messages.length,
+                                      itemBuilder: (context, index) {
+                                        final messages = _thread!.messages;
+                                        final message = messages[index];
+                                        final mine = currentUserId != null && message.senderId == currentUserId;
+                                        final showSender = index == 0 || messages[index - 1].senderId != message.senderId;
+                                        final timestamp = MaterialLocalizations.of(context).formatTimeOfDay(
+                                          TimeOfDay.fromDateTime(message.createdAt.toLocal()),
+                                        );
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 8),
+                                          child: Align(
+                                            alignment: mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+                                            child: ConstrainedBox(
+                                              constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .84),
+                                              child: DecoratedBox(
+                                                decoration: BoxDecoration(
+                                                  color: mine
+                                                      ? colors.primary.withValues(alpha: .11)
+                                                      : colors.surfaceContainerHighest.withValues(alpha: .52),
+                                                  border: Border.all(color: colors.outlineVariant.withValues(alpha: .48)),
+                                                  borderRadius: BorderRadiusDirectional.only(
+                                                    topStart: const Radius.circular(14),
+                                                    topEnd: const Radius.circular(14),
+                                                    bottomStart: Radius.circular(mine ? 14 : 4),
+                                                    bottomEnd: Radius.circular(mine ? 4 : 14),
+                                                  ),
+                                                ),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      if (showSender)
+                                                        Row(
+                                                          children: [
+                                                            Expanded(
+                                                              child: Text(
+                                                                message.senderName,
+                                                                key: ValueKey('chat-sender-${message.id}'),
+                                                                maxLines: 1,
+                                                                overflow: TextOverflow.ellipsis,
+                                                                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+                                                              ),
+                                                            ),
+                                                            const SizedBox(width: 8),
+                                                            Text(
+                                                              timestamp,
+                                                              key: ValueKey('chat-message-timestamp-${message.id}'),
+                                                              textDirection: TextDirection.ltr,
+                                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                                color: colors.onSurfaceVariant,
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w600,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        )
+                                                      else
+                                                        Align(
+                                                          alignment: AlignmentDirectional.centerEnd,
+                                                          child: Text(timestamp, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
+                                                        ),
+                                                      if (showSender) const SizedBox(height: 5),
+                                                      Text(message.body, style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.42)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                      ),
+                    ],
+                  ),
                 ),
                 if (conversationStatus == 'OPEN')
                   Padding(

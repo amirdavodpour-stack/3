@@ -151,7 +151,12 @@ Future<void> _pumpWalletResponsiveMatrix(
               value: const _Wave22CapabilitiesRepository(),
             ),
           ],
-          child: WalletPage(repository: wallet),
+          child: WalletPage(
+            key: ValueKey(
+              'wallet-matrix-${width.toInt()}-${locale.languageCode}-$textScale',
+            ),
+            repository: wallet,
+          ),
         ),
       ),
     ),
