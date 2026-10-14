@@ -1288,7 +1288,7 @@ class _WalletPageState extends State<WalletPage> {
             SizedBox(height: tightViewport ? 2 : HopeV2Spacing.sm),
             LayoutBuilder(
               builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 760;
+                final wide = constraints.maxWidth >= 720;
                 final hero = balanceHero();
                 final actions = actionsPanel();
                 if (!wide) {

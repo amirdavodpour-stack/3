@@ -447,6 +447,7 @@ grep -Fq "test/features/auth/auth_pages_test.dart" ".github/workflows/hope-ui-wa
 echo "PASS: Wave47 Chat/Profile/Auth recovery and state-truth contracts"
 
 # Wave48: actual Wallet + Work Center viewport/locale matrix; keep the executable guard mode.
+grep -Fq "final wide = constraints.maxWidth >= 720;" "lib/features/wallet/wallet_page.dart"
 grep -Fq "Wave48 Wallet adapts hero/action composition across FA-RTL and EN-LTR viewports" "test/features/wallet/wave22_compact_wallet_test.dart"
 grep -Fq "Wave48 Work Center preserves lifecycle reachability across widths and locales" "test/features/transactions/transactions_page_test.dart"
 grep -Fq "test/features/wallet/wave22_compact_wallet_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
