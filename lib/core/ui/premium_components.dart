@@ -234,7 +234,7 @@ class PremiumPrimaryNavigationScaffold extends StatelessWidget {
       NavigationDestination(
         icon: const HopeNavigationGlyph(icon: HopeV2Icons.activity, selected: false),
         selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.activitySelected, selected: true),
-        label: label('کار', 'Work'),
+        label: label('کارگاه', 'Workshop'),
       ),
       NavigationDestination(
         icon: const HopeNavigationGlyph(icon: HopeV2Icons.wallet, selected: false),
@@ -1001,8 +1001,8 @@ class PremiumPanel extends StatelessWidget {
             end: AlignmentDirectional.bottomEnd,
             colors: dark
                 ? [
-                    scheme.primary.withValues(alpha: glass ? .13 : .075),
-                    HopeV2Colors.secondary.withValues(alpha: glass ? .022 : .012),
+                    HopeV2Colors.darkGreenGlow.withValues(alpha: glass ? .13 : .075),
+                    HopeV2Colors.darkGreenGlow.withValues(alpha: glass ? .04 : .018),
                     HopeV2Surfaces.panel(context).withValues(alpha: glass ? .74 : 1),
                   ]
                 : [
@@ -1046,13 +1046,13 @@ class PremiumPanel extends StatelessWidget {
                       ),
                     if (highlight)
                       BoxShadow(
-                        color: scheme.primary.withValues(alpha: glass ? .07 : .045),
+                        color: HopeV2Colors.darkGreenGlow.withValues(alpha: glass ? .07 : .035),
                         blurRadius: glass ? 24 : 18,
                         offset: const Offset(0, 9),
                       ),
                     if (glass)
                       BoxShadow(
-                        color: HopeV2Colors.secondary.withValues(alpha: .018),
+                        color: HopeV2Colors.darkGreenGlow.withValues(alpha: .018),
                         blurRadius: 26,
                         offset: const Offset(-7, 12),
                       ),
@@ -1060,8 +1060,8 @@ class PremiumPanel extends StatelessWidget {
             : [
                 BoxShadow(
                   color: highlight
-                      ? scheme.primary.withValues(alpha: .06)
-                      : const Color(0x081B1638),
+                      ? HopeV2Colors.warmHalo.withValues(alpha: .06)
+                      : const Color(0x081D2119),
                   blurRadius: highlight ? 26 : 22,
                   offset: const Offset(0, 8),
                 ),
@@ -1107,9 +1107,9 @@ class _HeroEditorialFallback extends StatelessWidget {
             begin: AlignmentDirectional.topEnd,
             end: AlignmentDirectional.bottomStart,
             colors: [
-              accent.withValues(alpha: .24),
-              const Color(0xFF151A31),
-              const Color(0xFF080B13),
+              accent.withValues(alpha: .12),
+              const Color(0xFF151B18),
+              const Color(0xFF080E0B),
             ],
             stops: const [0, .46, 1],
           ),
@@ -1136,9 +1136,9 @@ class _HeroEditorialFallback extends StatelessWidget {
           begin: AlignmentDirectional.topEnd,
           end: AlignmentDirectional.bottomStart,
           colors: [
-            accent.withValues(alpha: .22),
-            const Color(0xFF151A31),
-            const Color(0xFF080B13),
+            accent.withValues(alpha: .12),
+            const Color(0xFF151B18),
+            const Color(0xFF080E0B),
           ],
           stops: const [0, .42, 1],
         ),
@@ -1419,12 +1419,10 @@ class PremiumHero extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          // Runtime visual certification: hero lower ambient light stays violet-led.
-                          HopeV2Colors.primary.withValues(
-                            alpha: Theme.of(context).brightness == Brightness.dark
-                                ? .09
-                                : .07,
-                          ),
+                          // Dark mode uses a low-intensity forest halo rather than a purple wash.
+                          Theme.of(context).brightness == Brightness.dark
+                              ? HopeV2Colors.darkGreenGlow.withValues(alpha: .07)
+                              : HopeV2Colors.warmHalo.withValues(alpha: .05),
                           Colors.transparent,
                         ],
                       ),
@@ -1968,7 +1966,7 @@ class PremiumTag extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
