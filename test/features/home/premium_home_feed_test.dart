@@ -397,6 +397,20 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Home overview heading does not duplicate the featured match section',
+    (tester) async {
+      final harness = await _host(_SequencedMarketplaceRepository());
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your HOPE overview'), findsOneWidget);
+      expect(find.text('Opportunities matched to your path'), findsNothing);
+      expect(find.text('Best match for you'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('single recommendation does not reserve an empty matches section',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();

@@ -1123,7 +1123,12 @@ void main() {
       );
       expect(
         paragraph.text.toPlainText(),
-        '۱۲۳٬۴۵۶٬۷۸۹٬۰۱۲٬۳۴۵ تومان تا ۹۸۷٬۶۵۴٬۳۲۱٬۰۹۸٬۷۶۵ تومان',
+        '۱۲۳٬۴۵۶٬۷۸۹٬۰۱۲٬۳۴۵ تا ۹۸۷٬۶۵۴٬۳۲۱٬۰۹۸٬۷۶۵ تومان',
+      );
+      expect(
+        paragraph.text.toPlainText().split('تومان').length - 1,
+        1,
+        reason: 'A compact Persian amount range should show its currency unit once, after both exact bounds.',
       );
       expect(tester.takeException(), isNull);
     },
