@@ -451,17 +451,22 @@ void main() {
         return const SizedBox();
       }),
     ));
+    await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.dark(),
-      home: Builder(builder: (context) {
-        dark = {
-          'info': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.primaryDark),
-          'success': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.successDark),
-          'warning': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.warningDark),
-          'danger': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.dangerDark),
-        };
-        return const SizedBox();
-      }),
+      theme: AppTheme.light(),
+      home: Theme(
+        data: AppTheme.dark(),
+        child: Builder(builder: (context) {
+          expect(Theme.of(context).brightness, Brightness.dark);
+          dark = {
+            'info': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.primaryDark),
+            'success': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.successDark),
+            'warning': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.warningDark),
+            'danger': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.dangerDark),
+          };
+          return const SizedBox();
+        }),
+      ),
     ));
     expect(light['info'], HopeV2Colors.infoSurfaceLight);
     expect(light['success'], HopeV2Colors.successSurfaceLight);

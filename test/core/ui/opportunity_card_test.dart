@@ -2000,7 +2000,7 @@ void main() {
       final amount = tester.widget<Text>(
         find.byKey(const ValueKey('opportunity-card-budget-amount')),
       );
-      expect(amount.style?.color, HopeV2Colors.primaryDark);
+      expect(amount.style?.color, HopeV2Colors.moneyTextDark);
       expect(tester.takeException(), isNull);
     },
   );
