@@ -7,7 +7,14 @@ Persian tagline: «فرصت‌های بهتر، برای آدم‌های بهت�
 Sub-tagline: «کار درست، درآمد امن، آینده روشن»  
 English: **Intelligent Work · Trusted Money · Human Progress**
 
-The app should feel like a high-trust work platform, not a generic dashboard. Use a dark navy base, indigo focus, restrained teal success, semantic amber only for real exceptions, and a bright white Google sign-in button. Hierarchy is task → amount/title → status/trust → metadata. The interface must remain legible at 360dp and text scale 2.0.
+The app should feel like a high-trust work platform, not a generic dashboard. Use a dark navy base, indigo action graphics, restrained teal/cyan information, deep green trust/success, semantic amber only for real exceptions, danger red only for true failures, and a bright white Google sign-in button. Hierarchy is task → amount/title → status/trust → metadata. The interface must remain legible at 360dp and text scale 2.0.
+
+## Color-genome decision — 2026-10-15
+
+- **No readable text is purple/indigo.** The rule includes prices, budgets, wallet figures, metrics, match scores, selected labels, navigation/tab labels, chips, text buttons and links. Indigo is a non-text interaction cue: filled actions, borders, focus rings, progress rings, selection fills and selected icons.
+- Money values use neutral foregrounds in both themes: `moneyTextLight #24271F` and `moneyTextDark #F1F3EC`. An ordinary price is not semantic success; green is reserved for an actual positive/trust state, and red for actual negative/error states.
+- Information and matching use teal on light surfaces (`#0F766E`) and cyan-teal on dark surfaces (`#5EEAD4`). Success/trust, warning/pending and danger use separate contrast-safe foregrounds and soft background fills.
+- Prefer tonal state surfaces over loud full-card fills. Text foregrounds and background tints are separate tokens; never assume a token is readable simply because it is the right hue.
 
 ## Current shared source
 

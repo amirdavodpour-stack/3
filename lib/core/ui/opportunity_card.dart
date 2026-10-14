@@ -487,7 +487,7 @@ class OpportunityCard extends StatelessWidget {
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w800,
-                  color: primary,
+                  color: HopeV2SemanticColors.textSecondary(context),
                 ),
           )
         else
@@ -597,7 +597,7 @@ class OpportunityCard extends StatelessWidget {
               fontSize: enlargedText ? 11.5 : 10.5,
               height: 1.12,
               fontWeight: FontWeight.w900,
-              color: primary,
+              color: HopeV2SemanticColors.amount(context),
             ),
           ),
         ],
@@ -680,7 +680,7 @@ class OpportunityCard extends StatelessWidget {
                   // naturally rather than clipping any server-provided amount.
                   softWrap: true,
                   textAlign: TextAlign.start,
-                  style: TextStyle(fontSize: 13, height: 1.2, fontWeight: FontWeight.w900, color: primary),
+                  style: TextStyle(fontSize: 13, height: 1.2, fontWeight: FontWeight.w900, color: HopeV2SemanticColors.amount(context)),
                 ),
               ],
             ],
@@ -791,7 +791,7 @@ class OpportunityCard extends StatelessWidget {
                     textAlign: TextAlign.end,
                     style: HopeV2Type.metric(context).copyWith(
                       fontSize: narrowMeta ? 14 : 15,
-                      color: primary,
+                      color: HopeV2SemanticColors.amount(context),
                     ),
                   );
 
@@ -848,7 +848,7 @@ class OpportunityCard extends StatelessWidget {
                               ? copy.copy_view_and_act_on_mission
                               : copy.copy_view_details_and_act),
                       style: TextStyle(
-                        color: primary,
+                        color: HopeV2SemanticColors.textPrimary(context),
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -1099,7 +1099,7 @@ class OpportunityCard extends StatelessWidget {
                       key: const ValueKey('opportunity-featured-scan-budget'),
                       softWrap: true,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: primary,
+                            color: HopeV2SemanticColors.amount(context),
                             fontSize: compactViewport ? 12.5 : 13.5,
                             height: 1.16,
                             fontWeight: FontWeight.w900,
@@ -1133,7 +1133,7 @@ class OpportunityCard extends StatelessWidget {
                       Text(
                         _t(context, 'مشاهده جزئیات', 'View details'),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: primary,
+                              color: HopeV2SemanticColors.textPrimary(context),
                               fontWeight: FontWeight.w900,
                             ),
                       ),
@@ -1339,7 +1339,7 @@ class OpportunityCard extends StatelessWidget {
                   softWrap: true,
                   textAlign: TextAlign.start,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: primary,
+                        color: HopeV2SemanticColors.amount(context),
                         fontSize: compactViewport ? 12 : 13,
                         height: 1.18,
                         fontWeight: FontWeight.w900,
@@ -1379,7 +1379,7 @@ class OpportunityCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: primary,
+                      color: HopeV2SemanticColors.textPrimary(context),
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -1601,7 +1601,7 @@ class OpportunityCard extends StatelessWidget {
                         style: HopeV2Type.metric(context).copyWith(
                           fontSize: compactViewport ? 14 : 18,
                           height: compactViewport ? 1.15 : 1.05,
-                          color: primary,
+                          color: HopeV2SemanticColors.amount(context),
                         ),
                       ),
                     ],

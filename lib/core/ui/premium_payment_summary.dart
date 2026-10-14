@@ -107,7 +107,7 @@ class PremiumPaymentSummary extends StatelessWidget {
                   Text(
                     _money(context, amount),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+                      color: HopeV2SemanticColors.amount(context),
                       fontWeight: FontWeight.w900,
                     ),
                   ),

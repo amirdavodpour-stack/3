@@ -2,19 +2,23 @@
 
 Single source currently lives in `lib/core/theme/hope_v2_design.dart`; `lib/core/theme/app_theme.dart` is a compatibility facade. The target path `lib/core/design/tokens.dart` is not present on the baseline branch; migrate only after imports are mapped to avoid a duplicate token source.
 
-## Canonical semantic palette
+## Canonical color genome — updated 2026-10-15
 
-| Token | Hex | Use |
-|---|---|---|
-| primary | `#6366F1` | primary action, focus, selected navigation |
-| success | `#10B981` | completed/positive ledger events |
-| warning | `#F59E0B` | genuine exceptions only |
-| danger | `#EF4444` | destructive/failure |
-| surface | `#0F111A` | dark base surface |
-| text | `#F8FAFC` | primary dark-theme text |
-| secondary accent | `#14B8A6` | restrained teal accent; avoid meaning ambiguity |
-| light page | `#F4F0FB` | lavender-led light canvas |
-| dark page | `#0B0F18` | near-black navy canvas |
+**Hard rule: no readable text uses indigo/purple.** This includes prices, budgets, money totals, metrics, selected labels, navigation text, tab labels, text buttons, chip labels and score labels. Brand indigo may remain in action fills, focus rings, selected backgrounds/borders, progress graphics and decorative icons. If a status or score needs colored text, use its contrast-safe semantic foreground instead.
+
+| Role | Light foreground / token | Dark foreground / token | Intended meaning |
+|---|---|---|---|
+| Brand actions | `primaryAction #4F46E5`; hover `#4338CA`; pressed `#3730A3` | `primaryDark #818CF8` for fills/indicators | Primary action, focus and selection graphics only; never text |
+| Money / price | `moneyTextLight #24271F` | `moneyTextDark #F1F3EC` | Neutral readable prices, budgets, balances and totals |
+| Information / intelligence | `infoTextLight #0F766E` | `infoTextDark #5EEAD4` | Match score, neutral information, non-error guidance |
+| Success / trust | `successOnLight #236443` | `successDark #89BD95` | Verified, completed, positive ledger events |
+| Warning / pending | `warningOnLight #92400E` | `warningDark #D5B56C` | Genuine exception, pending state or attention required |
+| Danger / failure | `dangerOnLight #B91C1C` | `dangerDark #DC766F` | Destructive action, failure or negative state |
+| Teal accent | `secondaryAction #0F766E`; `secondary #14B8A6` | `secondaryDark #5EEAD4` | Trust/intelligence accents; avoid ambiguous success use |
+| Neutral text | `ink #24271F`; `muted #66675B` | `darkText #F1F3EC`; `darkMuted #AEB7AC` | Primary, secondary and supporting copy |
+| Canvas/surface | `pageLight #F2F0E8`; `panelSoftLight #FAF9F4` | `pageDark #070A12`; `darkSurface #0F111A`; `darkCard #111827` | Warm light neutral and near-black navy/charcoal hierarchy |
+
+Semantic fills are deliberately softer than text foregrounds: use `successSurfaceLight/Dark`, `warningSurfaceLight/Dark`, `dangerSurfaceLight/Dark`, and `infoSurfaceLight/Dark` behind compact state indicators rather than washing entire cards in strong colors. The indigo tonal ramp `primaryTintLight/Dark` and `primaryBorderLight/Dark` is for fills and edges only.
 
 ## Spacing, shape, motion and typography
 
@@ -29,9 +33,11 @@ Single source currently lives in `lib/core/theme/hope_v2_design.dart`; `lib/core
 
 ## Contrast-safe semantic variants
 
-- Brand accent `primary=#6366F1` remains the visual identity token. Interactive actions use `primaryAction=#4F46E5` in light theme and `primaryDark=#818CF8` with dark ink on dark theme so button-label contrast is not assumed from the brand accent alone.
-- Light semantic foregrounds: `primaryOnLight=#4F46E5`, `successOnLight=#047857`, `warningOnLight=#92400E`, `dangerOnLight=#B91C1C`, `secondaryAction=#0F766E`.
-- The shared theme chooses foreground/background pairs by brightness; use these variants instead of white-on-amber or white-on-teal combinations.
+- Brand indigo is allowed for controls and decorative state graphics, not readable text. Text in selected controls stays neutral; the selected fill, border, focus ring or icon carries the interaction signal.
+- Prices and all financial values always use `HopeV2SemanticColors.amount(context)`; they do not switch to green for an ordinary value and never use brand indigo. Reserve success/danger colors for actual state or direction.
+- `HopeV2SemanticColors.info(context)` resolves to readable teal on light surfaces and cyan-teal on dark surfaces. Match intelligence and informational scores use this role rather than the brand action token.
+- Use `successOnLight`, `warningOnLight`, `dangerOnLight` with the matching dark variants for semantic text. Soft semantic surface tokens remain separate from their foreground tokens.
+- `tool/contrast_check.py` enforces a 4.5:1 minimum for money and semantic body text across the canonical light/dark surface sets; icon/border/action states retain their respective checks.
 
 ## Contrast verification
 

@@ -151,6 +151,11 @@ void main() {
     expect(find.text('۹۴٪ تطابق'), findsOneWidget);
     expect(find.text('طراحی'), findsOneWidget);
     expect(find.textContaining('تومان'), findsOneWidget);
+    final budget = tester.widget<Text>(
+      find.byKey(const ValueKey('opportunity-featured-scan-budget')),
+    );
+    expect(budget.style?.color, HopeV2Colors.moneyTextDark);
+    expect(budget.style?.color, isNot(HopeV2Colors.primaryDark));
     expect(tester.takeException(), isNull);
   });
 

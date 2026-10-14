@@ -1695,7 +1695,7 @@ class _MatchIntelligence extends StatelessWidget {
                                       ?.copyWith(
                                         fontSize: 7,
                                         fontWeight: FontWeight.w900,
-                                        color: primary,
+                                        color: HopeV2SemanticColors.info(context),
                                         letterSpacing: .4,
                                       ),
                                 ),
@@ -1723,7 +1723,7 @@ class _MatchIntelligence extends StatelessWidget {
                                   .textTheme
                                   .labelMedium
                                   ?.copyWith(
-                                    color: primary,
+                                    color: HopeV2SemanticColors.info(context),
                                     fontWeight: FontWeight.w800,
                                   ),
                             ),
@@ -1843,7 +1843,7 @@ class _MatchIntelligence extends StatelessWidget {
                                     locale: Localizations.localeOf(context).languageCode,
                                   ), style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
-                              Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: primary, letterSpacing: .6)),
+                              Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: HopeV2SemanticColors.info(context), letterSpacing: .6)),
                             ]),
                           ],
                         ),
@@ -1856,7 +1856,7 @@ class _MatchIntelligence extends StatelessWidget {
                           const SizedBox(width: 7),
                           Expanded(child: Text(_t(context, 'هوش تطبیق', 'Match intelligence'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
                         ]),
-                        if (fit != null) ...[SizedBox(height: compact ? 2 : 4), Text(fit, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: primary, fontWeight: FontWeight.w800))],
+                        if (fit != null) ...[SizedBox(height: compact ? 2 : 4), Text(fit, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: HopeV2SemanticColors.info(context), fontWeight: FontWeight.w800))],
                         if (confidence != null) ...[SizedBox(height: compact ? 2 : 4), Text('${HopeDisplayFormatter.percent((confidence.clamp(0, 1) * 100).round(), locale: Localizations.localeOf(context).languageCode)} ${_t(context, 'اطمینان', 'confidence')}', key: const ValueKey('match-confidence-note'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: HopeV2Colors.muted))],
                       ]),
                     ),
@@ -1885,7 +1885,7 @@ class _MatchIntelligence extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(children: [
                     Expanded(child: Text(_t(context, 'سیگنال‌های واقعی پیشنهاد برای همین فرصت', 'Live recommendation signals for this opportunity'), style: Theme.of(context).textTheme.bodySmall)),
-                    Text(_t(context, 'جزئیات', 'Details'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: primary, fontWeight: FontWeight.w900)),
+                    Text(_t(context, 'جزئیات', 'Details'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: HopeV2SemanticColors.textPrimary(context), fontWeight: FontWeight.w900)),
                   ]),
                 ],
               ],
@@ -1910,7 +1910,7 @@ class _MatchIntelligence extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
           Expanded(child: Text(_componentLabel(context, key), style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800))),
-          Text('$percent%', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: primary, fontWeight: FontWeight.w900)),
+          Text('$percent%', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: HopeV2SemanticColors.info(context), fontWeight: FontWeight.w900)),
         ]),
         const SizedBox(height: 5),
         ClipRRect(

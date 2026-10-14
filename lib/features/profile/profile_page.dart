@@ -124,7 +124,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Text(
                 initial,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: HopeV2SemanticColors.textPrimary(context),
                   fontWeight: FontWeight.w900,
                   fontSize: 20,
                 ),
@@ -249,7 +249,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: HopeV2Icons.job,
                   label: _t(context, 'ظرفیت', 'Capacity'),
                   value: _capacityLabel(context, data.capacity),
-                  color: Theme.of(context).colorScheme.primary,
+                  color: HopeV2SemanticColors.info(context),
                 ),
               ];
               return PremiumPanel(
@@ -519,7 +519,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
                         Navigator.push(context, HopeRoutes.register()),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: HopeV2Colors.primary,
+                      foregroundColor: HopeV2Colors.ink,
                     ),
                     child: Text(
                       HopeCopy.of(context).copy_create_account_bfa3517,

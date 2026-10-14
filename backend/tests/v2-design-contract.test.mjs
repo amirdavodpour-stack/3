@@ -9,6 +9,7 @@ const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 test('V2 premium design system is present and wired into flagship surfaces', () => {
   const pubspec = read('pubspec.yaml');
   const theme = read('lib/core/theme/hope_v2_design.dart');
+  const appTheme = read('lib/core/theme/app_theme.dart');
   const components = read('lib/core/ui/premium_components.dart');
   const home = read('lib/features/home/home_page.dart');
   const homeWidgets = read('lib/features/home/home_widgets.part.dart');
@@ -16,6 +17,9 @@ test('V2 premium design system is present and wired into flagship surfaces', () 
   const homeFeed = read('lib/features/home/premium_home_feed.dart');
   const jobCard = read('lib/features/jobs/jobs_widgets.part.dart');
   const opportunityCard = read('lib/core/ui/opportunity_card.dart');
+  const offersPage = read('lib/features/offers/offers_page.dart');
+  const paymentSummary = read('lib/core/ui/premium_payment_summary.dart');
+  const candidateMatches = read('lib/features/marketplace/employer_candidate_matches_page.dart');
   const profile = read('lib/features/profile/profile_page.dart');
   const transactions = read('lib/features/transactions/transactions_page.dart');
   const paymentSummary = read('lib/core/ui/premium_payment_summary.dart');
@@ -54,6 +58,16 @@ test('V2 premium design system is present and wired into flagship surfaces', () 
   assert.match(jobs, /OpportunityCard/);
   assert.match(opportunityCard, /PremiumTag/);
   assert.match(opportunityCard, /HopeV2Radii/);
+  assert.match(theme, /static Color amount\(BuildContext context\)/);
+  assert.match(theme, /static const moneyTextLight = Color\(0xFF24271F\)/);
+  assert.match(theme, /static const moneyTextDark = Color\(0xFFF1F3EC\)/);
+  assert.match(theme, /static const infoTextLight = Color\(0xFF0F766E\)/);
+  assert.match(appTheme, /labelColor: textColor/);
+  assert.match(appTheme, /selectedColor: textColor/);
+  assert.match(opportunityCard, /key: const ValueKey\('opportunity-card-standard-budget'\)[\s\S]{0,500}HopeV2SemanticColors.amount\(context\)/);
+  assert.match(offersPage, /_money\(o.price\),[\s\S]{0,200}HopeV2SemanticColors.amount\(context\)/);
+  assert.match(paymentSummary, /_money\(context, amount\),[\s\S]{0,200}HopeV2SemanticColors.amount\(context\)/);
+  assert.match(candidateMatches, /color: HopeV2SemanticColors.info\(context\)/);
   assert.match(opportunityCard, /HopeV2Surfaces/);
   for (const migrated of [profile, transactions, notifications, admin]) {
     assert.match(migrated, /premium_components\.dart/);

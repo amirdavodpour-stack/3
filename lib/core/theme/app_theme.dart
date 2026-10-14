@@ -54,6 +54,8 @@ class AppTheme {
       onSecondary: dark ? AppColors.ink : Colors.white,
       surface: dark ? AppColors.darkSurface : AppColors.surface,
       onSurface: dark ? AppColors.darkText : AppColors.ink,
+      onSurfaceVariant: dark ? AppColors.darkMuted : AppColors.muted,
+      error: dark ? AppColors.dangerDark : AppColors.dangerOnLight,
     );
 
     final base = ThemeData(
@@ -108,7 +110,7 @@ class AppTheme {
       listTileTheme: ListTileThemeData(
         textColor: textColor,
         iconColor: mutedColor,
-        selectedColor: scheme.primary,
+        selectedColor: textColor,
         selectedTileColor: dark
             ? AppColors.primaryDark.withValues(alpha: .10)
             : HopeV2Colors.warmHalo.withValues(alpha: .10),
@@ -137,7 +139,7 @@ class AppTheme {
           color: dark ? AppColors.primaryDark.withValues(alpha: .16) : AppColors.softPrimary,
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
         ),
-        labelColor: scheme.primary,
+        labelColor: textColor,
         unselectedLabelColor: mutedColor,
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
         unselectedLabelStyle:
@@ -247,6 +249,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          foregroundColor: textColor,
           minimumSize: const Size.fromHeight(48),
           side: BorderSide(
               color: dark ? HopeV2Colors.darkBorder : HopeV2Colors.outlinedButtonBorderLight),
@@ -257,6 +260,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
+              foregroundColor: textColor,
               minimumSize: const Size(48, 48),
               textStyle: const TextStyle(fontWeight: FontWeight.w800))),
       iconButtonTheme: IconButtonThemeData(
@@ -278,7 +282,7 @@ class AppTheme {
                 ? FontWeight.w900
                 : FontWeight.w700,
             color: states.contains(WidgetState.selected)
-                ? scheme.primary
+                ? textColor
                 : mutedColor,
           ),
         ),
@@ -300,7 +304,7 @@ class AppTheme {
         selectedIconTheme: IconThemeData(color: scheme.primary, size: 24),
         unselectedIconTheme: IconThemeData(color: mutedColor, size: 23),
         selectedLabelTextStyle: TextStyle(
-          color: scheme.primary,
+          color: textColor,
           fontWeight: FontWeight.w900,
         ),
         unselectedLabelTextStyle: TextStyle(

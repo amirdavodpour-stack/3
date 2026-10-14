@@ -1930,7 +1930,8 @@ class PremiumTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final base = color ?? Theme.of(context).colorScheme.primary;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final foreground = inverse ? Colors.white : (dark ? Colors.white : base);
+    final foreground = inverse ? Colors.white : HopeV2SemanticColors.textPrimary(context);
+    final iconForeground = inverse ? Colors.white : base;
     final background = inverse
         ? Colors.white.withValues(alpha: .10)
         : base.withValues(
@@ -1953,11 +1954,11 @@ class PremiumTag extends StatelessWidget {
             if (icon != null) ...[
               ExcludeSemantics(
                 child: icon is IconData
-                    ? Icon(icon as IconData, size: 14, color: foreground)
+                    ? Icon(icon as IconData, size: 14, color: iconForeground)
                     : HugeIcon(
                         icon: icon as List<List>,
                         size: 14,
-                        color: foreground,
+                        color: iconForeground,
                         strokeWidth: 1.9,
                       ),
               ),
@@ -2008,10 +2009,9 @@ class PremiumFilterChip extends StatelessWidget {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final interactive = enabled && !loading;
     final base = color ?? Theme.of(context).colorScheme.primary;
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     final foreground = interactive
-        ? (selected ? base : Theme.of(context).colorScheme.onSurface)
-        : muted;
+        ? HopeV2SemanticColors.textPrimary(context)
+        : HopeV2SemanticColors.textSecondary(context);
 
     return Semantics(
       button: true,

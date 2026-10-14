@@ -24,6 +24,13 @@ class HopeV2Colors {
   static const secondaryAction = Color(0xFF0F766E);
 
   static const primaryDark = Color(0xFF818CF8);
+  // Indigo is an interaction cue, never a readable text foreground.
+  static const primaryActionHoverLight = Color(0xFF4338CA);
+  static const primaryActionPressedLight = Color(0xFF3730A3);
+  static const primaryTintLight = Color(0xFFEEF2FF);
+  static const primaryBorderLight = Color(0xFFC7D2FE);
+  static const primaryTintDark = Color(0x2B6366F1);
+  static const primaryBorderDark = Color(0x4D818CF8);
   static const secondary = Color(0xFF14B8A6);
   static const secondaryStrong = Color(0xFF0D9488);
   static const secondaryDark = Color(0xFF5EEAD4);
@@ -50,6 +57,22 @@ class HopeV2Colors {
   static const darkCard = Color(0xFF111827);
   static const darkText = Color(0xFFF1F3EC);
   static const darkMuted = Color(0xFFAEB7AC);
+
+  // Text roles must remain independent from brand-action hues.
+  static const moneyTextLight = Color(0xFF24271F);
+  static const moneyTextDark = Color(0xFFF1F3EC);
+  static const infoTextLight = Color(0xFF0F766E);
+  static const infoTextDark = Color(0xFF5EEAD4);
+
+  // Low-intensity state backgrounds are separate from their text foregrounds.
+  static const successSurfaceLight = Color(0xFFE8F5E9);
+  static const successSurfaceDark = Color(0xFF172A22);
+  static const warningSurfaceLight = Color(0xFFFFF3D6);
+  static const warningSurfaceDark = Color(0xFF302617);
+  static const dangerSurfaceLight = Color(0xFFFDEBEC);
+  static const dangerSurfaceDark = Color(0xFF351D22);
+  static const infoSurfaceLight = Color(0xFFDDF5F0);
+  static const infoSurfaceDark = Color(0xFF142C2C);
 
   static const pageLight = Color(0xFFF2F0E8);
   static const pageDark = Color(0xFF070A12);
@@ -370,21 +393,56 @@ class HopeV2Gradients {
 class HopeV2SemanticColors {
   const HopeV2SemanticColors._();
 
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  /// Brand indigo is reserved for action/selection graphics, never readable text.
   static Color primary(BuildContext context) => Theme.of(context).colorScheme.primary;
   static Color secondary(BuildContext context) => Theme.of(context).colorScheme.secondary;
   static Color surface(BuildContext context) => Theme.of(context).colorScheme.surface;
   static Color elevated(BuildContext context) => HopeV2Surfaces.panel(context);
   static Color background(BuildContext context) => HopeV2Surfaces.page(context);
   static Color border(BuildContext context) => HopeV2Surfaces.border(context);
-  static Color textPrimary(BuildContext context) => Theme.of(context).colorScheme.onSurface;
-  static Color textSecondary(BuildContext context) => Theme.of(context).colorScheme.onSurfaceVariant;
-  static Color success(BuildContext context) => HopeV2Colors.success;
+
+  static Color textPrimary(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.darkText : HopeV2Colors.ink;
+  static Color textSecondary(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.darkMuted : HopeV2Colors.muted;
+  static Color amount(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.moneyTextDark : HopeV2Colors.moneyTextLight;
+  static Color info(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.infoTextDark : HopeV2Colors.infoTextLight;
+  static Color success(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.successDark : HopeV2Colors.successOnLight;
   static Color warning(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
-          ? HopeV2Colors.warningDark
-          : HopeV2Colors.warning;
+      _isDark(context) ? HopeV2Colors.warningDark : HopeV2Colors.warningOnLight;
   static Color error(BuildContext context) => Theme.of(context).colorScheme.error;
-  static Color info(BuildContext context) => Theme.of(context).colorScheme.primary;
+
+  /// Contrast-safe text foreground for semantic chips; never pass raw indigo.
+  static Color readableAccent(BuildContext context, Color accent) {
+    if (accent == HopeV2Colors.primary ||
+        accent == HopeV2Colors.primaryDark ||
+        accent == HopeV2Colors.primaryAction ||
+        accent == HopeV2Colors.secondary ||
+        accent == HopeV2Colors.secondaryStrong ||
+        accent == HopeV2Colors.secondaryDark ||
+        accent == HopeV2Colors.secondaryAction) {
+      return info(context);
+    }
+    if (accent == HopeV2Colors.success ||
+        accent == HopeV2Colors.successDark ||
+        accent == HopeV2Colors.successOnLight) return success(context);
+    if (accent == HopeV2Colors.warning ||
+        accent == HopeV2Colors.warningDark ||
+        accent == HopeV2Colors.warningOnLight) return warning(context);
+    if (accent == HopeV2Colors.danger ||
+        accent == HopeV2Colors.dangerDark ||
+        accent == HopeV2Colors.dangerOnLight) return error(context);
+    if (accent == HopeV2Colors.muted || accent == HopeV2Colors.darkMuted) {
+      return textSecondary(context);
+    }
+    return textPrimary(context);
+  }
 }
 
 class HopeV2Shadows {

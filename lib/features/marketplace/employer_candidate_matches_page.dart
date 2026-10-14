@@ -468,7 +468,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           child: Text(
                             _candidateScoreLabel(context, candidate.score),
                             style: HopeV2Type.metric(context).copyWith(
-                              color: Theme.of(context).colorScheme.primary,
+                              color: HopeV2SemanticColors.info(context),
                               fontSize: 22,
                             ),
                           ),

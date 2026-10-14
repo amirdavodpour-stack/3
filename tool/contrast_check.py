@@ -43,7 +43,9 @@ required = [
     "panelLight", "panelSoftLight", "chipLight", "navigationLight",
     "primaryAction", "primaryOnLight", "successOnLight", "warningOnLight",
     "dangerOnLight", "secondaryAction", "primaryDark", "successDark",
-    "warningDark", "dangerDark",
+    "warningDark", "dangerDark", "moneyTextLight", "moneyTextDark",
+    "infoTextLight", "infoTextDark", "primaryActionHoverLight",
+    "primaryActionPressedLight",
 ]
 missing = [key for key in required if key not in TOKENS]
 if missing:
@@ -62,18 +64,27 @@ checks: list[tuple[str, str, str, float, float]] = []
 for fg in ("darkText", "darkMuted"):
     for bg in dark_surfaces:
         checks.append((fg, bg, "body", ratio(TOKENS[fg], TOKENS[bg]), 4.5))
-for fg in ("ink", "muted"):
+for fg in ("ink", "muted", "moneyTextLight", "infoTextLight",
+           "successOnLight", "warningOnLight", "dangerOnLight"):
     for bg in light_surfaces:
-        checks.append((fg, bg, "body", ratio(TOKENS[fg], TOKENS[bg]), 4.5))
+        checks.append((fg, bg, "body/semantic text", ratio(TOKENS[fg], TOKENS[bg]), 4.5))
 for fg in ("primaryOnLight", "successOnLight", "warningOnLight", "dangerOnLight"):
     for bg in light_surfaces:
         checks.append((fg, bg, "icon/border", ratio(TOKENS[fg], TOKENS[bg]), 3.0))
+for fg in ("moneyTextDark", "infoTextDark", "successDark", "warningDark", "dangerDark"):
+    for bg in dark_surfaces:
+        checks.append((fg, bg, "body/semantic text", ratio(TOKENS[fg], TOKENS[bg]), 4.5))
 for fg in ("primaryDark", "successDark", "warningDark", "dangerDark"):
     for bg in dark_surfaces:
         checks.append((fg, bg, "icon/border", ratio(TOKENS[fg], TOKENS[bg]), 3.0))
 for fg in ("primaryAction", "secondaryAction", "successOnLight", "warningOnLight", "dangerOnLight"):
     checks.append((fg, "surface", "button label", ratio("#FFFFFF", TOKENS[fg]), 4.5))
 checks.append(("ink", "primaryDark", "dark button label", ratio(TOKENS["ink"], TOKENS["primaryDark"]), 4.5))
+indigo_foregrounds = {TOKENS[name] for name in ("primary", "primaryAction", "primaryDark", "primaryActionHoverLight", "primaryActionPressedLight")}
+for readable in ("moneyTextLight", "moneyTextDark", "infoTextLight", "infoTextDark"):
+    if TOKENS[readable] in indigo_foregrounds:
+        print(f"Contrast check blocked: {readable} must not reuse an indigo action token.", file=sys.stderr)
+        raise SystemExit(1)
 
 failures = [item for item in checks if item[3] + 1e-9 < item[4]]
 for fg, bg, kind, value, threshold in checks:

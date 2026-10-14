@@ -298,15 +298,8 @@ class StatusPill extends StatelessWidget {
     );
   }
 
-  Color _accessible(BuildContext context, Color c) {
-    if (Theme.of(context).brightness != Brightness.dark) return c;
-    if (c == HopeV2Colors.warning) return HopeV2Colors.warningDark;
-    if (c == HopeV2Colors.danger) return HopeV2Colors.dangerDark;
-    if (c == HopeV2Colors.success) return HopeV2Colors.successDark;
-    if (c == HopeV2Colors.muted) return HopeV2Colors.darkMuted;
-    if (c == HopeV2Colors.primary) return HopeV2Colors.primaryDark;
-    return c;
-  }
+  Color _accessible(BuildContext context, Color c) =>
+      HopeV2SemanticColors.readableAccent(context, c);
 }
 
 class HopeIconTile extends StatelessWidget {

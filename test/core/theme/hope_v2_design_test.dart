@@ -323,4 +323,115 @@ void main() {
     expect(find.byType(HugeIcon), findsWidgets);
   });
 
+
+  test('money and information text roles are separate from indigo actions', () {
+    expect(HopeV2Colors.moneyTextLight, HopeV2Colors.ink);
+    expect(HopeV2Colors.moneyTextDark, HopeV2Colors.darkText);
+    expect(HopeV2Colors.infoTextLight, HopeV2Colors.secondaryAction);
+    expect(HopeV2Colors.infoTextDark, HopeV2Colors.secondaryDark);
+
+    final indigoActions = {
+      HopeV2Colors.primary,
+      HopeV2Colors.primaryAction,
+      HopeV2Colors.primaryDark,
+      HopeV2Colors.primaryActionHoverLight,
+      HopeV2Colors.primaryActionPressedLight,
+    };
+    for (final readable in [
+      HopeV2Colors.moneyTextLight,
+      HopeV2Colors.moneyTextDark,
+      HopeV2Colors.infoTextLight,
+      HopeV2Colors.infoTextDark,
+    ]) {
+      expect(indigoActions.contains(readable), isFalse);
+    }
+
+    final lightSurfaces = [
+      HopeV2Colors.surface,
+      HopeV2Colors.backgroundWarm,
+      HopeV2Colors.pageLight,
+      HopeV2Colors.panelSoftLight,
+      HopeV2Colors.navigationLight,
+      HopeV2Colors.chipLight,
+    ];
+    final darkSurfaces = [
+      HopeV2Colors.darkBackground,
+      HopeV2Colors.darkSurface,
+      HopeV2Colors.darkCard,
+      HopeV2Colors.panelDark,
+      HopeV2Colors.panelSoftDark,
+      HopeV2Colors.inputDark,
+    ];
+    for (final surface in lightSurfaces) {
+      expect(_contrastRatio(HopeV2Colors.moneyTextLight, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.infoTextLight, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.successOnLight, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.warningOnLight, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.dangerOnLight, surface), greaterThanOrEqualTo(4.5));
+    }
+    for (final surface in darkSurfaces) {
+      expect(_contrastRatio(HopeV2Colors.moneyTextDark, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.infoTextDark, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.successDark, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.warningDark, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.dangerDark, surface), greaterThanOrEqualTo(4.5));
+    }
+  });
+
+  test('readable theme labels stay neutral while indigo remains available for controls', () {
+    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      final text = theme.brightness == Brightness.dark
+          ? HopeV2Colors.darkText
+          : HopeV2Colors.ink;
+      expect(theme.listTileTheme.selectedColor, text);
+      expect(theme.tabBarTheme.labelColor, text);
+      expect(theme.textButtonTheme.style?.foregroundColor?.resolve({}), text);
+      expect(theme.outlinedButtonTheme.style?.foregroundColor?.resolve({}), text);
+      expect(
+        theme.navigationBarTheme.labelTextStyle?.resolve({WidgetState.selected})?.color,
+        text,
+      );
+      expect(theme.navigationRailTheme.selectedLabelTextStyle?.color, text);
+    }
+  });
+
+  testWidgets('brand-accent chip labels and informational status text are readable',
+      (tester) async {
+    Future<void> pump(Brightness brightness) async {
+      final theme =
+          brightness == Brightness.dark ? AppTheme.dark() : AppTheme.light();
+      await tester.pumpWidget(MaterialApp(
+        theme: theme,
+        home: Scaffold(
+          body: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PremiumTag(label: 'Brand tag', color: HopeV2Colors.primary),
+              PremiumFilterChip(
+                label: 'Selected filter',
+                selected: true,
+                color: HopeV2Colors.primary,
+                onTap: () {},
+              ),
+              const StatusPill('Information'),
+            ],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      final neutral = brightness == Brightness.dark
+          ? HopeV2Colors.darkText
+          : HopeV2Colors.ink;
+      expect(tester.widget<Text>(find.text('Brand tag')).style?.color, neutral);
+      expect(tester.widget<Text>(find.text('Selected filter')).style?.color, neutral);
+      expect(
+        tester.widget<Text>(find.text('Information')).style?.color,
+        brightness == Brightness.dark ? HopeV2Colors.infoTextDark : HopeV2Colors.infoTextLight,
+      );
+    }
+
+    await pump(Brightness.light);
+    await pump(Brightness.dark);
+  });
+
 }
