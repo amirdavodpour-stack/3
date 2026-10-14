@@ -190,6 +190,24 @@ void main() {
   );
 
   testWidgets(
+    'register shows configured Google sign-in when backend capability is enabled',
+    (tester) async {
+      await tester.pumpWidget(await _screen(
+        const RegisterPage(),
+        googleSignIn: GoogleSignInService(serverClientId: 'test-server-client'),
+        capabilities: _BackendCapabilitiesRepo(
+          const BackendCapabilities(googleSignIn: true),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('auth-google-sign-in')), findsOneWidget);
+      expect(find.text('یا'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'register hides configured Google sign-in when backend capability lookup fails',
     (tester) async {
       await tester.pumpWidget(await _screen(

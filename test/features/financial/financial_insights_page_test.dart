@@ -489,6 +489,55 @@ void main() {
 
 
   testWidgets(
+    'monthly cash-flow chart advertises horizontal navigation only when needed',
+    (tester) async {
+      const hintFa = 'برای دیدن ماه‌های دیگر، نمودار را افقی بکشید';
+      const hintEn = 'Swipe the chart sideways to view other months';
+      for (final width in [360.0, 1200.0]) {
+        tester.view.physicalSize = Size(width, 900);
+        tester.view.devicePixelRatio = 1;
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _Wave24InsightsRepository(),
+            child: MaterialApp(
+              locale: const Locale('fa'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final chart = find.byKey(
+          const ValueKey('financial-cashflow-chart-scroll'),
+        );
+        await tester.scrollUntilVisible(
+          chart,
+          140,
+          scrollable: find.byType(Scrollable).first,
+        );
+        final hint = find.text(hintFa);
+        if (width == 360) {
+          expect(hint, findsOneWidget);
+          expect(hint.hitTestable(), findsOneWidget);
+          expect(find.text(hintEn), findsNothing);
+        } else {
+          expect(hint, findsNothing);
+        }
+        expect(tester.takeException(), isNull);
+      }
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    },
+  );
+
+  testWidgets(
     'Wave 34 financial chart labels remain readable and scrollable at 1.5x text scale',
     (tester) async {
       tester.view.physicalSize = const Size(360, 900);

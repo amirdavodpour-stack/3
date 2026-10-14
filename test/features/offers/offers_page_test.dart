@@ -388,6 +388,12 @@ testWidgets('accepting an offer disables the financial action until completion',
         tester.widget<SingleChildScrollView>(rail).scrollDirection,
         Axis.horizontal,
       );
+      final scrollbar = find.ancestor(
+        of: rail,
+        matching: find.byType(Scrollbar),
+      );
+      expect(scrollbar, findsOneWidget);
+      expect(tester.widget<Scrollbar>(scrollbar).thumbVisibility, isTrue);
       expect(
         tester.getSize(rail).height,
         lessThan(64),
