@@ -127,6 +127,25 @@ class HopeV2Colors {
   static const walletBalanceMetricBorderEmphasized = Color(0x3DFFFFFF);
 }
 
+/// Muted decorative identities for opportunity artwork and its matching card
+/// accent rail. These colors are never readable text and never represent a
+/// lifecycle, money, verification, or trust state.
+class HopeV2OpportunityAccents {
+  const HopeV2OpportunityAccents._();
+
+  static const software = Color(0xFF557D75);
+  static const design = Color(0xFFB58A4D);
+  static const marketing = Color(0xFFB86F55);
+  static const content = Color(0xFF5A8793);
+  static const finance = Color(0xFF4F805D);
+  static const education = Color(0xFF638DA3);
+  static const support = Color(0xFF718E87);
+  static const construction = Color(0xFFB9784C);
+  static const media = Color(0xFFB46F86);
+  static const data = Color(0xFF438B91);
+  static const sales = Color(0xFF5D875F);
+}
+
 /// A complete, stable tonal ramp. Consumers should request named stops rather
 /// than interpolate UI colors at runtime; interaction hues and text roles stay
 /// separately defined in [HopeV2Colors].
