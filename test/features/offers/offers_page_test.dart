@@ -7,6 +7,7 @@ import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/marketplace/offer_repository.dart';
 import 'package:hope_mobile/features/offers/offers_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:provider/provider.dart';
 
 HopeOffer _offer({required String id, required String status}) => HopeOffer(
@@ -316,6 +317,11 @@ testWidgets('accepting an offer disables the financial action until completion',
       find.descendant(of: confirmation, matching: find.text('2,500,000 TOMAN')),
       findsOneWidget,
     );
+    final amount = tester.widget<Text>(
+      find.descendant(of: confirmation, matching: find.text('2,500,000 TOMAN')),
+    );
+    expect(amount.style?.color, HopeV2Colors.moneyTextLight,
+        reason: 'Readable offer amounts must use the neutral financial text role.');
     await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
     await tester.pump();
 

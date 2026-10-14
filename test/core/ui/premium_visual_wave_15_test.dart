@@ -112,6 +112,13 @@ void main() {
       expect(find.text(value), findsOneWidget,
           reason: 'Wave 15 must render the real localized numeric score $value');
     }
+    for (final value in ['۹۲٪', '۹۶٪', '۸۸٪', '۷۲٪', '۸۴٪']) {
+      expect(
+        tester.widget<Text>(find.text(value)).style?.color,
+        HopeV2Colors.infoTextDark,
+        reason: 'Readable match score $value must use the teal information foreground, never brand indigo.',
+      );
+    }
     expect(find.textContaining(r'${score}'), findsNothing);
     expect(find.textContaining(r'${(value'), findsNothing);
     expect(find.byKey(const ValueKey('opportunity-dna-signature')),
