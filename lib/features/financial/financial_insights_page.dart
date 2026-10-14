@@ -639,7 +639,7 @@ class _BarChart extends StatelessWidget {
                     ).toDouble();
                     final hasHorizontalOverflow =
                         chartWidth > constraints.maxWidth - axisWidth;
-                    const scrollHintHeight = 22.0;
+                    final scrollHintHeight = math.max(22.0, 18.0 * textScale).toDouble();
                     final chartViewportHeight = math.max(
                       1.0,
                       constraints.maxHeight -
