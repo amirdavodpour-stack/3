@@ -500,13 +500,21 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Text(_entryTitle(item), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
               const SizedBox(height: 12),
-              _DetailRow(label: _t('مبلغ', 'Amount'), value: '${_signedMoney(item)}'),
+              _DetailRow(
+                label: _t('مبلغ', 'Amount'),
+                value: _signedMoney(item),
+                valueColor: _directionColor(context, item.isCredit),
+              ),
               _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: _entryTypeLabel(item.entryType)),
               _DetailRow(label: _t('جهت', 'Direction'), value: _directionLabel(item.direction)),
               _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: _referenceTypeLabel(item.referenceType)),
 
               if (item.balanceAfter != null)
-                _DetailRow(label: _t('موجودی پس از تراکنش', 'Balance after'), value: _money(item.balanceAfter!)),
+                _DetailRow(
+                    label: _t('موجودی پس از تراکنش', 'Balance after'),
+                    value: _money(item.balanceAfter!),
+                    valueColor: HopeV2SemanticColors.amount(context),
+                  ),
               _DetailRow(label: _t('زمان', 'Timestamp'), value: _date(item.createdAt)),
             ],
           ),
@@ -541,7 +549,13 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
               const SizedBox(height: 18),
-              _DetailRow(label: _t('مبلغ', 'Amount'), value: _money(payout.amount)),
+              _DetailRow(
+                label: _t('مبلغ', 'Amount'),
+                value: _money(payout.amount),
+                valueColor: _isPendingPayout(status)
+                    ? HopeV2SemanticColors.pendingAmount(context)
+                    : HopeV2SemanticColors.amount(context),
+              ),
               _DetailRow(label: _t('وضعیت', 'Status'), value: _payoutLabel(status)),
               _DetailRow(label: _t('ارائه‌دهنده', 'Provider'), value: _providerLabel(payout.provider)),
               _DetailRow(label: _t('زمان ثبت', 'Created'), value: _date(payout.createdAt)),
@@ -1533,9 +1547,10 @@ padding: const EdgeInsets.all(18),
 }
 
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
+  const _DetailRow({required this.label, required this.value, this.valueColor});
   final String label;
   final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -1549,7 +1564,7 @@ class _DetailRow extends StatelessWidget {
               child: SelectableText(
                 value,
                 textAlign: TextAlign.end,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: TextStyle(fontWeight: FontWeight.w800, color: valueColor),
               ),
             ),
           ],
