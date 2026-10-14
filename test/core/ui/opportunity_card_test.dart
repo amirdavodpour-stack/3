@@ -2072,7 +2072,7 @@ void main() {
 
 
   testWidgets(
-    'opportunity card action affordance stays tactile, directional, and consistent across layouts',
+    'opportunity card action cue stays compact and follows RTL/LTR across shared layouts',
     (tester) async {
       final job = HopeJob.fromMap({
         'id': 'opportunity-card-action-affordance',
