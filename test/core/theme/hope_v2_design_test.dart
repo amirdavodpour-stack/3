@@ -643,4 +643,45 @@ void main() {
     expect(dark['danger'], HopeV2Colors.dangerSurfaceDark);
   });
 
+  test('HOPE tonal ramps darken consistently and stay aligned with legacy tokens', () {
+    final ramps = <String, HopeV2TonalPalette>{
+      'brand': HopeV2TonalPalettes.brand,
+      'neutral': HopeV2TonalPalettes.neutral,
+      'info': HopeV2TonalPalettes.info,
+      'success': HopeV2TonalPalettes.success,
+      'warning': HopeV2TonalPalettes.warning,
+      'danger': HopeV2TonalPalettes.danger,
+    };
+
+    for (final entry in ramps.entries) {
+      final tones = entry.value.values;
+      for (var i = 1; i < tones.length; i++) {
+        expect(
+          tones[i].computeLuminance(),
+          lessThan(tones[i - 1].computeLuminance()),
+          reason: '${entry.key} shade ${HopeV2TonalPalette.steps[i]} must be darker than shade ${HopeV2TonalPalette.steps[i - 1]}.',
+        );
+      }
+    }
+
+    // These compatibility tokens are still consumed by existing screens.
+    // Keep them synchronized with the canonical ramps during migration.
+    expect(HopeV2Colors.primary, HopeV2TonalPalettes.brand.shade500);
+    expect(HopeV2Colors.primaryDark, HopeV2TonalPalettes.brand.shade400);
+    expect(HopeV2Colors.primaryAction, HopeV2TonalPalettes.brand.shade600);
+    expect(HopeV2Colors.primaryActionHoverLight, HopeV2TonalPalettes.brand.shade700);
+    expect(HopeV2Colors.primaryActionPressedLight, HopeV2TonalPalettes.brand.shade800);
+    expect(HopeV2Colors.primaryTintLight, HopeV2TonalPalettes.brand.shade50);
+    expect(HopeV2Colors.primaryBorderLight, HopeV2TonalPalettes.brand.shade200);
+    expect(HopeV2Colors.ink, HopeV2TonalPalettes.neutral.shade900);
+    expect(HopeV2Colors.muted, HopeV2TonalPalettes.neutral.shade600);
+    expect(HopeV2Colors.inkSoft, HopeV2TonalPalettes.neutral.shade800);
+    expect(HopeV2Colors.secondary, HopeV2TonalPalettes.info.shade500);
+    expect(HopeV2Colors.secondaryStrong, HopeV2TonalPalettes.info.shade600);
+    expect(HopeV2Colors.secondaryDark, HopeV2TonalPalettes.info.shade300);
+    expect(HopeV2Colors.secondaryAction, HopeV2TonalPalettes.info.shade700);
+    expect(HopeV2Colors.warningOnLight, HopeV2TonalPalettes.warning.shade800);
+    expect(HopeV2Colors.dangerOnLight, HopeV2TonalPalettes.danger.shade700);
+  });
+
 }
