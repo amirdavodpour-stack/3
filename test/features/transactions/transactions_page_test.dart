@@ -236,7 +236,7 @@ void main() {
     final repo = _Transactions();
     await _pump(tester, repo, guest: true);
     expect(find.byType(TransactionsPage), findsOneWidget);
-    expect(find.textContaining('خصوصی'), findsOneWidget);
+    expect(find.textContaining('شخصی'), findsOneWidget);
   });
 
   testWidgets('empty authenticated transactions show the empty state',
