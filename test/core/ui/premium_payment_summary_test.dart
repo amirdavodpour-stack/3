@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/premium_payment_summary.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
@@ -62,6 +63,17 @@ void main() {
 
     expect(find.text('Needs review'), findsOneWidget);
     expect(find.text('UNKNOWN_STATUS'), findsNothing);
+
+    final iconFinder = find.byKey(const ValueKey('premium-payment-status-icon'));
+    expect(iconFinder, findsOneWidget);
+    final icon = tester.widget<HopeIcon>(iconFinder);
+    final iconContext = tester.element(iconFinder);
+    expect(icon.color, HopeV2SemanticColors.pending(iconContext));
+    expect(
+      icon.color,
+      isNot(Theme.of(iconContext).colorScheme.primary),
+      reason: 'An unknown/pending payment state is semantic status, not the brand action color.',
+    );
   });
 
   testWidgets(
