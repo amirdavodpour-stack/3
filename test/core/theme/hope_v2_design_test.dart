@@ -45,7 +45,7 @@ void main() {
 
   test('HOPE palette restores navy-charcoal surfaces, indigo actions, and restrained forest accents', () {
     expect(HopeV2Colors.primary, const Color(0xFF6366F1));
-    expect(HopeV2Colors.primaryAction, const Color(0xFF6366F1));
+    expect(HopeV2Colors.primaryAction, const Color(0xFF4F46E5));
     expect(HopeV2Colors.primaryDark, const Color(0xFF818CF8));
     expect(HopeV2Colors.secondaryAction, const Color(0xFF0F766E));
     expect(HopeV2Colors.secondary, const Color(0xFF14B8A6));
@@ -201,8 +201,8 @@ void main() {
   test('HOPE dark surfaces stay navy-charcoal with a subdued forest-green halo token', () {
     expect(HopeV2Colors.pageDark, HopeV2Colors.darkBackground);
     expect(HopeV2Colors.darkBackground, const Color(0xFF070A12));
-    expect(HopeV2Colors.darkSurface, const Color(0xFF101512));
-    expect(HopeV2Colors.darkCard, const Color(0xFF121915));
+    expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
+    expect(HopeV2Colors.darkCard, const Color(0xFF111827));
     expect(HopeV2Colors.panelDark, const Color(0xFF101522));
     expect(HopeV2Colors.panelSoftDark, const Color(0xFF121726));
     expect(HopeV2Colors.inputDark, const Color(0xFF0F111A));
