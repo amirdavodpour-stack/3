@@ -6,7 +6,7 @@ import 'package:hugeicons/hugeicons.dart';
 /// This is intentionally token-first: screens should consume these values
 /// instead of inventing per-page spacing, radii, or breakpoints.
 
-/// Premium reference contract: warm-neutral surfaces with restrained forest accents.
+/// Canonical HOPE contract: near-black navy/charcoal surfaces, indigo-led actions, and a very restrained forest-green accent.
 /// Runtime certification batch: compact home, deterministic glass, restrained bloom.
 /// Certification round three: opaque premium surfaces + controlled wallet hero.
 /// Final visual checkpoint: wallet/profile bloom removed; home remains compact.
@@ -15,19 +15,19 @@ import 'package:hugeicons/hugeicons.dart';
 class HopeV2Colors {
   const HopeV2Colors._();
 
-  static const primary = Color(0xFF6B5733);
-  static const primaryAction = Color(0xFF665126);
-  static const primaryOnLight = Color(0xFF665126);
+  static const primary = Color(0xFF6366F1);
+  static const primaryAction = Color(0xFF6366F1);
+  static const primaryOnLight = Color(0xFF4F46E5);
   static const successOnLight = Color(0xFF236443);
   static const warningOnLight = Color(0xFF92400E);
   static const dangerOnLight = Color(0xFFB91C1C);
-  static const secondaryAction = Color(0xFF3F624B);
+  static const secondaryAction = Color(0xFF0F766E);
 
-  static const primaryDark = Color(0xFFD0BD92);
-  static const secondary = Color(0xFF55755F);
-  static const secondaryStrong = Color(0xFF3D6148);
-  static const secondaryDark = Color(0xFFA9C5AB);
-  static const accent = Color(0xFFB38A43);
+  static const primaryDark = Color(0xFF818CF8);
+  static const secondary = Color(0xFF14B8A6);
+  static const secondaryStrong = Color(0xFF0D9488);
+  static const secondaryDark = Color(0xFF5EEAD4);
+  static const accent = Color(0xFFF59E0B);
   /// Focus accent for featured/recommended work surfaces; use sparingly.
   static const orange = Color(0xFFF97316);
   static const orangeDark = Color(0xFFFF9A4D);
@@ -45,21 +45,21 @@ class HopeV2Colors {
   static const danger = Color(0xFFC14B43);
   static const dangerDark = Color(0xFFDC766F);
   static const softPrimary = Color(0xFFE8E0CD);
-  static const darkBackground = Color(0xFF080D0B);
-  static const darkSurface = Color(0xFF101512);
-  static const darkCard = Color(0xFF121915);
+  static const darkBackground = Color(0xFF070A12);
+  static const darkSurface = Color(0xFF0F111A);
+  static const darkCard = Color(0xFF111827);
   static const darkText = Color(0xFFF1F3EC);
   static const darkMuted = Color(0xFFAEB7AC);
 
   static const pageLight = Color(0xFFF2F0E8);
-  static const pageDark = Color(0xFF080D0B);
+  static const pageDark = Color(0xFF070A12);
   static const panelLight = Color(0xFFFFFFFF);
-  static const panelDark = Color(0xFF101612);
+  static const panelDark = Color(0xFF101522);
   static const panelSoftLight = Color(0xFFFAF9F4);
-  static const panelSoftDark = Color(0xFF131A16);
+  static const panelSoftDark = Color(0xFF121726);
   static const chipLight = Color(0xFFEEECE2);
   static const chipDark = Color(0x20FFFFFF);
-  static const chipSelectedDark = Color(0x2B8EA68A);
+  static const chipSelectedDark = Color(0x2B6366F1);
   static const disabledLight = Color(0xFFE5E2D9);
   static const borderControlLight = Color(0xFFD8D4C8);
   static const dividerLight = Color(0xFFE6E2D9);
@@ -67,8 +67,8 @@ class HopeV2Colors {
   static const navigationLight = Color(0xFFF9F8F3);
   static const navigationDark = Color(0xF9080D0B);
   static const navigationIndicatorLight = Color(0xFFE9E1D0);
-  static const navigationIndicatorDark = Color(0x2B8EA68A);
-  static const inputDark = Color(0xFF0B120E);
+  static const navigationIndicatorDark = Color(0x2B6366F1);
+  static const inputDark = Color(0xFF0F111A);
   static const darkBorder = Color(0x1FFFFFFF);
   static const darkBorderStrong = Color(0x2BFFFFFF);
   static const darkDivider = Color(0x18FFFFFF);
@@ -356,10 +356,10 @@ class HopeV2Gradients {
   // Runtime visual target: flat dark canvas with a restrained neutral hero.
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF131A16),
-      Color(0xFF1C2920),
-      Color(0xFF131A16),
-      Color(0xFF090F0C),
+      Color(0xFF121726),
+      Color(0xFF1B2748),
+      Color(0xFF121726),
+      Color(0xFF090D16),
     ],
     stops: [0, .38, .72, 1],
     begin: Alignment.topRight,
@@ -409,12 +409,12 @@ class HopeV2Shadows {
   // Runtime visual certification target: no cyan spill on dark hero edges.
   static const heroDark = [
     BoxShadow(
-      color: Color(0x30264C36),
+      color: Color(0x18264C36),
       blurRadius: 30,
       offset: Offset(0, 14),
     ),
     BoxShadow(
-      color: Color(0x17264C36),
+      color: Color(0x0C264C36),
       blurRadius: 42,
       offset: Offset(-8, 18),
     ),
