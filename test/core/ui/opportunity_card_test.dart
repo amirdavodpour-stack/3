@@ -1863,4 +1863,70 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'featured scan tags scroll on one line without increasing card height',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      HopeJob jobWithVisibility(String visibility) => HopeJob.fromMap({
+            'id': 'featured-scan-tag-density',
+            'title': 'طراحی رابط کاربری',
+            'categoryId': 'design',
+            'category': 'طراحی',
+            'jobType': 'FIXED',
+            'budgetMin': '1500000',
+            'budgetMax': '2500000',
+            'kind': 'JOB',
+            'visibility': visibility,
+            'status': 'OPEN',
+            'city': 'تهران',
+            'recommendationScore': 0.94,
+            'workMode': 'REMOTE',
+          });
+
+      Widget host(String visibility) => MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: ThemeData(brightness: Brightness.dark),
+            home: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(16),
+                child: OpportunityCard(
+                  job: jobWithVisibility(visibility),
+                  variant: OpportunityCardVariant.featuredScan,
+                ),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(host('PUBLIC'));
+      await tester.pumpAndSettle();
+      final publicHeight = tester.getSize(find.byType(OpportunityCard)).height;
+      final rail = find.byKey(
+        const ValueKey('opportunity-featured-scan-tag-rail'),
+      );
+      expect(rail, findsOneWidget);
+      expect(
+        tester.widget<SingleChildScrollView>(rail).scrollDirection,
+        Axis.horizontal,
+      );
+
+      await tester.pumpWidget(host('SPECIALIZED'));
+      await tester.pumpAndSettle();
+      final specializedHeight =
+          tester.getSize(find.byType(OpportunityCard)).height;
+      expect(specializedHeight, closeTo(publicHeight, 1.0));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
