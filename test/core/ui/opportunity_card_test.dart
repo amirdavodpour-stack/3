@@ -1256,7 +1256,7 @@ void main() {
       final fallbackGradient = fallbackDecoration.gradient! as LinearGradient;
       expect(
         fallbackGradient.colors.first,
-        const Color(0xFF557D75).withValues(alpha: .13),
+        HopeV2OpportunityAccents.software.withValues(alpha: .13),
         reason: 'Fallback artwork and the card frame share the muted software-category identity.',
       );
       expect(
