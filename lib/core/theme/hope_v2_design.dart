@@ -34,7 +34,7 @@ class HopeV2Colors {
   static const inkSoft = Color(0xFF34372D);
   static const backgroundWarm = Color(0xFFF5F3EA);
   static const ink = Color(0xFF24271F);
-  static const muted = Color(0xFF6C6D61);
+  static const muted = Color(0xFF66675B);
   static const surface = Color(0xFFFFFFFF);
   static const background = Color(0xFFEFECE3);
   // Match the canonical reference semantic green used for trust/success.
