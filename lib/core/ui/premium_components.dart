@@ -137,8 +137,8 @@ class _PremiumNavigationItem extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final icon = selected ? destination.selectedIcon : destination.icon;
     final labelColor = selected
-        ? (dark ? HopeV2Colors.primaryDark : accent)
-        : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted);
+        ? HopeV2SemanticColors.readableAccent(context, accent)
+        : HopeV2SemanticColors.textSecondary(context);
 
     return Semantics(
       button: true,
@@ -895,8 +895,11 @@ class PremiumHeader extends StatelessWidget {
                           eyebrow.toUpperCase(),
                           overflow: TextOverflow.ellipsis,
                           style: HopeV2Type.eyebrow(context).copyWith(
-                            color: resolvedDomain?.spec.accentFor(context) ??
-                                Theme.of(context).colorScheme.primary,
+                            color: HopeV2SemanticColors.readableAccent(
+                              context,
+                              resolvedDomain?.spec.accentFor(context) ??
+                                  Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ),
                       ),
@@ -942,7 +945,10 @@ class PremiumHeader extends StatelessWidget {
                     eyebrow.toUpperCase(),
                     overflow: TextOverflow.ellipsis,
                     style: HopeV2Type.eyebrow(context).copyWith(
-                      color: resolvedDomain.spec.accentFor(context),
+                      color: HopeV2SemanticColors.readableAccent(
+                        context,
+                        resolvedDomain.spec.accentFor(context),
+                      ),
                     ),
                   ),
                 ],
@@ -1519,7 +1525,7 @@ class PremiumHero extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: resolvedDomain.spec.accentFor(context),
+                                        color: HopeV2Colors.darkText,
                                         fontWeight: FontWeight.w900,
                                         fontSize: 10,
                                       ),
