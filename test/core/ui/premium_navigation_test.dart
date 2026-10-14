@@ -318,7 +318,7 @@ void main() {
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.text('خانه'), findsOneWidget);
     expect(find.text('کاوش'), findsOneWidget);
-    expect(find.text('کار'), findsOneWidget);
+    expect(find.text('کارگاه'), findsOneWidget);
     expect(find.text('کیف پول'), findsOneWidget);
     expect(find.text('پروفایل'), findsOneWidget);
 
@@ -439,7 +439,7 @@ void main() {
       final dock = find.byKey(const ValueKey('hope-navigation-dock'));
       expect(dock, findsOneWidget);
       expect(tester.getSize(dock).height, greaterThan(68));
-      for (final label in ['Home', 'Explore', 'Work', 'Wallet', 'Profile']) {
+      for (final label in ['Home', 'Explore', 'Workshop', 'Wallet', 'Profile']) {
         expect(find.text(label), findsOneWidget);
       }
       expect(tester.takeException(), isNull);
