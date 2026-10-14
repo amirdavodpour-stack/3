@@ -458,8 +458,9 @@ void main() {
       expect(stepList, findsOneWidget);
       expect(viewport, findsOneWidget);
       expect(dock, findsOneWidget);
-      expect(specialized, findsOneWidget);
 
+      // The target lives in a lazy ListView child and may not exist in the
+      // widget tree until the first step has been scrolled into the cache.
       await tester.scrollUntilVisible(
         specialized,
         120,
@@ -469,6 +470,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.ensureVisible(specialized);
       await tester.pumpAndSettle();
+      expect(specialized, findsOneWidget);
 
       final viewportRect = tester.getRect(viewport);
       final specializedRect = tester.getRect(specialized);
