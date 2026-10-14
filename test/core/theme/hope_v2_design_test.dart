@@ -43,14 +43,19 @@ void main() {
     );
   });
 
-  test('HOPE reference palette stays locked to the current visual North Star', () {
-    expect(HopeV2Colors.primary, const Color(0xFF6366F1));
-    expect(HopeV2Colors.primaryDark, const Color(0xFF818CF8));
-    expect(HopeV2Colors.success, const Color(0xFF10B981));
-    expect(HopeV2Colors.warning, const Color(0xFFF59E0B));
-    expect(HopeV2Colors.danger, const Color(0xFFEF4444));
-    expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
-    expect(HopeV2Colors.darkText, const Color(0xFFF8FAFC));
+  test('HOPE palette uses warm neutrals and restrained forest accents', () {
+    expect(HopeV2Colors.primary, const Color(0xFF6B5733));
+    expect(HopeV2Colors.primaryAction, const Color(0xFF665126));
+    expect(HopeV2Colors.primaryDark, const Color(0xFFD0BD92));
+    expect(HopeV2Colors.secondaryAction, const Color(0xFF3F624B));
+    expect(HopeV2Colors.secondary, const Color(0xFF55755F));
+    expect(HopeV2Colors.success, const Color(0xFF27764C));
+    expect(HopeV2Colors.darkGreenGlow, const Color(0xFF264C36));
+    expect(HopeV2Colors.darkSurface, const Color(0xFF101512));
+    expect(HopeV2Colors.darkCard, const Color(0xFF121915));
+    expect(HopeV2Colors.darkText, const Color(0xFFF1F3EC));
+    expect(HopeV2Gradients.hero.colors, isNot(contains(const Color(0xFF5D43E8))));
+    expect(HopeV2Gradients.heroDark.colors, isNot(contains(const Color(0xFF37318C))));
   });
 
   test('wallet balance hero palette is centralized without visual drift', () {
@@ -94,12 +99,12 @@ void main() {
     expect(semanticSurface, themeSurface);
   });
 
-  test('HOPE light surfaces stay lavender-led', () {
-    expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0FB));
-    expect(HopeV2Colors.pageLight, const Color(0xFFF1EDF8));
-    expect(HopeV2Colors.panelSoftLight, const Color(0xFFFBF9FE));
-    expect(HopeV2Colors.navigationLight, const Color(0xFFF7F4FC));
-    expect(HopeV2Colors.navigationIndicatorLight, const Color(0xFFE5DFFF));
+  test('HOPE light surfaces use restrained warm neutrals', () {
+    expect(HopeV2Colors.backgroundWarm, const Color(0xFFF5F3EA));
+    expect(HopeV2Colors.pageLight, const Color(0xFFF2F0E8));
+    expect(HopeV2Colors.panelSoftLight, const Color(0xFFFAF9F4));
+    expect(HopeV2Colors.navigationLight, const Color(0xFFF9F8F3));
+    expect(HopeV2Colors.navigationIndicatorLight, const Color(0xFFE9E1D0));
   });
 
   test('HOPE typography keeps font selection behind a single design-system token', () {
@@ -155,14 +160,44 @@ void main() {
     expect(halo.colors.last, Colors.transparent);
   });
 
-  test('HOPE dark surfaces stay cool and avoid the warm-brown palette', () {
+  test('HOPE dark cards stay neutral with a subdued green halo token', () {
     expect(HopeV2Colors.pageDark, HopeV2Colors.darkBackground);
-    expect(HopeV2Colors.darkBackground, const Color(0xFF070A12));
-    expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
-    expect(HopeV2Colors.darkCard, const Color(0xFF111827));
-    expect(HopeV2Colors.panelSoftDark, const Color(0xFF121726));
-    expect(HopeV2Colors.inputDark, const Color(0xFF0D1320));
-    expect(HopeV2Colors.navigationIndicatorDark, const Color(0x3A6366F1));
+    expect(HopeV2Colors.darkBackground, const Color(0xFF080D0B));
+    expect(HopeV2Colors.darkSurface, const Color(0xFF101512));
+    expect(HopeV2Colors.darkCard, const Color(0xFF121915));
+    expect(HopeV2Colors.panelDark, const Color(0xFF101612));
+    expect(HopeV2Colors.panelSoftDark, const Color(0xFF131A16));
+    expect(HopeV2Colors.inputDark, const Color(0xFF0B120E));
+    expect(HopeV2Colors.navigationIndicatorDark, const Color(0x2B8EA68A));
+    expect(HopeV2Colors.darkGreenGlow, const Color(0xFF264C36));
+  });
+
+  test('dropdown and popup options use readable theme text instead of black defaults', () {
+    final light = AppTheme.light();
+    final dark = AppTheme.dark();
+    expect(light.dropdownMenuTheme.textStyle?.color, light.colorScheme.onSurface);
+    expect(light.popupMenuTheme.textStyle?.color, light.colorScheme.onSurface);
+    expect(dark.dropdownMenuTheme.textStyle?.color, dark.colorScheme.onSurface);
+    expect(dark.popupMenuTheme.textStyle?.color, dark.colorScheme.onSurface);
+    expect(light.dropdownMenuTheme.textStyle?.color, isNot(Colors.black));
+    expect(dark.dropdownMenuTheme.textStyle?.color, isNot(Colors.black));
+  });
+
+  testWidgets('premium tags stay on one line', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: PremiumTag(
+            label: 'برچسب طولانی نمونه',
+            color: HopeV2Colors.secondary,
+          ),
+        ),
+      ),
+    );
+
+    final text = tester.widget<Text>(find.text('برچسب طولانی نمونه'));
+    expect(text.maxLines, 1);
   });
 
   test('HOPE action icon vocabulary is backed by Hugeicons data', () {
