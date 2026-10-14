@@ -21,6 +21,7 @@ class _FakeWallet implements WalletRepository {
     this.payoutCurrency = 'TOMAN',
     this.payoutStatus = 'REQUESTED',
     this.entryType = 'TRANSFER',
+    this.pendingWithdrawalBalance = 0,
   });
 
   final String currency;
@@ -28,6 +29,7 @@ class _FakeWallet implements WalletRepository {
   final String payoutCurrency;
   final String payoutStatus;
   final String entryType;
+  final int pendingWithdrawalBalance;
   Object? transferError;
   bool failLoad = false;
 
@@ -41,6 +43,7 @@ class _FakeWallet implements WalletRepository {
         'availableBalance': 2500000,
         'lockedBalance': 1000000,
         'escrowBalance': 1000000,
+        'pendingWithdrawalBalance': pendingWithdrawalBalance,
         'totalBalance': 3500000,
         'status': 'ACTIVE',
       });
@@ -285,6 +288,59 @@ void main() {
       expect(find.text('Status'), findsOneWidget);
       expect(find.text('400,000 TOMAN'), findsOneWidget);
       expect(find.text('Requested'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'pending withdrawal summary agrees with the reserved payout row',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet(
+        payoutStatus: 'RESERVED',
+        pendingWithdrawalBalance: 400000,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final pendingMetric =
+          find.byKey(const ValueKey('wallet-balance-metric-pending'));
+      expect(pendingMetric, findsOneWidget);
+      expect(
+        find.descendant(
+          of: pendingMetric,
+          matching: find.text('۴۰۰٬۰۰۰ تومان'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('برداشت‌ها'),
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('۴۰۰٬۰۰۰ تومان'), findsNWidgets(2));
+      expect(find.text('رزروشده'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
