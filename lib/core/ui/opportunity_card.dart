@@ -114,9 +114,10 @@ class OpportunityCard extends StatelessWidget {
                 .where((v) => v?.isNotEmpty == true)
                 .join(' – '));
     final title = job.title.trim().isEmpty ? copy.copy_untitled_d89410e : job.title;
-    final primary = featured || featuredScan
-        ? HopeV2Colors.primary
-        : (job.isMission ? HopeV2Colors.primary : secondaryAccent(context));
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final primary = featured || featuredScan || job.isMission
+        ? (dark ? HopeV2Colors.primaryDark : HopeV2Colors.primary)
+        : secondaryAccent(context);
     final reasons = [
       ...job.aiRecommendationReasons,
       ...job.recommendationReasons,
