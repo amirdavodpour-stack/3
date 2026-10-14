@@ -32,18 +32,21 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
         fractionDigits: score == score.roundToDouble() ? 0 : 1,
       );
 
-  String _reason(BuildContext context, String value) => switch (value) {
-        'SKILL_MATCH' => _t(context, 'مهارت', 'Skills'),
-        'EXPERIENCE_MATCH' => _t(context, 'تجربه', 'Experience'),
-        'CATEGORY_MATCH' => _t(context, 'دسته‌بندی', 'Category'),
-        'LOCATION_MATCH' => _t(context, 'مکان', 'Location'),
-        'WORK_MODE_MATCH' => _t(context, 'شیوه کار', 'Work mode'),
-        'KIND_MATCH' => _t(context, 'نوع همکاری', 'Work type'),
-        'SALARY_FIT' => _t(context, 'حقوق مناسب', 'Salary fit'),
-        'BUDGET_FIT' => _t(context, 'بودجه مناسب', 'Budget fit'),
-        'AVAILABILITY_MATCH' => _t(context, 'دردسترس', 'Availability'),
-        _ => value,
-      };
+  String? _reason(BuildContext context, String value) {
+    final code = value.trim().toUpperCase();
+    return switch (code) {
+      'SKILL_MATCH' => _t(context, 'مهارت', 'Skills'),
+      'EXPERIENCE_MATCH' => _t(context, 'تجربه', 'Experience'),
+      'CATEGORY_MATCH' => _t(context, 'دسته‌بندی', 'Category'),
+      'LOCATION_MATCH' => _t(context, 'مکان', 'Location'),
+      'WORK_MODE_MATCH' => _t(context, 'شیوه کار', 'Work mode'),
+      'KIND_MATCH' => _t(context, 'نوع همکاری', 'Work type'),
+      'SALARY_FIT' => _t(context, 'حقوق مناسب', 'Salary fit'),
+      'BUDGET_FIT' => _t(context, 'بودجه مناسب', 'Budget fit'),
+      'AVAILABILITY_MATCH' => _t(context, 'دردسترس', 'Availability'),
+      _ => null,
+    };
+  }
 
   String _componentLabel(BuildContext context, String key) => switch (key) {
     'skills' => _t(context, 'مهارت', 'Skills'),
@@ -472,16 +475,18 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (candidate.reasons.isNotEmpty) ...[
+                    if (candidate.reasons.any((reason) => _reason(context, reason) != null)) ...[
                       const SizedBox(height: 11),
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
                         children: candidate.reasons
+                            .map((reason) => _reason(context, reason))
+                            .whereType<String>()
                             .map(
-                              (reason) => PremiumTag(
+                              (label) => PremiumTag(
                                 icon: HopeV2Icons.match,
-                                label: _reason(context, reason),
+                                label: label,
                                 color: HopeV2Colors.secondary,
                               ),
                             )

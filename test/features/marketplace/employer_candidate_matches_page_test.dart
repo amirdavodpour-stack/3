@@ -18,7 +18,7 @@ void main() {
           userId: 'worker-1',
           displayName: 'Worker One',
           score: 91.4,
-          reasons: ['SKILL_MATCH', 'EXPERIENCE_MATCH'],
+          reasons: ['SKILL_MATCH', 'EXPERIENCE_MATCH', 'FUTURE_SIGNAL_CODE'],
           components: {'skills': 100, 'experience': 90},
           applicationId: 'app-1',
           status: 'PENDING',
@@ -80,6 +80,11 @@ void main() {
     );
     expect(find.text('مهارت'), findsWidgets);
     expect(find.text('تجربه'), findsWidgets);
+    expect(
+      find.text('FUTURE_SIGNAL_CODE'),
+      findsNothing,
+      reason: 'Unknown backend reason codes must never be shown as customer-facing labels.',
+    );
     expect(
       find.textContaining('۱٬۲۵۰٬۰۰۰ تومان'),
       findsOneWidget,
