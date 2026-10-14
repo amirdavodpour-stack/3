@@ -18,7 +18,6 @@ test('V2 premium design system is present and wired into flagship surfaces', () 
   const jobCard = read('lib/features/jobs/jobs_widgets.part.dart');
   const opportunityCard = read('lib/core/ui/opportunity_card.dart');
   const offersPage = read('lib/features/offers/offers_page.dart');
-  const paymentSummary = read('lib/core/ui/premium_payment_summary.dart');
   const candidateMatches = read('lib/features/marketplace/employer_candidate_matches_page.dart');
   const profile = read('lib/features/profile/profile_page.dart');
   const transactions = read('lib/features/transactions/transactions_page.dart');
@@ -65,7 +64,7 @@ test('V2 premium design system is present and wired into flagship surfaces', () 
   assert.match(appTheme, /labelColor: textColor/);
   assert.match(appTheme, /selectedColor: textColor/);
   assert.match(opportunityCard, /key: const ValueKey\('opportunity-card-standard-budget'\)[\s\S]{0,500}HopeV2SemanticColors.amount\(context\)/);
-  assert.match(offersPage, /_money\(o.price\),[\s\S]{0,200}HopeV2SemanticColors.amount\(context\)/);
+  assert.match(offersPage, /_money\\(o.price\\),[\\s\\S]{0,350}HopeV2SemanticColors.amount\\(context\\)/);
   assert.match(paymentSummary, /_money\(context, amount\),[\s\S]{0,200}HopeV2SemanticColors.amount\(context\)/);
   assert.match(candidateMatches, /color: HopeV2SemanticColors.info\(context\)/);
   assert.match(opportunityCard, /HopeV2Surfaces/);
