@@ -401,8 +401,8 @@ extension HopeProductDomainX on HopeProductDomain {
             descriptionEn: 'Find, search, and evaluate opportunities.',
           ),
         HopeProductDomain.work => const HopeDomainSpec(
-            labelFa: 'کار',
-            labelEn: 'Work',
+            labelFa: 'کارگاه',
+            labelEn: 'Workshop',
             icon: HopeV2Icons.mission,
             accent: HopeV2Colors.primary,
             descriptionFa: 'چرخه اجرایی همکاری، درخواست و پیشنهاد.',
