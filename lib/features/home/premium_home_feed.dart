@@ -737,11 +737,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 
     return PremiumQuickActionStrip(
       title: _t(context, 'دسترسی سریع', 'Quick access'),
-      subtitle: _t(
-        context,
-        'قابلیت‌های اصلی بدون نیاز به باز کردن منوی کناری.',
-        'Core destinations without opening the side menu.',
-      ),
       actions: actions,
     );
   }
@@ -1071,7 +1066,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             PremiumSectionHeader(
               domain: HopeProductDomain.work,
               title: _t(context, 'اقدام بعدی شما', 'Your next action'),
-              subtitle: _t(context, 'اولویت با کاری است که همین حالا فعال است.', 'Active work takes priority over discovery.'),
             ),
             const SizedBox(height: HopeV2Spacing.sm),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
