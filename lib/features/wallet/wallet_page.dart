@@ -1102,7 +1102,12 @@ class _WalletPageState extends State<WalletPage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: enabled ? color : HopeV2Colors.darkMuted,
+                            color: enabled
+                                ? HopeV2SemanticColors.readableAccent(
+                                    context,
+                                    color,
+                                  )
+                                : HopeV2Colors.darkMuted,
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
                           ),
