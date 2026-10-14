@@ -461,6 +461,9 @@ echo "PASS: Wave48 Wallet and Work Center responsive/locale matrix contracts"
 
 # Wave52: expanded opportunity reason panel must not leak unknown backend enums.
 grep -Fq "String? _reason(BuildContext context, String value)" "lib/core/ui/opportunity_card.dart"
+expanded_helper_line=$(grep -nF "Widget _expandedStandard(" "lib/core/ui/opportunity_card.dart" | head -n1 | cut -d: -f1)
+reason_labels_line=$(grep -nF "final reasonLabels = reasons" "lib/core/ui/opportunity_card.dart" | head -n1 | cut -d: -f1)
+test -n "$expanded_helper_line" && test -n "$reason_labels_line" && test "$reason_labels_line" -gt "$expanded_helper_line"
 grep -Fq "if (reasonLabels.isNotEmpty) ...[" "lib/core/ui/opportunity_card.dart"
 grep -Fq "expanded opportunity omits unknown match reason values" "test/core/ui/opportunity_card_test.dart"
 grep -Fq "test/core/ui/opportunity_card_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"

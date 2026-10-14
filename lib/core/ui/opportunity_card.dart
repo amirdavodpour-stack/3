@@ -104,10 +104,6 @@ class OpportunityCard extends StatelessWidget {
       ...job.aiRecommendationReasons,
       ...job.recommendationReasons,
     ].take(3).toList(growable: false);
-    final reasonLabels = reasons
-        .map((reason) => _reason(context, reason))
-        .whereType<String>()
-        .toList(growable: false);
     final mediaUrl = _mediaUrl(job);
     final locale = Localizations.localeOf(context).languageCode;
     final categoryValue = _categoryValue();
@@ -1388,6 +1384,10 @@ class OpportunityCard extends StatelessWidget {
   }) {
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final reasonLabels = reasons
+        .map((reason) => _reason(context, reason))
+        .whereType<String>()
+        .toList(growable: false);
     final matchPercent =
         HopeDisplayFormatter.matchPercentage(job.recommendationScore);
     return Column(
