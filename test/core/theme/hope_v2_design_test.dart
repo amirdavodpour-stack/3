@@ -179,8 +179,12 @@ void main() {
     expect(light.popupMenuTheme.textStyle?.color, light.colorScheme.onSurface);
     expect(dark.dropdownMenuTheme.textStyle?.color, dark.colorScheme.onSurface);
     expect(dark.popupMenuTheme.textStyle?.color, dark.colorScheme.onSurface);
+    expect(light.listTileTheme.textColor, light.colorScheme.onSurface);
+    expect(dark.listTileTheme.textColor, dark.colorScheme.onSurface);
     expect(light.dropdownMenuTheme.textStyle?.color, isNot(Colors.black));
     expect(dark.dropdownMenuTheme.textStyle?.color, isNot(Colors.black));
+    expect(light.listTileTheme.textColor, isNot(Colors.black));
+    expect(dark.listTileTheme.textColor, isNot(Colors.black));
   });
 
   testWidgets('premium tags stay on one line', (tester) async {
