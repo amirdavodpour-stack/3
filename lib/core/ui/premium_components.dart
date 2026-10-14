@@ -798,7 +798,7 @@ class PremiumDomainNavigationGroup extends StatelessWidget {
                   child: Text(
                     spec.label(context),
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: spec.accentFor(context),
+                          color: HopeV2SemanticColors.textPrimary(context),
                           fontWeight: FontWeight.w900,
                         ),
                   ),
