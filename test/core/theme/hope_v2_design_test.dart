@@ -279,6 +279,42 @@ void main() {
     expect(semantics.flagsCollection.isEnabled, ui.Tristate.isFalse);
   });
 
+  testWidgets('lifecycle rail readable labels stay neutral in light and dark themes',
+      (tester) async {
+    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Scaffold(
+            body: HopeLifecycleRail(
+              labels: const ['Created', 'Funded', 'Released'],
+              icons: const [
+                Icons.circle,
+                Icons.account_balance_wallet,
+                Icons.check_circle,
+              ],
+              current: 1,
+            ),
+          ),
+        ),
+      );
+
+      final context = tester.element(find.byType(HopeLifecycleRail));
+      expect(
+        tester.widget<Text>(find.text('Created')).style?.color,
+        HopeV2SemanticColors.textPrimary(context),
+      );
+      expect(
+        tester.widget<Text>(find.text('Funded')).style?.color,
+        HopeV2SemanticColors.textPrimary(context),
+      );
+      expect(
+        tester.widget<Text>(find.text('Released')).style?.color,
+        HopeV2SemanticColors.textSecondary(context),
+      );
+    }
+  });
+
   testWidgets('HopeIconTile renders canonical Hugeicons action tokens',
       (tester) async {
     await tester.pumpWidget(
