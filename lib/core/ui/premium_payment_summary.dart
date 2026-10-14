@@ -65,6 +65,17 @@ class PremiumPaymentSummary extends StatelessWidget {
     }
   }
 
+  Color _statusColor(BuildContext context) {
+    final status = payment.status.toUpperCase();
+    if (status == 'RELEASED' || status == 'REFUNDED') {
+      return HopeV2SemanticColors.success(context);
+    }
+    if (status.contains('FAILED')) {
+      return HopeV2SemanticColors.error(context);
+    }
+    return HopeV2SemanticColors.pending(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final amount = payment.amount;
@@ -89,12 +100,9 @@ class PremiumPaymentSummary extends StatelessWidget {
               children: [
                 HopeIcon(
                   _statusIcon(),
+                  key: const ValueKey('premium-payment-status-icon'),
                   size: 22,
-                  color: payment.status == 'RELEASED' || payment.status == 'REFUNDED'
-                      ? HopeV2Colors.success
-                      : payment.status.contains('FAILED')
-                          ? HopeV2Colors.danger
-                          : HopeV2Colors.primary,
+                  color: _statusColor(context),
                 ),
                 const SizedBox(width: HopeV2Spacing.sm),
                 Expanded(
