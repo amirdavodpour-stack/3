@@ -152,13 +152,13 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                 PremiumHeader(
                   page: HopePageId.recommendation,
                   domain: HopeProductDomain.intelligence,
-                  eyebrow: 'HOPE AI',
+                  eyebrow: isEn ? 'HOPE AI' : 'پیشنهاد هوشمند',
                   title: isEn
                       ? 'Let HOPE learn your work preferences'
-                      : 'بگذارید HOPE سلیقه کاری شما را بشناسد',
+                      : 'ترجیحات کاری خود را مشخص کنید',
                   subtitle: isEn
-                      ? 'One question at a time. Your answers shape future opportunity recommendations.'
-                      : 'هر بار یک سؤال کوتاه؛ پاسخ‌های شما پایه پیشنهادهای شغلی بعدی می‌شوند.',
+                      ? 'A few answers make recommendations more relevant.'
+                      : 'با پاسخ به چند پرسش، پیشنهادها دقیق‌تر می‌شوند.',
                   trailing: PremiumIconButton(
                     icon: HopeV2Icons.close,
                     tooltip: isEn ? 'Skip' : 'بعداً',
