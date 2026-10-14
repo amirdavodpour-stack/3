@@ -143,6 +143,8 @@ class OpportunityCard extends StatelessWidget {
         ? _formatCompactRangeAmount(amount, context)
         : _formatAmount(amount, context);
 
+    final cardAccent = _cardAccent(primary);
+
     return PressableScale(
       semanticLabel: [
         title,
@@ -154,71 +156,139 @@ class OpportunityCard extends StatelessWidget {
       ].join(', '),
       onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
       child: Container(
-          decoration: BoxDecoration(
-            gradient: featured || featuredScan
-                ? LinearGradient(
-                    begin: AlignmentDirectional.topStart,
-                    end: AlignmentDirectional.bottomEnd,
-                    colors: Theme.of(context).brightness == Brightness.dark
-                        ? [
-                            primary.withValues(alpha: .12),
-                            const Color(0xFF101522),
-                            Theme.of(context).colorScheme.surface,
-                          ]
-                        : [
-                            primary.withValues(alpha: .06),
-                            Theme.of(context).colorScheme.surface,
-                            Theme.of(context).colorScheme.surface,
-                          ],
-                    stops: const [0, .44, 1],
-                  )
-                : null,
-            color: featured || featuredScan ? null : Colors.transparent,
-            borderRadius: BorderRadius.circular(
-              featured || featuredScan ? HopeV2Radii.lg : HopeV2Radii.md,
-            ),
-            border: Border.all(
-              color: featured || featuredScan
-                  ? primary.withValues(
-                      alpha: Theme.of(context).brightness == Brightness.dark
-                          ? (featuredScan ? .18 : .21)
-                          : .18,
-                    )
-                  : HopeV2Surfaces.border(context).withValues(alpha: .08),
-            ),
-            boxShadow: Theme.of(context).brightness == Brightness.dark
-                ? [
-                    if (featured || featuredScan)
-                      BoxShadow(
-                        color: primary.withValues(alpha: .035),
-                        blurRadius: 22,
-                        offset: const Offset(0, 9),
-                      ),
-                  ]
-                : const <BoxShadow>[],
-          ),
-          padding: EdgeInsets.all(
-            (featured || featuredScan)
-                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 6 : 10)
-                : (compact ? 7 : 6),
-          ),
-          child: compact
-              ? _compact(context, title, city, amount, primary, mediaUrl, copy)
-              : compactGrid
-                  ? _compactGrid(context, title, city, amount, primary, mediaUrl, copy)
-                  : _standard(
-                  context,
-                  title,
-                  city,
-                  amount,
-                  primary,
-                  reasons,
-                  expanded,
-                  featured,
-                  featuredScan,
-                  mediaUrl,
-                  copy,
+        decoration: BoxDecoration(
+          gradient: featured || featuredScan
+              ? LinearGradient(
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
+                  colors: dark
+                      ? [
+                          primary.withValues(alpha: .12),
+                          const Color(0xFF101522),
+                          Theme.of(context).colorScheme.surface,
+                        ]
+                      : [
+                          primary.withValues(alpha: .06),
+                          Theme.of(context).colorScheme.surface,
+                          Theme.of(context).colorScheme.surface,
+                        ],
+                  stops: const [0, .44, 1],
+                )
+              : LinearGradient(
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
+                  colors: dark
+                      ? [
+                          cardAccent.withValues(alpha: .075),
+                          HopeV2Surfaces.panel(context),
+                        ]
+                      : [
+                          cardAccent.withValues(alpha: .035),
+                          Theme.of(context).colorScheme.surface,
+                        ],
                 ),
+          borderRadius: BorderRadius.circular(
+            featured || featuredScan ? HopeV2Radii.lg : HopeV2Radii.md,
+          ),
+          border: Border.all(
+            color: featured || featuredScan
+                ? primary.withValues(
+                    alpha: dark
+                        ? (featuredScan ? .18 : .21)
+                        : .18,
+                  )
+                : HopeV2Surfaces.border(context).withValues(
+                    alpha: dark ? .55 : .72,
+                  ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: dark
+                  ? Colors.black.withValues(alpha: .15)
+                  : cardAccent.withValues(
+                      alpha: featured || featuredScan ? .065 : .035,
+                    ),
+              blurRadius: featured || featuredScan ? 22 : 16,
+              offset: Offset(0, featured || featuredScan ? 8 : 5),
+            ),
+            if (dark && (featured || featuredScan))
+              BoxShadow(
+                color: primary.withValues(alpha: .035),
+                blurRadius: 22,
+                offset: const Offset(0, 9),
+              ),
+          ],
+        ),
+        padding: EdgeInsets.all(
+          (featured || featuredScan)
+              ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact
+                  ? 6
+                  : 10)
+              : (compact ? 7 : 6),
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 5),
+              child: compact
+                  ? _compact(context, title, city, amount, primary, mediaUrl, copy)
+                  : compactGrid
+                      ? _compactGrid(
+                          context,
+                          title,
+                          city,
+                          amount,
+                          primary,
+                          mediaUrl,
+                          copy,
+                        )
+                      : _standard(
+                          context,
+                          title,
+                          city,
+                          amount,
+                          primary,
+                          reasons,
+                          expanded,
+                          featured,
+                          featuredScan,
+                          mediaUrl,
+                          copy,
+                        ),
+            ),
+            PositionedDirectional(
+              start: 0,
+              top: 6,
+              bottom: 6,
+              child: ExcludeSemantics(
+                child: Container(
+                  key: const ValueKey('opportunity-card-accent-rail'),
+                  width: featured || featuredScan ? 3 : 2.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: AlignmentDirectional.topStart,
+                      end: AlignmentDirectional.bottomEnd,
+                      colors: [
+                        cardAccent.withValues(alpha: .28),
+                        cardAccent.withValues(alpha: .88),
+                        cardAccent.withValues(alpha: .42),
+                      ],
+                      stops: const [0, .52, 1],
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cardAccent.withValues(alpha: .10),
+                        blurRadius: 6,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -243,6 +313,52 @@ class OpportunityCard extends StatelessWidget {
     if (categoryId != null && categoryId.isNotEmpty) return categoryId;
     final category = job.category?.trim();
     return category != null && category.isNotEmpty ? category : null;
+  }
+
+  // Carry the category's editorial identity from its cover artwork into the
+  // card frame, using a muted palette that stays warm and readable in both
+  // themes. Unknown categories fall back to the current role accent.
+  Color _cardAccent(Color fallback) {
+    final categoryKey = (_artworkCategoryValue() ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', '-')
+        .replaceAll('  ', ' ');
+    return switch (categoryKey) {
+      'software' ||
+      'software-development' ||
+      'development' ||
+      'نرم‌افزار' ||
+      'نرم افزار' => const Color(0xFF557D75),
+      'design' || 'graphic-design' || 'طراحی' => const Color(0xFFB58A4D),
+      'marketing' || 'بازاریابی' => const Color(0xFFB86F55),
+      'content' ||
+      'translation' ||
+      'content-translation' ||
+      'محتوا و ترجمه' => const Color(0xFF5A8793),
+      'finance' ||
+      'accounting' ||
+      'finance-accounting' ||
+      'مالی و حسابداری' => const Color(0xFF4F805D),
+      'education' || 'آموزش' => const Color(0xFF638DA3),
+      'support' || 'پشتیبانی' => const Color(0xFF718E87),
+      'construction' ||
+      'technical' ||
+      'construction-technical' ||
+      'ساخت‌وساز و فنی' => const Color(0xFFB9784C),
+      'video' ||
+      'audio' ||
+      'video-audio' ||
+      'video-production' ||
+      'تولید ویدیو و صدا' => const Color(0xFFB46F86),
+      'data' ||
+      'ai' ||
+      'data-ai' ||
+      'artificial-intelligence' ||
+      'داده و هوش مصنوعی' => const Color(0xFF438B91),
+      'sales' || 'فروش' => const Color(0xFF5D875F),
+      _ => fallback,
+    };
   }
 
   // Listing cards use only absolute HTTP(S) media from the opportunity payload.
@@ -385,27 +501,27 @@ class OpportunityCard extends StatelessWidget {
         .replaceAll('  ', ' ');
     final (accent, icon, artworkStyle) = switch (categoryKey) {
       'software' || 'software-development' || 'development' || 'نرم‌افزار' || 'نرم افزار' =>
-        (HopeV2Colors.primary, HopeV2Icons.web, _CategoryArtworkStyle.software),
+        (const Color(0xFF557D75), HopeV2Icons.web, _CategoryArtworkStyle.software),
       'design' || 'graphic-design' || 'طراحی' =>
-        (HopeV2Colors.accent, HopeV2Icons.featured, _CategoryArtworkStyle.design),
+        (const Color(0xFFB58A4D), HopeV2Icons.featured, _CategoryArtworkStyle.design),
       'marketing' || 'بازاریابی' =>
-        (HopeV2Colors.accent, HopeV2Icons.activity, _CategoryArtworkStyle.marketing),
+        (const Color(0xFFB86F55), HopeV2Icons.activity, _CategoryArtworkStyle.marketing),
       'content' || 'translation' || 'content-translation' || 'محتوا و ترجمه' =>
-        (const Color(0xFF0EA5E9), HopeV2Icons.description, _CategoryArtworkStyle.content),
+        (const Color(0xFF5A8793), HopeV2Icons.description, _CategoryArtworkStyle.content),
       'finance' || 'accounting' || 'finance-accounting' || 'مالی و حسابداری' =>
-        (HopeV2Colors.successDark, HopeV2Icons.payments, _CategoryArtworkStyle.finance),
+        (const Color(0xFF4F805D), HopeV2Icons.payments, _CategoryArtworkStyle.finance),
       'education' || 'آموزش' =>
-        (const Color(0xFF38BDF8), HopeV2Icons.skills, _CategoryArtworkStyle.education),
+        (const Color(0xFF638DA3), HopeV2Icons.skills, _CategoryArtworkStyle.education),
       'support' || 'پشتیبانی' =>
-        (HopeV2Colors.secondaryDark, HopeV2Icons.message, _CategoryArtworkStyle.support),
+        (const Color(0xFF718E87), HopeV2Icons.message, _CategoryArtworkStyle.support),
       'construction' || 'technical' || 'construction-technical' || 'ساخت‌وساز و فنی' =>
-        (const Color(0xFFF97316), HopeV2Icons.workshop, _CategoryArtworkStyle.construction),
+        (const Color(0xFFB9784C), HopeV2Icons.workshop, _CategoryArtworkStyle.construction),
       'video' || 'audio' || 'video-audio' || 'video-production' || 'تولید ویدیو و صدا' =>
-        (const Color(0xFFEC4899), HopeV2Icons.device, _CategoryArtworkStyle.media),
+        (const Color(0xFFB46F86), HopeV2Icons.device, _CategoryArtworkStyle.media),
       'data' || 'ai' || 'data-ai' || 'artificial-intelligence' || 'داده و هوش مصنوعی' =>
-        (const Color(0xFF06B6D4), HopeV2Icons.insights, _CategoryArtworkStyle.data),
+        (const Color(0xFF438B91), HopeV2Icons.insights, _CategoryArtworkStyle.data),
       'sales' || 'فروش' =>
-        (const Color(0xFF22C55E), HopeV2Icons.activitySelected, _CategoryArtworkStyle.sales),
+        (const Color(0xFF5D875F), HopeV2Icons.activitySelected, _CategoryArtworkStyle.sales),
       _ => (primary, HopeV2Icons.category, _CategoryArtworkStyle.general),
     };
     final theme = Theme.of(context);
