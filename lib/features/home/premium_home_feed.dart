@@ -206,6 +206,9 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         ? _t(context, 'شما', 'you')
         : displayName.trim();
     final identityLabel = safeName;
+    final initialColor = Theme.of(context).brightness == Brightness.dark
+        ? HopeV2Colors.primaryDark
+        : HopeV2Colors.primaryOnLight;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
@@ -230,7 +233,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                   child: Text(
                                     initial,
                                     style: const TextStyle(
-                                      color: HopeV2Colors.primaryDark,
+                                      color: initialColor,
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
@@ -240,7 +243,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                 child: Text(
                                   initial,
                                   style: const TextStyle(
-                                    color: HopeV2Colors.primaryDark,
+                                    color: initialColor,
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
