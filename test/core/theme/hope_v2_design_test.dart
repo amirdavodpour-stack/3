@@ -338,6 +338,10 @@ void main() {
                   ],
                 ),
                 PremiumDomainMarker(domain: HopeProductDomain.work),
+                PremiumDomainNavigationGroup(
+                  domain: HopeProductDomain.work,
+                  children: const [SizedBox.shrink()],
+                ),
               ],
             ),
           ),
@@ -349,9 +353,16 @@ void main() {
         tester.widget<Text>(find.text('Work center')).style?.color,
         HopeV2SemanticColors.textPrimary(context),
       );
+      final workshopLabels =
+          tester.widgetList<Text>(find.text('Workshop')).toList();
+      expect(workshopLabels, hasLength(2));
       expect(
-        tester.widget<Text>(find.text('Workshop')).style?.color,
+        workshopLabels.first.style?.color,
         HopeV2SemanticColors.textSecondary(context),
+      );
+      expect(
+        workshopLabels.last.style?.color,
+        HopeV2SemanticColors.textPrimary(context),
       );
     }
   });
