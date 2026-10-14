@@ -55,8 +55,8 @@ class OpportunityCard extends StatelessWidget {
         '${HopeDisplayFormatter.integer(values[1], locale: locale)}\n'
         '${_t(context, 'تومان', 'TOMAN')}';
   }
-  String _reason(BuildContext context, String value) =>
-      hopeRecommendationReasonLabel(context, value) ?? value;
+  String? _reason(BuildContext context, String value) =>
+      hopeRecommendationReasonLabel(context, value);
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -104,6 +104,10 @@ class OpportunityCard extends StatelessWidget {
       ...job.aiRecommendationReasons,
       ...job.recommendationReasons,
     ].take(3).toList(growable: false);
+    final reasonLabels = reasons
+        .map((reason) => _reason(context, reason))
+        .whereType<String>()
+        .toList(growable: false);
     final mediaUrl = _mediaUrl(job);
     final locale = Localizations.localeOf(context).languageCode;
     final categoryValue = _categoryValue();
@@ -1544,25 +1548,26 @@ class OpportunityCard extends StatelessWidget {
             ),
           ),
         ],
-        if (reasons.isNotEmpty) ...[
+        if (reasonLabels.isNotEmpty) ...[
           const SizedBox(height: HopeV2Spacing.sm),
           Text(
             copy.copy_match_signals,
+            key: const ValueKey('opportunity-card-match-signals-title'),
             style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: HopeV2Spacing.xs),
           Wrap(
             spacing: HopeV2Spacing.sm,
             runSpacing: HopeV2Spacing.sm,
-            children: reasons
+            children: reasonLabels
                 .map(
-                  (r) => PremiumTag(
+                  (label) => PremiumTag(
                     icon: HopeV2Icons.completed,
-                    label: _reason(context, r),
+                    label: label,
                     color: primary,
                   ),
                 )
-                .toList(),
+                .toList(growable: false),
           ),
         ],
         if (job.description.trim().isNotEmpty) ...[

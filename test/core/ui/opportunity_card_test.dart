@@ -826,6 +826,45 @@ void main() {
     },
   );
 
+  testWidgets(
+    'expanded opportunity omits unknown match reason values',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'expanded-unknown-match-rationale',
+        'title': 'Opportunity with an unknown reason',
+        'description': 'Expanded reason hygiene regression.',
+        'kind': 'MISSION',
+        'visibility': 'SPECIALIZED',
+        'status': 'OPEN',
+        'recommendationReasons': ['FUTURE_SIGNAL_CODE'],
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.expanded,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('FUTURE_SIGNAL_CODE'), findsNothing);
+      expect(find.text('Match signals'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('opportunity card localizes canonical labels in both locales',
       (tester) async {
     final job = HopeJob.fromMap({

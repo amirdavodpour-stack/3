@@ -459,6 +459,13 @@ grep -Fq "test/features/transactions/transactions_page_test.dart" ".github/workf
 grep -Fq "item.width < HopeV2Breakpoints.medium" "test/features/transactions/transactions_page_test.dart"
 echo "PASS: Wave48 Wallet and Work Center responsive/locale matrix contracts"
 
+# Wave52: expanded opportunity reason panel must not leak unknown backend enums.
+grep -Fq "String? _reason(BuildContext context, String value)" "lib/core/ui/opportunity_card.dart"
+grep -Fq "if (reasonLabels.isNotEmpty) ...[" "lib/core/ui/opportunity_card.dart"
+grep -Fq "expanded opportunity omits unknown match reason values" "test/core/ui/opportunity_card_test.dart"
+grep -Fq "test/core/ui/opportunity_card_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+echo "PASS: Wave52 expanded OpportunityCard reason hygiene"
+
 # Wave51: include comprehensive Wallet page widget regressions in the consolidated gate.
 grep -Fq -- '--plain-name "pending withdrawal summary agrees with the reserved payout row" test/features/wallet/wallet_page_test.dart' ".github/workflows/hope-ui-wave-1-static.yml"
 grep -Fq "pending withdrawal summary agrees with the reserved payout row" "test/features/wallet/wallet_page_test.dart"
