@@ -315,6 +315,47 @@ void main() {
     }
   });
 
+  testWidgets('domain accent graphics do not tint readable domain text',
+      (tester) async {
+    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          theme: theme,
+          home: Scaffold(
+            body: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PremiumQuickActionStrip(
+                  title: 'Work center',
+                  domain: HopeProductDomain.work,
+                  actions: const [
+                    PremiumQuickAction(
+                      label: 'Continue',
+                      icon: HopeV2Icons.home,
+                      primary: true,
+                    ),
+                  ],
+                ),
+                PremiumDomainMarker(domain: HopeProductDomain.work),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final context = tester.element(find.byType(PremiumQuickActionStrip));
+      expect(
+        tester.widget<Text>(find.text('Work center')).style?.color,
+        HopeV2SemanticColors.textPrimary(context),
+      );
+      expect(
+        tester.widget<Text>(find.text('Workshop')).style?.color,
+        HopeV2SemanticColors.textSecondary(context),
+      );
+    }
+  });
+
   testWidgets('HopeIconTile renders canonical Hugeicons action tokens',
       (tester) async {
     await tester.pumpWidget(
