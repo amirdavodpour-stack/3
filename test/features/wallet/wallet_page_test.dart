@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
+import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
@@ -14,6 +15,14 @@ import 'package:hope_mobile/features/wallet/wallet_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _WalletEnabledCapabilities implements BackendCapabilitiesRepository {
+  @override
+  Future<BackendCapabilities> load() async => const BackendCapabilities(
+        wallet: true,
+        walletWithdraw: true,
+      );
+}
 
 class _FakeWallet implements WalletRepository {
   _FakeWallet({
@@ -1141,6 +1150,9 @@ void main() {
             providers: [
               ChangeNotifierProvider.value(value: auth),
               Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
             ],
             child: WalletPage(repository: wallet),
           ),
