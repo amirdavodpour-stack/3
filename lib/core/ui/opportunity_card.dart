@@ -386,7 +386,7 @@ class OpportunityCard extends StatelessWidget {
       'software' || 'software-development' || 'development' || 'نرم‌افزار' || 'نرم افزار' =>
         (HopeV2Colors.primary, HopeV2Icons.web, _CategoryArtworkStyle.software),
       'design' || 'graphic-design' || 'طراحی' =>
-        (const Color(0xFF8B5CF6), HopeV2Icons.featured, _CategoryArtworkStyle.design),
+        (HopeV2Colors.accent, HopeV2Icons.featured, _CategoryArtworkStyle.design),
       'marketing' || 'بازاریابی' =>
         (HopeV2Colors.accent, HopeV2Icons.activity, _CategoryArtworkStyle.marketing),
       'content' || 'translation' || 'content-translation' || 'محتوا و ترجمه' =>
@@ -1060,10 +1060,24 @@ class OpportunityCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: HopeV2Spacing.xs,
-                    runSpacing: 3,
-                    children: tags,
+                  SingleChildScrollView(
+                    key: const ValueKey('opportunity-featured-scan-tag-rail'),
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final tag in tags)
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(
+                              end: HopeV2Spacing.xs,
+                            ),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 130),
+                              child: tag,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 5),
                   Text(
