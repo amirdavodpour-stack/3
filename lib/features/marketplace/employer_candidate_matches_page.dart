@@ -159,7 +159,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: heading
-                      ? primary
+                      ? HopeV2SemanticColors.textPrimary(context)
                       : Theme.of(context).colorScheme.onSurface,
                   fontWeight: heading ? FontWeight.w900 : FontWeight.w700,
                 ),
