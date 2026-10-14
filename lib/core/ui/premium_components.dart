@@ -728,7 +728,7 @@ class PremiumDomainMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spec = domain.spec;
-    final accent = spec.accent;
+    final accent = spec.accentFor(context);
     final size = compact ? 26.0 : 36.0;
     return Semantics(
       container: true,
@@ -798,7 +798,7 @@ class PremiumDomainNavigationGroup extends StatelessWidget {
                   child: Text(
                     spec.label(context),
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: spec.accent,
+                          color: spec.accentFor(context),
                           fontWeight: FontWeight.w900,
                         ),
                   ),
