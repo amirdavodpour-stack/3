@@ -1852,7 +1852,7 @@ class _MatchIntelligence extends StatelessWidget {
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
-                          const HopeIcon(HopeV2Icons.featured, color: HopeV2Colors.primaryDark, size: 18),
+                          HopeIcon(HopeV2Icons.featured, color: Theme.of(context).colorScheme.primary, size: 18),
                           const SizedBox(width: 7),
                           Expanded(child: Text(_t(context, 'هوش تطبیق', 'Match intelligence'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
                         ]),
