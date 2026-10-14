@@ -660,7 +660,7 @@ void main() {
     expect(find.text('94% match'), findsOneWidget);
   });
 
-  testWidgets('featured job opportunity uses the HOPE purple focal accent',
+  testWidgets('featured job opportunity uses the warm-neutral focal accent',
       (tester) async {
     final job = HopeJob.fromMap({
       'id': 'job-featured-job-accent',
@@ -696,7 +696,7 @@ void main() {
       ),
     );
 
-    const primary = Color(0xFF6366F1);
+    const primary = HopeV2Colors.primaryDark;
     final focalGradientFound = tester.widgetList<Container>(
       find.byType(Container),
     ).any((container) {
