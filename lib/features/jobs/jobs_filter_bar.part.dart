@@ -393,7 +393,7 @@ class _JobsFilterHeader extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
+              color: HopeV2SemanticColors.textPrimary(context),
               fontWeight: FontWeight.w900,
             ),
       ),
