@@ -1239,6 +1239,125 @@ void main() {
 
 
   testWidgets(
+    'wallet transaction detail amounts retain semantic foregrounds in light and dark themes',
+    (tester) async {
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        for (final isCredit in [true, false]) {
+          SharedPreferences.setMockInitialValues({});
+          final auth = AuthController(_AuthRepo(), SecureStore());
+          await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+          final wallet = _FakeWallet(direction: isCredit ? 'CREDIT' : 'DEBIT');
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: brightness == Brightness.dark
+                  ? ThemeData.dark()
+                  : ThemeData.light(),
+              locale: const Locale('en'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: MultiProvider(
+                providers: [
+                  ChangeNotifierProvider.value(value: auth),
+                  Provider<WalletRepository>.value(value: wallet),
+                ],
+                child: WalletPage(repository: wallet),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
+          await tester.scrollUntilVisible(
+            find.text(amountLabel),
+            500,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(amountLabel));
+          await tester.pumpAndSettle();
+
+          final detailAmount = find.byWidgetPredicate(
+            (widget) =>
+                widget is SelectableText && widget.data == amountLabel,
+          );
+          expect(detailAmount, findsOneWidget);
+          final detailContext = tester.element(detailAmount);
+          expect(
+            tester.widget<SelectableText>(detailAmount).style?.color,
+            isCredit
+                ? HopeV2SemanticColors.incomingAmount(detailContext)
+                : HopeV2SemanticColors.negativeAmount(detailContext),
+            reason:
+                'Transaction detail amount must preserve direction semantics in $brightness mode.',
+          );
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'pending payout detail amount retains warning foreground in light and dark themes',
+    (tester) async {
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        SharedPreferences.setMockInitialValues({});
+        final auth = AuthController(_AuthRepo(), SecureStore());
+        await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+        final wallet = _FakeWallet(payoutStatus: 'RESERVED');
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: brightness == Brightness.dark
+                ? ThemeData.dark()
+                : ThemeData.light(),
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: auth),
+                Provider<WalletRepository>.value(value: wallet),
+              ],
+              child: WalletPage(repository: wallet),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(
+          find.text('Reserved'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Reserved'));
+        await tester.pumpAndSettle();
+
+        final detailAmount = find.byWidgetPredicate(
+          (widget) =>
+              widget is SelectableText && widget.data == '400,000 TOMAN',
+        );
+        expect(detailAmount, findsOneWidget);
+        final detailContext = tester.element(detailAmount);
+        expect(
+          tester.widget<SelectableText>(detailAmount).style?.color,
+          HopeV2SemanticColors.pendingAmount(detailContext),
+          reason:
+              'Pending withdrawal detail amount must remain semantically pending in $brightness mode.',
+        );
+      }
+    },
+  );
+
+  testWidgets(
     'wallet withdraw action label uses a readable semantic foreground',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
