@@ -466,7 +466,7 @@ void main() {
     }
   });
 
-  test('HOPE color genome provides six complete 50–950 tonal scales', () {
+  test('HOPE color genome provides seven complete 50–950 tonal scales', () {
     const expectedSteps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
     final palettes = <HopeV2TonalPalette>[
       HopeV2TonalPalettes.brand,
@@ -474,6 +474,7 @@ void main() {
       HopeV2TonalPalettes.info,
       HopeV2TonalPalettes.success,
       HopeV2TonalPalettes.warning,
+      HopeV2TonalPalettes.featured,
       HopeV2TonalPalettes.danger,
     ];
     const expectedValues = <List<Color>>[
@@ -506,6 +507,12 @@ void main() {
         Color(0xFFFCD34D), Color(0xFFFBBF24), Color(0xFFF59E0B),
         Color(0xFFD97706), Color(0xFFB45309), Color(0xFF92400E),
         Color(0xFF78350F), Color(0xFF451A03),
+      ],
+      [
+        Color(0xFFFFF7ED), Color(0xFFFFEDD5), Color(0xFFFDBA74),
+        Color(0xFFFF9A4D), Color(0xFFFB923C), Color(0xFFF97316),
+        Color(0xFFEA580C), Color(0xFFC2410C), Color(0xFF9A3412),
+        Color(0xFF7C2D12), Color(0xFF431407),
       ],
       [
         Color(0xFFFEF2F2), Color(0xFFFEE2E2), Color(0xFFFECACA),
@@ -738,6 +745,7 @@ void main() {
       'info': HopeV2TonalPalettes.info,
       'success': HopeV2TonalPalettes.success,
       'warning': HopeV2TonalPalettes.warning,
+      'featured': HopeV2TonalPalettes.featured,
       'danger': HopeV2TonalPalettes.danger,
     };
 
@@ -763,6 +771,10 @@ void main() {
     expect(HopeV2Colors.primaryBorderLight, HopeV2TonalPalettes.brand.shade200);
     expect(HopeV2Colors.ink, HopeV2TonalPalettes.neutral.shade900);
     expect(HopeV2Colors.muted, HopeV2TonalPalettes.neutral.shade600);
+    expect(HopeV2Colors.orange, HopeV2TonalPalettes.featured.shade500);
+    expect(HopeV2Colors.orangeDark, HopeV2TonalPalettes.featured.shade300);
+    expect(HopeV2Colors.accentTextLight, HopeV2TonalPalettes.featured.shade800);
+    expect(HopeV2Colors.accentTextDark, HopeV2TonalPalettes.featured.shade200);
     expect(HopeV2Colors.inkSoft, HopeV2TonalPalettes.neutral.shade800);
     expect(HopeV2Colors.secondary, HopeV2TonalPalettes.info.shade500);
     expect(HopeV2Colors.secondaryStrong, HopeV2TonalPalettes.info.shade600);
