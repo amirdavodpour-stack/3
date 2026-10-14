@@ -813,6 +813,56 @@ void main() {
     }
   });
 
+  testWidgets('pending payout amount and label use warning semantics in light and dark themes',
+      (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet(payoutStatus: 'RESERVED');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: brightness == Brightness.dark
+              ? ThemeData.dark()
+              : ThemeData.light(),
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Reserved'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      final amountFinder = find.text('400,000 TOMAN');
+      final statusFinder = find.text('Reserved');
+      final context = tester.element(statusFinder);
+      expect(
+        tester.widget<Text>(amountFinder).style?.color,
+        HopeV2SemanticColors.pendingAmount(context),
+      );
+      expect(
+        tester.widget<Text>(statusFinder).style?.color,
+        HopeV2SemanticColors.pending(context),
+      );
+    }
+  });
+
   testWidgets('wallet presents backend enums as localized user-facing labels',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
