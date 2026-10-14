@@ -32,27 +32,44 @@ class OpportunityCard extends StatelessWidget {
         locale: Localizations.localeOf(context).languageCode,
       );
 
-  // Compact discovery tiles retain the exact range while showing the
-  // currency unit once, so narrow cards have room for both amounts.
-  String _formatCompactGridAmount(String value, BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
+  ({int lower, int upper})? _parseCompactRange(String value) {
     final parts = value.trim().split(RegExp(r'\s*[–-]\s*'));
-    if (parts.length != 2) return _formatAmount(value, context);
-
+    if (parts.length != 2) return null;
     final first = HopeDisplayFormatter.parseInteger(parts.first);
     final second = HopeDisplayFormatter.parseInteger(parts.last);
-    if (first == null || second == null) {
-      return _formatAmount(value, context);
-    }
+    if (first == null || second == null) return null;
+    return first <= second
+        ? (lower: first, upper: second)
+        : (lower: second, upper: first);
+  }
 
-    if (first == second) {
-      return HopeDisplayFormatter.money(first, locale: locale);
+  // Compact cards keep both exact bounds together and display the currency
+  // unit once, after the range. This reduces noise without rounding values.
+  String _formatCompactRangeAmount(String value, BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final range = _parseCompactRange(value);
+    if (range == null) return _formatAmount(value, context);
+    if (range.lower == range.upper) {
+      return HopeDisplayFormatter.money(range.lower, locale: locale);
     }
-
-    final values = [first, second]..sort();
-    return '${HopeDisplayFormatter.integer(values[0], locale: locale)}\n'
+    return '${HopeDisplayFormatter.integer(range.lower, locale: locale)} '
         '${_t(context, 'تا', '–')} '
-        '${HopeDisplayFormatter.integer(values[1], locale: locale)}\n'
+        '${HopeDisplayFormatter.integer(range.upper, locale: locale)} '
+        '${_t(context, 'تومان', 'TOMAN')}';
+  }
+
+  // Grid cards preserve the same exact range but stack the amounts to fit a
+  // narrow two-column tile. The unit still appears once for quick scanning.
+  String _formatCompactGridAmount(String value, BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final range = _parseCompactRange(value);
+    if (range == null) return _formatAmount(value, context);
+    if (range.lower == range.upper) {
+      return HopeDisplayFormatter.money(range.lower, locale: locale);
+    }
+    return '${HopeDisplayFormatter.integer(range.lower, locale: locale)}\n'
+        '${_t(context, 'تا', '–')} '
+        '${HopeDisplayFormatter.integer(range.upper, locale: locale)}\n'
         '${_t(context, 'تومان', 'TOMAN')}';
   }
   String? _reason(BuildContext context, String value) =>
@@ -121,6 +138,9 @@ class OpportunityCard extends StatelessWidget {
             matchPercent.round(),
             locale: locale,
           )} ${_t(context, 'تطابق', 'match')}';
+    final semanticAmount = compact || compactGrid
+        ? _formatCompactRangeAmount(amount, context)
+        : _formatAmount(amount, context);
 
     return PressableScale(
       semanticLabel: [
@@ -128,7 +148,7 @@ class OpportunityCard extends StatelessWidget {
         opportunityKind,
         if (category.isNotEmpty) category,
         city,
-        if (amount.isNotEmpty) _formatAmount(amount, context),
+        if (amount.isNotEmpty) semanticAmount,
         if (scoreLabel.isNotEmpty) scoreLabel,
       ].join(', '),
       onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
@@ -652,7 +672,7 @@ class OpportunityCard extends StatelessWidget {
               if (amount.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
-                  _formatAmount(amount, context),
+                  _formatCompactRangeAmount(amount, context),
                   key: const ValueKey('opportunity-card-compact-budget'),
                   // Long Toman ranges can wrap each bound and unit separately
                   // at narrow widths and enlarged text. Let the text expand

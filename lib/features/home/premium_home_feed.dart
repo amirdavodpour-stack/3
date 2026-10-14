@@ -300,7 +300,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           ),
           const SizedBox(height: 3),
           Text(
-            _t(context, 'فرصت‌های متناسب با مسیر کاری شما', 'Opportunities matched to your path'),
+            _t(context, 'نمای کلی HOPE', 'Your HOPE overview'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
