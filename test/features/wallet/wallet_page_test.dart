@@ -809,6 +809,11 @@ void main() {
               : HopeV2SemanticColors.negativeAmount(amountContext),
           reason: 'Credit/debit amounts must use semantic foreground roles in $brightness mode.',
         );
+        expect(
+          amountText.style?.color,
+          isNot(Theme.of(amountContext).colorScheme.primary),
+          reason: 'Ledger amounts must not use the brand action foreground in $brightness mode.',
+        );
       }
     }
   });
@@ -859,6 +864,16 @@ void main() {
       expect(
         tester.widget<Text>(statusFinder).style?.color,
         HopeV2SemanticColors.pending(context),
+      );
+      expect(
+        tester.widget<Text>(statusFinder).style?.color,
+        isNot(Theme.of(context).colorScheme.primary),
+        reason: 'Pending payout status is semantic state, not a brand action label.',
+      );
+      expect(
+        tester.widget<Text>(amountFinder).style?.color,
+        isNot(Theme.of(context).colorScheme.primary),
+        reason: 'Pending payout amounts must not be colored as primary actions.',
       );
     }
   });
