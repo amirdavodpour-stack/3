@@ -682,7 +682,7 @@ class PremiumQuickActionStrip extends StatelessWidget {
                 child: Text(
                   title,
                   style: HopeV2Type.section(context).copyWith(
-                    color: resolvedDomain == null ? null : accent,
+                    color: resolvedDomain == null ? null : HopeV2SemanticColors.textPrimary(context),
                   ),
                 ),
               ),
@@ -757,7 +757,7 @@ class PremiumDomainMarker extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 spec.label(context),
-                style: HopeV2Type.eyebrow(context).copyWith(color: accent),
+                style: HopeV2Type.eyebrow(context).copyWith(color: HopeV2SemanticColors.textSecondary(context)),
               ),
             ],
           ],
