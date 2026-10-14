@@ -497,7 +497,7 @@ class _OffersPageState extends State<OffersPage> {
                   _money(o.price),
                   style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900,
-                        color: Theme.of(ctx).colorScheme.primary,
+                        color: HopeV2SemanticColors.amount(ctx),
                       ),
                 ),
                 if (o.message.trim().isNotEmpty) ...[

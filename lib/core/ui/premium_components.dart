@@ -2184,6 +2184,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = accent ?? Theme.of(context).colorScheme.primary;
+    final scoreForeground = HopeV2SemanticColors.info(context);
+    final neutralForeground = HopeV2SemanticColors.textSecondary(context);
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final scoreRingSize = enlargedText ? 78.0 : 62.0;
@@ -2283,7 +2285,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                   Text(
                     HopeDisplayFormatter.percent(percent, locale: locale),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: primary,
+                          color: scoreForeground,
                           fontWeight: FontWeight.w900,
                         ),
                   ),
@@ -2353,7 +2355,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: primary,
+                                    color: neutralForeground,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: .4,
                                   ),
@@ -2392,7 +2394,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                   Text(
                                     scoreLabel,
                                     style: HopeV2Type.metric(context).copyWith(
-                                      color: primary,
+                                      color: scoreForeground,
                                       fontSize: enlargedText ? 14 : 17,
                                       height: 1.0,
                                     ),
@@ -2404,7 +2406,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                         .textTheme
                                         .labelSmall
                                         ?.copyWith(
-                                          color: primary,
+                                          color: scoreForeground,
                                           fontWeight: FontWeight.w800,
                                           fontSize: enlargedText ? 10 : null,
                                           height: enlargedText ? 1 : null,
@@ -2462,8 +2464,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(scoreLabel, style: HopeV2Type.metric(context).copyWith(color: primary, fontSize: 24)),
-                          Text(_t(context, 'تطبیق', 'match'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: primary)),
+                          Text(scoreLabel, style: HopeV2Type.metric(context).copyWith(color: scoreForeground, fontSize: 24)),
+                          Text(_t(context, 'تطبیق', 'match'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scoreForeground)),
                         ],
                       ),
                     ),
@@ -2541,7 +2543,7 @@ class HopeCreationProgress extends StatelessWidget {
                 key: const ValueKey('create-opportunity-current-step-label'),
                 textAlign: TextAlign.start,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+                      color: HopeV2SemanticColors.textPrimary(context),
                       fontWeight: FontWeight.w900,
                     ),
               ),
@@ -2592,7 +2594,7 @@ class HopeCreationProgress extends StatelessWidget {
                               en ? (step + 1).toString() : persianDigits[step],
                               style: TextStyle(
                                 color: step <= safeIndex
-                                    ? Theme.of(context).colorScheme.primary
+                                    ? HopeV2SemanticColors.textPrimary(context)
                                     : Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
@@ -2607,7 +2609,7 @@ class HopeCreationProgress extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                   color: step == safeIndex
-                                      ? Theme.of(context).colorScheme.primary
+                                      ? HopeV2SemanticColors.textPrimary(context)
                                       : Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontWeight: step == safeIndex
                                       ? FontWeight.w900
