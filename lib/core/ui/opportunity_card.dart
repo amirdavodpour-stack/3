@@ -156,6 +156,7 @@ class OpportunityCard extends StatelessWidget {
       ].join(', '),
       onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
       child: Container(
+        key: const ValueKey('opportunity-card-surface'),
         decoration: BoxDecoration(
           color: featured || featuredScan
               ? null
