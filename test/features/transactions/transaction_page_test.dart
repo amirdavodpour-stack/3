@@ -9,6 +9,7 @@ import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
@@ -518,6 +519,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(feeAmount, findsOneWidget);
       final feeAmountText = tester.widget<Text>(feeAmount);
+      expect(
+        feeAmountText.style?.color,
+        HopeV2SemanticColors.price(tester.element(feeAmount)),
+        reason: 'Financial detail rows must use the semantic price foreground.',
+      );
       expect(feeAmountText.maxLines, isNull);
       expect(feeAmountText.softWrap, isTrue);
       expect(feeAmountText.overflow, TextOverflow.visible);

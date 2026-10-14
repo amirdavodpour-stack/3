@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/ui/premium_payment_summary.dart';
@@ -152,6 +153,21 @@ void main() {
     expect(values.any((value) => value.contains('1,000,000 Toman')), isTrue);
     expect(values.any((value) => value.contains('1,100,000 Toman')), isTrue);
     expect(values.any((value) => value.contains('900,000 Toman')), isTrue);
+
+    for (final amount in [
+      '1,000,000 Toman',
+      '1,100,000 Toman',
+      '900,000 Toman',
+    ]) {
+      final amountFinder = find.text(amount);
+      expect(amountFinder, findsOneWidget);
+      final amountText = tester.widget<Text>(amountFinder);
+      expect(
+        amountText.style?.color,
+        HopeV2SemanticColors.price(tester.element(amountFinder)),
+        reason: 'Every displayed payment amount must use the shared semantic price foreground.',
+      );
+    }
   });
 
   testWidgets('PremiumPaymentSummary exposes one financial summary semantics boundary',

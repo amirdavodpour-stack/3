@@ -257,6 +257,7 @@ Widget _moneyRow(
           overflow: TextOverflow.visible,
           textAlign: compactLayout ? TextAlign.start : TextAlign.end,
           style: TextStyle(
+            color: HopeV2SemanticColors.price(context),
             fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
           ),
         );

@@ -107,7 +107,7 @@ class PremiumPaymentSummary extends StatelessWidget {
                   Text(
                     _money(context, amount),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: HopeV2SemanticColors.amount(context),
+                      color: HopeV2SemanticColors.price(context),
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -177,7 +177,10 @@ class _Metric extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               value,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: HopeV2SemanticColors.price(context),
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ],
         ),
