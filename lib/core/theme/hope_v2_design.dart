@@ -18,7 +18,7 @@ class HopeV2Colors {
   static const primary = Color(0xFF6366F1);
   static const primaryAction = Color(0xFF4F46E5);
   static const primaryOnLight = Color(0xFF4F46E5);
-  static const successOnLight = Color(0xFF236443);
+  static const successOnLight = Color(0xFF166534);
   static const warningOnLight = Color(0xFF92400E);
   static const dangerOnLight = Color(0xFFB91C1C);
   static const secondaryAction = Color(0xFF0F766E);
@@ -47,11 +47,11 @@ class HopeV2Colors {
   static const background = Color(0xFFEFECE3);
   // Match the canonical reference semantic green used for trust/success.
   static const success = Color(0xFF27764C);
-  static const successDark = Color(0xFF89BD95);
+  static const successDark = Color(0xFFBBF7D0);
   static const warning = Color(0xFFB78635);
-  static const warningDark = Color(0xFFD5B56C);
+  static const warningDark = Color(0xFFFDE68A);
   static const danger = Color(0xFFC14B43);
-  static const dangerDark = Color(0xFFDC766F);
+  static const dangerDark = Color(0xFFFECACA);
   static const softPrimary = Color(0xFFE8E0CD);
   static const darkBackground = Color(0xFF070A12);
   static const darkSurface = Color(0xFF0F111A);
@@ -64,6 +64,11 @@ class HopeV2Colors {
   static const moneyTextDark = Color(0xFFF1F3EC);
   static const infoTextLight = Color(0xFF0F766E);
   static const infoTextDark = Color(0xFF5EEAD4);
+  // Dedicated blue identity/trust roles: separate from teal information and indigo actions.
+  static const trustTextLight = Color(0xFF1E40AF);
+  static const trustTextDark = Color(0xFFBFDBFE);
+  static const trustSurfaceLight = Color(0xFFEFF6FF);
+  static const trustSurfaceDark = Color(0xFF14253A);
 
   // Featured/recommended content uses a dedicated warm foreground, never the
   // brand-action hue. Its surface stays distinct from readable foregrounds.
@@ -175,9 +180,9 @@ class HopeV2TonalPalette {
       ];
 }
 
-/// Seven shared ramps form the HOPE color genome. The warm featured-orange
-/// ramp is distinct from amber warning. Purple/indigo remains action-only; semantic
-/// foregrounds are chosen separately for readable text.
+/// Eight shared ramps form the HOPE color genome. The warm featured-orange
+/// ramp is distinct from amber warning, and blue trust is distinct from teal info.
+/// Purple/indigo remains action-only; semantic foregrounds are chosen separately.
 class HopeV2TonalPalettes {
   const HopeV2TonalPalettes._();
 
@@ -221,6 +226,20 @@ class HopeV2TonalPalettes {
     shade800: Color(0xFF115E59),
     shade900: Color(0xFF134E4A),
     shade950: Color(0xFF042F2E),
+  );
+
+  static const trust = HopeV2TonalPalette(
+    shade50: Color(0xFFEFF6FF),
+    shade100: Color(0xFFDBEAFE),
+    shade200: Color(0xFFBFDBFE),
+    shade300: Color(0xFF93C5FD),
+    shade400: Color(0xFF60A5FA),
+    shade500: Color(0xFF3B82F6),
+    shade600: Color(0xFF2563EB),
+    shade700: Color(0xFF1D4ED8),
+    shade800: Color(0xFF1E40AF),
+    shade900: Color(0xFF1E3A8A),
+    shade950: Color(0xFF172554),
   );
 
   static const success = HopeV2TonalPalette(
@@ -577,6 +596,17 @@ class HopeV2SemanticColors {
       _isDark(context) ? HopeV2Colors.darkMuted : HopeV2Colors.muted;
   static Color amount(BuildContext context) =>
       _isDark(context) ? HopeV2Colors.moneyTextDark : HopeV2Colors.moneyTextLight;
+
+  /// Financial values and their labels have separate foreground roles.
+  static Color price(BuildContext context) => amount(context);
+  static Color priceLabel(BuildContext context) => textSecondary(context);
+
+  /// Verified identity/security is blue, not the indigo action hue.
+  static Color trust(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.trustTextDark : HopeV2Colors.trustTextLight;
+  static Color verified(BuildContext context) => trust(context);
+  static Color secure(BuildContext context) => trust(context);
+  static Color link(BuildContext context) => info(context);
   static Color info(BuildContext context) =>
       _isDark(context) ? HopeV2Colors.infoTextDark : HopeV2Colors.infoTextLight;
   static Color success(BuildContext context) =>
@@ -610,6 +640,12 @@ class HopeV2SemanticColors {
       return _isDark(context)
           ? HopeV2Colors.infoSurfaceDark
           : HopeV2Colors.infoSurfaceLight;
+    }
+    if (accent == HopeV2Colors.trustTextLight ||
+        accent == HopeV2Colors.trustTextDark) {
+      return _isDark(context)
+          ? HopeV2Colors.trustSurfaceDark
+          : HopeV2Colors.trustSurfaceLight;
     }
     if (accent == HopeV2Colors.success ||
         accent == HopeV2Colors.successDark ||
@@ -652,6 +688,8 @@ class HopeV2SemanticColors {
         accent == HopeV2Colors.secondaryAction) {
       return info(context);
     }
+    if (accent == HopeV2Colors.trustTextLight ||
+        accent == HopeV2Colors.trustTextDark) return trust(context);
     if (accent == HopeV2Colors.success ||
         accent == HopeV2Colors.successDark ||
         accent == HopeV2Colors.successOnLight) return success(context);

@@ -225,7 +225,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: HopeV2Icons.verified,
                   label: _t(context, 'اعتماد', 'Trust'),
                   value: data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'),
-                  color: data.isVerified ? Theme.of(context).colorScheme.primary : HopeV2Colors.muted,
+                  color: data.isVerified ? HopeV2SemanticColors.verified(context) : HopeV2SemanticColors.textSecondary(context),
                 ),
                 (
                   icon: HopeV2Icons.completed,

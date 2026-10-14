@@ -9,6 +9,7 @@ import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/features/profile/profile_page.dart';
@@ -86,6 +87,7 @@ Future<void> _pump(
   double height = 2400,
   ProfileRepository? repository,
   bool settle = true,
+  ThemeData? theme,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -101,7 +103,7 @@ Future<void> _pump(
     auth.continueAsGuest();
   }
   await tester.pumpWidget(MaterialApp(
-    theme: ThemeData.light(),
+    theme: theme ?? ThemeData.light(),
     locale: const Locale('fa'),
     supportedLocales: const [Locale('fa'), Locale('en')],
     localizationsDelegates: const [
@@ -256,6 +258,27 @@ testWidgets('profile keeps application management in the dedicated work destinat
     expect(find.text('تأییدشده'), findsWidgets);
     expect(find.textContaining('VERIFIED'), findsNothing);
   });
+  testWidgets('verified profile trust label uses a readable trust token, not brand indigo',
+      (tester) async {
+    await _pump(
+      tester,
+      authenticated: true,
+      theme: AppTheme.light(),
+    );
+
+    final railFinder = find.byType(HopeTrustSignalRail);
+    expect(railFinder, findsOneWidget);
+    final rail = tester.widget<HopeTrustSignalRail>(railFinder);
+    final context = tester.element(railFinder);
+    final verification = rail.signals.firstWhere(
+      (signal) => signal.label == 'اعتماد',
+    );
+
+    expect(verification.color, HopeV2SemanticColors.verified(context));
+    expect(verification.color, HopeV2Colors.trustTextLight);
+    expect(verification.color, isNot(Theme.of(context).colorScheme.primary));
+  });
+
   testWidgets(
     'Wave 24 language selector clears the dock at 360x640 and remains tappable',
     (tester) async {

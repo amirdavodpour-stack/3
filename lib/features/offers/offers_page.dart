@@ -323,7 +323,7 @@ class _OffersPageState extends State<OffersPage> {
                     _money(o.price),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w900,
-                          color: HopeV2SemanticColors.amount(context),
+                          color: HopeV2SemanticColors.price(context),
                         ),
                   ),
                   const SizedBox(height: 4),
@@ -497,7 +497,7 @@ class _OffersPageState extends State<OffersPage> {
                   _money(o.price),
                   style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900,
-                        color: HopeV2SemanticColors.amount(ctx),
+                        color: HopeV2SemanticColors.price(ctx),
                       ),
                 ),
                 if (o.message.trim().isNotEmpty) ...[

@@ -430,6 +430,8 @@ void main() {
       HopeV2Colors.moneyTextDark,
       HopeV2Colors.infoTextLight,
       HopeV2Colors.infoTextDark,
+      HopeV2Colors.trustTextLight,
+      HopeV2Colors.trustTextDark,
     ]) {
       expect(indigoActions.contains(readable), isFalse);
     }
@@ -441,6 +443,7 @@ void main() {
       HopeV2Colors.panelSoftLight,
       HopeV2Colors.navigationLight,
       HopeV2Colors.chipLight,
+      HopeV2Colors.trustSurfaceLight,
     ];
     final darkSurfaces = [
       HopeV2Colors.darkBackground,
@@ -449,6 +452,7 @@ void main() {
       HopeV2Colors.panelDark,
       HopeV2Colors.panelSoftDark,
       HopeV2Colors.inputDark,
+      HopeV2Colors.trustSurfaceDark,
     ];
     for (final surface in lightSurfaces) {
       expect(_contrastRatio(HopeV2Colors.moneyTextLight, surface), greaterThanOrEqualTo(4.5));
@@ -456,6 +460,7 @@ void main() {
       expect(_contrastRatio(HopeV2Colors.successOnLight, surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(HopeV2Colors.warningOnLight, surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(HopeV2Colors.dangerOnLight, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.trustTextLight, surface), greaterThanOrEqualTo(4.5));
     }
     for (final surface in darkSurfaces) {
       expect(_contrastRatio(HopeV2Colors.moneyTextDark, surface), greaterThanOrEqualTo(4.5));
@@ -463,15 +468,17 @@ void main() {
       expect(_contrastRatio(HopeV2Colors.successDark, surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(HopeV2Colors.warningDark, surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(HopeV2Colors.dangerDark, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.trustTextDark, surface), greaterThanOrEqualTo(4.5));
     }
   });
 
-  test('HOPE color genome provides seven complete 50–950 tonal scales', () {
+  test('HOPE color genome provides eight complete 50–950 tonal scales', () {
     const expectedSteps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
     final palettes = <HopeV2TonalPalette>[
       HopeV2TonalPalettes.brand,
       HopeV2TonalPalettes.neutral,
       HopeV2TonalPalettes.info,
+      HopeV2TonalPalettes.trust,
       HopeV2TonalPalettes.success,
       HopeV2TonalPalettes.warning,
       HopeV2TonalPalettes.featured,
@@ -495,6 +502,12 @@ void main() {
         Color(0xFF5EEAD4), Color(0xFF2DD4BF), Color(0xFF14B8A6),
         Color(0xFF0D9488), Color(0xFF0F766E), Color(0xFF115E59),
         Color(0xFF134E4A), Color(0xFF042F2E),
+      ],
+      [
+        Color(0xFFEFF6FF), Color(0xFFDBEAFE), Color(0xFFBFDBFE),
+        Color(0xFF93C5FD), Color(0xFF60A5FA), Color(0xFF3B82F6),
+        Color(0xFF2563EB), Color(0xFF1D4ED8), Color(0xFF1E40AF),
+        Color(0xFF1E3A8A), Color(0xFF172554),
       ],
       [
         Color(0xFFF0FDF4), Color(0xFFDCFCE7), Color(0xFFBBF7D0),
@@ -548,6 +561,15 @@ void main() {
       home: Builder(builder: (context) {
         light = {
           'amount': HopeV2SemanticColors.amount(context),
+          'price': HopeV2SemanticColors.price(context),
+          'priceLabel': HopeV2SemanticColors.priceLabel(context),
+          'trust': HopeV2SemanticColors.trust(context),
+          'secure': HopeV2SemanticColors.secure(context),
+          'link': HopeV2SemanticColors.link(context),
+          'pendingAmount': HopeV2SemanticColors.pendingAmount(context),
+          'negativeAmount': HopeV2SemanticColors.negativeAmount(context),
+          'trustSurface': HopeV2SemanticColors.statusSurface(
+            context, HopeV2Colors.trustTextLight),
           'neutral': HopeV2SemanticColors.neutral(context),
           'featured': HopeV2SemanticColors.featured(context),
           'pending': HopeV2SemanticColors.pending(context),
@@ -567,6 +589,15 @@ void main() {
       home: Builder(builder: (context) {
         dark = {
           'amount': HopeV2SemanticColors.amount(context),
+          'price': HopeV2SemanticColors.price(context),
+          'priceLabel': HopeV2SemanticColors.priceLabel(context),
+          'trust': HopeV2SemanticColors.trust(context),
+          'secure': HopeV2SemanticColors.secure(context),
+          'link': HopeV2SemanticColors.link(context),
+          'pendingAmount': HopeV2SemanticColors.pendingAmount(context),
+          'negativeAmount': HopeV2SemanticColors.negativeAmount(context),
+          'trustSurface': HopeV2SemanticColors.statusSurface(
+            context, HopeV2Colors.trustTextDark),
           'neutral': HopeV2SemanticColors.neutral(context),
           'featured': HopeV2SemanticColors.featured(context),
           'pending': HopeV2SemanticColors.pending(context),
@@ -583,6 +614,22 @@ void main() {
 
     expect(light['amount'], HopeV2Colors.moneyTextLight);
     expect(dark['amount'], HopeV2Colors.moneyTextDark);
+    expect(light['price'], light['amount']);
+    expect(dark['price'], dark['amount']);
+    expect(light['priceLabel'], HopeV2Colors.muted);
+    expect(dark['priceLabel'], HopeV2Colors.darkMuted);
+    expect(light['trust'], HopeV2Colors.trustTextLight);
+    expect(dark['trust'], HopeV2Colors.trustTextDark);
+    expect(light['secure'], light['trust']);
+    expect(dark['secure'], dark['trust']);
+    expect(light['link'], HopeV2Colors.infoTextLight);
+    expect(dark['link'], HopeV2Colors.infoTextDark);
+    expect(light['pendingAmount'], HopeV2Colors.warningOnLight);
+    expect(dark['pendingAmount'], HopeV2Colors.warningDark);
+    expect(light['negativeAmount'], AppTheme.light().colorScheme.error);
+    expect(dark['negativeAmount'], AppTheme.dark().colorScheme.error);
+    expect(light['trustSurface'], HopeV2Colors.trustSurfaceLight);
+    expect(dark['trustSurface'], HopeV2Colors.trustSurfaceDark);
     expect(light['neutral'], HopeV2Colors.muted);
     expect(dark['neutral'], HopeV2Colors.darkMuted);
     expect(light['featured'], HopeV2Colors.accentTextLight);
@@ -621,6 +668,7 @@ void main() {
       HopeV2Colors.panelSoftLight,
       HopeV2Colors.chipLight,
       HopeV2Colors.accentSurfaceLight,
+      HopeV2Colors.trustSurfaceLight,
     ];
     final darkTextSurfaces = [
       HopeV2Colors.darkBackground,
@@ -629,12 +677,15 @@ void main() {
       HopeV2Colors.panelDark,
       HopeV2Colors.panelSoftDark,
       HopeV2Colors.accentSurfaceDark,
+      HopeV2Colors.trustSurfaceDark,
     ];
     for (final surface in lightTextSurfaces) {
       expect(_contrastRatio(HopeV2Colors.accentTextLight, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.trustTextLight, surface), greaterThanOrEqualTo(4.5));
     }
     for (final surface in darkTextSurfaces) {
       expect(_contrastRatio(HopeV2Colors.accentTextDark, surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(HopeV2Colors.trustTextDark, surface), greaterThanOrEqualTo(4.5));
     }
   });
 
