@@ -2145,4 +2145,80 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'repeated opportunity cards stay quiet while featured cards own surface depth',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'opportunity-card-surface-hierarchy',
+        'title': 'A useful opportunity, clearly presented',
+        'categoryId': 'software',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '800000',
+        'city': 'Tehran',
+      });
+
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        for (final variant in [
+          OpportunityCardVariant.standard,
+          OpportunityCardVariant.featured,
+          OpportunityCardVariant.featuredScan,
+        ]) {
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: const Locale('fa'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              theme: ThemeData(brightness: brightness),
+              home: Scaffold(
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: OpportunityCard(job: job, variant: variant),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final surfaceFinder = find.byKey(
+            const ValueKey('opportunity-card-surface'),
+          );
+          expect(surfaceFinder, findsOneWidget);
+          final decoration =
+              tester.widget<Container>(surfaceFinder).decoration;
+          expect(decoration, isA<BoxDecoration>());
+          final box = decoration! as BoxDecoration;
+          final focal = variant == OpportunityCardVariant.featured ||
+              variant == OpportunityCardVariant.featuredScan;
+
+          expect(
+            box.boxShadow,
+            focal ? isNotEmpty : isEmpty,
+            reason: 'Only focal cards should carry elevation: $variant / $brightness.',
+          );
+          expect(
+            box.gradient != null,
+            focal,
+            reason: 'Only focal cards should use the stronger hero gradient.',
+          );
+          if (!focal) {
+            expect(
+              box.color,
+              isNotNull,
+              reason: 'Repeated results need a calm, readable surface.',
+            );
+          }
+          expect(tester.takeException(), isNull);
+        }
+      }
+    },
+  );
+
 }
