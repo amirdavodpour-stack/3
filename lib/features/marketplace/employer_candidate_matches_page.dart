@@ -26,6 +26,12 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
         fractionDigits: fractionDigits,
       );
 
+  String _candidateScoreLabel(BuildContext context, num score) => _percent(
+        context,
+        score,
+        fractionDigits: score == score.roundToDouble() ? 0 : 1,
+      );
+
   String _reason(BuildContext context, String value) => switch (value) {
         'SKILL_MATCH' => _t(context, 'مهارت', 'Skills'),
         'EXPERIENCE_MATCH' => _t(context, 'تجربه', 'Experience'),
@@ -238,13 +244,9 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                         candidateIndex < candidates.length;
                         candidateIndex++)
                       cell(
-                        _percent(
+                        _candidateScoreLabel(
                           context,
                           candidates[candidateIndex].score,
-                          fractionDigits: candidates[candidateIndex].score ==
-                                  candidates[candidateIndex].score.roundToDouble()
-                              ? 0
-                              : 1,
                         ),
                         heading: true,
                         highlight: candidateIndex == 0,
@@ -329,8 +331,9 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       ),
                     ),
                     PremiumTag(
+                      key: const ValueKey('candidate-comparison-best-score'),
                       icon: HopeV2Icons.match,
-                      label: _percent(context, best.score.round()),
+                      label: _candidateScoreLabel(context, best.score),
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     if (data.candidates.length > 1) ...[
@@ -450,6 +453,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           ),
                         ),
                         Container(
+                          key: ValueKey('candidate-match-score-${candidate.userId}'),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: HopeV2Colors.primary.withValues(alpha: .12),
@@ -459,11 +463,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            _percent(
-                          context,
-                          candidate.score,
-                          fractionDigits: candidate.score == candidate.score.roundToDouble() ? 0 : 1,
-                        ),
+                            _candidateScoreLabel(context, candidate.score),
                             style: HopeV2Type.metric(context).copyWith(
                               color: Theme.of(context).colorScheme.primary,
                               fontSize: 22,

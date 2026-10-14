@@ -62,6 +62,22 @@ void main() {
     expect(find.text('Worker One'), findsWidgets);
     expect(find.text('۹۱٫۴٪'), findsWidgets);
     expect(find.text('اختلاف ۵ واحد درصد'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-comparison-best-score')),
+        matching: find.text('۹۱٫۴٪'),
+      ),
+      findsOneWidget,
+      reason: 'The Best Match overview must preserve the source score precision.',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('candidate-match-score-worker-1')),
+        matching: find.text('۹۱٫۴٪'),
+      ),
+      findsOneWidget,
+      reason: 'The first candidate card must use the same score precision.',
+    );
     expect(find.text('مهارت'), findsWidgets);
     expect(find.text('تجربه'), findsWidgets);
     expect(
