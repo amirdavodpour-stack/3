@@ -536,7 +536,7 @@ class OpportunityCard extends StatelessWidget {
           begin: AlignmentDirectional.topEnd,
           end: AlignmentDirectional.bottomStart,
           colors: [
-            accent.withValues(alpha: dark ? .09 : .05),
+            accent.withValues(alpha: dark ? .13 : .075),
             baseSurface,
           ],
         ),
@@ -551,8 +551,8 @@ class OpportunityCard extends StatelessWidget {
         child: Center(
           child: Container(
             key: const ValueKey('opportunity-fallback-icon-container'),
-            width: 28,
-            height: 28,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: dark ? .07 : .04),
               shape: BoxShape.circle,
@@ -564,8 +564,8 @@ class OpportunityCard extends StatelessWidget {
               child: HopeIcon(
                 icon,
                 color: accent.withValues(alpha: dark ? .92 : 1),
-                size: 16,
-                strokeWidth: 1.6,
+                size: 17,
+                strokeWidth: 1.7,
               ),
             ),
           ),
@@ -1812,19 +1812,19 @@ class _CategoryFallbackPainter extends CustomPainter {
     final soft = Paint()
       ..color = accent.withValues(alpha: dark ? .10 : .055);
     final fill = Paint()
-      ..color = accent.withValues(alpha: dark ? .17 : .095);
+      ..color = accent.withValues(alpha: dark ? .22 : .13);
     final stroke = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.1
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..color = accent.withValues(alpha: dark ? .46 : .32);
+      ..color = accent.withValues(alpha: dark ? .54 : .36);
     final thin = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.35
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..color = accent.withValues(alpha: dark ? .34 : .22);
+      ..color = accent.withValues(alpha: dark ? .42 : .26);
 
     void line(double x1, double y1, double x2, double y2, Paint paint) =>
         canvas.drawLine(Offset(x1, y1), Offset(x2, y2), paint);
