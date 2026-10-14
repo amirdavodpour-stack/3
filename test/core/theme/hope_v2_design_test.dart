@@ -70,6 +70,44 @@ void main() {
     expect(HopeV2Colors.walletBalanceMetricBorderEmphasized, const Color(0x3DFFFFFF));
   });
 
+  testWidgets('domain accents adapt to the active light or dark theme',
+      (tester) async {
+    late Color lightPrimary;
+    late Color lightSecondary;
+    late Color darkPrimary;
+    late Color darkSecondary;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Builder(
+          builder: (context) {
+            lightPrimary = HopeProductDomain.work.spec.accentFor(context);
+            lightSecondary = HopeProductDomain.discovery.spec.accentFor(context);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Builder(
+          builder: (context) {
+            darkPrimary = HopeProductDomain.work.spec.accentFor(context);
+            darkSecondary = HopeProductDomain.discovery.spec.accentFor(context);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+
+    expect(lightPrimary, HopeV2Colors.primary);
+    expect(darkPrimary, HopeV2Colors.primaryDark);
+    expect(lightSecondary, HopeV2Colors.secondary);
+    expect(darkSecondary, HopeV2Colors.secondaryDark);
+  });
+
   testWidgets('semantic facade resolves error, border and surface from the active theme',
       (tester) async {
     late Color semanticError;
