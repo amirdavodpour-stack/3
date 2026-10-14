@@ -1241,27 +1241,55 @@ class OpportunityCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: HopeV2Spacing.xs,
-                    runSpacing: HopeV2Spacing.xs,
-                    children: [
-                      PremiumTag(
-                        label: job.isMission
-                            ? copy.copy_mission_fb4c5e1
-                            : copy.copy_job_ce2feba,
-                        icon: job.isMission
-                            ? HopeV2Icons.mission
-                            : HopeV2Icons.job,
-                        color: primary,
-                      ),
-                      if (match != null)
-                        PremiumTag(
-                          icon: HopeV2Icons.match,
-                          label: match,
-                          color: HopeV2Colors.success,
+                  SingleChildScrollView(
+                    key: const ValueKey('opportunity-scan-tag-rail'),
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(
+                            end: HopeV2Spacing.xs,
+                          ),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 130),
+                            child: PremiumTag(
+                              label: job.isMission
+                                  ? copy.copy_mission_fb4c5e1
+                                  : copy.copy_job_ce2feba,
+                              icon: job.isMission
+                                  ? HopeV2Icons.mission
+                                  : HopeV2Icons.job,
+                              color: primary,
+                            ),
+                          ),
                         ),
-                      if (matchReasonTag != null) matchReasonTag,
-                    ],
+                        if (match != null)
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(
+                              end: HopeV2Spacing.xs,
+                            ),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 130),
+                              child: PremiumTag(
+                                icon: HopeV2Icons.match,
+                                label: match,
+                                color: HopeV2Colors.success,
+                              ),
+                            ),
+                          ),
+                        if (matchReasonTag != null)
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(
+                              end: HopeV2Spacing.xs,
+                            ),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 130),
+                              child: matchReasonTag,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: HopeV2Spacing.xs),
                   Text(
