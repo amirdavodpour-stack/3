@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/router/app_routes.dart';
@@ -415,6 +416,80 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'Wave 50 compact fa-RTL keeps Specialized audience option scroll-reachable above the fixed dock',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+      await _open(tester);
+
+      final stepList = find.byKey(
+        const ValueKey('create-opportunity-step-0'),
+      );
+      final stepScroller = find.descendant(
+        of: stepList,
+        matching: find.byType(Scrollable),
+      ).first;
+      final viewport = find.descendant(
+        of: stepList,
+        matching: find.byType(Viewport),
+      ).first;
+      final dock = find.byKey(
+        const ValueKey('create-opportunity-action-dock'),
+      );
+      final specialized = find.ancestor(
+        of: find.text('تخصصی'),
+        matching: find.byType(PressableScale),
+      ).first;
+      final specializedPanel = find.descendant(
+        of: specialized,
+        matching: find.byType(PremiumPanel),
+      ).first;
+
+      expect(stepList, findsOneWidget);
+      expect(viewport, findsOneWidget);
+      expect(dock, findsOneWidget);
+      expect(specialized, findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        specialized,
+        120,
+        scrollable: stepScroller,
+        maxScrolls: 20,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(specialized);
+      await tester.pumpAndSettle();
+
+      final viewportRect = tester.getRect(viewport);
+      final specializedRect = tester.getRect(specialized);
+      final dockRect = tester.getRect(dock);
+      expect(specializedRect.top, greaterThanOrEqualTo(viewportRect.top));
+      expect(specializedRect.bottom, lessThanOrEqualTo(viewportRect.bottom));
+      expect(
+        viewportRect.bottom,
+        lessThanOrEqualTo(dockRect.top),
+        reason: 'The scrollable form viewport must finish above the fixed action dock.',
+      );
+      expect(specialized.hitTestable(), findsOneWidget);
+      expect(tester.widget<PremiumPanel>(specializedPanel).highlight, isFalse);
+
+      await tester.tap(specialized);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<PremiumPanel>(specializedPanel).highlight, isTrue);
+      expect(tester.getRect(dock).bottom, closeTo(dockRect.bottom, 0.1));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('switching types swaps price fields, fee copy and job deadline',
       (tester) async {
