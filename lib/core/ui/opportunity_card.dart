@@ -143,7 +143,7 @@ class OpportunityCard extends StatelessWidget {
         ? _formatCompactRangeAmount(amount, context)
         : _formatAmount(amount, context);
 
-    final cardAccent = _cardAccent(primary);
+    final cardAccent = _categoryArtwork(primary).accent;
 
     return PressableScale(
       semanticLabel: [
@@ -157,6 +157,9 @@ class OpportunityCard extends StatelessWidget {
       onTap: onTap ?? () => Navigator.push(context, HopeRoutes.jobDetail(job)),
       child: Container(
         decoration: BoxDecoration(
+          color: featured || featuredScan
+              ? null
+              : HopeV2Surfaces.panel(context),
           gradient: featured || featuredScan
               ? LinearGradient(
                   begin: AlignmentDirectional.topStart,
@@ -174,19 +177,7 @@ class OpportunityCard extends StatelessWidget {
                         ],
                   stops: const [0, .44, 1],
                 )
-              : LinearGradient(
-                  begin: AlignmentDirectional.topStart,
-                  end: AlignmentDirectional.bottomEnd,
-                  colors: dark
-                      ? [
-                          cardAccent.withValues(alpha: .075),
-                          HopeV2Surfaces.panel(context),
-                        ]
-                      : [
-                          cardAccent.withValues(alpha: .035),
-                          Theme.of(context).colorScheme.surface,
-                        ],
-                ),
+              : null,
           borderRadius: BorderRadius.circular(
             featured || featuredScan ? HopeV2Radii.lg : HopeV2Radii.md,
           ),
@@ -201,23 +192,23 @@ class OpportunityCard extends StatelessWidget {
                     alpha: dark ? .55 : .72,
                   ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: dark
-                  ? Colors.black.withValues(alpha: .15)
-                  : cardAccent.withValues(
-                      alpha: featured || featuredScan ? .065 : .035,
+          boxShadow: featured || featuredScan
+              ? [
+                  BoxShadow(
+                    color: dark
+                        ? Colors.black.withValues(alpha: .20)
+                        : cardAccent.withValues(alpha: .055),
+                    blurRadius: 20,
+                    offset: const Offset(0, 7),
+                  ),
+                  if (dark)
+                    BoxShadow(
+                      color: primary.withValues(alpha: .025),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
                     ),
-              blurRadius: featured || featuredScan ? 22 : 16,
-              offset: Offset(0, featured || featuredScan ? 8 : 5),
-            ),
-            if (dark && (featured || featuredScan))
-              BoxShadow(
-                color: primary.withValues(alpha: .035),
-                blurRadius: 22,
-                offset: const Offset(0, 9),
-              ),
-          ],
+                ]
+              : const <BoxShadow>[],
         ),
         padding: EdgeInsets.all(
           (featured || featuredScan)
@@ -276,13 +267,15 @@ class OpportunityCard extends StatelessWidget {
                       stops: const [0, .52, 1],
                     ),
                     borderRadius: BorderRadius.circular(999),
-                    boxShadow: [
-                      BoxShadow(
-                        color: cardAccent.withValues(alpha: .10),
-                        blurRadius: 6,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                    boxShadow: featured || featuredScan
+                        ? [
+                            BoxShadow(
+                              color: cardAccent.withValues(alpha: .09),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1),
+                            ),
+                          ]
+                        : const <BoxShadow>[],
                   ),
                 ),
               ),
@@ -315,50 +308,133 @@ class OpportunityCard extends StatelessWidget {
     return category != null && category.isNotEmpty ? category : null;
   }
 
-  // Carry the category's editorial identity from its cover artwork into the
-  // card frame, using a muted palette that stays warm and readable in both
-  // themes. Unknown categories fall back to the current role accent.
-  Color _cardAccent(Color fallback) {
-    final categoryKey = (_artworkCategoryValue() ?? '')
-        .trim()
-        .toLowerCase()
-        .replaceAll('_', '-')
-        .replaceAll('  ', ' ');
+  String _normalizedArtworkCategoryKey() =>
+      (_artworkCategoryValue() ?? '')
+          .trim()
+          .toLowerCase()
+          .replaceAll('_', '-')
+          .replaceAll('  ', ' ');
+
+  // One lookup keeps card framing and fallback illustration on the same
+  // category identity; the palette is decorative, never a status or price cue.
+  ({Color accent, Object icon, _CategoryArtworkStyle style})
+      _categoryArtwork(Color fallback) {
+    final categoryKey = _normalizedArtworkCategoryKey();
     return switch (categoryKey) {
       'software' ||
       'software-development' ||
       'development' ||
       'نرم‌افزار' ||
-      'نرم افزار' => const Color(0xFF557D75),
-      'design' || 'graphic-design' || 'طراحی' => const Color(0xFFB58A4D),
-      'marketing' || 'بازاریابی' => const Color(0xFFB86F55),
+      'نرم افزار' => (
+          accent: const Color(0xFF557D75),
+          icon: HopeV2Icons.web,
+          style: _CategoryArtworkStyle.software,
+        ),
+      'design' || 'graphic-design' || 'طراحی' => (
+          accent: const Color(0xFFB58A4D),
+          icon: HopeV2Icons.featured,
+          style: _CategoryArtworkStyle.design,
+        ),
+      'marketing' || 'بازاریابی' => (
+          accent: const Color(0xFFB86F55),
+          icon: HopeV2Icons.activity,
+          style: _CategoryArtworkStyle.marketing,
+        ),
       'content' ||
       'translation' ||
       'content-translation' ||
-      'محتوا و ترجمه' => const Color(0xFF5A8793),
+      'محتوا و ترجمه' => (
+          accent: const Color(0xFF5A8793),
+          icon: HopeV2Icons.description,
+          style: _CategoryArtworkStyle.content,
+        ),
       'finance' ||
       'accounting' ||
       'finance-accounting' ||
-      'مالی و حسابداری' => const Color(0xFF4F805D),
-      'education' || 'آموزش' => const Color(0xFF638DA3),
-      'support' || 'پشتیبانی' => const Color(0xFF718E87),
+      'مالی و حسابداری' => (
+          accent: const Color(0xFF4F805D),
+          icon: HopeV2Icons.payments,
+          style: _CategoryArtworkStyle.finance,
+        ),
+      'education' || 'آموزش' => (
+          accent: const Color(0xFF638DA3),
+          icon: HopeV2Icons.skills,
+          style: _CategoryArtworkStyle.education,
+        ),
+      'support' || 'پشتیبانی' => (
+          accent: const Color(0xFF718E87),
+          icon: HopeV2Icons.message,
+          style: _CategoryArtworkStyle.support,
+        ),
       'construction' ||
       'technical' ||
       'construction-technical' ||
-      'ساخت‌وساز و فنی' => const Color(0xFFB9784C),
+      'ساخت‌وساز و فنی' => (
+          accent: const Color(0xFFB9784C),
+          icon: HopeV2Icons.workshop,
+          style: _CategoryArtworkStyle.construction,
+        ),
       'video' ||
       'audio' ||
       'video-audio' ||
       'video-production' ||
-      'تولید ویدیو و صدا' => const Color(0xFFB46F86),
+      'تولید ویدیو و صدا' => (
+          accent: const Color(0xFFB46F86),
+          icon: HopeV2Icons.device,
+          style: _CategoryArtworkStyle.media,
+        ),
       'data' ||
       'ai' ||
       'data-ai' ||
       'artificial-intelligence' ||
-      'داده و هوش مصنوعی' => const Color(0xFF438B91),
-      'sales' || 'فروش' => const Color(0xFF5D875F),
-      _ => fallback,
+      'داده و هوش مصنوعی' => (
+          accent: const Color(0xFF438B91),
+          icon: HopeV2Icons.insights,
+          style: _CategoryArtworkStyle.data,
+        ),
+      'sales' || 'فروش' => (
+          accent: const Color(0xFF5D875F),
+          icon: HopeV2Icons.activitySelected,
+          style: _CategoryArtworkStyle.sales,
+        ),
+      _ => (
+          accent: fallback,
+          icon: HopeV2Icons.category,
+          style: _CategoryArtworkStyle.general,
+        ),
     };
+  }
+
+  // The detail cue is decorative; the entire card remains the single,
+  // accessible tap target (minimum 48dp) and retains reduced-motion behavior.
+  Widget _actionAffordance(BuildContext context) {
+    final action = Theme.of(context).colorScheme.primary;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final icon = Directionality.of(context) == ui.TextDirection.rtl
+        ? HopeV2Icons.arrowLeft
+        : HopeV2Icons.arrowRight;
+    return ExcludeSemantics(
+      child: Container(
+        key: const ValueKey('opportunity-card-action-affordance'),
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: action.withValues(alpha: dark ? .13 : .075),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: action.withValues(alpha: dark ? .28 : .17),
+          ),
+        ),
+        child: Center(
+          child: HugeIcon(
+            icon: icon,
+            size: 16,
+            color: action,
+            strokeWidth: 1.9,
+          ),
+        ),
+      ),
+    );
   }
 
   // Listing cards use only absolute HTTP(S) media from the opportunity payload.
@@ -493,37 +569,11 @@ class OpportunityCard extends StatelessWidget {
   }
 
   Widget _fallbackMedia(BuildContext context, Color primary) {
-    final categoryValue = _artworkCategoryValue();
-    final categoryKey = (categoryValue ?? '')
-        .trim()
-        .toLowerCase()
-        .replaceAll('_', '-')
-        .replaceAll('  ', ' ');
-    final (accent, icon, artworkStyle) = switch (categoryKey) {
-      'software' || 'software-development' || 'development' || 'نرم‌افزار' || 'نرم افزار' =>
-        (const Color(0xFF557D75), HopeV2Icons.web, _CategoryArtworkStyle.software),
-      'design' || 'graphic-design' || 'طراحی' =>
-        (const Color(0xFFB58A4D), HopeV2Icons.featured, _CategoryArtworkStyle.design),
-      'marketing' || 'بازاریابی' =>
-        (const Color(0xFFB86F55), HopeV2Icons.activity, _CategoryArtworkStyle.marketing),
-      'content' || 'translation' || 'content-translation' || 'محتوا و ترجمه' =>
-        (const Color(0xFF5A8793), HopeV2Icons.description, _CategoryArtworkStyle.content),
-      'finance' || 'accounting' || 'finance-accounting' || 'مالی و حسابداری' =>
-        (const Color(0xFF4F805D), HopeV2Icons.payments, _CategoryArtworkStyle.finance),
-      'education' || 'آموزش' =>
-        (const Color(0xFF638DA3), HopeV2Icons.skills, _CategoryArtworkStyle.education),
-      'support' || 'پشتیبانی' =>
-        (const Color(0xFF718E87), HopeV2Icons.message, _CategoryArtworkStyle.support),
-      'construction' || 'technical' || 'construction-technical' || 'ساخت‌وساز و فنی' =>
-        (const Color(0xFFB9784C), HopeV2Icons.workshop, _CategoryArtworkStyle.construction),
-      'video' || 'audio' || 'video-audio' || 'video-production' || 'تولید ویدیو و صدا' =>
-        (const Color(0xFFB46F86), HopeV2Icons.device, _CategoryArtworkStyle.media),
-      'data' || 'ai' || 'data-ai' || 'artificial-intelligence' || 'داده و هوش مصنوعی' =>
-        (const Color(0xFF438B91), HopeV2Icons.insights, _CategoryArtworkStyle.data),
-      'sales' || 'فروش' =>
-        (const Color(0xFF5D875F), HopeV2Icons.activitySelected, _CategoryArtworkStyle.sales),
-      _ => (primary, HopeV2Icons.category, _CategoryArtworkStyle.general),
-    };
+    final categoryKey = _normalizedArtworkCategoryKey();
+    final artwork = _categoryArtwork(primary);
+    final accent = artwork.accent;
+    final icon = artwork.icon;
+    final artworkStyle = artwork.style;
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     final baseSurface =
@@ -803,14 +853,7 @@ class OpportunityCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        HugeIcon(
-          icon: Directionality.of(context) == ui.TextDirection.rtl
-              ? HopeV2Icons.arrowLeft
-              : HopeV2Icons.arrowRight,
-          size: 18,
-          color: primary,
-          strokeWidth: 1.9,
-        ),
+        _actionAffordance(context),
       ],
     );
   }
@@ -969,14 +1012,7 @@ class OpportunityCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  HugeIcon(
-                    icon: Directionality.of(context) == ui.TextDirection.rtl
-                        ? HopeV2Icons.arrowLeft
-                        : HopeV2Icons.arrowRight,
-                    size: 20,
-                    color: primary,
-                    strokeWidth: 1.9,
-                  ),
+                  _actionAffordance(context),
                 ],
               ),
             ),
@@ -1254,13 +1290,7 @@ class OpportunityCard extends StatelessWidget {
                             ),
                       ),
                       const SizedBox(width: 4),
-                      HugeIcon(
-                        icon: Directionality.of(context) == ui.TextDirection.rtl
-                            ? HopeV2Icons.arrowLeft
-                            : HopeV2Icons.arrowRight,
-                        size: 17,
-                        color: primary,
-                      ),
+                      _actionAffordance(context),
                     ],
                   ),
                 ],
@@ -1500,14 +1530,7 @@ class OpportunityCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                HugeIcon(
-                  icon: Directionality.of(context) == ui.TextDirection.rtl
-                      ? HopeV2Icons.arrowLeft
-                      : HopeV2Icons.arrowRight,
-                  size: 19,
-                  color: primary,
-                  strokeWidth: 1.9,
-                ),
+                _actionAffordance(context),
               ],
             ),
           ),
@@ -1769,14 +1792,7 @@ class OpportunityCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            HugeIcon(
-              icon: Directionality.of(context) == ui.TextDirection.rtl
-                  ? HopeV2Icons.arrowLeft
-                  : HopeV2Icons.arrowRight,
-              size: 20,
-              color: primary,
-              strokeWidth: 1.9,
-            ),
+            _actionAffordance(context),
           ],
         ),
       ],
