@@ -152,4 +152,41 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'hero domain label uses a neutral high-contrast foreground on the dark hero',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorScheme: const ColorScheme.light(primary: Color(0xFF6750A4)),
+          ),
+          home: const Scaffold(
+            body: PremiumHero(
+              eyebrow: 'WELCOME',
+              title: 'Home',
+              message: 'A real welcome surface',
+              domain: HopeProductDomain.overview,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final label = find.text('Overview');
+      expect(label, findsOneWidget);
+      final text = tester.widget<Text>(label);
+      expect(
+        text.style?.color,
+        HopeV2Colors.darkText,
+        reason: 'Hero domain text sits on a dark gradient and must use a neutral, high-contrast foreground.',
+      );
+      expect(
+        text.style?.color,
+        isNot(Theme.of(tester.element(label)).colorScheme.primary),
+        reason: 'Readable text on the hero may not use the purple domain accent.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
