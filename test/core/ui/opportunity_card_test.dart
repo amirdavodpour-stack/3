@@ -1929,4 +1929,70 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'featured mobile tags stay on one rail when a match reason is added',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      HopeJob jobWithReasons(List<String> reasons) => HopeJob.fromMap({
+            'id': 'featured-tag-rail-density',
+            'title': 'طراحی رابط کاربری',
+            'categoryId': 'design',
+            'category': 'طراحی',
+            'jobType': 'FIXED',
+            'budgetMin': '1500000',
+            'budgetMax': '2500000',
+            'kind': 'JOB',
+            'visibility': 'PUBLIC',
+            'status': 'OPEN',
+            'city': 'تهران',
+            'recommendationScore': 0.94,
+            'recommendationReasons': reasons,
+          });
+
+      Widget host(List<String> reasons) => MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: ThemeData(brightness: Brightness.dark),
+            home: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(16),
+                child: OpportunityCard(
+                  job: jobWithReasons(reasons),
+                  variant: OpportunityCardVariant.featured,
+                ),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(host(const []));
+      await tester.pumpAndSettle();
+      final baseHeight = tester.getSize(find.byType(OpportunityCard)).height;
+
+      await tester.pumpWidget(host(const ['SKILL_MATCH']));
+      await tester.pumpAndSettle();
+      final rail = find.byKey(const ValueKey('opportunity-scan-tag-rail'));
+      expect(rail, findsOneWidget);
+      expect(
+        tester.widget<SingleChildScrollView>(rail).scrollDirection,
+        Axis.horizontal,
+      );
+      expect(
+        tester.getSize(find.byType(OpportunityCard)).height,
+        closeTo(baseHeight, 1.0),
+      );
+      expect(find.byKey(const ValueKey('opportunity-card-match-reason')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
