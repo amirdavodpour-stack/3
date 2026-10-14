@@ -2004,4 +2004,68 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'opportunity cards carry a category-specific accent rail in light and dark themes',
+    (tester) async {
+      HopeJob jobFor(String category) => HopeJob.fromMap({
+            'id': 'card-accent-$category',
+            'title': 'A considered product experience',
+            'categoryId': category,
+            'category': category,
+            'kind': 'JOB',
+            'status': 'OPEN',
+            'visibility': 'PUBLIC',
+            'budgetMin': '1200000',
+            'city': 'Tehran',
+          });
+
+      Future<Color> accentFor(String category, Brightness brightness) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: ThemeData(brightness: brightness),
+            home: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(16),
+                child: OpportunityCard(job: jobFor(category)),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final rail = find.byKey(
+          const ValueKey('opportunity-card-accent-rail'),
+        );
+        expect(rail, findsOneWidget);
+        expect(tester.getSize(rail).width, greaterThan(0));
+
+        final decoration = tester.widget<Container>(rail).decoration;
+        expect(decoration, isA<BoxDecoration>());
+        final gradient = (decoration! as BoxDecoration).gradient;
+        expect(gradient, isA<LinearGradient>());
+        expect(tester.takeException(), isNull);
+        return (gradient! as LinearGradient).colors[1];
+      }
+
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        final designAccent = await accentFor('design', brightness);
+        final softwareAccent = await accentFor('software', brightness);
+        expect(
+          designAccent,
+          isNot(softwareAccent),
+          reason: 'Category artwork should carry the same unique identity into the card frame.',
+        );
+      }
+    },
+  );
+
 }
