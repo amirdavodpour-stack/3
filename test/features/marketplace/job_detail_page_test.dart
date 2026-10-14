@@ -781,6 +781,63 @@ void main() {
   });
 
   testWidgets(
+    'compact Job Detail exposes the real work-mode DNA trait without duplicating decision facts',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        await _pump(
+          tester,
+          job: _job(
+            kind: 'JOB',
+            category: 'Software',
+            city: 'Tehran',
+            workMode: 'HYBRID',
+          ),
+          width: 390,
+          height: 844,
+          locale: const Locale('fa'),
+        );
+
+        final dna = find.byKey(const ValueKey('opportunity-dna-signature'));
+        expect(dna, findsOneWidget);
+
+        final workMode = tester.getSemantics(
+          find.byKey(const ValueKey('opportunity-dna-fact-work-mode')),
+        );
+        expect(workMode.label, contains('نوع همکاری'));
+        expect(workMode.label, contains('هیبریدی'));
+
+        expect(
+          find.descendant(of: dna, matching: find.text('دسته‌بندی')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: dna, matching: find.text('مکان')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: dna, matching: find.text('بودجه')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: dna, matching: find.text('تطبیق')),
+          findsNothing,
+        );
+
+        final descriptionHeader = find.text('شرح فرصت');
+        expect(descriptionHeader, findsOneWidget);
+        expect(
+          tester.getBottomRight(dna).dy,
+          lessThan(tester.getTopLeft(descriptionHeader).dy),
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        handle.dispose();
+      }
+    },
+  );
+
+  testWidgets(
       'Wave 40 Job Detail keeps category/location on the decision surface and only unique work mode in DNA',
       (tester) async {
     final handle = tester.ensureSemantics();
