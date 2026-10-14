@@ -165,10 +165,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
       glass: false,
       quiet: true,
       title: _t('دسترسی سریع', 'Quick access'),
-      subtitle: _t(
-        'درخواست‌ها، پیشنهادها و اعلان‌ها را بدون باز کردن منوی کناری در دسترس داشته باشید.',
-        'Reach applications, offers, and notifications without opening the side menu.',
-      ),
       actions: [
         PremiumQuickAction(
           label: copy.copy_applications_6655869,
@@ -399,10 +395,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
             PremiumHeader(
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
-              eyebrow: _t('مرکز کار', 'WORK CENTER'),
-              title: _t('مرکز کار خصوصی شما', 'Your private work center'),
-              subtitle: HopeCopy.of(context)
-                  .copy_sign_in_to_view_your_projects_and_payments_32a2bc2,
+              eyebrow: _t('کارگاه', 'WORKSHOP'),
+              title: _t('کارگاه شخصی شما', 'Your workspace'),
+              subtitle: _t('برای مشاهده پروژه‌ها و پرداخت‌ها وارد شوید.', 'Sign in to view projects and payments.'),
               trailing: const HopeIconTile(
                 HopeV2Icons.secure,
                 size: 42,
@@ -449,9 +444,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
-                      title: _t('مرکز کار بارگذاری نشد', 'Work center could not be loaded'),
-                      subtitle: HopeCopy.of(context)
-                          .copy_pull_down_to_try_again_c41d215,
+                      title: _t('بارگذاری کارگاه ناموفق بود', 'Could not load workshop'),
+                      
                       trailing: const HopeIconTile(
                         HopeV2Icons.pending,
                         size: 42,
@@ -498,9 +492,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
-                      title: _t('هنوز کاری ثبت نشده است', 'No work activity yet'),
-                      subtitle: HopeCopy.of(context)
-                          .copy_your_projects_applications_and_payments_wi_bec5340,
+                      title: _t('هنوز فعالیتی ثبت نشده است', 'No work activity yet'),
+                      subtitle: _t('درخواست‌ها و پیشنهادهای شما اینجا نمایش داده می‌شوند.', 'Your applications and offers appear here.'),
                       trailing: const HopeIconTile(
                         HopeV2Icons.insights,
                         size: 42,
@@ -542,10 +535,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
-                      title: _t('مرکز مالی و همکاری‌ها', 'Work & finance center'),
+                      title: _t('کارگاه و امور مالی', 'Workshop and finance'),
                       subtitle: _t(
-                        'همکاری‌های فعال، وضعیت اجرا و تسویه مالی را در یک نگاه دنبال کنید.',
-                        'Track active work, execution state, and financial settlement in one view.',
+                        'کارهای فعال و تسویه مالی را پیگیری کنید.',
+                        'Track active work and settlement.',
                       ),                    ),
                     const SizedBox(height: 6),
                     if (_reloadError != null) ...[
