@@ -247,6 +247,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
   Widget _workItemCard(HopeJob job) {
     final status = job.status ?? '—';
     final settled = _isWorkCenterSettled(status);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final statusAccent = settled
+        ? (dark ? HopeV2Colors.successDark : HopeV2Colors.success)
+        : Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: PremiumPanel(
@@ -262,7 +266,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               children: [
                 HopeIconTile(
                   settled ? HopeV2Icons.completed : HopeV2Icons.pending,
-                  color: settled ? HopeV2Colors.success : HopeV2Colors.primary,
+                  color: statusAccent,
                   filled: true,
                 ),
                 const SizedBox(width: 10),
@@ -284,9 +288,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           PremiumTag(
                             icon: HopeV2Icons.activity,
                             label: _jobStatusLabel(context, status),
-                            color: settled
-                                ? HopeV2Colors.success
-                                : HopeV2Colors.primary,
+                            color: statusAccent,
                           ),
                           if (job.city?.isNotEmpty == true)
                             PremiumTag(
