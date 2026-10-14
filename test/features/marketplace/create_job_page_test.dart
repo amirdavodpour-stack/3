@@ -445,10 +445,11 @@ void main() {
       final dock = find.byKey(
         const ValueKey('create-opportunity-action-dock'),
       );
-      final specialized = find.ancestor(
-        of: find.text('تخصصی'),
-        matching: find.byType(PressableScale),
-      ).first;
+      final specialized = find.byWidgetPredicate(
+        (widget) =>
+            widget is PressableScale &&
+            (widget.semanticLabel ?? '').contains('تخصصی'),
+      );
       final specializedPanel = find.descendant(
         of: specialized,
         matching: find.byType(PremiumPanel),
