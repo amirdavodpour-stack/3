@@ -105,15 +105,6 @@ class AppTheme {
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         ),
       ),
-      dropdownButtonTheme: DropdownButtonThemeData(
-        dropdownColor: dark ? AppColors.darkSurface : AppColors.surface,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
-        borderRadius: BorderRadius.circular(HopeV2Radii.md),
-      ),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
