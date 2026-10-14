@@ -7,6 +7,7 @@ import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/transactions/wallet_repository.dart';
 import 'package:hope_mobile/features/wallet/wallet_page.dart';
@@ -1108,6 +1109,65 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'wallet withdraw action label uses a readable semantic foreground',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const brandIndigo = Color(0xFF6750A4);
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(
+            colorScheme: const ColorScheme.light(primary: brandIndigo),
+          ),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final withdraw = find.text('Withdraw');
+      expect(withdraw, findsOneWidget);
+      final text = tester.widget<Text>(withdraw);
+      final context = tester.element(withdraw);
+      expect(
+        text.style?.color,
+        HopeV2SemanticColors.readableAccent(
+          context,
+          Theme.of(context).colorScheme.primary,
+        ),
+        reason: 'The primary wallet action label must resolve through semantic readable colors.',
+      );
+      expect(
+        text.style?.color,
+        isNot(Theme.of(context).colorScheme.primary),
+        reason: 'The withdraw action label must not reuse the raw indigo action color.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   // Runtime certification trigger: grouped Wave G-2 after compile-scope repair.
 }
