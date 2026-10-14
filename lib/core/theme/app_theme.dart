@@ -110,7 +110,7 @@ class AppTheme {
         iconColor: mutedColor,
         selectedColor: scheme.primary,
         selectedTileColor: dark
-            ? HopeV2Colors.darkGreenGlow.withValues(alpha: .16)
+            ? AppColors.primaryDark.withValues(alpha: .10)
             : HopeV2Colors.warmHalo.withValues(alpha: .10),
       ),
       appBarTheme: AppBarTheme(
