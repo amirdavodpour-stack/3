@@ -626,7 +626,9 @@ class HopeV2SemanticColors {
   static Color pending(BuildContext context) => warning(context);
   static Color processing(BuildContext context) => info(context);
   static Color incomingAmount(BuildContext context) => success(context);
+  static Color pendingAmount(BuildContext context) => warning(context);
   static Color outgoingAmount(BuildContext context) => error(context);
+  static Color negativeAmount(BuildContext context) => error(context);
 
   /// Contrast-safe text foreground for semantic chips; never pass raw indigo.
   static Color statusSurface(BuildContext context, Color accent) {
