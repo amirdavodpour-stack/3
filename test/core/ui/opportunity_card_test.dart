@@ -1992,6 +1992,10 @@ void main() {
         closeTo(baseHeight, 1.0),
       );
       expect(find.byKey(const ValueKey('opportunity-card-match-reason')), findsOneWidget);
+      final amount = tester.widget<Text>(
+        find.byKey(const ValueKey('opportunity-card-budget-amount')),
+      );
+      expect(amount.style?.color, HopeV2Colors.primaryDark);
       expect(tester.takeException(), isNull);
     },
   );
