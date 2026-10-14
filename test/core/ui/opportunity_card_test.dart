@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/components.dart';
@@ -2064,6 +2065,82 @@ void main() {
           isNot(softwareAccent),
           reason: 'Category artwork should carry the same unique identity into the card frame.',
         );
+      }
+    },
+  );
+
+
+  testWidgets(
+    'opportunity card action affordance stays tactile, directional, and consistent across layouts',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'opportunity-card-action-affordance',
+        'title': 'Design a better product',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+      });
+
+      const variants = [
+        OpportunityCardVariant.standard,
+        OpportunityCardVariant.featured,
+        OpportunityCardVariant.featuredScan,
+        OpportunityCardVariant.expanded,
+        OpportunityCardVariant.compactGrid,
+      ];
+      for (final locale in const [Locale('fa'), Locale('en')]) {
+        for (final variant in variants) {
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: locale,
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              theme: ThemeData(brightness: Brightness.light),
+              home: Scaffold(
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: OpportunityCard(job: job, variant: variant),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final affordance = find.byKey(
+            const ValueKey('opportunity-card-action-affordance'),
+          );
+          expect(
+            affordance,
+            findsOneWidget,
+            reason: 'Missing action cue for $variant in ${locale.languageCode}.',
+          );
+          expect(
+            tester.getSize(affordance),
+            const Size(30, 30),
+            reason: 'The decorative cue must stay compact; the card owns the tap target.',
+          );
+          final arrow = tester.widget<HugeIcon>(
+            find.descendant(of: affordance, matching: find.byType(HugeIcon)),
+          );
+          expect(
+            arrow.icon,
+            locale.languageCode == 'fa'
+                ? HopeV2Icons.arrowLeft
+                : HopeV2Icons.arrowRight,
+            reason: 'The detail affordance must follow text direction.',
+          );
+          expect(tester.takeException(), isNull);
+        }
       }
     },
   );
