@@ -34,10 +34,11 @@ class HopeV2Colors {
   static const secondary = Color(0xFF14B8A6);
   static const secondaryStrong = Color(0xFF0D9488);
   static const secondaryDark = Color(0xFF5EEAD4);
-  static const accent = Color(0xFFF59E0B);
+  // Legacy generic accent stays amber and aliases the warning ramp below.
+  static const accent = HopeV2TonalPalettes.warning.shade500;
   /// Focus accent for featured/recommended work surfaces; use sparingly.
-  static const orange = Color(0xFFF97316);
-  static const orangeDark = Color(0xFFFF9A4D);
+  static const orange = HopeV2TonalPalettes.featured.shade500;
+  static const orangeDark = HopeV2TonalPalettes.featured.shade300;
   static const inkSoft = Color(0xFF34372D);
   static const backgroundWarm = Color(0xFFF5F3EA);
   static const ink = Color(0xFF24271F);
@@ -66,8 +67,8 @@ class HopeV2Colors {
 
   // Featured/recommended content uses a dedicated warm foreground, never the
   // brand-action hue. Its surface stays distinct from readable foregrounds.
-  static const accentTextLight = Color(0xFF9A3412);
-  static const accentTextDark = Color(0xFFFDBA74);
+  static const accentTextLight = HopeV2TonalPalettes.featured.shade800;
+  static const accentTextDark = HopeV2TonalPalettes.featured.shade200;
   static const accentSurfaceLight = Color(0xFFFFF1E6);
   static const accentSurfaceDark = Color(0xFF332316);
 
@@ -174,8 +175,9 @@ class HopeV2TonalPalette {
       ];
 }
 
-/// Six shared ramps form the HOPE color genome. Purple/indigo is a brand-action
-/// palette only; semantic foregrounds are chosen separately for readable text.
+/// Seven shared ramps form the HOPE color genome. The warm featured-orange
+/// ramp is distinct from amber warning. Purple/indigo remains action-only; semantic
+/// foregrounds are chosen separately for readable text.
 class HopeV2TonalPalettes {
   const HopeV2TonalPalettes._();
 
@@ -247,6 +249,20 @@ class HopeV2TonalPalettes {
     shade800: Color(0xFF92400E),
     shade900: Color(0xFF78350F),
     shade950: Color(0xFF451A03),
+  );
+
+  static const featured = HopeV2TonalPalette(
+    shade50: Color(0xFFFFF7ED),
+    shade100: Color(0xFFFFEDD5),
+    shade200: Color(0xFFFDBA74),
+    shade300: Color(0xFFFF9A4D),
+    shade400: Color(0xFFFB923C),
+    shade500: Color(0xFFF97316),
+    shade600: Color(0xFFEA580C),
+    shade700: Color(0xFFC2410C),
+    shade800: Color(0xFF9A3412),
+    shade900: Color(0xFF7C2D12),
+    shade950: Color(0xFF431407),
   );
 
   static const danger = HopeV2TonalPalette(
