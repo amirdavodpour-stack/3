@@ -327,17 +327,17 @@ class OpportunityCard extends StatelessWidget {
       'development' ||
       'نرم‌افزار' ||
       'نرم افزار' => (
-          accent: const Color(0xFF557D75),
+          accent: HopeV2OpportunityAccents.software,
           icon: HopeV2Icons.web,
           style: _CategoryArtworkStyle.software,
         ),
       'design' || 'graphic-design' || 'طراحی' => (
-          accent: const Color(0xFFB58A4D),
+          accent: HopeV2OpportunityAccents.design,
           icon: HopeV2Icons.featured,
           style: _CategoryArtworkStyle.design,
         ),
       'marketing' || 'بازاریابی' => (
-          accent: const Color(0xFFB86F55),
+          accent: HopeV2OpportunityAccents.marketing,
           icon: HopeV2Icons.activity,
           style: _CategoryArtworkStyle.marketing,
         ),
@@ -345,7 +345,7 @@ class OpportunityCard extends StatelessWidget {
       'translation' ||
       'content-translation' ||
       'محتوا و ترجمه' => (
-          accent: const Color(0xFF5A8793),
+          accent: HopeV2OpportunityAccents.content,
           icon: HopeV2Icons.description,
           style: _CategoryArtworkStyle.content,
         ),
@@ -353,17 +353,17 @@ class OpportunityCard extends StatelessWidget {
       'accounting' ||
       'finance-accounting' ||
       'مالی و حسابداری' => (
-          accent: const Color(0xFF4F805D),
+          accent: HopeV2OpportunityAccents.finance,
           icon: HopeV2Icons.payments,
           style: _CategoryArtworkStyle.finance,
         ),
       'education' || 'آموزش' => (
-          accent: const Color(0xFF638DA3),
+          accent: HopeV2OpportunityAccents.education,
           icon: HopeV2Icons.skills,
           style: _CategoryArtworkStyle.education,
         ),
       'support' || 'پشتیبانی' => (
-          accent: const Color(0xFF718E87),
+          accent: HopeV2OpportunityAccents.support,
           icon: HopeV2Icons.message,
           style: _CategoryArtworkStyle.support,
         ),
@@ -371,7 +371,7 @@ class OpportunityCard extends StatelessWidget {
       'technical' ||
       'construction-technical' ||
       'ساخت‌وساز و فنی' => (
-          accent: const Color(0xFFB9784C),
+          accent: HopeV2OpportunityAccents.construction,
           icon: HopeV2Icons.workshop,
           style: _CategoryArtworkStyle.construction,
         ),
@@ -380,7 +380,7 @@ class OpportunityCard extends StatelessWidget {
       'video-audio' ||
       'video-production' ||
       'تولید ویدیو و صدا' => (
-          accent: const Color(0xFFB46F86),
+          accent: HopeV2OpportunityAccents.media,
           icon: HopeV2Icons.device,
           style: _CategoryArtworkStyle.media,
         ),
@@ -389,12 +389,12 @@ class OpportunityCard extends StatelessWidget {
       'data-ai' ||
       'artificial-intelligence' ||
       'داده و هوش مصنوعی' => (
-          accent: const Color(0xFF438B91),
+          accent: HopeV2OpportunityAccents.data,
           icon: HopeV2Icons.insights,
           style: _CategoryArtworkStyle.data,
         ),
       'sales' || 'فروش' => (
-          accent: const Color(0xFF5D875F),
+          accent: HopeV2OpportunityAccents.sales,
           icon: HopeV2Icons.activitySelected,
           style: _CategoryArtworkStyle.sales,
         ),
