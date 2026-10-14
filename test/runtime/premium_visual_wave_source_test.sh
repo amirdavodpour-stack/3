@@ -459,6 +459,11 @@ grep -Fq "test/features/transactions/transactions_page_test.dart" ".github/workf
 grep -Fq "item.width < HopeV2Breakpoints.medium" "test/features/transactions/transactions_page_test.dart"
 echo "PASS: Wave48 Wallet and Work Center responsive/locale matrix contracts"
 
+# Wave51: include comprehensive Wallet page widget regressions in the consolidated gate.
+grep -Fq "test/features/wallet/wallet_page_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq "pending withdrawal summary agrees with the reserved payout row" "test/features/wallet/wallet_page_test.dart"
+echo "PASS: Wave51 pending-withdrawal summary and payout fixture coverage"
+
 # Wave49: adaptive Offers, Notifications and Chat rows across locale/viewport combinations.
 grep -Fq "final compactHeading =" "lib/features/offers/offers_page.dart"
 grep -Fq 'offer-status-${o.id}' "lib/features/offers/offers_page.dart"
