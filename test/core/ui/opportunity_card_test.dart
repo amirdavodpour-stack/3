@@ -2087,11 +2087,11 @@ void main() {
       });
 
       const variants = [
+        OpportunityCardVariant.compact,
         OpportunityCardVariant.standard,
         OpportunityCardVariant.featured,
         OpportunityCardVariant.featuredScan,
         OpportunityCardVariant.expanded,
-        OpportunityCardVariant.compactGrid,
       ];
       for (final locale in const [Locale('fa'), Locale('en')]) {
         for (final variant in variants) {
