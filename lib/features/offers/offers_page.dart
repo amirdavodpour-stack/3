@@ -18,6 +18,7 @@ class OffersPage extends StatefulWidget {
 }
 
 class _OffersPageState extends State<OffersPage> {
+  final ScrollController _filterScrollController = ScrollController();
   List<HopeOffer> _items = const [];
   Object? _loadError;
   bool _loading = true;
@@ -29,6 +30,12 @@ class _OffersPageState extends State<OffersPage> {
   void initState() {
     super.initState();
     _reload();
+  }
+
+  @override
+  void dispose() {
+    _filterScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _reload() async {
@@ -177,27 +184,35 @@ class _OffersPageState extends State<OffersPage> {
                 const SizedBox(height: 10),
               ],
               if (!_loading && (_loadError == null || _items.isNotEmpty))
-                SingleChildScrollView(
-                  key: const ValueKey('offers-status-filter-scroll'),
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
-                        Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 8),
-                          child: PremiumFilterChip(
-                            selected: _filter == x,
-                            label: x == 'ALL'
-                                ? '${_t('همه', 'All')} (${all.length})'
-                                : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
-                            color: x == 'ALL'
-                                ? Theme.of(context).colorScheme.primary
-                                : _statusColor(context, x),
-                            onTap: () => setState(() => _filter = x),
+                Scrollbar(
+                  controller: _filterScrollController,
+                  thumbVisibility: true,
+                  interactive: true,
+                  thickness: 3,
+                  radius: const Radius.circular(99),
+                  child: SingleChildScrollView(
+                    controller: _filterScrollController,
+                    key: const ValueKey('offers-status-filter-scroll'),
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 8),
+                            child: PremiumFilterChip(
+                              selected: _filter == x,
+                              label: x == 'ALL'
+                                  ? '${_t('همه', 'All')} (${all.length})'
+                                  : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
+                              color: x == 'ALL'
+                                  ? Theme.of(context).colorScheme.primary
+                                  : _statusColor(context, x),
+                              onTap: () => setState(() => _filter = x),
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               const SizedBox(height: 10),

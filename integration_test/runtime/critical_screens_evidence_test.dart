@@ -1158,6 +1158,17 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
   }
 }
 
+Future<void> _waitForRuntimeRegisterGoogleCta(WidgetTester tester) async {
+  final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
+  for (var attempt = 0; attempt < 6; attempt++) {
+    if (googleButton.evaluate().isNotEmpty) return;
+    await tester.pump();
+  }
+  throw StateError(
+    'Register runtime evidence did not reach the configured Google Sign-In state.',
+  );
+}
+
 Future<void> _captureRuntimeScreen(
   WidgetTester tester, {
   required _Runtime runtime,
@@ -1197,7 +1208,13 @@ Future<void> _captureRuntimeScreen(
   // headless VM-service boundary (seen on current-head runtime evidence).
   // Capture immediately after the proven surface-commit boundary, like Login.
   if (child is RegisterPage) {
-    print('HOPE_RUNTIME_REGISTER_DIRECT_CAPTURE:$marker');
+    await _waitForRuntimeRegisterGoogleCta(tester);
+    expect(
+      find.byKey(const ValueKey('auth-google-sign-in')),
+      findsOneWidget,
+      reason: 'The configured Google Sign-In action must be settled before Register evidence is captured.',
+    );
+    print('HOPE_RUNTIME_REGISTER_READY_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);
     if (_runtimeNeedsScrollEnd(marker)) {
       await _captureScrollEndEvidence(tester, marker);

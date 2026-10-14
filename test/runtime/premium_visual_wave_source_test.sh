@@ -63,10 +63,12 @@ grep -Fq '<item name="android:windowLightNavigationBar">false</item>' "$android_
 
 register_block="$(sed -n '/if (child is RegisterPage)/,/if (child is PasswordResetPage)/p' "$runtime_driver")"
 register_capture_block="$(printf '%s\n' "$register_block" | sed '/if (child is RegisterPage)/,/return;/p')"
-printf '%s\n' "$register_capture_block" | grep -Fq "HOPE_RUNTIME_REGISTER_DIRECT_CAPTURE"
+printf '%s\n' "$register_capture_block" | grep -Fq "HOPE_RUNTIME_REGISTER_READY_CAPTURE"
+printf '%s\n' "$register_capture_block" | grep -Fq 'await _waitForRuntimeRegisterGoogleCta(tester)'
+printf '%s\n' "$register_capture_block" | grep -Fq "find.byKey(const ValueKey('auth-google-sign-in'))"
 printf '%s\n' "$register_capture_block" | grep -Fq 'await _captureRuntimeScreenshot(marker, tester: tester)'
-if printf '%s\n' "$register_capture_block" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
-  echo "FAIL: Register runtime capture must remain direct after surface preparation" >&2
+if printf '%s\n' "$register_capture_block" | grep -Eq 'Future<void>\.delayed'; then
+  echo "FAIL: Register capture must use the bounded readiness helper, not a timed settle" >&2
   exit 1
 fi
 
@@ -282,7 +284,7 @@ printf '%s\n' "$compact_money_block" | grep -Fq 'overflow: TextOverflow.clip,'
 echo "PASS: Wave 23 superwave + Wave 22 compact-first-fold source contracts"
 echo "PASS: Wave 21 shared visual + locale + evidence integrity contracts"
 echo "PASS: premium visual composition wave source integrity"
-echo "PASS: Register + PasswordReset runtime capture uses direct screenshot after surface preparation"
+echo "PASS: Register captures configured Google CTA after bounded readiness; PasswordReset remains direct"
 # [runtime-capture-fa] full FA/RTL + responsive editorial media certification after Home-only proof.
 # [runtime-capture] full EN/LTR editorial media certification after FA/RTL proof.
 

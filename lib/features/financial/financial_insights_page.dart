@@ -637,106 +637,149 @@ class _BarChart extends StatelessWidget {
                       constraints.maxWidth - axisWidth,
                       data.length * monthWidth,
                     ).toDouble();
+                    final hasHorizontalOverflow =
+                        chartWidth > constraints.maxWidth - axisWidth;
+                    const scrollHintHeight = 22.0;
+                    final chartViewportHeight = math.max(
+                      1.0,
+                      constraints.maxHeight -
+                          (hasHorizontalOverflow ? scrollHintHeight : 0),
+                    ).toDouble();
                     final labelHeight = math.max(
-                      constraints.maxHeight < 150 ? 20.0 : 24.0,
+                      chartViewportHeight < 150 ? 20.0 : 24.0,
                       14.0 * textScale,
                     ).toDouble();
                     final axisTicks = textScale > 1.2
                         ? const [4, 2, 0]
                         : const [4, 3, 2, 1, 0];
 
-                    return Row(
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SizedBox(
-                          width: axisWidth,
-                          height: constraints.maxHeight,
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                height: labelHeight + 3,
-                                child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
+                        if (hasHorizontalOverflow)
+                          SizedBox(
+                            height: scrollHintHeight,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Icon(
+                                  Icons.swipe_rounded,
+                                  size: 16,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
                                   child: Text(
-                                    english ? 'TOMAN' : 'تومان',
+                                    english
+                                        ? 'Swipe the chart sideways to view other months'
+                                        : 'برای دیدن ماه‌های دیگر، نمودار را افقی بکشید',
                                     maxLines: 1,
-                                    overflow: TextOverflow.clip,
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w800,
-                                          color: theme.colorScheme.onSurfaceVariant,
-                                        ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.end,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 3),
-                                  child: Column(
-                                    key: const ValueKey('financial-cashflow-y-axis'),
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      for (final tick in axisTicks)
-                                        Text(
-                                          _cashFlowAxisLabel(
-                                            (scaleMaximum * tick / 4).round(),
-                                            locale,
-                                          ),
-                                          key: ValueKey('financial-cashflow-y-tick-$tick'),
+                              ],
+                            ),
+                          ),
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                width: axisWidth,
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height: labelHeight + 3,
+                                      child: Align(
+                                        alignment: AlignmentDirectional.centerStart,
+                                        child: Text(
+                                          english ? 'TOMAN' : 'تومان',
                                           maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          textAlign: TextAlign.end,
+                                          overflow: TextOverflow.clip,
                                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                fontSize: 10,
-                                                height: 1,
-                                                fontWeight: tick == 0 || tick == 4
-                                                    ? FontWeight.w800
-                                                    : FontWeight.w600,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w800,
                                                 color: theme.colorScheme.onSurfaceVariant,
                                               ),
                                         ),
-                                    ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(bottom: 3),
+                                        child: Column(
+                                          key: const ValueKey('financial-cashflow-y-axis'),
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            for (final tick in axisTicks)
+                                              Text(
+                                                _cashFlowAxisLabel(
+                                                  (scaleMaximum * tick / 4).round(),
+                                                  locale,
+                                                ),
+                                                key: ValueKey('financial-cashflow-y-tick-$tick'),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                textAlign: TextAlign.end,
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                      fontSize: 10,
+                                                      height: 1,
+                                                      fontWeight: tick == 0 || tick == 4
+                                                          ? FontWeight.w800
+                                                          : FontWeight.w600,
+                                                      color: theme.colorScheme.onSurfaceVariant,
+                                                    ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  key: const ValueKey('financial-cashflow-chart-scroll'),
+                                  scrollDirection: Axis.horizontal,
+                                  child: SizedBox(
+                                    width: chartWidth,
+                                    height: chartViewportHeight,
+                                    child: Semantics(
+                                      key: const ValueKey('financial-cashflow-chart-semantics'),
+                                      container: true,
+                                      label: english
+                                          ? 'Monthly cash flow; amounts in TOMAN; ${data.length} recorded months. ' +
+                                              data.map((month) =>
+                                                '${month.month} (${month.label}): inflow ${HopeDisplayFormatter.money(month.inflow, locale: locale)}, outflow ${HopeDisplayFormatter.money(month.outflow, locale: locale)}, reserved ${HopeDisplayFormatter.money(month.reserved, locale: locale)}'
+                                              ).join('. ')
+                                          : 'جریان نقدی ماهانه؛ مبالغ به تومان؛ ${data.length} ماه ثبت‌شده. ' +
+                                              data.map((month) =>
+                                                '${month.month} (${month.label}): ورودی ${HopeDisplayFormatter.money(month.inflow, locale: locale)}، خروجی ${HopeDisplayFormatter.money(month.outflow, locale: locale)}، رزرو شده ${HopeDisplayFormatter.money(month.reserved, locale: locale)}'
+                                              ).join('؛ '),
+                                      child: CustomPaint(
+                                        painter: _BarChartPainter(
+                                          data,
+                                          inflow,
+                                          outflow,
+                                          reserved,
+                                          theme.colorScheme.outline,
+                                          Directionality.of(context),
+                                          textScale,
+                                          scaleMaximum,
+                                        ),
+                                        child: const SizedBox.expand(),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-                        ),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            key: const ValueKey('financial-cashflow-chart-scroll'),
-                            scrollDirection: Axis.horizontal,
-                            child: SizedBox(
-                              width: chartWidth,
-                              height: constraints.maxHeight,
-                              child: Semantics(
-                                key: const ValueKey('financial-cashflow-chart-semantics'),
-                                container: true,
-                                label: english
-                                    ? 'Monthly cash flow; amounts in TOMAN; ${data.length} recorded months. ' +
-                                        data.map((month) =>
-                                          '${month.month} (${month.label}): inflow ${HopeDisplayFormatter.money(month.inflow, locale: locale)}, outflow ${HopeDisplayFormatter.money(month.outflow, locale: locale)}, reserved ${HopeDisplayFormatter.money(month.reserved, locale: locale)}'
-                                        ).join('. ')
-                                    : 'جریان نقدی ماهانه؛ مبالغ به تومان؛ ${data.length} ماه ثبت‌شده. ' +
-                                        data.map((month) =>
-                                          '${month.month} (${month.label}): ورودی ${HopeDisplayFormatter.money(month.inflow, locale: locale)}، خروجی ${HopeDisplayFormatter.money(month.outflow, locale: locale)}، رزرو شده ${HopeDisplayFormatter.money(month.reserved, locale: locale)}'
-                                        ).join('؛ '),
-                                child: CustomPaint(
-                                  painter: _BarChartPainter(
-                                    data,
-                                    inflow,
-                                    outflow,
-                                    reserved,
-                                    theme.colorScheme.outline,
-                                    Directionality.of(context),
-                                    textScale,
-                                    scaleMaximum,
-                                  ),
-                                  child: const SizedBox.expand(),
-                                ),
-                              ),
-                            ),
                           ),
                         ),
                       ],
