@@ -35,10 +35,10 @@ class HopeV2Colors {
   static const secondaryStrong = Color(0xFF0D9488);
   static const secondaryDark = Color(0xFF5EEAD4);
   // Legacy generic accent stays amber and aliases the warning ramp below.
-  static const accent = HopeV2TonalPalettes.warning.shade500;
+  static const accent = Color(0xFFF59E0B);
   /// Focus accent for featured/recommended work surfaces; use sparingly.
-  static const orange = HopeV2TonalPalettes.featured.shade500;
-  static const orangeDark = HopeV2TonalPalettes.featured.shade300;
+  static const orange = Color(0xFFF97316);
+  static const orangeDark = Color(0xFFFF9A4D);
   static const inkSoft = Color(0xFF34372D);
   static const backgroundWarm = Color(0xFFF5F3EA);
   static const ink = Color(0xFF24271F);
@@ -67,8 +67,8 @@ class HopeV2Colors {
 
   // Featured/recommended content uses a dedicated warm foreground, never the
   // brand-action hue. Its surface stays distinct from readable foregrounds.
-  static const accentTextLight = HopeV2TonalPalettes.featured.shade800;
-  static const accentTextDark = HopeV2TonalPalettes.featured.shade200;
+  static const accentTextLight = Color(0xFF9A3412);
+  static const accentTextDark = Color(0xFFFDBA74);
   static const accentSurfaceLight = Color(0xFFFFF1E6);
   static const accentSurfaceDark = Color(0xFF332316);
 
