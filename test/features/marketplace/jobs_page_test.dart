@@ -10,6 +10,7 @@ import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/marketplace/saved_search_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
@@ -369,6 +370,17 @@ void main() {
     expect(
       find.byKey(const ValueKey('hope-explore-result-count')),
       findsOneWidget,
+    );
+    final resultCountText = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('hope-explore-result-count')),
+        matching: find.byType(Text),
+      ),
+    );
+    expect(
+      resultCountText.style?.color,
+      HopeV2Colors.ink,
+      reason: 'The Explore result count is readable text and must use a neutral foreground.',
     );
     expect(
       tester.getSize(
