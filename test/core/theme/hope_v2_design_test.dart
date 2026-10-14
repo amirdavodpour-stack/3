@@ -378,6 +378,171 @@ void main() {
     }
   });
 
+  test('HOPE color genome provides six complete 50–950 tonal scales', () {
+    const expectedSteps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+    final palettes = <HopeV2TonalPalette>[
+      HopeV2TonalPalettes.brand,
+      HopeV2TonalPalettes.neutral,
+      HopeV2TonalPalettes.info,
+      HopeV2TonalPalettes.success,
+      HopeV2TonalPalettes.warning,
+      HopeV2TonalPalettes.danger,
+    ];
+    const expectedValues = <List<Color>>[
+      [
+        Color(0xFFEEF2FF), Color(0xFFE0E7FF), Color(0xFFC7D2FE),
+        Color(0xFFA5B4FC), Color(0xFF818CF8), Color(0xFF6366F1),
+        Color(0xFF4F46E5), Color(0xFF4338CA), Color(0xFF3730A3),
+        Color(0xFF312E81), Color(0xFF1E1B4B),
+      ],
+      [
+        Color(0xFFFAF9F4), Color(0xFFF2F0E8), Color(0xFFE9E5D9),
+        Color(0xFFD6D1C4), Color(0xFFB4AE9E), Color(0xFF8B8779),
+        Color(0xFF66675B), Color(0xFF4A4C43), Color(0xFF34372D),
+        Color(0xFF24271F), Color(0xFF12140F),
+      ],
+      [
+        Color(0xFFE6FFFB), Color(0xFFCCFBF1), Color(0xFF99F6E4),
+        Color(0xFF5EEAD4), Color(0xFF2DD4BF), Color(0xFF14B8A6),
+        Color(0xFF0D9488), Color(0xFF0F766E), Color(0xFF115E59),
+        Color(0xFF134E4A), Color(0xFF042F2E),
+      ],
+      [
+        Color(0xFFF0FDF4), Color(0xFFDCFCE7), Color(0xFFBBF7D0),
+        Color(0xFF86EFAC), Color(0xFF4ADE80), Color(0xFF22C55E),
+        Color(0xFF16A34A), Color(0xFF15803D), Color(0xFF166534),
+        Color(0xFF14532D), Color(0xFF052E16),
+      ],
+      [
+        Color(0xFFFFFBEB), Color(0xFFFEF3C7), Color(0xFFFDE68A),
+        Color(0xFFFCD34D), Color(0xFFFBBF24), Color(0xFFF59E0B),
+        Color(0xFFD97706), Color(0xFFB45309), Color(0xFF92400E),
+        Color(0xFF78350F), Color(0xFF451A03),
+      ],
+      [
+        Color(0xFFFEF2F2), Color(0xFFFEE2E2), Color(0xFFFECACA),
+        Color(0xFFFCA5A5), Color(0xFFF87171), Color(0xFFEF4444),
+        Color(0xFFDC2626), Color(0xFFB91C1C), Color(0xFF991B1B),
+        Color(0xFF7F1D1D), Color(0xFF450A0A),
+      ],
+    ];
+
+    expect(HopeV2TonalPalette.steps, expectedSteps);
+    for (var paletteIndex = 0; paletteIndex < palettes.length; paletteIndex++) {
+      final palette = palettes[paletteIndex];
+      expect(palette.values, expectedValues[paletteIndex]);
+      for (var stopIndex = 0; stopIndex < expectedSteps.length; stopIndex++) {
+        expect(palette.shade(expectedSteps[stopIndex]), expectedValues[paletteIndex][stopIndex]);
+      }
+    }
+    expect(() => HopeV2TonalPalettes.brand.shade(75), throwsArgumentError);
+    expect(HopeV2TonalPalettes.brand.shade(500), HopeV2Colors.primary);
+    expect(HopeV2TonalPalettes.neutral.shade(900), HopeV2Colors.ink);
+    expect(HopeV2TonalPalettes.info.shade(700), HopeV2Colors.secondaryAction);
+    expect(HopeV2TonalPalettes.warning.shade(500), HopeV2Colors.accent);
+    expect(HopeV2TonalPalettes.danger.shade(700), HopeV2Colors.dangerOnLight);
+  });
+
+  testWidgets('featured and financial semantic roles use readable non-brand foregrounds',
+      (tester) async {
+    late Map<String, Color> light;
+    late Map<String, Color> dark;
+
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: Builder(builder: (context) {
+        light = {
+          'amount': HopeV2SemanticColors.amount(context),
+          'neutral': HopeV2SemanticColors.neutral(context),
+          'featured': HopeV2SemanticColors.featured(context),
+          'pending': HopeV2SemanticColors.pending(context),
+          'processing': HopeV2SemanticColors.processing(context),
+          'incoming': HopeV2SemanticColors.incomingAmount(context),
+          'outgoing': HopeV2SemanticColors.outgoingAmount(context),
+          'accentSurface': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.orange),
+          'accentForeground': HopeV2SemanticColors.readableAccent(context, HopeV2Colors.orange),
+        };
+        return const SizedBox();
+      }),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.dark(),
+      home: Builder(builder: (context) {
+        dark = {
+          'amount': HopeV2SemanticColors.amount(context),
+          'neutral': HopeV2SemanticColors.neutral(context),
+          'featured': HopeV2SemanticColors.featured(context),
+          'pending': HopeV2SemanticColors.pending(context),
+          'processing': HopeV2SemanticColors.processing(context),
+          'incoming': HopeV2SemanticColors.incomingAmount(context),
+          'outgoing': HopeV2SemanticColors.outgoingAmount(context),
+          'accentSurface': HopeV2SemanticColors.statusSurface(context, HopeV2Colors.orangeDark),
+          'accentForeground': HopeV2SemanticColors.readableAccent(context, HopeV2Colors.orangeDark),
+        };
+        return const SizedBox();
+      }),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(light['amount'], HopeV2Colors.moneyTextLight);
+    expect(dark['amount'], HopeV2Colors.moneyTextDark);
+    expect(light['neutral'], HopeV2Colors.muted);
+    expect(dark['neutral'], HopeV2Colors.darkMuted);
+    expect(light['featured'], HopeV2Colors.accentTextLight);
+    expect(dark['featured'], HopeV2Colors.accentTextDark);
+    expect(light['pending'], HopeV2Colors.warningOnLight);
+    expect(dark['pending'], HopeV2Colors.warningDark);
+    expect(light['processing'], HopeV2Colors.infoTextLight);
+    expect(dark['processing'], HopeV2Colors.infoTextDark);
+    expect(light['incoming'], HopeV2Colors.successOnLight);
+    expect(dark['incoming'], HopeV2Colors.successDark);
+    expect(light['outgoing'], HopeV2Colors.dangerOnLight);
+    expect(dark['outgoing'], HopeV2Colors.dangerDark);
+    expect(light['accentSurface'], HopeV2Colors.accentSurfaceLight);
+    expect(dark['accentSurface'], HopeV2Colors.accentSurfaceDark);
+    expect(light['accentForeground'], HopeV2Colors.accentTextLight);
+    expect(dark['accentForeground'], HopeV2Colors.accentTextDark);
+
+    final brandActionColors = <Color>{
+      HopeV2Colors.primary,
+      HopeV2Colors.primaryAction,
+      HopeV2Colors.primaryDark,
+      HopeV2Colors.primaryActionHoverLight,
+      HopeV2Colors.primaryActionPressedLight,
+    };
+    for (final foreground in [
+      ...light.values.where((color) => color != HopeV2Colors.accentSurfaceLight),
+      ...dark.values.where((color) => color != HopeV2Colors.accentSurfaceDark),
+    ]) {
+      expect(brandActionColors.contains(foreground), isFalse);
+    }
+
+    final lightTextSurfaces = [
+      HopeV2Colors.surface,
+      HopeV2Colors.backgroundWarm,
+      HopeV2Colors.pageLight,
+      HopeV2Colors.panelSoftLight,
+      HopeV2Colors.chipLight,
+      HopeV2Colors.accentSurfaceLight,
+    ];
+    final darkTextSurfaces = [
+      HopeV2Colors.darkBackground,
+      HopeV2Colors.darkSurface,
+      HopeV2Colors.darkCard,
+      HopeV2Colors.panelDark,
+      HopeV2Colors.panelSoftDark,
+      HopeV2Colors.accentSurfaceDark,
+    ];
+    for (final surface in lightTextSurfaces) {
+      expect(_contrastRatio(HopeV2Colors.accentTextLight, surface), greaterThanOrEqualTo(4.5));
+    }
+    for (final surface in darkTextSurfaces) {
+      expect(_contrastRatio(HopeV2Colors.accentTextDark, surface), greaterThanOrEqualTo(4.5));
+    }
+  });
+
   test('readable theme labels stay neutral while indigo remains available for controls', () {
     for (final theme in [AppTheme.light(), AppTheme.dark()]) {
       final text = theme.brightness == Brightness.dark

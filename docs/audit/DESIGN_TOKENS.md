@@ -6,6 +6,10 @@ Single source currently lives in `lib/core/theme/hope_v2_design.dart`; `lib/core
 
 **Hard rule: no readable text uses indigo/purple.** This includes prices, budgets, money totals, metrics, selected labels, navigation text, tab labels, text buttons, chip labels and score labels. Brand indigo may remain in action fills, focus rings, selected backgrounds/borders, progress graphics and decorative icons. If a status or score needs colored text, use its contrast-safe semantic foreground instead.
 
+The canonical genome is implemented in `HopeV2TonalPalettes`: six 11-stop ramps (`50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950`) for brand-action, warm-neutral, information/teal, success, warning and danger. Use `palette.shade(step)` for a named tone; do not interpolate ad-hoc values or introduce a second palette source. Legacy `HopeV2Colors` tokens remain stable while the UI migrates.
+
+Semantic foregrounds are separate from ramps: `amount` stays neutral for ordinary prices and balances; `pending` maps to warning, `processing` to information, and only actual incoming/outgoing transaction states use positive/negative semantics. Featured content uses a dedicated warm accent foreground with matching soft surfaces. `readableAccent` maps known interaction hues to a contrast-safe semantic foreground; action colors must never be passed directly to a text style.
+
 | Role | Light foreground / token | Dark foreground / token | Intended meaning |
 |---|---|---|---|
 | Brand actions | `primaryAction #4F46E5`; hover `#4338CA`; pressed `#3730A3` | `primaryDark #818CF8` for fills/indicators | Primary action, focus and selection graphics only; never text |
@@ -36,6 +40,7 @@ Semantic fills are deliberately softer than text foregrounds: use `successSurfac
 - Brand indigo is allowed for controls and decorative state graphics, not readable text. Text in selected controls stays neutral; the selected fill, border, focus ring or icon carries the interaction signal.
 - Prices and all financial values always use `HopeV2SemanticColors.amount(context)`; they do not switch to green for an ordinary value and never use brand indigo. Reserve success/danger colors for actual state or direction.
 - `HopeV2SemanticColors.info(context)` resolves to readable teal on light surfaces and cyan-teal on dark surfaces. Match intelligence and informational scores use this role rather than the brand action token.
+- `HopeV2SemanticColors.featured(context)` provides warm burnt-orange text (`#9A3412` in light mode, `#FDBA74` in dark mode); these are measured against neutral and featured surfaces by the Flutter widget contract and static contrast guard.
 - Use `successOnLight`, `warningOnLight`, `dangerOnLight` with the matching dark variants for semantic text. Soft semantic surface tokens remain separate from their foreground tokens.
 - `tool/contrast_check.py` enforces a 4.5:1 minimum for money and semantic body text across the canonical light/dark surface sets; icon/border/action states retain their respective checks.
 

@@ -64,6 +64,13 @@ class HopeV2Colors {
   static const infoTextLight = Color(0xFF0F766E);
   static const infoTextDark = Color(0xFF5EEAD4);
 
+  // Featured/recommended content uses a dedicated warm foreground, never the
+  // brand-action hue. Its surface stays distinct from readable foregrounds.
+  static const accentTextLight = Color(0xFF9A3412);
+  static const accentTextDark = Color(0xFFFDBA74);
+  static const accentSurfaceLight = Color(0xFFFFF1E6);
+  static const accentSurfaceDark = Color(0xFF332316);
+
   // Low-intensity state backgrounds are separate from their text foregrounds.
   static const successSurfaceLight = Color(0xFFE8F5E9);
   static const successSurfaceDark = Color(0xFF172A22);
@@ -113,6 +120,150 @@ class HopeV2Colors {
   static const walletBalanceMetricBorder = Color(0x0FFFFFFF);
   static const walletBalanceMetricBorderEmphasized = Color(0x3DFFFFFF);
 }
+
+/// A complete, stable tonal ramp. Consumers should request named stops rather
+/// than interpolate UI colors at runtime; interaction hues and text roles stay
+/// separately defined in [HopeV2Colors].
+class HopeV2TonalPalette {
+  const HopeV2TonalPalette({
+    required this.shade50,
+    required this.shade100,
+    required this.shade200,
+    required this.shade300,
+    required this.shade400,
+    required this.shade500,
+    required this.shade600,
+    required this.shade700,
+    required this.shade800,
+    required this.shade900,
+    required this.shade950,
+  });
+
+  static const steps = <int>[50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+
+  final Color shade50;
+  final Color shade100;
+  final Color shade200;
+  final Color shade300;
+  final Color shade400;
+  final Color shade500;
+  final Color shade600;
+  final Color shade700;
+  final Color shade800;
+  final Color shade900;
+  final Color shade950;
+
+  Color shade(int step) => switch (step) {
+        50 => shade50,
+        100 => shade100,
+        200 => shade200,
+        300 => shade300,
+        400 => shade400,
+        500 => shade500,
+        600 => shade600,
+        700 => shade700,
+        800 => shade800,
+        900 => shade900,
+        950 => shade950,
+        _ => throw ArgumentError.value(step, 'step', 'Expected a defined tonal step'),
+      };
+
+  List<Color> get values => [
+        shade50, shade100, shade200, shade300, shade400, shade500,
+        shade600, shade700, shade800, shade900, shade950,
+      ];
+}
+
+/// Six shared ramps form the HOPE color genome. Purple/indigo is a brand-action
+/// palette only; semantic foregrounds are chosen separately for readable text.
+class HopeV2TonalPalettes {
+  const HopeV2TonalPalettes._();
+
+  static const brand = HopeV2TonalPalette(
+    shade50: Color(0xFFEEF2FF),
+    shade100: Color(0xFFE0E7FF),
+    shade200: Color(0xFFC7D2FE),
+    shade300: Color(0xFFA5B4FC),
+    shade400: Color(0xFF818CF8),
+    shade500: Color(0xFF6366F1),
+    shade600: Color(0xFF4F46E5),
+    shade700: Color(0xFF4338CA),
+    shade800: Color(0xFF3730A3),
+    shade900: Color(0xFF312E81),
+    shade950: Color(0xFF1E1B4B),
+  );
+
+  static const neutral = HopeV2TonalPalette(
+    shade50: Color(0xFFFAF9F4),
+    shade100: Color(0xFFF2F0E8),
+    shade200: Color(0xFFE9E5D9),
+    shade300: Color(0xFFD6D1C4),
+    shade400: Color(0xFFB4AE9E),
+    shade500: Color(0xFF8B8779),
+    shade600: Color(0xFF66675B),
+    shade700: Color(0xFF4A4C43),
+    shade800: Color(0xFF34372D),
+    shade900: Color(0xFF24271F),
+    shade950: Color(0xFF12140F),
+  );
+
+  static const info = HopeV2TonalPalette(
+    shade50: Color(0xFFE6FFFB),
+    shade100: Color(0xFFCCFBF1),
+    shade200: Color(0xFF99F6E4),
+    shade300: Color(0xFF5EEAD4),
+    shade400: Color(0xFF2DD4BF),
+    shade500: Color(0xFF14B8A6),
+    shade600: Color(0xFF0D9488),
+    shade700: Color(0xFF0F766E),
+    shade800: Color(0xFF115E59),
+    shade900: Color(0xFF134E4A),
+    shade950: Color(0xFF042F2E),
+  );
+
+  static const success = HopeV2TonalPalette(
+    shade50: Color(0xFFF0FDF4),
+    shade100: Color(0xFFDCFCE7),
+    shade200: Color(0xFFBBF7D0),
+    shade300: Color(0xFF86EFAC),
+    shade400: Color(0xFF4ADE80),
+    shade500: Color(0xFF22C55E),
+    shade600: Color(0xFF16A34A),
+    shade700: Color(0xFF15803D),
+    shade800: Color(0xFF166534),
+    shade900: Color(0xFF14532D),
+    shade950: Color(0xFF052E16),
+  );
+
+  static const warning = HopeV2TonalPalette(
+    shade50: Color(0xFFFFFBEB),
+    shade100: Color(0xFFFEF3C7),
+    shade200: Color(0xFFFDE68A),
+    shade300: Color(0xFFFCD34D),
+    shade400: Color(0xFFFBBF24),
+    shade500: Color(0xFFF59E0B),
+    shade600: Color(0xFFD97706),
+    shade700: Color(0xFFB45309),
+    shade800: Color(0xFF92400E),
+    shade900: Color(0xFF78350F),
+    shade950: Color(0xFF451A03),
+  );
+
+  static const danger = HopeV2TonalPalette(
+    shade50: Color(0xFFFEF2F2),
+    shade100: Color(0xFFFEE2E2),
+    shade200: Color(0xFFFECACA),
+    shade300: Color(0xFFFCA5A5),
+    shade400: Color(0xFFF87171),
+    shade500: Color(0xFFEF4444),
+    shade600: Color(0xFFDC2626),
+    shade700: Color(0xFFB91C1C),
+    shade800: Color(0xFF991B1B),
+    shade900: Color(0xFF7F1D1D),
+    shade950: Color(0xFF450A0A),
+  );
+}
+
 
 /// Canonical icon vocabulary. Keep navigation and recurring product concepts
 /// on this set so the interface reads as one designed system rather than a
@@ -418,6 +569,19 @@ class HopeV2SemanticColors {
       _isDark(context) ? HopeV2Colors.warningDark : HopeV2Colors.warningOnLight;
   static Color error(BuildContext context) => Theme.of(context).colorScheme.error;
 
+  /// Neutral labels and values retain their contrast in both theme modes.
+  static Color neutral(BuildContext context) => textSecondary(context);
+
+  /// Recommended/featured state uses warm orange, never brand indigo as text.
+  static Color featured(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.accentTextDark : HopeV2Colors.accentTextLight;
+
+  /// Named state roles make intent explicit at product call sites.
+  static Color pending(BuildContext context) => warning(context);
+  static Color processing(BuildContext context) => info(context);
+  static Color incomingAmount(BuildContext context) => success(context);
+  static Color outgoingAmount(BuildContext context) => error(context);
+
   /// Contrast-safe text foreground for semantic chips; never pass raw indigo.
   static Color statusSurface(BuildContext context, Color accent) {
     if (accent == HopeV2Colors.primary ||
@@ -452,6 +616,13 @@ class HopeV2SemanticColors {
           ? HopeV2Colors.dangerSurfaceDark
           : HopeV2Colors.dangerSurfaceLight;
     }
+    if (accent == HopeV2Colors.accent ||
+        accent == HopeV2Colors.orange ||
+        accent == HopeV2Colors.orangeDark) {
+      return _isDark(context)
+          ? HopeV2Colors.accentSurfaceDark
+          : HopeV2Colors.accentSurfaceLight;
+    }
     return accent.withValues(alpha: _isDark(context) ? .12 : .08);
   }
 
@@ -474,6 +645,9 @@ class HopeV2SemanticColors {
     if (accent == HopeV2Colors.danger ||
         accent == HopeV2Colors.dangerDark ||
         accent == HopeV2Colors.dangerOnLight) return error(context);
+    if (accent == HopeV2Colors.accent ||
+        accent == HopeV2Colors.orange ||
+        accent == HopeV2Colors.orangeDark) return featured(context);
     if (accent == HopeV2Colors.muted || accent == HopeV2Colors.darkMuted) {
       return textSecondary(context);
     }
