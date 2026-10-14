@@ -58,6 +58,33 @@ void main() {
     expect(HopeV2Gradients.heroDark.colors, isNot(contains(const Color(0xFF37318C))));
   });
 
+  test('opportunity artwork accents stay unique and separate from semantic states', () {
+    const accents = <Color>[
+      HopeV2OpportunityAccents.software,
+      HopeV2OpportunityAccents.design,
+      HopeV2OpportunityAccents.marketing,
+      HopeV2OpportunityAccents.content,
+      HopeV2OpportunityAccents.finance,
+      HopeV2OpportunityAccents.education,
+      HopeV2OpportunityAccents.support,
+      HopeV2OpportunityAccents.construction,
+      HopeV2OpportunityAccents.media,
+      HopeV2OpportunityAccents.data,
+      HopeV2OpportunityAccents.sales,
+    ];
+
+    expect(accents.toSet(), hasLength(accents.length));
+    expect(accents, isNot(contains(HopeV2Colors.primary)));
+    expect(accents, isNot(contains(HopeV2Colors.primaryAction)));
+    expect(accents, isNot(contains(HopeV2Colors.primaryDark)));
+    expect(accents, isNot(contains(HopeV2Colors.secondary)));
+    expect(accents, isNot(contains(HopeV2Colors.success)));
+    expect(accents, isNot(contains(HopeV2Colors.warning)));
+    expect(accents, isNot(contains(HopeV2Colors.danger)));
+    expect(accents, isNot(contains(HopeV2Colors.trustTextLight)));
+    expect(accents, isNot(contains(HopeV2Colors.accentTextLight)));
+  });
+
   test('wallet balance hero palette is centralized without visual drift', () {
     expect(HopeV2Colors.walletBalanceHeroStart, const Color(0xFF121726));
     expect(HopeV2Colors.walletBalanceHeroMiddle, const Color(0xFF1B2748));
