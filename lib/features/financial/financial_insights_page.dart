@@ -375,7 +375,7 @@ class _ChartCard extends StatelessWidget {
     final baseChartHeight =
         shortViewport ? 122.0 : compact ? 156.0 : 172.0;
     final chartHeight =
-        (baseChartHeight + math.max(0.0, textScale - 1.0) * 96.0).toDouble();
+        (baseChartHeight + math.max(0.0, textScale - 1.0) * 112.0).toDouble();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
