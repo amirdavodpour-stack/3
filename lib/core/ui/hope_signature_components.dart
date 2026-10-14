@@ -102,7 +102,7 @@ class HopeOpportunityLivePreview extends StatelessWidget {
                           style:
                               Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color:
-                                        Theme.of(context).colorScheme.primary,
+                                        HopeV2SemanticColors.textPrimary(context),
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: .7,
                                   ),
