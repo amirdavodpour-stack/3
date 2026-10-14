@@ -269,12 +269,9 @@ class _WalletPageState extends State<WalletPage> {
   String _entryTitle(HopeWalletTransaction item) =>
       _referenceTypeLabel(item.referenceType);
 
-  Color _directionColor(BuildContext context, bool credit) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return credit
-        ? (dark ? HopeV2Colors.successDark : HopeV2Colors.success)
-        : (dark ? HopeV2Colors.dangerDark : HopeV2Colors.danger);
-  }
+  Color _directionColor(BuildContext context, bool credit) => credit
+      ? HopeV2SemanticColors.incomingAmount(context)
+      : HopeV2SemanticColors.negativeAmount(context);
 
   Object _directionIcon(bool credit) => credit ? HopeV2Icons.transferIn : HopeV2Icons.transferOut;
 
