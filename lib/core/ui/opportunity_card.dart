@@ -74,6 +74,38 @@ class OpportunityCard extends StatelessWidget {
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  // Compact featured cards disclose one known, localized reason backed by the
+  // recommendation payload. Unknown server enums are deliberately not surfaced.
+  String? _knownCompactReasonLabel(BuildContext context, List<String> reasons) {
+    const supportedReasons = <String>{
+      'SKILL_MATCH',
+      'CATEGORY_MATCH',
+      'VERY_NEAR',
+      'NEARBY',
+      'REMOTE',
+      'WORK_MODE_MATCH',
+      'SALARY_FIT',
+      'BEHAVIOR_MATCH',
+      'GENERAL_MATCH',
+    };
+    for (final reason in reasons) {
+      final code = reason.trim().toUpperCase();
+      if (supportedReasons.contains(code)) return _reason(context, code);
+    }
+    return null;
+  }
+
+  Widget? _compactMatchReasonTag(BuildContext context, List<String> reasons) {
+    final label = _knownCompactReasonLabel(context, reasons);
+    if (label == null || label.trim().isEmpty) return null;
+    return PremiumTag(
+      key: const ValueKey('opportunity-card-match-reason'),
+      icon: HopeV2Icons.insights,
+      label: label,
+      color: HopeV2Colors.secondary,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final compact = variant == OpportunityCardVariant.compact;
@@ -686,8 +718,10 @@ class OpportunityCard extends StatelessWidget {
     required double? score,
     required String? mediaUrl,
     required HopeCopy copy,
+    required List<String> reasons,
   }) {
     final hasMedia = mediaUrl?.trim().isNotEmpty == true;
+    final matchReasonTag = _compactMatchReasonTag(context, reasons);
     final company = _companyName();
     final mode = _workMode(context);
     return Column(
@@ -735,6 +769,7 @@ class OpportunityCard extends StatelessWidget {
                       : copy.copy_job_ce2feba,
                   color: primary,
                 ),
+                if (matchReasonTag != null) matchReasonTag,
                 if (company != null)
                   PremiumTag(
                     icon: HopeV2Icons.profile,
@@ -867,6 +902,7 @@ class OpportunityCard extends StatelessWidget {
         primary: primary,
         mediaUrl: mediaUrl,
         copy: copy,
+        reasons: reasons,
       );
     }
 
@@ -879,6 +915,8 @@ class OpportunityCard extends StatelessWidget {
         primary: primary,
         mediaUrl: mediaUrl,
         copy: copy,
+        reasons: reasons,
+        showMatchRationale: true,
       );
     }
 
@@ -892,6 +930,7 @@ class OpportunityCard extends StatelessWidget {
         score: job.recommendationScore,
         mediaUrl: mediaUrl,
         copy: copy,
+        reasons: reasons,
       );
     }
 
@@ -904,6 +943,7 @@ class OpportunityCard extends StatelessWidget {
         primary: primary,
         mediaUrl: mediaUrl,
         copy: copy,
+        reasons: reasons,
       );
     }
 
@@ -962,6 +1002,7 @@ class OpportunityCard extends StatelessWidget {
     required Color primary,
     required String? mediaUrl,
     required HopeCopy copy,
+    required List<String> reasons,
   }) {
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
@@ -972,6 +1013,7 @@ class OpportunityCard extends StatelessWidget {
         : hopeCategoryLabel(context, categoryValue);
     final match = _matchLabel(context);
     final mode = _workMode(context);
+    final matchReasonTag = _compactMatchReasonTag(context, reasons);
     final tags = <Widget>[
       PremiumTag(
         icon: job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
@@ -990,6 +1032,7 @@ class OpportunityCard extends StatelessWidget {
           label: match,
           color: HopeV2Colors.success,
         ),
+      if (matchReasonTag != null) matchReasonTag,
       if (job.visibility == 'SPECIALIZED')
         PremiumTag(
           icon: HopeV2Icons.secure,
@@ -1117,10 +1160,15 @@ class OpportunityCard extends StatelessWidget {
     required Color primary,
     required String? mediaUrl,
     required HopeCopy copy,
+    required List<String> reasons,
+    bool showMatchRationale = false,
   }) {
     final company = _companyName();
     final mode = _workMode(context);
     final match = _matchLabel(context);
+    final matchReasonTag = showMatchRationale
+        ? _compactMatchReasonTag(context, reasons)
+        : null;
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final mediaSize = compactViewport ? 56.0 : 88.0;
@@ -1209,6 +1257,7 @@ class OpportunityCard extends StatelessWidget {
                           label: match,
                           color: HopeV2Colors.success,
                         ),
+                      if (matchReasonTag != null) matchReasonTag,
                     ],
                   ),
                   const SizedBox(height: HopeV2Spacing.xs),

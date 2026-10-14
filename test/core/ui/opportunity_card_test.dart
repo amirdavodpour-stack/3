@@ -719,6 +719,113 @@ void main() {
   });
 
 
+  testWidgets(
+    'featured opportunity exposes one localized model-backed match rationale only when known',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'featured-match-rationale',
+        'title': 'طراحی محصول برای بازار کار',
+        'description': 'Real opportunity fixture.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'jobType': 'FIXED',
+        'budgetMin': '1000000',
+        'budgetMax': '1500000',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'recommendationScore': 0.94,
+        'recommendationReasons': ['SKILL_MATCH', 'CATEGORY_MATCH'],
+      });
+
+      for (final locale in const [Locale('fa'), Locale('en')]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: locale,
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: ThemeData(brightness: Brightness.dark),
+            home: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(12),
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.featured,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('opportunity-card-match-reason')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(locale.languageCode == 'fa' ? 'مهارت مرتبط' : 'Skill match'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(locale.languageCode == 'fa' ? 'دسته‌بندی مرتبط' : 'Category match'),
+          findsNothing,
+          reason: 'The compact featured card should expose only one rationale.',
+        );
+        expect(tester.takeException(), isNull);
+      }
+
+      final unknownReasonJob = HopeJob.fromMap({
+        'id': 'featured-unknown-match-rationale',
+        'title': 'Opportunity with an unknown reason',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'recommendationScore': 0.88,
+        'recommendationReasons': ['FUTURE_SIGNAL_CODE'],
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(12),
+              child: OpportunityCard(
+                job: unknownReasonJob,
+                variant: OpportunityCardVariant.featured,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('opportunity-card-match-reason')),
+        findsNothing,
+        reason: 'Unknown backend reason codes must not leak into product UI.',
+      );
+      expect(find.text('FUTURE_SIGNAL_CODE'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('opportunity card localizes canonical labels in both locales',
       (tester) async {
     final job = HopeJob.fromMap({
