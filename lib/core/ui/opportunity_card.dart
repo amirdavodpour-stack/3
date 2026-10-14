@@ -55,45 +55,14 @@ class OpportunityCard extends StatelessWidget {
         '${HopeDisplayFormatter.integer(values[1], locale: locale)}\n'
         '${_t(context, 'تومان', 'TOMAN')}';
   }
-  String _reason(BuildContext context, String value) {
-    final copy = HopeCopy.of(context);
-    return switch (value) {
-      'SKILL_MATCH' => copy.copy_match_skill,
-      'CATEGORY_MATCH' => copy.copy_match_category,
-      'VERY_NEAR' => _t(context, 'تطابق مکانی', 'Location match'),
-      'NEARBY' => _t(context, 'تطابق مکانی', 'Location match'),
-      'REMOTE' => copy.copy_remote_dcbb625,
-      'WORK_MODE_MATCH' => copy.copy_match_work_mode,
-      'SALARY_FIT' => copy.copy_match_salary_fit,
-      'BEHAVIOR_MATCH' => copy.copy_match_preference_fit,
-      'GENERAL_MATCH' => copy.copy_match_general_fit,
-      _ => value,
-    };
-  }
+  String _reason(BuildContext context, String value) =>
+      hopeRecommendationReasonLabel(context, value) ?? value;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
-  // Compact featured cards disclose one known, localized reason backed by the
-  // recommendation payload. Unknown server enums are deliberately not surfaced.
-  String? _knownCompactReasonLabel(BuildContext context, List<String> reasons) {
-    const supportedReasons = <String>{
-      'SKILL_MATCH',
-      'CATEGORY_MATCH',
-      'VERY_NEAR',
-      'NEARBY',
-      'REMOTE',
-      'WORK_MODE_MATCH',
-      'SALARY_FIT',
-      'BEHAVIOR_MATCH',
-      'GENERAL_MATCH',
-    };
-    for (final reason in reasons) {
-      final code = reason.trim().toUpperCase();
-      if (supportedReasons.contains(code)) return _reason(context, code);
-    }
-    return null;
-  }
+  String? _knownCompactReasonLabel(BuildContext context, List<String> reasons) =>
+      hopeFirstRecommendationReasonLabel(context, reasons);
 
   Widget? _compactMatchReasonTag(BuildContext context, List<String> reasons) {
     final label = _knownCompactReasonLabel(context, reasons);

@@ -6,6 +6,7 @@ import '../theme/hope_v2_design.dart';
 
 import 'components.dart';
 import 'hope_display_formatters.dart';
+import 'hope_l10n.dart';
 import 'hope_product_architecture.dart';
 
 /// Shared page shell. Every V2 flagship surface should use this instead of
@@ -2136,6 +2137,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     required this.kind,
     this.accent,
     this.breakdown = const <String, double>{},
+    this.recommendationReasons = const <String>[],
   });
 
   final double? matchScore;
@@ -2145,6 +2147,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
   final String kind;
   final Color? accent;
   final Map<String, double> breakdown;
+  final List<String> recommendationReasons;
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -2179,6 +2182,16 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     final score = normalizedScore?.round();
     final locale = Localizations.localeOf(context).languageCode;
     final scoreLabel = score == null ? '—' : HopeDisplayFormatter.percent(score, locale: locale);
+    final rationaleLabel =
+        hopeFirstRecommendationReasonLabel(context, recommendationReasons);
+    final matchRationaleTag = rationaleLabel == null
+        ? null
+        : PremiumTag(
+            key: const ValueKey('opportunity-decision-match-rationale'),
+            icon: HopeV2Icons.insights,
+            label: rationaleLabel,
+            color: HopeV2Colors.secondary,
+          );
 
     Widget fact(String label, String value, Object icon, Color color) {
       if (value.trim().isEmpty || value.trim() == '—') {
@@ -2404,6 +2417,13 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                       fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
                     ],
                   ),
+                  if (matchRationaleTag != null) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: matchRationaleTag,
+                    ),
+                  ],
                   if (hasBreakdown) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -2440,14 +2460,26 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                     const SizedBox(width: 10),
                   ],
                   Expanded(
-                    child: Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        fact(_t(context, 'نوع', 'Type'), kind, HopeV2Icons.job, primary),
-                        fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
-                        fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
-                        fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
+                        Wrap(
+                          spacing: 7,
+                          runSpacing: 7,
+                          children: [
+                            fact(_t(context, 'نوع', 'Type'), kind, HopeV2Icons.job, primary),
+                            fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
+                            fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
+                            fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
+                          ],
+                        ),
+                        if (matchRationaleTag != null) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: matchRationaleTag,
+                          ),
+                        ],
                       ],
                     ),
                   ),

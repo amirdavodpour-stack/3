@@ -532,3 +532,50 @@ class HopeCopy {
   String get copy_offers => value.copy_offers;
   String get copy_all_cities => value.copy_all_cities;
 }
+
+
+/// Returns a localized display label for a recognized recommendation reason.
+/// Unknown backend values are intentionally omitted from customer-facing UI.
+String? hopeRecommendationReasonLabel(
+  BuildContext context,
+  String raw,
+) {
+  final code = raw.trim().toUpperCase();
+  final copy = HopeCopy.of(context);
+  switch (code) {
+    case 'SKILL_MATCH':
+      return copy.copy_match_skill;
+    case 'CATEGORY_MATCH':
+      return copy.copy_match_category;
+    case 'VERY_NEAR':
+    case 'NEARBY':
+      return Localizations.localeOf(context).languageCode == 'en'
+          ? 'Location match'
+          : 'تطابق مکانی';
+    case 'REMOTE':
+      return copy.copy_remote_dcbb625;
+    case 'WORK_MODE_MATCH':
+      return copy.copy_match_work_mode;
+    case 'SALARY_FIT':
+      return copy.copy_match_salary_fit;
+    case 'BEHAVIOR_MATCH':
+      return copy.copy_match_preference_fit;
+    case 'GENERAL_MATCH':
+      return copy.copy_match_general_fit;
+    default:
+      return null;
+  }
+}
+
+/// Selects the first reason with a supported localized label, keeping compact
+/// recommendation surfaces concise without inventing explanations.
+String? hopeFirstRecommendationReasonLabel(
+  BuildContext context,
+  Iterable<String> reasons,
+) {
+  for (final reason in reasons) {
+    final label = hopeRecommendationReasonLabel(context, reason);
+    if (label != null && label.trim().isNotEmpty) return label;
+  }
+  return null;
+}

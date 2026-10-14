@@ -373,6 +373,55 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'decision strip localizes one supported rationale and suppresses unknown codes',
+    (tester) async {
+      const rationaleKey =
+          ValueKey('opportunity-decision-match-rationale');
+
+      await _pump(
+        tester,
+        job: _job(
+          recommendationReasons: ['SKILL_MATCH', 'CATEGORY_MATCH'],
+        ),
+        width: 390,
+        height: 844,
+        locale: const Locale('en'),
+      );
+      expect(find.byKey(rationaleKey), findsOneWidget);
+      expect(find.text('Skill match'), findsOneWidget);
+      expect(find.text('Category match'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await _pump(
+        tester,
+        job: _job(
+          recommendationReasons: ['SKILL_MATCH', 'CATEGORY_MATCH'],
+        ),
+        width: 390,
+        height: 844,
+        locale: const Locale('fa'),
+      );
+      expect(find.byKey(rationaleKey), findsOneWidget);
+      expect(find.text('مهارت مرتبط'), findsOneWidget);
+      expect(find.text('Skill match'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await _pump(
+        tester,
+        job: _job(
+          recommendationReasons: ['FUTURE_SIGNAL_CODE'],
+        ),
+        width: 390,
+        height: 844,
+        locale: const Locale('en'),
+      );
+      expect(find.byKey(rationaleKey), findsNothing);
+      expect(find.text('FUTURE_SIGNAL_CODE'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('opportunity hero uses the tighter mobile-first height contract',
       (tester) async {
     await _pump(tester, job: _job(), width: 900, height: 1200);

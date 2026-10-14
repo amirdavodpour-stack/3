@@ -860,6 +860,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               location: _opportunityLocationLabel(context, j),
               accent: Theme.of(context).colorScheme.primary,
               breakdown: j.recommendationComponents,
+              recommendationReasons: j.recommendationReasons,
             ),
             Padding(
               key: const ValueKey('opportunity-quick-status'),
