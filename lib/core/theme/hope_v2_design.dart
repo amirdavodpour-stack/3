@@ -886,30 +886,30 @@ class HopeV2Type {
   static TextStyle display(BuildContext context) => Theme.of(context)
       .textTheme
       .displaySmall!
-      .copyWith(fontSize: 30, letterSpacing: -.7, height: 1.1);
+      .copyWith(fontSize: 28, letterSpacing: -.6, height: 1.12);
 
   static TextStyle hero(BuildContext context) => Theme.of(context)
       .textTheme
       .headlineMedium!
-      .copyWith(fontSize: 25, letterSpacing: -.55, height: 1.08);
+      .copyWith(fontSize: 23, letterSpacing: -.45, height: 1.12);
 
   static TextStyle metric(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
       .copyWith(
-        fontSize: 20,
-        fontWeight: FontWeight.w900,
-        letterSpacing: -.45,
-        height: 1.0,
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -.3,
+        height: 1.08,
       );
 
   static TextStyle section(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
-      .copyWith(fontSize: 18, letterSpacing: -.2, height: 1.18);
+      .copyWith(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -.15, height: 1.22);
 
   static TextStyle eyebrow(BuildContext context) => Theme.of(context)
       .textTheme
       .labelLarge!
-      .copyWith(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: .55);
+      .copyWith(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: .4);
 }
