@@ -404,9 +404,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 filled: true,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             PremiumPanel(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: FilledButton.icon(
                 onPressed: () =>
                     Navigator.push(context, HopeRoutes.login()),
@@ -452,9 +452,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         filled: true,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     PremiumPanel(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: FilledButton.icon(
                         onPressed: reload,
                         icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
@@ -500,10 +500,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         filled: true,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     _activityNavigation(context),
                     PremiumPanel(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: FilledButton.icon(
                         onPressed: () => Navigator.push(
                           context,

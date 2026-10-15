@@ -232,9 +232,10 @@ void main() {
     },
   );
 
-  testWidgets('guest transactions protect private activity', (tester) async {
+  testWidgets('guest transactions protect private activity with compact first-fold CTA',
+      (tester) async {
     final repo = _Transactions();
-    await _pump(tester, repo, guest: true);
+    await _pump(tester, repo, guest: true, width: 390, height: 844);
     expect(find.byType(TransactionsPage), findsOneWidget);
     expect(find.textContaining('شخصی'), findsOneWidget);
     expect(
@@ -242,6 +243,19 @@ void main() {
       24,
       reason: 'The page frame must not duplicate the navigation-aware scroll tail.',
     );
+
+    final action = find.byType(FilledButton);
+    expect(action, findsOneWidget);
+    expect(
+      tester.getTopLeft(action).dy,
+      lessThan(240),
+      reason: 'The sign-in action should not be pushed down by an oversized blank band.',
+    );
+    expect(
+      tester.widget<PremiumPanel>(find.byType(PremiumPanel)).padding,
+      const EdgeInsets.all(12),
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('empty authenticated transactions show the empty state',
