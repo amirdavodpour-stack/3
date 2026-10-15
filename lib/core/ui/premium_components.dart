@@ -433,7 +433,7 @@ class PremiumPageFrame extends StatelessWidget {
     super.key,
     required this.child,
     this.maxWidth = 1180,
-    this.padding = const EdgeInsets.fromLTRB(20, 16, 20, 104),
+    this.padding = const EdgeInsets.fromLTRB(16, 12, 16, 104),
     this.safeBottom = true,
     this.page,
     this.domain,
@@ -905,12 +905,12 @@ class PremiumHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                maxLines: compact ? 3 : 3,
+                maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
-                  fontSize: compact ? 20.5 : 27,
-                  height: compact ? 1.14 : 1.08,
-                  letterSpacing: compact ? -.35 : -.75,
+                  fontSize: compact ? 19.5 : 25.5,
+                  height: compact ? 1.12 : 1.08,
+                  letterSpacing: compact ? -.25 : -.65,
                 ),
               ),
               if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
@@ -1104,20 +1104,20 @@ class PremiumPanel extends StatelessWidget {
                     if (highlight)
                       BoxShadow(
                         color: Colors.black.withValues(alpha: .12),
-                        blurRadius: 22,
-                        offset: const Offset(0, 9),
+                        blurRadius: 16,
+                        offset: const Offset(0, 5),
                       ),
                     if (highlight)
                       BoxShadow(
                         color: HopeV2Colors.darkGreenGlow.withValues(alpha: glass ? .07 : .035),
-                        blurRadius: glass ? 24 : 18,
-                        offset: const Offset(0, 9),
+                        blurRadius: glass ? 18 : 14,
+                        offset: const Offset(0, 5),
                       ),
                     if (glass)
                       BoxShadow(
                         color: HopeV2Colors.darkGreenGlow.withValues(alpha: .018),
                         blurRadius: 26,
-                        offset: const Offset(-7, 12),
+                        offset: const Offset(-5, 8),
                       ),
                   ]
             : [
@@ -1125,8 +1125,8 @@ class PremiumPanel extends StatelessWidget {
                   color: highlight
                       ? HopeV2Colors.warmHalo.withValues(alpha: .06)
                       : const Color(0x081D2119),
-                  blurRadius: highlight ? 26 : 22,
-                  offset: const Offset(0, 8),
+                  blurRadius: highlight ? 18 : 14,
+                  offset: const Offset(0, 5),
                 ),
               ],
       ),
@@ -1359,7 +1359,7 @@ class PremiumHero extends StatelessWidget {
     this.action,
     this.icon,
     this.mediaUrl,
-    this.height = 264,
+    this.height = 200,
     this.compactHero = false,
     this.semanticLabel,
     this.domain,
@@ -1385,17 +1385,17 @@ class PremiumHero extends StatelessWidget {
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final resolvedDomain = domain ?? page?.spec.domain;
     final heroHeight = compactHero
-        ? height.clamp(112.0, 300.0).toDouble()
+        ? height.clamp(88.0, 148.0).toDouble()
         : compact
-            // Standard mobile hero stays editorial while returning more first-fold
-            // space to match, metadata, and the primary action.
-            ? height.clamp(164.0, 300.0).toDouble()
-            : (height < 280 ? 280.0 : height);
+            // Explicit short bands survive; defaults and oversized caller
+            // values are capped before they consume the first fold.
+            ? height.clamp(112.0, 204.0).toDouble()
+            : height.clamp(152.0, 224.0).toDouble();
     final horizontal = compactHero
         ? HopeV2Spacing.md
         : compact
-            ? HopeV2Spacing.lg
-            : HopeV2Spacing.xxl;
+            ? HopeV2Spacing.md
+            : HopeV2Spacing.xl;
 
     return Semantics(
       container: true,
@@ -1455,8 +1455,8 @@ class PremiumHero extends StatelessWidget {
             PositionedDirectional(
                 end: compact ? -84 : -48,
                 top: compact ? -76 : -54,
-                width: compact ? 176 : 204,
-                height: compact ? 176 : 204,
+                width: compact ? 136 : 164,
+                height: compact ? 136 : 164,
                 child: ExcludeSemantics(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -1474,8 +1474,8 @@ class PremiumHero extends StatelessWidget {
               PositionedDirectional(
                 start: compact ? -92 : -56,
                 bottom: compact ? -108 : -84,
-                width: compact ? 190 : 224,
-                height: compact ? 190 : 224,
+                width: compact ? 152 : 180,
+                height: compact ? 152 : 180,
                 child: ExcludeSemantics(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -1499,8 +1499,8 @@ class PremiumHero extends StatelessWidget {
                 top: horizontal,
                 child: ExcludeSemantics(
                   child: Container(
-                    width: 50,
-                    height: 50,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .12),
                       borderRadius: BorderRadius.circular(HopeV2Radii.iconTile),
@@ -1509,12 +1509,12 @@ class PremiumHero extends StatelessWidget {
                       ),
                     ),
                     child: icon is IconData
-                        ? Icon(icon as IconData, color: Colors.white, size: 28)
+                        ? Icon(icon as IconData, color: Colors.white, size: 24)
                         : HugeIcon(
                             icon: icon as List<List>,
                             color: Colors.white,
-                            size: 28,
-                            strokeWidth: 2.1,
+                            size: 24,
+                            strokeWidth: 2.0,
                           ),
                   ),
                 ),
@@ -1524,8 +1524,8 @@ class PremiumHero extends StatelessWidget {
               top: -62,
               child: ExcludeSemantics(
                 child: Container(
-                  width: 210,
-                  height: 210,
+                  width: 164,
+                  height: 164,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border:
@@ -1539,7 +1539,7 @@ class PremiumHero extends StatelessWidget {
                 horizontal: horizontal,
                 // Compact auth heroes have short fixed heights; the full-size
                 // vertical gutter can force wrapped copy to overflow at 360dp.
-                vertical: compactHero ? 4 : horizontal,
+                vertical: compactHero ? 4 : (compact ? 12 : 16),
               ),
               child: Align(
                 alignment: AlignmentDirectional.bottomStart,
@@ -1612,7 +1612,7 @@ class PremiumHero extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: compactHero ? 20 : (dense ? 21 : 24),
+                              fontSize: compactHero ? 19 : (dense ? 21 : 22),
                               height: 1.03,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -.9,

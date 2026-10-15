@@ -498,9 +498,9 @@ class OpportunityCard extends StatelessWidget {
         key: const ValueKey('opportunity-media-header'),
         height: featured
             ? (hasMedia
-                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 108 : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 128 : 152))
-                : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 64 : 76))
-            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 78 : 92),
+                ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 84 : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 96 : 112))
+                : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 52 : 60))
+            : (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 64 : 76),
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,

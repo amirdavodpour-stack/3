@@ -202,7 +202,7 @@ void main() {
   });
 
   test('HOPE hero geometry stays intentionally more expressive than standard cards', () {
-    expect(HopeV2Radii.hero, 28.0);
+    expect(HopeV2Radii.hero, 22.0);
     expect(HopeV2Radii.hero, greaterThan(HopeV2Radii.lg));
   });
 

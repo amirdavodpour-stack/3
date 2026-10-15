@@ -446,7 +446,7 @@ class HopeV2Radii {
   static const md = 14.0;
   static const lg = 16.0;
   static const xl = 20.0;
-  static const hero = 28.0;
+  static const hero = 22.0;
   static const input = 12.0;
   static const button = 12.0;
   static const navigation = 12.0;
