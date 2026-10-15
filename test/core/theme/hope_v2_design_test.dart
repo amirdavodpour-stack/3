@@ -198,7 +198,7 @@ void main() {
   });
 
   test('HOPE warm-brown accent is a light accent token, not the page base', () {
-    expect(HopeV2Colors.warmHalo, const Color(0xFFC2A487));
+    expect(HopeV2Colors.warmHalo, const Color(0xFFD0A16D));
   });
 
   test('HOPE hero geometry stays intentionally more expressive than standard cards', () {
