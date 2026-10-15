@@ -102,10 +102,11 @@ for fg in ("primaryDark", "successDark", "warningDark", "dangerDark"):
 for fg in ("primaryAction", "secondaryAction", "successOnLight", "warningOnLight", "dangerOnLight"):
     checks.append((fg, "surface", "button label", ratio("#FFFFFF", TOKENS[fg]), 4.5))
 checks.append(("ink", "primaryDark", "dark button label", ratio(TOKENS["ink"], TOKENS["primaryDark"]), 4.5))
+checks.append(("primaryDark", "darkBackground", "lichen signature accent", ratio(TOKENS["primaryDark"], TOKENS["darkBackground"]), 4.5))
 # Validate that the central color genome retains the full, named 50–950 ramps.
 expected_steps = {"50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"}
 palette_names = {name for name, _ in palette_blocks}
-if palette_names != {"brand", "neutral", "info", "trust", "success", "warning", "featured", "danger"}:
+if palette_names != {"forest", "lichen", "neutral", "info", "trust", "success", "warning", "featured", "danger"}:
     print(f"Contrast check blocked: incomplete tonal palette set: {sorted(palette_names)}", file=sys.stderr)
     raise SystemExit(1)
 for palette_name, palette_shades in PALETTE_SHADES.items():
@@ -114,16 +115,16 @@ for palette_name, palette_shades in PALETTE_SHADES.items():
         raise SystemExit(1)
 
 palette_token_bindings = {
-    "primary": ("brand", "500"),
-    "primaryAction": ("brand", "600"),
-    "primaryOnLight": ("brand", "600"),
-    "primaryDark": ("brand", "400"),
-    "primaryTintLight": ("brand", "50"),
-    "primaryBorderLight": ("brand", "200"),
-    "primaryActionHoverLight": ("brand", "700"),
-    "primaryActionPressedLight": ("brand", "800"),
-    "secondary": ("info", "500"),
-    "secondaryStrong": ("info", "600"),
+    "primary": ("forest", "700"),
+    "primaryAction": ("forest", "800"),
+    "primaryOnLight": ("forest", "800"),
+    "primaryDark": ("lichen", "400"),
+    "primaryTintLight": ("forest", "100"),
+    "primaryBorderLight": ("forest", "300"),
+    "primaryActionHoverLight": ("forest", "900"),
+    "primaryActionPressedLight": ("forest", "950"),
+    "secondary": ("info", "700"),
+    "secondaryStrong": ("info", "800"),
     "secondaryDark": ("info", "300"),
     "secondaryAction": ("info", "700"),
     "accent": ("warning", "500"),
@@ -156,10 +157,10 @@ for token_name, (palette_name, shade) in palette_token_bindings.items():
         )
         raise SystemExit(1)
 
-indigo_foregrounds = {TOKENS[name] for name in ("primary", "primaryAction", "primaryDark", "primaryActionHoverLight", "primaryActionPressedLight")}
+brand_action_foregrounds = {TOKENS[name] for name in ("primary", "primaryAction", "primaryDark", "primaryActionHoverLight", "primaryActionPressedLight")}
 for readable in ("moneyTextLight", "moneyTextDark", "infoTextLight", "infoTextDark", "trustTextLight", "trustTextDark", "accentTextLight", "accentTextDark"):
-    if TOKENS[readable] in indigo_foregrounds:
-        print(f"Contrast check blocked: {readable} must not reuse an indigo action token.", file=sys.stderr)
+    if TOKENS[readable] in brand_action_foregrounds:
+        print(f"Contrast check blocked: {readable} must not reuse a brand action token.", file=sys.stderr)
         raise SystemExit(1)
 
 failures = [item for item in checks if item[3] + 1e-9 < item[4]]
@@ -169,4 +170,4 @@ for fg, bg, kind, value, threshold in checks:
 if failures:
     print(f"Contrast check failed: {len(failures)} of {len(checks)} pairs.", file=sys.stderr)
     raise SystemExit(1)
-print(f"Contrast check PASS: {len(checks)} token/surface pairs; eight complete tonal ramps verified.")
+print(f"Contrast check PASS: {len(checks)} token/surface pairs; nine complete tonal ramps verified.")
