@@ -109,7 +109,7 @@ class HopeV2Colors {
   static const dividerLight = Color(0xFFE6E2D9);
   static const outlinedButtonBorderLight = Color(0xFFD6D1C4);
   static const navigationLight = Color(0xFFF9F8F3);
-  static const navigationDark = Color(0xF9080D0B);
+  static const navigationDark = Color(0xF90B0F18);
   static const navigationIndicatorLight = Color(0xFFE0E7FF);
   static const navigationIndicatorDark = Color(0x2B6366F1);
   static const inputDark = Color(0xFF0F111A);
