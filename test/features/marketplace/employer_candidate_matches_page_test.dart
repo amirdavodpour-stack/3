@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/features/marketplace/job_detail_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/marketplace/employer_candidate_matching_repository.dart';
 import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
@@ -315,4 +318,53 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'candidate match loader uses a single compact page shell in loading and loaded states',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final pending = Completer<HopeEmployerCandidateMatchList>();
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: EmployerCandidateMatchesLoader(
+            future: pending.future,
+            jobTitle: 'Flutter role',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Loading matches'), findsOneWidget);
+      expect(find.byType(PremiumPageFrame), findsOneWidget);
+      expect(
+        tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding,
+        const EdgeInsets.fromLTRB(14, 10, 14, 24),
+      );
+      expect(tester.takeException(), isNull);
+
+      pending.complete(
+        const HopeEmployerCandidateMatchList(
+          jobId: 'job-1',
+          kind: 'JOB',
+          candidates: [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PremiumPageFrame), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

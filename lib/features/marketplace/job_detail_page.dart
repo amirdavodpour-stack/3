@@ -1995,27 +1995,32 @@ class EmployerCandidateMatchesLoader extends StatelessWidget {
 
   final Future<HopeEmployerCandidateMatchList> future;
   final String jobTitle;
+
   @override
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
     return Scaffold(
-      body: PremiumPageFrame(
-        maxWidth: 1180,
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 40),
-        child: FutureBuilder<HopeEmployerCandidateMatchList>(
-          future: future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return HopeAsyncState(
+      body: FutureBuilder<HopeEmployerCandidateMatchList>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return PremiumPageFrame(
+              maxWidth: 1180,
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+              child: HopeAsyncState(
                 kind: HopeStateKind.loading,
                 title: english ? 'Loading matches' : 'در حال بارگذاری انطباق',
                 message: english
                     ? 'Compatibility signals are being prepared.'
                     : 'شاخص‌های انطباق در حال آماده‌سازی هستند.',
-              );
-            }
-            if (snapshot.hasError || snapshot.data == null) {
-              return ListView(
+              ),
+            );
+          }
+          if (snapshot.hasError || snapshot.data == null) {
+            return PremiumPageFrame(
+              maxWidth: 1180,
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+              child: ListView(
                 children: [
                   PremiumHeader(
                     domain: HopeProductDomain.intelligence,
@@ -2034,7 +2039,7 @@ class EmployerCandidateMatchesLoader extends StatelessWidget {
                       onPressed: () => Navigator.maybePop(context),
                     ),
                   ),
-                  const SizedBox(height: HopeV2Spacing.lg),
+                  const SizedBox(height: HopeV2Spacing.md),
                   EmptyState(
                     icon: HopeV2Icons.error,
                     title: english
@@ -2050,20 +2055,16 @@ class EmployerCandidateMatchesLoader extends StatelessWidget {
                     ),
                   ),
                 ],
-              );
-            }
-            return Column(
-              children: [
-                Expanded(
-                  child: EmployerCandidateMatchesPage(
-                    data: snapshot.data!,
-                    onRetry: () {},
-                  ),
-                ),
-              ],
+              ),
             );
-          },
-        ),
+          }
+          // The destination owns its own frame and navigation-aware scroll tail.
+          // Returning it directly avoids nesting a second page shell around it.
+          return EmployerCandidateMatchesPage(
+            data: snapshot.data!,
+            onRetry: () {},
+          );
+        },
       ),
     );
   }
