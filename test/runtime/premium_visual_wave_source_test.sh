@@ -498,7 +498,7 @@ echo "PASS: Wave49 adaptive heading and recovery content across locale/viewport 
 # Wave53: OpportunityCard 2.0 category identity, quiet list surfaces, and one RTL-aware action cue.
 grep -Fq 'class HopeV2OpportunityAccents' "lib/core/theme/hope_v2_design.dart"
 grep -Fq 'static const software = Color(0xFF557D75);' "lib/core/theme/hope_v2_design.dart"
-grep -Fq 'static const sales = Color(0xFF5D875F);' "lib/core/theme/hope_v2_design.dart"
+grep -Fq 'static const sales = Color(0xFF6B895D);' "lib/core/theme/hope_v2_design.dart"
 grep -Fq 'final cardAccent = _categoryArtwork(primary).accent;' "$opportunity"
 grep -Fq "ValueKey('opportunity-card-surface')" "$opportunity"
 grep -Fq "ValueKey('opportunity-card-accent-rail')" "$opportunity"
