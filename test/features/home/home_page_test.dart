@@ -167,4 +167,24 @@ void main() {
     expect(find.text('ورود'), findsOneWidget);
     expect(find.text('ساخت حساب'), findsOneWidget);
   });
+
+  testWidgets('tab navigation animates between pages instead of snapping', (tester) async {
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
+
+    final pager = find.byKey(const ValueKey('hope-tab-pager'));
+    expect(pager, findsOneWidget);
+    final scrollable = find.descendant(
+      of: pager,
+      matching: find.byType(Scrollable),
+    ).first;
+
+    await tester.tap(find.text('کاوش'));
+    await tester.pump(const Duration(milliseconds: 140));
+
+    final position = tester.state<ScrollableState>(scrollable).position;
+    expect(position.pixels, greaterThan(0));
+    expect(position.pixels, lessThan(position.maxScrollExtent));
+    expect(tester.takeException(), isNull);
+  });
 }
