@@ -141,16 +141,16 @@ class HopeV2OpportunityAccents {
   const HopeV2OpportunityAccents._();
 
   static const software = Color(0xFF557D75);
-  static const design = Color(0xFFB58A4D);
-  static const marketing = Color(0xFFB86F55);
-  static const content = Color(0xFF5A8793);
+  static const design = Color(0xFF9B805A);
+  static const marketing = Color(0xFFAD735B);
+  static const content = Color(0xFF65827D);
   static const finance = Color(0xFF4F805D);
-  static const education = Color(0xFF638DA3);
+  static const education = Color(0xFF728B91);
   static const support = Color(0xFF718E87);
-  static const construction = Color(0xFFB9784C);
-  static const media = Color(0xFFB46F86);
-  static const data = Color(0xFF438B91);
-  static const sales = Color(0xFF5D875F);
+  static const construction = Color(0xFFB27A55);
+  static const media = Color(0xFF9E7782);
+  static const data = Color(0xFF4E817B);
+  static const sales = Color(0xFF6B895D);
 }
 
 /// A complete, stable tonal ramp. Consumers should request named stops rather
@@ -546,7 +546,7 @@ class HopeV2Surfaces {
       begin: AlignmentDirectional.topEnd,
       end: AlignmentDirectional.bottomStart,
       colors: [
-        Color(0x0DC2A487),
+        Color(0x0DD0A16D),
         Colors.transparent,
         Colors.transparent,
       ],
@@ -615,22 +615,22 @@ class HopeV2Gradients {
 
   static const hero = LinearGradient(
     colors: [
-      Color(0xFF5B5343),
-      Color(0xFF827252),
-      Color(0xFFB9A77C),
+      Color(0xFF193A2A),
+      Color(0xFF31583C),
+      Color(0xFF789F6B),
     ],
     stops: [0, .55, 1],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
 
-  // Runtime visual target: flat dark canvas with a restrained neutral hero.
+  // Editorial dark hero: layered canopy greens, no blue-violet cast.
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF121726),
-      Color(0xFF1B2748),
-      Color(0xFF121726),
-      Color(0xFF090D16),
+      Color(0xFF0D1510),
+      Color(0xFF193A2A),
+      Color(0xFF244D38),
+      Color(0xFF141F18),
     ],
     stops: [0, .38, .72, 1],
     begin: Alignment.topRight,
@@ -644,7 +644,7 @@ class HopeV2SemanticColors {
   static bool _isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
 
-  /// Brand indigo is reserved for action/selection graphics, never readable text.
+  /// Forest and lichen are reserved for brand action/selection roles, never as uncontrolled text colors.
   static Color primary(BuildContext context) => Theme.of(context).colorScheme.primary;
   static Color secondary(BuildContext context) => Theme.of(context).colorScheme.secondary;
   static Color surface(BuildContext context) => Theme.of(context).colorScheme.surface;
@@ -795,7 +795,7 @@ class HopeV2Shadows {
 
   static const card = [
     BoxShadow(
-      color: Color(0x0D1B1638),
+      color: Color(0x0D193A2A),
       blurRadius: 28,
       offset: Offset(0, 12),
     ),
@@ -803,7 +803,7 @@ class HopeV2Shadows {
 
   static const hero = [
     BoxShadow(
-      color: Color(0x241C1738),
+      color: Color(0x24193A2A),
       blurRadius: 36,
       offset: Offset(0, 18),
     ),
@@ -812,12 +812,12 @@ class HopeV2Shadows {
   // Runtime visual certification target: no cyan spill on dark hero edges.
   static const heroDark = [
     BoxShadow(
-      color: Color(0x18264C36),
+      color: Color(0x18315A3C),
       blurRadius: 30,
       offset: Offset(0, 14),
     ),
     BoxShadow(
-      color: Color(0x0C264C36),
+      color: Color(0x0C315A3C),
       blurRadius: 42,
       offset: Offset(-8, 18),
     ),
@@ -825,7 +825,7 @@ class HopeV2Shadows {
 
   static const gradientHero = [
     BoxShadow(
-      color: Color(0x252B5B42),
+      color: Color(0x25244D38),
       blurRadius: 28,
       offset: Offset(0, 12),
     ),
