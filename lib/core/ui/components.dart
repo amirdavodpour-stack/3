@@ -459,7 +459,7 @@ class HopeIconTile extends StatelessWidget {
       boxShadow: filled
           ? [
               BoxShadow(
-                color: color.withValues(alpha: dark ? .025 : .035),
+                color: accent.withValues(alpha: dark ? .025 : .035),
                 blurRadius: size * .08,
                 offset: Offset(0, size * .035),
               ),

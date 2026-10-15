@@ -479,6 +479,87 @@ class HopeV2Icons {
 class HopeV2IconAccents {
   const HopeV2IconAccents._();
 
+  static const List<IconData> _green = <IconData>[
+    HopeV2Icons.mission,
+    HopeV2Icons.job,
+    HopeV2Icons.workshop,
+    HopeV2Icons.workshopSelected,
+    HopeV2Icons.activity,
+    HopeV2Icons.activitySelected,
+    HopeV2Icons.wallet,
+    HopeV2Icons.walletSelected,
+    HopeV2Icons.payments,
+    HopeV2Icons.transferIn,
+    HopeV2Icons.completed,
+    HopeV2Icons.success,
+    HopeV2Icons.deposit,
+    HopeV2Icons.insights,
+    HopeV2Icons.budget,
+    HopeV2Icons.refund,
+  ];
+  static const List<IconData> _teal = <IconData>[
+    HopeV2Icons.message,
+    HopeV2Icons.mail,
+    HopeV2Icons.email,
+    HopeV2Icons.info,
+    HopeV2Icons.search,
+    HopeV2Icons.refresh,
+    HopeV2Icons.notifications,
+    HopeV2Icons.attachment,
+    HopeV2Icons.download,
+    HopeV2Icons.upload,
+    HopeV2Icons.partial,
+    HopeV2Icons.category,
+    HopeV2Icons.savedSearches,
+    HopeV2Icons.translate,
+  ];
+  static const List<IconData> _blue = <IconData>[
+    HopeV2Icons.protectedFunds,
+    HopeV2Icons.secure,
+    HopeV2Icons.escrow,
+    HopeV2Icons.verified,
+    HopeV2Icons.moderation,
+    HopeV2Icons.identity,
+    HopeV2Icons.account,
+    HopeV2Icons.profile,
+    HopeV2Icons.profileSelected,
+    HopeV2Icons.admin,
+    HopeV2Icons.assign,
+    HopeV2Icons.userAdd,
+    HopeV2Icons.legal,
+    HopeV2Icons.location,
+    HopeV2Icons.distance,
+    HopeV2Icons.route,
+    HopeV2Icons.android,
+    HopeV2Icons.apple,
+    HopeV2Icons.device,
+    HopeV2Icons.web,
+  ];
+  static const List<IconData> _clay = <IconData>[
+    HopeV2Icons.featured,
+    HopeV2Icons.match,
+    HopeV2Icons.campaign,
+    HopeV2Icons.flag,
+    HopeV2Icons.play,
+  ];
+  static const List<IconData> _amber = <IconData>[
+    HopeV2Icons.pending,
+    HopeV2Icons.warning,
+    HopeV2Icons.rateLimit,
+    HopeV2Icons.deadline,
+    HopeV2Icons.history,
+  ];
+  static const List<IconData> _red = <IconData>[
+    HopeV2Icons.error,
+    HopeV2Icons.offline,
+    HopeV2Icons.withdraw,
+    HopeV2Icons.transferOut,
+    HopeV2Icons.validation,
+    HopeV2Icons.conflict,
+    HopeV2Icons.removeRole,
+  ];
+
+  /// Resolves a role tint. Text must use semantic text colors, never these accents.
   static Color resolve(Object? icon, {required Brightness brightness}) {
     final dark = brightness == Brightness.dark;
     final green = dark
@@ -502,97 +583,12 @@ class HopeV2IconAccents {
     final indigo = dark ? HopeV2Colors.primaryDark : HopeV2Colors.primaryAction;
 
     if (icon is! IconData) return indigo;
-    if (const <IconData>{
-      HopeV2Icons.mission,
-      HopeV2Icons.job,
-      HopeV2Icons.workshop,
-      HopeV2Icons.workshopSelected,
-      HopeV2Icons.activity,
-      HopeV2Icons.activitySelected,
-      HopeV2Icons.wallet,
-      HopeV2Icons.walletSelected,
-      HopeV2Icons.payments,
-      HopeV2Icons.transferIn,
-      HopeV2Icons.completed,
-      HopeV2Icons.success,
-      HopeV2Icons.deposit,
-      HopeV2Icons.insights,
-      HopeV2Icons.budget,
-      HopeV2Icons.refund,
-    }.contains(icon)) {
-      return green;
-    }
-    if (const <IconData>{
-      HopeV2Icons.message,
-      HopeV2Icons.mail,
-      HopeV2Icons.email,
-      HopeV2Icons.info,
-      HopeV2Icons.search,
-      HopeV2Icons.refresh,
-      HopeV2Icons.notifications,
-      HopeV2Icons.attachment,
-      HopeV2Icons.download,
-      HopeV2Icons.upload,
-      HopeV2Icons.partial,
-      HopeV2Icons.category,
-      HopeV2Icons.savedSearches,
-      HopeV2Icons.translate,
-    }.contains(icon)) {
-      return teal;
-    }
-    if (const <IconData>{
-      HopeV2Icons.protectedFunds,
-      HopeV2Icons.secure,
-      HopeV2Icons.escrow,
-      HopeV2Icons.verified,
-      HopeV2Icons.moderation,
-      HopeV2Icons.identity,
-      HopeV2Icons.account,
-      HopeV2Icons.profile,
-      HopeV2Icons.profileSelected,
-      HopeV2Icons.admin,
-      HopeV2Icons.assign,
-      HopeV2Icons.userAdd,
-      HopeV2Icons.legal,
-      HopeV2Icons.location,
-      HopeV2Icons.distance,
-      HopeV2Icons.route,
-      HopeV2Icons.android,
-      HopeV2Icons.apple,
-      HopeV2Icons.device,
-      HopeV2Icons.web,
-    }.contains(icon)) {
-      return blue;
-    }
-    if (const <IconData>{
-      HopeV2Icons.featured,
-      HopeV2Icons.match,
-      HopeV2Icons.campaign,
-      HopeV2Icons.flag,
-      HopeV2Icons.play,
-    }.contains(icon)) {
-      return clay;
-    }
-    if (const <IconData>{
-      HopeV2Icons.pending,
-      HopeV2Icons.warning,
-      HopeV2Icons.rateLimit,
-      HopeV2Icons.deadline,
-      HopeV2Icons.history,
-    }.contains(icon)) {
-      return amber;
-    }
-    if (const <IconData>{
-      HopeV2Icons.error,
-      HopeV2Icons.offline,
-      HopeV2Icons.withdraw,
-      HopeV2Icons.transferOut,
-      HopeV2Icons.validation,
-      HopeV2Icons.conflict,
-      HopeV2Icons.removeRole,
-    }.contains(icon)) {
-      return red;
-    }
+    if (_green.contains(icon)) return green;
+    if (_teal.contains(icon)) return teal;
+    if (_blue.contains(icon)) return blue;
+    if (_clay.contains(icon)) return clay;
+    if (_amber.contains(icon)) return amber;
+    if (_red.contains(icon)) return red;
     return indigo;
   }
 }
