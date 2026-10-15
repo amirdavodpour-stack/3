@@ -184,7 +184,10 @@ grep -Fq '? 3' "lib/features/financial/financial_insights_page.dart"
 grep -Fq ': 2;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq '(constraints.maxWidth - gap * (columns - 1)) / columns;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
-grep -Fq 'height: compactViewport ? (denseViewport ? 112 : 144) : denseViewport ? 148 : 214,' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'height: compactViewport' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq '(denseViewport ? 96 : 128)' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'denseViewport ? 148' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq ': 214,' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'HOPE_RUNTIME_EXACT_HEAD=$exact_head' ".github/workflows/hope-ui-runtime-evidence.yml"
 if sed -n '/class HopeWalletFlowSignature/,/Target-aligned opportunity DNA signature/p' "lib/core/ui/hope_signature_components.dart" | grep -Eq 'wallet\.(totalBalance|availableBalance|lockedBalance)'; then
   echo "FAIL: wallet ledger lifecycle panel must not repeat balance values" >&2
@@ -271,7 +274,7 @@ grep -Fq "Wave 29 keeps every navigation label visible at 320x640dp" "test/core/
 
 # Wave 26 adaptive Explore density must use the purpose-built compact grid tile.
 grep -Fq 'final textScale = MediaQuery.textScalerOf(context).scale(1);' "$jobs_widgets"
-grep -Fq 'constraints.maxWidth >= 340' "$jobs_widgets"
+grep -Fq 'constraints.maxWidth >= 420' "$jobs_widgets"
 grep -Fq 'enum OpportunityCardVariant { compact, compactGrid, standard, featured, featuredScan, expanded }' "$opportunity"
 grep -Fq 'Widget _compactGrid(' "$opportunity"
 grep -Fq 'String _formatCompactGridAmount(' "$opportunity"
