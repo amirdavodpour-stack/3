@@ -1170,12 +1170,21 @@ class OpportunityCard extends StatelessWidget {
     final match = _matchLabel(context);
     final mode = _workMode(context);
     final matchReasonTag = _compactMatchReasonTag(context, reasons);
+    // Keep the first scan-line calm on phone widths. Type, specialized
+    // visibility, category and match remain the highest-signal metadata;
+    // secondary rationale is available lower in the card when space allows.
     final tags = <Widget>[
       PremiumTag(
         icon: job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
         label: job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
         color: primary,
       ),
+      if (job.visibility == 'SPECIALIZED')
+        PremiumTag(
+          icon: HopeV2Icons.secure,
+          label: copy.copy_specialized_5d1ca04,
+          color: HopeV2Colors.warning,
+        ),
       if (category.isNotEmpty)
         PremiumTag(
           icon: HopeV2Icons.category,
@@ -1189,13 +1198,10 @@ class OpportunityCard extends StatelessWidget {
           color: HopeV2Colors.success,
         ),
       if (matchReasonTag != null) matchReasonTag,
-      if (job.visibility == 'SPECIALIZED')
-        PremiumTag(
-          icon: HopeV2Icons.secure,
-          label: copy.copy_specialized_5d1ca04,
-          color: HopeV2Colors.warning,
-        ),
     ];
+    final visibleTags = compactViewport && tags.length > 3
+        ? tags.take(3).toList(growable: false)
+        : tags;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
@@ -1233,13 +1239,13 @@ class OpportunityCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        for (final tag in tags)
+                        for (final tag in visibleTags)
                           Padding(
                             padding: const EdgeInsetsDirectional.only(
                               end: HopeV2Spacing.xs,
                             ),
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 130),
+                              constraints: BoxConstraints(maxWidth: compactViewport ? 92 : 130),
                               child: tag,
                             ),
                           ),
