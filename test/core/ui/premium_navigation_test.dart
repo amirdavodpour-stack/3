@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -625,5 +626,48 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+
+  testWidgets(
+    'primary navigation uses a coherent Cupertino glyph family and neutral labels',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: PremiumPrimaryNavigationScaffold(
+            selectedIndex: 2,
+            onDestinationSelected: (_) {},
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+
+      final workshopSemantics = find.ancestor(
+        of: find.text('کارگاه'),
+        matching: find.byType(Semantics),
+      ).first;
+      final glyph = tester.widget<HopeNavigationGlyph>(
+        find.descendant(
+          of: workshopSemantics,
+          matching: find.byType(HopeNavigationGlyph),
+        ),
+      );
+      expect(glyph.icon, CupertinoIcons.briefcase_fill);
+      expect(find.text('۰۳'), findsNothing);
+
+      final label = tester.widget<Text>(find.text('کارگاه'));
+      expect(
+        label.style?.color,
+        HopeV2SemanticColors.textPrimary(tester.element(find.text('کارگاه'))),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
 }
