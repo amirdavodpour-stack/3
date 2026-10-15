@@ -705,7 +705,7 @@ class _WalletPageState extends State<WalletPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
             HopeAsyncState(
               kind: hopeStateKindForError(_error ?? StateError('wallet-load')),
               title: _t('کیف پول بارگذاری نشد', 'Wallet could not be loaded'),

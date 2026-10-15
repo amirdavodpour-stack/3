@@ -248,7 +248,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         ? (dark ? HopeV2Colors.successDark : HopeV2Colors.success)
         : Theme.of(context).colorScheme.primary;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
         quiet: true,
         padding: EdgeInsets.all(
@@ -263,9 +263,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 HopeIconTile(
                   settled ? HopeV2Icons.completed : HopeV2Icons.pending,
                   color: statusAccent,
+                  size: 36,
                   filled: true,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,12 +275,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         job.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                        ),
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 4),
                       Wrap(
-                        spacing: 7,
-                        runSpacing: 6,
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
                           PremiumTag(
                             icon: HopeV2Icons.activity,
@@ -299,7 +303,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             PremiumLifecycle(
               key: ValueKey('work-center-lifecycle-${job.id}'),
               compact: MediaQuery.textScalerOf(context).scale(1) <= 1.2,
@@ -321,9 +325,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     PremiumPaymentSummary(payment: payment),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: () => Navigator.push(
                         context,

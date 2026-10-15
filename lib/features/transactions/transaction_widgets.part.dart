@@ -532,7 +532,7 @@ extension on _TransactionPageState {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               PremiumPanel(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                 highlight: status == 'HELD' ||
@@ -566,7 +566,7 @@ extension on _TransactionPageState {
 
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Text(
                       HopeCopy.of(context).copy_amount_6400812,
                       style: Theme.of(context).textTheme.bodySmall,
@@ -657,22 +657,24 @@ extension on _TransactionPageState {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               _flow(context, job, status),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               _actions(context, job, status),
               if (payment?.fees != null) ...[
                 const SizedBox(height: 12),
                 PremiumPanel(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
                               HopeCopy.of(context)
                                   .copy_financial_details_f24007d,
-                              style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 12),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              )),
+                          const SizedBox(height: 8),
                           _moneyRow(
                               context,
                               HopeCopy.of(context).copy_base_amount_82586c0,
@@ -685,7 +687,7 @@ extension on _TransactionPageState {
                               context,
                               HopeCopy.of(context).copy_worker_fee_85a35aa,
                               payment!.fees!.workerFee),
-                          const Divider(height: 20),
+                          const Divider(height: 16),
                           _moneyRow(
                               context,
                               HopeCopy.of(context).copy_employer_charge_9740283,
