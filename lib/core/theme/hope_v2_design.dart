@@ -372,8 +372,8 @@ class HopeV2Icons {
   static const IconData homeSelected = CupertinoIcons.house_fill;
   static const IconData workshop = CupertinoIcons.briefcase;
   static const IconData workshopSelected = CupertinoIcons.briefcase_fill;
-  static const IconData activity = CupertinoIcons.chart_bar;
-  static const IconData activitySelected = CupertinoIcons.chart_bar_fill;
+  static const IconData activity = CupertinoIcons.waveform_path;
+  static const IconData activitySelected = CupertinoIcons.waveform_path_ecg;
   static const IconData wallet = CupertinoIcons.creditcard;
   static const IconData walletSelected = CupertinoIcons.creditcard_fill;
   static const IconData profile = CupertinoIcons.person_crop_circle;
@@ -388,7 +388,7 @@ class HopeV2Icons {
   static const IconData category = CupertinoIcons.tag;
   static const IconData distance = CupertinoIcons.location_north;
   static const IconData skills = CupertinoIcons.wrench;
-  static const IconData description = CupertinoIcons.doc_text;
+  static const IconData description = CupertinoIcons.doc_richtext;
   static const IconData route = CupertinoIcons.map;
   static const IconData android = CupertinoIcons.device_phone_portrait;
   static const IconData apple = CupertinoIcons.device_laptop;
@@ -460,12 +460,12 @@ class HopeV2Icons {
   static const IconData permission = CupertinoIcons.lock;
   static const IconData rateLimit = CupertinoIcons.hourglass_tophalf_fill;
   static const IconData legal = CupertinoIcons.hammer;
-  static const IconData assign = CupertinoIcons.person_crop_circle_badge_plus;
+  static const IconData assign = CupertinoIcons.person_crop_circle_badge_checkmark;
   static const IconData account = CupertinoIcons.person_crop_circle;
   static const IconData moderation = CupertinoIcons.shield;
   static const IconData identity = CupertinoIcons.person_crop_circle;
   static const IconData removeRole = CupertinoIcons.person_crop_circle_badge_minus;
-  static const IconData partial = CupertinoIcons.chart_bar;
+  static const IconData partial = CupertinoIcons.chart_pie;
 }
 
 /// Primary navigation uses the same Cupertino family with outline/filled pairs.

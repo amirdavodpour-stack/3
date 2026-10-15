@@ -25,6 +25,10 @@ The style is Cupertino/SF-inspired, not a claim that these are official Apple SF
 | Wallet | `wallet` | creditcard | Wallet destination and balance |
 | Payments / invoice | `payments` | doc_on_clipboard | Payment/invoice facts |
 | Budget | `budget` | doc_chart | Budget / financial allocation |
+| Activity | `activity` | waveform_path | Activity or timeline cue; not a financial metric |
+| Insights | `insights` | chart_bar | Analytics and measured trends |
+| Partial progress | `partial` | chart_pie | Incomplete/partial state, not generic analytics |
+| Assignment | `assign` | person_crop_circle_badge_checkmark | Assign/confirm person, distinct from add-user |
 | Deposit | `deposit` | arrow_down_circle | Render action only when `walletDeposit=true` |
 | Withdraw | `withdraw` | arrow_up_circle | Withdrawal action; danger semantics only after failure |
 | Transfer in | `transferIn` | arrow_down_left | Directional transaction row |
@@ -46,6 +50,7 @@ The style is Cupertino/SF-inspired, not a claim that these are official Apple SF
 | Filter | `filter` | slider_horizontal_3 | Search/list filters |
 | Refresh / retry | `refresh` / `retry` | arrow_clockwise | Animate only while an actual refresh/retry runs |
 | Role switch | `roleSwitch` | repeat | Switch between مجری / کارفرما |
+| Description | `description` | doc_richtext | Longer content/details, distinct from opportunity identity |
 | Attachment / upload | `attachment` / `upload` | paperclip / tray_arrow_up | Evidence and file actions |
 | Empty state | `empty` | tray | Pair with concise, actionable empty-state copy |
 | Offline | `offline` | wifi_slash | Explain connection state and recovery |
