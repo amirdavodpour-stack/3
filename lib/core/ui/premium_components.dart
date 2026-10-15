@@ -25,16 +25,17 @@ class HopeNavigationGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
     final primary = Theme.of(context).colorScheme.primary;
     final color = selected
         ? (dark ? HopeV2Colors.primaryDark : primary)
         : (dark ? HopeV2Colors.darkMuted : HopeV2Colors.muted);
 
     return AnimatedContainer(
-      duration: HopeV2Motion.fast,
+      duration: reduceMotion ? Duration.zero : HopeV2Motion.fast,
       curve: Curves.easeOutCubic,
-      width: HopeV2Navigation.itemWidth,
-      height: HopeV2Navigation.itemHeight,
+      width: 24,
+      height: 24,
       alignment: Alignment.center,
       decoration: const BoxDecoration(),
       child: HopeIcon(
@@ -61,6 +62,8 @@ class PremiumNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (destinations.isEmpty) return const SizedBox.shrink();
+
     final dark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     final surface = HopeV2Surfaces.navigation(context);
@@ -68,6 +71,8 @@ class PremiumNavigationBar extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final compactLabels = width < 340 || textScale > 1.2;
     final horizontalInset = compactLabels ? 4.0 : 12.0;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final activeIndex = selectedIndex.clamp(0, destinations.length - 1).toInt();
 
     return SafeArea(
       top: false,
@@ -80,35 +85,72 @@ class PremiumNavigationBar extends StatelessWidget {
           color: dark
               ? HopeV2Colors.navigationDark.withValues(alpha: .985)
               : surface.withValues(alpha: .98),
-          borderRadius: BorderRadius.circular(HopeV2Navigation.dockRadius),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? .22 : .075),
-              blurRadius: dark ? 20 : 16,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          // A shelf-like rail reads as one editorial structure, rather than a
+          // floating capsule. The flatter lower edge visually anchors it.
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(4),
+            bottomRight: Radius.circular(4),
+          ),
           border: Border.all(
             color: dark
-                ? Colors.white.withValues(alpha: .065)
-                : HopeV2Surfaces.border(context).withValues(alpha: .75),
+                ? Colors.white.withValues(alpha: .10)
+                : HopeV2Surfaces.border(context).withValues(alpha: .85),
           ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var index = 0; index < destinations.length; index++)
-              Expanded(
-                child: _PremiumNavigationItem(
-                  destination: destinations[index],
-                  selected: index == selectedIndex,
-                  onPressed: () => onDestinationSelected(index),
-                  accent: primary,
-                  compact: compactLabels,
-                  showLabel: true,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = constraints.maxWidth / destinations.length;
+            return Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                AnimatedPositionedDirectional(
+                  start: itemWidth * activeIndex + 2,
+                  top: 2,
+                  bottom: 2,
+                  width: itemWidth - 4,
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  child: DecoratedBox(
+                    key: const ValueKey('hope-navigation-selection-plate'),
+                    decoration: ShapeDecoration(
+                      color: HopeV2Surfaces.panel(context),
+                      shape: BeveledRectangleBorder(
+                        borderRadius: const BorderRadiusDirectional.only(
+                          topStart: Radius.circular(4),
+                          topEnd: Radius.circular(15),
+                          bottomStart: Radius.circular(15),
+                          bottomEnd: Radius.circular(4),
+                        ),
+                        side: BorderSide(
+                          color: primary.withValues(alpha: dark ? .30 : .22),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-          ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var index = 0; index < destinations.length; index++)
+                      Expanded(
+                        child: _PremiumNavigationItem(
+                          destination: destinations[index],
+                          index: index,
+                          selected: index == activeIndex,
+                          onPressed: () => onDestinationSelected(index),
+                          compact: compactLabels,
+                          showLabel: true,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -118,27 +160,34 @@ class PremiumNavigationBar extends StatelessWidget {
 class _PremiumNavigationItem extends StatelessWidget {
   const _PremiumNavigationItem({
     required this.destination,
+    required this.index,
     required this.selected,
     required this.onPressed,
-    required this.accent,
     required this.compact,
     required this.showLabel,
   });
 
   final NavigationDestination destination;
+  final int index;
   final bool selected;
   final VoidCallback onPressed;
-  final Color accent;
   final bool compact;
   final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final icon = selected ? destination.selectedIcon : destination.icon;
     final labelColor = selected
-        ? HopeV2SemanticColors.readableAccent(context, accent)
+        ? HopeV2SemanticColors.textPrimary(context)
         : HopeV2SemanticColors.textSecondary(context);
+    final isFarsi = Localizations.localeOf(context).languageCode == 'fa';
+    final rawOrdinal = (index + 1).toString().padLeft(2, '0');
+    final ordinal = isFarsi
+        ? rawOrdinal
+            .split('')
+            .map((digit) => '۰۱۲۳۴۵۶۷۸۹'[int.parse(digit)])
+            .join()
+        : rawOrdinal;
 
     return Semantics(
       button: true,
@@ -150,51 +199,63 @@ class _PremiumNavigationItem extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 2, vertical: compact ? 1 : 3),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 0 : 2,
+              vertical: compact ? 1 : 3,
+            ),
             child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 82),
-                child: Ink(
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? accent.withValues(alpha: dark ? .18 : .11)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(HopeV2Navigation.itemRadius),
-                    border: selected
-                        ? Border.all(
-                            color: accent.withValues(alpha: dark ? .24 : .18),
-                          )
-                        : null,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 5, vertical: compact ? 2 : 4),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: HopeV2Touch.minimum,
-                          height: compact ? 22 : 26,
-                          child: Center(child: icon),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? 1 : 4,
+                  vertical: compact ? 2 : 4,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: compact ? 22 : 26,
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            icon,
+                            if (selected) ...[
+                              const SizedBox(width: 3),
+                              ExcludeSemantics(
+                                child: Text(
+                                  ordinal,
+                                  style: TextStyle(
+                                    color: HopeV2SemanticColors.info(context),
+                                    fontSize: 9,
+                                    height: 1,
+                                    letterSpacing: .5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        if (showLabel) ...[
-                          const SizedBox(height: 1),
-                          Text(
-                            destination.label,
-                            maxLines: compact ? 2 : 1,
-                            softWrap: compact,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: labelColor,
-                              fontSize: compact ? 10.5 : 11.5,
-                              height: compact ? .95 : 1.0,
-                              fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
-                  ),
+                    if (showLabel) ...[
+                      const SizedBox(height: 1),
+                      Text(
+                        destination.label,
+                        maxLines: compact ? 2 : 1,
+                        softWrap: compact,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: labelColor,
+                          fontSize: compact ? 10.5 : 11.5,
+                          height: compact ? .95 : 1.0,
+                          fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -232,8 +293,8 @@ class PremiumPrimaryNavigationScaffold extends StatelessWidget {
         label: label('کاوش', 'Explore'),
       ),
       NavigationDestination(
-        icon: const HopeNavigationGlyph(icon: HopeV2Icons.activity, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.activitySelected, selected: true),
+        icon: const HopeNavigationGlyph(icon: HopeV2Icons.workshop, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.workshopSelected, selected: true),
         label: label('کارگاه', 'Workshop'),
       ),
       NavigationDestination(
