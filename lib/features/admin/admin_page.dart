@@ -224,7 +224,7 @@ class _AdminPageState extends State<AdminPage>
           body: RefreshIndicator(
             onRefresh: () async => _reload(),
             child: PremiumPageFrame(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 32),
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -263,11 +263,11 @@ class _AdminPageState extends State<AdminPage>
                       ],
                     ),
                   ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 FutureBuilder<HopeAdminSummary>(
                     future: _summary,
                     builder: (context, s) => _summaryGrid(context, s.data)),
-                const SizedBox(height: 11),
+                const SizedBox(height: 8),
                 PremiumQuickActionStrip(
                   domain: HopeProductDomain.control,
                   title: _t('کنترل‌های اصلی', 'Control actions'),
@@ -331,7 +331,7 @@ class _AdminPageState extends State<AdminPage>
                   Tab(text: HopeCopy.of(context).copy_audit_log_ff87181),
                 ]),
                 SizedBox(
-                    height: 580,
+                    height: (MediaQuery.sizeOf(context).height * .62).clamp(320.0, 520.0).toDouble(),
                     child: TabBarView(controller: _tabs, children: [
                       _jobsTab(context),
                       _applicationsTab(context),

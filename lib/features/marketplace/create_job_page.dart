@@ -231,10 +231,10 @@ class _CreateJobPageState extends State<CreateJobPage> {
       body: PremiumPageFrame(
         maxWidth: 980,
         padding: EdgeInsets.fromLTRB(
-          20,
-          shortViewport ? 4 : 12,
-          20,
-          shortViewport ? 8 : 24,
+          16,
+          shortViewport ? 4 : 8,
+          16,
+          shortViewport ? 8 : 20,
         ),
         child: SizedBox.expand(
           child: Column(
@@ -266,7 +266,7 @@ class _CreateJobPageState extends State<CreateJobPage> {
                     const SizedBox(width: 8),
                     const HopeIconTile(
                       HopeV2Icons.add,
-                      size: 52,
+                      size: 42,
                       filled: true,
                     ),
                   ],

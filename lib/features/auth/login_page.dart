@@ -157,10 +157,10 @@ class _LoginPageState extends State<LoginPage> {
             page: HopePageId.login,
             maxWidth: 640,
             padding: EdgeInsets.fromLTRB(
-              20,
-              denseAuth ? 4 : 12,
-              20,
-              denseAuth ? 12 : 30,
+              16,
+              denseAuth ? 4 : 8,
+              16,
+              denseAuth ? 10 : 24,
             ),
             child: ListView(
               padding: HopeV2Navigation.scrollEndPadding(context),
@@ -181,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                   const HopeMark(size: 34),
                 ],
               ),
-              SizedBox(height: denseAuth ? 6 : 12),
+              SizedBox(height: denseAuth ? 4 : 8),
               PremiumHero(
                 page: HopePageId.login,
                 domain: HopeProductDomain.account,
@@ -196,13 +196,13 @@ class _LoginPageState extends State<LoginPage> {
                     : (denseAuth ? 92 : 104),
                 compactHero: true,
               ),
-              SizedBox(height: denseAuth ? 6 : 10),
+              SizedBox(height: denseAuth ? 4 : 8),
               AnimatedEntrance(
                 child: PremiumPanel(
                   // Auth is a dense primary surface; avoid a nested GPU blur
                   // here so the first Android frame remains deterministic.
                   glass: false,
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -300,7 +300,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              SizedBox(height: denseAuth ? 8 : 14),
+              SizedBox(height: denseAuth ? 6 : 10),
               OutlinedButton.icon(
                 onPressed: loading
                     ? null
@@ -316,7 +316,7 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () => Navigator.push(context, HopeRoutes.register()),
                 child: Text(l10n.noAccountSignUp),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Text(
                 l10n.loginTermsNotice,
                 textAlign: TextAlign.center,

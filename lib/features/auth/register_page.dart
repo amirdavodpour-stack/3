@@ -164,10 +164,10 @@ class _RegisterPageState extends State<RegisterPage> {
               page: HopePageId.register,
               maxWidth: 640,
               padding: EdgeInsets.fromLTRB(
-                20,
-                denseAuth ? 4 : 12,
-                20,
-                denseAuth ? 12 : 34,
+                16,
+                denseAuth ? 4 : 8,
+                16,
+                denseAuth ? 10 : 24,
               ),
               child: ListView(
                 padding: HopeV2Navigation.scrollEndPadding(context),
@@ -188,7 +188,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       const HopeMark(size: 34),
                     ],
                   ),
-                  SizedBox(height: denseAuth ? 6 : 12),
+                  SizedBox(height: denseAuth ? 4 : 8),
                   PremiumHero(
                     page: HopePageId.register,
                     domain: HopeProductDomain.account,
@@ -199,9 +199,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     height: denseAuth ? 100 : 112,
                     compactHero: true,
                   ),
-                  SizedBox(height: denseAuth ? 8 : 12),
+                  SizedBox(height: denseAuth ? 6 : 8),
                   PremiumPanel(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                     child: Column(
                       children: [
                         if (_canUseGoogleSignIn) ...[
@@ -301,7 +301,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
