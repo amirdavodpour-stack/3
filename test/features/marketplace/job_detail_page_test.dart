@@ -451,7 +451,7 @@ void main() {
     expect(
       tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame).first).padding.bottom,
       12,
-      reason: '$testReason',
+      reason: 'The opportunity detail ListView owns navigation-aware end padding; its outer frame should stay compact.',
     );
     expect(tester.getSize(decision).width, greaterThan(220));
     expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
