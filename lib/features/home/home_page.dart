@@ -163,7 +163,8 @@ class _HomePageState extends State<HomePage> {
       itemCount: 5,
       itemBuilder: (context, index) => _KeepAliveTab(
         key: ValueKey('hope-tab-keepalive-$index'),
-        child: AnimatedBuilder(
+        active: index == tab,
+        builder: () => AnimatedBuilder(
           animation: _pageController,
           child: _buildTab(index),
           builder: (context, child) {
@@ -384,9 +385,14 @@ class _HomePageState extends State<HomePage> {
 }
 
 class _KeepAliveTab extends StatefulWidget {
-  const _KeepAliveTab({super.key, required this.child});
+  const _KeepAliveTab({
+    super.key,
+    required this.active,
+    required this.builder,
+  });
 
-  final Widget child;
+  final bool active;
+  final Widget Function() builder;
 
   @override
   State<_KeepAliveTab> createState() => _KeepAliveTabState();
@@ -394,13 +400,18 @@ class _KeepAliveTab extends StatefulWidget {
 
 class _KeepAliveTabState extends State<_KeepAliveTab>
     with AutomaticKeepAliveClientMixin<_KeepAliveTab> {
+  Widget? _child;
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return widget.child;
+    // Do not initialize off-screen domains until a user visits them. Once
+    // visited, keep the subtree mounted so scroll and form state survive tabs.
+    _child ??= widget.active ? widget.builder() : null;
+    return _child ?? const SizedBox.shrink();
   }
 }
 
