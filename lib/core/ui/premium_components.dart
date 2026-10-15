@@ -2247,7 +2247,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     final neutralForeground = HopeV2SemanticColors.textSecondary(context);
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
-    final scoreRingSize = enlargedText ? 78.0 : 62.0;
+    final scoreRingSize = enlargedText ? 78.0 : 56.0;
     final normalizedScore =
         HopeDisplayFormatter.matchPercentage(matchScore);
     final score = normalizedScore?.round();
@@ -2269,12 +2269,12 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
         return const SizedBox.shrink();
       }
       return Container(
-        constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+        constraints: const BoxConstraints(minHeight: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: .07),
-          borderRadius: BorderRadius.circular(HopeV2Radii.md),
-          border: Border.all(color: color.withValues(alpha: .13)),
+          color: color.withValues(alpha: .06),
+          borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+          border: Border.all(color: color.withValues(alpha: .09)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -2350,7 +2350,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               ClipRRect(
                 borderRadius: BorderRadius.circular(99),
                 child: LinearProgressIndicator(
@@ -2478,10 +2478,10 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Wrap(
                     spacing: 6,
-                    runSpacing: 6,
+                    runSpacing: 5,
                     children: [
                       fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
                       fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
@@ -2489,14 +2489,14 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                     ],
                   ),
                   if (matchRationaleTag != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: matchRationaleTag,
                     ),
                   ],
                   if (hasBreakdown) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       _t(context, 'شاخص‌های تطبیق', 'Match signals'),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -2504,7 +2504,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                             fontWeight: FontWeight.w900,
                           ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     breakdownRail(),
                   ],
                 ],
