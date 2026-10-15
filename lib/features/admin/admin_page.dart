@@ -502,6 +502,7 @@ class _AdminPageState extends State<AdminPage>
           value: '${m?[key] ?? 0}',
           icon: item['icon']!,
           accent: Theme.of(context).colorScheme.primary,
+          compact: MediaQuery.sizeOf(context).width < 600,
         );
       }).toList(),
     );

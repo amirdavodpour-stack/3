@@ -7,6 +7,7 @@ import 'package:hope_mobile/core/admin/admin_repository.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/features/admin/admin_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -199,8 +200,13 @@ HopeJob _job(String id,
       'distanceKm': null,
     });
 
-Future<void> _pump(WidgetTester tester, _FakeAdmin repo) async {
-  tester.view.physicalSize = const Size(900, 2400);
+Future<void> _pump(
+  WidgetTester tester,
+  _FakeAdmin repo, {
+  double width = 900,
+  double height = 2400,
+}) async {
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -347,16 +353,23 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
 
   testWidgets('admin moderation workspace stays compact on a phone viewport',
       (tester) async {
-    await _pump(tester, _FakeAdmin());
-
-    tester.view.physicalSize = const Size(390, 844);
-    await tester.pumpAndSettle();
+    await _pump(tester, _FakeAdmin(), width: 390, height: 844);
 
     final workspace = find.byType(TabBarView);
     expect(workspace, findsOneWidget);
     final size = tester.getSize(workspace);
     expect(size.height, lessThanOrEqualTo(440));
     expect(size.height, greaterThanOrEqualTo(280));
+
+    final stats = tester.widgetList<PremiumStatCard>(
+      find.byType(PremiumStatCard),
+    );
+    expect(stats, hasLength(6));
+    expect(
+      stats.every((card) => card.compact),
+      isTrue,
+      reason: 'Phone-width admin summary cards must use the compact editorial layout.',
+    );
     expect(tester.takeException(), isNull);
   });
 
