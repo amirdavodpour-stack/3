@@ -252,12 +252,25 @@ void main() {
   testWidgets(
     'notifications loading uses the canonical async state inside the page shell',
     (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       final repo = _PendingNotificationRepository();
       await tester.pumpWidget(_app(repo));
       await tester.pump();
 
       expect(find.byType(HopeAsyncState), findsOneWidget);
-      expect(find.text('در حال بارگذاری اعلان‌ها'), findsOneWidget);
+      final loadingTitle = find.text('در حال بارگذاری اعلان‌ها');
+      expect(loadingTitle, findsOneWidget);
+      final contentList = find.byType(ListView).last;
+      expect(
+        tester.getTopLeft(loadingTitle).dy -
+            tester.getTopLeft(contentList).dy,
+        lessThan(120),
+        reason: 'Loading feedback should not be pushed down by a large decorative spacer.',
+      );
       expect(
         find.text('به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند'),
         findsNothing,

@@ -459,7 +459,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: HopeV2Navigation.scrollEndPadding(context),
                           children: [
-                            const SizedBox(height: 120),
+                            const SizedBox(height: 32),
                             HopeAsyncState(
                               kind: HopeStateKind.loading,
                               title: _t(
