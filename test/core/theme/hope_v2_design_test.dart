@@ -59,6 +59,7 @@ void main() {
     expect(HopeV2TonalPalettes.brand, HopeV2TonalPalettes.forest);
     expect(HopeV2TonalPalettes.lichen.shade(400), HopeV2Colors.primaryDark);
     expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0E5));
+    expect(HopeV2Colors.editorialClay, const Color(0xFFD0A16D));
     expect(HopeV2Colors.darkBackground, const Color(0xFF0D1510));
   });
 
@@ -244,16 +245,16 @@ void main() {
     expect(halo.colors.last, Colors.transparent);
   });
 
-  test('HOPE dark surfaces stay navy-charcoal with a subdued forest-green halo token', () {
+  test('HOPE dark surfaces stay canopy-charcoal with a subdued forest-green halo token', () {
     expect(HopeV2Colors.pageDark, HopeV2Colors.darkBackground);
     expect(HopeV2Colors.darkBackground, const Color(0xFF0D1510));
-    expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
-    expect(HopeV2Colors.darkCard, const Color(0xFF111827));
+    expect(HopeV2Colors.darkSurface, const Color(0xFF141F18));
+    expect(HopeV2Colors.darkCard, const Color(0xFF1C2B21));
     expect(HopeV2Colors.panelDark, const Color(0xFF141F18));
     expect(HopeV2Colors.panelSoftDark, const Color(0xFF1C2B21));
     expect(HopeV2Colors.inputDark, const Color(0xFF141F18));
     expect(HopeV2Colors.navigationIndicatorDark, const Color(0x29B8D86C));
-    expect(HopeV2Colors.darkGreenGlow, const Color(0xFF264C36));
+    expect(HopeV2Colors.darkGreenGlow, const Color(0xFF31583C));
   });
 
   test('dropdown and popup options use readable theme text instead of black defaults', () {
