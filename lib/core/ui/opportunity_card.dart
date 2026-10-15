@@ -431,8 +431,7 @@ class OpportunityCard extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: HopeIcon(
-            icon: icon,
+          child: HopeIcon( icon,
             size: 16,
             color: action,
             strokeWidth: 1.9,
@@ -1488,8 +1487,7 @@ class OpportunityCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              HopeIcon(
-                icon: HopeV2Icons.payments,
+              HopeIcon( HopeV2Icons.payments,
                 size: 15,
                 color: primary,
                 strokeWidth: 1.8,
@@ -1570,8 +1568,7 @@ class OpportunityCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          HopeIcon(
-            icon: icon,
+          HopeIcon( icon,
             size: 15,
             color: color,
             strokeWidth: 1.8,
@@ -1732,8 +1729,7 @@ class OpportunityCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                HopeIcon(
-                  icon: HopeV2Icons.payments,
+                HopeIcon( HopeV2Icons.payments,
                   color: primary,
                   size: 19,
                   strokeWidth: 1.9,

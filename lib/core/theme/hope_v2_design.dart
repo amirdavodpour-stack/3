@@ -464,6 +464,7 @@ class HopeV2Icons {
   static const IconData account = CupertinoIcons.person_crop_circle;
   static const IconData moderation = CupertinoIcons.shield;
   static const IconData identity = CupertinoIcons.person_crop_circle;
+  static const IconData admin = CupertinoIcons.lock_shield;
   static const IconData removeRole = CupertinoIcons.person_crop_circle_badge_minus;
   static const IconData partial = CupertinoIcons.chart_pie;
 }

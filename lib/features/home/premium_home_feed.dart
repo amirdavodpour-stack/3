@@ -382,8 +382,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     ),
                     action: FilledButton.icon(
                       onPressed: _refresh,
-                      icon: const HopeIcon(
-                        icon: HopeV2Icons.refresh,
+                      icon: const HopeIcon( HopeV2Icons.refresh,
                         size: 20,
                       ),
                       label: Text(_t(context, 'تلاش دوباره', 'Retry')),
@@ -863,7 +862,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             ),
             action: OutlinedButton.icon(
               onPressed: widget.onOpenExplore,
-              icon: const HopeIcon(icon: HopeV2Icons.workshop, size: 18),
+              icon: const HopeIcon( HopeV2Icons.workshop, size: 18),
               label: Text(_t(context, 'رفتن به کاوش', 'Open Explore')),
             ),
           ),
@@ -997,8 +996,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           else
             FilledButton.icon(
               onPressed: widget.onOpenExplore,
-              icon: HopeIcon(
-                icon: Directionality.of(context) == TextDirection.rtl
+              icon: HopeIcon( Directionality.of(context) == TextDirection.rtl
                     ? HopeV2Icons.arrowLeft
                     : HopeV2Icons.arrowRight,
                 size: 17,
@@ -1080,8 +1078,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             const SizedBox(height: HopeV2Spacing.sm),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
             const SizedBox(height: HopeV2Spacing.sm),
-            Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: HopeIcon(
-                              icon: Directionality.of(context) == TextDirection.rtl
+            Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: HopeIcon( Directionality.of(context) == TextDirection.rtl
                                   ? HopeV2Icons.arrowLeft
                                   : HopeV2Icons.arrowRight,
                               size: 19,

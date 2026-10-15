@@ -268,7 +268,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                       Expanded(
                                         child: _caseMeta(
                                           context,
-                                          HopeV2HopeV2Icons.payments,
+                                          HopeV2Icons.payments,
                                           _t('وضعیت پرداخت', 'Payment'),
                                           '${row['paymentStatus'] ?? '—'}',
                                         ),
