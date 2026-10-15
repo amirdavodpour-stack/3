@@ -21,13 +21,13 @@ class _TypeHero extends StatelessWidget {
                 child: Text(
                   HopeCopy.of(context)
                       .copy_first_choose_what_kind_of_opportunity_you__f035ca9,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: HopeV2Type.section(context),
                 ),
               ),
 
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           LayoutBuilder(
             builder: (context, constraints) {
               final tiles = [
@@ -99,38 +99,39 @@ class _TypeHero extends StatelessWidget {
               : HopeV2Surfaces.panel(context),
           border: Border.all(
             color: selected
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: .35)
-                : Theme.of(context).dividerColor.withValues(alpha: .75),
-            width: selected ? 1.2 : 1,
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: .26)
+                : HopeV2Surfaces.border(context).withValues(alpha: .42),
+            width: selected ? 1 : .7,
           ),
         ),
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.all(compact ? 10 : 12),
+              padding: EdgeInsets.all(compact ? 8 : 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   HopeIcon(
                     icon,
                     color: selected ? Theme.of(context).colorScheme.onPrimaryContainer : AppColors.primary,
-                    size: compact ? 22 : 25,
+                    size: compact ? 20 : 23,
                     strokeWidth: 2.0,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     title,
                     style: TextStyle(
-                      fontWeight: FontWeight.w900,
+                      fontSize: compact ? 14 : 15,
+                      fontWeight: FontWeight.w700,
                       color: selected ? Theme.of(context).colorScheme.onPrimaryContainer : null,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     sub,
                     style: TextStyle(
-                      fontSize: 12,
-                      height: 1.35,
+                      fontSize: 11.5,
+                      height: 1.3,
                       color: selected ? Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: .78) : null,
                     ),
                   ),
@@ -182,22 +183,22 @@ class _VisibilityCard extends StatelessWidget {
       semanticLabel: '$title. $sub',
       child: PremiumPanel(
         highlight: selected,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             HopeIconTile(
               icon,
               filled: selected,
-              size: 42,
+              size: 38,
             ),
-            const SizedBox(width: 9),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   Text(
                     sub,
