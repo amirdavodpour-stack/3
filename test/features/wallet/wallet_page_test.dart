@@ -618,6 +618,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('wallet initial error state keeps recovery near the first fold',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet()..failLoad = true;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final errorTitle = find.text('Wallet could not be loaded');
+    expect(errorTitle, findsOneWidget);
+    expect(
+      tester.getTopLeft(errorTitle).dy,
+      lessThan(120),
+      reason: 'The initial error state should not push recovery below a 160dp spacer.',
+    );
+    expect(find.text('Try again'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('wallet refresh failure keeps stale wallet visible with retry error',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
