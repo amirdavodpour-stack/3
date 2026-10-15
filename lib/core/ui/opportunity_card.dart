@@ -180,7 +180,7 @@ class OpportunityCard extends StatelessWidget {
                 )
               : null,
           borderRadius: BorderRadius.circular(
-            featured || featuredScan ? HopeV2Radii.lg : HopeV2Radii.md,
+            featured || featuredScan ? HopeV2Radii.md : HopeV2Radii.md,
           ),
           border: Border.all(
             color: featured || featuredScan
@@ -199,14 +199,14 @@ class OpportunityCard extends StatelessWidget {
                     color: dark
                         ? Colors.black.withValues(alpha: .20)
                         : cardAccent.withValues(alpha: .055),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
                   if (dark)
                     BoxShadow(
                       color: primary.withValues(alpha: .025),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
                     ),
                 ]
               : const <BoxShadow>[],
@@ -214,8 +214,8 @@ class OpportunityCard extends StatelessWidget {
         padding: EdgeInsets.all(
           (featured || featuredScan)
               ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact
-                  ? 6
-                  : 10)
+                  ? 5
+                  : 8)
               : (compact
                   ? 7
                   : (compactGrid &&
@@ -799,8 +799,8 @@ class OpportunityCard extends StatelessWidget {
       key: const ValueKey('opportunity-compact-media'),
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 72,
-        height: 72,
+        width: 64,
+        height: 64,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
@@ -814,7 +814,7 @@ class OpportunityCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         media,
-        const SizedBox(width: 11),
+        const SizedBox(width: 9),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,9 +825,9 @@ class OpportunityCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14.5,
-                      height: 1.22,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      height: 1.24,
                     ),
               ),
               const SizedBox(height: 5),
