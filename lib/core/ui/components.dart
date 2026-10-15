@@ -333,7 +333,11 @@ class HopeKineticGlyph extends StatelessWidget {
         child: CustomPaint(
           painter: _HopeKineticGlyphPainter(
             color: color,
-            motionColor: dark ? HopeV2Colors.primaryDark : HopeV2Colors.primaryAction,
+            // Keep the frame genuinely duotone: botanical green complements
+            // indigo product actions, while teal remains the information accent.
+            motionColor: dark
+                ? HopeV2TonalPalettes.forest.shade300
+                : HopeV2TonalPalettes.forest.shade700,
             infoColor: dark ? HopeV2Colors.secondaryDark : HopeV2Colors.secondaryStrong,
             alert: alert,
           ),

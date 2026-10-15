@@ -52,6 +52,13 @@ class AppTheme {
       onPrimary: dark ? AppColors.ink : AppColors.surface,
       secondary: dark ? AppColors.secondaryDark : AppColors.secondaryAction,
       onSecondary: dark ? AppColors.ink : AppColors.surface,
+      // Green is a peer identity accent, not a replacement for indigo or teal.
+      tertiary: dark
+          ? HopeV2TonalPalettes.forest.shade300
+          : HopeV2TonalPalettes.forest.shade600,
+      onTertiary: dark
+          ? HopeV2TonalPalettes.forest.shade900
+          : AppColors.surface,
       surface: dark ? AppColors.darkSurface : AppColors.surface,
       onSurface: dark ? AppColors.darkText : AppColors.ink,
       onSurfaceVariant: dark ? AppColors.darkMuted : AppColors.muted,

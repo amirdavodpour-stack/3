@@ -88,6 +88,18 @@ void main() {
       ),
     );
     expect(find.byKey(const ValueKey('hope-navigation-selection-plate')), findsOneWidget);
+    final activeRail = tester.widget<DecoratedBox>(
+      find.descendant(
+        of: find.byKey(const ValueKey('hope-navigation-selection-accent')),
+        matching: find.byType(DecoratedBox),
+      ),
+    );
+    final railDecoration = activeRail.decoration as BoxDecoration;
+    expect(
+      railDecoration.color,
+      HopeV2TonalPalettes.forest.shade700.withValues(alpha: .86),
+      reason: 'The green identity accent should complement, not replace, the indigo selection plate.',
+    );
   });
 
   testWidgets('default dark premium panels use the canonical opaque surface', (tester) async {

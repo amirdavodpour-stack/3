@@ -141,7 +141,10 @@ class PremiumNavigationBar extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: primary.withValues(alpha: dark ? .72 : .68),
+                      color: (dark
+                              ? HopeV2TonalPalettes.forest.shade300
+                              : HopeV2TonalPalettes.forest.shade700)
+                          .withValues(alpha: dark ? .92 : .86),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

@@ -16,13 +16,15 @@ Status: Implemented on the isolated working branch for review; runtime visual ac
 ## Color roles
 
 - Surfaces: `#070A12`, `#0F111A`, `#111827`
-- Primary interaction: `#6366F1` / `#818CF8`
-- Information: `#0F766E` / `#5EEAD4`
-- Success and trust: existing semantic green ramp
-- Warning: existing semantic amber ramp
-- Error: existing semantic red ramp
+- Primary interaction / selection: indigo `#6366F1` / `#818CF8`
+- Peer identity accent: botanical green ramp; forest `#3E673F` in light mode and `#9FBF91` in dark mode
+- Information: teal `#0F766E` / `#5EEAD4`
+- Trust: blue ramp, retained independently
+- Success: semantic green ramp, kept distinct from the botanical identity accent
+- Featured: restrained orange/clay ramp
+- Warning and error: semantic amber and red ramps
 
-Decorative shapes may use the existing category accent, indigo and teal with low alpha. Amber/red/green are not added as generic confetti; their meanings remain semantic.
+Green is restored as a frequent complementary identity hue beside indigo, not as a replacement theme. Navigation retains its indigo selection plate and glyph while the active editorial rail uses green. Kinetic state frames pair botanical green with teal and the owning state's semantic color. Amber/red/semantic-success colors remain meaning-driven rather than generic confetti.
 
 ## Components updated
 

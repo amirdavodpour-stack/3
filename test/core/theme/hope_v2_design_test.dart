@@ -29,6 +29,8 @@ void main() {
     final light = AppTheme.light().colorScheme;
     expect(light.primary, AppColors.primaryAction);
     expect(light.onPrimary, AppColors.surface);
+    expect(light.tertiary, HopeV2TonalPalettes.forest.shade600);
+    expect(light.onTertiary, AppColors.surface);
     expect(
       _contrastRatio(light.onPrimary, light.primary),
       greaterThanOrEqualTo(4.5),
@@ -37,6 +39,8 @@ void main() {
     final dark = AppTheme.dark().colorScheme;
     expect(dark.primary, AppColors.primaryDark);
     expect(dark.onPrimary, AppColors.ink);
+    expect(dark.tertiary, HopeV2TonalPalettes.forest.shade300);
+    expect(dark.onTertiary, HopeV2TonalPalettes.forest.shade900);
     expect(
       _contrastRatio(dark.onPrimary, dark.primary),
       greaterThanOrEqualTo(4.5),
