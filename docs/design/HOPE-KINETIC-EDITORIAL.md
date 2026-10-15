@@ -25,7 +25,7 @@ Status: Implemented on the isolated working branch for review; runtime visual ac
 - Featured: restrained orange/clay ramp
 - Warning and error: semantic amber and red ramps
 
-Green is restored as a frequent complementary identity hue beside indigo, not as a replacement theme. Navigation retains its indigo selection plate and glyph while the active editorial rail uses green. Kinetic state frames pair botanical green with teal and the owning state's semantic color. Amber/red/semantic-success colors remain meaning-driven rather than generic confetti.
+Green is restored as a frequent complementary identity hue beside indigo, not as a replacement theme. The compact navigation keeps an indigo selection plate with a green editorial rail; the desktop rail uses a green selected glyph while labels remain neutral. Kinetic state frames pair botanical green with teal and the owning state's semantic color. Amber/red/semantic-success colors remain meaning-driven rather than generic confetti.
 
 ## Components updated
 

@@ -201,6 +201,15 @@ void main() {
     );
     expect(rail.destinations, hasLength(5));
     expect(
+      rail.selectedIconTheme?.color,
+      HopeV2TonalPalettes.forest.shade700,
+      reason: 'Desktop navigation should expose the green identity accent without recoloring labels.',
+    );
+    expect(
+      rail.selectedLabelTextStyle?.color,
+      HopeV2SemanticColors.textPrimary(tester.element(find.byType(NavigationRail))),
+    );
+    expect(
       tester.getSize(find.byType(PremiumNavigationRail)).width,
       greaterThanOrEqualTo(210),
     );

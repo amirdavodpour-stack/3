@@ -381,6 +381,18 @@ class PremiumNavigationRail extends StatelessWidget {
             labelType: extended
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.all,
+            // Keep desktop navigation multi-accent too: green identifies the
+            // selected destination; readable labels remain neutral.
+            selectedIconTheme: IconThemeData(
+              color: dark
+                  ? HopeV2TonalPalettes.forest.shade300
+                  : HopeV2TonalPalettes.forest.shade700,
+              size: 24,
+            ),
+            unselectedIconTheme: IconThemeData(
+              color: HopeV2SemanticColors.navigationLabel(context, selected: false),
+              size: 24,
+            ),
             selectedLabelTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: HopeV2SemanticColors.textPrimary(context),
               fontWeight: FontWeight.w800,
