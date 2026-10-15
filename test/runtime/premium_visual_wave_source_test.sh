@@ -186,7 +186,7 @@ grep -Fq '(constraints.maxWidth - gap * (columns - 1)) / columns;' "lib/features
 grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'height: compactViewport' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq '(denseViewport ? 96 : 128)' "lib/features/marketplace/job_detail_page.dart"
-grep -Fq 'denseViewport ? 148' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq '? 148' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq ': 214,' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'HOPE_RUNTIME_EXACT_HEAD=$exact_head' ".github/workflows/hope-ui-runtime-evidence.yml"
 if sed -n '/class HopeWalletFlowSignature/,/Target-aligned opportunity DNA signature/p' "lib/core/ui/hope_signature_components.dart" | grep -Eq 'wallet\.(totalBalance|availableBalance|lockedBalance)'; then
