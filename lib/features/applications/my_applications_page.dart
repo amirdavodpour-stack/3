@@ -376,7 +376,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   Widget _applicationCard(HopeApplication item) {
     final color = _statusColor(context, item.status);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
         quiet: true,
         padding: EdgeInsets.all(
@@ -392,9 +392,10 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   item.status == 'ACCEPTED'
                       ? HopeV2Icons.completed
                       : HopeV2Icons.mission,
+                  size: 36,
                   filled: true,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,14 +403,14 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                       Text(
                         item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           height: 1.15,
                         ),
                       ),
                       const SizedBox(height: 5),
                       Wrap(
-                        spacing: 7,
-                        runSpacing: 6,
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
                           PremiumTag(icon: HopeV2Icons.activity, label: item.statusLabelFor(english: _isEnglish), color: color),
                           if (item.jobCity?.isNotEmpty == true)
