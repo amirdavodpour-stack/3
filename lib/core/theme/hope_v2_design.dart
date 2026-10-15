@@ -44,7 +44,7 @@ class HopeV2Colors {
   static const inkSoft = Color(0xFF344238);
   static const backgroundWarm = Color(0xFFF4F0E5);
   static const ink = Color(0xFF18221C);
-  static const muted = Color(0xFF626D61);
+  static const muted = Color(0xFF5B665A);
   static const surface = Color(0xFFFFFCF5);
   static const background = Color(0xFFE9E5D9);
   // Match the canonical reference semantic green used for trust/success.
@@ -70,7 +70,7 @@ class HopeV2Colors {
   // Text roles must remain independent from brand-action hues.
   static const moneyTextLight = Color(0xFF18221C);
   static const moneyTextDark = Color(0xFFF1F3EC);
-  static const infoTextLight = Color(0xFF0F766E);
+  static const infoTextLight = Color(0xFF115E59);
   static const infoTextDark = Color(0xFF5EEAD4);
   // Dedicated blue identity/trust roles: separate from teal information and forest/lichen brand actions.
   static const trustTextLight = Color(0xFF1E40AF);
@@ -252,7 +252,7 @@ class HopeV2TonalPalettes {
     shade300: Color(0xFFD6D1C4),
     shade400: Color(0xFFB4AE9E),
     shade500: Color(0xFF8B8779),
-    shade600: Color(0xFF626D61),
+    shade600: Color(0xFF5B665A),
     shade700: Color(0xFF4A574A),
     shade800: Color(0xFF344238),
     shade900: Color(0xFF18221C),
