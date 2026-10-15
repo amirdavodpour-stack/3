@@ -1345,8 +1345,10 @@ class _WalletPageState extends State<WalletPage> {
                 );
               },
             ),
-            SizedBox(height: tightViewport ? 2 : 10),
-            SizedBox(height: tightViewport ? 2 : 16),
+            SizedBox(
+              key: const ValueKey('wallet-history-transition-gap'),
+              height: tightViewport ? 4 : 16,
+            ),
             Container(
               key: _historyKey,
               child: PremiumSectionHeader(

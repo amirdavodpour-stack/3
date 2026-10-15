@@ -1288,6 +1288,11 @@ void main() {
 
     expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
     expect(find.byKey(const ValueKey('wallet-provider-status')), findsOneWidget);
+    final historyGap = find.byKey(
+      const ValueKey('wallet-history-transition-gap'),
+    );
+    expect(historyGap, findsOneWidget);
+    expect(tester.getSize(historyGap).height, 4);
     final availableMetric =
         find.byKey(const ValueKey('wallet-balance-metric-available'));
     expect(availableMetric, findsOneWidget);
