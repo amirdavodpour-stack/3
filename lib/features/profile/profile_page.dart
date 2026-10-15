@@ -143,6 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     const HopeIconTile(
                       HopeV2Icons.secure,
+                      color: HopeV2Colors.success,
                       filled: true,
                       size: 40,
                     ),
@@ -599,7 +600,10 @@ padding: const EdgeInsets.symmetric(vertical: 6),
 
               final details = ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-                leading: const HopeIconTile(HopeV2Icons.translate),
+                leading: const HopeIconTile(
+                  HopeV2Icons.translate,
+                  color: HopeV2Colors.secondary,
+                ),
                 title: Text(
                   HopeCopy.of(context).copy_app_language_789c9c4,
                 ),
@@ -645,7 +649,10 @@ padding: const EdgeInsets.symmetric(vertical: 6),
 
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-                leading: const HopeIconTile(HopeV2Icons.translate),
+                leading: const HopeIconTile(
+                  HopeV2Icons.translate,
+                  color: HopeV2Colors.secondary,
+                ),
                 title: Text(
                   HopeCopy.of(context).copy_app_language_789c9c4,
                 ),
@@ -687,7 +694,10 @@ padding: const EdgeInsets.symmetric(vertical: 6),
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const HopeIconTile(HopeV2Icons.location),
+            leading: const HopeIconTile(
+              HopeV2Icons.location,
+              color: HopeV2Colors.secondary,
+            ),
             title: Text(
               HopeCopy.of(context).copy_location_city_46ccc39,
             ),
@@ -744,7 +754,10 @@ padding: const EdgeInsets.symmetric(vertical: 6),
             ),
           ),
           ListTile(
-            leading: const HopeIconTile(HopeV2Icons.location),
+            leading: const HopeIconTile(
+              HopeV2Icons.location,
+              color: HopeV2Colors.secondary,
+            ),
             title: Text(
               HopeCopy.of(context).copy_choose_another_city_1375095,
             ),
