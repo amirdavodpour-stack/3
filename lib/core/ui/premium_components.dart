@@ -1020,7 +1020,7 @@ class PremiumPanel extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
-    this.radius = HopeV2Radii.lg,
+    this.radius = HopeV2Radii.md,
     this.highlight = false,
     this.glass = false,
     this.quiet = false,
@@ -1090,8 +1090,8 @@ class PremiumPanel extends StatelessWidget {
               : highlight
                   ? scheme.primary.withValues(alpha: dark ? .15 : .14)
                   : (dark
-                      ? Colors.white.withValues(alpha: glass ? .07 : .055)
-                      : HopeV2Surfaces.border(context).withValues(alpha: .72)),
+                      ? Colors.white.withValues(alpha: glass ? .05 : .035)
+                      : HopeV2Surfaces.border(context).withValues(alpha: .52)),
           width: 1,
         ),
         boxShadow: quiet
@@ -1100,30 +1100,30 @@ class PremiumPanel extends StatelessWidget {
                 ? [
                     if (highlight)
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: .12),
-                        blurRadius: 16,
-                        offset: const Offset(0, 5),
+                        color: Colors.black.withValues(alpha: .09),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
                       ),
                     if (highlight)
                       BoxShadow(
-                        color: HopeV2Colors.primary.withValues(alpha: glass ? .07 : .035),
-                        blurRadius: glass ? 18 : 14,
-                        offset: const Offset(0, 5),
+                        color: HopeV2Colors.primary.withValues(alpha: glass ? .05 : .025),
+                        blurRadius: glass ? 14 : 10,
+                        offset: const Offset(0, 3),
                       ),
                     if (glass)
                       BoxShadow(
-                        color: HopeV2Colors.primary.withValues(alpha: .018),
-                        blurRadius: 26,
-                        offset: const Offset(-5, 8),
+                        color: HopeV2Colors.primary.withValues(alpha: .014),
+                        blurRadius: 18,
+                        offset: const Offset(-3, 4),
                       ),
                   ]
             : [
                 BoxShadow(
                   color: highlight
-                      ? HopeV2Colors.warmHalo.withValues(alpha: .06)
-                      : const Color(0x081D2119),
-                  blurRadius: highlight ? 18 : 14,
-                  offset: const Offset(0, 5),
+                      ? HopeV2Colors.warmHalo.withValues(alpha: .04)
+                      : const Color(0x041D2119),
+                  blurRadius: highlight ? 12 : 9,
+                  offset: const Offset(0, 3),
                 ),
               ],
       ),
@@ -1131,7 +1131,7 @@ class PremiumPanel extends StatelessWidget {
     );
 
     final content = ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
+      borderRadius: BorderRadius.circular(quiet ? HopeV2Radii.md : radius),
       child: panel,
     );
 
