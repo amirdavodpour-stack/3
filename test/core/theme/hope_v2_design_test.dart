@@ -92,6 +92,8 @@ void main() {
       ],
       reason: 'Dark-mode heroes must retain the prior slate/navy ramp rather than a green wash.',
     );
+    expect(HopeV2Shadows.card.single.color, const Color(0x0D1B1638));
+    expect(HopeV2Shadows.hero.single.color, const Color(0x241C1738));
   });
 
   test('opportunity artwork accents stay unique and separate from semantic states', () {
