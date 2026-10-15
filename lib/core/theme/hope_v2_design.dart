@@ -390,6 +390,10 @@ class HopeV2Icons {
   static const IconData skills = CupertinoIcons.wrench;
   static const IconData description = CupertinoIcons.doc_text;
   static const IconData route = CupertinoIcons.map;
+  static const IconData android = CupertinoIcons.device_phone_portrait;
+  static const IconData apple = CupertinoIcons.device_laptop;
+  static const IconData web = CupertinoIcons.globe;
+  static const IconData device = CupertinoIcons.device_phone_portrait;
 
   // Financial actions and lifecycle.
   static const IconData protectedFunds = CupertinoIcons.lock_shield;
