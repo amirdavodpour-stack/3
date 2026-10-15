@@ -67,7 +67,7 @@ void main() {
   );
 
   testWidgets(
-    'selected navigation label uses a readable semantic foreground, not brand indigo',
+    'selected navigation label uses the dedicated neutral navigation foreground',
     (tester) async {
       const brandIndigo = Color(0xFF6750A4);
       await tester.pumpWidget(
@@ -98,9 +98,9 @@ void main() {
       final context = tester.element(label);
       expect(
         text.style?.color,
-        HopeV2SemanticColors.readableAccent(
+        HopeV2SemanticColors.navigationLabel(
           context,
-          Theme.of(context).colorScheme.primary,
+          selected: true,
         ),
         reason: 'Selected navigation text must resolve through readable semantic colors.',
       );
