@@ -319,7 +319,7 @@ class _AdminPageState extends State<AdminPage>
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: _actionBusy ? null : _showGrantAdminDialog,
-                    icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
+                    icon: const Icon(HopeV2Icons.admin, size: 20),
                     label: Text(_t('افزودن مدیر جدید', 'Add new administrator')),
                   ),
                 ],
@@ -412,8 +412,8 @@ class _AdminPageState extends State<AdminPage>
                   trailing: u.id == _currentAdminId
                       ? Chip(label: Text(_t('مالک فعلی', 'Current owner')))
                       : Wrap(spacing: 6, children: [
-                          IconButton(tooltip: _t('خروج همه نشست‌ها', 'Revoke sessions'), onPressed: _actionBusy ? null : () => _revokeAdminSessions(u), icon: const Icon(Icons.logout)),
-                          IconButton(tooltip: _t('لغو نقش مدیر', 'Revoke admin'), onPressed: _actionBusy ? null : () => _revokeAdmin(u), icon: const Icon(Icons.remove_moderator_outlined)),
+                          IconButton(tooltip: _t('خروج همه نشست‌ها', 'Revoke sessions'), onPressed: _actionBusy ? null : () => _revokeAdminSessions(u), icon: const Icon(HopeV2Icons.logout)),
+                          IconButton(tooltip: _t('لغو نقش مدیر', 'Revoke admin'), onPressed: _actionBusy ? null : () => _revokeAdmin(u), icon: const Icon(HopeV2Icons.removeRole)),
                         ]),
                 ),
               )),
