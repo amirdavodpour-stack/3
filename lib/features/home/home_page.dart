@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage> {
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-home-selected'),
-          icon: HopeV2NavigationIcons.home,
+          icon: HopeV2NavigationIcons.homeSelected,
           selected: true,
         ),
         label: _t(context, 'خانه', 'Home'),
@@ -110,7 +110,7 @@ class _HomePageState extends State<HomePage> {
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-explore-selected'),
-          icon: HopeV2NavigationIcons.explore,
+          icon: HopeV2NavigationIcons.exploreSelected,
           selected: true,
         ),
         label: _t(context, 'کاوش', 'Explore'),
@@ -123,7 +123,7 @@ class _HomePageState extends State<HomePage> {
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-work-selected'),
-          icon: HopeV2NavigationIcons.workshop,
+          icon: HopeV2NavigationIcons.workshopSelected,
           selected: true,
         ),
         label: _t(context, 'کار', 'Work'),
@@ -136,7 +136,7 @@ class _HomePageState extends State<HomePage> {
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-wallet-selected'),
-          icon: HopeV2NavigationIcons.wallet,
+          icon: HopeV2NavigationIcons.walletSelected,
           selected: true,
         ),
         label: _t(context, 'کیف پول', 'Wallet'),
@@ -149,7 +149,7 @@ class _HomePageState extends State<HomePage> {
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-profile-selected'),
-          icon: HopeV2NavigationIcons.profile,
+          icon: HopeV2NavigationIcons.profileSelected,
           selected: true,
         ),
         label: _t(context, 'پروفایل', 'Profile'),
