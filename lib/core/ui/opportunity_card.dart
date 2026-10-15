@@ -168,7 +168,7 @@ class OpportunityCard extends StatelessWidget {
                   colors: dark
                       ? [
                           primary.withValues(alpha: .12),
-                          const Color(0xFF101522),
+                          HopeV2Colors.darkSurface,
                           Theme.of(context).colorScheme.surface,
                         ]
                       : [

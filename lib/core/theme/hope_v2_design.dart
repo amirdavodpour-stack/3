@@ -436,8 +436,8 @@ class HopeV2Spacing {
   static const lg = 16.0;
   static const xl = 24.0;
   static const xxl = 32.0;
-  static const section = 28.0;
-  static const display = 48.0;
+  static const section = 24.0;
+  static const display = 40.0;
 }
 
 class HopeV2Radii {
@@ -797,16 +797,16 @@ class HopeV2Shadows {
   static const card = [
     BoxShadow(
       color: Color(0x0D193A2A),
-      blurRadius: 28,
-      offset: Offset(0, 12),
+      blurRadius: 18,
+      offset: Offset(0, 6),
     ),
   ];
 
   static const hero = [
     BoxShadow(
       color: Color(0x24193A2A),
-      blurRadius: 36,
-      offset: Offset(0, 18),
+      blurRadius: 24,
+      offset: Offset(0, 10),
     ),
   ];
 
@@ -814,21 +814,21 @@ class HopeV2Shadows {
   static const heroDark = [
     BoxShadow(
       color: Color(0x18315A3C),
-      blurRadius: 30,
-      offset: Offset(0, 14),
+      blurRadius: 20,
+      offset: Offset(0, 8),
     ),
     BoxShadow(
       color: Color(0x0C315A3C),
-      blurRadius: 42,
-      offset: Offset(-8, 18),
+      blurRadius: 28,
+      offset: Offset(-5, 12),
     ),
   ];
 
   static const gradientHero = [
     BoxShadow(
       color: Color(0x25244D38),
-      blurRadius: 28,
-      offset: Offset(0, 12),
+      blurRadius: 18,
+      offset: Offset(0, 6),
     ),
   ];
 }
