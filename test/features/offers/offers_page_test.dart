@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/marketplace/offer_repository.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/offers/offers_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
@@ -225,6 +226,11 @@ void main() {
             );
             await tester.pumpAndSettle();
 
+            expect(
+              tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+              24,
+              reason: 'Offers must not reserve a second oversized tail outside the scroll view.',
+            );
             final titleFinder = find.byKey(
               const ValueKey('offer-title-responsive-offer'),
             );
