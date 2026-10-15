@@ -1,6 +1,6 @@
 # HOPE Semantic Icon Map
 
-The current UI uses HugeIcons through shared `HopeV2Icons` / `HopeIcon`. Keep one semantic concept per icon; do not introduce per-screen glyph choices without updating this map.
+The product uses HugeIcons through shared `HopeV2Icons` / `HopeIcon` for domain actions. The five primary navigation destinations intentionally use the separate, internally consistent Cupertino outline/filled family defined by `HopeV2NavigationIcons`. Keep one semantic concept per icon; do not introduce per-screen glyph choices without updating this map.
 
 | Concept | Canonical icon concept | Requirements |
 |---|---|---|
@@ -32,3 +32,16 @@ The current UI uses HugeIcons through shared `HopeV2Icons` / `HopeIcon`. Keep on
 - Icon stroke/weight must remain consistent; avoid oversized white glyphs in form fields.
 - Color alone never communicates status; pair color with text and icon.
 - Current baseline fails Google icon branding and has some ambiguous repeated glyphs. Fixes are not considered closed until screenshot and semantics tests pass.
+
+
+## Primary navigation family — 2026-10-15
+
+| Destination | Resting glyph | Selected glyph |
+|---|---|---|
+| Home | Cupertino house | Cupertino house filled |
+| Explore | Cupertino compass | Cupertino compass filled |
+| Workshop | Cupertino briefcase | Cupertino briefcase filled |
+| Wallet | Cupertino credit card | Cupertino credit card filled |
+| Profile | Cupertino person-in-circle | Cupertino person-in-circle filled |
+
+Navigation labels remain neutral in both themes. Do not tint readable destination text teal/green; the selected state is communicated by the editorial folio plate, a restrained action-colored hairline, icon fill, and weight. Domain icons elsewhere remain in the HugeIcons family.
