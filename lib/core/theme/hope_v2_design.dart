@@ -640,7 +640,7 @@ class HopeV2Gradients {
     end: Alignment.bottomLeft,
   );
 
-  // Editorial dark hero: layered canopy greens, no blue-violet cast.
+  // Editorial dark hero: layered slate/navy surfaces; selected actions supply the indigo accent.
   static const heroDark = LinearGradient(
     colors: [
       Color(0xFF0D1510),
@@ -660,7 +660,7 @@ class HopeV2SemanticColors {
   static bool _isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
 
-  /// Forest and lichen are reserved for brand action/selection roles, never as uncontrolled text colors.
+  /// Indigo owns brand actions and selection. Forest and lichen are supporting decorative accents, never readable text roles.
   static Color primary(BuildContext context) => Theme.of(context).colorScheme.primary;
   static Color secondary(BuildContext context) => Theme.of(context).colorScheme.secondary;
   static Color surface(BuildContext context) => Theme.of(context).colorScheme.surface;
