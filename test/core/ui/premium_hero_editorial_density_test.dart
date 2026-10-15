@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 
 void main() {
@@ -74,4 +76,40 @@ void main() {
     expect(tester.getSize(find.byType(PremiumHero)).height, 176);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'dark editorial hero fallback uses the canonical navy gradient',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: Scaffold(
+            body: PremiumHero(
+              eyebrow: 'Opportunity',
+              title: 'A focused editorial title',
+              message: 'A concise supporting description.',
+              compactHero: true,
+              height: 176,
+            ),
+          ),
+        ),
+      );
+
+      final fallback = tester.widget<DecoratedBox>(
+        find.byKey(const ValueKey('premium-hero-compact-fallback')),
+      );
+      final decoration = fallback.decoration as BoxDecoration;
+      final gradient = decoration.gradient! as LinearGradient;
+
+      expect(gradient.colors, HopeV2Gradients.heroDark.colors);
+      expect(gradient.stops, HopeV2Gradients.heroDark.stops);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

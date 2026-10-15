@@ -1006,4 +1006,46 @@ void main() {
     expect(HopeV2Colors.dangerOnLight, HopeV2TonalPalettes.danger.shade700);
   });
 
+
+  testWidgets(
+    'highlighted dark panels use indigo treatment over canonical navy surfaces',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: const Scaffold(
+            body: PremiumPanel(
+              highlight: true,
+              child: Text('Highlighted panel'),
+            ),
+          ),
+        ),
+      );
+
+      final panel = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(PremiumPanel),
+          matching: find.byType(Container),
+        ).first,
+      );
+      final decoration = panel.decoration! as BoxDecoration;
+      final gradient = decoration.gradient! as LinearGradient;
+
+      expect(
+        gradient.colors.first,
+        HopeV2Colors.primary.withValues(alpha: .075),
+      );
+      expect(
+        gradient.colors[1],
+        HopeV2Colors.primary.withValues(alpha: .018),
+      );
+      expect(gradient.colors[2], const Color(0xFF101522));
+      expect(
+        decoration.boxShadow!.last.color,
+        HopeV2Colors.primary.withValues(alpha: .035),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
