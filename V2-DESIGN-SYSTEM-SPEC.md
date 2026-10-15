@@ -12,6 +12,14 @@ The product uses Persian-first RTL presentation for customer and worker experien
 - Primary information is grouped into cards and sections; destructive actions are visually distinct and require an explicit confirmation state.
 - Avoid layout assumptions tied to a single handset width. Screens must remain usable in narrow, large, and text-expanded configurations.
 
+### Color genome
+
+- **Dark foundation:** near-black navy `#070A12`; surface `#0F111A`; card `#111827`; raised panels `#101522` and `#121726`. Dark mode must read as charcoal/navy, not as a green-tinted canvas.
+- **Brand action:** indigo is the primary action and selection family (`#6366F1` light identity, `#4F46E5` light action, `#818CF8` dark action). Use it for selected controls and focused actions, not as a body-text color.
+- **Semantic roles remain independent:** teal for information/secondary actions, green for success, amber for warning/pending, orange for featured/recommended content, blue for trust/verification, and red for danger.
+- **Forest and lichen remain supporting decorative/category accents.** They must not replace the global action color, neutral surfaces, or semantic colors. Opportunity artwork may use a muted, distinct category accent.
+- Light mode keeps its warm editorial-paper surface family. All foreground/background pairings must pass the applicable WCAG contrast contract.
+
 ## Interaction states
 
 Every asynchronous feature surface should define loading, success, empty, error, retry, disabled, and permission-denied states where applicable. Long-running financial operations must expose an operation state that is stable across refresh and navigation.
