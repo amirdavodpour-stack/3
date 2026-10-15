@@ -264,7 +264,7 @@ void main() {
     final button = find.byType(PremiumIconButton);
     expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
     expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
-    expect(find.byType(HugeIcon), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.refresh), findsOneWidget);
     expect(find.byType(InkWell), findsOneWidget);
   });
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/components.dart';
@@ -2130,8 +2129,8 @@ void main() {
             const Size(30, 30),
             reason: 'The decorative cue must stay compact; the card owns the tap target.',
           );
-          final arrow = tester.widget<HugeIcon>(
-            find.descendant(of: affordance, matching: find.byType(HugeIcon)),
+          final arrow = tester.widget<HopeIcon>(
+            find.descendant(of: affordance, matching: find.byType(HopeIcon)),
           );
           expect(
             arrow.icon,
