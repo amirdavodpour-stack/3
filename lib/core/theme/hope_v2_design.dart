@@ -461,7 +461,7 @@ class HopeV2Radii {
   static const md = 14.0;
   static const lg = 16.0;
   static const xl = 20.0;
-  static const hero = 22.0;
+  static const hero = 18.0;
   static const input = 12.0;
   static const button = 12.0;
   static const navigation = 12.0;
@@ -841,31 +841,31 @@ class HopeV2Shadows {
 
   static const hero = [
     BoxShadow(
-      color: Color(0x241C1738),
-      blurRadius: 24,
-      offset: Offset(0, 10),
+      color: Color(0x1A1C1738),
+      blurRadius: 16,
+      offset: Offset(0, 5),
     ),
   ];
 
   // Runtime visual certification target: no cyan spill on dark hero edges.
   static const heroDark = [
     BoxShadow(
-      color: Color(0x18333B70),
-      blurRadius: 20,
-      offset: Offset(0, 8),
+      color: Color(0x12333B70),
+      blurRadius: 14,
+      offset: Offset(0, 4),
     ),
     BoxShadow(
-      color: Color(0x0C2B345F),
-      blurRadius: 28,
-      offset: Offset(-5, 12),
+      color: Color(0x062B345F),
+      blurRadius: 18,
+      offset: Offset(-3, 5),
     ),
   ];
 
   static const gradientHero = [
     BoxShadow(
-      color: Color(0x252C3372),
-      blurRadius: 18,
-      offset: Offset(0, 6),
+      color: Color(0x1A2C3372),
+      blurRadius: 12,
+      offset: Offset(0, 4),
     ),
   ];
 }
