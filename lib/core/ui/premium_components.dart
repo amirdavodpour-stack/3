@@ -1020,7 +1020,7 @@ class PremiumPanel extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(HopeV2Spacing.lg),
-    this.radius = HopeV2Radii.md,
+    this.radius = HopeV2Radii.lg,
     this.highlight = false,
     this.glass = false,
     this.quiet = false,
