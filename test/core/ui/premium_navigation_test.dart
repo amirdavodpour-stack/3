@@ -83,11 +83,11 @@ void main() {
     final decoration = dock.decoration! as BoxDecoration;
     expect(
       decoration.borderRadius,
-      const BorderRadius.only(
-        topLeft: Radius.circular(18),
-        topRight: Radius.circular(18),
-        bottomLeft: Radius.circular(4),
-        bottomRight: Radius.circular(4),
+      const BorderRadiusDirectional.only(
+        topStart: Radius.circular(24),
+        topEnd: Radius.circular(7),
+        bottomStart: Radius.circular(4),
+        bottomEnd: Radius.circular(18),
       ),
     );
     expect(find.byKey(const ValueKey('hope-navigation-selection-plate')), findsOneWidget);
@@ -342,7 +342,7 @@ void main() {
         matching: find.byType(HopeNavigationGlyph),
       ),
     );
-    expect(workshopGlyph.icon, HopeV2Icons.workshopSelected);
+    expect(workshopGlyph.icon, HopeV2NavigationIcons.workshopSelected);
 
     await tester.tap(find.text('کیف پول'));
     await tester.pump();
