@@ -20,6 +20,11 @@ The product uses Persian-first RTL presentation for customer and worker experien
 - **Forest and lichen remain supporting decorative/category accents.** They must not replace the global action color, neutral surfaces, or semantic colors. Opportunity artwork may use a muted, distinct category accent.
 - Light mode keeps its warm editorial-paper surface family. All foreground/background pairings must pass the applicable WCAG contrast contract.
 
+
+- **Generic Hero fallback:** dark mode uses the shared slate/navy `HopeV2Gradients.heroDark`; category color is a restrained localized wash, never the base surface. Light mode retains the existing warm editorial Hero gradient.
+- **Highlighted panels:** `PremiumPanel(highlight: true)` uses a subtle indigo brand tint over the canonical dark panel surface. Forest and lichen remain category/decorative families, not generic panel backgrounds or elevation shadows.
+- **Depth ladder:** distinguish canvas, surface, content card, and raised/overlay tiers through calibrated tone, restrained borders, and measured soft shadows. Avoid combining high-contrast outlines with multiple competing glows.
+
 ## Interaction states
 
 Every asynchronous feature surface should define loading, success, empty, error, retry, disabled, and permission-denied states where applicable. Long-running financial operations must expose an operation state that is stable across refresh and navigation.

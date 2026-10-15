@@ -11,6 +11,40 @@ The supplied HOPE Design System 2.0 showcase is the visual reference, not a lite
 - Persian RTL and English LTR remain supported. Compact screens must not hide filters or actions behind fixed navigation.
 - Runtime evidence is evidence of rendering only; it does not establish TalkBack compliance when accessibility services are disabled.
 
+
+## Canonical Color Genome & Layer Contract — 2026-10-15
+
+This section is the current system-level authority for color meaning, generic Hero treatment, and surface depth. Older wave notes below remain historical records; if a historical experiment conflicts with this section, this contract wins.
+
+### Runtime ownership
+- The canonical source of runtime values is `lib/core/theme/hope_v2_design.dart`. Shared widgets consume semantic tokens and variants; `DESIGN.md` documents intent and mirrors accepted runtime values.
+- Do not create screen-local substitutes for established semantic colors or shared surfaces. Update the token owner, shared component, this contract, and relevant tests together whenever a system-level role changes.
+
+### Color meanings
+- **Indigo:** HOPE brand, primary action, active selection, focus, and selective brand/editorial decoration. Indigo may recur across the experience, but is not a universal card fill or a readable text color on itself.
+- **Teal:** informational data and secondary/informational treatments.
+- **Blue:** trust, verification, and reliability cues.
+- **Green:** successful/completed/approved states and explicitly chosen domain categories.
+- **Amber:** pending, caution, and warning states, with intensity reflecting severity.
+- **Orange:** featured/recommended content and deliberate editorial emphasis; not an automatic warning state.
+- **Red:** tiered danger, financial loss, destructive action, and errors, with meaning expressed in copy/icons as well as hue.
+- **Forest and lichen:** supporting category artwork and limited decorative accents only. They must not replace neutral global surfaces, brand actions, or semantic state colors.
+- **Navy/charcoal neutrals:** own page canvas, panels, cards, overlays, and most readable copy. Keep distinct color families; do not flatten the interface into a green-only palette.
+
+### Dark depth and Hero treatment
+- The dark canvas is `#070A12`, main surface `#0F111A`, card `#111827`, and raised surfaces `#101522` / `#121726`.
+- Generic dark Hero fallback uses `HopeV2Gradients.heroDark` (slate/navy). Domain identity can appear through a low-intensity, localized accent wash and small artwork details; it cannot replace the base gradient.
+- `PremiumPanel(highlight: true)` uses a restrained indigo tint over the canonical panel surface. Forest/lichen glows are reserved for explicitly named category/decor treatments, not generic highlighted panels or shadows.
+- Layer hierarchy: **L0 canvas → L1 surface → L2 card/content panel → L3 raised/overlay**. Separate layers through calibrated tonal differences, subtle borders, and standardized soft offset shadows—not by stacking a bright outline and multiple competing glows on every card.
+- Elevation is role-based. A Hero or critical decision can own a focal tier; standard information, utility controls, secondary metrics, and repeated metadata must stay quieter.
+
+### Editorial density and acceptance
+- A Hero's height is driven by content, action, and viewport; content-only Heroes remain capped. Do not spend the first fold on decorative space when the user's next decision or essential facts can appear earlier.
+- Preserve product truth and sparse states: never invent cards, financial data, profile credentials, or activity simply to fill negative space.
+- Keep copy largely neutral. Color is an accent to hierarchy, not a substitute for typography, grouping, labels, or spacing.
+- Status and chart meanings remain stable across all screens, legends, tables, badges, and detail views. Color is never the only signal.
+- Validate contrast, state variants, RTL/LTR, narrow viewports, expanded text, and page-specific composition. Source/test success is not visual acceptance; current-head runtime screenshots must be individually reviewed before declaring a visual wave accepted.
+
 ## Wave 23 implementation scope
 - Home Pulse precedes recommendations in a non-scrolling responsive metric panel.
 - Compact opportunity score becomes a circular score indicator while existing component percentages remain grounded in the model.

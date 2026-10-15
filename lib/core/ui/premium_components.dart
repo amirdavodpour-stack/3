@@ -1064,8 +1064,8 @@ class PremiumPanel extends StatelessWidget {
             end: AlignmentDirectional.bottomEnd,
             colors: dark
                 ? [
-                    HopeV2Colors.darkGreenGlow.withValues(alpha: glass ? .13 : .075),
-                    HopeV2Colors.darkGreenGlow.withValues(alpha: glass ? .04 : .018),
+                    HopeV2Colors.primary.withValues(alpha: glass ? .13 : .075),
+                    HopeV2Colors.primary.withValues(alpha: glass ? .04 : .018),
                     HopeV2Surfaces.panel(context).withValues(alpha: glass ? .74 : 1),
                   ]
                 : [
@@ -1109,13 +1109,13 @@ class PremiumPanel extends StatelessWidget {
                       ),
                     if (highlight)
                       BoxShadow(
-                        color: HopeV2Colors.darkGreenGlow.withValues(alpha: glass ? .07 : .035),
+                        color: HopeV2Colors.primary.withValues(alpha: glass ? .07 : .035),
                         blurRadius: glass ? 18 : 14,
                         offset: const Offset(0, 5),
                       ),
                     if (glass)
                       BoxShadow(
-                        color: HopeV2Colors.darkGreenGlow.withValues(alpha: .018),
+                        color: HopeV2Colors.primary.withValues(alpha: .018),
                         blurRadius: 26,
                         offset: const Offset(-5, 8),
                       ),
@@ -1162,30 +1162,21 @@ class _HeroEditorialFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final heroGradient =
+        dark ? HopeV2Gradients.heroDark : HopeV2Gradients.hero;
+    final accentWash = accent.withValues(alpha: dark ? .08 : .045);
+
     if (compact) {
       return DecoratedBox(
         key: const ValueKey('premium-hero-compact-fallback'),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: AlignmentDirectional.topEnd,
-            end: AlignmentDirectional.bottomStart,
-            colors: [
-              accent.withValues(alpha: .12),
-              const Color(0xFF151B18),
-              const Color(0xFF080E0B),
-            ],
-            stops: const [0, .46, 1],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: heroGradient),
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: RadialGradient(
               center: AlignmentDirectional.topEnd,
               radius: 1.2,
-              colors: [
-                accent.withValues(alpha: .12),
-                Colors.transparent,
-              ],
+              colors: [accentWash, Colors.transparent],
               stops: const [0, .82],
             ),
           ),
@@ -1194,21 +1185,22 @@ class _HeroEditorialFallback extends StatelessWidget {
       );
     }
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: AlignmentDirectional.topEnd,
-          end: AlignmentDirectional.bottomStart,
-          colors: [
-            accent.withValues(alpha: .12),
-            const Color(0xFF151B18),
-            const Color(0xFF080E0B),
-          ],
-          stops: const [0, .42, 1],
-        ),
-      ),
+      decoration: BoxDecoration(gradient: heroGradient),
       child: Stack(
         fit: StackFit.expand,
         children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: AlignmentDirectional.topEnd,
+                  radius: 1.2,
+                  colors: [accentWash, Colors.transparent],
+                  stops: const [0, .82],
+                ),
+              ),
+            ),
+          ),
           PositionedDirectional(
             end: -30,
             top: -22,
@@ -1487,9 +1479,9 @@ class PremiumHero extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          // Dark mode uses a low-intensity forest halo rather than a purple wash.
+                          // Keep the generic brand bloom indigo-tinted; domain accents stay in the Hero artwork.
                           Theme.of(context).brightness == Brightness.dark
-                              ? HopeV2Colors.darkGreenGlow.withValues(alpha: .07)
+                              ? HopeV2Colors.primary.withValues(alpha: .055)
                               : HopeV2Colors.warmHalo.withValues(alpha: .05),
                           Colors.transparent,
                         ],
