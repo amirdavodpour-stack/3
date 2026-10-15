@@ -38,7 +38,8 @@ grep -Fq 'static const darkDivider = Color(0x18FFFFFF);' "$theme"
 grep -Fq 'static const barHeight = 68.0;' "$theme"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
-grep -Fq 'padding: const EdgeInsets.fromLTRB(14, 4, 14, 24)' "$home"
+grep -Fq 'padding: const EdgeInsets.fromLTRB(14, 4, 14, 12)' "$home"
+grep -Fq 'The home ListView already owns navigation-aware end padding; its outer frame should not reserve another dead band.' 'test/features/home/premium_home_feed_test.dart'
 grep -Fq 'fontSize: compact ? 19.5 : 25.5' "$premium"
 grep -Fq 'class PremiumEmptyState extends StatelessWidget' "$premium"
 grep -Fq 'maxLines: 2,' "$opportunity"
