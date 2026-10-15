@@ -1054,7 +1054,7 @@ void main() {
       expect(gradient.colors[2], const Color(0xFF101522));
       expect(
         decoration.boxShadow!.last.color,
-        HopeV2Colors.primary.withValues(alpha: .035),
+        HopeV2Colors.primary.withValues(alpha: .025),
       );
       expect(tester.takeException(), isNull);
     },
