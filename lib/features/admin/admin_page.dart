@@ -511,7 +511,7 @@ class _AdminPageState extends State<AdminPage>
       {required VoidCallback retry}) {
     if (error == null) return const SizedBox.shrink();
     return Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         child: EmptyState(
             icon: HopeV2Icons.pending,
             title: HopeCopy.of(context).copy_connection_failed_1b34bc9,
@@ -545,16 +545,17 @@ class _AdminPageState extends State<AdminPage>
             children: list.take(50).map<Widget>((job) {
               final status = job.status ?? '—';
               return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: PremiumPanel(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(12),
                       child: Row(children: [
                         HopeIconTile(
                             job.isJob
                                 ? HopeV2Icons.job
                                 : HopeV2Icons.mission,
+                            size: 36,
                             filled: true),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
                         Expanded(
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,9 +613,9 @@ class _AdminPageState extends State<AdminPage>
             children: list.take(50).map<Widget>((a) {
               final status = a.status;
               return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: PremiumPanel(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(12),
                       child: Column(children: [
                         ListTile(
                             contentPadding: EdgeInsets.zero,

@@ -209,12 +209,12 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                     else
                       ...rows.map(
                         (row) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 8),
                           child: InkWell(
                             onTap: () => _open(row),
                             borderRadius: BorderRadius.circular(HopeV2Radii.lg),
                             child: PremiumPanel(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(14),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -223,10 +223,10 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                     children: [
                                       const HopeIconTile(
                                         Icons.gavel_outlined,
-                                        size: 44,
+                                        size: 36,
                                         filled: true,
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: 8),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,7 +253,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 8),
                                   Row(
                                     children: [
                                       Expanded(
@@ -264,7 +264,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                           '${row['status'] ?? '—'}',
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: 8),
                                       Expanded(
                                         child: _caseMeta(
                                           context,
@@ -321,7 +321,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
   ) {
     return Container(
       constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),

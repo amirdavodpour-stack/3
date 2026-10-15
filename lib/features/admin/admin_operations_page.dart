@@ -229,7 +229,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(14),
               children: [
                 _header(
                   HopeV2Icons.wallet,
@@ -278,8 +278,8 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const HopeIconTile(HopeV2Icons.notifications, filled: true),
-            const SizedBox(width: 10),
+            const HopeIconTile(HopeV2Icons.notifications, size: 36, filled: true),
+            const SizedBox(width: 8),
             Expanded(child: Text(
               '${row['reason'] ?? _t('گزارش', 'Report')}',
               style: Theme.of(context).textTheme.titleMedium,
@@ -357,8 +357,8 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const HopeIconTile(HopeV2Icons.pending, filled: true),
-            const SizedBox(width: 10),
+            const HopeIconTile(HopeV2Icons.pending, size: 36, filled: true),
+            const SizedBox(width: 8),
             Expanded(child: Text('${_t('تسویه', 'Payout')} ${id.isEmpty ? '—' : id}',
                 style: Theme.of(context).textTheme.titleMedium)),
             StatusPill(_payoutStatusLabel(row['status']), color: AppColors.warning),
@@ -506,11 +506,11 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     HopeProductDomain domain = HopeProductDomain.control,
   }) =>
       PremiumPanel(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            PremiumDomainMarker(domain: domain),
-            const SizedBox(width: 12),
+            PremiumDomainMarker(domain: domain, compact: true),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,8 +546,8 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         return GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
             mainAxisExtent: columns == 1 ? 82 : 96,
           ),
           shrinkWrap: true,
@@ -556,7 +556,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           itemBuilder: (context, index) {
             final entry = entries[index];
             return PremiumPanel(
-              padding: const EdgeInsets.all(13),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -589,7 +589,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   Widget _mapPanel(Object icon, String title, Map<String, dynamic> data) => PremiumPanel(
     padding: const EdgeInsets.all(14),
     child: ExpansionTile(
-      leading: HopeIconTile(icon),
+      leading: HopeIconTile(icon, size: 36),
       title: Text(title),
       children: data.entries.map((e) => ListTile(
         dense: true,
@@ -600,7 +600,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   );
 
   Widget _empty(Object icon, String text) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 50),
+    padding: const EdgeInsets.symmetric(vertical: 32),
     child: EmptyState(icon: icon, title: text, message: ''),
   );
 }
