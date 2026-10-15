@@ -2281,4 +2281,59 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'standard dark opportunity cards preserve the intended low-opacity neutral border',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'subtle-dark-card-border',
+        'title': 'طراحی محصول',
+        'categoryId': 'design',
+        'category': 'طراحی',
+        'kind': 'MISSION',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1000000',
+        'city': 'تهران',
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.compact,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final surface = tester.widget<Container>(
+        find.byKey(const ValueKey('opportunity-card-surface')),
+      );
+      final decoration = surface.decoration! as BoxDecoration;
+      final border = decoration.border! as Border;
+      expect(
+        border.top.color,
+        HopeV2Colors.darkBorder,
+        reason: 'withValues must not replace a deliberately low-opacity neutral border with a 55%-opaque white outline.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
