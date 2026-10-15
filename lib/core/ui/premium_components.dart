@@ -1919,23 +1919,23 @@ class PremiumEmptyState extends StatelessWidget {
       child: PremiumPanel(
         glass: false,
         highlight: false,
-        padding: EdgeInsets.all(dense ? 14 : (compact ? 18 : 24)),
+        padding: EdgeInsets.all(dense ? 12 : (compact ? 16 : 20)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: dense ? 44 : 52,
-              height: dense ? 44 : 52,
+              width: dense ? 40 : 46,
+              height: dense ? 40 : 46,
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: .12),
                 borderRadius: BorderRadius.circular(HopeV2Radii.md),
                 border: Border.all(color: accent.withValues(alpha: .18)),
               ),
               alignment: Alignment.center,
-              child: HopeIcon(icon, size: dense ? 22 : 26, color: accent),
+              child: HopeIcon(icon, size: dense ? 20 : 23, color: accent),
             ),
-            SizedBox(height: dense ? 9 : 12),
+            SizedBox(height: dense ? 8 : 10),
             Text(
               title,
               textAlign: TextAlign.center,
@@ -2030,7 +2030,7 @@ class PremiumTag extends StatelessWidget {
                   color: foreground,
                   fontSize: 11,
                   height: 1.0,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
