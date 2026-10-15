@@ -99,7 +99,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
         body: SafeArea(
           child: PremiumPageFrame(
             maxWidth: 820,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

@@ -95,7 +95,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
       child: Scaffold(
         body: PremiumPageFrame(
           maxWidth: 1200,
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 48),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 40),
           child: FutureBuilder<List<Map<String, dynamic>>>(
             future: _future,
             builder: (context, snapshot) {

@@ -199,14 +199,14 @@ class OpportunityCard extends StatelessWidget {
                     color: dark
                         ? Colors.black.withValues(alpha: .20)
                         : cardAccent.withValues(alpha: .055),
-                    blurRadius: 20,
-                    offset: const Offset(0, 7),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
                   ),
                   if (dark)
                     BoxShadow(
                       color: primary.withValues(alpha: .025),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
                     ),
                 ]
               : const <BoxShadow>[],
@@ -277,8 +277,8 @@ class OpportunityCard extends StatelessWidget {
                         ? [
                             BoxShadow(
                               color: cardAccent.withValues(alpha: .09),
-                              blurRadius: 6,
-                              offset: const Offset(0, 1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 0),
                             ),
                           ]
                         : const <BoxShadow>[],

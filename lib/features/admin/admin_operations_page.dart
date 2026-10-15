@@ -124,7 +124,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       child: Scaffold(
         body: PremiumPageFrame(
           maxWidth: 1280,
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 56),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 48),
           child: Column(
             children: [
               PremiumHeader(

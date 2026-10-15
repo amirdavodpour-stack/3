@@ -38,7 +38,7 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
   @override Widget build(BuildContext context) => Directionality(
     textDirection: Localizations.localeOf(context).languageCode == 'en' ? TextDirection.ltr : TextDirection.rtl,
     child: Scaffold(
-      body: PremiumPageFrame(maxWidth: 620, padding: const EdgeInsets.all(22), child: ListView(
+      body: PremiumPageFrame(maxWidth: 620, padding: const EdgeInsets.all(16), child: ListView(
         children: [
           PremiumHeader(
             page: HopePageId.adminAccess,
