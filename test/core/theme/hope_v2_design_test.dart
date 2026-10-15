@@ -366,6 +366,17 @@ void main() {
     expect(HopeV2Colors.darkGreenGlow, const Color(0xFF264C36));
   });
 
+  test('generic dark elevation shadows use indigo and navy tones', () {
+    expect(
+      HopeV2Shadows.heroDark.map((shadow) => shadow.color).toList(),
+      const [Color(0x18333B70), Color(0x0C2B345F)],
+    );
+    expect(
+      HopeV2Shadows.gradientHero.single.color,
+      const Color(0x252C3372),
+    );
+  });
+
   test('dropdown and popup options use readable theme text instead of black defaults', () {
     final light = AppTheme.light();
     final dark = AppTheme.dark();
