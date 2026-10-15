@@ -156,7 +156,8 @@ grep -Fq "premium-page-frame-content-padding" "$premium"
 grep -Fq 'wave18-compact-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'framePadding.padding.resolve(TextDirection.rtl).bottom, 16' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'EdgeInsets.fromLTRB(0, 0, 0, 56)' 'lib/features/jobs/jobs_widgets.part.dart'
-grep -Fq 'tightViewport ? 20 : 28' 'lib/features/wallet/wallet_page.dart'
+grep -Fq 'tightViewport ? 12 : 20' 'lib/features/wallet/wallet_page.dart'
+grep -Fq 'The wallet ListView already owns navigation-aware end padding; its outer frame should stay compact.' 'test/features/wallet/wallet_page_test.dart'
 grep -Fq 'compactViewport ? 20 : 28' 'lib/features/marketplace/job_detail_page.dart'
 
 # Wave 19: the financial range uses the full card width and must not be ellipsized.
