@@ -886,7 +886,13 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           const SizedBox(height: HopeV2Spacing.sm),
           OpportunityCard(
             job: recommended.first,
-            variant: OpportunityCardVariant.featured,
+            // The mobile first fold uses an inline detail affordance rather
+            // than spending another full touch-target row on a card already
+            // exposed as one accessible tap target.
+            variant: MediaQuery.sizeOf(context).width <
+                    HopeV2Breakpoints.compact
+                ? OpportunityCardVariant.featuredScan
+                : OpportunityCardVariant.featured,
           ),
           if (compactPulse != null) ...[
             const SizedBox(height: HopeV2Spacing.xs),
