@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -11,28 +10,28 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 void main() {
   const destinations = <NavigationDestination>[
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.home, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.homeSelected, size: 24),
+      icon: Icon(HopeV2Icons.home, size: 24),
+      selectedIcon: Icon(HopeV2Icons.homeSelected, size: 24),
       label: 'خانه',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.search, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.search, size: 24),
+      icon: Icon(HopeV2Icons.search, size: 24),
+      selectedIcon: Icon(HopeV2Icons.search, size: 24),
       label: 'کاوش',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
+      icon: Icon(HopeV2Icons.workshop, size: 24),
+      selectedIcon: Icon(HopeV2Icons.workshopSelected, size: 24),
       label: 'کارگاه',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.walletSelected, size: 24),
+      icon: Icon(HopeV2Icons.wallet, size: 24),
+      selectedIcon: Icon(HopeV2Icons.walletSelected, size: 24),
       label: 'کیف پول',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.profile, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.profileSelected, size: 24),
+      icon: Icon(HopeV2Icons.profile, size: 24),
+      selectedIcon: Icon(HopeV2Icons.profileSelected, size: 24),
       label: 'پروفایل',
     ),
   ];

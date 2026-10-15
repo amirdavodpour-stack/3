@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -566,7 +565,7 @@ class _WalletPageState extends State<WalletPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const HugeIcon(icon: HopeV2Icons.pending, size: 20),
+                      const HopeIcon(icon: HopeV2Icons.pending, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(_t(

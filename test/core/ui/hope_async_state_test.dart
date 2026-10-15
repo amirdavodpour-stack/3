@@ -46,7 +46,7 @@ void main() {
       ),
     );
 
-    final icon = tester.widget<Icon>(find.byIcon(Icons.schedule_rounded));
+    final icon = tester.widget<Icon>(find.byIcon(HopeV2Icons.pending));
     expect(icon.color, HopeV2Colors.warning);
   });
 
@@ -89,7 +89,7 @@ void main() {
     );
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.byIcon(Icons.hourglass_empty_rounded), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.pending), findsOneWidget);
   });
 
   test('maps transport and authorization failures to truthful state kinds',

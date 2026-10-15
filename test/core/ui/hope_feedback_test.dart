@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/ui/hope_feedback.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 
 void main() {
   testWidgets('HopeFeedback uses the canonical floating acknowledgement surface',
@@ -29,7 +30,7 @@ void main() {
     final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
     expect(snackBar.behavior, SnackBarBehavior.floating);
     expect(find.text('پیام تست'), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.error), findsOneWidget);
   });
 
   testWidgets(

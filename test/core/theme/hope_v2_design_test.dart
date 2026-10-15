@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -561,7 +562,7 @@ void main() {
     }
   });
 
-  testWidgets('HopeIconTile renders canonical Hugeicons action tokens',
+  testWidgets('HopeIconTile renders canonical Cupertino action tokens',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -577,9 +578,9 @@ void main() {
       ),
     );
 
-    expect(find.byType(HugeIcon), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.search), findsOneWidget);
   });
-  testWidgets('compatibility status and empty-state primitives accept canonical icons',
+  testWidgets('status and empty-state primitives accept canonical Cupertino icons',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -602,7 +603,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(HugeIcon), findsWidgets);
+    expect(find.byType(Icon), findsWidgets);
   });
 
 
