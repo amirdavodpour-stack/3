@@ -126,9 +126,13 @@ test -f "test/core/ui/premium_visual_wave_15_test.dart"
 # Wave 17: viewport fill, compact navigation labels and financial-value wrapping.
 grep -Fq 'final compactLabels = width < 340 || textScale > 1.2;' "$premium"
 grep -Fq 'showLabel: true,' "$premium"
-grep -Fq 'blurRadius: dark ? 20 : 16' "$premium"
+# Editorial navigation is a continuous rail with one direction-aware moving folio plate.
+grep -Fq 'AnimatedPositionedDirectional(' "$premium"
+grep -Fq "hope-navigation-selection-plate" "$premium"
+grep -Fq 'BeveledRectangleBorder(' "$premium"
+grep -Fq 'HopeV2SemanticColors.textPrimary(context)' "$premium"
+grep -Fq "paragraph.didExceedMaxLines" "test/core/ui/premium_navigation_test.dart"
 grep -Fq 'minHeight: availableHeight,' "$premium"
-grep -Fq 'constraints: const BoxConstraints(maxWidth: 82)' "$premium"
 grep -Fq 'maxLines: 2,' "lib/features/wallet/wallet_page.dart"
 grep -Fq 'softWrap: true' "lib/features/wallet/wallet_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/transactions/transactions_page.dart"
@@ -253,7 +257,7 @@ if grep -Fq '[wave23-preverified]' .github/workflows/hope-ui-wave-1-static.yml; 
 fi
 # Wave 26 navigation labels and selected-state glyphs remain explicit.
 grep -Fq 'showLabel: true,' "$premium"
-grep -Fq 'blurRadius: dark ? 20 : 16' "$premium"
+grep -Fq 'reduceMotion ? Duration.zero' "$premium"
 grep -Fq 'HopeV2Icons.homeSelected, selected: true' "$premium"
 grep -Fq 'HopeV2Icons.walletSelected, selected: true' "$premium"
 grep -Fq 'HopeV2Icons.profileSelected, selected: true' "$premium"
