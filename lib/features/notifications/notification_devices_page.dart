@@ -156,7 +156,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
             if (!_loading && _error == null) const SizedBox(height: 12),
             if (_loading)
               const PremiumPanel(
-                child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator())),
+                child: SizedBox(height: 72, child: Center(child: CircularProgressIndicator())),
               )
             else if (_error != null)
               PremiumPanel(

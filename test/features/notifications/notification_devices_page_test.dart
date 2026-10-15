@@ -17,6 +17,14 @@ HopeNotificationDevice _device(String id, String platform) =>
       enabled: true,
     );
 
+class _PendingDeviceRepository extends _SequencedDeviceRepository {
+  final Completer<List<HopeNotificationDevice>> pending =
+      Completer<List<HopeNotificationDevice>>();
+
+  @override
+  Future<List<HopeNotificationDevice>> listDevices() => pending.future;
+}
+
 class _SequencedDeviceRepository implements NotificationRepository {
   int listCalls = 0;
   final Completer<List<HopeNotificationDevice>> staleRefresh =
@@ -74,6 +82,31 @@ Widget _host(_SequencedDeviceRepository repository) => MaterialApp(
     );
 
 void main() {
+  testWidgets('notification device loading state uses a compact editorial panel',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _PendingDeviceRepository();
+    await tester.pumpWidget(_host(repository));
+    await tester.pump();
+
+    final spinner = find.byType(CircularProgressIndicator);
+    final panel = find.byType(PremiumPanel).first;
+    expect(spinner, findsOneWidget);
+    expect(
+      tester.getTopLeft(spinner).dy - tester.getTopLeft(panel).dy,
+      lessThan(70),
+      reason: 'Loading feedback should not sit in an oversized 180dp placeholder.',
+    );
+
+    repository.pending.complete(const []);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('latest device refresh wins over an older in-flight load',
       (tester) async {
     final repository = _SequencedDeviceRepository();
