@@ -631,24 +631,23 @@ class HopeV2Gradients {
 
   static const hero = LinearGradient(
     colors: [
-      Color(0xFF193A2A),
-      Color(0xFF31583C),
-      Color(0xFF789F6B),
+      Color(0xFF5B5343),
+      Color(0xFF827252),
+      Color(0xFFB9A77C),
     ],
     stops: [0, .55, 1],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
 
-  // Editorial dark hero: layered slate/navy surfaces; selected actions supply the indigo accent.
+  // Restore the prior restrained slate/navy hero; indigo remains reserved for action and selection.
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF0D1510),
-      Color(0xFF193A2A),
-      Color(0xFF244D38),
-      Color(0xFF141F18),
+      Color(0xFF121726),
+      Color(0xFF1B2748),
+      Color(0xFF121726),
     ],
-    stops: [0, .38, .72, 1],
+    stops: [0, .55, 1],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
