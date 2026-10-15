@@ -891,7 +891,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             // than spending another full touch-target row on a card already
             // exposed as one accessible tap target.
             variant: MediaQuery.sizeOf(context).width <
-                    HopeV2Breakpoints.compact
+                        HopeV2Breakpoints.compact &&
+                    MediaQuery.textScalerOf(context).scale(1) <= 1.2
                 ? OpportunityCardVariant.featuredScan
                 : OpportunityCardVariant.featured,
           ),
