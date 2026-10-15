@@ -2804,7 +2804,7 @@ class HopeLifecycleRail extends StatelessWidget {
                           ),
                         ),
                         child: HopeIcon(
-                          i < safeCurrent ? Icons.check_rounded : icons[i],
+                          i < safeCurrent ? HopeV2Icons.completed : icons[i],
                           size: i < safeCurrent ? 14 : 13,
                           color: i < safeCurrent
                               ? Theme.of(context).colorScheme.onPrimary

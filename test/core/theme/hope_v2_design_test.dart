@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -409,18 +408,40 @@ void main() {
     expect(text.maxLines, 1);
   });
 
-  test('HOPE action icon vocabulary uses Cupertino IconData consistently', () {
-    expect(HopeV2Icons.search, isA<IconData>());
-    expect(HopeV2Icons.menu, isA<IconData>());
-    expect(HopeV2Icons.refresh, isA<IconData>());
-    expect(HopeV2Icons.add, isA<IconData>());
-    expect(HopeV2Icons.notifications, isA<IconData>());
-    expect(HopeV2Icons.mission, isA<IconData>());
-    expect(HopeV2Icons.protectedFunds, isA<IconData>());
-    expect(HopeV2Icons.transferIn, isA<IconData>());
-    expect(HopeV2Icons.transferOut, isA<IconData>());
-    expect(HopeV2Icons.verified, isA<IconData>());
-    expect(HopeV2Icons.error, isA<IconData>());
+  test('HOPE action icon vocabulary uses the Cupertino font package consistently', () {
+    final icons = <IconData>[
+      HopeV2Icons.home,
+      HopeV2Icons.homeSelected,
+      HopeV2Icons.workshop,
+      HopeV2Icons.wallet,
+      HopeV2Icons.profile,
+      HopeV2Icons.search,
+      HopeV2Icons.menu,
+      HopeV2Icons.refresh,
+      HopeV2Icons.add,
+      HopeV2Icons.notifications,
+      HopeV2Icons.mission,
+      HopeV2Icons.protectedFunds,
+      HopeV2Icons.transferIn,
+      HopeV2Icons.transferOut,
+      HopeV2Icons.verified,
+      HopeV2Icons.error,
+      HopeV2Icons.empty,
+      HopeV2Icons.offline,
+      HopeV2Icons.history,
+      HopeV2Icons.deadline,
+      HopeV2Icons.deposit,
+      HopeV2Icons.withdraw,
+    ];
+    expect(icons, isNotEmpty);
+    expect(
+      icons.every(
+        (icon) =>
+            icon.fontFamily == CupertinoIcons.iconFont &&
+            icon.fontPackage == CupertinoIcons.iconFontPackage,
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('premium filter chip exposes disabled and loading states',

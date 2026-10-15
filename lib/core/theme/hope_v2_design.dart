@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 /// HOPE V2 design primitives.
 ///
@@ -363,66 +362,104 @@ class HopeV2TonalPalettes {
 /// Canonical icon vocabulary. Keep navigation and recurring product concepts
 /// on this set so the interface reads as one designed system rather than a
 /// collection of unrelated Material defaults.
+/// Canonical Cupertino/SF-style icon vocabulary for all product surfaces.
+/// Keep one stable semantic name per concept so screens never choose glyphs locally.
 class HopeV2Icons {
   const HopeV2Icons._();
 
-  // HOPE's product icon language is Hugeicons Stroke Rounded. The package
-  // provides 6,000+ consistent SVG icons with controlled stroke weight.
-  // Keep recurring concepts here so screens never pick arbitrary glyphs.
-  static const home = HugeIcons.strokeRoundedHome01;
-  static const homeSelected = HugeIcons.strokeRoundedHome02;
-  static const workshop = HugeIcons.strokeRoundedBriefcase01;
-  static const workshopSelected = HugeIcons.strokeRoundedBriefcase02;
-  static const activity = HugeIcons.strokeRoundedActivity01;
-  static const activitySelected = HugeIcons.strokeRoundedActivity02;
-  static const wallet = HugeIcons.strokeRoundedWallet01;
-  static const walletSelected = HugeIcons.strokeRoundedWallet02;
-  static const profile = HugeIcons.strokeRoundedUser;
-  static const profileSelected = HugeIcons.strokeRoundedUserAccount;
+  // Primary navigation: outline / filled pairs.
+  static const IconData home = CupertinoIcons.house;
+  static const IconData homeSelected = CupertinoIcons.house_fill;
+  static const IconData workshop = CupertinoIcons.briefcase;
+  static const IconData workshopSelected = CupertinoIcons.briefcase_fill;
+  static const IconData activity = CupertinoIcons.chart_bar;
+  static const IconData activitySelected = CupertinoIcons.chart_bar_fill;
+  static const IconData wallet = CupertinoIcons.creditcard;
+  static const IconData walletSelected = CupertinoIcons.creditcard_fill;
+  static const IconData profile = CupertinoIcons.person_crop_circle;
+  static const IconData profileSelected = CupertinoIcons.person_crop_circle_fill;
 
-  static const mission = HugeIcons.strokeRoundedFlash;
-  static const job = HugeIcons.strokeRoundedWorkHistory;
-  static const featured = HugeIcons.strokeRoundedSparkles;
-  static const match = HugeIcons.strokeRoundedUserCheck01;
-  static const location = HugeIcons.strokeRoundedLocation01;
-  static const category = HugeIcons.strokeRoundedTag01;
-  static const distance = HugeIcons.strokeRoundedLocationUser01;
-  static const protectedFunds = HugeIcons.strokeRoundedShield01;
-  static const payments = HugeIcons.strokeRoundedMoney01;
-  static const transferIn = HugeIcons.strokeRoundedMoneyReceive01;
-  static const transferOut = HugeIcons.strokeRoundedMoneySend01;
-  static const completed = HugeIcons.strokeRoundedTaskDone01;
-  static const pending = HugeIcons.strokeRoundedHourglass;
-  static const secure = HugeIcons.strokeRoundedLock;
-  static const insights = HugeIcons.strokeRoundedActivitySpark;
-  static const savedSearches = HugeIcons.strokeRoundedBookmark01;
-  static const mail = HugeIcons.strokeRoundedMail01;
-  static const view = HugeIcons.strokeRoundedView;
-  static const viewOff = HugeIcons.strokeRoundedViewOff;
-  static const password = HugeIcons.strokeRoundedLockPassword;
-  static const copy = HugeIcons.strokeRoundedCopy01;
-  static const verified = HugeIcons.strokeRoundedCheckmarkBadge02;
-  static const error = HugeIcons.strokeRoundedCancelCircle;
-  static const description = HugeIcons.strokeRoundedFile01;
-  static const skills = HugeIcons.strokeRoundedBrain02;
-  static const message = HugeIcons.strokeRoundedMessage01;
-  static const route = HugeIcons.strokeRoundedRoute01;
-  static const android = HugeIcons.strokeRoundedAndroid;
-  static const apple = HugeIcons.strokeRoundedApple;
-  static const web = HugeIcons.strokeRoundedGlobe;
-  static const device = HugeIcons.strokeRoundedDeviceAccess;
-  static const add = HugeIcons.strokeRoundedAdd01;
-  static const menu = HugeIcons.strokeRoundedMenu01;
-  static const refresh = HugeIcons.strokeRoundedRefresh;
-  static const search = HugeIcons.strokeRoundedSearch01;
-  static const filter = HugeIcons.strokeRoundedFilter;
-  static const close = HugeIcons.strokeRoundedCancel01;
-  static const notifications = HugeIcons.strokeRoundedNotification01;
-  static const translate = HugeIcons.strokeRoundedLanguageCircle;
-  static const userAdd = HugeIcons.strokeRoundedUserAdd01;
-  static const login = HugeIcons.strokeRoundedLogin01;
-  static const arrowLeft = HugeIcons.strokeRoundedArrowLeft01;
-  static const arrowRight = HugeIcons.strokeRoundedArrowRight01;
+  // Discover, opportunities and matching.
+  static const IconData mission = CupertinoIcons.bolt;
+  static const IconData job = CupertinoIcons.doc_text;
+  static const IconData featured = CupertinoIcons.star;
+  static const IconData match = CupertinoIcons.sparkles;
+  static const IconData location = CupertinoIcons.location;
+  static const IconData category = CupertinoIcons.tag;
+  static const IconData distance = CupertinoIcons.location;
+  static const IconData skills = CupertinoIcons.wrench;
+  static const IconData description = CupertinoIcons.doc_text;
+  static const IconData route = CupertinoIcons.map;
+
+  // Financial actions and lifecycle.
+  static const IconData protectedFunds = CupertinoIcons.lock_shield;
+  static const IconData secure = CupertinoIcons.lock;
+  static const IconData payments = CupertinoIcons.doc_text;
+  static const IconData transferIn = CupertinoIcons.arrow_down_left;
+  static const IconData transferOut = CupertinoIcons.arrow_up_right;
+  static const IconData completed = CupertinoIcons.checkmark_circle;
+  static const IconData success = CupertinoIcons.checkmark_circle;
+  static const IconData pending = CupertinoIcons.hourglass;
+  static const IconData error = CupertinoIcons.xmark_circle;
+  static const IconData insights = CupertinoIcons.chart_bar;
+  static const IconData savedSearches = CupertinoIcons.bookmark;
+  static const IconData deposit = CupertinoIcons.arrow_down_circle;
+  static const IconData withdraw = CupertinoIcons.arrow_up_circle;
+  static const IconData history = CupertinoIcons.clock;
+  static const IconData budget = CupertinoIcons.doc_text;
+  static const IconData deadline = CupertinoIcons.calendar;
+  static const IconData escrow = CupertinoIcons.lock_shield;
+
+  // Forms, communication and utilities.
+  static const IconData mail = CupertinoIcons.envelope;
+  static const IconData email = CupertinoIcons.envelope;
+  static const IconData at = CupertinoIcons.at;
+  static const IconData view = CupertinoIcons.eye;
+  static const IconData viewOff = CupertinoIcons.eye_slash;
+  static const IconData password = CupertinoIcons.lock;
+  static const IconData copy = CupertinoIcons.doc_on_doc;
+  static const IconData verified = CupertinoIcons.checkmark_seal;
+  static const IconData message = CupertinoIcons.chat_bubble_text;
+  static const IconData add = CupertinoIcons.plus;
+  static const IconData menu = CupertinoIcons.line_horizontal_3;
+  static const IconData refresh = CupertinoIcons.arrow_clockwise;
+  static const IconData search = CupertinoIcons.search;
+  static const IconData filter = CupertinoIcons.slider_horizontal_3;
+  static const IconData close = CupertinoIcons.xmark;
+  static const IconData notifications = CupertinoIcons.bell;
+  static const IconData translate = CupertinoIcons.textformat;
+  static const IconData userAdd = CupertinoIcons.person_crop_circle_badge_plus;
+  static const IconData login = CupertinoIcons.arrow_right_square;
+  static const IconData logout = CupertinoIcons.escape;
+  static const IconData arrowLeft = CupertinoIcons.arrow_left;
+  static const IconData arrowRight = CupertinoIcons.arrow_right;
+  static const IconData save = CupertinoIcons.bookmark;
+  static const IconData share = CupertinoIcons.share;
+  static const IconData roleSwitch = CupertinoIcons.repeat;
+  static const IconData empty = CupertinoIcons.tray;
+  static const IconData offline = CupertinoIcons.wifi_slash;
+  static const IconData info = CupertinoIcons.info;
+  static const IconData warning = CupertinoIcons.exclamationmark_triangle;
+  static const IconData upload = CupertinoIcons.tray_arrow_up;
+  static const IconData attachment = CupertinoIcons.paperclip;
+  static const IconData download = CupertinoIcons.tray_arrow_down;
+  static const IconData pause = CupertinoIcons.pause_circle;
+  static const IconData refund = CupertinoIcons.arrow_uturn_left;
+  static const IconData flag = CupertinoIcons.flag;
+  static const IconData play = CupertinoIcons.play_circle;
+  static const IconData campaign = CupertinoIcons.speaker;
+  static const IconData validation = CupertinoIcons.exclamationmark_triangle;
+  static const IconData conflict = CupertinoIcons.arrow_2_circlepath;
+  static const IconData retry = CupertinoIcons.arrow_clockwise;
+  static const IconData permission = CupertinoIcons.lock;
+  static const IconData rateLimit = CupertinoIcons.hourglass_tophalf_fill;
+  static const IconData legal = CupertinoIcons.hammer;
+  static const IconData assign = CupertinoIcons.person_crop_circle_badge_plus;
+  static const IconData account = CupertinoIcons.person_crop_circle;
+  static const IconData moderation = CupertinoIcons.shield;
+  static const IconData identity = CupertinoIcons.person_crop_circle;
+  static const IconData removeRole = CupertinoIcons.person_crop_circle_badge_minus;
+  static const IconData partial = CupertinoIcons.chart_bar;
 }
 
 /// Editorial navigation uses one deliberately distinct Cupertino icon family.
