@@ -1384,13 +1384,18 @@ class PremiumHero extends StatelessWidget {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final resolvedDomain = domain ?? page?.spec.domain;
-    final heroHeight = compactHero
-        ? height.clamp(88.0, 148.0).toDouble()
-        : compact
-            // Explicit short bands survive; defaults and oversized caller
-            // values are capped before they consume the first fold.
-            ? height.clamp(112.0, 204.0).toDouble()
-            : height.clamp(152.0, 224.0).toDouble();
+    // Editorial density is content-aware: informational heroes without an
+    // action should not reserve the same vertical budget as a conversion hero.
+    // Explicit short bands survive, while oversized caller values are capped.
+    final maxHeroHeight = compactHero
+        ? 148.0
+        : action != null
+            ? (compact ? 196.0 : 216.0)
+            : message.trim().isEmpty
+                ? (compact ? 144.0 : 160.0)
+                : (compact ? 176.0 : 192.0);
+    final minHeroHeight = compactHero ? 88.0 : (compact ? 112.0 : 152.0);
+    final heroHeight = height.clamp(minHeroHeight, maxHeroHeight).toDouble();
     final horizontal = compactHero
         ? HopeV2Spacing.md
         : compact
