@@ -199,10 +199,20 @@ testWidgets('profile keeps application management in the dedicated work destinat
     expect(find.text('درخواست‌ها'), findsNothing);
   });
 
-  testWidgets('guest profile explains sign-in requirement', (tester) async {
-    await _pump(tester);
+  testWidgets('guest profile uses the Hero as the single editorial introduction',
+      (tester) async {
+    await _pump(tester, width: 390, height: 844);
     expect(find.byType(ProfilePage), findsOneWidget);
     expect(find.textContaining('ورود'), findsWidgets);
+
+    final hero = find.byType(PremiumHero);
+    expect(hero, findsOneWidget);
+    expect(
+      tester.getTopLeft(hero).dy,
+      lessThan(100),
+      reason: 'The guest introduction should not repeat a title and paragraph before the Hero.',
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('profile stays stable across the compact-to-medium device matrix',

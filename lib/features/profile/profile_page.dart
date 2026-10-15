@@ -492,18 +492,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
         ),
         children: [
           const HopeMark(),
-          const SizedBox(height: 24),
-          Text(
-            HopeCopy.of(context).copy_profile_8b081d3,
-            style: Theme.of(context).textTheme.displaySmall,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            HopeCopy.of(context)
-                .copy_create_an_account_to_apply_post_and_person_6fd6b91,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           PremiumHero(
             eyebrow: HopeCopy.of(context).copy_hope_account_4ba3966,
             title: HopeCopy.of(context)
