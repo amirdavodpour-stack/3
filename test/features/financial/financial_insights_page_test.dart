@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/financial/financial_insights_repository.dart';
 import 'package:hope_mobile/features/financial/financial_insights_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -266,6 +267,13 @@ void main() {
       expect(find.text('Net cash flow'), findsOneWidget);
       expect(find.text('30,000 TOMAN'), findsOneWidget);
       expect(find.text('380,000 TOMAN'), findsOneWidget);
+      expect(
+        tester.widget<PremiumPageFrame>(
+          find.byType(PremiumPageFrame),
+        ).padding.bottom,
+        24,
+        reason: 'The financial insights shell should not reserve a duplicate 64dp dead band beneath its scroll view.',
+      );
       expect(tester.takeException(), isNull);
     },
   );

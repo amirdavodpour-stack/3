@@ -50,7 +50,7 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
               compactWidth ? 12 : 16,
               shortViewport ? 6 : 14,
               compactWidth ? 12 : 16,
-              shortViewport ? 20 : 64,
+              shortViewport ? 20 : 24,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
