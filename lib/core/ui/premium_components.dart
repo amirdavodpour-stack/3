@@ -132,12 +132,16 @@ class PremiumNavigationBar extends StatelessWidget {
                     ),
                   ),
                 ),
-                PositionedDirectional(
+                AnimatedPositionedDirectional(
                   key: const ValueKey('hope-navigation-selection-accent'),
                   start: itemWidth * activeIndex + itemWidth * .27,
                   top: 4,
                   width: itemWidth * .46,
                   height: 2,
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: primary.withValues(alpha: dark ? .88 : .78),
