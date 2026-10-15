@@ -418,12 +418,12 @@ class _ChatPageState extends State<ChatPage> {
                                   )
                                 : PremiumPanel(
                                     key: const ValueKey('chat-message-list-panel'),
-                                    glass: true,
-                                    padding: const EdgeInsets.all(6),
+                                    quiet: true,
+                                    padding: const EdgeInsets.all(4),
                                     child: ListView.builder(
                                       key: const ValueKey('chat-message-list'),
                                       controller: _scroll,
-                                      padding: const EdgeInsets.fromLTRB(6, 8, 6, 12),
+                                      padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
                                       itemCount: _thread!.messages.length,
                                       itemBuilder: (context, index) {
                                         final messages = _thread!.messages;
@@ -453,7 +453,7 @@ class _ChatPageState extends State<ChatPage> {
                                                   ),
                                                 ),
                                                 child: Padding(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
                                                   child: Column(
                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
@@ -508,7 +508,7 @@ class _ChatPageState extends State<ChatPage> {
                     padding: const EdgeInsets.only(top: 8, bottom: 4),
                     child: PremiumPanel(
                       key: const ValueKey('chat-composer-panel'),
-                      glass: true,
+                      quiet: true,
                       padding: const EdgeInsets.all(6),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -548,8 +548,8 @@ class _ChatPageState extends State<ChatPage> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: PremiumPanel(
-                      glass: true,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      quiet: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Row(
                         children: [
                           HopeIcon(HopeV2Icons.secure, size: 18, color: colors.onSurfaceVariant, strokeWidth: 1.6),
