@@ -18,7 +18,7 @@ class AboutHopePage extends StatelessWidget {
         body: PremiumPageFrame(
           page: HopePageId.about,
           maxWidth: 980,
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 48),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
           child: ListView(
             padding: EdgeInsets.zero,
             children: [

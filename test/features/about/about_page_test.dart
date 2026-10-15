@@ -46,4 +46,21 @@ void main() {
     expect(find.byType(PremiumHero), findsOneWidget);
     expect(find.text('A work marketplace built around trust'), findsOneWidget);
   });
+  testWidgets('About hero and page tail follow compact editorial budgets', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app(const Locale('en')));
+    await tester.pumpAndSettle();
+
+    expect(tester.getSize(find.byType(PremiumHero)).height, 192);
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+      24,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
 }
