@@ -1283,17 +1283,17 @@ void main() {
             .color;
 
         expect(
-          legendColor(Icons.call_received_rounded),
+          legendColor(HopeV2Icons.transferIn),
           expectedInflow,
           reason: 'Cash inflow uses the success family, not the brand action hue.',
         );
         expect(
-          legendColor(Icons.call_made_rounded),
+          legendColor(HopeV2Icons.transferOut),
           expectedOutflow,
           reason: 'Cash outflow has a distinct danger/negative-flow series.',
         );
         expect(
-          legendColor(Icons.lock_outline_rounded),
+          legendColor(HopeV2Icons.secure),
           expectedReserved,
           reason: 'Reserved cash uses the amber pending family.',
         );
