@@ -142,15 +142,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     }) {
       final primary = Theme.of(context).colorScheme.primary;
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
         child: Container(
           key: key,
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           decoration: highlight
               ? BoxDecoration(
                   color: primary.withValues(alpha: .075),
-                  borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                  border: Border.all(color: primary.withValues(alpha: .16)),
+                  borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+                  border: Border.all(color: primary.withValues(alpha: .12)),
                 )
               : null,
           child: Text(
@@ -201,7 +201,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
               defaultVerticalAlignment: TableCellVerticalAlignment.middle,
               border: TableBorder(
                 horizontalInside: BorderSide(
-                  color: HopeV2Surfaces.border(context).withValues(alpha: .38),
+                  color: HopeV2Surfaces.border(context).withValues(alpha: .24),
                 ),
               ),
               children: [
@@ -398,11 +398,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
             (candidate) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+                padding: const EdgeInsets.fromLTRB(8, 7, 8, 8),
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: HopeV2Surfaces.divider(context).withValues(alpha: .70),
+                      color: HopeV2Surfaces.divider(context).withValues(alpha: .38),
                     ),
                   ),
                 ),
@@ -413,8 +413,8 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 38,
-                          height: 38,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: HopeV2Colors.primary.withValues(alpha: .12),
@@ -427,7 +427,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 9),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,9 +441,9 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w900),
+                                    ?.copyWith(fontWeight: FontWeight.w800),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 3),
                               Text(
                                 _t(context, 'میزان انطباق', 'Compatibility'),
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -457,26 +457,26 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                         ),
                         Container(
                           key: ValueKey('candidate-match-score-${candidate.userId}'),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: HopeV2Colors.primary.withValues(alpha: .12),
-                            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+                            color: HopeV2Colors.primary.withValues(alpha: .10),
+                            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
                             border: Border.all(
-                              color: HopeV2Colors.primary.withValues(alpha: .20),
+                              color: HopeV2Colors.primary.withValues(alpha: .14),
                             ),
                           ),
                           child: Text(
                             _candidateScoreLabel(context, candidate.score),
                             style: HopeV2Type.metric(context).copyWith(
                               color: HopeV2SemanticColors.info(context),
-                              fontSize: 22,
+                              fontSize: 20,
                             ),
                           ),
                         ),
                       ],
                     ),
                     if (candidate.reasons.any((reason) => _reason(context, reason) != null)) ...[
-                      const SizedBox(height: 11),
+                      const SizedBox(height: 8),
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
@@ -494,7 +494,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       ),
                     ],
                     if (candidate.components.isNotEmpty) ...[
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       _componentBreakdown(context, candidate),
                     ],
                     if ((candidate.skills ?? '').trim().isNotEmpty) ...[
