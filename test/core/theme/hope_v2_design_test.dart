@@ -1098,4 +1098,77 @@ void main() {
     },
   );
 
+
+  test('icon accents distribute the HOPE multi-accent genome by product role', () {
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.wallet, brightness: Brightness.light),
+      HopeV2TonalPalettes.forest.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.wallet, brightness: Brightness.dark),
+      HopeV2TonalPalettes.forest.shade300,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.message, brightness: Brightness.light),
+      HopeV2TonalPalettes.info.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.profile, brightness: Brightness.dark),
+      HopeV2TonalPalettes.trust.shade300,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.featured, brightness: Brightness.light),
+      HopeV2TonalPalettes.featured.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.pending, brightness: Brightness.dark),
+      HopeV2TonalPalettes.warning.shade200,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.error, brightness: Brightness.light),
+      HopeV2TonalPalettes.danger.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.home, brightness: Brightness.light),
+      HopeV2Colors.primaryAction,
+    );
+  });
+
+  testWidgets('default icon tiles render green, teal, clay and trust accents by role',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: Column(
+            children: [
+              HopeIconTile(HopeV2Icons.wallet),
+              HopeIconTile(HopeV2Icons.message),
+              HopeIconTile(HopeV2Icons.featured),
+              HopeIconTile(HopeV2Icons.profile),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.wallet)).color,
+      HopeV2TonalPalettes.forest.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.message)).color,
+      HopeV2TonalPalettes.info.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.featured)).color,
+      HopeV2TonalPalettes.featured.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.profile)).color,
+      HopeV2TonalPalettes.trust.shade300,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
 }

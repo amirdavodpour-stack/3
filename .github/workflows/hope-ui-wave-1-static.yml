@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - feat/google-sign-in-2026-09-20
+      - feat/ui-v2-wave-1-execution-2026-10-07
 
 concurrency:
   # Isolate verification by exact commit so a wedged older runner cannot starve the current head.

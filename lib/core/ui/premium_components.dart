@@ -1916,7 +1916,10 @@ class PremiumEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final accent = Theme.of(context).colorScheme.primary;
+    final accent = HopeV2IconAccents.resolve(
+      icon,
+      brightness: Theme.of(context).brightness,
+    );
     return Semantics(
       container: true,
       child: PremiumPanel(

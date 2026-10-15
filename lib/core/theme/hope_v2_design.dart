@@ -469,6 +469,134 @@ class HopeV2Icons {
   static const IconData partial = CupertinoIcons.chart_pie;
 }
 
+/// Resolves a restrained identity/semantic tint for icon tiles and empty states.
+///
+/// The mapping is by product concept, not by screen theme: botanical green is
+/// a peer accent for work and money-in actions; teal marks information and
+/// communication; blue marks trust/identity; warm clay marks featured content;
+/// amber/red remain reserved for pending and negative states. Unmapped actions
+/// keep the indigo brand role. Readable text must not use these decorative tints.
+class HopeV2IconAccents {
+  const HopeV2IconAccents._();
+
+  static Color resolve(Object? icon, {required Brightness brightness}) {
+    final dark = brightness == Brightness.dark;
+    final green = dark
+        ? HopeV2TonalPalettes.forest.shade300
+        : HopeV2TonalPalettes.forest.shade700;
+    final teal = dark
+        ? HopeV2TonalPalettes.info.shade300
+        : HopeV2TonalPalettes.info.shade700;
+    final blue = dark
+        ? HopeV2TonalPalettes.trust.shade300
+        : HopeV2TonalPalettes.trust.shade700;
+    final clay = dark
+        ? HopeV2TonalPalettes.featured.shade300
+        : HopeV2TonalPalettes.featured.shade700;
+    final amber = dark
+        ? HopeV2TonalPalettes.warning.shade200
+        : HopeV2TonalPalettes.warning.shade800;
+    final red = dark
+        ? HopeV2TonalPalettes.danger.shade300
+        : HopeV2TonalPalettes.danger.shade700;
+    final indigo = dark ? HopeV2Colors.primaryDark : HopeV2Colors.primaryAction;
+
+    if (icon is! IconData) return indigo;
+    if (const <IconData>{
+      HopeV2Icons.mission,
+      HopeV2Icons.job,
+      HopeV2Icons.workshop,
+      HopeV2Icons.workshopSelected,
+      HopeV2Icons.activity,
+      HopeV2Icons.activitySelected,
+      HopeV2Icons.wallet,
+      HopeV2Icons.walletSelected,
+      HopeV2Icons.payments,
+      HopeV2Icons.transferIn,
+      HopeV2Icons.completed,
+      HopeV2Icons.success,
+      HopeV2Icons.deposit,
+      HopeV2Icons.insights,
+      HopeV2Icons.budget,
+      HopeV2Icons.refund,
+    }.contains(icon)) {
+      return green;
+    }
+    if (const <IconData>{
+      HopeV2Icons.message,
+      HopeV2Icons.mail,
+      HopeV2Icons.email,
+      HopeV2Icons.info,
+      HopeV2Icons.search,
+      HopeV2Icons.refresh,
+      HopeV2Icons.notifications,
+      HopeV2Icons.attachment,
+      HopeV2Icons.download,
+      HopeV2Icons.upload,
+      HopeV2Icons.partial,
+      HopeV2Icons.category,
+      HopeV2Icons.savedSearches,
+      HopeV2Icons.translate,
+    }.contains(icon)) {
+      return teal;
+    }
+    if (const <IconData>{
+      HopeV2Icons.protectedFunds,
+      HopeV2Icons.secure,
+      HopeV2Icons.escrow,
+      HopeV2Icons.verified,
+      HopeV2Icons.moderation,
+      HopeV2Icons.identity,
+      HopeV2Icons.account,
+      HopeV2Icons.profile,
+      HopeV2Icons.profileSelected,
+      HopeV2Icons.admin,
+      HopeV2Icons.assign,
+      HopeV2Icons.userAdd,
+      HopeV2Icons.legal,
+      HopeV2Icons.location,
+      HopeV2Icons.distance,
+      HopeV2Icons.route,
+      HopeV2Icons.android,
+      HopeV2Icons.apple,
+      HopeV2Icons.device,
+      HopeV2Icons.web,
+    }.contains(icon)) {
+      return blue;
+    }
+    if (const <IconData>{
+      HopeV2Icons.featured,
+      HopeV2Icons.match,
+      HopeV2Icons.campaign,
+      HopeV2Icons.flag,
+      HopeV2Icons.play,
+    }.contains(icon)) {
+      return clay;
+    }
+    if (const <IconData>{
+      HopeV2Icons.pending,
+      HopeV2Icons.warning,
+      HopeV2Icons.rateLimit,
+      HopeV2Icons.deadline,
+      HopeV2Icons.history,
+    }.contains(icon)) {
+      return amber;
+    }
+    if (const <IconData>{
+      HopeV2Icons.error,
+      HopeV2Icons.offline,
+      HopeV2Icons.withdraw,
+      HopeV2Icons.transferOut,
+      HopeV2Icons.validation,
+      HopeV2Icons.conflict,
+      HopeV2Icons.removeRole,
+    }.contains(icon)) {
+      return red;
+    }
+    return indigo;
+  }
+}
+
 /// Primary navigation uses the same Cupertino family with outline/filled pairs.
 /// Domain actions resolve through HopeV2Icons so every screen shares one vocabulary.
 class HopeV2NavigationIcons {

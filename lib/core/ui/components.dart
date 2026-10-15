@@ -425,12 +425,12 @@ class _HopeKineticGlyphPainter extends CustomPainter {
 class HopeIconTile extends StatelessWidget {
   const HopeIconTile(this.icon,
       {super.key,
-      this.color = HopeV2Colors.primary,
+      this.color,
       this.size = 40,
       this.filled = false,
       this.semanticLabel});
   final Object icon;
-  final Color color;
+  final Color? color;
   final double size;
   final bool filled;
   final String? semanticLabel;
@@ -438,19 +438,23 @@ class HopeIconTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = color ?? HopeV2IconAccents.resolve(
+      icon,
+      brightness: Theme.of(context).brightness,
+    );
     final radius =
         BorderRadius.circular((size * .26).clamp(10.0, 16.0).toDouble());
     final fill = filled
-        ? color.withValues(alpha: dark ? .76 : .93)
-        : color.withValues(alpha: dark ? .09 : .08);
-    final iconColor = filled ? Colors.white : color;
+        ? accent.withValues(alpha: dark ? .76 : .93)
+        : accent.withValues(alpha: dark ? .09 : .08);
+    final iconColor = filled ? Colors.white : accent;
     final decoration = BoxDecoration(
       color: fill,
       borderRadius: radius,
       border: Border.all(
         color: filled
             ? Colors.white.withValues(alpha: dark ? .08 : .16)
-            : color.withValues(alpha: dark ? .15 : .14),
+            : accent.withValues(alpha: dark ? .15 : .14),
       ),
       boxShadow: filled
           ? [
@@ -517,11 +521,11 @@ class MetricTile extends StatelessWidget {
       required this.label,
       required this.value,
       this.icon,
-      this.color = HopeV2Colors.primary});
+      this.color});
   final String label;
   final String value;
   final Object? icon;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) => HopeSurface(

@@ -11,6 +11,7 @@ Status: Implemented on the isolated working branch for review; runtime visual ac
 1. **Core glyphs:** small, readable Cupertino IconData glyphs resolved from `HopeV2Icons` or `HopeV2NavigationIcons`. Line/filled state is reserved for selected navigation or real action state.
 2. **Editorial frame:** short arcs, asymmetric cuts, trajectories and small duotone markers around selected status and empty-state glyphs.
 3. **Category artwork:** deterministic procedural artwork in the opportunity fallback painter, using the category accent with existing indigo and teal roles. It stays compact and must never communicate price, success, trust or urgency through color alone.
+4. **Icon-tile tint:** shared cards and empty states resolve a supporting tint by product concept. Explicitly supplied colors are preserved; this avoids a purple-only UI without turning the app into a green-only theme.
 4. **Brand exceptions:** retain the official multicolor Google G asset for Google sign-in. The Apple/Android device list uses neutral device glyphs while platform identity is carried in text.
 
 ## Color roles
@@ -30,7 +31,8 @@ Green is restored as a frequent complementary identity hue beside indigo, not as
 
 - `HopeV2Icons`: canonical consumer-facing Cupertino glyph vocabulary.
 - `HopeV2NavigationIcons`: five navigation outline/filled pairs.
-- `HopeIcon` / `HopeIconTile`: shared rendering adapter.
+- `HopeIcon` / `HopeIconTile`: shared rendering adapter; icon tiles resolve a restrained section/semantic accent by product concept, while explicit caller colors always win.
+- `HopeV2IconAccents`: light/dark tint map for work/money-in (green), information/communication (teal), trust/identity (blue), featured content (clay), pending (amber), negative outcomes (red), and neutral actions (indigo).
 - `HopeKineticGlyph`: compact editorial frame for semantic state and empty-state glyphs.
 - `HopeAsyncState` / `HopeFeedback` / lifecycle status: unified state icon mapping.
 - `OpportunityCard`: category-specific procedural duotone artwork gains trajectory arcs, asymmetrical cuts and a restrained indigo/teal layer.

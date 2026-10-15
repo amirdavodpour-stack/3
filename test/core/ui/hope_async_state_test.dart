@@ -162,4 +162,25 @@ void main() {
     final button = find.byType(FilledButton);
     expect(tester.getSize(button).height, greaterThanOrEqualTo(HopeV2Touch.minimum));
   });
+
+  testWidgets('successful async state uses the botanical green peer accent',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: HopeAsyncState(
+            kind: HopeStateKind.success,
+            title: 'Complete',
+            message: 'The operation completed.',
+          ),
+        ),
+      ),
+    );
+
+    final icon = tester.widget<Icon>(find.byIcon(HopeV2Icons.success));
+    expect(icon.color, HopeV2TonalPalettes.forest.shade300);
+    expect(tester.takeException(), isNull);
+  });
+
 }
