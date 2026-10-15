@@ -191,9 +191,10 @@ class _PremiumNavigationItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = selected ? destination.selectedIcon ?? destination.icon : destination.icon;
-    final labelColor = selected
-        ? HopeV2SemanticColors.textPrimary(context)
-        : HopeV2SemanticColors.textSecondary(context);
+    final labelColor = HopeV2SemanticColors.navigationLabel(
+      context,
+      selected: selected,
+    );
     return Semantics(
       button: true,
       selected: selected,
@@ -224,17 +225,21 @@ class _PremiumNavigationItem extends StatelessWidget {
                     ),
                     if (showLabel) ...[
                       const SizedBox(height: 1),
-                      Text(
-                        destination.label,
-                        maxLines: compact ? 2 : 1,
-                        softWrap: compact,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: labelColor,
-                          fontSize: compact ? 10.5 : 11.5,
-                          height: compact ? .95 : 1.0,
-                          fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.center,
+                        child: Text(
+                          destination.label,
+                          maxLines: 1,
+                          softWrap: false,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: labelColor,
+                            fontSize: compact ? 10.5 : 11.5,
+                            height: compact ? .95 : 1.0,
+                            fontWeight:
+                                selected ? FontWeight.w800 : FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],

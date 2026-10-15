@@ -569,7 +569,10 @@ void main() {
           final selectedLabel = tester.widget<Text>(find.text(labels[index]));
           expect(
             selectedLabel.style?.color,
-            HopeV2SemanticColors.textPrimary(tester.element(find.text(labels[index]))),
+            HopeV2SemanticColors.navigationLabel(
+              tester.element(find.text(labels[index])),
+              selected: true,
+            ),
             reason: 'Selected label must remain high-contrast neutral',
           );
           previousRect = currentRect;
@@ -628,6 +631,61 @@ void main() {
 
 
   testWidgets(
+    '360dp fa-RTL dock fits Workshop and keeps navigation copy achromatic',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: PremiumPrimaryNavigationScaffold(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final label in ['خانه', 'کاوش', 'کارگاه', 'کیف پول', 'پروفایل']) {
+        expect(find.text(label), findsOneWidget);
+        final text = find.text(label);
+        final paragraph = tester.renderObject<RenderParagraph>(text);
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: '360dp navigation must not truncate the rendered label: $label',
+        );
+        expect(
+          find.ancestor(of: text, matching: find.byType(FittedBox)),
+          findsOneWidget,
+          reason: 'Navigation labels must scale down before being clipped: $label',
+        );
+        final selected = label == 'خانه';
+        expect(
+          tester.widget<Text>(text).style?.color,
+          HopeV2SemanticColors.navigationLabel(
+            tester.element(text),
+            selected: selected,
+          ),
+          reason: 'Navigation copy must use the neutral navigation color role.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'primary navigation uses a coherent Cupertino glyph family and neutral labels',
     (tester) async {
       await tester.pumpWidget(
@@ -664,7 +722,10 @@ void main() {
       final label = tester.widget<Text>(find.text('کارگاه'));
       expect(
         label.style?.color,
-        HopeV2SemanticColors.textPrimary(tester.element(find.text('کارگاه'))),
+        HopeV2SemanticColors.navigationLabel(
+          tester.element(find.text('کارگاه')),
+          selected: true,
+        ),
       );
       expect(tester.takeException(), isNull);
     },

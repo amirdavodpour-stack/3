@@ -60,6 +60,12 @@ class HopeV2Colors {
   static const darkText = Color(0xFFF1F3EC);
   static const darkMuted = Color(0xFFAEB7AC);
 
+  // Navigation labels are deliberately achromatic, unlike olive-muted body text.
+  static const navigationLabelDark = Color(0xFFF4F4F5);
+  static const navigationLabelMutedDark = Color(0xFFBDBDC3);
+  static const navigationLabelLight = Color(0xFF27272A);
+  static const navigationLabelMutedLight = Color(0xFF68686F);
+
   // Text roles must remain independent from brand-action hues.
   static const moneyTextLight = Color(0xFF24271F);
   static const moneyTextDark = Color(0xFFF1F3EC);
@@ -632,6 +638,23 @@ class HopeV2SemanticColors {
       _isDark(context) ? HopeV2Colors.darkText : HopeV2Colors.ink;
   static Color textSecondary(BuildContext context) =>
       _isDark(context) ? HopeV2Colors.darkMuted : HopeV2Colors.muted;
+
+  /// Navigation labels use neutral grayscale instead of the olive-muted
+  /// general text role. Selection remains legible without coloring the copy.
+  static Color navigationLabel(
+    BuildContext context, {
+    required bool selected,
+  }) {
+    if (_isDark(context)) {
+      return selected
+          ? HopeV2Colors.navigationLabelDark
+          : HopeV2Colors.navigationLabelMutedDark;
+    }
+    return selected
+        ? HopeV2Colors.navigationLabelLight
+        : HopeV2Colors.navigationLabelMutedLight;
+  }
+
   static Color amount(BuildContext context) =>
       _isDark(context) ? HopeV2Colors.moneyTextDark : HopeV2Colors.moneyTextLight;
 

@@ -44,4 +44,4 @@ The product uses HugeIcons through shared `HopeV2Icons` / `HopeIcon` for domain 
 | Wallet | Cupertino credit card | Cupertino credit card filled |
 | Profile | Cupertino person-in-circle | Cupertino person-in-circle filled |
 
-Navigation labels remain neutral in both themes. Do not tint readable destination text teal/green; the selected state is communicated by the editorial folio plate, a restrained action-colored hairline, icon fill, and weight. Domain icons elsewhere remain in the HugeIcons family.
+Navigation labels use dedicated achromatic grayscale roles in both themes, rather than the olive-muted general text role. Do not tint readable destination text teal/green; the selected state is communicated by the editorial folio plate, a restrained action-colored hairline, icon fill, and weight. Each label scales down only as needed to fit its destination cell at compact widths; it must not be truncated. Domain icons elsewhere remain in the HugeIcons family.
