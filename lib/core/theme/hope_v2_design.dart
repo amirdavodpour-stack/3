@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
@@ -382,6 +383,24 @@ class HopeV2Icons {
   static const login = HugeIcons.strokeRoundedLogin01;
   static const arrowLeft = HugeIcons.strokeRoundedArrowLeft01;
   static const arrowRight = HugeIcons.strokeRoundedArrowRight01;
+}
+
+/// Editorial navigation uses one deliberately distinct Cupertino icon family.
+/// The rest of the product keeps its HugeIcons vocabulary; these five
+/// high-frequency destinations share familiar outline/filled pairs.
+class HopeV2NavigationIcons {
+  const HopeV2NavigationIcons._();
+
+  static const home = CupertinoIcons.house;
+  static const homeSelected = CupertinoIcons.house_fill;
+  static const explore = CupertinoIcons.compass;
+  static const exploreSelected = CupertinoIcons.compass_fill;
+  static const workshop = CupertinoIcons.briefcase;
+  static const workshopSelected = CupertinoIcons.briefcase_fill;
+  static const wallet = CupertinoIcons.creditcard;
+  static const walletSelected = CupertinoIcons.creditcard_fill;
+  static const profile = CupertinoIcons.person_crop_circle;
+  static const profileSelected = CupertinoIcons.person_crop_circle_fill;
 }
 
 class HopeV2Spacing {
