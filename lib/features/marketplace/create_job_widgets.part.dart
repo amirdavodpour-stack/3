@@ -402,7 +402,7 @@ class _CreateJobForm extends StatelessWidget {
                                 IconButton(
                                   tooltip: HopeCopy.of(context).copy_retry_49f3eba,
                                   onPressed: () => onRetryCategories(),
-                                  icon: const HugeIcon(icon: HopeV2Icons.refresh, size: 19),
+                                  icon: const HopeIcon(icon: HopeV2Icons.refresh, size: 19),
                                 ),
                               ],
                             ),
@@ -744,7 +744,7 @@ class _CreateJobForm extends StatelessWidget {
                           onPressed: activeStep == 0 || busy
                               ? null
                               : () => onStepChanged(activeStep - 1),
-                          icon: HugeIcon(
+                          icon: HopeIcon(
                             icon: Directionality.of(context) == ui.TextDirection.rtl
                                 ? HopeV2Icons.arrowRight
                                 : HopeV2Icons.arrowLeft,
@@ -768,7 +768,7 @@ class _CreateJobForm extends StatelessWidget {
                                   height: 18,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : HugeIcon(
+                              : HopeIcon(
                                   icon: activeStep < 4
                                       ? (Directionality.of(context) == ui.TextDirection.rtl
                                           ? HopeV2Icons.arrowLeft
