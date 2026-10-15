@@ -248,6 +248,54 @@ void main() {
     );
   });
 
+  testWidgets('editorial hero with a primary action remains overflow-free on RTL mobile',
+      (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 640);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Directionality(
+          textDirection: ui.TextDirection.rtl,
+          child: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(12),
+              child: PremiumHero(
+                eyebrow: 'حساب کاربری',
+                title: 'مسیر حرفه‌ای خود را ادامه دهید',
+                message: 'پروفایل، فرصت‌ها و تراکنش‌های خود را یکجا مدیریت کنید.',
+                icon: HopeV2Icons.profile,
+                action: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {},
+                        child: const Text('ساخت حساب'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {},
+                        child: const Text('ورود'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getSize(find.byType(PremiumHero)).height, lessThanOrEqualTo(204));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('premium hero renders with the shared expressive surface', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

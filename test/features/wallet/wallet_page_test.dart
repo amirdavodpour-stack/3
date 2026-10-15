@@ -33,6 +33,10 @@ class _FakeWallet implements WalletRepository {
     this.entryType = 'TRANSFER',
     this.direction = 'CREDIT',
     this.pendingWithdrawalBalance = 0,
+    this.availableBalance = 2500000,
+    this.lockedBalance = 1000000,
+    this.escrowBalance = 1000000,
+    this.totalBalance = 3500000,
   });
 
   final String currency;
@@ -42,6 +46,10 @@ class _FakeWallet implements WalletRepository {
   final String entryType;
   final String direction;
   final int pendingWithdrawalBalance;
+  final int availableBalance;
+  final int lockedBalance;
+  final int escrowBalance;
+  final int totalBalance;
   Object? transferError;
   bool failLoad = false;
 
@@ -52,11 +60,11 @@ class _FakeWallet implements WalletRepository {
         'id': 'wallet-1',
         'userId': 'u1',
         'currency': currency,
-        'availableBalance': 2500000,
-        'lockedBalance': 1000000,
-        'escrowBalance': 1000000,
+        'availableBalance': availableBalance,
+        'lockedBalance': lockedBalance,
+        'escrowBalance': escrowBalance,
         'pendingWithdrawalBalance': pendingWithdrawalBalance,
-        'totalBalance': 3500000,
+        'totalBalance': totalBalance,
         'status': 'ACTIVE',
       });
   }
@@ -560,6 +568,55 @@ void main() {
       expect(find.text('برداشت‌ها'), findsOneWidget);
     },
   );
+
+  testWidgets('very large wallet balances keep the compact hero in a two-column metric grid',
+      (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 640);
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    const large = 9123456789123456789;
+    final wallet = _FakeWallet(
+      availableBalance: large,
+      lockedBalance: large,
+      escrowBalance: large,
+      totalBalance: large,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final hero = find.byKey(const ValueKey('wallet-balance-hero'));
+    final available = find.byKey(const ValueKey('wallet-balance-metric-available'));
+    final held = find.byKey(const ValueKey('wallet-balance-metric-protected'));
+    expect(hero, findsOneWidget);
+    expect(available, findsOneWidget);
+    expect(held, findsOneWidget);
+    expect(tester.getSize(available).width, lessThan(240));
+    expect(tester.getSize(held).width, lessThan(240));
+    expect(tester.getSize(hero).height, lessThan(320));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('wallet refresh failure keeps stale wallet visible with retry error',
       (tester) async {
