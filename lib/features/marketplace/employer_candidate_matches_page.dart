@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/marketplace/employer_candidate_matching_repository.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_display_formatters.dart';
+import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 
 class EmployerCandidateMatchesPage extends StatelessWidget {
@@ -386,7 +387,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: onRetry,
-                  icon: const HopeIcon(icon: HopeV2Icons.refresh, size: 18),
+                  icon: const HopeIcon( HopeV2Icons.refresh, size: 18),
                   label: Text(_t(context, 'به‌روزرسانی', 'Refresh')),
                 ),
               ],

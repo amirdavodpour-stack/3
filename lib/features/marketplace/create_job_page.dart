@@ -382,8 +382,7 @@ class _CreatePublishRetryState extends StatelessWidget {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const HopeIcon(
-                          icon: HopeV2Icons.refresh,
+                      : const HopeIcon( HopeV2Icons.refresh,
                           size: 18,
                         ),
                   label: Text(
