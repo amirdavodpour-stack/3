@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/saved_search_repository.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/jobs/saved_searches_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -83,6 +84,11 @@ void main() {
       await tester.pumpWidget(_host(repository));
       await tester.pumpAndSettle();
 
+      expect(
+        tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+        24,
+        reason: 'Saved Search relies on the scroll view for its navigation-aware tail.',
+      );
       expect(
         find.byKey(const ValueKey('saved-search-create-cta')),
         findsOneWidget,

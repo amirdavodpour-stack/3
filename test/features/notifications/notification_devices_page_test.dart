@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/notifications/notification.dart';
 import 'package:hope_mobile/core/notifications/notification_repository.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/notifications/notification_devices_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -79,6 +80,11 @@ void main() {
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+      24,
+      reason: 'Device settings use the scroll tail and avoid a second large page-frame gutter.',
+    );
     expect(find.text('Android'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Refresh'));

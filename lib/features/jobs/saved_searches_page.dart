@@ -231,7 +231,7 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 96),
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
