@@ -455,7 +455,7 @@ void _showSignIn(BuildContext context) {
                 Navigator.pop(sheetContext);
                 _resumeCreateAfterAuth(context, register: true);
               },
-              icon: const HopeIcon(icon: HopeV2Icons.userAdd, size: 21),
+              icon: const HopeIcon( HopeV2Icons.userAdd, size: 21),
               label: Text(HopeCopy.of(context).copy_create_account_bfa3517),
             ),
             const SizedBox(height: 9),
@@ -464,7 +464,7 @@ void _showSignIn(BuildContext context) {
                 Navigator.pop(sheetContext);
                 _resumeCreateAfterAuth(context, register: false);
               },
-              icon: const HopeIcon(icon: HopeV2Icons.login, size: 21),
+              icon: const HopeIcon( HopeV2Icons.login, size: 21),
               label: Text(HopeCopy.of(context).copy_log_in_b4c960b),
             ),
           ],

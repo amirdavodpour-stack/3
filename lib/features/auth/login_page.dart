@@ -168,8 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: HopeIcon(
-                      icon: Localizations.localeOf(context).languageCode == 'en'
+                    icon: HopeIcon( Localizations.localeOf(context).languageCode == 'en'
                           ? HopeV2Icons.arrowLeft
                           : HopeV2Icons.arrowRight,
                       size: 21,
@@ -260,8 +259,7 @@ class _LoginPageState extends State<LoginPage> {
                           labelText: l10n.passwordLabel,
                           prefixIcon: const Icon(HopeV2Icons.password, size: 18, key: ValueKey('auth-password-field-icon')),
                           suffixIcon: IconButton(
-                            icon: HopeIcon(
-                              icon: obscure
+                            icon: HopeIcon( obscure
                                   ? HopeV2Icons.viewOff
                                   : HopeV2Icons.view,
                               size: 20,
@@ -307,7 +305,7 @@ class _LoginPageState extends State<LoginPage> {
                         context.read<AuthController>().continueAsGuest();
                         Navigator.maybePop(context);
                       },
-                icon: const HopeIcon(icon: HopeV2Icons.workshop, size: 19),
+                icon: const HopeIcon( HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
               ),
               const SizedBox(height: 8),

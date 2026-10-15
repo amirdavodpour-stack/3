@@ -175,8 +175,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: HopeIcon(
-                          icon: Localizations.localeOf(context).languageCode == 'en'
+                        icon: HopeIcon( Localizations.localeOf(context).languageCode == 'en'
                               ? HopeV2Icons.arrowLeft
                               : HopeV2Icons.arrowRight,
                           size: 21,
@@ -281,8 +280,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             labelText: HopeCopy.of(context).copy_password_656eabe,
                             prefixIcon: const Icon(HopeV2Icons.password, size: 18, key: ValueKey('auth-password-field-icon')),
                             suffixIcon: IconButton(
-                              icon: HopeIcon(
-                                icon: obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,
+                              icon: HopeIcon( obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,
                                 size: 20,
                               ),
                               tooltip: obscure

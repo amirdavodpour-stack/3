@@ -65,8 +65,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: HopeIcon(
-                          icon: Localizations.localeOf(context).languageCode == 'en'
+                        icon: HopeIcon( Localizations.localeOf(context).languageCode == 'en'
                               ? HopeV2Icons.arrowLeft
                               : HopeV2Icons.arrowRight,
                           size: 21,
