@@ -125,13 +125,13 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                       const SizedBox(width: 8),
                       const HopeIconTile(
                         HopeV2Icons.completed,
-                        size: 52,
+                        size: 40,
                         filled: true,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: HopeV2Spacing.lg),
+                const SizedBox(height: HopeV2Spacing.md),
                 Expanded(
                   child: FutureBuilder<JobSatisfactionState>(
           future: _future,
@@ -181,7 +181,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                 children: [
                   PremiumPanel(
                     highlight: true,
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -254,13 +254,13 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
               children: [
                 PremiumPanel(
                   glass: true,
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(14),
                   child: Text(_t(
                     'این فرم فقط برای همین همکاری است. هیچ چت عمومی یا درخواست آزاد از هوش مصنوعی در اختیار شما نیست.',
                     'This form is scoped to this work only. There is no general AI chat or free-form AI request.',
                   )),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 _RatingField(
                   key: const ValueKey('satisfaction-overall-rating'),
                   label: _t('رضایت کلی', 'Overall satisfaction'),
@@ -269,9 +269,9 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                   value: _overallRating,
                   onChanged: (value) => setState(() => _overallRating = value),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 PremiumPanel(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -281,7 +281,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                           'Was the work completed as agreed?',
                         ),
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w800,
                             ),
                       ),
                       const SizedBox(height: 8),
@@ -328,7 +328,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 _RatingField(
                   key: const ValueKey('satisfaction-communication-rating'),
                   label: _t(
@@ -353,11 +353,11 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                           fontWeight: FontWeight.w700,
                         ),
                   ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 TextField(
                   controller: _report,
                   maxLength: 2000,
-                  maxLines: 6,
+                  maxLines: 4,
                   decoration: InputDecoration(
                     labelText: _t('گزارش کوتاه', 'Short report'),
                     hintText: _t(
@@ -366,7 +366,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 FilledButton.icon(
                   key: const ValueKey('job-satisfaction-submit'),
                   onPressed: _busy || !_feedbackComplete ? null : _submit,
@@ -416,7 +416,7 @@ class _RatingField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => PremiumPanel(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -425,9 +425,9 @@ class _RatingField extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w900),
+                  ?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 9),
+            const SizedBox(height: 7),
             Semantics(
               container: true,
               explicitChildNodes: true,
