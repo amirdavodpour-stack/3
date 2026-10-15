@@ -434,7 +434,7 @@ class _ChatPageState extends State<ChatPage> {
                                           TimeOfDay.fromDateTime(message.createdAt.toLocal()),
                                         );
                                         return Padding(
-                                          padding: const EdgeInsets.only(bottom: 8),
+                                          padding: const EdgeInsets.only(bottom: 6),
                                           child: Align(
                                             alignment: mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
                                             child: ConstrainedBox(
@@ -443,8 +443,8 @@ class _ChatPageState extends State<ChatPage> {
                                                 decoration: BoxDecoration(
                                                   color: mine
                                                       ? colors.primary.withValues(alpha: .11)
-                                                      : colors.surfaceContainerHighest.withValues(alpha: .52),
-                                                  border: Border.all(color: colors.outlineVariant.withValues(alpha: .48)),
+                                                      : colors.surfaceContainerHighest.withValues(alpha: .38),
+                                                  border: Border.all(color: colors.outlineVariant.withValues(alpha: .26)),
                                                   borderRadius: BorderRadiusDirectional.only(
                                                     topStart: const Radius.circular(14),
                                                     topEnd: const Radius.circular(14),
@@ -453,7 +453,7 @@ class _ChatPageState extends State<ChatPage> {
                                                   ),
                                                 ),
                                                 child: Padding(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                                   child: Column(
                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
@@ -509,7 +509,7 @@ class _ChatPageState extends State<ChatPage> {
                     child: PremiumPanel(
                       key: const ValueKey('chat-composer-panel'),
                       glass: true,
-                      padding: const EdgeInsets.all(7),
+                      padding: const EdgeInsets.all(6),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -526,7 +526,7 @@ class _ChatPageState extends State<ChatPage> {
                                 hintText: _t('پیام خود را بنویسید', 'Write a message'),
                                 isDense: true,
                                 prefixIcon: null,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               ),
                             ),
                           ),
@@ -549,7 +549,7 @@ class _ChatPageState extends State<ChatPage> {
                     padding: const EdgeInsets.only(top: 8),
                     child: PremiumPanel(
                       glass: true,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       child: Row(
                         children: [
                           HopeIcon(HopeV2Icons.secure, size: 18, color: colors.onSurfaceVariant, strokeWidth: 1.6),

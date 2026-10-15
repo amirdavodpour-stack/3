@@ -38,7 +38,7 @@ class _JobsResultsSliver extends StatelessWidget {
       return SliverFillRemaining(
         hasScrollBody: false,
         child: EmptyState(
-          icon: Icons.cloud_off_rounded,
+          icon: HopeV2Icons.error,
           title: HopeCopy.of(context).copy_connection_failed_1b34bc9,
           message: HopeCopy.of(context)
               .copy_the_server_did_not_return_data_try_again_bccfbb3,
@@ -56,7 +56,7 @@ class _JobsResultsSliver extends StatelessWidget {
       return SliverFillRemaining(
         hasScrollBody: false,
         child: EmptyState(
-          icon: Icons.search_off_rounded,
+          icon: HopeV2Icons.search,
           title: HopeCopy.of(context).copy_no_matching_opportunity_d85e775,
           message: HopeCopy.of(context)
               .copy_broaden_your_filters_or_try_another_city_e8e32cb,
