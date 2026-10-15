@@ -305,6 +305,119 @@ class StatusPill extends StatelessWidget {
       HopeV2SemanticColors.readableAccent(context, c);
 }
 
+/// Small kinetic editorial frame for a semantic glyph.
+/// The ornament remains subordinate to the icon and never replaces its label.
+class HopeKineticGlyph extends StatelessWidget {
+  const HopeKineticGlyph({
+    super.key,
+    required this.child,
+    required this.color,
+    this.width = 52,
+    this.height = 48,
+    this.alert = false,
+  });
+
+  final Widget child;
+  final Color color;
+  final double width;
+  final double height;
+  final bool alert;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: CustomPaint(
+          painter: _HopeKineticGlyphPainter(
+            color: color,
+            motionColor: dark ? HopeV2Colors.primaryDark : HopeV2Colors.primaryAction,
+            infoColor: dark ? HopeV2Colors.secondaryDark : HopeV2Colors.secondaryStrong,
+            alert: alert,
+          ),
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
+class _HopeKineticGlyphPainter extends CustomPainter {
+  const _HopeKineticGlyphPainter({
+    required this.color,
+    required this.motionColor,
+    required this.infoColor,
+    required this.alert,
+  });
+
+  final Color color;
+  final Color motionColor;
+  final Color infoColor;
+  final bool alert;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final center = Offset(size.width * .5, size.height * .5);
+    final radius = size.shortestSide * .31;
+    final orbit = Rect.fromCircle(center: center, radius: radius);
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.45
+      ..strokeCap = StrokeCap.round
+      ..color = color.withValues(alpha: .46);
+    final motion = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.35
+      ..strokeCap = StrokeCap.round
+      ..color = motionColor.withValues(alpha: .52);
+    final infoFill = Paint()
+      ..color = infoColor.withValues(alpha: .76);
+    final motionFill = Paint()
+      ..color = motionColor.withValues(alpha: .13);
+    canvas.drawArc(orbit, -.72, 2.35, false, ring);
+    canvas.drawArc(orbit, 2.68, .86, false, motion);
+    final slash = Path()
+      ..moveTo(1, size.height * .74)
+      ..lineTo(size.width * .24, size.height * .53)
+      ..lineTo(size.width * .33, size.height * .53)
+      ..lineTo(size.width * .10, size.height * .78)
+      ..close()
+      ..moveTo(size.width * .78, size.height * .22)
+      ..lineTo(size.width * .94, size.height * .08)
+      ..lineTo(size.width * .98, size.height * .08)
+      ..lineTo(size.width * .84, size.height * .25)
+      ..close();
+    canvas.drawPath(slash, motionFill);
+    canvas.drawCircle(
+      Offset(size.width * .91, size.height * .77),
+      size.shortestSide * .045,
+      infoFill,
+    );
+    canvas.drawCircle(
+      Offset(size.width * .19, size.height * .17),
+      size.shortestSide * .035,
+      Paint()..color = color.withValues(alpha: .7),
+    );
+    if (alert) {
+      final cut = Path()
+        ..moveTo(size.width * .74, size.height * .02)
+        ..lineTo(size.width * .98, size.height * .02)
+        ..lineTo(size.width * .98, size.height * .27);
+      canvas.drawPath(cut, ring);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HopeKineticGlyphPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.motionColor != motionColor ||
+      oldDelegate.infoColor != infoColor ||
+      oldDelegate.alert != alert;
+}
+
 class HopeIconTile extends StatelessWidget {
   const HopeIconTile(this.icon,
       {super.key,

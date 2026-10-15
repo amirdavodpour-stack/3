@@ -1924,16 +1924,11 @@ class PremiumEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: dense ? 40 : 46,
-              height: dense ? 40 : 46,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                border: Border.all(color: accent.withValues(alpha: .18)),
-              ),
-              alignment: Alignment.center,
-              child: HopeIcon(icon, size: dense ? 20 : 23, color: accent),
+            HopeKineticGlyph(
+              width: dense ? 44 : 52,
+              height: dense ? 42 : 50,
+              color: accent,
+              child: HopeIcon(icon, size: dense ? 18 : 21, color: accent),
             ),
             SizedBox(height: dense ? 8 : 10),
             Text(

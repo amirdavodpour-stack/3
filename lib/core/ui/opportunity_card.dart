@@ -1881,6 +1881,49 @@ class _CategoryFallbackPainter extends CustomPainter {
     circle(126, 13, 2.2, fill);
     circle(198, 78, 2.2, fill);
 
+    // Kinetic editorial duotone layer: category accent paired with HOPE indigo
+    // and teal. These ornaments are decorative only and never encode status.
+    final motionColor = dark ? HopeV2Colors.primaryDark : HopeV2Colors.primaryAction;
+    final infoColor = dark ? HopeV2Colors.secondaryDark : HopeV2Colors.secondaryStrong;
+    final motionFill = Paint()
+      ..color = motionColor.withValues(alpha: dark ? .16 : .09);
+    final motionStroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round
+      ..color = motionColor.withValues(alpha: dark ? .43 : .28);
+    final infoStroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.25
+      ..strokeCap = StrokeCap.round
+      ..color = infoColor.withValues(alpha: dark ? .42 : .30);
+    final slash = Path()
+      ..moveTo(-8, 78)
+      ..lineTo(36, 31)
+      ..lineTo(51, 31)
+      ..lineTo(7, 80)
+      ..close()
+      ..moveTo(268, 93)
+      ..lineTo(307, 51)
+      ..lineTo(326, 51)
+      ..lineTo(288, 93)
+      ..close();
+    canvas.drawPath(slash, motionFill);
+    final trajectory = Path()
+      ..moveTo(-12, 68)
+      ..cubicTo(47, 12, 94, 101, 154, 53)
+      ..cubicTo(206, 13, 259, 13, 334, 30);
+    canvas.drawPath(trajectory, infoStroke);
+    canvas.drawArc(
+      Rect.fromCircle(center: const Offset(284, 45), radius: 25),
+      -.9,
+      2.05,
+      false,
+      motionStroke,
+    );
+    circle(303, 24, 3.2, Paint()..color = infoColor.withValues(alpha: .82));
+    circle(26, 24, 2.5, Paint()..color = motionColor.withValues(alpha: .72));
+
     switch (style) {
       case _CategoryArtworkStyle.software:
         line(38, 22, 75, 67, thin);

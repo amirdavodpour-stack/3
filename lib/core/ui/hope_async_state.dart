@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../network/api_client.dart';
 import '../theme/hope_v2_design.dart';
+import 'components.dart';
 
 enum HopeStateKind {
   initial,
@@ -101,21 +102,15 @@ class HopeAsyncState extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2.5),
                       )
                     else
-                      SizedBox(
-                        width: 52,
-                        height: 48,
-                        child: CustomPaint(
-                          painter: _HopeKineticStatePainter(
-                            color: config.$2,
-                            kind: kind,
-                          ),
-                          child: Center(
-                            child: Icon(
-                              config.$1,
-                              size: 30,
-                              color: config.$2,
-                            ),
-                          ),
+                      HopeKineticGlyph(
+                        color: config.$2,
+                        alert: kind == HopeStateKind.error ||
+                            kind == HopeStateKind.offline ||
+                            kind == HopeStateKind.conflict,
+                        child: HopeIcon(
+                          config.$1,
+                          size: 30,
+                          color: config.$2,
                         ),
                       ),
                     const SizedBox(height: HopeV2Spacing.md),
@@ -162,57 +157,3 @@ class HopeAsyncState extends StatelessWidget {
 }
 
 
-/// A compact kinetic editorial frame that gives semantic state icons a
-/// distinct HOPE rhythm without enlarging the page's hero or card geometry.
-class _HopeKineticStatePainter extends CustomPainter {
-  const _HopeKineticStatePainter({required this.color, required this.kind});
-
-  final Color color;
-  final HopeStateKind kind;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-    final soft = Paint()..color = color.withValues(alpha: .12);
-    final bright = Paint()
-      ..color = color.withValues(alpha: .48)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
-      ..strokeCap = StrokeCap.round;
-    final fine = Paint()
-      ..color = color.withValues(alpha: .27)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round;
-
-    final ring = Rect.fromCircle(
-      center: Offset(size.width * .5, size.height * .5),
-      radius: 17,
-    );
-    canvas.drawArc(ring, -.8, 2.15, false, bright);
-    canvas.drawArc(ring, 2.75, 1.15, false, fine);
-    canvas.drawCircle(Offset(size.width - 7, 9), 3.1, soft);
-    canvas.drawCircle(Offset(7, size.height - 8), 2.1, bright);
-
-    final slashes = Path()
-      ..moveTo(2, 9)
-      ..lineTo(7, 4)
-      ..moveTo(size.width - 13, size.height - 4)
-      ..lineTo(size.width - 5, size.height - 11);
-    canvas.drawPath(slashes, fine);
-
-    if (kind == HopeStateKind.error ||
-        kind == HopeStateKind.offline ||
-        kind == HopeStateKind.conflict) {
-      final cut = Path()
-        ..moveTo(size.width - 15, 3)
-        ..lineTo(size.width - 8, 3)
-        ..lineTo(size.width - 8, 10);
-      canvas.drawPath(cut, bright);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _HopeKineticStatePainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.kind != kind;
-}
