@@ -947,10 +947,10 @@ void main() {
           matching: find.byType(HopeIcon),
         ),
       );
-      final nextIcon = tester.widget<HugeIcon>(
+      final nextIcon = tester.widget<HopeIcon>(
         find.descendant(
           of: find.byKey(const ValueKey('create-opportunity-next-step')),
-          matching: find.byType(HugeIcon),
+          matching: find.byType(HopeIcon),
         ),
       );
 

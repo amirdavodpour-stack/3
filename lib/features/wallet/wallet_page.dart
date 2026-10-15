@@ -565,7 +565,7 @@ class _WalletPageState extends State<WalletPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const HopeIcon(icon: HopeV2Icons.pending, size: 20),
+                      const HopeIcon( HopeV2Icons.pending, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(_t(

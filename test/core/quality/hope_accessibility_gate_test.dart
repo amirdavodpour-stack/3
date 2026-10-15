@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 void main() {
   Widget wrap(Widget child) {
@@ -45,33 +44,33 @@ void main() {
             },
             destinations: const [
               NavigationDestination(
-                icon: HugeIcon(icon: HopeV2Icons.home, size: 24),
+                icon: Icon(HopeV2Icons.home, size: 24),
                 selectedIcon:
-                    HugeIcon(icon: HopeV2Icons.homeSelected, size: 24),
+                    Icon(HopeV2Icons.homeSelected, size: 24),
                 label: 'خانه',
               ),
               NavigationDestination(
-                icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
+                icon: Icon(HopeV2Icons.workshop, size: 24),
                 selectedIcon:
-                    HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
+                    Icon(HopeV2Icons.workshopSelected, size: 24),
                 label: 'کارگاه',
               ),
               NavigationDestination(
-                icon: HugeIcon(icon: HopeV2Icons.activity, size: 24),
+                icon: Icon(HopeV2Icons.activity, size: 24),
                 selectedIcon:
-                    HugeIcon(icon: HopeV2Icons.activitySelected, size: 24),
+                    Icon(HopeV2Icons.activitySelected, size: 24),
                 label: 'فعالیت',
               ),
               NavigationDestination(
-                icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24),
+                icon: Icon(HopeV2Icons.wallet, size: 24),
                 selectedIcon:
-                    HugeIcon(icon: HopeV2Icons.walletSelected, size: 24),
+                    Icon(HopeV2Icons.walletSelected, size: 24),
                 label: 'کیف پول',
               ),
               NavigationDestination(
-                icon: HugeIcon(icon: HopeV2Icons.profile, size: 24),
+                icon: Icon(HopeV2Icons.profile, size: 24),
                 selectedIcon:
-                    HugeIcon(icon: HopeV2Icons.profileSelected, size: 24),
+                    Icon(HopeV2Icons.profileSelected, size: 24),
                 label: 'پروفایل',
               ),
             ],
