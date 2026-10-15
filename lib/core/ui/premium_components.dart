@@ -176,7 +176,7 @@ class _PremiumNavigationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = selected ? destination.selectedIcon : destination.icon;
+    final icon = selected ? destination.selectedIcon ?? destination.icon : destination.icon;
     final labelColor = selected
         ? HopeV2SemanticColors.textPrimary(context)
         : HopeV2SemanticColors.textSecondary(context);
