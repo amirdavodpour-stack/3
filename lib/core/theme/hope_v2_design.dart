@@ -468,9 +468,8 @@ class HopeV2Icons {
   static const IconData partial = CupertinoIcons.chart_bar;
 }
 
-/// Editorial navigation uses one deliberately distinct Cupertino icon family.
-/// The rest of the product keeps its HugeIcons vocabulary; these five
-/// high-frequency destinations share familiar outline/filled pairs.
+/// Primary navigation uses the same Cupertino family with outline/filled pairs.
+/// Domain actions resolve through HopeV2Icons so every screen shares one vocabulary.
 class HopeV2NavigationIcons {
   const HopeV2NavigationIcons._();
 
