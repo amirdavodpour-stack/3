@@ -93,7 +93,7 @@ void main() {
       reason: 'Dark-mode heroes must retain the prior slate/navy ramp rather than a green wash.',
     );
     expect(HopeV2Shadows.card.single.color, const Color(0x0D1B1638));
-    expect(HopeV2Shadows.hero.single.color, const Color(0x241C1738));
+    expect(HopeV2Shadows.hero.single.color, const Color(0x1A1C1738));
   });
 
   test('opportunity artwork accents stay unique and separate from semantic states', () {
@@ -369,11 +369,11 @@ void main() {
   test('generic dark elevation shadows use indigo and navy tones', () {
     expect(
       HopeV2Shadows.heroDark.map((shadow) => shadow.color).toList(),
-      const [Color(0x18333B70), Color(0x0C2B345F)],
+      const [Color(0x12333B70), Color(0x062B345F)],
     );
     expect(
       HopeV2Shadows.gradientHero.single.color,
-      const Color(0x252C3372),
+      const Color(0x1A2C3372),
     );
   });
 

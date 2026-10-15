@@ -130,7 +130,9 @@ grep -Fq 'showLabel: true,' "$premium"
 # Editorial navigation is a continuous rail with one direction-aware moving folio plate.
 grep -Fq 'AnimatedPositionedDirectional(' "$premium"
 grep -Fq "hope-navigation-selection-plate" "$premium"
-grep -Fq 'BeveledRectangleBorder(' "$premium"
+navigation_selection_block="$(sed -n '/hope-navigation-selection-plate/,+16p' "$premium")"
+printf '%s\n' "$navigation_selection_block" | grep -Fq 'RoundedRectangleBorder('
+printf '%s\n' "$navigation_selection_block" | grep -Fq 'borderRadius: BorderRadius.circular(10)'
 grep -Fq 'HopeV2SemanticColors.navigationLabel(' "$premium"
 grep -Fq 'fit: BoxFit.scaleDown' "$premium"
 grep -Fq 'navigationLabelMutedDark = Color(0xFFBDBDC3)' "$theme"
