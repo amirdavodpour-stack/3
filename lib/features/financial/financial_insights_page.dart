@@ -562,9 +562,9 @@ class _BarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final shortViewport = MediaQuery.sizeOf(context).height < 800;
     final theme = Theme.of(context);
-    final inflow = theme.colorScheme.primary;
-    final outflow = theme.colorScheme.tertiary;
-    final reserved = theme.colorScheme.secondary;
+    final inflow = HopeV2ChartColors.cashIn(context);
+    final outflow = HopeV2ChartColors.cashOut(context);
+    final reserved = HopeV2ChartColors.reserved(context);
     final locale = Localizations.localeOf(context).languageCode;
     final english = locale.toLowerCase().startsWith('en');
     final values = data

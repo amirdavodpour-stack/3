@@ -805,6 +805,29 @@ class HopeV2SemanticColors {
   }
 }
 
+
+/// Theme-aware identities for the financial chart series. These are data-series
+/// colors (not text colors): incoming funds use the success family, outgoing
+/// cash flow has a distinct negative-flow family, and reserved funds use amber.
+class HopeV2ChartColors {
+  const HopeV2ChartColors._();
+
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color cashIn(BuildContext context) => _isDark(context)
+      ? HopeV2TonalPalettes.success.shade400
+      : HopeV2TonalPalettes.success.shade700;
+
+  static Color cashOut(BuildContext context) => _isDark(context)
+      ? HopeV2TonalPalettes.danger.shade400
+      : HopeV2TonalPalettes.danger.shade700;
+
+  static Color reserved(BuildContext context) => _isDark(context)
+      ? HopeV2TonalPalettes.warning.shade300
+      : HopeV2TonalPalettes.warning.shade700;
+}
+
 class HopeV2Shadows {
   const HopeV2Shadows._();
 

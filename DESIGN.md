@@ -43,6 +43,7 @@ This section is the current system-level authority for color meaning, generic He
 - Preserve product truth and sparse states: never invent cards, financial data, profile credentials, or activity simply to fill negative space.
 - Keep copy largely neutral. Color is an accent to hierarchy, not a substitute for typography, grouping, labels, or spacing.
 - Status and chart meanings remain stable across all screens, legends, tables, badges, and detail views. Color is never the only signal.
+- Cash-flow chart series are centrally mapped by `HopeV2ChartColors`: inflow uses the success ramp, outflow uses a distinct negative-flow ramp, and reserved funds use the amber warning ramp. Each selects a theme-appropriate tonal stop; it does not claim an ordinary outbound transaction is a failed transaction.
 - Validate contrast, state variants, RTL/LTR, narrow viewports, expanded text, and page-specific composition. Source/test success is not visual acceptance; current-head runtime screenshots must be individually reviewed before declaring a visual wave accepted.
 
 ## Wave 23 implementation scope

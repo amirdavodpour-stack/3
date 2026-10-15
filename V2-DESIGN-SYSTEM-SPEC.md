@@ -23,6 +23,7 @@ The product uses Persian-first RTL presentation for customer and worker experien
 
 - **Generic Hero fallback:** dark mode uses the shared slate/navy `HopeV2Gradients.heroDark`; category color is a restrained localized wash, never the base surface. Light mode retains the existing warm editorial Hero gradient.
 - **Highlighted panels:** `PremiumPanel(highlight: true)` uses a subtle indigo brand tint over the canonical dark panel surface. Forest and lichen remain category/decorative families, not generic panel backgrounds or elevation shadows.
+- **Financial charts:** cash-flow inflow/outflow/reserved series use `HopeV2ChartColors` so the same data role has the same identity across legend and plotted marks: success family for inflow, negative-flow family for outflow, and amber warning family for reserved funds, with distinct theme-appropriate tonal stops.
 - **Depth ladder:** distinguish canvas, surface, content card, and raised/overlay tiers through calibrated tone, restrained borders, and measured soft shadows. Avoid combining high-contrast outlines with multiple competing glows.
 
 ## Interaction states
