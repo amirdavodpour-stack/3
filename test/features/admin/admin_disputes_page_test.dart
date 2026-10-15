@@ -112,7 +112,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('AI status'), findsOneWidget);
-    expect(find.text('REVIEWING'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text('REVIEWING'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Legal ruleset'), findsOneWidget);
     expect(find.text('v1'), findsOneWidget);
     expect(tester.takeException(), isNull);
