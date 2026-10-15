@@ -255,12 +255,12 @@ if grep -Fq '[wave23-preverified]' .github/workflows/hope-ui-wave-1-static.yml; 
   echo 'FAIL: static workflow still carries the Wave23 skip marker' >&2
   exit 1
 fi
-# Wave 26 navigation labels and selected-state glyphs remain explicit.
+# Editorial navigation labels, motion, and selected-state glyphs remain explicit.
 grep -Fq 'showLabel: true,' "$premium"
 grep -Fq 'reduceMotion ? Duration.zero' "$premium"
-grep -Fq 'HopeV2Icons.homeSelected, selected: true' "$premium"
-grep -Fq 'HopeV2Icons.walletSelected, selected: true' "$premium"
-grep -Fq 'HopeV2Icons.profileSelected, selected: true' "$premium"
+grep -Fq 'HopeV2NavigationIcons.homeSelected, selected: true' "$premium"
+grep -Fq 'HopeV2NavigationIcons.walletSelected, selected: true' "$premium"
+grep -Fq 'HopeV2NavigationIcons.profileSelected, selected: true' "$premium"
 grep -Fq "Wave 29 keeps every navigation label visible at 320x640dp" "test/core/ui/premium_navigation_test.dart"
 
 # Wave 26 adaptive Explore density must use the purpose-built compact grid tile.
