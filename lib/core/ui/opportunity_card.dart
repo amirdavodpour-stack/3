@@ -216,7 +216,12 @@ class OpportunityCard extends StatelessWidget {
               ? (MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact
                   ? 6
                   : 10)
-              : (compact ? 7 : 6),
+              : (compact
+                  ? 7
+                  : (compactGrid &&
+                          MediaQuery.textScalerOf(context).scale(1) > 1.15
+                      ? 3
+                      : 6)),
         ),
         child: Stack(
           children: [
@@ -709,7 +714,7 @@ class OpportunityCard extends StatelessWidget {
               ),
             ),
           ),
-        SizedBox(height: enlargedText ? 3 : 4),
+        SizedBox(height: enlargedText ? 2 : 4),
         Text(
           title,
           maxLines: 2,
@@ -751,7 +756,7 @@ class OpportunityCard extends StatelessWidget {
           ],
         ),
         if (amount.isNotEmpty) ...[
-          SizedBox(height: enlargedText ? 3 : 4),
+          SizedBox(height: enlargedText ? 2 : 4),
           Text(
             _formatCompactGridAmount(amount, context),
             key: const ValueKey('opportunity-card-compact-grid-budget'),

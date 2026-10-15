@@ -2270,8 +2270,9 @@ void main() {
       final fallback = tester.widget<DecoratedBox>(
         find.byKey(const ValueKey('opportunity-fallback-media-surface')),
       );
+      final fallbackDecoration = fallback.decoration as BoxDecoration;
       final fallbackGradient =
-          fallback.decoration.gradient! as LinearGradient;
+          fallbackDecoration.gradient! as LinearGradient;
       expect(
         fallbackGradient.colors.first,
         HopeV2OpportunityAccents.media.withValues(alpha: .13),
