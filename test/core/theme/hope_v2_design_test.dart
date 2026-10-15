@@ -409,12 +409,18 @@ void main() {
     expect(text.maxLines, 1);
   });
 
-  test('HOPE action icon vocabulary is backed by Hugeicons data', () {
-    expect(HopeV2Icons.search, isA<List<List>>());
-    expect(HopeV2Icons.menu, isA<List<List>>());
-    expect(HopeV2Icons.refresh, isA<List<List>>());
-    expect(HopeV2Icons.add, isA<List<List>>());
-    expect(HopeV2Icons.notifications, isA<List<List>>());
+  test('HOPE action icon vocabulary uses Cupertino IconData consistently', () {
+    expect(HopeV2Icons.search, isA<IconData>());
+    expect(HopeV2Icons.menu, isA<IconData>());
+    expect(HopeV2Icons.refresh, isA<IconData>());
+    expect(HopeV2Icons.add, isA<IconData>());
+    expect(HopeV2Icons.notifications, isA<IconData>());
+    expect(HopeV2Icons.mission, isA<IconData>());
+    expect(HopeV2Icons.protectedFunds, isA<IconData>());
+    expect(HopeV2Icons.transferIn, isA<IconData>());
+    expect(HopeV2Icons.transferOut, isA<IconData>());
+    expect(HopeV2Icons.verified, isA<IconData>());
+    expect(HopeV2Icons.error, isA<IconData>());
   });
 
   testWidgets('premium filter chip exposes disabled and loading states',
