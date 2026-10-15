@@ -112,4 +112,56 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'full dark editorial hero fallback uses the canonical navy gradient',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: Scaffold(
+            body: PremiumHero(
+              eyebrow: 'Opportunity',
+              title: 'A focused editorial title',
+              message: 'A concise supporting description.',
+              compactHero: false,
+              height: 200,
+            ),
+          ),
+        ),
+      );
+
+      final decorations = tester.widgetList<DecoratedBox>(
+        find.descendant(
+          of: find.byType(PremiumHero),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      final gradients = decorations
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .map((decoration) => decoration.gradient)
+          .whereType<LinearGradient>()
+          .toList();
+      final canonical = HopeV2Gradients.heroDark.colors;
+      expect(
+        gradients.any(
+          (gradient) =>
+              gradient.colors.length == canonical.length &&
+              List<int>.generate(canonical.length, (index) => index).every(
+                (index) => gradient.colors[index] == canonical[index],
+              ),
+        ),
+        isTrue,
+        reason: 'The full-size fallback must use slate/navy as its base and reserve domain colors for small accents.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
