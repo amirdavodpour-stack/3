@@ -117,9 +117,9 @@ class HopeV2Colors {
   static const darkBorderStrong = Color(0x2BFFFFFF);
   static const darkDivider = Color(0x18FFFFFF);
   static const cardBorderLight = Color(0xFFE1DDD2);
-  /// Light warm-brown accent used only as a restrained atmospheric underlay.
+  /// Muted editorial-clay accent used only as a restrained atmospheric underlay.
   static const darkGreenGlow = Color(0xFF31583C);
-  static const warmHalo = Color(0xFFC2A487);
+  static const warmHalo = Color(0xFFD0A16D);
   static const warmHaloDark = Color(0xFF826D59);
 
   // Wallet balance hero roles. The canopy gradient is shared by wallet and
