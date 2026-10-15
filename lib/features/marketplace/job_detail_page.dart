@@ -813,7 +813,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
           compactViewport ? 12 : 16,
           6,
           compactViewport ? 12 : 16,
-          compactViewport ? 20 : 28,
+          compactViewport ? 12 : 20,
         ),
         child: ListView(
           key: const ValueKey('opportunity-detail-content-list'),

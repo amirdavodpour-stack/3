@@ -448,6 +448,11 @@ void main() {
     expect(decision, findsOneWidget);
     expect(hero, findsOneWidget);
     expect(tester.getSize(hero).height, 112);
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame).first).padding.bottom,
+      12,
+      reason: '$testReason',
+    );
     expect(tester.getSize(decision).width, greaterThan(220));
     expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
     expect(find.text('94%'), findsOneWidget);
