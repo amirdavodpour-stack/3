@@ -192,7 +192,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   PremiumHero(
                     page: HopePageId.register,
                     domain: HopeProductDomain.account,
-                    eyebrow: HopeCopy.of(context).copy_hope_account_4ba3966,
+                    eyebrow: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
                     icon: HopeV2Icons.userAdd,

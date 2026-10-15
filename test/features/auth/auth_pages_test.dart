@@ -317,9 +317,13 @@ void main() {
     expect(
       find.text(copy.copy_start_a_good_collaboration_9df52cf),
       findsOneWidget,
-      reason: 'The registration headline should not be duplicated in the eyebrow.',
+      reason: 'Compact auth heroes render the headline once and suppress the eyebrow to preserve first-fold density.',
     );
-    expect(find.text(copy.copy_hope_account_4ba3966), findsOneWidget);
+    expect(
+      find.text(copy.copy_hope_account_4ba3966),
+      findsNothing,
+      reason: 'The compact registration hero intentionally suppresses the eyebrow.',
+    );
   });
 
   testWidgets('auth entry surfaces use the canonical PremiumHero owner', (tester) async {
