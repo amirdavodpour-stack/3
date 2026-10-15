@@ -11,6 +11,7 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/transactions/wallet_repository.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/wallet/wallet_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -1285,6 +1286,11 @@ void main() {
     final header = find.byKey(const ValueKey('wallet-finance-header'));
     expect(header, findsOneWidget);
     expect(tester.getSize(header).height, lessThan(120));
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+      12,
+      reason: 'The wallet ListView already owns navigation-aware end padding; its outer frame should stay compact.',
+    );
 
     expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
     expect(find.byKey(const ValueKey('wallet-provider-status')), findsOneWidget);

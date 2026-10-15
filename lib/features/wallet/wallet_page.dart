@@ -1196,7 +1196,7 @@ class _WalletPageState extends State<WalletPage> {
             tightViewport ? 12 : 16,
             tightViewport ? 6 : 14,
             tightViewport ? 12 : 16,
-            tightViewport ? 20 : 28,
+            tightViewport ? 12 : 20,
           ),
         child: ListView(
           padding: HopeV2Navigation.scrollEndPadding(context),
