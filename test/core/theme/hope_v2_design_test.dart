@@ -462,7 +462,7 @@ void main() {
   test('money and information text roles are separate from indigo actions', () {
     expect(HopeV2Colors.moneyTextLight, HopeV2Colors.ink);
     expect(HopeV2Colors.moneyTextDark, HopeV2Colors.darkText);
-    expect(HopeV2Colors.infoTextLight, HopeV2Colors.secondaryAction);
+    expect(HopeV2Colors.infoTextLight, HopeV2TonalPalettes.info.shade(800));
     expect(HopeV2Colors.infoTextDark, HopeV2Colors.secondaryDark);
 
     final indigoActions = {
@@ -548,7 +548,7 @@ void main() {
       [
         Color(0xFFFAF9F4), Color(0xFFF2F0E8), Color(0xFFE9E5D9),
         Color(0xFFD6D1C4), Color(0xFFB4AE9E), Color(0xFF8B8779),
-        Color(0xFF626D61), Color(0xFF4A574A), Color(0xFF344238),
+        Color(0xFF5B665A), Color(0xFF4A574A), Color(0xFF344238),
         Color(0xFF18221C), Color(0xFF12140F),
       ],
       [
