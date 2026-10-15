@@ -345,6 +345,21 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
   });
 
+  testWidgets('admin moderation workspace stays compact on a phone viewport',
+      (tester) async {
+    await _pump(tester, _FakeAdmin());
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+
+    final workspace = find.byType(TabBarView);
+    expect(workspace, findsOneWidget);
+    final size = tester.getSize(workspace);
+    expect(size.height, lessThanOrEqualTo(440));
+    expect(size.height, greaterThanOrEqualTo(280));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('admin renders summary metrics and moderation actions',
       (tester) async {
     final repo = _FakeAdmin()

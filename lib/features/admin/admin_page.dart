@@ -331,7 +331,7 @@ class _AdminPageState extends State<AdminPage>
                   Tab(text: HopeCopy.of(context).copy_audit_log_ff87181),
                 ]),
                 SizedBox(
-                    height: (MediaQuery.sizeOf(context).height * .62).clamp(320.0, 520.0).toDouble(),
+                    height: (MediaQuery.sizeOf(context).height * .52).clamp(280.0, 440.0).toDouble(),
                     child: TabBarView(controller: _tabs, children: [
                       _jobsTab(context),
                       _applicationsTab(context),
