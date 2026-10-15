@@ -74,11 +74,14 @@ class _JobsResultsSliver extends StatelessWidget {
             final textScale = MediaQuery.textScalerOf(context).scale(1);
             // Prefer readable single-column cards when users enlarge text;
             // adaptive density must not outrank accessibility readability.
+            // Keep a true editorial list on phone widths. The two-column
+            // layout makes key opportunity facts too small and cards too tall
+            // once real Persian titles and full budget ranges are rendered.
             final columns = textScale > 1.2
                 ? 1
                 : constraints.maxWidth >= HopeV2Breakpoints.expanded
                     ? 3
-                    : constraints.maxWidth >= 340
+                    : constraints.maxWidth >= 420
                         ? 2
                         : 1;
             final recommendedIndex = jobs.indexWhere(
