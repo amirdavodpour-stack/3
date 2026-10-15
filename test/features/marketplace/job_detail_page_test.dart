@@ -447,7 +447,7 @@ void main() {
     final hero = find.byType(PremiumHero);
     expect(decision, findsOneWidget);
     expect(hero, findsOneWidget);
-    expect(tester.getSize(hero).height, 112);
+    expect(tester.getSize(hero).height, 96);
     expect(
       tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame).first).padding.bottom,
       12,
