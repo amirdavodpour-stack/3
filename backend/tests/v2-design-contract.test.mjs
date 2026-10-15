@@ -61,7 +61,7 @@ test('V2 premium design system is present and wired into flagship surfaces', () 
   assert.match(theme, /static Color price\(BuildContext context\)/);
   assert.match(theme, /static const moneyTextLight = Color\(0xFF18221C\)/);
   assert.match(theme, /static const moneyTextDark = Color\(0xFFF1F3EC\)/);
-  assert.match(theme, /static const infoTextLight = Color\(0xFF0F766E\)/);
+  assert.match(theme, /static const infoTextLight = Color\(0xFF115E59\)/);
   assert.match(appTheme, /labelColor: textColor/);
   assert.match(appTheme, /selectedColor: textColor/);
   assert.match(opportunityCard, /key: const ValueKey\('opportunity-card-standard-budget'\)[\s\S]{0,500}HopeV2SemanticColors.amount\(context\)/);
