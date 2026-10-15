@@ -241,7 +241,7 @@ class _SummaryCard extends StatelessWidget {
 
     return PremiumPanel(
       highlight: true,
-      padding: EdgeInsets.all(compact ? 12 : 16),
+      padding: EdgeInsets.all(compact ? 10 : 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -259,7 +259,7 @@ class _SummaryCard extends StatelessWidget {
           SizedBox(height: compact ? 8 : 13),
           LayoutBuilder(
             builder: (context, constraints) {
-              const gap = 8.0;
+              const gap = 6.0;
               final textScale = MediaQuery.textScalerOf(context).scale(1);
               final columns = compact &&
                       constraints.maxWidth >= 300 &&
@@ -310,20 +310,20 @@ class _Metric extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final accent = Theme.of(context).colorScheme.primary;
     return Container(
-      constraints: BoxConstraints(minHeight: compact ? 60 : 74),
+      constraints: BoxConstraints(minHeight: compact ? 54 : 68),
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 12,
-        vertical: compact ? 6 : 10,
+        horizontal: compact ? 8 : 11,
+        vertical: compact ? 5 : 8,
       ),
       decoration: BoxDecoration(
         color: highlight
             ? accent.withValues(alpha: dark ? .14 : .07)
             : HopeV2Surfaces.panelSoft(context),
-        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        borderRadius: BorderRadius.circular(HopeV2Radii.sm),
         border: Border.all(
           color: highlight
-              ? accent.withValues(alpha: dark ? .30 : .22)
-              : HopeV2Surfaces.border(context).withValues(alpha: dark ? .42 : .65),
+              ? accent.withValues(alpha: dark ? .28 : .20)
+              : HopeV2Surfaces.border(context).withValues(alpha: dark ? .18 : .28),
         ),
       ),
       child: Column(
@@ -341,7 +341,7 @@ class _Metric extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           Text(
             value,
             maxLines: 2,
@@ -393,18 +393,18 @@ class _ChartCard extends StatelessWidget {
         const SizedBox(height: 7),
         DecoratedBox(
           decoration: BoxDecoration(
-            color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .32),
-            borderRadius: BorderRadius.circular(HopeV2Radii.md),
+            color: HopeV2Surfaces.panelSoft(context).withValues(alpha: .22),
+            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
             border: Border.all(
-              color: HopeV2Surfaces.border(context).withValues(alpha: .52),
+              color: HopeV2Surfaces.border(context).withValues(alpha: .24),
             ),
           ),
           child: Padding(
             padding: EdgeInsets.fromLTRB(
-              10,
-              shortViewport ? 4 : compact ? 8 : 10,
-              10,
-              shortViewport ? 4 : compact ? 8 : 10,
+              8,
+              shortViewport ? 4 : compact ? 7 : 9,
+              8,
+              shortViewport ? 4 : compact ? 7 : 9,
             ),
             child: SizedBox(
               height: chartHeight,
