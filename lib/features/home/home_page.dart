@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
@@ -456,7 +455,7 @@ void _showSignIn(BuildContext context) {
                 Navigator.pop(sheetContext);
                 _resumeCreateAfterAuth(context, register: true);
               },
-              icon: const HugeIcon(icon: HopeV2Icons.userAdd, size: 21),
+              icon: const HopeIcon(icon: HopeV2Icons.userAdd, size: 21),
               label: Text(HopeCopy.of(context).copy_create_account_bfa3517),
             ),
             const SizedBox(height: 9),
@@ -465,7 +464,7 @@ void _showSignIn(BuildContext context) {
                 Navigator.pop(sheetContext);
                 _resumeCreateAfterAuth(context, register: false);
               },
-              icon: const HugeIcon(icon: HopeV2Icons.login, size: 21),
+              icon: const HopeIcon(icon: HopeV2Icons.login, size: 21),
               label: Text(HopeCopy.of(context).copy_log_in_b4c960b),
             ),
           ],
