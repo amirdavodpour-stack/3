@@ -14,6 +14,7 @@ import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/features/profile/profile_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -310,6 +311,42 @@ testWidgets('profile keeps application management in the dedicated work destinat
         Offset(selectorRect.left + selectorRect.width * .25, selectorRect.center.dy),
       );
       await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'profile account and utility settings use semantic accents instead of blanket brand indigo',
+    (tester) async {
+      await _pump(
+        tester,
+        authenticated: true,
+        width: 390,
+        theme: AppTheme.dark(),
+      );
+
+      final accountTile = tester.widget<HopeIconTile>(
+        find.descendant(
+          of: find.byKey(const ValueKey('profile-account-summary')),
+          matching: find.byType(HopeIconTile),
+        ).first,
+      );
+      expect(accountTile.color, HopeV2Colors.success);
+
+      final settingsTiles = tester.widgetList<HopeIconTile>(
+        find.descendant(
+          of: find.byKey(const ValueKey('profile-settings-panel')),
+          matching: find.byType(HopeIconTile),
+        ),
+      ).toList();
+      expect(settingsTiles.length, greaterThanOrEqualTo(4));
+      expect(settingsTiles[0].color, HopeV2Colors.secondary,
+          reason: 'Language is an informational utility, not a primary action.');
+      expect(settingsTiles[2].color, HopeV2Colors.secondary,
+          reason: 'Current-location state uses the information accent.');
+      expect(settingsTiles[3].color, HopeV2Colors.secondary,
+          reason: 'City selection shares the information/location role.');
       expect(tester.takeException(), isNull);
     },
   );
