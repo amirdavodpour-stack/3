@@ -146,7 +146,7 @@ class HopeSurface extends StatelessWidget {
       {super.key,
       required this.child,
       this.padding = EdgeInsets.zero,
-      this.radius = HopeV2Radii.lg,
+      this.radius = HopeV2Radii.md,
       this.highlight = false});
   final Widget child;
   final EdgeInsets padding;
@@ -178,19 +178,22 @@ class HopeSurface extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? HopeV2Colors.primary.withValues(alpha: .20)
-              : border,
-          width: highlight ? 1.1 : 1,
+              ? HopeV2Colors.primary.withValues(alpha: dark ? .24 : .18)
+              : border.withValues(alpha: dark ? .72 : .62),
+          width: highlight ? 1 : .7,
         ),
+        // Editorial cards rely on spacing and tonal contrast first. Keep
+        // elevation nearly imperceptible so nested panels do not stack into
+        // a collection of glowing, outlined boxes.
         boxShadow: dark
             ? const []
             : [
                 BoxShadow(
                   color: highlight
-                      ? HopeV2Colors.primary.withValues(alpha: .06)
-                      : const Color(0x081B1638),
-                  blurRadius: highlight ? 26 : 22,
-                  offset: const Offset(0, 8),
+                      ? HopeV2Colors.primary.withValues(alpha: .035)
+                      : const Color(0x041B1638),
+                  blurRadius: highlight ? 14 : 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
       ),
