@@ -271,7 +271,7 @@ class PremiumPrimaryNavigationScaffold extends StatelessWidget {
       ),
       NavigationDestination(
         icon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.explore, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.explore, selected: true),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.exploreSelected, selected: true),
         label: label('کاوش', 'Explore'),
       ),
       NavigationDestination(
