@@ -169,7 +169,7 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
@@ -291,7 +291,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 : HopeCopy.of(context)
                     .copy_controls_that_make_hope_fit_you_better_ace4c0c,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _settingsCard(context, settings, theme),
           const SizedBox(height: 8),
           PremiumSectionHeader(
@@ -303,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
               'Job applications have their own dedicated workspace.',
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           PremiumQuickActionStrip(
             domain: HopeProductDomain.work,
             quiet: true,
@@ -328,7 +328,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           PremiumSectionHeader(
             domain: HopeProductDomain.discovery,
             title: _t(context, 'جست‌وجو و کشف', 'Discovery'),
@@ -338,7 +338,7 @@ class _ProfilePageState extends State<ProfilePage> {
               'Manage saved filters in the discovery workspace.',
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           PremiumQuickActionStrip(
             domain: HopeProductDomain.discovery,
             title: _t(context, 'دسترسی‌های کاوش', 'Discovery destinations'),
@@ -354,7 +354,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           PremiumSectionHeader(
             domain: HopeProductDomain.account,
             title: _t(context, 'مرکز کنترل حساب', 'Account control center'),
@@ -364,7 +364,7 @@ class _ProfilePageState extends State<ProfilePage> {
               'Manage privacy, devices, and account settings in one place.',
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           PremiumPanel(
             glass: true,
 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -388,7 +388,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           if (auth.user?['role'] == 'ADMIN')
             FilledButton.tonalIcon(
               onPressed: () => Navigator.push(context, HopeRoutes.admin()),
@@ -403,7 +403,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
             icon: const HopeIcon(HopeV2Icons.insights, size: 19),
             label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           ListTile(
             leading: const HopeIconTile(
               HopeV2Icons.transferOut,
@@ -533,7 +533,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           _settingsCard(context, settings, theme),
         ],
       ),
@@ -971,7 +971,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
       context: context,
       showDragHandle: true,
       builder: (_) => ListView(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(14),
         shrinkWrap: true,
         children: [
           Text(
