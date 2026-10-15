@@ -110,7 +110,7 @@ class _OffersPageState extends State<OffersPage> {
       body: RefreshIndicator(
         onRefresh: _reload,
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 16),
           child: ListView(
             padding: HopeV2Navigation.scrollEndPadding(context),
             children: [
@@ -143,7 +143,7 @@ class _OffersPageState extends State<OffersPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               if (!_loading && _loadError == null && all.isNotEmpty) ...[
                 Text(
                   HopeDisplayFormatter.integer(
@@ -155,7 +155,7 @@ class _OffersPageState extends State<OffersPage> {
                         fontWeight: FontWeight.w700,
                       ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
               ],
               if (_loading && _items.isEmpty)
                 HopeAsyncState(
@@ -188,7 +188,7 @@ class _OffersPageState extends State<OffersPage> {
                   controller: _filterScrollController,
                   thumbVisibility: true,
                   interactive: true,
-                  thickness: 3,
+                  thickness: 2,
                   radius: const Radius.circular(99),
                   child: SingleChildScrollView(
                     controller: _filterScrollController,
@@ -215,7 +215,7 @@ class _OffersPageState extends State<OffersPage> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               if (rows.isEmpty &&
                   (_items.isNotEmpty || (!_loading && _loadError == null)))
                 EmptyState(
@@ -236,10 +236,10 @@ class _OffersPageState extends State<OffersPage> {
   }
 
   Widget _card(HopeOffer o) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.only(bottom: 8),
     child: PremiumPanel(
       key: ValueKey('offer-card-${o.id}'),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       quiet: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +251,7 @@ class _OffersPageState extends State<OffersPage> {
             label: '${o.jobTitle?.trim().isNotEmpty == true ? o.jobTitle!.trim() : _t('پیشنهاد همکاری', 'Work offer')}، ${_money(o.price)}، ${_statusLabel(o.status)}',
             onTap: () => _showDetails(o),
             child: InkWell(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
               onTap: () => _showDetails(o),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,12 +270,12 @@ class _OffersPageState extends State<OffersPage> {
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w900),
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       );
                       final titleWithIcon = Row(
                         children: [
-                          const HopeIconTile(HopeV2Icons.payments, filled: true),
-                          const SizedBox(width: 10),
+                          const HopeIconTile(HopeV2Icons.payments, size: 36, filled: true),
+                          const SizedBox(width: 8),
                           Expanded(child: title),
                         ],
                       );
@@ -292,7 +292,7 @@ class _OffersPageState extends State<OffersPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             titleWithIcon,
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Align(
                               alignment: AlignmentDirectional.centerStart,
                               child: status,
@@ -311,14 +311,14 @@ class _OffersPageState extends State<OffersPage> {
                   ),
                   if (o.message.trim().isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 10),
+                      padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         o.message,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
                     _money(o.price),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -340,7 +340,7 @@ class _OffersPageState extends State<OffersPage> {
           ),
           if (widget.jobId != null && o.isPending)
             Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(top: 10),
               child: FilledButton.icon(
                 onPressed: _acceptingId == o.id ? null : () => _accept(o),
                 icon: _acceptingId == o.id
