@@ -307,7 +307,7 @@ class _ChatPageState extends State<ChatPage> {
                                 final compactBanner = constraints.maxWidth < 340 ||
                                     MediaQuery.textScalerOf(context).scale(1) > 1.2;
                                 final errorIcon = Icon(
-                                  Icons.error_outline_rounded,
+                                  HopeV2Icons.error,
                                   size: 16,
                                   color: colors.error,
                                 );

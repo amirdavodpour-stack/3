@@ -307,12 +307,12 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                             ButtonSegment<bool>(
                               value: true,
                               label: Text(_t('بله', 'Yes')),
-                              icon: const Icon(Icons.check_rounded),
+                              icon: const Icon(HopeV2Icons.completed),
                             ),
                             ButtonSegment<bool>(
                               value: false,
                               label: Text(_t('خیر', 'No')),
-                              icon: const Icon(Icons.flag_outlined),
+                              icon: const Icon(HopeV2Icons.flag),
                             ),
                           ],
                           selected: _completedAsAgreed == null

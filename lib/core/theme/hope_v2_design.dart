@@ -417,6 +417,7 @@ class HopeV2Icons {
   static const IconData view = CupertinoIcons.eye;
   static const IconData viewOff = CupertinoIcons.eye_slash;
   static const IconData password = CupertinoIcons.lock;
+  static const IconData lockOpen = CupertinoIcons.lock_open;
   static const IconData copy = CupertinoIcons.doc_on_doc;
   static const IconData verified = CupertinoIcons.checkmark_seal;
   static const IconData message = CupertinoIcons.chat_bubble_text;
