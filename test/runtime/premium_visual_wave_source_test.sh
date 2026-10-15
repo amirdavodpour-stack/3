@@ -156,8 +156,8 @@ grep -Fq "premium-page-frame-content-padding" "$premium"
 grep -Fq 'wave18-compact-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'framePadding.padding.resolve(TextDirection.rtl).bottom, 16' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'EdgeInsets.fromLTRB(0, 0, 0, 56)' 'lib/features/jobs/jobs_widgets.part.dart'
-grep -Fq 'tightViewport ? 24 : 32' 'lib/features/wallet/wallet_page.dart'
-grep -Fq 'compactViewport ? 24 : 32' 'lib/features/marketplace/job_detail_page.dart'
+grep -Fq 'tightViewport ? 20 : 28' 'lib/features/wallet/wallet_page.dart'
+grep -Fq 'compactViewport ? 20 : 28' 'lib/features/marketplace/job_detail_page.dart'
 
 # Wave 19: the financial range uses the full card width and must not be ellipsized.
 grep -Fq "opportunity-card-budget-amount" "$opportunity"
@@ -181,7 +181,7 @@ grep -Fq '? 3' "lib/features/financial/financial_insights_page.dart"
 grep -Fq ': 2;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq '(constraints.maxWidth - gap * (columns - 1)) / columns;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
-grep -Fq 'height: compactViewport ? 112 : denseViewport ? 148 : 214,' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'height: compactViewport ? (denseViewport ? 112 : 144) : denseViewport ? 148 : 214,' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'HOPE_RUNTIME_EXACT_HEAD=$exact_head' ".github/workflows/hope-ui-runtime-evidence.yml"
 if sed -n '/class HopeWalletFlowSignature/,/Target-aligned opportunity DNA signature/p' "lib/core/ui/hope_signature_components.dart" | grep -Eq 'wallet\.(totalBalance|availableBalance|lockedBalance)'; then
   echo "FAIL: wallet ledger lifecycle panel must not repeat balance values" >&2
