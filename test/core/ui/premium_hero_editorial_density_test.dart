@@ -26,7 +26,7 @@ void main() {
       ),
     );
 
-    expect(tester.getSize(find.byType(PremiumHero)).height, 192);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 184);
     expect(tester.takeException(), isNull);
   });
 
@@ -50,7 +50,7 @@ void main() {
       ),
     );
 
-    expect(tester.getSize(find.byType(PremiumHero)).height, 216);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 208);
     expect(tester.takeException(), isNull);
   });
 
@@ -73,7 +73,7 @@ void main() {
       ),
     );
 
-    expect(tester.getSize(find.byType(PremiumHero)).height, 176);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 164);
     expect(tester.takeException(), isNull);
   });
 

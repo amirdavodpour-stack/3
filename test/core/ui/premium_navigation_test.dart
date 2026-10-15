@@ -84,10 +84,8 @@ void main() {
     expect(
       decoration.borderRadius,
       const BorderRadiusDirectional.only(
-        topStart: Radius.circular(24),
-        topEnd: Radius.circular(7),
-        bottomStart: Radius.circular(4),
-        bottomEnd: Radius.circular(18),
+        topStart: Radius.circular(14),
+        topEnd: Radius.circular(14),
       ),
     );
     expect(find.byKey(const ValueKey('hope-navigation-selection-plate')), findsOneWidget);
