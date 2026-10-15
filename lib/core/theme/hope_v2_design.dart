@@ -72,7 +72,7 @@ class HopeV2Colors {
   static const moneyTextDark = Color(0xFFF1F3EC);
   static const infoTextLight = Color(0xFF0F766E);
   static const infoTextDark = Color(0xFF5EEAD4);
-  // Dedicated blue identity/trust roles: separate from teal information and indigo actions.
+  // Dedicated blue identity/trust roles: separate from teal information and forest/lichen brand actions.
   static const trustTextLight = Color(0xFF1E40AF);
   static const trustTextDark = Color(0xFFBFDBFE);
   static const trustSurfaceLight = Color(0xFFEFF6FF);
@@ -207,7 +207,7 @@ class HopeV2TonalPalette {
       ];
 }
 
-/// Eight shared ramps form the HOPE color genome. The warm featured-orange
+/// Nine shared ramps form the HOPE color genome. Forest and lichen define the brand; the warm featured-orange
 /// ramp is distinct from amber warning, and blue trust is distinct from teal info.
 /// Forest is the identity ramp; lichen is the signature action accent in dark mode. Semantic roles stay independent.
 class HopeV2TonalPalettes {
@@ -681,7 +681,7 @@ class HopeV2SemanticColors {
   static Color price(BuildContext context) => amount(context);
   static Color priceLabel(BuildContext context) => textSecondary(context);
 
-  /// Verified identity/security is blue, not the indigo action hue.
+  /// Verified identity/security is blue, not the forest/lichen brand action hue.
   static Color trust(BuildContext context) =>
       _isDark(context) ? HopeV2Colors.trustTextDark : HopeV2Colors.trustTextLight;
   static Color verified(BuildContext context) => trust(context);
@@ -698,7 +698,7 @@ class HopeV2SemanticColors {
   /// Neutral labels and values retain their contrast in both theme modes.
   static Color neutral(BuildContext context) => textSecondary(context);
 
-  /// Recommended/featured state uses warm orange, never brand indigo as text.
+  /// Recommended/featured state uses warm orange, never the brand action hue as text.
   static Color featured(BuildContext context) =>
       _isDark(context) ? HopeV2Colors.accentTextDark : HopeV2Colors.accentTextLight;
 
@@ -710,7 +710,7 @@ class HopeV2SemanticColors {
   static Color outgoingAmount(BuildContext context) => error(context);
   static Color negativeAmount(BuildContext context) => error(context);
 
-  /// Contrast-safe text foreground for semantic chips; never pass raw indigo.
+  /// Contrast-safe text foreground for semantic chips; never pass a raw brand action hue.
   static Color statusSurface(BuildContext context, Color accent) {
     if (accent == HopeV2Colors.primary ||
         accent == HopeV2Colors.primaryDark ||
