@@ -146,7 +146,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
         body: SafeArea(
           child: PremiumPageFrame(
             maxWidth: 820,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: Column(
               children: [
                 PremiumHeader(

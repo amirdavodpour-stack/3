@@ -253,7 +253,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
     return Scaffold(
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(

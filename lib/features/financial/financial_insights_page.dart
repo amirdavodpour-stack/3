@@ -47,10 +47,10 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
           child: PremiumPageFrame(
             maxWidth: 1100,
             padding: EdgeInsets.fromLTRB(
-              compactWidth ? 12 : 20,
-              shortViewport ? 8 : 18,
-              compactWidth ? 12 : 20,
-              shortViewport ? 24 : 72,
+              compactWidth ? 12 : 16,
+              shortViewport ? 6 : 14,
+              compactWidth ? 12 : 16,
+              shortViewport ? 20 : 64,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -241,7 +241,7 @@ class _SummaryCard extends StatelessWidget {
 
     return PremiumPanel(
       highlight: true,
-      padding: EdgeInsets.all(compact ? 12 : 18),
+      padding: EdgeInsets.all(compact ? 12 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
