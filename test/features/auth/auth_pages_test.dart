@@ -8,6 +8,7 @@ import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
 import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
+import 'package:hope_mobile/core/ui/hope_l10n.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/auth/password_reset_page.dart';
@@ -312,6 +313,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(RegisterPage), findsOneWidget);
     expect(find.byType(TextField), findsAtLeastNWidgets(3));
+    final copy = HopeCopy.of(tester.element(find.byType(RegisterPage)));
+    expect(
+      find.text(copy.copy_start_a_good_collaboration_9df52cf),
+      findsOneWidget,
+      reason: 'The registration headline should not be duplicated in the eyebrow.',
+    );
+    expect(find.text(copy.copy_hope_account_4ba3966), findsOneWidget);
   });
 
   testWidgets('auth entry surfaces use the canonical PremiumHero owner', (tester) async {
