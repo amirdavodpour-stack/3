@@ -188,7 +188,7 @@ void main() {
     expect(HopeV2Colors.pageLight, const Color(0xFFF4F0E5));
     expect(HopeV2Colors.panelSoftLight, const Color(0xFFF9F6ED));
     expect(HopeV2Colors.navigationLight, const Color(0xFFF9F8F3));
-    expect(HopeV2Colors.navigationIndicatorLight, const Color(0xFFE9E1D0));
+    expect(HopeV2Colors.navigationIndicatorLight, const Color(0xFFDDE9D8));
   });
 
   test('HOPE typography keeps font selection behind a single design-system token', () {
@@ -547,8 +547,8 @@ void main() {
       [
         Color(0xFFFAF9F4), Color(0xFFF2F0E8), Color(0xFFE9E5D9),
         Color(0xFFD6D1C4), Color(0xFFB4AE9E), Color(0xFF8B8779),
-        Color(0xFF66675B), Color(0xFF4A4C43), Color(0xFF34372D),
-        Color(0xFF24271F), Color(0xFF12140F),
+        Color(0xFF626D61), Color(0xFF4A574A), Color(0xFF344238),
+        Color(0xFF18221C), Color(0xFF12140F),
       ],
       [
         Color(0xFFE6FFFB), Color(0xFFCCFBF1), Color(0xFF99F6E4),
