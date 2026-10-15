@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/opportunity/opportunity_agent_repository.dart';
 import '../../core/theme/hope_v2_design.dart';
@@ -192,7 +191,7 @@ class OpportunityAgentPanel extends StatelessWidget {
                 color: actionAccent.withValues(alpha: .12),
               ),
               child: Center(
-                child: HugeIcon(
+                child: HopeIcon(
                   icon: icon,
                   size: 19,
                   color: actionForeground,

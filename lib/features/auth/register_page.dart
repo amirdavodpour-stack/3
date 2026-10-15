@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
-import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/backend_capabilities.dart';
@@ -176,7 +175,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: HugeIcon(
+                        icon: HopeIcon(
                           icon: Localizations.localeOf(context).languageCode == 'en'
                               ? HopeV2Icons.arrowLeft
                               : HopeV2Icons.arrowRight,
@@ -282,7 +281,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             labelText: HopeCopy.of(context).copy_password_656eabe,
                             prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
                             suffixIcon: IconButton(
-                              icon: HugeIcon(
+                              icon: HopeIcon(
                                 icon: obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,
                                 size: 20,
                               ),

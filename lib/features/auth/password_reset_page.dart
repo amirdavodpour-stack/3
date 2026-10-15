@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/application/application_registry.dart';
 import '../../core/application/application_registry_context.dart';
@@ -66,7 +65,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: HugeIcon(
+                        icon: HopeIcon(
                           icon: Localizations.localeOf(context).languageCode == 'en'
                               ? HopeV2Icons.arrowLeft
                               : HopeV2Icons.arrowRight,

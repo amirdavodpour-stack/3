@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -169,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: HugeIcon(
+                    icon: HopeIcon(
                       icon: Localizations.localeOf(context).languageCode == 'en'
                           ? HopeV2Icons.arrowLeft
                           : HopeV2Icons.arrowRight,
@@ -261,7 +260,7 @@ class _LoginPageState extends State<LoginPage> {
                           labelText: l10n.passwordLabel,
                           prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
                           suffixIcon: IconButton(
-                            icon: HugeIcon(
+                            icon: HopeIcon(
                               icon: obscure
                                   ? HopeV2Icons.viewOff
                                   : HopeV2Icons.view,
@@ -308,7 +307,7 @@ class _LoginPageState extends State<LoginPage> {
                         context.read<AuthController>().continueAsGuest();
                         Navigator.maybePop(context);
                       },
-                icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 19),
+                icon: const HopeIcon(icon: HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
               ),
               const SizedBox(height: 8),

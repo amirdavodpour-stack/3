@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 import '../marketplace/job.dart';
 import '../router/app_routes.dart';
@@ -432,7 +431,7 @@ class OpportunityCard extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: HugeIcon(
+          child: HopeIcon(
             icon: icon,
             size: 16,
             color: action,
@@ -1489,7 +1488,7 @@ class OpportunityCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              HugeIcon(
+              HopeIcon(
                 icon: HopeV2Icons.payments,
                 size: 15,
                 color: primary,
@@ -1571,7 +1570,7 @@ class OpportunityCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          HugeIcon(
+          HopeIcon(
             icon: icon,
             size: 15,
             color: color,
@@ -1733,7 +1732,7 @@ class OpportunityCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                HugeIcon(
+                HopeIcon(
                   icon: HopeV2Icons.payments,
                   color: primary,
                   size: 19,
