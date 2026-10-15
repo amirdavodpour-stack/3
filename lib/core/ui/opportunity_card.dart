@@ -189,9 +189,9 @@ class OpportunityCard extends StatelessWidget {
                         ? (featuredScan ? .18 : .21)
                         : .18,
                   )
-                : HopeV2Surfaces.border(context).withValues(
-                    alpha: dark ? .55 : .72,
-                  ),
+                : (dark
+                    ? HopeV2Colors.darkBorder
+                    : HopeV2Surfaces.border(context)),
           ),
           boxShadow: featured || featuredScan
               ? [
