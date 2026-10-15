@@ -87,11 +87,11 @@ class PremiumNavigationBar extends StatelessWidget {
               : surface.withValues(alpha: .98),
           // A shelf-like rail reads as one editorial structure, rather than a
           // floating capsule. The flatter lower edge visually anchors it.
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
-            bottomLeft: Radius.circular(4),
-            bottomRight: Radius.circular(4),
+          borderRadius: const BorderRadiusDirectional.only(
+            topStart: Radius.circular(24),
+            topEnd: Radius.circular(7),
+            bottomStart: Radius.circular(4),
+            bottomEnd: Radius.circular(18),
           ),
           border: Border.all(
             color: dark
@@ -120,15 +120,28 @@ class PremiumNavigationBar extends StatelessWidget {
                       color: HopeV2Surfaces.panel(context),
                       shape: BeveledRectangleBorder(
                         borderRadius: const BorderRadiusDirectional.only(
-                          topStart: Radius.circular(4),
-                          topEnd: Radius.circular(15),
-                          bottomStart: Radius.circular(15),
-                          bottomEnd: Radius.circular(4),
+                          topStart: Radius.circular(14),
+                          topEnd: Radius.circular(4),
+                          bottomStart: Radius.circular(4),
+                          bottomEnd: Radius.circular(14),
                         ),
                         side: BorderSide(
                           color: primary.withValues(alpha: dark ? .30 : .22),
                         ),
                       ),
+                    ),
+                  ),
+                ),
+                PositionedDirectional(
+                  key: const ValueKey('hope-navigation-selection-accent'),
+                  start: itemWidth * activeIndex + itemWidth * .27,
+                  top: 4,
+                  width: itemWidth * .46,
+                  height: 2,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: dark ? .88 : .78),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
@@ -180,15 +193,6 @@ class _PremiumNavigationItem extends StatelessWidget {
     final labelColor = selected
         ? HopeV2SemanticColors.textPrimary(context)
         : HopeV2SemanticColors.textSecondary(context);
-    final isFarsi = Localizations.localeOf(context).languageCode == 'fa';
-    final rawOrdinal = (index + 1).toString().padLeft(2, '0');
-    final ordinal = isFarsi
-        ? rawOrdinal
-            .split('')
-            .map((digit) => '۰۱۲۳۴۵۶۷۸۹'[int.parse(digit)])
-            .join()
-        : rawOrdinal;
-
     return Semantics(
       button: true,
       selected: selected,
@@ -215,29 +219,7 @@ class _PremiumNavigationItem extends StatelessWidget {
                   children: [
                     SizedBox(
                       height: compact ? 22 : 26,
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            icon,
-                            if (selected) ...[
-                              const SizedBox(width: 3),
-                              ExcludeSemantics(
-                                child: Text(
-                                  ordinal,
-                                  style: TextStyle(
-                                    color: HopeV2SemanticColors.info(context),
-                                    fontSize: 9,
-                                    height: 1,
-                                    letterSpacing: .5,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
+                      child: Center(child: icon),
                     ),
                     if (showLabel) ...[
                       const SizedBox(height: 1),
@@ -283,28 +265,28 @@ class PremiumPrimaryNavigationScaffold extends StatelessWidget {
     String label(String fa, String en) => isEn ? en : fa;
     return [
       NavigationDestination(
-        icon: const HopeNavigationGlyph(icon: HopeV2Icons.home, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.homeSelected, selected: true),
+        icon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.home, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.homeSelected, selected: true),
         label: label('خانه', 'Home'),
       ),
       NavigationDestination(
-        icon: const HopeNavigationGlyph(icon: HopeV2Icons.search, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.search, selected: true),
+        icon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.explore, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.explore, selected: true),
         label: label('کاوش', 'Explore'),
       ),
       NavigationDestination(
-        icon: const HopeNavigationGlyph(icon: HopeV2Icons.workshop, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.workshopSelected, selected: true),
+        icon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.workshop, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.workshopSelected, selected: true),
         label: label('کارگاه', 'Workshop'),
       ),
       NavigationDestination(
-        icon: const HopeNavigationGlyph(icon: HopeV2Icons.wallet, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.walletSelected, selected: true),
+        icon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.wallet, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.walletSelected, selected: true),
         label: label('کیف پول', 'Wallet'),
       ),
       NavigationDestination(
-        icon: const HopeNavigationGlyph(icon: HopeV2Icons.profile, selected: false),
-        selectedIcon: const HopeNavigationGlyph(icon: HopeV2Icons.profileSelected, selected: true),
+        icon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.profile, selected: false),
+        selectedIcon: const HopeNavigationGlyph(icon: HopeV2NavigationIcons.profileSelected, selected: true),
         label: label('پروفایل', 'Profile'),
       ),
     ];
@@ -393,6 +375,14 @@ class PremiumNavigationRail extends StatelessWidget {
             labelType: extended
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.all,
+            selectedLabelTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: HopeV2SemanticColors.textPrimary(context),
+              fontWeight: FontWeight.w800,
+            ),
+            unselectedLabelTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: HopeV2SemanticColors.textSecondary(context),
+              fontWeight: FontWeight.w500,
+            ),
             leading: leading,
             trailing: trailing,
             backgroundColor: Colors.transparent,
