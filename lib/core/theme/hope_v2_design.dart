@@ -386,7 +386,7 @@ class HopeV2Icons {
   static const IconData match = CupertinoIcons.sparkles;
   static const IconData location = CupertinoIcons.location;
   static const IconData category = CupertinoIcons.tag;
-  static const IconData distance = CupertinoIcons.location;
+  static const IconData distance = CupertinoIcons.location_north;
   static const IconData skills = CupertinoIcons.wrench;
   static const IconData description = CupertinoIcons.doc_text;
   static const IconData route = CupertinoIcons.map;
@@ -394,7 +394,7 @@ class HopeV2Icons {
   // Financial actions and lifecycle.
   static const IconData protectedFunds = CupertinoIcons.lock_shield;
   static const IconData secure = CupertinoIcons.lock;
-  static const IconData payments = CupertinoIcons.doc_text;
+  static const IconData payments = CupertinoIcons.doc_on_clipboard;
   static const IconData transferIn = CupertinoIcons.arrow_down_left;
   static const IconData transferOut = CupertinoIcons.arrow_up_right;
   static const IconData completed = CupertinoIcons.checkmark_circle;
@@ -406,7 +406,7 @@ class HopeV2Icons {
   static const IconData deposit = CupertinoIcons.arrow_down_circle;
   static const IconData withdraw = CupertinoIcons.arrow_up_circle;
   static const IconData history = CupertinoIcons.clock;
-  static const IconData budget = CupertinoIcons.doc_text;
+  static const IconData budget = CupertinoIcons.doc_chart;
   static const IconData deadline = CupertinoIcons.calendar;
   static const IconData escrow = CupertinoIcons.lock_shield;
 
@@ -437,6 +437,7 @@ class HopeV2Icons {
   static const IconData save = CupertinoIcons.bookmark;
   static const IconData share = CupertinoIcons.share;
   static const IconData roleSwitch = CupertinoIcons.repeat;
+  static const IconData transfer = CupertinoIcons.arrow_left_right;
   static const IconData empty = CupertinoIcons.tray;
   static const IconData offline = CupertinoIcons.wifi_slash;
   static const IconData info = CupertinoIcons.info;

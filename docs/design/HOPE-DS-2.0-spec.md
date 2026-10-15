@@ -67,8 +67,8 @@ A 128dp compact hero with no redundant eyebrow/icon tile. Google sign-in uses th
 
 ## Editorial navigation and page motion — 2026-10-15
 
-- Primary navigation uses one coherent Cupertino outline/filled icon family, deliberately distinct from the HugeIcons vocabulary used by domain actions.
+- All consumer-facing glyphs use one coherent Cupertino IconData family via HopeV2Icons and HopeV2NavigationIcons. HugeIcons remains only as a compatibility renderer for unmigrated legacy consumers; new and migrated UI must use the central Cupertino vocabulary.
 - Destination labels are always neutral semantic text. Teal/green is reserved for genuine information/trust/success states, never for navigation copy or decorative ordinals; the colored ordinal has been removed.
 - The mobile dock uses direction-aware asymmetrical geometry. Its selected folio has a reverse-cut silhouette and a short action-colored top rule, not a generic pill or a full green text treatment.
 - Changing destinations animates the page horizontally with a restrained fade/depth shift. The PageView keeps visited tabs alive, disables direct swiping so navigation semantics remain stable, and jumps without animation when the system requests reduced motion.
-- RTL/LTR direction, compact widths, text scaling, selected-label contrast, and reduced-motion behavior remain required regression gates. Runtime screenshot review is still required before visual acceptance.
+- RTL/LTR direction, compact widths, text scaling, selected-label contrast, and reduced-motion behavior remain required regression gates. Runtime screenshot review is still required before visual acceptance. Kinetic Editorial remains subordinate to compact layout, semantic meaning, RTL direction and accessibility.
