@@ -507,6 +507,43 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Wave 35 phone Explore uses full-width editorial opportunity cards',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo());
+      await tester.pumpAndSettle();
+
+      final cards = tester.widgetList<OpportunityCard>(
+        find.byType(OpportunityCard),
+      );
+      expect(cards, isNotEmpty);
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compactGrid),
+        isFalse,
+        reason: 'Phone-width Explore should not compress Persian opportunity metadata into tall two-column tiles.',
+      );
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compact),
+        isTrue,
+        reason: 'Compact phones should use readable horizontal opportunity summaries.',
+      );
+      final firstCard = tester.getRect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is OpportunityCard &&
+              widget.variant == OpportunityCardVariant.compact,
+        ).first,
+      );
+      expect(firstCard.width, greaterThan(280));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('compact explore uses a short search hint so the control band stays overflow-free',
       (tester) async {
     tester.view.physicalSize = const Size(360, 900);
