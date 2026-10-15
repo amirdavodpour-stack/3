@@ -31,4 +31,36 @@ void main() {
     expect(find.text('پیام تست'), findsOneWidget);
     expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
   });
+
+  testWidgets(
+    'HopeFeedback reserves requested clearance above a screen-local action dock',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => HopeFeedback.show(
+                  context,
+                  'Recoverable validation error',
+                  tone: HopeFeedbackTone.warning,
+                  bottomClearance: 112,
+                ),
+                child: const Text('Show dock-safe feedback'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show dock-safe feedback'));
+      await tester.pump();
+
+      final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
+      expect(snackBar.behavior, SnackBarBehavior.floating);
+      expect(snackBar.margin, const EdgeInsets.fromLTRB(16, 0, 16, 128));
+      expect(find.text('Recoverable validation error'), findsOneWidget);
+    },
+  );
+
 }

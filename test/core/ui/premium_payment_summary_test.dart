@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/premium_payment_summary.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
@@ -61,6 +63,17 @@ void main() {
 
     expect(find.text('Needs review'), findsOneWidget);
     expect(find.text('UNKNOWN_STATUS'), findsNothing);
+
+    final iconFinder = find.byKey(const ValueKey('premium-payment-status-icon'));
+    expect(iconFinder, findsOneWidget);
+    final icon = tester.widget<HopeIcon>(iconFinder);
+    final iconContext = tester.element(iconFinder);
+    expect(icon.color, HopeV2SemanticColors.pending(iconContext));
+    expect(
+      icon.color,
+      isNot(Theme.of(iconContext).colorScheme.primary),
+      reason: 'An unknown/pending payment state is semantic status, not the brand action color.',
+    );
   });
 
   testWidgets(
@@ -98,6 +111,31 @@ void main() {
     expect(find.text('2000000.0 Toman'), findsNothing);
   });
 
+
+  testWidgets(
+      'PremiumPaymentSummary formats Persian Toman with Persian digits',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: PremiumPaymentSummary(payment: _payment(currency: 'TOMAN')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('۱٬۰۰۰٬۰۰۰ تومان'), findsWidgets);
+    expect(find.textContaining('1,000,000 تومان'), findsNothing);
+  });
+
   testWidgets(
       'PremiumPaymentSummary always presents the current internal ledger as Toman',
       (tester) async {
@@ -127,10 +165,26 @@ void main() {
     expect(values.any((value) => value.contains('1,000,000 Toman')), isTrue);
     expect(values.any((value) => value.contains('1,100,000 Toman')), isTrue);
     expect(values.any((value) => value.contains('900,000 Toman')), isTrue);
+
+    for (final amount in [
+      '1,000,000 Toman',
+      '1,100,000 Toman',
+      '900,000 Toman',
+    ]) {
+      final amountFinder = find.text(amount);
+      expect(amountFinder, findsOneWidget);
+      final amountText = tester.widget<Text>(amountFinder);
+      expect(
+        amountText.style?.color,
+        HopeV2SemanticColors.price(tester.element(amountFinder)),
+        reason: 'Every displayed payment amount must use the shared semantic price foreground.',
+      );
+    }
   });
 
   testWidgets('PremiumPaymentSummary exposes one financial summary semantics boundary',
       (tester) async {
+    final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
@@ -148,20 +202,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final semantics = tester.ensureSemantics();
-    try {
-      expect(
-        find.bySemanticsLabel(
-          'Payment status: Funds held, amount 1,000,000 Toman',
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.bySemanticsLabel('Payment details, Funds held'),
-        findsNothing,
-      );
-    } finally {
-      semantics.dispose();
-    }
+    await tester.pump();
+    expect(
+      find.bySemanticsLabel(
+        'Payment status: Funds held, amount 1,000,000 Toman',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Payment details, Funds held'),
+      findsNothing,
+    );
+    semantics.dispose();
   });
 }

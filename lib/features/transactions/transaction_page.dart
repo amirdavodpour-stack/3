@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import '../evidence/evidence_picker.dart';
@@ -104,18 +105,6 @@ class _TransactionPageState extends State<TransactionPage> {
 
   bool _isOwner(HopeJob? job) =>
       context.read<AuthController>().user?['id']?.toString() == job?.ownerId?.toString();
-
-  String _jobStatusLabel(String? raw) => switch (raw?.toUpperCase()) {
-        'DRAFT' => _t('پیش‌نویس', 'Draft'),
-        'PUBLISHED' => _t('منتشر شده', 'Published'),
-        'FUNDED' => _t('تأمین وجه شده', 'Funded'),
-        'IN_PROGRESS' => _t('در حال انجام', 'In progress'),
-        'DELIVERED' => _t('تحویل شده', 'Delivered'),
-        'UNDER_REVIEW' => _t('در حال بررسی', 'Under review'),
-        'COMPLETED' => _t('تکمیل شده', 'Completed'),
-        'CANCELLED' => _t('لغو شده', 'Cancelled'),
-        _ => _t('نیازمند بررسی', 'Needs review'),
-      };
 
   bool _isProvider(HopeJob? job) =>
       context.read<AuthController>().user?['id']?.toString() == job?.providerId?.toString();
@@ -245,31 +234,56 @@ class _TransactionPageState extends State<TransactionPage> {
   Widget build(BuildContext context) => _buildPage(context);
 }
 
-Widget _moneyRow(BuildContext context, String label, dynamic value, {bool strong = false}) =>
-    Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+Widget _moneyRow(
+  BuildContext context,
+  String label,
+  dynamic value, {
+  bool strong = false,
+}) =>
+    LayoutBuilder(
+      builder: (context, constraints) {
+        final compactLayout = constraints.maxWidth < 380 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.2;
+        final labelText = Text(
+          label,
+          maxLines: null,
+          softWrap: true,
+          overflow: TextOverflow.visible,
+        );
+        final amountText = Text(
+          moneyLabel(context, value ?? '—'),
+          maxLines: null,
+          softWrap: true,
+          overflow: TextOverflow.visible,
+          textAlign: compactLayout ? TextAlign.start : TextAlign.end,
+          style: TextStyle(
+            color: HopeV2SemanticColors.price(context),
+            fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
           ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              moneyLabel(context, value ?? '—'),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: compactLayout
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    labelText,
+                    const SizedBox(height: 2),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: amountText,
+                    ),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: labelText),
+                    const SizedBox(width: 12),
+                    Flexible(child: amountText),
+                  ],
+                ),
+        );
+      },
     );

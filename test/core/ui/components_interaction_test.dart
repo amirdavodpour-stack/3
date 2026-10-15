@@ -208,8 +208,14 @@ void main() {
     expect(rail.minWidth, HopeV2Navigation.railMinWidth);
     expect(rail.minExtendedWidth, HopeV2Navigation.railExtendedWidth);
 
-    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.height, HopeV2Navigation.barHeight);
+    final bar = tester.widget<Container>(
+      find.byKey(const ValueKey('hope-navigation-dock')),
+    );
+    expect(
+      tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
+      HopeV2Navigation.barHeight,
+    );
+    expect(bar.decoration, isA<BoxDecoration>());
   });
 
   testWidgets('PressableScale is keyboard-focusable and exposes button semantics',

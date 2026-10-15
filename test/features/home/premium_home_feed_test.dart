@@ -10,10 +10,17 @@ import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
+import 'package:hope_mobile/core/transactions/payment.dart';
+import 'package:hope_mobile/core/transactions/transaction_repository.dart';
+import 'package:hope_mobile/core/transactions/wallet.dart';
+import 'package:hope_mobile/core/transactions/wallet_repository.dart';
+import 'package:hope_mobile/core/ui/hope_display_formatters.dart';
 import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/ui/copy.dart';
+import 'package:hope_mobile/core/ui/opportunity_card.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/home/premium_home_feed.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,10 +29,10 @@ import 'package:provider/provider.dart';
 class _FakeOpportunityAgent implements OpportunityAgentRepository {
   @override
   Future<HopeOpportunityAgentState> getState() async =>
-      HopeOpportunityAgentState(
+      const HopeOpportunityAgentState(
         profileCompleteness: HopeOpportunityAgentProfileCompleteness(score: 1),
-        activity: const HopeOpportunityAgentActivity(),
-        actions: const [
+        activity: HopeOpportunityAgentActivity(),
+        actions: [
           HopeOpportunityAgentAction(
             type: 'FOLLOW_UP_APPLICATION',
             title: 'Review your next opportunity',
@@ -33,6 +40,34 @@ class _FakeOpportunityAgent implements OpportunityAgentRepository {
           ),
         ],
       );
+}
+
+class _FailOnceOpportunityAgent implements OpportunityAgentRepository {
+  int calls = 0;
+  final firstResponse = Completer<HopeOpportunityAgentState>();
+
+  @override
+  Future<HopeOpportunityAgentState> getState() {
+    calls += 1;
+    if (calls == 1) return firstResponse.future;
+    return Future.value(const HopeOpportunityAgentState(
+      profileCompleteness: HopeOpportunityAgentProfileCompleteness(score: 1),
+      activity: HopeOpportunityAgentActivity(),
+      actions: [
+        HopeOpportunityAgentAction(
+          type: 'REVIEW_OPPORTUNITY',
+          title: 'Review the matched opportunity',
+          reasons: ['SKILL_MATCH'],
+        ),
+      ],
+    ));
+  }
+
+  void failInitialRequest() {
+    firstResponse.completeError(
+      StateError('opportunity agent temporarily unavailable'),
+    );
+  }
 }
 
 class _AuthRepo implements AuthRepository {
@@ -91,6 +126,22 @@ class _SequencedMarketplaceRepository implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
+class _FailingHomeOpportunitiesRepository extends _SequencedMarketplaceRepository {
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async {
+    throw StateError('opportunities unavailable');
+  }
+}
+
 HopeJob _job(String id, String title, {bool recommended = false}) =>
     HopeJob.fromMap({
       'id': id,
@@ -108,6 +159,62 @@ HopeJob _job(String id, String title, {bool recommended = false}) =>
           recommended ? ['SKILL_MATCH'] : const <String>[],
     });
 
+class _ImmediateTransactions implements TransactionRepository {
+  @override
+  Future<List<HopeJob>> listMyJobs() async => const <HopeJob>[];
+
+  @override
+  Future<HopePayment> getPayment(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopePayment> fundPayment(String jobId, {String? idempotencyKey}) async => throw UnimplementedError();
+  @override
+  Future<HopePayment> refundPayment(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopePayment> releasePayment(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopeJob> startJob(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopeJob> deliverJob(String jobId) async => throw UnimplementedError();
+  @override
+  Future<HopeJob> acceptJob(String jobId) async => throw UnimplementedError();
+  @override
+  Future<void> submitEvidence(String jobId, {required String uri, required String notes, required String type}) async => throw UnimplementedError();
+}
+
+class _FailOnceActiveJobsTransactions extends _ImmediateTransactions {
+  int listCalls = 0;
+
+  @override
+  Future<List<HopeJob>> listMyJobs() async {
+    listCalls += 1;
+    if (listCalls == 1) {
+      throw StateError('active work unavailable');
+    }
+    return const <HopeJob>[];
+  }
+}
+
+class _DelayedWalletRepository implements WalletRepository {
+  final requests = <Completer<HopeWallet>>[];
+
+  @override
+  Future<HopeWallet> getWallet() {
+    final gate = Completer<HopeWallet>();
+    requests.add(gate);
+    return gate.future;
+  }
+
+  @override
+  Future<WalletTransactionsPage> listTransactions({int limit = 30, String? cursor}) async => throw UnimplementedError();
+  @override
+  Future<List<HopePayout>> listPayouts() async => throw UnimplementedError();
+  @override
+  Future<Map<String, dynamic>> transfer({required String destinationWalletId, required int amount, required String idempotencyKey}) async => throw UnimplementedError();
+  @override
+  Future<Map<String, dynamic>> requestPayout({required int amount, required String idempotencyKey}) async => throw UnimplementedError();
+  @override
+  Future<Map<String, dynamic>> topUp({required int amount, required String idempotencyKey}) async => throw UnimplementedError();
+}
 class _HomeHarness {
   const _HomeHarness(this.widget, this.settings);
 
@@ -118,6 +225,11 @@ class _HomeHarness {
 Future<_HomeHarness> _host(
   _SequencedMarketplaceRepository repository, {
   bool authenticated = false,
+  double textScale = 1,
+  String locale = 'en',
+  TransactionRepository? transactions,
+  WalletRepository? wallets,
+  OpportunityAgentRepository? agentRepository,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
@@ -133,7 +245,7 @@ Future<_HomeHarness> _host(
   }
   return _HomeHarness(
     MaterialApp(
-      locale: const Locale('en'),
+      locale: Locale(locale),
       supportedLocales: const [Locale('fa'), Locale('en')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -141,6 +253,14 @@ Future<_HomeHarness> _host(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        if (textScale <= 1) return child!;
+        final media = MediaQueryData.fromView(View.of(context));
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        );
+      },
       home: MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: settings),
@@ -148,8 +268,11 @@ Future<_HomeHarness> _host(
           Provider<ApplicationRegistry>.value(
             value: ApplicationRegistry(
               marketplace: repository,
-              opportunityAgent:
-                  authenticated ? _FakeOpportunityAgent() : null,
+              transactions: transactions,
+              wallets: wallets,
+              opportunityAgent: authenticated
+                  ? (agentRepository ?? _FakeOpportunityAgent())
+                  : null,
             ),
           ),
         ],
@@ -167,6 +290,128 @@ Future<_HomeHarness> _host(
 void _noop() {}
 
 void main() {
+  testWidgets('home identity header is neutral rather than time-based',
+      (tester) async {
+    final harness = await _host(_SequencedMarketplaceRepository(), authenticated: true);
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('Good evening, Ali'), findsNothing);
+  });
+
+  testWidgets(
+    'Home exposes retry when Opportunity Agent fails to load',
+    (tester) async {
+      final agent = _FailOnceOpportunityAgent();
+      final harness = await _host(
+        _SequencedMarketplaceRepository(),
+        authenticated: true,
+        agentRepository: agent,
+      );
+
+      await tester.pumpWidget(harness.widget);
+      await tester.pump();
+      // Complete the rejected Future only after FutureBuilder has subscribed.
+      agent.failInitialRequest();
+      await tester.pumpAndSettle();
+
+      expect(agent.calls, 1);
+      expect(find.text('Smart suggestions are temporarily unavailable'), findsOneWidget);
+      final retry = find.byKey(const ValueKey('home-opportunity-agent-retry'));
+      expect(retry, findsOneWidget);
+      await tester.ensureVisible(retry);
+      await tester.pumpAndSettle();
+
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+
+      expect(agent.calls, 2);
+      expect(find.text('Smart suggestions are temporarily unavailable'), findsNothing);
+      expect(find.text('Review the matched opportunity'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Home distinguishes active-work load failure and retries it',
+    (tester) async {
+      final transactions = _FailOnceActiveJobsTransactions();
+      final wallets = _DelayedWalletRepository();
+      final harness = await _host(
+        _SequencedMarketplaceRepository(),
+        authenticated: true,
+        transactions: transactions,
+        wallets: wallets,
+      );
+
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      expect(transactions.listCalls, 1);
+      expect(find.text('Active work is temporarily unavailable'), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-active-work-retry')), findsOneWidget);
+
+      final retry = find.byKey(const ValueKey('home-active-work-retry'));
+      await tester.ensureVisible(retry);
+      await tester.pumpAndSettle();
+      await tester.tap(retry);
+      // The Home feed contains animated loading surfaces during refresh.
+      // Advance finite frames rather than requiring every animation to settle.
+      expect(transactions.listCalls, 2);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      expect(find.text('Active work is temporarily unavailable'), findsNothing);
+      expect(find.byKey(const ValueKey('home-active-work-retry')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Home Pulse does not report zero matches when opportunities fail to load',
+    (tester) async {
+      tester.view.physicalSize = const Size(720, 1280);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _FailingHomeOpportunitiesRepository(),
+        locale: 'en',
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Opportunities are unavailable'), findsOneWidget);
+      final matches = find.byKey(
+        const ValueKey('home-pulse-stat-matches'),
+      );
+      expect(matches, findsOneWidget);
+      final texts = tester
+          .widgetList<Text>(find.descendant(of: matches, matching: find.byType(Text)))
+          .map((widget) => widget.data ?? '')
+          .toList();
+      expect(texts, contains('—'));
+      expect(texts, isNot(contains('0')));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Home overview heading does not duplicate the featured match section',
+    (tester) async {
+      final harness = await _host(_SequencedMarketplaceRepository());
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your HOPE overview'), findsOneWidget);
+      expect(find.text('Opportunities matched to your path'), findsNothing);
+      expect(find.text('Best match for you'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('single recommendation does not reserve an empty matches section',
       (tester) async {
     final repository = _SequencedMarketplaceRepository();
@@ -177,6 +422,140 @@ void main() {
     expect(find.text('Best match for you'), findsOneWidget);
     expect(find.text('Matches'), findsNothing);
   });
+
+  testWidgets('compact home fold prioritizes the featured opportunity before the pulse',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final harness = await _host(_SequencedMarketplaceRepository());
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame).first).padding.bottom,
+      12,
+      reason: 'The home ListView already owns navigation-aware end padding; its outer frame should not reserve another dead band.',
+    );
+    final pulse = find.byKey(const ValueKey('home-pulse-panel'));
+    final featured = find.text('Best match for you');
+    expect(pulse, findsOneWidget);
+    expect(featured, findsOneWidget);
+    expect(tester.getTopLeft(featured).dy, lessThan(tester.getTopLeft(pulse).dy));
+
+    final featuredCards = find.byType(OpportunityCard);
+    expect(featuredCards, findsWidgets);
+    final featuredRect = tester.getRect(featuredCards.first);
+    final homeViewport = tester.getRect(find.byType(ListView).first);
+    expect(featuredRect.top, greaterThanOrEqualTo(homeViewport.top));
+    expect(
+      featuredRect.bottom,
+      lessThanOrEqualTo(homeViewport.bottom),
+      reason: 'The primary featured opportunity must fit in the first compact viewport.',
+    );
+
+    final compactPulse = find.byKey(const ValueKey('home-pulse-compact-strip'));
+    expect(compactPulse, findsOneWidget);
+    expect(tester.getSize(compactPulse).height, lessThanOrEqualTo(64));
+    final metrics = find.byKey(const ValueKey('home-pulse-compact-metrics'));
+    expect(metrics, findsOneWidget);
+    final metricsRect = tester.getRect(metrics);
+    final chipRects = <Rect>[];
+    for (var index = 0; index < 4; index++) {
+      final chip = find.byKey(ValueKey('home-pulse-compact-metric-$index'));
+      expect(chip, findsOneWidget);
+      final rect = tester.getRect(chip);
+      chipRects.add(rect);
+      expect(rect.left, greaterThanOrEqualTo(metricsRect.left));
+      expect(rect.right, lessThanOrEqualTo(metricsRect.right));
+      expect(rect.height, lessThanOrEqualTo(32));
+    }
+    expect(
+      chipRects.map((rect) => rect.top.round()).toSet().length,
+      2,
+      reason: 'Compact Pulse should arrange its four complete metrics in two rows.',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'late wallet result from an old Home load cannot overwrite the newest refresh',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final marketplace = _SequencedMarketplaceRepository();
+      final wallets = _DelayedWalletRepository();
+      final harness = await _host(
+        marketplace,
+        authenticated: true,
+        transactions: _ImmediateTransactions(),
+        wallets: wallets,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+      expect(wallets.requests, hasLength(1));
+
+      final refresh = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      final refreshFuture = refresh.onRefresh();
+      await tester.pump();
+      expect(wallets.requests, hasLength(2));
+
+      wallets.requests[1].complete(HopeWallet(
+        id: 'wallet-new',
+        userId: 'u1',
+        currency: 'TOMAN',
+        availableBalance: 0,
+        lockedBalance: 0,
+        status: 'ACTIVE',
+        escrowBalance: 5555,
+      ));
+      marketplace.staleRefresh.complete([marketplace.fresh]);
+      await refreshFuture;
+      await tester.pumpAndSettle();
+
+      final metric =
+          find.byKey(const ValueKey('home-pulse-stat-Held in escrow'));
+      expect(metric, findsOneWidget);
+      final latestBalance = HopeDisplayFormatter.money(5555, locale: 'en');
+      final oldBalance = HopeDisplayFormatter.money(1111, locale: 'en');
+      final visibleMetricText = tester
+          .widgetList<Text>(
+            find.descendant(of: metric, matching: find.byType(Text)),
+          )
+          .map((widget) => widget.data ?? '')
+          .toList();
+      expect(
+        visibleMetricText,
+        contains(latestBalance),
+        reason: 'Current metric texts: ${visibleMetricText.join(' | ')}',
+      );
+
+      wallets.requests[0].complete(HopeWallet(
+        id: 'wallet-old',
+        userId: 'u1',
+        currency: 'TOMAN',
+        availableBalance: 0,
+        lockedBalance: 0,
+        status: 'ACTIVE',
+        escrowBalance: 1111,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: metric, matching: find.text(latestBalance)),
+        findsOneWidget,
+        reason: 'A stale wallet response must not replace the newest snapshot.',
+      );
+      expect(
+        find.descendant(of: metric, matching: find.text(oldBalance)),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('settings changes reload home opportunities',
       (tester) async {
@@ -194,10 +573,10 @@ void main() {
   });
 
   testWidgets(
-      'home pulse uses four compact columns above the inner width threshold',
+      'home pulse uses a single horizontal scanline at wide widths',
       (tester) async {
     tester.view.physicalSize = const Size(1179, 2556);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();
@@ -205,10 +584,12 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final stats = List.generate(
-        4,
-        (index) => find.byKey(ValueKey('home-pulse-stat-$index')),
-      );
+      final stats = [
+        find.text('matches'),
+        find.text('new'),
+        find.text('active'),
+        find.text('Held in escrow'),
+      ];
       for (final stat in stats) {
         expect(stat, findsOneWidget);
       }
@@ -227,10 +608,10 @@ void main() {
   });
 
   testWidgets(
-      'home pulse stays compact enough to keep the first match in the first fold',
+      'home pulse stays a quiet rail before the primary match on responsive widths',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();
@@ -238,15 +619,20 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final pulse = find.ancestor(
-        of: find.text('HOPE Pulse'),
-        matching: find.byType(PremiumPanel),
-      ).first;
-      expect(tester.getSize(pulse).height, lessThanOrEqualTo(105));
+      final pulse = find.byKey(const ValueKey('home-pulse-panel'));
+      final pulseSize = tester.getSize(pulse);
+      final statGridWidth = tester.getSize(
+        find.byKey(const ValueKey('home-pulse-stat-grid')),
+      ).width;
+      final expectedMaximumHeight = statGridWidth >= 800 ? 70.0 : 140.0;
+      expect(pulseSize.height, lessThanOrEqualTo(expectedMaximumHeight));
 
       final bestMatch = find.text('Best match for you');
       expect(bestMatch, findsOneWidget);
-      expect(tester.getTopLeft(bestMatch).dy, lessThan(230));
+      expect(
+        tester.getTopLeft(pulse).dy,
+        lessThan(tester.getTopLeft(bestMatch).dy),
+      );
     } finally {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
@@ -254,10 +640,10 @@ void main() {
   });
 
   testWidgets(
-      'home pulse stays in one visual row at the 720x1280 responsive viewport',
+      'home pulse adapts its metric rows to the actual responsive rail width at 720x1280',
       (tester) async {
     tester.view.physicalSize = const Size(720, 1280);
-    tester.view.devicePixelRatio = 3;
+    tester.view.devicePixelRatio = 1.0;
 
     try {
       final repository = _SequencedMarketplaceRepository();
@@ -265,23 +651,79 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final stats = List.generate(
-        4,
-        (index) => find.byKey(ValueKey('home-pulse-stat-$index')),
-      );
+      final stats = [
+        find.text('matches'),
+        find.text('new'),
+        find.text('active'),
+        find.text('Held in escrow'),
+      ];
       final tops = stats
           .map((finder) => tester.getTopLeft(finder).dy)
           .toList(growable: false);
+      final gridWidth = tester.getSize(
+        find.byKey(const ValueKey('home-pulse-stat-grid')),
+      ).width;
 
-      expect(
-        tops.every((top) => (top - tops.first).abs() < 1.0),
-        isTrue,
-      );
+      if (gridWidth >= 800) {
+        expect(tops.every((top) => (top - tops.first).abs() < 1.0), isTrue);
+      } else {
+        expect((tops[0] - tops[1]).abs(), lessThan(1.0));
+        expect((tops[2] - tops[3]).abs(), lessThan(1.0));
+        expect(tops[2], greaterThan(tops[0]));
+      }
     } finally {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     }
   });
+
+
+  testWidgets(
+    'Wave30 Home Pulse reflows into two readable rows at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _SequencedMarketplaceRepository(),
+        textScale: 1.5,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final opportunityCards = tester.widgetList<OpportunityCard>(
+        find.byType(OpportunityCard),
+      );
+      expect(
+        opportunityCards.any(
+          (card) => card.variant == OpportunityCardVariant.featured,
+        ),
+        isTrue,
+        reason: 'At 1.5x text scale, the proven featured layout must replace the compressed first-fold scan card.',
+      );
+
+      final keys = [
+        'home-pulse-stat-matches',
+        'home-pulse-stat-new',
+        'home-pulse-stat-active',
+        'home-pulse-stat-Held in escrow',
+      ].map((key) => find.byKey(ValueKey(key))).toList(growable: false);
+      for (final stat in keys) {
+        expect(stat, findsOneWidget);
+      }
+      final rects = keys.map((finder) => tester.getRect(finder)).toList(growable: false);
+      expect((rects[0].top - rects[1].top).abs(), lessThan(1.0));
+      expect((rects[2].top - rects[3].top).abs(), lessThan(1.0));
+      expect(rects[2].top, greaterThan(rects[0].top));
+      expect(
+        tester.getSize(find.byKey(const ValueKey('home-pulse-panel'))).height,
+        greaterThan(70),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('home money labels use the canonical Toman copy helper',
       (tester) async {
@@ -292,6 +734,21 @@ void main() {
     expect(
       moneyLabel(tester.element(find.byType(PremiumHomeFeed)), 125000),
       contains('125,000 TOMAN'),
+    );
+  });
+
+  testWidgets('home money labels localize Persian digits and grouping in fa-RTL',
+      (tester) async {
+    final harness = await _host(
+      _SequencedMarketplaceRepository(),
+      locale: 'fa',
+    );
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+
+    expect(
+      moneyLabel(tester.element(find.byType(PremiumHomeFeed)), 125000),
+      contains('۱۲۵٬۰۰۰'),
     );
   });
 
@@ -309,6 +766,12 @@ void main() {
       );
 
       expect(bestMatch, findsOneWidget);
+      await tester.scrollUntilVisible(
+        intelligence,
+        400,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       expect(intelligence, findsOneWidget);
       expect(
         tester.getTopLeft(bestMatch).dy,

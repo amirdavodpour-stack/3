@@ -3,7 +3,9 @@ part of 'transaction_page.dart';
 extension on _TransactionPageState {
   Widget _flow(BuildContext context, HopeJob? job, String paymentStatus) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final current = _stepFor(job, paymentStatus).clamp(0, 5);
+    // Unknown backend states must not be visualized as a real lifecycle stage.
+    // _stepFor returns -1 unless payment/job state maps to a documented stage.
+    final current = _stepFor(job, paymentStatus);
     const en = ['Fund', 'Hold', 'Work', 'Deliver', 'Approve', 'Payout'];
     const fa = ['تأمین وجه', 'در امانت', 'در حال انجام', 'تحویل', 'تأیید', 'تسویه'];
     const icons = [
@@ -17,7 +19,7 @@ extension on _TransactionPageState {
 
     return PremiumPanel(
       key: const ValueKey('transaction-payment-lifecycle'),
-      padding: const EdgeInsets.fromLTRB(10, 7, 10, 5),
+      padding: EdgeInsets.fromLTRB(10, compact ? 6 : 7, 10, compact ? 6 : 5),
       highlight: paymentStatus == 'HELD' ||
           paymentStatus == 'RELEASED' ||
           paymentStatus == 'HOLD_PENDING' ||
@@ -26,27 +28,44 @@ extension on _TransactionPageState {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _t('مسیر مالی و انجام کار', 'Payment & job flow'),
-                  style: HopeV2Type.section(context),
-                ),
-              ),
-              PremiumTag(
-                icon: _statusIcon(paymentStatus),
-                label: _statusLabel(paymentStatus),
-                color: _statusColor(paymentStatus),
-              ),
-            ],
+          Text(
+            _t('مسیر مالی و انجام کار', 'Payment & job flow'),
+            style: HopeV2Type.section(context),
           ),
           const SizedBox(height: 5),
-          _lifecycleProgress(
-            context,
-            current: current,
-            total: en.length,
-          ),
+          if (current >= 0)
+            _lifecycleProgress(
+              context,
+              current: current,
+              total: en.length,
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HopeIcon(
+                    HopeV2Icons.pending,
+                    size: 17,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _t(
+                        'مرحله نامشخص',
+                        'Stage unavailable',
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 4),
           for (var i = 0; i < en.length; i++)
             _lifecycleStep(
@@ -102,7 +121,7 @@ extension on _TransactionPageState {
   }) {
     final scheme = Theme.of(context).colorScheme;
     final safeCurrent = current.clamp(0, total - 1);
-    final progress = total <= 1 ? 1.0 : safeCurrent / (total - 1);
+    final progress = total <= 1 ? 1.0 : (safeCurrent + 1) / total;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -111,8 +130,8 @@ extension on _TransactionPageState {
             Expanded(
               child: Text(
                 _t(
-                  'مرحله ${safeCurrent + 1} از ${total}',
-                  'Stage ${safeCurrent + 1} of ${total}',
+                  'مرحله ${safeCurrent + 1} از $total',
+                  'Stage ${safeCurrent + 1} of $total',
                 ),
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w800,
@@ -386,6 +405,10 @@ extension on _TransactionPageState {
     final status = payment?.status ?? 'NO_TRANSACTION';
     final job = payment?.job;
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final publicReference = HopeDisplayFormatter.humanRef(
+      payment?.providerRef,
+      locale: Localizations.localeOf(context).languageCode,
+    );
     return Directionality(
       textDirection: Localizations.localeOf(context).languageCode == 'en'
           ? TextDirection.ltr
@@ -427,7 +450,7 @@ extension on _TransactionPageState {
             onRefresh: refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
+              padding: HopeV2Navigation.scrollEndPadding(context),
               children: [
               if (error != null) ...[
                 HopeAsyncState(
@@ -442,57 +465,74 @@ extension on _TransactionPageState {
                 ),
                 const SizedBox(height: 14),
               ],
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          job?.title ??
-                              HopeCopy.of(context).copy_transaction_7e0ea3b,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
+              Builder(
+                builder: (context) {
+                  final enlargedText =
+                      MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                  final titleBlock = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job?.title ??
+                            HopeCopy.of(context).copy_transaction_7e0ea3b,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      if (payment?.id == null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          payment?.id == null
-                              ? _t(
-                                  'پرداخت هنوز ساخته نشده',
-                                  'Payment has not been created yet',
-                                )
-                              : _t('شناسه پرداخت: ${payment?.id ?? ""}', 'Payment ID: ${payment?.id ?? ""}'),
+                          _t(
+                            'پرداخت هنوز ساخته نشده',
+                            'Payment has not been created yet',
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  PremiumTag(
+                    ],
+                  );
+                  final statusTag = PremiumTag(
                     icon: _statusIcon(status),
                     label: _statusLabel(status),
                     color: _statusColor(status),
-                  ),
-                  IconButton(
+                  );
+                  final refreshButton = IconButton(
                     onPressed: loading ? null : refresh,
                     tooltip: _t('به‌روزرسانی وضعیت', 'Refresh status'),
                     icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
-                  ),
-                ],
+                  );
+
+                  if (enlargedText) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        titleBlock,
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          alignment: WrapAlignment.spaceBetween,
+                          children: [statusTag, refreshButton],
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(child: titleBlock),
+                      const SizedBox(width: 8),
+                      statusTag,
+                      refreshButton,
+                    ],
+                  );
+                },
               ),
-              if (job != null) ...[
-                const SizedBox(height: 7),
-                StatusPill(
-                  _jobStatusLabel(job.status),
-                  color: AppColors.muted,
-                  icon: HopeV2Icons.job,
-                ),
-              ],
-              const SizedBox(height: 12),
+
+              const SizedBox(height: 8),
               PremiumPanel(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                 highlight: status == 'HELD' ||
@@ -523,30 +563,24 @@ extension on _TransactionPageState {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        PremiumTag(
-                          icon: _statusIcon(status),
-                          label: _statusLabel(status),
-                          color: _statusColor(status),
-                        ),
+
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Text(
                       HopeCopy.of(context).copy_amount_6400812,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 4),
-                    FittedBox(
-                      alignment: AlignmentDirectional.centerStart,
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        moneyLabel(context, payment?.amount ?? '—'),
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: compact ? 25 : null,
-                              letterSpacing: -.8,
-                            ),
+                    Text(
+                      key: const ValueKey('transaction-payment-amount'),
+                      moneyLabel(context, payment?.amount ?? '—'),
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: compact ? 25 : null,
+                        letterSpacing: -.8,
                       ),
                     ),
                     if (status == 'HELD' ||
@@ -561,7 +595,7 @@ extension on _TransactionPageState {
                         ),
                       ),
                     ],
-                    if (!compact && (payment?.providerRef?.trim().isNotEmpty ?? false)) ...[
+                    if (!compact && publicReference != null) ...[
                       const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -577,7 +611,7 @@ extension on _TransactionPageState {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              payment!.providerRef!.trim(),
+                              publicReference,
                               softWrap: true,
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
@@ -623,22 +657,24 @@ extension on _TransactionPageState {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               _flow(context, job, status),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               _actions(context, job, status),
               if (payment?.fees != null) ...[
                 const SizedBox(height: 12),
                 PremiumPanel(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
                               HopeCopy.of(context)
                                   .copy_financial_details_f24007d,
-                              style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 12),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              )),
+                          const SizedBox(height: 8),
                           _moneyRow(
                               context,
                               HopeCopy.of(context).copy_base_amount_82586c0,
@@ -651,7 +687,7 @@ extension on _TransactionPageState {
                               context,
                               HopeCopy.of(context).copy_worker_fee_85a35aa,
                               payment!.fees!.workerFee),
-                          const Divider(height: 20),
+                          const Divider(height: 16),
                           _moneyRow(
                               context,
                               HopeCopy.of(context).copy_employer_charge_9740283,

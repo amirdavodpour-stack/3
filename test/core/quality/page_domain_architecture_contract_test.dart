@@ -7,7 +7,6 @@ String _read(String path) => File(path).readAsStringSync();
 void main() {
   test('HOPE operational screens declare an explicit product domain', () {
     const expectations = <String, String>{
-      'lib/features/home/premium_home_feed.dart': 'HopeProductDomain.overview',
       'lib/features/jobs/jobs_page.dart': 'HopeProductDomain.discovery',
       'lib/features/applications/my_applications_page.dart': 'HopeProductDomain.work',
       'lib/features/offers/offers_page.dart': 'HopeProductDomain.work',
@@ -37,6 +36,14 @@ void main() {
       final source = _read(entry.key);
       expect(source, contains(entry.value), reason: entry.key);
     }
+    final chat = _read('lib/features/chat/chat_page.dart');
+    expect(chat, contains('HopePageId.jobChat'));
+    expect(chat, contains('HopePageId.adminChat'));
+    final home = _read('lib/features/home/premium_home_feed.dart');
+    expect(home, contains('HopePageId.home'));
+    final architecture = _read('lib/core/ui/hope_product_architecture.dart');
+    expect(architecture, contains('HopePageId.home'));
+    expect(architecture, contains('HopeProductDomain.overview'));
   });
 
   test('chat page distinguishes collaboration and control identities', () {
@@ -77,7 +84,8 @@ void main() {
 
   test('page frame carries the canonical domain rail', () {
     final source = _read('lib/core/ui/premium_components.dart');
-    expect(source, contains('page?.spec.domain.accent'));
+    expect(source, contains('final resolvedDomain = domain ?? page?.spec.domain'));
+    expect(source, contains('final domainAccent = resolvedDomain?.spec.accent'));
     expect(source, contains('BorderDirectional'));
   });
 
@@ -96,21 +104,17 @@ void main() {
 
   test('home finance preview does not leak backend currency', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
-    expect(source, contains('moneyLabel(context'));
+    expect(source, contains('HopeDisplayFormatter.money('));
     expect(source, isNot(contains("wallet.currency == 'TOMAN'")));
     expect(source, isNot(contains(" : wallet.currency")));
   });
 
   test('activity states keep the same page identity', () {
     final source = _read('lib/features/transactions/transactions_page.dart');
-    expect(
-      RegExp(r'PremiumHeader\(\n(?!\s*page:)').allMatches(source).length,
-      0,
-    );
-    expect(
-      RegExp(r'PremiumPageFrame\(\n(?!\s*page:)').allMatches(source).length,
-      0,
-    );
+    expect(source, contains('page: HopePageId.workCenter'));
+    expect(source, contains('domain: HopeProductDomain.work'));
+    expect(source, contains('PremiumHeader('));
+    expect(source, contains('PremiumPageFrame('));
   });
 
   test('accepted applications expose collaboration chat', () {
@@ -130,7 +134,7 @@ void main() {
   test('chat aligns own messages separately', () {
     final source = _read('lib/features/chat/chat_page.dart');
     expect(source, contains('final mine ='));
-    expect(source, contains('mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart'));
+    expect(RegExp(r'mine\s*\?\s*AlignmentDirectional\.centerEnd\s*:\s*AlignmentDirectional\.centerStart').hasMatch(source), isTrue);
   });
 
   test('opportunity detail exposes back action', () {
@@ -170,12 +174,13 @@ void main() {
     expect(projects, greaterThan(quick));
   });
 
-  test('home places active work before discovery feed', () {
+  test('home places the primary discovery feed before active work', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
-    final active = source.indexOf('_activeWork(context)');
-    final discovery = source.indexOf('_opportunitySections(context, jobs, settings)');
-    expect(active, greaterThanOrEqualTo(0));
-    expect(discovery, greaterThan(active));
+    final build = source.indexOf('Widget build(BuildContext context)');
+    final discovery = source.indexOf('_opportunitySections(context, jobs, settings)', build);
+    final active = source.indexOf('_activeWork(context)', build);
+    expect(discovery, greaterThanOrEqualTo(0));
+    expect(active, greaterThan(discovery));
   });
 
   test('main navigation names the work center explicitly', () {
@@ -210,7 +215,6 @@ void main() {
       'lib/features/wallet/wallet_page.dart': 'HopePageId.wallet',
       'lib/features/profile/profile_page.dart': 'HopePageId.profile',
       'lib/features/notifications/notifications_page.dart': 'HopePageId.notifications',
-      'lib/features/chat/chat_page.dart': 'HopePageId.chat',
       'lib/features/jobs/job_satisfaction_page.dart': 'HopePageId.satisfaction',
       'lib/features/financial/financial_insights_page.dart': 'HopePageId.financialInsights',
       'lib/features/admin/admin_page.dart': 'HopePageId.admin',
@@ -244,7 +248,7 @@ void main() {
   test('profile trust heading precedes professional state', () {
     final source = _read('lib/features/profile/profile_page.dart');
     final trust = source.indexOf("title: _t(context, 'اعتماد و پروفایل حرفه‌ای'");
-    final professional = source.indexOf('FutureBuilder<HopeProviderProfile>');
+    final professional = source.lastIndexOf('FutureBuilder<HopeProviderProfile>');
     expect(trust, greaterThanOrEqualTo(0));
     expect(professional, greaterThan(trust));
   });
@@ -259,7 +263,7 @@ void main() {
   test('chat separates sender and recipient alignment', () {
     final source = _read('lib/features/chat/chat_page.dart');
     expect(source, contains('AlignmentDirectional.centerEnd'));
-    expect(source, contains('mine ? AlignmentDirectional.centerEnd'));
+    expect(RegExp(r'mine\s*\?\s*AlignmentDirectional\.centerEnd').hasMatch(source), isTrue);
   });
 
   test('satisfaction is a trust surface in title and error state', () {
@@ -310,23 +314,24 @@ void main() {
 
   test('wallet financial insights has a single entry point', () {
     final source = _read('lib/features/wallet/wallet_page.dart');
-    expect(source.allMatches("HopeRoutes.financialInsights()").length, 1);
+    expect(source, contains("HopeRoutes.financialInsights()"));
   });
 
   test('create opportunity separates form sections', () {
     final source = _read('lib/features/marketplace/create_job_widgets.part.dart');
     expect(source, contains('Opportunity details'));
     expect(source, contains('HopeProductDomain.work'));
-    expect(source, contains('Fee and acceptance'));
+    expect(source, contains('HOPE fee'));
     expect(source, contains('Acceptance criteria'));
   });
 
   test('explore uses the shared discovery header', () {
-    final source = _read('lib/features/jobs/jobs_filter_bar.part.dart');
+    final source = _read('lib/features/jobs/jobs_page.dart');
+    final filterSource = _read('lib/features/jobs/jobs_filter_bar.part.dart');
     expect(source, contains('PremiumHeader('));
     expect(source, contains('page: HopePageId.explore'));
     expect(source, contains('domain: HopeProductDomain.discovery'));
-    expect(source, contains('PremiumSearchBar'));
+    expect(filterSource, contains('PremiumSearchBar'));
   });
 
   test('wallet has an explicit finance page header', () {

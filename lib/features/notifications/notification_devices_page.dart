@@ -107,11 +107,11 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 24),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               page: HopePageId.notificationDevices,
@@ -141,7 +141,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
             if (!_loading && _error == null)
               PremiumStatCard(
                 label: _t('دستگاه فعال برای Push', 'Active Push devices'),
@@ -153,20 +153,20 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                   'Only the state needed to manage notifications is exposed.',
                 ),
               ),
-            if (!_loading && _error == null) const SizedBox(height: 12),
+            if (!_loading && _error == null) const SizedBox(height: 8),
             if (_loading)
               const PremiumPanel(
-                child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator())),
+                child: SizedBox(height: 72, child: Center(child: CircularProgressIndicator())),
               )
             else if (_error != null)
               PremiumPanel(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   children: [
-                    const HopeIcon(HopeV2Icons.error, size: 34),
-                    const SizedBox(height: 10),
+                    const HopeIcon(HopeV2Icons.error, size: 28),
+                    const SizedBox(height: 8),
                     Text(_error!, textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     OutlinedButton.icon(
                       onPressed: _load,
                       icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
@@ -177,17 +177,17 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               )
             else if (_devices.isEmpty)
               PremiumPanel(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   children: [
-                    const HopeIcon(HopeV2Icons.notifications, size: 38),
-                    const SizedBox(height: 12),
+                    const HopeIcon(HopeV2Icons.notifications, size: 30),
+                    const SizedBox(height: 8),
                     Text(
                       _t('دستگاه فعالی برای اعلان ثبت نشده است.', 'No active notification devices are registered.'),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       _t('وقتی Push را در یک دستگاه فعال کنید، اینجا نمایش داده می‌شود.',
                           'A device appears here after Push notifications are enabled.'),
@@ -198,12 +198,12 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               )
             else
               PremiumPanel(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   children: _devices.map((device) {
                     final busy = _busyId == device.id;
                     return ListTile(
-                      leading: HopeIconTile(_icon(device.platform), filled: true),
+                      leading: HopeIconTile(_icon(device.platform), size: 36, filled: true),
                       title: Text(
                         _platformLabel(device.platform),
                         style: const TextStyle(fontWeight: FontWeight.w800),
@@ -241,12 +241,12 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               ),
             const SizedBox(height: 14),
             PremiumPanel(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const HopeIcon(HopeV2Icons.insights, size: 20),
-                  const SizedBox(width: 10),
+                  const HopeIcon(HopeV2Icons.insights, size: 18),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(_t(
                       'این صفحه فقط دستگاه‌های ثبت‌شده را مدیریت می‌کند؛ توکن Push خام در رابط کاربری نمایش داده نمی‌شود.',

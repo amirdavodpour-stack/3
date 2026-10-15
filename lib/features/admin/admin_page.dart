@@ -43,6 +43,11 @@ class _AdminPageState extends State<AdminPage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 4, vsync: this);
+    _summary = Future.value(const HopeAdminSummary(values: {}));
+    _jobs = Future.value(const <HopeJob>[]);
+    _applications = Future.value(const <HopeApplication>[]);
+    _users = Future.value(const <HopeAdminUser>[]);
+    _audit = Future.value(const <HopeAdminAuditEvent>[]);
     _checkPanelAccess();
   }
 
@@ -61,19 +66,40 @@ class _AdminPageState extends State<AdminPage>
         Navigator.pushReplacement(context, HopeRoutes.adminAccess());
         return;
       }
+      final repository = context.read<AdminRepository>();
+      final summary = repository.getSummary();
+      final jobs = repository.listJobs();
+      final applications = repository.listApplications();
+      final users = repository.listUsers();
+      final audit = repository.listAudit();
+      _observeFuture(summary);
+      _observeFuture(jobs);
+      _observeFuture(applications);
+      _observeFuture(users);
+      _observeFuture(audit);
       setState(() {
         _panelVerified = true;
         _isPrimaryAdmin = access['primaryAdmin'] == true;
         _currentAdminId = '${access['userId'] ?? ''}';
-        _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
+        _permissions = (access['permissions'] is List)
+            ? (access['permissions'] as List).whereType<String>().toSet()
+            : <String>{};
         _checkingPanel = false;
+        _summary = summary;
+        _jobs = jobs;
+        _applications = applications;
+        _users = users;
+        _audit = audit;
       });
-      _reload();
     } catch (_) {
       if (!mounted) return;
       setState(() => _checkingPanel = false);
       Navigator.pushReplacement(context, HopeRoutes.adminAccess());
     }
+  }
+
+  void _observeFuture<T>(Future<T> future) {
+    future.then<void>((_) {}, onError: (Object _, StackTrace __) {});
   }
 
   void _reload() {
@@ -83,6 +109,11 @@ class _AdminPageState extends State<AdminPage>
     _applications = repository.listApplications();
     _users = repository.listUsers();
     _audit = repository.listAudit();
+    _observeFuture(_summary);
+    _observeFuture(_jobs);
+    _observeFuture(_applications);
+    _observeFuture(_users);
+    _observeFuture(_audit);
     if (mounted) setState(() {});
   }
 
@@ -193,7 +224,7 @@ class _AdminPageState extends State<AdminPage>
           body: RefreshIndicator(
             onRefresh: () async => _reload(),
             child: PremiumPageFrame(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 32),
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -222,23 +253,21 @@ class _AdminPageState extends State<AdminPage>
                           onPressed: _actionBusy
                               ? null
                               : () async {
-                                  await context.read<AdminRepository>().lockPanel();
-                                  if (mounted) {
-                                    Navigator.pushReplacement(
-                                      context,
-                                      HopeRoutes.adminAccess(),
-                                    );
-                                  }
+                                  final repository = context.read<AdminRepository>();
+                                  final navigator = Navigator.of(context);
+                                  await repository.lockPanel();
+                                  if (!mounted) return;
+                                  navigator.pushReplacement(HopeRoutes.adminAccess());
                                 },
                         ),
                       ],
                     ),
                   ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 FutureBuilder<HopeAdminSummary>(
                     future: _summary,
                     builder: (context, s) => _summaryGrid(context, s.data)),
-                const SizedBox(height: 11),
+                const SizedBox(height: 8),
                 PremiumQuickActionStrip(
                   domain: HopeProductDomain.control,
                   title: _t('کنترل‌های اصلی', 'Control actions'),
@@ -302,7 +331,7 @@ class _AdminPageState extends State<AdminPage>
                   Tab(text: HopeCopy.of(context).copy_audit_log_ff87181),
                 ]),
                 SizedBox(
-                    height: 580,
+                    height: (MediaQuery.sizeOf(context).height * .52).clamp(280.0, 440.0).toDouble(),
                     child: TabBarView(controller: _tabs, children: [
                       _jobsTab(context),
                       _applicationsTab(context),
@@ -398,7 +427,7 @@ class _AdminPageState extends State<AdminPage>
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(_t('لغو نقش مدیر؟', 'Revoke administrator role?')),
-        content: Text(_t('دسترسی مدیریتی '+"${user.displayName.isEmpty ? user.email : user.displayName}"+' قطع می‌شود.', 'Administrator access for '+"${user.displayName.isEmpty ? user.email : user.displayName}"+' will be removed.')),
+        content: Text(_t('دسترسی مدیریتی ${user.displayName.isEmpty ? user.email : user.displayName} قطع می‌شود.', 'Administrator access for ${user.displayName.isEmpty ? user.email : user.displayName} will be removed.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_t('انصراف', 'Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(_t('لغو نقش', 'Revoke role'))),
@@ -473,6 +502,7 @@ class _AdminPageState extends State<AdminPage>
           value: '${m?[key] ?? 0}',
           icon: item['icon']!,
           accent: Theme.of(context).colorScheme.primary,
+          compact: MediaQuery.sizeOf(context).width < 600,
         );
       }).toList(),
     );
@@ -481,7 +511,7 @@ class _AdminPageState extends State<AdminPage>
       {required VoidCallback retry}) {
     if (error == null) return const SizedBox.shrink();
     return Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         child: EmptyState(
             icon: HopeV2Icons.pending,
             title: HopeCopy.of(context).copy_connection_failed_1b34bc9,
@@ -515,16 +545,17 @@ class _AdminPageState extends State<AdminPage>
             children: list.take(50).map<Widget>((job) {
               final status = job.status ?? '—';
               return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: PremiumPanel(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(12),
                       child: Row(children: [
                         HopeIconTile(
                             job.isJob
                                 ? HopeV2Icons.job
                                 : HopeV2Icons.mission,
+                            size: 36,
                             filled: true),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
                         Expanded(
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -582,9 +613,9 @@ class _AdminPageState extends State<AdminPage>
             children: list.take(50).map<Widget>((a) {
               final status = a.status;
               return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: PremiumPanel(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(12),
                       child: Column(children: [
                         ListTile(
                             contentPadding: EdgeInsets.zero,

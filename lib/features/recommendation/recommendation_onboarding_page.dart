@@ -50,7 +50,19 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
     } catch (error) {
       if (!mounted) return;
       setState(() => _loading = false);
-      HopeFeedback.show(context, apiErrorMessage(error, fallback: 'مصاحبه هوشمند موقتاً در دسترس نیست.'), tone: HopeFeedbackTone.error);
+      final message = apiErrorMessage(
+        error,
+        fallback: 'مصاحبه هوشمند موقتاً در دسترس نیست.',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          HopeFeedback.show(
+            context,
+            message,
+            tone: HopeFeedbackTone.error,
+          );
+        }
+      });
     }
   }
 
@@ -134,19 +146,19 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
         body: SafeArea(
           child: PremiumPageFrame(
             maxWidth: 820,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: Column(
               children: [
                 PremiumHeader(
                   page: HopePageId.recommendation,
                   domain: HopeProductDomain.intelligence,
-                  eyebrow: 'HOPE AI',
+                  eyebrow: isEn ? 'HOPE AI' : 'پیشنهاد هوشمند',
                   title: isEn
                       ? 'Let HOPE learn your work preferences'
-                      : 'بگذارید HOPE سلیقه کاری شما را بشناسد',
+                      : 'ترجیحات کاری خود را مشخص کنید',
                   subtitle: isEn
-                      ? 'One question at a time. Your answers shape future opportunity recommendations.'
-                      : 'هر بار یک سؤال کوتاه؛ پاسخ‌های شما پایه پیشنهادهای شغلی بعدی می‌شوند.',
+                      ? 'A few answers make recommendations more relevant.'
+                      : 'با پاسخ به چند پرسش، پیشنهادها دقیق‌تر می‌شوند.',
                   trailing: PremiumIconButton(
                     icon: HopeV2Icons.close,
                     tooltip: isEn ? 'Skip' : 'بعداً',
@@ -217,7 +229,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                             hintText: isEn
                                 ? 'Write your answer…'
                                 : 'پاسخ خود را بنویسید…',
-                            prefixIcon: HopeIcon(
+                            prefixIcon: const HopeIcon(
                               HopeV2Icons.message,
                               size: 20,
                             ),

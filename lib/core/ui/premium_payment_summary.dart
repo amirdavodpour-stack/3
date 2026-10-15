@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/hope_v2_design.dart';
 import '../transactions/payment.dart';
+import 'hope_display_formatters.dart';
 import 'premium_components.dart';
 import 'components.dart';
 
@@ -39,23 +40,14 @@ class PremiumPaymentSummary extends StatelessWidget {
 
   String _money(BuildContext context, dynamic value) {
     if (value == null) return '—';
+    final locale = Localizations.localeOf(context).languageCode;
     final raw = '$value'.trim();
-    final parsed = num.tryParse(raw);
-    final normalized = parsed != null && parsed == parsed.truncate()
-        ? parsed.toInt().toString()
-        : raw;
-    final amount = int.tryParse(normalized);
-    if (amount == null) {
-      return "$normalized ${_label(context, 'تومان', 'Toman')}";
-    }
-    final digits = amount.abs().toString();
-    final parts = <String>[];
-    for (var end = digits.length; end > 0; end -= 3) {
-      final start = end - 3 < 0 ? 0 : end - 3;
-      parts.insert(0, digits.substring(start, end));
-    }
-    final grouped = amount < 0 ? '-${parts.join(',')}' : parts.join(',');
-    return "$grouped ${_label(context, 'تومان', 'Toman')}";
+    final integralDecimal = RegExp(r'^([+-]?\d+)\.0+$').firstMatch(raw);
+    final normalized = integralDecimal?.group(1) ?? raw;
+    final parsed = HopeDisplayFormatter.parseInteger(normalized);
+    if (parsed == null) return '—';
+    return '${HopeDisplayFormatter.integer(parsed, locale: locale)} '
+        '${_label(context, 'تومان', 'Toman')}';
   }
   Object _statusIcon() {
     switch (payment.status) {
@@ -73,6 +65,17 @@ class PremiumPaymentSummary extends StatelessWidget {
     }
   }
 
+  Color _statusColor(BuildContext context) {
+    final status = payment.status.toUpperCase();
+    if (status == 'RELEASED' || status == 'REFUNDED') {
+      return HopeV2SemanticColors.success(context);
+    }
+    if (status.contains('FAILED')) {
+      return HopeV2SemanticColors.error(context);
+    }
+    return HopeV2SemanticColors.pending(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final amount = payment.amount;
@@ -80,20 +83,16 @@ class PremiumPaymentSummary extends StatelessWidget {
     final status = _statusLabel(context);
     return Semantics(
       container: true,
+      excludeSemantics: true,
       label: _label(
         context,
         'وضعیت پرداخت: $status، مبلغ ${_money(context, amount)}',
         'Payment status: $status, amount ${_money(context, amount)}',
       ),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(HopeV2Spacing.lg),
-        highlight: const {
-          'HELD',
-          'RELEASED',
-          'HOLD_PENDING',
-          'RELEASE_PENDING',
-        }.contains(payment.status),
-        semanticLabel: _label(context, 'جزئیات پرداخت، $status', 'Payment details, $status'),
+        quiet: true,
+        padding: const EdgeInsets.fromLTRB(0, 6, 0, 4),
+        highlight: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -101,12 +100,9 @@ class PremiumPaymentSummary extends StatelessWidget {
               children: [
                 HopeIcon(
                   _statusIcon(),
+                  key: const ValueKey('premium-payment-status-icon'),
                   size: 22,
-                  color: payment.status == 'RELEASED' || payment.status == 'REFUNDED'
-                      ? HopeV2Colors.success
-                      : payment.status.contains('FAILED')
-                          ? HopeV2Colors.danger
-                          : HopeV2Colors.primary,
+                  color: _statusColor(context),
                 ),
                 const SizedBox(width: HopeV2Spacing.sm),
                 Expanded(
@@ -118,7 +114,10 @@ class PremiumPaymentSummary extends StatelessWidget {
                 if (amount != null)
                   Text(
                     _money(context, amount),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: HopeV2SemanticColors.price(context),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
               ],
             ),
@@ -163,18 +162,33 @@ class _Metric extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 42),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .55),
+          color: HopeV2Surfaces.panelSoft(context),
           borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+          border: Border.all(
+            color: HopeV2Surfaces.border(context).withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark ? .38 : .68,
+            ),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: Theme.of(context).textTheme.labelSmall),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? HopeV2Colors.darkMuted
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 2),
             Text(
               value,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: HopeV2SemanticColors.price(context),
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ],
         ),

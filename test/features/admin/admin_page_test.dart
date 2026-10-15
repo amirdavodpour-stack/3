@@ -7,6 +7,7 @@ import 'package:hope_mobile/core/admin/admin_repository.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/features/admin/admin_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -48,7 +49,10 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<List<HopeJob>> listJobs() async {
     calls.add('jobs');
-    if (failJobs) throw Exception('network down');
+    if (failJobs) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      throw Exception('network down');
+    }
     return jobs;
   }
 
@@ -161,6 +165,11 @@ class _FakeAdmin implements AdminRepository {
 
   @override
   Future<Map<String, dynamic>> getCrashSummary({int days = 30}) async => const {};
+  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async => const {'verified': true};
+  @override Future<void> lockPanel() async {}
+  @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
+  @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
+  @override Future<Map<String, dynamic>> resolveDispute(String id, {required String resolution, String? reason}) async => const {};
 }
 
 HopeJob _job(String id,
@@ -191,8 +200,13 @@ HopeJob _job(String id,
       'distanceKm': null,
     });
 
-Future<void> _pump(WidgetTester tester, _FakeAdmin repo) async {
-  tester.view.physicalSize = const Size(900, 2400);
+Future<void> _pump(
+  WidgetTester tester,
+  _FakeAdmin repo, {
+  double width = 900,
+  double height = 2400,
+}) async {
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -337,6 +351,28 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
   });
 
+  testWidgets('admin moderation workspace stays compact on a phone viewport',
+      (tester) async {
+    await _pump(tester, _FakeAdmin(), width: 390, height: 844);
+
+    final workspace = find.byType(TabBarView);
+    expect(workspace, findsOneWidget);
+    final size = tester.getSize(workspace);
+    expect(size.height, lessThanOrEqualTo(440));
+    expect(size.height, greaterThanOrEqualTo(280));
+
+    final stats = tester.widgetList<PremiumStatCard>(
+      find.byType(PremiumStatCard),
+    );
+    expect(stats, hasLength(6));
+    expect(
+      stats.every((card) => card.compact),
+      isTrue,
+      reason: 'Phone-width admin summary cards must use the compact editorial layout.',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('admin renders summary metrics and moderation actions',
       (tester) async {
     final repo = _FakeAdmin()
@@ -437,6 +473,7 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
         findsOneWidget);
   });
 
+  // A rejected jobs future must stay owned by the page FutureBuilder so the retry path can render it.
   testWidgets('admin load failure shows retry and recovers', (tester) async {
     final repo = _FakeAdmin(failJobs: true)
       ..jobs = [_job('j1', kind: 'MISSION', status: 'PUBLISHED')];

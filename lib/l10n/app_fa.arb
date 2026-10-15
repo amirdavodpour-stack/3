@@ -33,7 +33,7 @@
     "description": "Link to the password-reset page from the login page."
   },
   "loginButton": "ورود به HOPE",
-  "signInWithGoogle": "ورود با Google",
+  "signInWithGoogle": "ورود با گوگل",
   "@signInWithGoogle": {
     "description": "Button label for Google authentication on the login page."
   },
@@ -1157,7 +1157,7 @@
   "@copy_hope_work_grow_together_6a1d9f0": {
     "description": "Migrated language selector/brand copy."
   },
-  "copy_language_english_d9f5a4a": "زبان: English",
+  "copy_language_english_d9f5a4a": "زبان: انگلیسی",
   "@copy_language_english_d9f5a4a": {
     "description": "Migrated language selector/brand copy."
   },
@@ -1169,7 +1169,7 @@
   "@copy_registration_failed_please_try_again_bbb72e2": {
     "description": "Final direct UI string migration."
   },
-  "copy_link_uri_optional_1d2307a": "لینک/URI (اختیاری)",
+  "copy_link_uri_optional_1d2307a": "نشانی اینترنتی (اختیاری)",
   "@copy_link_uri_optional_1d2307a": {
     "description": "Final direct UI string migration."
   },
@@ -1272,5 +1272,17 @@
   "copy_offers": "پیشنهادها",
   "@copy_offers": {
     "description": "Activity navigation destination for offers."
-  }
+  },
+  "categorySoftware": "نرم‌افزار",
+  "categoryDesign": "طراحی",
+  "categoryMarketing": "بازاریابی",
+  "categoryContentTranslation": "محتوا و ترجمه",
+  "categoryFinanceAccounting": "مالی و حسابداری",
+  "categoryEducation": "آموزش",
+  "categorySupport": "پشتیبانی",
+  "categoryConstructionTechnical": "ساخت‌وساز و فنی",
+  "categoryVideoAudio": "تولید ویدیو و صدا",
+  "categoryDataAI": "داده و هوش مصنوعی",
+  "categorySales": "فروش",
+  "categoryOther": "سایر"
 }

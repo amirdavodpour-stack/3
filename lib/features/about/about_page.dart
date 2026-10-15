@@ -18,7 +18,7 @@ class AboutHopePage extends StatelessWidget {
         body: PremiumPageFrame(
           page: HopePageId.about,
           maxWidth: 980,
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 72),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -29,19 +29,14 @@ class AboutHopePage extends StatelessWidget {
               title: isEn ? 'A work marketplace built around trust' : 'بازار کار HOPE با محوریت اعتماد',
               message: HopeCopy.of(context).copy_about_mission_description,
               icon: HopeV2Icons.insights,
-              height: 248,
+              height: 192,
             ),
-            const SizedBox(height: 18),
-            const Center(child: HopeMark(size: 72, showText: true)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+            const Center(child: HopeMark(size: 48, showText: true)),
+            const SizedBox(height: 8),
             Text(HopeCopy.of(context).copy_what_is_hope_83013ad,
                 style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 9),
-            Text(
-              HopeCopy.of(context).copy_about_mission_description,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             _infoCard(
                 context,
                 HopeV2Icons.mission,
@@ -138,15 +133,56 @@ class AboutHopePage extends StatelessWidget {
           ]));
   Widget _feeRow(
           BuildContext context, String title, String value, Object icon) =>
-      Row(children: [
-        HopeIconTile(icon, size: 42),
-        const SizedBox(width: 12),
-        Expanded(
-            child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
-        Text(value,
-            textAlign: TextAlign.end,
-            style: Theme.of(context).textTheme.bodyMedium)
-      ]);
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final titleStyle = Theme.of(context).textTheme.titleMedium;
+          final valueStyle = Theme.of(context).textTheme.bodyMedium;
+          if (constraints.maxWidth < 420) {
+            // Long Persian fee labels and values cannot share a single compact
+            // row with the icon. Stack the amount below the label instead of
+            // clipping or horizontally overflowing real financial copy.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    HopeIconTile(icon, size: 42),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(title, style: titleStyle)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 54),
+                  child: Text(
+                    value,
+                    softWrap: true,
+                    textAlign: TextAlign.end,
+                    style: valueStyle,
+                  ),
+                ),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              HopeIconTile(icon, size: 42),
+              const SizedBox(width: 12),
+              Expanded(child: Text(title, style: titleStyle)),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  value,
+                  softWrap: true,
+                  textAlign: TextAlign.end,
+                  style: valueStyle,
+                ),
+              ),
+            ],
+          );
+        },
+      );
   Widget _bullet(BuildContext context, Object icon, String text) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

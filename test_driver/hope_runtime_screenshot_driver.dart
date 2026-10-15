@@ -5,8 +5,8 @@ import 'package:integration_test/integration_test_driver_extended.dart';
 Future<void> main() async {
   const outputRoot = 'docs/audit/evidence/android-runtime';
 
-  print('HOPE_DRIVER_CWD:${Directory.current.path}');
-  print('HOPE_DRIVER_OUTPUT_ROOT:$outputRoot');
+  stdout.writeln('HOPE_DRIVER_CWD:${Directory.current.path}');
+  stdout.writeln('HOPE_DRIVER_OUTPUT_ROOT:$outputRoot');
 
   await integrationDriver(
     responseDataCallback: null,
@@ -14,9 +14,9 @@ Future<void> main() async {
       final file = File('$outputRoot/$name.png');
       await file.parent.create(recursive: true);
       await file.writeAsBytes(image, flush: true);
-      print('HOPE_DRIVER_SCREENSHOT_WRITTEN:${file.path}:bytes=${image.length}');
+      stdout.writeln('HOPE_DRIVER_SCREENSHOT_WRITTEN:${file.path}:bytes=${image.length}');
       if (!await file.exists() || await file.length() < 16) {
-        print('HOPE_DRIVER_SCREENSHOT_INVALID:${file.path}');
+        stdout.writeln('HOPE_DRIVER_SCREENSHOT_INVALID:${file.path}');
         return false;
       }
       final validPng = image.length >= 8 &&
@@ -29,7 +29,7 @@ Future<void> main() async {
           image[6] == 0x1a &&
           image[7] == 0x0a;
       if (!validPng) {
-        print('HOPE_DRIVER_SCREENSHOT_INVALID_PNG:${file.path}');
+        stdout.writeln('HOPE_DRIVER_SCREENSHOT_INVALID_PNG:${file.path}');
       }
       return validPng;
     },

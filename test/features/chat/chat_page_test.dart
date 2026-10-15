@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/chat/chat_repository.dart';
@@ -6,6 +7,7 @@ import 'package:hope_mobile/features/chat/chat_page.dart';
 
 class FakeChatRepository implements ChatRepository {
   bool failList = false;
+  bool failSend = false;
   String conversationStatus = 'OPEN';
   HopeChatThread? threadOverride;
 
@@ -46,6 +48,7 @@ class FakeChatRepository implements ChatRepository {
     String conversationId,
     String message,
   ) async {
+    if (failSend) throw StateError('send failed');
     lastMessage = message;
     return HopeChatMessage(
       id: 'message-1',
@@ -59,6 +62,87 @@ class FakeChatRepository implements ChatRepository {
 }
 
 void main() {
+  testWidgets(
+    'Wave49 Chat send failure keeps full error and Retry reachable at 1.5x in both directions',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 640);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      for (final locale in const [Locale('fa'), Locale('en')]) {
+        final repository = FakeChatRepository()..failSend = true;
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: locale,
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: ChatPage(
+              key: ValueKey('chat-locale-${locale.languageCode}'),
+              repository: repository,
+              jobId: 'job-1',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byKey(const ValueKey('chat-message-input')),
+          'keep this draft for retry',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('chat-send-button')));
+        await tester.pumpAndSettle();
+
+        final banner = find.byKey(const ValueKey('chat-send-error'));
+        final errorText = find.byKey(
+          const ValueKey('chat-send-error-message'),
+        );
+        final retry = find.byKey(
+          const ValueKey('chat-send-error-retry'),
+        );
+        expect(banner, findsOneWidget);
+        expect(errorText, findsOneWidget);
+        expect(retry, findsOneWidget);
+        expect(tester.widget<Text>(errorText).maxLines, isNull);
+        expect(
+          tester.widget<TextField>(
+            find.byKey(const ValueKey('chat-message-input')),
+          ).controller?.text,
+          'keep this draft for retry',
+        );
+        expect(tester.getRect(banner).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(banner).right, lessThanOrEqualTo(320));
+        expect(tester.getRect(retry).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(retry).right, lessThanOrEqualTo(320));
+        final headerRect = tester.getRect(
+          find.byKey(const ValueKey('chat-conversation-header')),
+        );
+        final bannerRect = tester.getRect(banner);
+        final retryRect = tester.getRect(retry);
+        final composerRect = tester.getRect(
+          find.byKey(const ValueKey('chat-composer-panel')),
+        );
+        expect(bannerRect.top, greaterThanOrEqualTo(headerRect.bottom));
+        expect(bannerRect.bottom, lessThanOrEqualTo(composerRect.top));
+        expect(retryRect.top, greaterThanOrEqualTo(bannerRect.top));
+        expect(retryRect.bottom, lessThanOrEqualTo(bannerRect.bottom));
+        expect(composerRect.bottom, lessThanOrEqualTo(640));
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('ChatPage sends a human message', (tester) async {
     final repository = FakeChatRepository();
 
@@ -68,6 +152,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
     await tester.tap(find.byTooltip('Send'));
     await tester.pumpAndSettle();
 
@@ -87,6 +172,25 @@ void main() {
 
     expect(repository.lastMessage, isNull);
   });
+
+  testWidgets(
+    'Wave47 successful empty chat keeps the composer available',
+    (tester) async {
+      final repository = FakeChatRepository();
+      await tester.pumpWidget(
+        MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('No messages yet.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-message-list')), findsNothing);
+      expect(find.byKey(const ValueKey('chat-composer-panel')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-message-input')), findsOneWidget);
+      expect(find.text('Loading conversation'), findsNothing);
+      expect(find.text('Conversation unavailable'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'ChatPage keeps load error as the only initial state and clears it after retry',
@@ -161,5 +265,121 @@ void main() {
 
     expect(find.text('Hello from the worker'), findsOneWidget);
     expect(find.text(formatted), findsOneWidget);
+    final timestampWidget = tester.widget<Text>(
+      find.byKey(const ValueKey('chat-message-timestamp-message-1')),
+    );
+    expect(timestampWidget.textDirection, TextDirection.ltr);
+    expect(
+      timestampWidget.style?.fontSize,
+      greaterThanOrEqualTo(12),
+      reason: 'Message times must remain legible beside the message content.',
+    );
   });
+  testWidgets(
+    'Wave 28 chat is organized for compact phones and keeps primary targets at 48dp',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = FakeChatRepository();
+
+      await tester.pumpWidget(
+        MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('chat-conversation-header')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-message-list')), findsNothing);
+      expect(find.text('Worker'), findsOneWidget);
+      expect(find.text('Test job'), findsOneWidget);
+      final input = tester.widget<TextField>(
+        find.byKey(const ValueKey('chat-message-input')),
+      );
+      expect(input.decoration?.prefixIcon, isNull);
+      final sendRect = tester.getRect(find.byKey(const ValueKey('chat-send-button')));
+      expect(sendRect.width, greaterThanOrEqualTo(48));
+      expect(sendRect.height, greaterThanOrEqualTo(48));
+      expect(
+        tester.getRect(find.byKey(const ValueKey('chat-composer-panel'))).bottom,
+        lessThanOrEqualTo(640),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Wave 28 failed chat send restores the exact draft for retry',
+      (tester) async {
+    final repository = FakeChatRepository()..failSend = true;
+    await tester.pumpWidget(
+      MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('chat-message-input')),
+      'keep this draft',
+    );
+    await tester.pump();
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<TextField>(
+        find.byKey(const ValueKey('chat-message-input')),
+      ).controller?.text,
+      'keep this draft',
+    );
+    expect(find.byKey(const ValueKey('chat-send-error')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Wave 28 groups consecutive messages from the same sender',
+      (tester) async {
+    final repository = FakeChatRepository()
+      ..threadOverride = HopeChatThread(
+        conversation: const HopeChatConversation(
+          id: 'chat-1',
+          kind: 'JOB',
+          jobId: 'job-1',
+          status: 'OPEN',
+          title: 'Test job',
+          otherUserName: 'Worker',
+        ),
+        messages: [
+          HopeChatMessage(
+            id: 'm1',
+            conversationId: 'chat-1',
+            senderId: 'worker-1',
+            senderName: 'Worker',
+            body: 'First line',
+            createdAt: DateTime(2026, 1, 1, 13, 45),
+          ),
+          HopeChatMessage(
+            id: 'm2',
+            conversationId: 'chat-1',
+            senderId: 'worker-1',
+            senderName: 'Worker',
+            body: 'Second line',
+            createdAt: DateTime(2026, 1, 1, 13, 46),
+          ),
+        ],
+      );
+
+    await tester.pumpWidget(
+      MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+    );
+    await tester.pumpAndSettle();
+
+    final messages = find.byKey(const ValueKey('chat-message-list'));
+    expect(messages, findsOneWidget);
+    expect(
+      find.descendant(of: messages, matching: find.text('Worker')),
+      findsOneWidget,
+    );
+    expect(find.text('First line'), findsOneWidget);
+    expect(find.text('Second line'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }

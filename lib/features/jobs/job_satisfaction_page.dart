@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/jobs/job_satisfaction_repository.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/hope_async_state.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/theme/hope_v2_design.dart';
 
@@ -17,13 +18,17 @@ class JobSatisfactionPage extends StatefulWidget {
 
 class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
   late Future<JobSatisfactionState> _future;
-  int _overallRating = 5;
-  int _communicationRating = 5;
-  bool _completedAsAgreed = true;
+  int? _overallRating;
+  int? _communicationRating;
+  bool? _completedAsAgreed;
   final _report = TextEditingController();
   bool _busy = false;
 
   bool get _en => Localizations.localeOf(context).languageCode == 'en';
+  bool get _feedbackComplete =>
+      _overallRating != null &&
+      _communicationRating != null &&
+      _completedAsAgreed != null;
   String _t(String fa, String en) => _en ? en : fa;
 
   @override
@@ -42,14 +47,14 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
       context.read<JobSatisfactionRepository>().getState(widget.jobId);
 
   Future<void> _submit() async {
-    if (_busy) return;
+    if (_busy || !_feedbackComplete) return;
     setState(() => _busy = true);
     try {
       final result = await context.read<JobSatisfactionRepository>().submit(
         jobId: widget.jobId,
-        overallRating: _overallRating,
-        completedAsAgreed: _completedAsAgreed,
-        communicationRating: _communicationRating,
+        overallRating: _overallRating!,
+        completedAsAgreed: _completedAsAgreed!,
+        communicationRating: _communicationRating!,
         report: _report.text,
       );
       if (!mounted) return;
@@ -94,7 +99,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
         body: SafeArea(
           child: PremiumPageFrame(
             maxWidth: 820,
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 72),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -120,13 +125,13 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                       const SizedBox(width: 8),
                       const HopeIconTile(
                         HopeV2Icons.completed,
-                        size: 52,
+                        size: 40,
                         filled: true,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: HopeV2Spacing.lg),
+                const SizedBox(height: HopeV2Spacing.md),
                 Expanded(
                   child: FutureBuilder<JobSatisfactionState>(
           future: _future,
@@ -168,11 +173,15 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
               final feedback = state.feedback!;
               final dispute = state.dispute;
               return ListView(
-                padding: const EdgeInsets.all(20),
+                padding: HopeV2Navigation.scrollEndPadding(
+                  context,
+                  horizontal: 20,
+                  top: 20,
+                ),
                 children: [
                   PremiumPanel(
                     highlight: true,
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -190,7 +199,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                         )),
                         const SizedBox(height: 3),
                         Text(
-                          feedback.aiSatisfactionScore.toString() + '%',
+                          '${feedback.aiSatisfactionScore}%',
                           style: Theme.of(context)
                               .textTheme
                               .displaySmall
@@ -226,7 +235,7 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                           )),
                           if ('${dispute['aiDecision'] ?? ''}'.isNotEmpty) ...[
                             const SizedBox(height: 8),
-                            Text(_t('تصمیم پیشنهادی AI: ', 'AI suggested action: ') + '${dispute['aiDecision'] ?? 'HOLD'}'),
+                            Text('${_t('تصمیم پیشنهادی AI: ', 'AI suggested action: ')}${dispute['aiDecision'] ?? 'HOLD'}'),
                           ],
                         ],
                       ),
@@ -237,47 +246,118 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
             }
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 64),
+              padding: HopeV2Navigation.scrollEndPadding(
+                context,
+                horizontal: 20,
+                top: 20,
+              ),
               children: [
                 PremiumPanel(
                   glass: true,
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(14),
                   child: Text(_t(
                     'این فرم فقط برای همین همکاری است. هیچ چت عمومی یا درخواست آزاد از هوش مصنوعی در اختیار شما نیست.',
                     'This form is scoped to this work only. There is no general AI chat or free-form AI request.',
                   )),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 _RatingField(
+                  key: const ValueKey('satisfaction-overall-rating'),
                   label: _t('رضایت کلی', 'Overall satisfaction'),
+                  lowEndpoint: _t('کاملاً ناراضی', 'Very dissatisfied'),
+                  highEndpoint: _t('کاملاً راضی', 'Very satisfied'),
                   value: _overallRating,
                   onChanged: (value) => setState(() => _overallRating = value),
                 ),
-                const SizedBox(height: 12),
-                SwitchListTile.adaptive(
-                  title: Text(_t(
-                    'کار مطابق توافق انجام شد',
-                    'Work was completed as agreed',
-                  )),
-                  value: _completedAsAgreed,
-                  onChanged: (value) =>
-                      setState(() => _completedAsAgreed = value),
+                const SizedBox(height: 10),
+                PremiumPanel(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _t(
+                          'کار مطابق توافق انجام شد؟',
+                          'Was the work completed as agreed?',
+                        ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Semantics(
+                        container: true,
+                        explicitChildNodes: true,
+                        label: _t(
+                          'کار مطابق توافق انجام شد؟',
+                          'Was the work completed as agreed?',
+                        ),
+                        value: _completedAsAgreed == null
+                            ? _t('انتخاب نشده', 'Not selected')
+                            : _completedAsAgreed!
+                                ? _t('بله', 'Yes')
+                                : _t('خیر', 'No'),
+                        hint: _t(
+                          'بله یا خیر را انتخاب کنید',
+                          'Choose Yes or No',
+                        ),
+                        child: SegmentedButton<bool>(
+                          key: const ValueKey('satisfaction-agreement-choice'),
+                          segments: [
+                            ButtonSegment<bool>(
+                              value: true,
+                              label: Text(_t('بله', 'Yes')),
+                              icon: const Icon(Icons.check_rounded),
+                            ),
+                            ButtonSegment<bool>(
+                              value: false,
+                              label: Text(_t('خیر', 'No')),
+                              icon: const Icon(Icons.flag_outlined),
+                            ),
+                          ],
+                          selected: _completedAsAgreed == null
+                              ? <bool>{}
+                              : <bool>{_completedAsAgreed!},
+                          emptySelectionAllowed: true,
+                          onSelectionChanged: (selected) => setState(
+                            () => _completedAsAgreed =
+                                selected.isEmpty ? null : selected.first,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 _RatingField(
+                  key: const ValueKey('satisfaction-communication-rating'),
                   label: _t(
                     'ارتباط و هماهنگی',
                     'Communication and coordination',
                   ),
+                  lowEndpoint: _t('بسیار ضعیف', 'Very poor'),
+                  highEndpoint: _t('عالی', 'Excellent'),
                   value: _communicationRating,
                   onChanged: (value) =>
                       setState(() => _communicationRating = value),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                if (!_feedbackComplete)
+                  Text(
+                    _t(
+                      'برای ثبت گزارش، دو امتیاز و پاسخ توافق را انتخاب کنید.',
+                      'Choose both ratings and the agreement answer before submitting.',
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                const SizedBox(height: 10),
                 TextField(
                   controller: _report,
                   maxLength: 2000,
-                  maxLines: 6,
+                  maxLines: 4,
                   decoration: InputDecoration(
                     labelText: _t('گزارش کوتاه', 'Short report'),
                     hintText: _t(
@@ -286,9 +366,10 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 FilledButton.icon(
-                  onPressed: _busy ? null : _submit,
+                  key: const ValueKey('job-satisfaction-submit'),
+                  onPressed: _busy || !_feedbackComplete ? null : _submit,
                   icon: _busy
                       ? const SizedBox(
                           width: 18,
@@ -319,18 +400,23 @@ class _JobSatisfactionPageState extends State<JobSatisfactionPage> {
 
 class _RatingField extends StatelessWidget {
   const _RatingField({
+    super.key,
     required this.label,
+    required this.lowEndpoint,
+    required this.highEndpoint,
     required this.value,
     required this.onChanged,
   });
 
   final String label;
-  final int value;
-  final ValueChanged<int> onChanged;
+  final String lowEndpoint;
+  final String highEndpoint;
+  final int? value;
+  final ValueChanged<int?> onChanged;
 
   @override
   Widget build(BuildContext context) => PremiumPanel(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -339,23 +425,69 @@ class _RatingField extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w900),
+                  ?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 9),
-            SegmentedButton<int>(
-              segments: List.generate(
-                5,
-                (index) {
-                  final number = index + 1;
-                  return ButtonSegment<int>(
-                    value: number,
-                    label: Text(number.toString()),
-                  );
-                },
+            const SizedBox(height: 7),
+            Semantics(
+              container: true,
+              explicitChildNodes: true,
+              label: label,
+              value: value == null
+                  ? (Localizations.localeOf(context).languageCode == 'en'
+                      ? 'Not selected'
+                      : 'انتخاب نشده')
+                  : HopeDisplayFormatter.integer(
+                      value!,
+                      locale: Localizations.localeOf(context).languageCode,
+                    ),
+              hint: Localizations.localeOf(context).languageCode == 'en'
+                  ? 'Choose a rating from 1 ($lowEndpoint) to 5 ($highEndpoint)'
+                  : 'از ۱ ($lowEndpoint) تا ۵ ($highEndpoint) انتخاب کنید',
+              child: SegmentedButton<int>(
+                segments: List.generate(
+                  5,
+                  (index) {
+                    final number = index + 1;
+                    return ButtonSegment<int>(
+                      value: number,
+                      label: Text(
+                        HopeDisplayFormatter.integer(
+                          number,
+                          locale: Localizations.localeOf(context).languageCode,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                selected: value == null ? <int>{} : <int>{value!},
+                emptySelectionAllowed: true,
+                onSelectionChanged: (selected) =>
+                    onChanged(selected.isEmpty ? null : selected.first),
               ),
-              selected: <int>{value},
-              onSelectionChanged: (selected) =>
-                  onChanged(selected.first),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    lowEndpoint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    highEndpoint,
+                    textAlign: TextAlign.end,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

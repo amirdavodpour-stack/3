@@ -8,6 +8,13 @@ class AppColors {
   const AppColors._();
 
   static const primary = HopeV2Colors.primary;
+  static const primaryAction = HopeV2Colors.primaryAction;
+  static const primaryOnLight = HopeV2Colors.primaryOnLight;
+  static const successOnLight = HopeV2Colors.successOnLight;
+  static const warningOnLight = HopeV2Colors.warningOnLight;
+  static const dangerOnLight = HopeV2Colors.dangerOnLight;
+  static const secondaryAction = HopeV2Colors.secondaryAction;
+
   static const primaryDark = HopeV2Colors.primaryDark;
   static const secondary = HopeV2Colors.secondary;
   static const secondaryStrong = HopeV2Colors.secondaryStrong;
@@ -41,12 +48,14 @@ class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: brightness,
-      primary: AppColors.primary,
-      onPrimary: Colors.white,
-      secondary: dark ? AppColors.secondaryDark : AppColors.secondary,
-      onSecondary: Colors.white,
+      primary: dark ? AppColors.primaryDark : AppColors.primaryAction,
+      onPrimary: dark ? AppColors.ink : AppColors.surface,
+      secondary: dark ? AppColors.secondaryDark : AppColors.secondaryAction,
+      onSecondary: dark ? AppColors.ink : AppColors.surface,
       surface: dark ? AppColors.darkSurface : AppColors.surface,
       onSurface: dark ? AppColors.darkText : AppColors.ink,
+      onSurfaceVariant: dark ? AppColors.darkMuted : AppColors.muted,
+      error: dark ? AppColors.dangerDark : AppColors.dangerOnLight,
     );
 
     final base = ThemeData(
@@ -76,6 +85,36 @@ class AppTheme {
     final mutedColor = dark ? AppColors.darkMuted : AppColors.muted;
 
     return base.copyWith(
+      popupMenuTheme: PopupMenuThemeData(
+        color: dark ? AppColors.darkSurface : AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        textStyle: TextStyle(
+          color: textColor,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        textStyle: TextStyle(
+          color: textColor,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(
+            dark ? AppColors.darkSurface : AppColors.surface,
+          ),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        textColor: textColor,
+        iconColor: mutedColor,
+        selectedColor: textColor,
+        selectedTileColor: dark
+            ? AppColors.primaryDark.withValues(alpha: .10)
+            : HopeV2Colors.warmHalo.withValues(alpha: .10),
+      ),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -87,10 +126,10 @@ class AppTheme {
         titleSpacing: 16,
         iconTheme: IconThemeData(color: textColor, size: 23),
         titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w900,
+          fontSize: 19,
+          fontWeight: FontWeight.w800,
           color: textColor,
-          letterSpacing: -.3,
+          letterSpacing: -.35,
         ),
       ),
       tabBarTheme: TabBarThemeData(
@@ -100,11 +139,11 @@ class AppTheme {
           color: dark ? AppColors.primaryDark.withValues(alpha: .16) : AppColors.softPrimary,
           borderRadius: BorderRadius.circular(HopeV2Radii.chip),
         ),
-        labelColor: scheme.primary,
+        labelColor: textColor,
         unselectedLabelColor: mutedColor,
-        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
         unselectedLabelStyle:
-            const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
       chipTheme: ChipThemeData(
@@ -119,7 +158,7 @@ class AppTheme {
         ),
         labelStyle: TextStyle(
           color: textColor,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           fontSize: 12,
         ),
         secondaryLabelStyle: TextStyle(
@@ -172,7 +211,7 @@ class AppTheme {
         color: dark ? AppColors.darkCard : AppColors.surface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.lg)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.md)),
       ),
       dividerTheme: DividerThemeData(
           color: dark ? HopeV2Colors.darkDivider : HopeV2Colors.dividerLight, space: 1),
@@ -205,23 +244,25 @@ class AppTheme {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle:
-              const TextStyle(fontWeight: FontWeight.w900, letterSpacing: -.1),
+              const TextStyle(fontWeight: FontWeight.w700, letterSpacing: -.1),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          foregroundColor: textColor,
           minimumSize: const Size.fromHeight(48),
           side: BorderSide(
               color: dark ? HopeV2Colors.darkBorder : HopeV2Colors.outlinedButtonBorderLight),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
+              foregroundColor: textColor,
               minimumSize: const Size(48, 48),
-              textStyle: const TextStyle(fontWeight: FontWeight.w800))),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700))),
       iconButtonTheme: IconButtonThemeData(
           style: IconButton.styleFrom(
               minimumSize: const Size(48, 48),
@@ -241,7 +282,7 @@ class AppTheme {
                 ? FontWeight.w900
                 : FontWeight.w700,
             color: states.contains(WidgetState.selected)
-                ? scheme.primary
+                ? textColor
                 : mutedColor,
           ),
         ),
@@ -263,7 +304,7 @@ class AppTheme {
         selectedIconTheme: IconThemeData(color: scheme.primary, size: 24),
         unselectedIconTheme: IconThemeData(color: mutedColor, size: 23),
         selectedLabelTextStyle: TextStyle(
-          color: scheme.primary,
+          color: textColor,
           fontWeight: FontWeight.w900,
         ),
         unselectedLabelTextStyle: TextStyle(

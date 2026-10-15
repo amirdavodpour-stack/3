@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/saved_search_repository.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/jobs/saved_searches_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -14,6 +15,7 @@ HopeSavedSearch _search(
   String name, {
   String kind = 'ALL',
   String visibility = 'ALL',
+  String category = 'ALL',
 }) => HopeSavedSearch(
   id: id,
   name: name,
@@ -21,13 +23,14 @@ HopeSavedSearch _search(
   kind: kind,
   visibility: visibility,
   city: 'AUTO',
-  category: 'ALL',
+  category: category,
   updatedAt: '2026-09-22T00:00:00Z',
 );
 
 class _SequencedSavedSearchRepository implements SavedSearchRepository {
   int calls = 0;
   List<HopeSavedSearch>? itemsOverride;
+  final List<String> deletedIds = [];
   final Completer<List<HopeSavedSearch>> firstRefresh =
       Completer<List<HopeSavedSearch>>();
 
@@ -48,7 +51,9 @@ class _SequencedSavedSearchRepository implements SavedSearchRepository {
       Future.value(search);
 
   @override
-  Future<void> delete(String id) async {}
+  Future<void> delete(String id) async {
+    deletedIds.add(id);
+  }
 }
 
 Widget _host(_SequencedSavedSearchRepository repository) {
@@ -69,6 +74,31 @@ Widget _host(_SequencedSavedSearchRepository repository) {
 }
 
 void main() {
+  testWidgets(
+    'Saved Search create action stays beside page content instead of floating below it',
+    (tester) async {
+      final repository = _SequencedSavedSearchRepository();
+      repository.itemsOverride = [
+        _search('adjacent', 'Adjacent search', category: 'SOFTWARE'),
+      ];
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+        24,
+        reason: 'Saved Search relies on the scroll view for its navigation-aware tail.',
+      );
+      expect(
+        find.byKey(const ValueKey('saved-search-create-cta')),
+        findsOneWidget,
+      );
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byKey(const ValueKey('saved-search-list')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('saved-search enum filters use localized labels', (tester) async {
     final repository = _SequencedSavedSearchRepository();
     repository.itemsOverride = [
@@ -89,6 +119,16 @@ void main() {
     expect(find.textContaining('Specialized'), findsOneWidget);
     expect(find.text('MISSION'), findsNothing);
     expect(find.text('SPECIALIZED'), findsNothing);
+  });
+  testWidgets('saved-search categories use localized labels, not raw slugs', (tester) async {
+    final repository = _SequencedSavedSearchRepository();
+    repository.itemsOverride = [
+      _search('software', 'Software search', category: 'SOFTWARE'),
+    ];
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('SOFTWARE'), findsNothing);
+    expect(find.textContaining(' • Software'), findsOneWidget);
   });
   testWidgets('unknown saved-search enums use safe localized fallback', (tester) async {
     final repository = _SequencedSavedSearchRepository();
@@ -138,4 +178,72 @@ void main() {
     expect(find.text('Fresh search'), findsOneWidget);
     expect(find.text('Stale search'), findsNothing);
   });
+
+  testWidgets(
+    'saved-search zero state gives a truthful next action instead of a blank list',
+    (tester) async {
+      final repository = _SequencedSavedSearchRepository()
+        ..itemsOverride = const [];
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      expect(find.text('You have no saved searches yet.'), findsOneWidget);
+      expect(
+        find.text(
+          'Save a search from Explore or create your first one with the button below.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('saved-search-create-cta')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('saved-search-list')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'saved-search multi-row state retains other records after confirming one deletion',
+    (tester) async {
+      final repository = _SequencedSavedSearchRepository()
+        ..itemsOverride = [
+          _search('one', 'One search'),
+          _search('two', 'Two search'),
+          _search('three', 'Three search'),
+        ];
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('saved-search-list')), findsOneWidget);
+      expect(find.text('One search'), findsOneWidget);
+      expect(find.text('Two search'), findsOneWidget);
+      expect(find.text('Three search'), findsOneWidget);
+      expect(find.byTooltip('Edit'), findsNWidgets(3));
+      expect(find.byTooltip('Delete'), findsNWidgets(3));
+      expect(
+        find.byKey(const ValueKey('saved-search-create-cta')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byTooltip('Delete').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Delete saved search'), findsOneWidget);
+      expect(
+        find.text('Delete “One search” from your saved searches?'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(repository.deletedIds, ['one']);
+      expect(find.text('One search'), findsNothing);
+      expect(find.text('Two search'), findsOneWidget);
+      expect(find.text('Three search'), findsOneWidget);
+      expect(find.byTooltip('Delete'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

@@ -61,6 +61,7 @@ Future<void> _pump(WidgetTester tester, {String language = 'fa'}) async {
   await settings.load();
   final auth = AuthController(_AuthRepo(), SecureStore());
   await auth.restoreSession();
+  auth.continueAsGuest();
   await tester.pumpWidget(MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: settings),
@@ -90,7 +91,7 @@ void main() {
 
   testWidgets('drawer opens for the guest shell', (tester) async {
     await _pump(tester);
-    final menu = find.bySemanticsLabel('منو');
+    final menu = find.byKey(const ValueKey('hope-menu-button'));
     if (menu.evaluate().isNotEmpty) {
       await tester.tap(menu);
     } else {
@@ -105,7 +106,7 @@ void main() {
       'language can be changed from the drawer without replacing MaterialApp',
       (tester) async {
     await _pump(tester);
-    final menu = find.bySemanticsLabel('منو');
+    final menu = find.byKey(const ValueKey('hope-menu-button'));
     await tester.tap(menu);
     await tester.pumpAndSettle();
     expect(find.byType(Drawer), findsOneWidget);

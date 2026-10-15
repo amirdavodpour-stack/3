@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/backend_capabilities.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/google_sign_in_service.dart';
 import '../../core/network/api_error_presenter.dart';
@@ -29,6 +32,38 @@ class _LoginPageState extends State<LoginPage> {
   final password = TextEditingController();
   bool obscure = true;
   bool loading = false;
+  bool _capabilitiesLookupAttempted = false;
+  BackendCapabilities? _backendCapabilities;
+
+  bool get _canUseGoogleSignIn =>
+      (context.read<GoogleSignInService?>()?.isConfigured ?? false) &&
+      _backendCapabilities?.googleSignIn == true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_capabilitiesLookupAttempted) return;
+    _capabilitiesLookupAttempted = true;
+    try {
+      final repository = context.read<BackendCapabilitiesRepository>();
+      unawaited(_loadBackendCapabilities(repository));
+    } on ProviderNotFoundException {
+      _backendCapabilities = null;
+    }
+  }
+
+  Future<void> _loadBackendCapabilities(
+    BackendCapabilitiesRepository repository,
+  ) async {
+    try {
+      final capabilities = await repository.load();
+      if (!mounted) return;
+      setState(() => _backendCapabilities = capabilities);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _backendCapabilities = null);
+    }
+  }
 
   @override
   void dispose() {
@@ -40,7 +75,9 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> submitGoogle() async {
     final l10n = AppLocalizations.of(context);
     final google = context.read<GoogleSignInService?>();
-    if (google == null || !google.isConfigured) {
+    if (google == null ||
+        !google.isConfigured ||
+        _backendCapabilities?.googleSignIn != true) {
       if (mounted) {
         HopeFeedback.show(context, l10n.loginFailedGeneric, tone: HopeFeedbackTone.error);
       }
@@ -106,6 +143,10 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final denseAuth =
+        (MediaQuery.sizeOf(context).height < 760 ||
+            MediaQuery.viewInsetsOf(context).bottom > 0) &&
+        MediaQuery.textScalerOf(context).scale(1) <= 1.2;
     return Directionality(
       textDirection: Localizations.localeOf(context).languageCode == 'en'
           ? TextDirection.ltr
@@ -115,9 +156,14 @@ class _LoginPageState extends State<LoginPage> {
           child: PremiumPageFrame(
             page: HopePageId.login,
             maxWidth: 640,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              denseAuth ? 4 : 8,
+              16,
+              denseAuth ? 10 : 24,
+            ),
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: HopeV2Navigation.scrollEndPadding(context),
               children: [
               Row(
                 children: [
@@ -135,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                   const HopeMark(size: 34),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: denseAuth ? 4 : 8),
               PremiumHero(
                 page: HopePageId.login,
                 domain: HopeProductDomain.account,
@@ -143,24 +189,44 @@ class _LoginPageState extends State<LoginPage> {
                 title: l10n.loginWelcomeBack,
                 message: l10n.loginWelcomeBackSubtitle,
                 icon: HopeV2Icons.login,
-                height: 164,
+                // Keep the compact auth hero tall enough for 1.5x text. Its
+                // title and subtitle can each wrap to two lines in fa-RTL.
+                height: MediaQuery.textScalerOf(context).scale(1) > 1.2
+                    ? 156
+                    : (denseAuth ? 92 : 104),
+                compactHero: true,
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: denseAuth ? 4 : 8),
               AnimatedEntrance(
                 child: PremiumPanel(
                   // Auth is a dense primary surface; avoid a nested GPU blur
                   // here so the first Android frame remains deterministic.
                   glass: false,
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
+                      if (_canUseGoogleSignIn) ...[
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
+                            key: const ValueKey('auth-google-sign-in'),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF1F1F1F),
+                              side: const BorderSide(color: Color(0xFFDADCE0)),
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                             onPressed: loading ? null : submitGoogle,
-                            icon: const HugeIcon(icon: HopeV2Icons.userAdd, size: 19),
+                            icon: Image.asset(
+                              'assets/branding/google_g.png',
+                              width: 20,
+                              height: 20,
+                              excludeFromSemantics: true,
+                            ),
                             label: Text(l10n.signInWithGoogle),
                           ),
                         ),
@@ -183,7 +249,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.emailLabel,
-                          prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 20),
+                          prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -193,7 +259,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
-                          prefixIcon: const HopeIcon(HopeV2Icons.password, size: 20),
+                          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
                           suffixIcon: IconButton(
                             icon: HugeIcon(
                               icon: obscure
@@ -234,7 +300,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: denseAuth ? 6 : 10),
               OutlinedButton.icon(
                 onPressed: loading
                     ? null
@@ -245,31 +311,12 @@ class _LoginPageState extends State<LoginPage> {
                 icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(l10n.orDivider),
-                  ),
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => Navigator.push(context, HopeRoutes.register()),
                 child: Text(l10n.noAccountSignUp),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Text(
                 l10n.loginTermsNotice,
                 textAlign: TextAlign.center,

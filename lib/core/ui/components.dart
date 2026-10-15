@@ -146,7 +146,7 @@ class HopeSurface extends StatelessWidget {
       {super.key,
       required this.child,
       this.padding = EdgeInsets.zero,
-      this.radius = HopeV2Radii.lg,
+      this.radius = HopeV2Radii.md,
       this.highlight = false});
   final Widget child;
   final EdgeInsets padding;
@@ -178,19 +178,22 @@ class HopeSurface extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: highlight
-              ? HopeV2Colors.primary.withValues(alpha: .20)
-              : border,
-          width: highlight ? 1.1 : 1,
+              ? HopeV2Colors.primary.withValues(alpha: dark ? .24 : .18)
+              : border.withValues(alpha: dark ? .72 : .62),
+          width: highlight ? 1 : .7,
         ),
+        // Editorial cards rely on spacing and tonal contrast first. Keep
+        // elevation nearly imperceptible so nested panels do not stack into
+        // a collection of glowing, outlined boxes.
         boxShadow: dark
             ? const []
             : [
                 BoxShadow(
                   color: highlight
-                      ? HopeV2Colors.primary.withValues(alpha: .06)
-                      : const Color(0x081B1638),
-                  blurRadius: highlight ? 26 : 22,
-                  offset: const Offset(0, 8),
+                      ? HopeV2Colors.primary.withValues(alpha: .035)
+                      : const Color(0x041B1638),
+                  blurRadius: highlight ? 14 : 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
       ),
@@ -262,10 +265,10 @@ class StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolved = _accessible(context, color);
     return Container(
-      constraints: const BoxConstraints(minHeight: 32),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      constraints: const BoxConstraints(minHeight: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: resolved.withValues(alpha: .10),
+        color: HopeV2SemanticColors.statusSurface(context, color),
         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
         border: Border.all(
           color: resolved.withValues(alpha: .08),
@@ -275,8 +278,8 @@ class StatusPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            HopeIcon(icon!, size: 14, color: resolved, strokeWidth: 1.9),
-            const SizedBox(width: 5),
+            HopeIcon(icon!, size: 13, color: resolved, strokeWidth: 1.8),
+            const SizedBox(width: 4),
           ],
           Flexible(
             child: Semantics(
@@ -288,7 +291,7 @@ class StatusPill extends StatelessWidget {
                 style: TextStyle(
                   color: resolved,
                   fontSize: 11,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -298,22 +301,15 @@ class StatusPill extends StatelessWidget {
     );
   }
 
-  Color _accessible(BuildContext context, Color c) {
-    if (Theme.of(context).brightness != Brightness.dark) return c;
-    if (c == HopeV2Colors.warning) return HopeV2Colors.warningDark;
-    if (c == HopeV2Colors.danger) return HopeV2Colors.dangerDark;
-    if (c == HopeV2Colors.success) return HopeV2Colors.successDark;
-    if (c == HopeV2Colors.muted) return HopeV2Colors.darkMuted;
-    if (c == HopeV2Colors.primary) return HopeV2Colors.primaryDark;
-    return c;
-  }
+  Color _accessible(BuildContext context, Color c) =>
+      HopeV2SemanticColors.readableAccent(context, c);
 }
 
 class HopeIconTile extends StatelessWidget {
   const HopeIconTile(this.icon,
       {super.key,
       this.color = HopeV2Colors.primary,
-      this.size = 44,
+      this.size = 40,
       this.filled = false,
       this.semanticLabel});
   final Object icon;
@@ -342,9 +338,9 @@ class HopeIconTile extends StatelessWidget {
       boxShadow: filled
           ? [
               BoxShadow(
-                color: color.withValues(alpha: dark ? .035 : .05),
-                blurRadius: size * .12,
-                offset: Offset(0, size * .05),
+                color: color.withValues(alpha: dark ? .025 : .035),
+                blurRadius: size * .08,
+                offset: Offset(0, size * .035),
               ),
             ]
           : const [],
@@ -412,7 +408,7 @@ class MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => HopeSurface(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Row(children: [
           if (icon != null) ...[
             HopeIconTile(icon!, color: color),
@@ -608,7 +604,41 @@ class _SearchFieldState extends State<SearchField> {
       },
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
-        prefixIcon: const HopeIcon(HopeV2Icons.search, size: 21, color: HopeV2Colors.muted, strokeWidth: 1.9),
+        filled: true,
+        fillColor: HopeV2Surfaces.input(context),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        prefixIcon: const HopeIcon(
+          HopeV2Icons.search,
+          size: 21,
+          color: HopeV2Colors.muted,
+          strokeWidth: 1.9,
+        ),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 52,
+          minHeight: HopeV2Touch.minimum,
+        ),
+        hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: HopeV2Colors.darkMuted,
+            ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          borderSide: BorderSide(
+            color: HopeV2Surfaces.controlBorder(context),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          borderSide: BorderSide(
+            color: HopeV2Surfaces.controlBorder(context).withValues(alpha: .30),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: .48),
+            width: 1.4,
+          ),
+        ),
         hintText: resolvedHint,
         suffixIcon: hasQuery || widget.onFilter != null
             ? Row(
@@ -687,7 +717,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
     final dark = Theme.of(context).brightness == Brightness.dark;
     _ensureController();
     final base =
-        dark ? Colors.white.withValues(alpha: .06) : const Color(0xFFECEAF2);
+        dark ? Colors.white.withValues(alpha: .06) : HopeV2Colors.disabledLight;
     final highlight = dark ? Colors.white.withValues(alpha: .12) : Colors.white;
     // Honor the system "reduce motion" preference: show a static placeholder.
     if (MediaQuery.disableAnimationsOf(context)) {
@@ -737,7 +767,7 @@ class OpportunitySkeletonCard extends StatelessWidget {
                   final subtitleWidth = width < 180 ? width : 180.0;
                   final detailWidth = width < 150 ? width : 150.0;
                   final stack = width < 240;
-                  final items = const [
+                  const items = [
                     SkeletonBox(height: 28, width: 100),
                     SkeletonBox(height: 28, width: 118),
                   ];

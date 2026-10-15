@@ -80,14 +80,14 @@ test('offer read APIs are authenticated and viewer-scoped', async () => {
 
 
 test('capability configuration exposes safe feature flags without secrets', async () => {
-  const source = (await Promise.all([
-    'app.js',
-    'routes/config_routes.js',
-    'config.js',
-  ].map((file) => readFile(new URL(`../src/${file}`, import.meta.url), 'utf8')))).join('\n');
+  const appSource = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../src/routes/config_routes.js', import.meta.url), 'utf8');
+  assert.match(appSource, /createConfigRoutes/);
+  assert.match(appSource, /parts\[0\] === 'config'/);
+  assert.match(source, /capabilities:/);
   for (const marker of [
     "createConfigRoutes",
-    "parts[0] === 'config'",
+
     "googleSignIn",
     "walletTransfer",
     "walletWithdraw",
@@ -98,4 +98,5 @@ test('capability configuration exposes safe feature flags without secrets', asyn
   ]) assert.ok(source.includes(marker), `Missing capability marker: ${marker}`);
   assert.ok(!source.includes('accessSecret'));
   assert.ok(!source.includes('paymentWebhookSecret'));
+  assert.match(appSource, /parts\[0\] === 'config'/);
 });

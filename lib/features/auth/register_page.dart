@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
+import '../../core/config/backend_capabilities.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/google_sign_in_service.dart';
 import '../../core/router/auth_return_intent.dart';
@@ -29,10 +32,44 @@ class _RegisterPageState extends State<RegisterPage> {
   final password = TextEditingController();
   bool obscure = true;
   bool loading = false;
+  bool _capabilitiesLookupAttempted = false;
+  BackendCapabilities? _backendCapabilities;
+
+  bool get _canUseGoogleSignIn =>
+      (context.read<GoogleSignInService?>()?.isConfigured ?? false) &&
+      _backendCapabilities?.googleSignIn == true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_capabilitiesLookupAttempted) return;
+    _capabilitiesLookupAttempted = true;
+    try {
+      final repository = context.read<BackendCapabilitiesRepository>();
+      unawaited(_loadBackendCapabilities(repository));
+    } on ProviderNotFoundException {
+      _backendCapabilities = null;
+    }
+  }
+
+  Future<void> _loadBackendCapabilities(
+    BackendCapabilitiesRepository repository,
+  ) async {
+    try {
+      final capabilities = await repository.load();
+      if (!mounted) return;
+      setState(() => _backendCapabilities = capabilities);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _backendCapabilities = null);
+    }
+  }
 
   Future<void> submitGoogle() async {
     final google = context.read<GoogleSignInService?>();
-    if (google == null || !google.isConfigured) return;
+    if (google == null ||
+        !google.isConfigured ||
+        _backendCapabilities?.googleSignIn != true) return;
     setState(() => loading = true);
     try {
       await context.read<AuthController>().loginWithGoogle(google);
@@ -93,9 +130,13 @@ class _RegisterPageState extends State<RegisterPage> {
           .read<AuthController>()
           .register(email.text.trim(), password.text, name.text.trim());
       if (mounted) {
-        await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
-        if (mounted && Navigator.of(context).canPop()) {
+        if (widget.returnIntent != null) {
           Navigator.of(context).pop(widget.returnIntent);
+        } else {
+          await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
+          if (mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(widget.returnIntent);
+          }
         }
       }
     } catch (error) {
@@ -108,7 +149,12 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Directionality(
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final denseAuth =
+        (mediaQuery.size.height < 760 || mediaQuery.viewInsets.bottom > 0) &&
+        mediaQuery.textScaler.scale(1) <= 1.2;
+    return Directionality(
         textDirection: Localizations.localeOf(context).languageCode == 'en'
             ? TextDirection.ltr
             : TextDirection.rtl,
@@ -117,9 +163,14 @@ class _RegisterPageState extends State<RegisterPage> {
             child: PremiumPageFrame(
               page: HopePageId.register,
               maxWidth: 640,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                denseAuth ? 4 : 8,
+                16,
+                denseAuth ? 10 : 24,
+              ),
               child: ListView(
-                padding: EdgeInsets.zero,
+                padding: HopeV2Navigation.scrollEndPadding(context),
                 children: [
                   Row(
                     children: [
@@ -137,7 +188,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       const HopeMark(size: 34),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: denseAuth ? 4 : 8),
                   PremiumHero(
                     page: HopePageId.register,
                     domain: HopeProductDomain.account,
@@ -145,19 +196,35 @@ class _RegisterPageState extends State<RegisterPage> {
                     title: HopeCopy.of(context).copy_start_a_good_collaboration_9df52cf,
                     message: HopeCopy.of(context).copy_create_a_hope_account_and_take_the_first_s_9ccd119,
                     icon: HopeV2Icons.userAdd,
-                    height: 164,
+                    height: denseAuth ? 100 : 112,
+                    compactHero: true,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: denseAuth ? 6 : 8),
                   PremiumPanel(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                     child: Column(
                       children: [
-                        if (context.read<GoogleSignInService?>()?.isConfigured ?? false) ...[
+                        if (_canUseGoogleSignIn) ...[
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
+                               key: const ValueKey('auth-google-sign-in'),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF1F1F1F),
+                                side: const BorderSide(color: Color(0xFFDADCE0)),
+                                minimumSize: const Size.fromHeight(48),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                               onPressed: loading ? null : submitGoogle,
-                              icon: const HopeIcon(HopeV2Icons.userAdd, size: 19),
+                              icon: Image.asset(
+                                'assets/branding/google_g.png',
+                                width: 20,
+                                height: 20,
+                                excludeFromSemantics: true,
+                              ),
                               label: Text(
                                 AppLocalizations.of(context).signInWithGoogle,
                               ),
@@ -192,7 +259,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_full_name_c7448f1,
-                            prefixIcon: const HopeIcon(HopeV2Icons.userAdd, size: 20),
+                            prefixIcon: const Icon(Icons.person_add_alt_1_rounded, size: 18, key: ValueKey('auth-name-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -203,7 +270,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 20),
+                            prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -213,7 +280,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_password_656eabe,
-                            prefixIcon: const HopeIcon(HopeV2Icons.password, size: 20),
+                            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
                             suffixIcon: IconButton(
                               icon: HugeIcon(
                                 icon: obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,
@@ -234,7 +301,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
@@ -263,4 +330,5 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       );
+  }
 }

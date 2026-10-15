@@ -21,6 +21,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   int _days = 30;
+  // Wave 1: admin control data starts from safe empty futures before access resolves.
   late Future<Map<String, dynamic>> _finance;
   late Future<List<Map<String, dynamic>>> _reports;
   late Future<List<Map<String, dynamic>>> _unknownPayouts;
@@ -35,6 +36,12 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 5, vsync: this);
+    _finance = Future.value(const <String, dynamic>{});
+    _reports = Future.value(const <Map<String, dynamic>>[]);
+    _unknownPayouts = Future.value(const <Map<String, dynamic>>[]);
+    _analytics = Future.value(const <String, dynamic>{});
+    _funnel = Future.value(const <String, dynamic>{});
+    _crashes = Future.value(const <String, dynamic>{});
     _reload();
   }
 
@@ -44,13 +51,18 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     super.dispose();
   }
 
-  void _reload() async {
+  Future<void> _reload() async {
     final r = context.read<AdminRepository>();
     try {
       final access = await r.getPanelAccess();
       if (!mounted) return;
-      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
-    } catch (_) {}
+      _permissions = access['permissions'] is List
+          ? (access['permissions'] as List).whereType<String>().toSet()
+          : <String>{};
+    } catch (_) {
+      if (!mounted) return;
+      _permissions = <String>{};
+    }
 
     _finance = r.getFinanceSummary();
     _reports = r.listTrustReports();
@@ -58,11 +70,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     _analytics = r.getAnalyticsSummary(days: _days);
     _funnel = r.getFunnel(days: _days);
     _crashes = r.getCrashSummary(days: _days);
-    r.getPanelAccess().then((access) {
-      if (!mounted) return;
-      _permissions = (access['permissions'] is List) ? (access['permissions'] as List).whereType<String>().toSet() : <String>{};
-      setState(() {});
-    }).catchError((_) {});
     if (mounted) setState(() {});
   }
 
@@ -117,7 +124,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       child: Scaffold(
         body: PremiumPageFrame(
           maxWidth: 1280,
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 56),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: Column(
             children: [
               PremiumHeader(
@@ -222,7 +229,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(14),
               children: [
                 _header(
                   HopeV2Icons.wallet,
@@ -271,8 +278,8 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const HopeIconTile(HopeV2Icons.notifications, filled: true),
-            const SizedBox(width: 10),
+            const HopeIconTile(HopeV2Icons.notifications, size: 36, filled: true),
+            const SizedBox(width: 8),
             Expanded(child: Text(
               '${row['reason'] ?? _t('گزارش', 'Report')}',
               style: Theme.of(context).textTheme.titleMedium,
@@ -350,8 +357,8 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const HopeIconTile(HopeV2Icons.pending, filled: true),
-            const SizedBox(width: 10),
+            const HopeIconTile(HopeV2Icons.pending, size: 36, filled: true),
+            const SizedBox(width: 8),
             Expanded(child: Text('${_t('تسویه', 'Payout')} ${id.isEmpty ? '—' : id}',
                 style: Theme.of(context).textTheme.titleMedium)),
             StatusPill(_payoutStatusLabel(row['status']), color: AppColors.warning),
@@ -499,11 +506,11 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     HopeProductDomain domain = HopeProductDomain.control,
   }) =>
       PremiumPanel(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            PremiumDomainMarker(domain: domain),
-            const SizedBox(width: 12),
+            PremiumDomainMarker(domain: domain, compact: true),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -539,8 +546,8 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
         return GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
             mainAxisExtent: columns == 1 ? 82 : 96,
           ),
           shrinkWrap: true,
@@ -549,7 +556,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           itemBuilder: (context, index) {
             final entry = entries[index];
             return PremiumPanel(
-              padding: const EdgeInsets.all(13),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -582,7 +589,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   Widget _mapPanel(Object icon, String title, Map<String, dynamic> data) => PremiumPanel(
     padding: const EdgeInsets.all(14),
     child: ExpansionTile(
-      leading: HopeIconTile(icon),
+      leading: HopeIconTile(icon, size: 36),
       title: Text(title),
       children: data.entries.map((e) => ListTile(
         dense: true,
@@ -593,7 +600,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   );
 
   Widget _empty(Object icon, String text) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 50),
+    padding: const EdgeInsets.symmetric(vertical: 32),
     child: EmptyState(icon: icon, title: text, message: ''),
   );
 }

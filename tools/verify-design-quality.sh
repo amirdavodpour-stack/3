@@ -9,6 +9,8 @@ need_file() { [[ -f "$1" ]] || fail "missing required file: $1"; }
 
 required_files=(
   pubspec.yaml
+  tool/contrast_check.py
+  assets/branding/google_g.png
   lib/core/theme/hope_v2_design.dart
   lib/core/theme/app_theme.dart
   lib/core/ui/components.dart
@@ -39,6 +41,11 @@ required_files=(
   test/core/quality/hope_accessibility_gate_test.dart
   test/core/quality/hope_quality_matrix_test.dart
   test/core/finance/toman_formatter_test.dart
+  test/features/financial/financial_insights_page_test.dart
+  test/features/profile/wave24_compact_dock_test.dart
+  docs/audit/WAVE_24_SUPERWAVE_REPORT.md
+  docs/audit/WAVE_25_PROFILE_FIRST_FOLD_REPORT.md
+  docs/superpowers/plans/2026-10-09-v2hope-wave24.md
   lib/core/finance/toman_formatter.dart
 )
 for f in "${required_files[@]}"; do need_file "$f"; done
@@ -62,6 +69,8 @@ if missing_en or missing_fa:
 print(f"Localization parity PASS ({len(fa_keys)} message keys)")
 PY
 
+python3 tool/contrast_check.py
+
 grep -q "class HopeV2Touch" lib/core/theme/hope_v2_design.dart || fail "touch-target token is missing"
 grep -q "minimum = 48.0" lib/core/theme/hope_v2_design.dart || fail "48px minimum target token is missing"
 grep -q "class PremiumPageFrame" lib/core/ui/premium_components.dart || fail "PremiumPageFrame is missing"
@@ -72,6 +81,9 @@ grep -q "continueAsGuest" integration_test/runtime/app_smoke_test.dart || fail "
 grep -q "loginWithGoogle" lib/features/auth/login_page.dart || fail "Google Sign-In action contract is missing"
 grep -R -q "تومان" lib/features/wallet lib/features/transactions || fail "TOMAN labelling is not present in finance surfaces"
 grep -q "semanticsIdentifier" lib/core/ui/premium_components.dart || fail "stable semantics identifier contract is missing"
+grep -q "scrollEndGap = 12.0" lib/core/theme/hope_v2_design.dart || fail "shared scroll end-gap token is missing"
+grep -q "hope-explore-kind-filters" lib/features/jobs/jobs_filter_bar.part.dart || fail "compact Explore kind control is missing"
+grep -q "financial-cashflow-legend" lib/features/financial/financial_insights_page.dart || fail "financial series legend is missing"
 grep -q "HopeTomanFormatter.grouped" lib/core/ui/copy.dart || fail "TOMAN display formatter is not connected"
 
 echo "HOPE design/runtime guardrails PASS"

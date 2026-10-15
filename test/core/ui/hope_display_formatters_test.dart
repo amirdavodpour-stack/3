@@ -17,10 +17,62 @@ void main() {
       );
     });
 
+    test('collapses equal ranges to one value', () {
+      expect(
+        HopeDisplayFormatter.amount('2500000 – 2500000', locale: 'fa'),
+        '۲٬۵۰۰٬۰۰۰ تومان',
+      );
+    });
+
+    test('isolates signed Persian Toman amounts and preserves English display', () {
+      expect(
+        HopeDisplayFormatter.signedMoney(500000, positive: true, locale: 'fa'),
+        '\u2066+۵۰۰٬۰۰۰ تومان\u2069',
+      );
+      expect(
+        HopeDisplayFormatter.signedMoney(500000, positive: false, locale: 'fa'),
+        '\u2066-۵۰۰٬۰۰۰ تومان\u2069',
+      );
+      expect(
+        HopeDisplayFormatter.signedMoney(500000, positive: true, locale: 'en'),
+        '+500,000 TOMAN',
+      );
+    });
+
+    test('localizes percentage digits, decimal separators, and percent sign', () {
+      expect(HopeDisplayFormatter.percent(96, locale: 'fa'), '۹۶٪');
+      expect(
+        HopeDisplayFormatter.percent(91.4, locale: 'fa', fractionDigits: 1),
+        '۹۱٫۴٪',
+      );
+      expect(
+        HopeDisplayFormatter.percent(91.4, locale: 'en', fractionDigits: 1),
+        '91.4%',
+      );
+    });
+
+    test('normalizes fractional and whole recommendation scores to 0–100', () {
+      expect(HopeDisplayFormatter.matchPercentage(0.94), 94);
+      expect(HopeDisplayFormatter.matchPercentage('0.94'), 94);
+      expect(HopeDisplayFormatter.matchPercentage(94), 94);
+      expect(HopeDisplayFormatter.matchPercentage('۹۴'), 94);
+      expect(HopeDisplayFormatter.matchPercentage(0), 0);
+      expect(HopeDisplayFormatter.matchPercentage(1), 100);
+    });
+
+    test('does not manufacture match scores from invalid or out-of-range values', () {
+      expect(HopeDisplayFormatter.matchPercentage(null), isNull);
+      expect(HopeDisplayFormatter.matchPercentage(double.nan), isNull);
+      expect(HopeDisplayFormatter.matchPercentage(double.infinity), isNull);
+      expect(HopeDisplayFormatter.matchPercentage(-0.1), isNull);
+      expect(HopeDisplayFormatter.matchPercentage(100.1), isNull);
+      expect(HopeDisplayFormatter.matchPercentage('not-a-score'), isNull);
+    });
+
     test('formats English money without Persian digits', () {
       expect(
         HopeDisplayFormatter.money('1500000', locale: 'en'),
-        '1,500,000 Toman',
+        '1,500,000 TOMAN',
       );
     });
 
@@ -31,6 +83,18 @@ void main() {
       );
     });
 
+    test('rejects fractional TOMAN values and malformed money text', () {
+      expect(HopeDisplayFormatter.money(12.5, locale: 'fa'), '—');
+      expect(HopeDisplayFormatter.integer(12.5, locale: 'en'), '—');
+      expect(HopeDisplayFormatter.amount('2026-09-21T06:00:00Z', locale: 'fa'), '—');
+    });
+
+    test('formats only server-issued public references', () {
+      expect(HopeDisplayFormatter.humanRef('HP-1042', locale: 'fa'), '#HP-1042');
+      expect(HopeDisplayFormatter.humanRef('#hp-1042', locale: 'en'), '#HP-1042');
+      expect(HopeDisplayFormatter.humanRef('payment-runtime-1', locale: 'fa'), isNull);
+      expect(HopeDisplayFormatter.humanRef('550e8400-e29b-41d4-a716-446655440000', locale: 'en'), isNull);
+    });
     test('formats relative dates and uses Jalali for older Persian dates', () {
       final now = DateTime.parse('2026-10-07T12:00:00Z');
       expect(
@@ -47,7 +111,31 @@ void main() {
           locale: 'fa',
           now: now,
         ),
-        isNot(contains('T')),
+        '۱۰ شهریور ۱۴۰۵',
+      );
+      expect(
+        HopeDisplayFormatter.relativeDateTime(
+          '2026-10-08T00:00:00Z',
+          locale: 'fa',
+          now: now,
+        ),
+        'در ۱۲ ساعت',
+      );
+      expect(
+        HopeDisplayFormatter.relativeDateTime(
+          '2026-10-08T00:00:00Z',
+          locale: 'en',
+          now: now,
+        ),
+        'in 12 hours',
+      );
+      expect(
+        HopeDisplayFormatter.relativeDateTime(
+          '2026-09-01T10:00:00Z',
+          locale: 'en',
+          now: now,
+        ),
+        'Sep 1, 2026',
       );
     });
   });

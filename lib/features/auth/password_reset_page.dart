@@ -58,9 +58,9 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
             child: PremiumPageFrame(
               page: HopePageId.passwordReset,
               maxWidth: 640,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: ListView(
-                padding: EdgeInsets.zero,
+                padding: HopeV2Navigation.scrollEndPadding(context),
                 children: [
                   Row(
                     children: [
@@ -78,7 +78,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                       const HopeMark(size: 34),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   PremiumHero(
                     page: HopePageId.passwordReset,
                     domain: HopeProductDomain.account,
@@ -86,11 +86,12 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     title: HopeCopy.of(context).copy_reset_password_18b5d1c,
                     message: HopeCopy.of(context).copy_enter_your_account_email_and_we_will_start_16caa6e,
                     icon: HopeV2Icons.mail,
-                    height: 164,
+                    height: 128,
+                    compactHero: true,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   PremiumPanel(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       children: [
                         TextField(
@@ -99,7 +100,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const HopeIcon(HopeV2Icons.mail, size: 20),
+                            prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -119,7 +120,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   EmptyState(
                     icon: HopeV2Icons.secure,
                     title: HopeCopy.of(context).copy_you_are_covered_1bbe449,

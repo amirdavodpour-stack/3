@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#101522"/><stop offset="1" stop-color="#0B0F18"/></linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366F1"/><stop offset=".55" stop-color="#312E81"/><stop offset="1" stop-color="#0F111A"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".10"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".025"/></linearGradient>
+  </defs>
+  <rect width="1200" height="760" rx="28" fill="url(#bg)"/>
+  <text x="48" y="56" fill="#F8FAFC" font-family="Inter, sans-serif" font-size="28" font-weight="800">HOPE DESIGN SYSTEM 2.0</text>
+  <text x="48" y="84" fill="#A5ADBD" font-family="Inter, sans-serif" font-size="14">Discover · Execute · Trust  /  Persian-first · RTL-safe · Ledger-safe</text>
+  <g transform="translate(48 112)">
+    <g><rect width="164" height="70" rx="12" fill="#6366F1"/><text x="14" y="28" fill="#FFFFFF" font-size="14" font-family="Inter">Primary</text><text x="14" y="51" fill="#FFFFFF" font-size="14" font-family="monospace">#6366F1</text></g>
+    <g transform="translate(176 0)"><rect width="164" height="70" rx="12" fill="#10B981"/><text x="14" y="28" fill="#06251B" font-size="14" font-family="Inter">Success accent</text><text x="14" y="51" fill="#06251B" font-size="14" font-family="monospace">#10B981</text></g>
+    <g transform="translate(352 0)"><rect width="164" height="70" rx="12" fill="#F59E0B"/><text x="14" y="28" fill="#2A1800" font-size="14" font-family="Inter">Warning</text><text x="14" y="51" fill="#2A1800" font-size="14" font-family="monospace">#F59E0B</text></g>
+    <g transform="translate(528 0)"><rect width="164" height="70" rx="12" fill="#EF4444"/><text x="14" y="28" fill="#FFFFFF" font-size="14" font-family="Inter">Danger</text><text x="14" y="51" fill="#FFFFFF" font-size="14" font-family="monospace">#EF4444</text></g>
+    <g transform="translate(704 0)"><rect width="164" height="70" rx="12" fill="#0F111A" stroke="#333B4E"/><text x="14" y="28" fill="#F8FAFC" font-size="14" font-family="Inter">Surface</text><text x="14" y="51" fill="#F8FAFC" font-size="14" font-family="monospace">#0F111A</text></g>
+    <g transform="translate(880 0)"><rect width="164" height="70" rx="12" fill="#F8FAFC"/><text x="14" y="28" fill="#0F111A" font-size="14" font-family="Inter">Text</text><text x="14" y="51" fill="#0F111A" font-size="14" font-family="monospace">#F8FAFC</text></g>
+  </g>
+  <g transform="translate(48 222)">
+    <rect width="340" height="472" rx="22" fill="#101522" stroke="#2B3346"/>
+    <text x="22" y="34" fill="#F8FAFC" font-family="Inter" font-size="18" font-weight="700">Home / Pulse</text>
+    <text x="22" y="56" fill="#A5ADBD" font-family="Inter" font-size="12">Two-column reflow at narrow widths</text>
+    <rect x="20" y="76" width="300" height="82" rx="14" fill="url(#glass)" stroke="#2A344B"/>
+    <text x="38" y="104" fill="#A5ADBD" font-size="12" font-family="Inter">MATCHES</text><text x="38" y="137" fill="#F8FAFC" font-size="25" font-weight="800" font-family="Inter">12</text>
+    <rect x="20" y="170" width="144" height="82" rx="14" fill="url(#glass)" stroke="#2A344B"/><text x="34" y="197" fill="#A5ADBD" font-size="12" font-family="Inter">NEW</text><text x="34" y="230" fill="#F8FAFC" font-size="24" font-weight="800" font-family="Inter">4</text>
+    <rect x="176" y="170" width="144" height="82" rx="14" fill="url(#glass)" stroke="#2A344B"/><text x="190" y="197" fill="#A5ADBD" font-size="12" font-family="Inter">ACTIVE</text><text x="190" y="230" fill="#F8FAFC" font-size="24" font-weight="800" font-family="Inter">2</text>
+    <rect x="20" y="264" width="300" height="82" rx="14" fill="url(#glass)" stroke="#2A344B"/><text x="38" y="292" fill="#A5ADBD" font-size="12" font-family="Inter">HELD IN HOPE ESCROW</text><text x="38" y="325" fill="#F8FAFC" font-size="24" font-weight="800" font-family="Inter">۱٬۰۰۰٬۰۰۰ تومان</text>
+    <rect x="20" y="366" width="300" height="82" rx="14" fill="url(#hero)"/><text x="38" y="394" fill="#FFFFFF" font-size="12" font-family="Inter">NEXT ACTION</text><text x="38" y="420" fill="#FFFFFF" font-size="17" font-weight="700" font-family="Inter">Review delivery</text>
+  </g>
+  <g transform="translate(430 222)">
+    <rect width="340" height="472" rx="22" fill="#101522" stroke="#2B3346"/>
+    <text x="22" y="34" fill="#F8FAFC" font-family="Inter" font-size="18" font-weight="700">Opportunity Card</text>
+    <rect x="18" y="56" width="304" height="150" rx="16" fill="url(#hero)"/>
+    <circle cx="276" cy="90" r="54" fill="#FFFFFF" fill-opacity=".08"/>
+    <rect x="36" y="78" width="50" height="50" rx="16" fill="#FFFFFF" fill-opacity=".12" stroke="#FFFFFF" stroke-opacity=".2"/>
+    <path d="M48 102h26M61 89v26" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round"/>
+    <text x="36" y="168" fill="#FFFFFF" font-size="20" font-weight="800" font-family="Inter">Software delivery</text>
+    <rect x="18" y="222" width="304" height="52" rx="12" fill="url(#glass)" stroke="#2A344B"/>
+    <text x="34" y="244" fill="#A5ADBD" font-size="11" font-family="Inter">BUDGET · NO ELLIPSIS</text><text x="34" y="263" fill="#F8FAFC" font-size="16" font-weight="700" font-family="Inter">۱٬۵۰۰٬۰۰۰ تا ۲٬۵۰۰٬۰۰۰ تومان</text>
+    <rect x="18" y="290" width="90" height="28" rx="14" fill="#6366F1" fill-opacity=".18" stroke="#818CF8"/><text x="63" y="308" text-anchor="middle" fill="#C7D2FE" font-size="11" font-family="Inter">Match 94%</text>
+    <rect x="116" y="290" width="82" height="28" rx="14" fill="#FFFFFF" fill-opacity=".06" stroke="#FFFFFF" stroke-opacity=".1"/><text x="157" y="308" text-anchor="middle" fill="#F8FAFC" font-size="11" font-family="Inter">Remote</text>
+    <rect x="206" y="290" width="96" height="28" rx="14" fill="#FFFFFF" fill-opacity=".06" stroke="#FFFFFF" stroke-opacity=".1"/><text x="254" y="308" text-anchor="middle" fill="#F8FAFC" font-size="11" font-family="Inter">Skills</text>
+    <text x="20" y="356" fill="#A5ADBD" font-family="Inter" font-size="12">One tap target · max 3 chips</text>
+    <rect x="18" y="374" width="304" height="54" rx="14" fill="#4F46E5"/><text x="170" y="407" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700" font-family="Inter">View opportunity</text>
+  </g>
+  <g transform="translate(812 222)">
+    <rect width="340" height="472" rx="22" fill="#101522" stroke="#2B3346"/>
+    <text x="22" y="34" fill="#F8FAFC" font-family="Inter" font-size="18" font-weight="700">Wallet / Engagement</text>
+    <rect x="18" y="56" width="304" height="126" rx="16" fill="url(#hero)"/>
+    <text x="36" y="84" fill="#D9DDFE" font-size="12" font-family="Inter">TOTAL BALANCE · ONCE</text><text x="36" y="121" fill="#FFFFFF" font-size="25" font-weight="800" font-family="Inter">۳٬۵۰۰٬۰۰۰</text><text x="36" y="147" fill="#FFFFFF" font-size="13" font-family="Inter">تومان</text>
+    <rect x="18" y="196" width="304" height="58" rx="12" fill="url(#glass)" stroke="#2A344B"/><text x="34" y="219" fill="#A5ADBD" font-size="12" font-family="Inter">AVAILABLE</text><text x="34" y="241" fill="#F8FAFC" font-size="16" font-weight="700" font-family="Inter">۲٬۵۰۰٬۰۰۰ تومان</text>
+    <rect x="18" y="266" width="304" height="58" rx="12" fill="url(#glass)" stroke="#2A344B"/><text x="34" y="289" fill="#A5ADBD" font-size="12" font-family="Inter">HELD IN ESCROW (SUBSET OF LOCKED)</text><text x="34" y="311" fill="#F8FAFC" font-size="16" font-weight="700" font-family="Inter">۱٬۰۰۰٬۰۰۰ تومان</text>
+    <text x="22" y="358" fill="#A5ADBD" font-size="12" font-family="Inter">Lifecycle progress</text>
+    <g transform="translate(24 382)">
+      <circle cx="0" cy="0" r="7" fill="#10B981"/><circle cx="56" cy="0" r="7" fill="#10B981"/><circle cx="112" cy="0" r="7" fill="#6366F1"/><circle cx="168" cy="0" r="7" fill="#2D3748"/><circle cx="224" cy="0" r="7" fill="#2D3748"/><circle cx="280" cy="0" r="7" fill="#2D3748"/>
+      <path d="M7 0H49M63 0H105M119 0H161M175 0H217M231 0H273" stroke="#39445C" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <text x="22" y="424" fill="#F8FAFC" font-family="Inter" font-size="13">Funded → Held → Work → Delivery → Approve → Release</text>
+  </g>
+  <text x="48" y="730" fill="#A5ADBD" font-family="Inter" font-size="12">Spec sheet only — production truth remains Flutter source + server ledger + exact-head runtime evidence.</text>
+</svg>

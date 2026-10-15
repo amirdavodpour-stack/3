@@ -9,6 +9,7 @@ import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
@@ -164,7 +165,9 @@ Future<void> _pump(
   _FakeTx repo, {
   String ownerId = 'u1',
   double width = 900,
+  double textScale = 1.0,
   bool disableAnimations = false,
+  bool useActualViewportMetrics = false,
 }) async {
   tester.view.physicalSize = Size(width, 2200);
   tester.view.devicePixelRatio = 1.0;
@@ -185,7 +188,12 @@ Future<void> _pump(
       GlobalCupertinoLocalizations.delegate,
     ],
     home: MediaQuery(
-      data: MediaQueryData(disableAnimations: disableAnimations),
+      data: MediaQueryData(
+        size: useActualViewportMetrics ? Size(width, 2200) : Size.zero,
+        devicePixelRatio: 1.0,
+        textScaler: TextScaler.linear(textScale),
+        disableAnimations: disableAnimations,
+      ),
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: auth),
@@ -249,10 +257,17 @@ void main() {
     expect(find.text('Protected by HOPE'), findsOneWidget);
     expect(find.text('Start work'), findsOneWidget);
     expect(find.text('Stage 2 of 6'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is PremiumTag && widget.label == 'Funds held',
+      ),
+      findsOneWidget,
+      reason: 'The canonical payment status is already shown in the page heading.',
+    );
   });
 
   testWidgets(
-    'compact payment lifecycle remains decision-dense',
+    'Wave 23 vertical transaction timeline remains decision-dense on compact screens',
     (tester) async {
       final repo = _FakeTx()
         ..payment = Future.value(HopePayment.fromMap({
@@ -268,6 +283,14 @@ void main() {
           find.byKey(const ValueKey('transaction-payment-lifecycle'));
       expect(flow, findsOneWidget);
       expect(tester.getSize(flow).height, lessThan(340));
+      expect(find.text('Fund'), findsOneWidget);
+      expect(find.text('Hold'), findsOneWidget);
+      expect(find.text('Payout'), findsOneWidget);
+      expect(
+        find.byType(HopeLifecycleRail),
+        findsNothing,
+        reason: 'Compact transaction detail should use the readable vertical timeline instead of a horizontal rail.',
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -284,7 +307,7 @@ void main() {
       }));
     await _pump(tester, repo, ownerId: 'u1');
 
-    expect(find.text('Funded'), findsWidgets);
+    expect(find.text('Funds held'), findsWidgets);
     expect(
       find.byWidgetPredicate((widget) {
         if (widget is! Text || widget.data == null) return false;
@@ -427,32 +450,87 @@ void main() {
     expect(repo2.calls, contains('refund:j1'));
   });
 
-  testWidgets('transaction summary contains long values on narrow screens',
-      (tester) async {
-    final repo = _FakeTx()
-      ..payment = Future.value(HopePayment.fromMap({
-        'id': 'p1',
-        'status': 'RELEASE_PENDING',
-        'amount': '9000000000000000',
-        'providerRef':
-            'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
-        'job': _job('j1', 'COMPLETED').toMap(),
-      }));
+  testWidgets(
+    'Wave 45 transaction summary preserves full TOMAN amount and fee values at 1.5x',
+    (tester) async {
+      final repo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'p1',
+          'status': 'RELEASE_PENDING',
+          'amount': '9000000000000000',
+          'providerRef':
+              'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
+          'fees': {
+            'baseAmount': '8999999999000000',
+            'employerFee': '1000000',
+            'workerFee': '500000',
+            'platformFee': '0',
+            'employerCharge': '9000000000000000',
+            'providerPayout': '8999999998500000',
+          },
+          'job': _job('j1', 'COMPLETED').toMap(),
+        }));
 
-    await _pump(tester, repo, ownerId: 'u1', width: 360);
-    await tester.pumpAndSettle();
+      await _pump(
+        tester,
+        repo,
+        ownerId: 'u1',
+        width: 360,
+        textScale: 1.5,
+        useActualViewportMetrics: true,
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Payment status'), findsOneWidget);
-    expect(find.text('Amount'), findsOneWidget);
-    expect(find.text('Reference'), findsOneWidget);
-    expect(
-      find.text(
-        'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
-      ),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.text('Payment status'), findsOneWidget);
+      expect(find.text('Amount'), findsOneWidget);
+      expect(find.text('Reference'), findsNothing);
+      expect(
+        find.text(
+          'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
+        ),
+        findsNothing,
+      );
+
+      final mainAmount = find.byKey(
+        const ValueKey('transaction-payment-amount'),
+      );
+      expect(mainAmount, findsOneWidget);
+      final mainAmountText = tester.widget<Text>(mainAmount);
+      expect(mainAmountText.data!.replaceAll(',', ''), '9000000000000000 TOMAN');
+      expect(mainAmountText.maxLines, isNull);
+      expect(mainAmountText.softWrap, isTrue);
+      expect(mainAmountText.overflow, TextOverflow.visible);
+      expect(tester.getRect(mainAmount).right, lessThanOrEqualTo(360));
+
+      Finder moneyTextWithoutCommas(String digits) => find.byWidgetPredicate(
+            (widget) =>
+                widget is Text &&
+                widget.data != null &&
+                widget.data!.replaceAll(',', '') == '$digits TOMAN',
+          );
+
+      final feeAmount = moneyTextWithoutCommas('8999999999000000');
+      await tester.scrollUntilVisible(
+        feeAmount,
+        180,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 30,
+      );
+      await tester.pumpAndSettle();
+      expect(feeAmount, findsOneWidget);
+      final feeAmountText = tester.widget<Text>(feeAmount);
+      expect(
+        feeAmountText.style?.color,
+        HopeV2SemanticColors.price(tester.element(feeAmount)),
+        reason: 'Financial detail rows must use the semantic price foreground.',
+      );
+      expect(feeAmountText.maxLines, isNull);
+      expect(feeAmountText.softWrap, isTrue);
+      expect(feeAmountText.overflow, TextOverflow.visible);
+      expect(tester.getRect(feeAmount).right, lessThanOrEqualTo(360));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('completed and released payment shows settled copy',
       (tester) async {
@@ -488,6 +566,8 @@ void main() {
     expect(find.text('EXTERNAL_REVIEW_REQUIRED'), findsNothing);
 
     expect(find.text('Needs review'), findsWidgets);
+    expect(find.text('Stage unavailable'), findsOneWidget);
+    expect(find.text('Stage 1 of 6'), findsNothing);
   });
 
   testWidgets('financial details section renders fee breakdown rows',
@@ -541,5 +621,54 @@ void main() {
     expect(find.text('1,650,000 TOMAN'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+
+  testWidgets(
+    'transaction details hide internal provider references but retain public references',
+    (tester) async {
+      final internalRepo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'payment-internal-id',
+          'status': 'HELD',
+          'amount': 1650000,
+          'providerRef': 'internal-ledger-reference-compact',
+          'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        }));
+      await _pump(
+        tester,
+        internalRepo,
+        width: 1200,
+        useActualViewportMetrics: true,
+      );
+
+      expect(find.text('internal-ledger-reference-compact'), findsNothing);
+      expect(find.text('Reference'), findsNothing);
+
+      // Force a fresh State/controller for the public-reference phase rather
+      // than reusing the internal-reference page's already-loaded payment.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      final publicRepo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'payment-public-reference',
+          'status': 'HELD',
+          'amount': 1650000,
+          'providerRef': 'HP-1042',
+          'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        }));
+      await _pump(
+        tester,
+        publicRepo,
+        width: 1200,
+        useActualViewportMetrics: true,
+      );
+
+      expect(find.text('Reference'), findsOneWidget);
+      expect(find.text('#HP-1042'), findsOneWidget);
+      expect(find.text('HP-1042'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
 }

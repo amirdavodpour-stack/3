@@ -380,6 +380,31 @@ class HopeDomainSpec {
       Localizations.localeOf(context).languageCode == 'en'
           ? descriptionEn
           : descriptionFa;
+
+  Color accentFor(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    if (accent == HopeV2Colors.primary ||
+        accent == HopeV2Colors.primaryDark) {
+      return dark ? HopeV2Colors.primaryDark : HopeV2Colors.primary;
+    }
+    if (accent == HopeV2Colors.secondary ||
+        accent == HopeV2Colors.secondaryDark) {
+      return dark ? HopeV2Colors.secondaryDark : HopeV2Colors.secondary;
+    }
+    if (accent == HopeV2Colors.success ||
+        accent == HopeV2Colors.successDark) {
+      return dark ? HopeV2Colors.successDark : HopeV2Colors.success;
+    }
+    if (accent == HopeV2Colors.warning ||
+        accent == HopeV2Colors.warningDark) {
+      return dark ? HopeV2Colors.warningDark : HopeV2Colors.warning;
+    }
+    if (accent == HopeV2Colors.danger ||
+        accent == HopeV2Colors.dangerDark) {
+      return dark ? HopeV2Colors.dangerDark : HopeV2Colors.danger;
+    }
+    return accent;
+  }
 }
 
 extension HopeProductDomainX on HopeProductDomain {
@@ -401,8 +426,8 @@ extension HopeProductDomainX on HopeProductDomain {
             descriptionEn: 'Find, search, and evaluate opportunities.',
           ),
         HopeProductDomain.work => const HopeDomainSpec(
-            labelFa: 'کار',
-            labelEn: 'Work',
+            labelFa: 'کارگاه',
+            labelEn: 'Workshop',
             icon: HopeV2Icons.mission,
             accent: HopeV2Colors.primary,
             descriptionFa: 'چرخه اجرایی همکاری، درخواست و پیشنهاد.',

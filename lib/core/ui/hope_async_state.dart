@@ -80,38 +80,66 @@ class HopeAsyncState extends StatelessWidget {
       container: true,
       explicitChildNodes: true,
       label: '$title. $message',
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Padding(
-            padding: const EdgeInsets.all(HopeV2Spacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!reduceMotion &&
-                    (kind == HopeStateKind.loading ||
-                        kind == HopeStateKind.refreshing ||
-                        kind == HopeStateKind.retrying ||
-                        kind == HopeStateKind.submitting))
-                  const SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
-                  )
-                else
-                  Icon(config.$1, size: 38, color: config.$2),
-                const SizedBox(height: HopeV2Spacing.md),
-                Text(title, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: HopeV2Spacing.xs),
-                Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
-                if (action != null) ...[
-                  const SizedBox(height: HopeV2Spacing.lg),
-                  ConstrainedBox(constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum), child: action!),
-                ],
-              ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final content = Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Padding(
+                padding: const EdgeInsets.all(HopeV2Spacing.xl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!reduceMotion &&
+                        (kind == HopeStateKind.loading ||
+                            kind == HopeStateKind.refreshing ||
+                            kind == HopeStateKind.retrying ||
+                            kind == HopeStateKind.submitting))
+                      const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      )
+                    else
+                      Icon(config.$1, size: 38, color: config.$2),
+                    const SizedBox(height: HopeV2Spacing.md),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: HopeV2Spacing.xs),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    if (action != null) ...[
+                      const SizedBox(height: HopeV2Spacing.lg),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minHeight: HopeV2Touch.minimum,
+                        ),
+                        child: action!,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+
+          // Async content lives inside Expanded/compact page viewports on some
+          // screens. Large text can make even a short loading/error message
+          // taller than that viewport; keep it scrollable instead of overflowing.
+          if (!constraints.hasBoundedHeight) return content;
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: content,
+            ),
+          );
+        },
       ),
     );
   }

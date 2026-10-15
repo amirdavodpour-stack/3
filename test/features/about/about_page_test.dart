@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/features/about/about_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/ui/hope_l10n.dart';
+import 'package:hope_mobile/core/ui/brand.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 
 Widget _app(Locale locale) => MaterialApp(
@@ -46,4 +48,50 @@ void main() {
     expect(find.byType(PremiumHero), findsOneWidget);
     expect(find.text('A work marketplace built around trust'), findsOneWidget);
   });
+  testWidgets('About hero and page tail follow compact editorial budgets', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app(const Locale('en')));
+    await tester.pumpAndSettle();
+
+    expect(tester.getSize(find.byType(PremiumHero)).height, 184);
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+      24,
+    );
+    final missionCopy = HopeCopy.of(
+      tester.element(find.byType(AboutHopePage)),
+    ).copy_about_mission_description;
+    expect(
+      find.text(missionCopy),
+      findsOneWidget,
+      reason: 'The mission description belongs in the Hero and should not be repeated below.',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('About first fold keeps its masthead compact in fa-RTL', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app(const Locale('fa')));
+    await tester.pumpAndSettle();
+
+    final hero = find.byType(PremiumHero);
+    final mark = find.byType(HopeMark);
+    expect(tester.getSize(hero).height, 164);
+    expect(tester.widget<HopeMark>(mark).size, 48);
+    expect(
+      tester.getRect(mark).top - tester.getRect(hero).bottom,
+      10,
+      reason: 'The logo should follow the hero as a compact brand signature, not a second oversized masthead.',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
 }

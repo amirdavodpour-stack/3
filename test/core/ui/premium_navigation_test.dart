@@ -1,4 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
@@ -13,14 +16,14 @@ void main() {
       label: 'خانه',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
+      icon: HugeIcon(icon: HopeV2Icons.search, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.search, size: 24),
       label: 'کاوش',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.activity, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.activitySelected, size: 24),
-      label: 'فعالیت',
+      icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
+      label: 'کارگاه',
     ),
     NavigationDestination(
       icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24),
@@ -52,14 +55,14 @@ void main() {
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.text('خانه'), findsOneWidget);
     expect(find.text('کاوش'), findsOneWidget);
-    expect(find.text('فعالیت'), findsOneWidget);
+    expect(find.text('کارگاه'), findsOneWidget);
     expect(find.text('کیف پول'), findsOneWidget);
     expect(find.text('پروفایل'), findsOneWidget);
     expect(tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
         greaterThanOrEqualTo(64));
   });
 
-  testWidgets('premium mobile navigation is a floating rounded surface',
+  testWidgets('premium mobile navigation uses an anchored editorial rail shape',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -78,7 +81,66 @@ void main() {
       find.byKey(const ValueKey('hope-navigation-dock')),
     );
     final decoration = dock.decoration! as BoxDecoration;
-    expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
+    expect(
+      decoration.borderRadius,
+      const BorderRadiusDirectional.only(
+        topStart: Radius.circular(14),
+        topEnd: Radius.circular(14),
+      ),
+    );
+    expect(find.byKey(const ValueKey('hope-navigation-selection-plate')), findsOneWidget);
+  });
+
+  testWidgets('default dark premium panels use the canonical opaque surface', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: PremiumPanel(child: SizedBox(width: 48, height: 48)),
+        ),
+      ),
+    );
+
+    final panel = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(PremiumPanel),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = panel.decoration as BoxDecoration;
+    expect(decoration.color, HopeV2Colors.panelDark);
+  });
+
+  testWidgets('quick action strip uses flat command controls without a wrapper panel',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: PremiumQuickActionStrip(
+            title: 'Quick access',
+            actions: [
+              PremiumQuickAction(
+                label: 'Applications',
+                icon: HopeV2Icons.mission,
+                primary: true,
+              ),
+              PremiumQuickAction(
+                label: 'Offers',
+                icon: HopeV2Icons.featured,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(PremiumQuickActionStrip), findsOneWidget);
+    expect(find.byType(PremiumPanel), findsNothing);
+    expect(find.text('Applications'), findsOneWidget);
+    expect(find.text('Offers'), findsOneWidget);
   });
 
   testWidgets('highlighted premium panels expose a restrained gradient layer',
@@ -212,10 +274,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        home: Scaffold(
+        home: const Scaffold(
           body: PremiumQuickActionStrip(
             title: 'Quick access',
-            actions: const [
+            actions: [
               PremiumQuickAction(
                 label: 'Applications',
                 icon: HopeV2Icons.mission,
@@ -249,6 +311,11 @@ void main() {
         theme: AppTheme.dark(),
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: PremiumPrimaryNavigationScaffold(
           selectedIndex: 2,
           onDestinationSelected: taps.add,
@@ -260,9 +327,20 @@ void main() {
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.text('خانه'), findsOneWidget);
     expect(find.text('کاوش'), findsOneWidget);
-    expect(find.text('کار'), findsOneWidget);
+    expect(find.text('کارگاه'), findsOneWidget);
     expect(find.text('کیف پول'), findsOneWidget);
     expect(find.text('پروفایل'), findsOneWidget);
+    final workshopSemantics = find.ancestor(
+      of: find.text('کارگاه'),
+      matching: find.byType(Semantics),
+    ).first;
+    final workshopGlyph = tester.widget<HopeNavigationGlyph>(
+      find.descendant(
+        of: workshopSemantics,
+        matching: find.byType(HopeNavigationGlyph),
+      ),
+    );
+    expect(workshopGlyph.icon, HopeV2NavigationIcons.workshopSelected);
 
     await tester.tap(find.text('کیف پول'));
     await tester.pump();
@@ -293,5 +371,362 @@ void main() {
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Wave 24 primary dock satisfies Android target sizing and labels',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          locale: const Locale('fa'),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: PremiumNavigationBar(
+                selectedIndex: 0,
+                onDestinationSelected: (_) {},
+                destinations: destinations,
+              ),
+            ),
+          ),
+        ),
+      );
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      expect(tester.takeException(), isNull);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('Wave 29 keeps every navigation label visible at 320x640dp', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        locale: const Locale('fa'),
+        home: Scaffold(
+          body: PremiumNavigationBar(
+            selectedIndex: 2,
+            onDestinationSelected: (_) {},
+            destinations: destinations,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+    for (final label in ['خانه', 'کاوش', 'کارگاه', 'کیف پول', 'پروفایل']) {
+      expect(find.text(label), findsOneWidget, reason: 'Missing compact nav label: $label');
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Compact navigation painted a clipped label: $label',
+      );
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+
+
+  testWidgets(
+    'Wave30 English navigation dock expands vertically at 1.5x without label overflow',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: PremiumPrimaryNavigationScaffold(
+              selectedIndex: 0,
+              onDestinationSelected: (_) {},
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+      expect(dock, findsOneWidget);
+      expect(tester.getSize(dock).height, greaterThan(68));
+      for (final label in ['Home', 'Explore', 'Workshop', 'Wallet', 'Profile']) {
+        expect(find.text(label), findsOneWidget);
+        final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: 'Large-text navigation painted a clipped label: $label',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Wave 27 scroll tail includes unconsumed system bottom inset',
+      (tester) async {
+    EdgeInsets? resolvedPadding;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(
+            padding: EdgeInsets.only(bottom: 24),
+          ),
+          child: Builder(
+            builder: (context) {
+              resolvedPadding = HopeV2Navigation.scrollEndPadding(context);
+              return const SizedBox(
+                key: ValueKey('wave27-scroll-end-padding'),
+                width: 10,
+                height: 1,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(resolvedPadding?.bottom, 36);
+  });
+
+  testWidgets(
+    'editorial folio plate follows all five logical destinations in RTL and LTR',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      for (final languageCode in ['fa', 'en']) {
+        var selectedIndex = 0;
+        final selectedCallbacks = <int>[];
+        final labels = languageCode == 'fa'
+            ? ['خانه', 'کاوش', 'کارگاه', 'کیف پول', 'پروفایل']
+            : ['Home', 'Explore', 'Workshop', 'Wallet', 'Profile'];
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.dark(),
+            locale: Locale(languageCode),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: StatefulBuilder(
+              builder: (context, setState) => PremiumPrimaryNavigationScaffold(
+                selectedIndex: selectedIndex,
+                onDestinationSelected: (index) {
+                  selectedCallbacks.add(index);
+                  setState(() => selectedIndex = index);
+                },
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final plate = find.byKey(const ValueKey('hope-navigation-selection-plate'));
+        expect(plate, findsOneWidget);
+        var previousRect = tester.getRect(plate);
+        for (var index = 1; index < labels.length; index++) {
+          await tester.tap(find.text(labels[index]));
+          await tester.pumpAndSettle();
+          final currentRect = tester.getRect(plate);
+          if (languageCode == 'fa') {
+            expect(
+              currentRect.center.dx,
+              lessThan(previousRect.center.dx),
+              reason: 'RTL logical destination $index must move left',
+            );
+          } else {
+            expect(
+              currentRect.center.dx,
+              greaterThan(previousRect.center.dx),
+              reason: 'LTR logical destination $index must move right',
+            );
+          }
+          expect(selectedCallbacks.last, index);
+          final selectedLabel = tester.widget<Text>(find.text(labels[index]));
+          expect(
+            selectedLabel.style?.color,
+            HopeV2SemanticColors.navigationLabel(
+              tester.element(find.text(labels[index])),
+              selected: true,
+            ),
+            reason: 'Selected label must remain high-contrast neutral',
+          );
+          previousRect = currentRect;
+        }
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('reduced-motion preference moves the folio plate without animation',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    var selectedIndex = 0;
+    final selectedCallbacks = <int>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MediaQuery(
+          data: MediaQueryData.fromView(tester.view).copyWith(
+            disableAnimations: true,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setState) => PremiumPrimaryNavigationScaffold(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (index) {
+                selectedCallbacks.add(index);
+                setState(() => selectedIndex = index);
+              },
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final plate = find.byKey(const ValueKey('hope-navigation-selection-plate'));
+    final before = tester.getRect(plate);
+    await tester.tap(find.text('کیف پول'));
+    await tester.pump();
+    final after = tester.getRect(plate);
+    expect(after.center.dx, lessThan(before.center.dx));
+    expect(selectedCallbacks, [3]);
+    expect(tester.takeException(), isNull);
+  });
+
+
+  testWidgets(
+    '360dp fa-RTL dock fits Workshop and keeps navigation copy achromatic',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: PremiumPrimaryNavigationScaffold(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final label in ['خانه', 'کاوش', 'کارگاه', 'کیف پول', 'پروفایل']) {
+        expect(find.text(label), findsOneWidget);
+        final text = find.text(label);
+        final paragraph = tester.renderObject<RenderParagraph>(text);
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: '360dp navigation must not truncate the rendered label: $label',
+        );
+        expect(
+          find.ancestor(of: text, matching: find.byType(FittedBox)),
+          findsOneWidget,
+          reason: 'Navigation labels must scale down before being clipped: $label',
+        );
+        final selected = label == 'خانه';
+        expect(
+          tester.widget<Text>(text).style?.color,
+          HopeV2SemanticColors.navigationLabel(
+            tester.element(text),
+            selected: selected,
+          ),
+          reason: 'Navigation copy must use the neutral navigation color role.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'primary navigation uses a coherent Cupertino glyph family and neutral labels',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: PremiumPrimaryNavigationScaffold(
+            selectedIndex: 2,
+            onDestinationSelected: (_) {},
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+
+      final workshopSemantics = find.ancestor(
+        of: find.text('کارگاه'),
+        matching: find.byType(Semantics),
+      ).first;
+      final glyph = tester.widget<HopeNavigationGlyph>(
+        find.descendant(
+          of: workshopSemantics,
+          matching: find.byType(HopeNavigationGlyph),
+        ),
+      );
+      expect(glyph.icon, CupertinoIcons.briefcase_fill);
+      expect(find.text('۰۳'), findsNothing);
+
+      final label = tester.widget<Text>(find.text('کارگاه'));
+      expect(
+        label.style?.color,
+        HopeV2SemanticColors.navigationLabel(
+          tester.element(find.text('کارگاه')),
+          selected: true,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
 }

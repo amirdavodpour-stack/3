@@ -10,7 +10,6 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_async_state.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/transactions/transaction_repository.dart';
 import '../../core/uploads/upload_queue.dart';
@@ -66,6 +65,30 @@ class _NotificationsPageState extends State<NotificationsPage> {
         loading = false;
       });
     }
+  }
+
+  Widget _notificationsLoadError({required bool retainsRows}) {
+    return HopeAsyncState(
+      kind: HopeStateKind.error,
+      title: retainsRows
+          ? _t(
+              'اعلان‌ها قابل تازه‌سازی نیستند',
+              'Could not refresh notifications',
+            )
+          : _t(
+              'اعلان‌ها در دسترس نیستند',
+              'Notifications unavailable',
+            ),
+      message: error ?? _t(
+        'خطای نامشخص در دریافت اعلان‌ها',
+        'An unknown error occurred while loading notifications.',
+      ),
+      action: FilledButton.icon(
+        onPressed: loading ? null : _load,
+        icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
+        label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+      ),
+    );
   }
 
   Future<void> _read(String id) async {
@@ -220,17 +243,59 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
   Widget _notificationCard(HopeNotification n) {
     final unread = n.isUnread;
+    final compactText = MediaQuery.sizeOf(context).width < 380 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final titleWidget = Text(
+      n.title,
+      key: ValueKey('notification-title-${n.id}'),
+      maxLines: compactText ? null : 2,
+      softWrap: true,
+      overflow: compactText ? TextOverflow.visible : TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.titleMedium,
+    );
+    final unreadTag = KeyedSubtree(
+      key: ValueKey('notification-unread-tag-${n.id}'),
+      child: PremiumTag(
+        label: _t('جدید', 'New'),
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+    final heading = compactText
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleWidget,
+              if (unread)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: unreadTag,
+                  ),
+                ),
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: titleWidget),
+              if (unread) ...[
+                const SizedBox(width: 8),
+                unreadTag,
+              ],
+            ],
+          );
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
         key: ValueKey('notification-card-${n.id}'),
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(12),
         quiet: !unread,
         highlight: unread,
         semanticLabel: n.title,
         child: InkWell(
           onTap: n.hasAction || unread ? () => _openNotification(n) : null,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
           onLongPress: unread ? () => _read(n.id) : null,
           child: Semantics(
             button: unread,
@@ -249,41 +314,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.outline,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 9),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              n.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                          if (unread) ...[
-                            const SizedBox(width: 8),
-                            PremiumTag(
-                              label: _t('جدید', 'New'),
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ],
-                        ],
-                      ),
+                      heading,
                       const SizedBox(height: 5),
                       Text(
                         n.body,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
+                        key: ValueKey('notification-body-${n.id}'),
+                        maxLines: compactText ? null : 3,
+                        softWrap: true,
+                        overflow: compactText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       if (n.hasAction) ...[
-                        const SizedBox(height: 10),
-                        FilledButton.tonalIcon(
+                        const SizedBox(height: 8),
+                        FilledButton.icon(
                           onPressed: () => _openNotification(n),
                           icon: const HopeIcon(HopeV2Icons.arrowRight, size: 18),
                           label: Text(n.actionLabel),
@@ -312,10 +362,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   Widget build(BuildContext context) {
     final unreadCount = items.where((item) => item.isUnread).length;
+    final unreadCountLabel = HopeDisplayFormatter.integer(
+      unreadCount,
+      locale: Localizations.localeOf(context).languageCode,
+    );
     return Scaffold(
       body: SafeArea(
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
           child: Column(
             children: [
               PremiumHeader(
@@ -324,15 +378,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 dense: true,
                 eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
                 title: _t('اعلان‌ها', 'Notifications'),
-                subtitle: unreadCount > 0
+                subtitle: loading
                     ? _t(
-                        'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • $unreadCount اعلان جدید',
-                        'Updates for applications, work, and payments • $unreadCount new',
+                        'در حال دریافت آخرین اعلان‌ها',
+                        'Loading latest notifications',
                       )
-                    : _t(
-                        'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند',
-                        'Updates for applications, work, and payments • All caught up',
-                      ),
+                    : error != null
+                        ? _t(
+                            'وضعیت اعلان‌ها تازه‌سازی نشد',
+                            'Notification status could not be refreshed',
+                          )
+                        : unreadCount > 0
+                            ? _t(
+                                '$unreadCountLabel اعلان خوانده‌نشده در فهرست زیر',
+                                '$unreadCountLabel unread in this list',
+                              )
+                            : _t(
+                                'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند',
+                                'Updates for applications, work, and payments • All caught up',
+                              ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -393,8 +457,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   child: loading
                       ? ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
+                          padding: HopeV2Navigation.scrollEndPadding(context),
                           children: [
-                            const SizedBox(height: 120),
+                            const SizedBox(height: 32),
                             HopeAsyncState(
                               kind: HopeStateKind.loading,
                               title: _t(
@@ -408,38 +473,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                           ],
                         )
-                      : error != null
+                      : error != null && items.isEmpty
                           ? ListView(
                               physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.only(top: 24),
+                              padding: HopeV2Navigation.scrollEndPadding(context, top: 24),
                               children: [
-                                HopeAsyncState(
-                                  kind: HopeStateKind.error,
-                                  title: _t(
-                                    'اعلان‌ها در دسترس نیستند',
-                                    'Notifications unavailable',
-                                  ),
-                                  message: error!,
-                                  action: FilledButton.icon(
-                                    onPressed: loading ? null : _load,
-                                    icon: const HopeIcon(
-                                      HopeV2Icons.refresh,
-                                      size: 19,
-                                    ),
-                                    label: Text(
-                                      HopeCopy.of(context).copy_retry_49f3eba,
-                                    ),
-                                  ),
-                                ),
+                                _notificationsLoadError(retainsRows: false),
                               ],
                             )
                           : items.isEmpty
                               ? ListView(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.only(top: 24),
+                                  padding: HopeV2Navigation.scrollEndPadding(context, top: 24),
                                   children: [
-                                    EmptyState(
+                                    PremiumEmptyState(
                                       icon: HopeV2Icons.notifications,
                                       title: _t(
                                         'اعلانی وجود ندارد',
@@ -447,14 +495,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       ),
                                       message: HopeCopy.of(context)
                                           .copy_you_have_no_new_notifications_45f9685,
+                                      dense: true,
                                     ),
                                   ],
                                 )
                               : ListView(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.only(bottom: 24),
+                                  padding: HopeV2Navigation.scrollEndPadding(context),
                                   children: [
+                                    if (error != null) ...[
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 12),
+                                        child: _notificationsLoadError(
+                                          retainsRows: true,
+                                        ),
+                                      ),
+                                    ],
                                     ...items.map(_notificationCard),
                                   ],
                                 ),

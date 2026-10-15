@@ -1,8 +1,6 @@
 import '../../core/router/app_routes.dart';
-import '../../core/router/app_router.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/ui/copy.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +13,7 @@ import '../../core/marketplace/job.dart';
 import '../../core/marketplace/saved_search_repository.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/opportunity_card.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
 import '../../core/theme/hope_v2_design.dart';
@@ -48,8 +47,10 @@ class _JobsPageState extends State<JobsPage> {
   String _category = 'ALL';
   List<HopeCategory> _categories = const [];
   List<HopeSavedSearch> _savedSearches = const [];
+  bool _savedSearchesLoadError = false;
   String? _categoryError;
   bool _savedSearchMutationBusy = false;
+  int _savedSearchesLoadRequestId = 0;
   Timer? _searchDebounce;
   @override
   void dispose() {
@@ -94,21 +95,38 @@ class _JobsPageState extends State<JobsPage> {
 
 
   Future<void> _loadSavedSearches() async {
+    final requestId = ++_savedSearchesLoadRequestId;
     try {
       final items = await _applicationRegistry(context).savedSearches.list();
-      if (mounted) setState(() => _savedSearches = items);
+      if (mounted && requestId == _savedSearchesLoadRequestId) {
+        setState(() {
+          _savedSearches = items;
+          _savedSearchesLoadError = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _savedSearches = const []);
+      if (mounted && requestId == _savedSearchesLoadRequestId) {
+        setState(() {
+          _savedSearches = const [];
+          _savedSearchesLoadError = true;
+        });
+      }
     }
   }
 
   String _savedSearchName() {
     final parts = <String>[];
     if (_query.trim().isNotEmpty) parts.add(_query.trim());
-    if (_kind != 'ALL') parts.add(_kind);
-    if (_visibility != 'ALL') parts.add(_visibility);
-    if (_category != 'ALL') parts.add(_category);
-    if (_city != 'AUTO') parts.add(_city);
+    if (_kind != 'ALL') parts.add(opportunityKindLabel(context, _kind));
+    if (_visibility != 'ALL') {
+      parts.add(opportunityVisibilityLabel(context, _visibility));
+    }
+    if (_category != 'ALL') parts.add(_categoryLabel(context));
+    if (_city != 'AUTO') {
+      parts.add(
+        _city == 'همه' ? HopeCopy.of(context).copy_all_cities : _city,
+      );
+    }
     return parts.isEmpty
         ? HopeCopy.of(context).copy_all_opportunities
         : parts.join(' • ');
@@ -132,14 +150,15 @@ class _JobsPageState extends State<JobsPage> {
   Future<void> _saveCurrentSearch() async {
     if (_savedSearchMutationBusy) return;
     setState(() => _savedSearchMutationBusy = true);
-    final controller = TextEditingController(text: _savedSearchName());
+    var suggestedName = _savedSearchName();
     try {
       final name = await showDialog<String>(
         context: context,
       builder: (context) => AlertDialog(
         title: Text(HopeCopy.of(context).copy_save_search),
-        content: TextField(
-          controller: controller,
+        content: TextFormField(
+          initialValue: suggestedName,
+          onChanged: (value) => suggestedName = value,
           autofocus: true,
           maxLength: 60,
           decoration: InputDecoration(hintText: HopeCopy.of(context).copy_search_name),
@@ -150,7 +169,7 @@ class _JobsPageState extends State<JobsPage> {
             child: Text(HopeCopy.of(context).copy_cancel_9955c4b),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            onPressed: () => Navigator.pop(context, suggestedName.trim()),
             child: Text(HopeCopy.of(context).copy_save_search),
           ),
         ],
@@ -182,7 +201,6 @@ class _JobsPageState extends State<JobsPage> {
         );
       }
     } finally {
-      controller.dispose();
       if (mounted) setState(() => _savedSearchMutationBusy = false);
     }
   }
@@ -320,7 +338,10 @@ class _JobsPageState extends State<JobsPage> {
     for (final c in _categories) {
       if (c.slug == _category) return c.label(isEn);
     }
-    return _category;
+    // Saved searches may outlive a category-list failure or refer to a slug
+    // unknown to the server. Reuse the canonical local taxonomy labels and
+    // never expose raw transport slugs in the visible filter summary.
+    return hopeCategoryLabel(context, _category, unknownAsOther: true);
   }
 
   List<HopeJob> _filter(List<HopeJob> jobs) {
@@ -351,7 +372,7 @@ class _JobsPageState extends State<JobsPage> {
     if (index == 1) return;
     if (index == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => AppRouter()),
+        HopeRoutes.home(),
         (_) => false,
       );
       return;
@@ -380,10 +401,10 @@ class _JobsPageState extends State<JobsPage> {
           return PremiumPageFrame(
             page: HopePageId.explore,
             padding: EdgeInsets.fromLTRB(
-              compact ? 16 : 20,
-              compact ? 6 : 14,
-              compact ? 16 : 20,
-              72,
+              compact ? 14 : 18,
+              compact ? 4 : 10,
+              compact ? 14 : 18,
+              20,
             ),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -437,6 +458,8 @@ class _JobsPageState extends State<JobsPage> {
                     onPickCity: () => _pickCity(context, settings),
                     onPickCategory: () => _pickCategory(context),
                     savedSearchCount: _savedSearches.length,
+                    savedSearchesLoadError: _savedSearchesLoadError,
+                    onRetrySavedSearches: _loadSavedSearches,
                     onSaveSearch:
                         _savedSearchMutationBusy ? null : _saveCurrentSearch,
                     onOpenSavedSearches: _openSavedSearches,
@@ -447,6 +470,12 @@ class _JobsPageState extends State<JobsPage> {
                   isLoading:
                       snapshot.connectionState == ConnectionState.waiting,
                   hasError: snapshot.hasError,
+                  onRetry: _refresh,
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: HopeV2Navigation.scrollEndPadding(context).bottom,
+                  ),
                 ),
               ],
             ),
@@ -462,11 +491,11 @@ class _JobsPageState extends State<JobsPage> {
       context: context,
       showDragHandle: true,
       builder: (_) => ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         shrinkWrap: true,
         children: [
           Text(HopeCopy.of(context).copy_choose_a_city_a93b334,
-              style: Theme.of(context).textTheme.headlineSmall),
+              style: HopeV2Type.section(context)),
           ...[...HopeSettingsController.cities, 'همه'].map((city) => ListTile(
                 title: Text(
                   city == 'همه' ? HopeCopy.of(context).copy_all_cities : city,
@@ -497,10 +526,10 @@ class _JobsPageState extends State<JobsPage> {
         showDragHandle: true,
         builder: (_) => ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(14),
                 children: [
                   Text(HopeCopy.of(context).copy_professional_field_4c6b94e,
-                      style: Theme.of(context).textTheme.headlineSmall),
+                      style: HopeV2Type.section(context)),
                   ListTile(
                       title: Text(HopeCopy.of(context).copy_all_fields_4f77401),
                       onTap: () => Navigator.pop(context, 'ALL')),

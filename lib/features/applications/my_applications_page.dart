@@ -231,7 +231,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         .toList(growable: false);
     if (uncategorized.isNotEmpty) {
       addSection(
-        _t('نیازمند بررسی', 'Needs review'),
+        _t('سایر وضعیت‌ها', 'Other statuses'),
         _t(
           'وضعیتی که در چرخهٔ استاندارد درخواست تعریف نشده است.',
           'A status outside the standard application lifecycle.',
@@ -253,11 +253,11 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
     return Scaffold(
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 72),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               page: HopePageId.myApplications,
@@ -288,13 +288,14 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               ),
             ),
             const SizedBox(height: 10),
-            if (!_loading)
+            if (!_loading && (_loadError == null || _items.isNotEmpty))
               SingleChildScrollView(
+                key: const ValueKey('applications-status-filter-scroll'),
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
                     _filterChip('ALL', _t('همه', 'All'), _items.length),
-                    ...['PENDING', 'SHORTLISTED', 'FORWARDED', 'INTERVIEW', 'OFFERED', 'ACCEPTED', 'REJECTED']
+                    ...['PENDING', 'SHORTLISTED', 'FORWARDED', 'INTERVIEW', 'OFFERED', 'ACCEPTED', 'REJECTED', 'WITHDRAWN']
                         .where((s) => (counts[s] ?? 0) > 0)
                         .map((s) => _filterChip(s, HopeApplication(
                               id: '', jobId: '', jobTitle: '', jobCity: null,
@@ -334,21 +335,22 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ..._applicationSections(context, visible),
               ]
             else if (visible.isEmpty)
-              PremiumPanel(
-                padding: const EdgeInsets.all(26),
-                child: Column(
-                  children: [
-                    const HopeIcon(HopeV2Icons.mission, size: 40),
-                    const SizedBox(height: 12),
-                    Text(
-                      _filter == 'ALL'
-                          ? _t('هنوز درخواستی ثبت نکرده‌اید.', 'You have not submitted any applications yet.')
-                          : _t('در این وضعیت درخواستی وجود ندارد.', 'No applications match this status.'),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
-                ),
+              PremiumEmptyState(
+                icon: HopeV2Icons.mission,
+                title: _filter == 'ALL'
+                    ? _t('هنوز درخواستی ثبت نکرده‌اید.',
+                        'You have not submitted any applications yet.')
+                    : _t('در این وضعیت درخواستی وجود ندارد.',
+                        'No applications match this status.'),
+                message: _filter == 'ALL'
+                    ? _t(
+                        'پس از ارسال درخواست برای یک فرصت، وضعیت و مسیر همکاری در همین صفحه نمایش داده می‌شود.',
+                        'After you apply to an opportunity, its status and collaboration lifecycle will appear here.',
+                      )
+                    : _t(
+                        'فیلتر دیگری را انتخاب کنید تا درخواست‌های همان وضعیت را ببینید.',
+                        'Choose another status filter to see applications in that state.',
+                      ),
               )
             else
               ..._applicationSections(context, visible),
@@ -374,9 +376,12 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   Widget _applicationCard(HopeApplication item) {
     final color = _statusColor(context, item.status);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(13),
+        quiet: true,
+        padding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 11 : 13,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -387,19 +392,25 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   item.status == 'ACCEPTED'
                       ? HopeV2Icons.completed
                       : HopeV2Icons.mission,
+                  size: 36,
                   filled: true,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
-                          style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.15,
+                        ),
+                      ),
                       const SizedBox(height: 5),
                       Wrap(
-                        spacing: 7,
-                        runSpacing: 6,
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
                           PremiumTag(icon: HopeV2Icons.activity, label: item.statusLabelFor(english: _isEnglish), color: color),
                           if (item.jobCity?.isNotEmpty == true)
@@ -467,35 +478,85 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     );
   }
 
+  String _timelineStageLabel(String stage) => switch (stage) {
+        'PENDING' => _t('در انتظار', 'Pending'),
+        'SHORTLISTED' => _t('بررسی', 'Shortlist'),
+        'FORWARDED' => _t('ارجاع', 'Forwarded'),
+        'INTERVIEW' => _t('مصاحبه', 'Interview'),
+        'OFFERED' => _t('پیشنهاد', 'Offer'),
+        'ACCEPTED' => _t('پذیرفته', 'Accepted'),
+        _ => _t('مرحله', 'Stage'),
+      };
+
   Widget _timeline(HopeApplication item) {
-    const stages = ['PENDING', 'SHORTLISTED', 'FORWARDED', 'INTERVIEW', 'OFFERED', 'ACCEPTED'];
+    const stages = [
+      'PENDING',
+      'SHORTLISTED',
+      'FORWARDED',
+      'INTERVIEW',
+      'OFFERED',
+      'ACCEPTED',
+    ];
     final current = stages.indexOf(item.status);
+    final stageColor = _statusColor(context, item.status);
+    final colors = Theme.of(context).colorScheme;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(stages.length, (index) {
+        final stage = stages[index];
         final reached = current >= 0 && index <= current;
         final active = index == current;
+        final label = _timelineStageLabel(stage);
         return Expanded(
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: active ? 12 : 9,
-                height: active ? 12 : 9,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: reached
-                      ? _statusColor(context, item.status)
-                      : Theme.of(context).colorScheme.outlineVariant,
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: active ? 12 : 9,
+                    height: active ? 12 : 9,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: reached ? stageColor : colors.outlineVariant,
+                    ),
+                  ),
+                  if (index < stages.length - 1)
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: reached && index < current
+                            ? stageColor
+                            : colors.outlineVariant,
+                      ),
+                    ),
+                ],
               ),
-              if (index < stages.length - 1)
-                Expanded(
-                  child: Container(
-                    height: 2,
-                    color: reached && index < current
-                        ? _statusColor(context, item.status)
-                        : Theme.of(context).colorScheme.outlineVariant,
+              const SizedBox(height: 5),
+              Semantics(
+                key: ValueKey('application-timeline-${item.id}-$stage'),
+                label: label,
+                selected: active,
+                child: Tooltip(
+                  message: label,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 9.5,
+                          height: 1.1,
+                          fontWeight:
+                              active ? FontWeight.w900 : FontWeight.w600,
+                          color: active
+                              ? stageColor
+                              : colors.onSurfaceVariant,
+                        ),
                   ),
                 ),
+              ),
             ],
           ),
         );

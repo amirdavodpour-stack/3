@@ -142,7 +142,7 @@ class _PrivacyCenterPageState extends State<PrivacyCenterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [

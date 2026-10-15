@@ -1,6 +1,6 @@
-import '../../core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import 'package:provider/provider.dart';
 import '../../core/transactions/transaction_repository.dart';
 import '../../core/application/application_registry_context.dart';
@@ -165,10 +165,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
       glass: false,
       quiet: true,
       title: _t('دسترسی سریع', 'Quick access'),
-      subtitle: _t(
-        'درخواست‌ها، پیشنهادها و اعلان‌ها را بدون باز کردن منوی کناری در دسترس داشته باشید.',
-        'Reach applications, offers, and notifications without opening the side menu.',
-      ),
       actions: [
         PremiumQuickAction(
           label: copy.copy_applications_6655869,
@@ -206,61 +202,57 @@ class _TransactionsPageState extends State<TransactionsPage> {
     required Color accent,
   }) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 76),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: .055),
-        borderRadius: BorderRadius.circular(HopeV2Radii.md),
-        border: Border.all(color: accent.withValues(alpha: .13)),
-      ),
+      constraints: const BoxConstraints(minHeight: 58),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       child: Row(
-        children: [
-          HopeIconTile(
-            icon,
-            size: 30,
-            filled: true,
-            color: accent,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: HopeV2Colors.muted,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-              ],
+          children: [
+            HopeIcon(icon, size: 18, color: accent, strokeWidth: 1.9),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 2,
+                    softWrap: true,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: HopeV2Colors.muted,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
   }
 
   Widget _workItemCard(HopeJob job) {
     final status = job.status ?? '—';
     final settled = _isWorkCenterSettled(status);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final statusAccent = settled
+        ? (dark ? HopeV2Colors.successDark : HopeV2Colors.success)
+        : Theme.of(context).colorScheme.primary;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
+        quiet: true,
         padding: EdgeInsets.all(
-          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 14 : 17,
+          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 12 : 14,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,10 +262,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
               children: [
                 HopeIconTile(
                   settled ? HopeV2Icons.completed : HopeV2Icons.pending,
-                  color: settled ? HopeV2Colors.success : HopeV2Colors.primary,
+                  color: statusAccent,
+                  size: 36,
                   filled: true,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,19 +275,20 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         job.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                        ),
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 4),
                       Wrap(
-                        spacing: 7,
-                        runSpacing: 6,
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
                           PremiumTag(
                             icon: HopeV2Icons.activity,
                             label: _jobStatusLabel(context, status),
-                            color: settled
-                                ? HopeV2Colors.success
-                                : HopeV2Colors.primary,
+                            color: statusAccent,
                           ),
                           if (job.city?.isNotEmpty == true)
                             PremiumTag(
@@ -309,9 +303,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             PremiumLifecycle(
-              compact: true,
+              key: ValueKey('work-center-lifecycle-${job.id}'),
+              compact: MediaQuery.textScalerOf(context).scale(1) <= 1.2,
               steps: _stepsForStatus(status),
               title: _t('مسیر همکاری', 'Work flow'),
               subtitle: _t(
@@ -330,9 +325,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     PremiumPaymentSummary(payment: payment),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: () => Navigator.push(
                         context,
@@ -375,7 +370,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     if (index == 2) return;
     if (index == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AppRouter()),
+        HopeRoutes.home(),
         (_) => false,
       );
       return;
@@ -397,25 +392,25 @@ class _TransactionsPageState extends State<TransactionsPage> {
     if (auth.isGuest) {
       return PremiumPageFrame(
                 page: HopePageId.workCenter,
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
         child: ListView(
+          padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
             PremiumHeader(
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
-              eyebrow: _t('مرکز کار', 'WORK CENTER'),
-              title: _t('مرکز کار خصوصی شما', 'Your private work center'),
-              subtitle: HopeCopy.of(context)
-                  .copy_sign_in_to_view_your_projects_and_payments_32a2bc2,
+              eyebrow: _t('کارگاه', 'WORKSHOP'),
+              title: _t('کارگاه شخصی شما', 'Your workspace'),
+              subtitle: _t('برای مشاهده پروژه‌ها و پرداخت‌ها وارد شوید.', 'Sign in to view projects and payments.'),
               trailing: const HopeIconTile(
                 HopeV2Icons.secure,
                 size: 42,
                 filled: true,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             PremiumPanel(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(12),
               child: FilledButton.icon(
                 onPressed: () =>
                     Navigator.push(context, HopeRoutes.login()),
@@ -444,26 +439,26 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
                 child: ListView(
+                  padding: HopeV2Navigation.scrollEndPadding(context),
                   children: [
                     PremiumHeader(
               dense: true,
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
-                      title: _t('مرکز کار بارگذاری نشد', 'Work center could not be loaded'),
-                      subtitle: HopeCopy.of(context)
-                          .copy_pull_down_to_try_again_c41d215,
+                      title: _t('بارگذاری کارگاه ناموفق بود', 'Could not load workshop'),
+                      
                       trailing: const HopeIconTile(
                         HopeV2Icons.pending,
                         size: 42,
                         filled: true,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     PremiumPanel(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(12),
                       child: FilledButton.icon(
                         onPressed: reload,
                         icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
@@ -492,27 +487,27 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
                 child: ListView(
+                  padding: HopeV2Navigation.scrollEndPadding(context),
                   children: [
                     PremiumHeader(
               dense: true,
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
-                      title: _t('هنوز کاری ثبت نشده است', 'No work activity yet'),
-                      subtitle: HopeCopy.of(context)
-                          .copy_your_projects_applications_and_payments_wi_bec5340,
+                      title: _t('هنوز فعالیتی ثبت نشده است', 'No work activity yet'),
+                      subtitle: _t('درخواست‌ها و پیشنهادهای شما اینجا نمایش داده می‌شوند.', 'Your applications and offers appear here.'),
                       trailing: const HopeIconTile(
                         HopeV2Icons.insights,
                         size: 42,
                         filled: true,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     _activityNavigation(context),
                     PremiumPanel(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(12),
                       child: FilledButton.icon(
                         onPressed: () => Navigator.push(
                           context,
@@ -535,21 +530,21 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 20),
                 child: ListView(
-                  padding: EdgeInsets.zero,
+                  padding: HopeV2Navigation.scrollEndPadding(context),
                   children: [
                     PremiumHeader(
               dense: true,
               page: HopePageId.workCenter,
               domain: HopeProductDomain.work,
                       eyebrow: _t('مرکز کار', 'WORK CENTER'),
-                      title: _t('مرکز مالی و همکاری‌ها', 'Work & finance center'),
+                      title: _t('کارگاه و امور مالی', 'Workshop and finance'),
                       subtitle: _t(
-                        'همکاری‌های فعال، وضعیت اجرا و تسویه مالی را در یک نگاه دنبال کنید.',
-                        'Track active work, execution state, and financial settlement in one view.',
+                        'کارهای فعال و تسویه مالی را پیگیری کنید.',
+                        'Track active work and settlement.',
                       ),                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     if (_reloadError != null) ...[
                       HopeAsyncState(
                         kind: HopeStateKind.error,
@@ -569,19 +564,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         final metrics = [
                           _workCenterMetric(
                             label: _t('همکاری‌ها', 'Collaborations'),
-                            value: '${items.length}',
+                            value: HopeDisplayFormatter.integer(items.length, locale: Localizations.localeOf(context).languageCode),
                             icon: HopeV2Icons.job,
                             accent: Theme.of(context).colorScheme.primary,
                           ),
                           _workCenterMetric(
                             label: _t('در حال اجرا', 'Active work'),
-                            value: '$activeCount',
+                            value: HopeDisplayFormatter.integer(activeCount, locale: Localizations.localeOf(context).languageCode),
                             icon: HopeV2Icons.mission,
                             accent: secondaryAccent(context),
                           ),
                           _workCenterMetric(
                             label: _t('تسویه‌شده', 'Settled'),
-                            value: '$settledCount',
+                            value: HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode),
                             icon: HopeV2Icons.completed,
                             accent: HopeV2Colors.success,
                           ),
@@ -599,7 +594,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         );
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     PremiumPanel(
                       key: const ValueKey('work-center-focus-strip'),
                       glass: false,
@@ -635,14 +630,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                 Text(
                                   activeItems.isNotEmpty
                                       ? _t(
-                                          '$activeCount همکاری در جریان است',
-                                          '$activeCount active collaborations',
+                                          '${HopeDisplayFormatter.integer(activeCount, locale: Localizations.localeOf(context).languageCode)} همکاری در جریان است',
+                                          '${HopeDisplayFormatter.integer(activeCount, locale: Localizations.localeOf(context).languageCode)} active collaborations',
                                         )
                                       : _t(
-                                          '$settledCount همکاری تسویه شده است',
-                                          '$settledCount collaborations settled',
+                                          '${HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode)} همکاری تسویه شده است',
+                                          '${HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode)} collaborations settled',
                                         ),
-                                  maxLines: 1,
+                                  maxLines: 2,
+                                  softWrap: true,
                                   overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                         fontWeight: FontWeight.w900,
@@ -654,13 +650,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           if (settledItems.isNotEmpty)
                             PremiumTag(
                               icon: HopeV2Icons.completed,
-                              label: '$settledCount ${_t('تسویه', 'settled')}',
+                              label: '${HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode)} ${_t('تسویه', 'settled')}',
                               color: HopeV2Colors.success,
                             ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
+                    _activityNavigation(context),
+                    const SizedBox(height: 10),
                     if (activeItems.isNotEmpty || settledItems.isNotEmpty) ...[
                       PremiumSectionHeader(
                         page: HopePageId.workCenter,
@@ -683,7 +681,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           'Collaborations still in execution or review.',
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       ...activeItems.map(_workItemCard),
                     ],
                     if (otherItems.isNotEmpty) ...[
@@ -698,7 +696,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           'Other collaboration states before final settlement.',
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       ...otherItems.map(_workItemCard),
                     ],
                     if (settledItems.isNotEmpty) ...[
@@ -713,10 +711,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           'Collaborations whose financial lifecycle is complete.',
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       ...settledItems.map(_workItemCard),
                     ],
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _activityNavigation(context),
                   ],
                 ),

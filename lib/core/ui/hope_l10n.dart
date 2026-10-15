@@ -1,6 +1,77 @@
 import 'package:flutter/widgets.dart';
 import '../../l10n/generated/app_localizations.dart';
 
+/// Localizes recognized marketplace category values using the app's canonical
+/// taxonomy labels. Unknown/custom names remain intact unless a safe fallback
+/// is requested by a filter summary.
+String hopeCategoryLabel(
+  BuildContext context,
+  String raw, {
+  bool unknownAsOther = false,
+}) {
+  final value = raw.trim();
+  final slug = value
+      .toLowerCase()
+      .replaceAll('_', '-')
+      .replaceAll('\u200c', '')
+      .replaceAll(RegExp(r'\s+'), '-');
+  final l10n = AppLocalizations.of(context);
+  switch (slug) {
+    case 'software':
+    case 'software-development':
+    case 'development':
+    case 'نرم-افزار':
+    case 'نرمافزار':
+      return l10n.categorySoftware;
+    case 'design':
+    case 'graphic-design':
+    case 'طراحی':
+      return l10n.categoryDesign;
+    case 'marketing':
+    case 'بازاریابی':
+      return l10n.categoryMarketing;
+    case 'content':
+    case 'translation':
+    case 'content-translation':
+    case 'محتوا-و-ترجمه':
+      return l10n.categoryContentTranslation;
+    case 'finance':
+    case 'accounting':
+    case 'finance-accounting':
+    case 'مالی-و-حسابداری':
+      return l10n.categoryFinanceAccounting;
+    case 'education':
+    case 'آموزش':
+      return l10n.categoryEducation;
+    case 'support':
+    case 'پشتیبانی':
+      return l10n.categorySupport;
+    case 'construction':
+    case 'technical':
+    case 'construction-technical':
+    case 'ساختوساز-و-فنی':
+      return l10n.categoryConstructionTechnical;
+    case 'video':
+    case 'audio':
+    case 'video-audio':
+    case 'video-production':
+    case 'تولید-ویدیو-و-صدا':
+      return l10n.categoryVideoAudio;
+    case 'data':
+    case 'ai':
+    case 'data-ai':
+    case 'artificial-intelligence':
+    case 'داده-و-هوش-مصنوعی':
+      return l10n.categoryDataAI;
+    case 'sales':
+    case 'فروش':
+      return l10n.categorySales;
+    default:
+      return unknownAsOther ? l10n.categoryOther : value;
+  }
+}
+
+
 class HopeCopy {
   const HopeCopy._(this.value);
   final AppLocalizations value;
@@ -460,4 +531,51 @@ class HopeCopy {
   String get copy_view_details => value.copy_view_details;
   String get copy_offers => value.copy_offers;
   String get copy_all_cities => value.copy_all_cities;
+}
+
+
+/// Returns a localized display label for a recognized recommendation reason.
+/// Unknown backend values are intentionally omitted from customer-facing UI.
+String? hopeRecommendationReasonLabel(
+  BuildContext context,
+  String raw,
+) {
+  final code = raw.trim().toUpperCase();
+  final copy = HopeCopy.of(context);
+  switch (code) {
+    case 'SKILL_MATCH':
+      return copy.copy_match_skill;
+    case 'CATEGORY_MATCH':
+      return copy.copy_match_category;
+    case 'VERY_NEAR':
+    case 'NEARBY':
+      return Localizations.localeOf(context).languageCode == 'en'
+          ? 'Location match'
+          : 'تطابق مکانی';
+    case 'REMOTE':
+      return copy.copy_remote_dcbb625;
+    case 'WORK_MODE_MATCH':
+      return copy.copy_match_work_mode;
+    case 'SALARY_FIT':
+      return copy.copy_match_salary_fit;
+    case 'BEHAVIOR_MATCH':
+      return copy.copy_match_preference_fit;
+    case 'GENERAL_MATCH':
+      return copy.copy_match_general_fit;
+    default:
+      return null;
+  }
+}
+
+/// Selects the first reason with a supported localized label, keeping compact
+/// recommendation surfaces concise without inventing explanations.
+String? hopeFirstRecommendationReasonLabel(
+  BuildContext context,
+  Iterable<String> reasons,
+) {
+  for (final reason in reasons) {
+    final label = hopeRecommendationReasonLabel(context, reason);
+    if (label != null && label.trim().isNotEmpty) return label;
+  }
+  return null;
 }

@@ -36,7 +36,43 @@ class AppLocalizationsFa extends AppLocalizations {
   String get loginButton => 'ورود به HOPE';
 
   @override
-  String get signInWithGoogle => 'ورود با Google';
+  String get categorySoftware => "نرم‌افزار";
+
+  @override
+  String get categoryDesign => "طراحی";
+
+  @override
+  String get categoryMarketing => "بازاریابی";
+
+  @override
+  String get categoryContentTranslation => "محتوا و ترجمه";
+
+  @override
+  String get categoryFinanceAccounting => "مالی و حسابداری";
+
+  @override
+  String get categoryEducation => "آموزش";
+
+  @override
+  String get categorySupport => "پشتیبانی";
+
+  @override
+  String get categoryConstructionTechnical => "ساخت‌وساز و فنی";
+
+  @override
+  String get categoryVideoAudio => "تولید ویدیو و صدا";
+
+  @override
+  String get categoryDataAI => "داده و هوش مصنوعی";
+
+  @override
+  String get categorySales => "فروش";
+
+  @override
+  String get categoryOther => "سایر";
+
+  @override
+  String get signInWithGoogle => 'ورود با گوگل';
 
   @override
   String get continueAsGuest => 'ادامه به‌عنوان مهمان';
@@ -945,7 +981,7 @@ class AppLocalizationsFa extends AppLocalizations {
       'HOPE • فرصت‌ها • کار';
 
   @override
-  String get copy_language_english_d9f5a4a => 'زبان: English';
+  String get copy_language_english_d9f5a4a => 'زبان: انگلیسی';
 
   @override
   String get copy_language_persian_3ffcd3e => 'زبان: فارسی';
@@ -955,7 +991,7 @@ class AppLocalizationsFa extends AppLocalizations {
       'ثبت‌نام انجام نشد. دوباره تلاش کنید.';
 
   @override
-  String get copy_link_uri_optional_1d2307a => 'لینک/URI (اختیاری)';
+  String get copy_link_uri_optional_1d2307a => 'نشانی اینترنتی (اختیاری)';
 
   @override
   String get copy_description_24d1e57 => 'توضیحات';

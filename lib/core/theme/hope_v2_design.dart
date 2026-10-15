@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
@@ -6,7 +7,7 @@ import 'package:hugeicons/hugeicons.dart';
 /// This is intentionally token-first: screens should consume these values
 /// instead of inventing per-page spacing, radii, or breakpoints.
 
-/// Premium reference contract: deep surfaces, restrained cyan/teal, violet focus.
+/// Canonical HOPE contract: indigo-led actions, near-black navy-charcoal surfaces, warm editorial paper, and disciplined semantic accents.
 /// Runtime certification batch: compact home, deterministic glass, restrained bloom.
 /// Certification round three: opaque premium surfaces + controlled wallet hero.
 /// Final visual checkpoint: wallet/profile bloom removed; home remains compact.
@@ -16,60 +17,348 @@ class HopeV2Colors {
   const HopeV2Colors._();
 
   static const primary = Color(0xFF6366F1);
+  static const primaryAction = Color(0xFF4F46E5);
+  static const primaryOnLight = Color(0xFF4F46E5);
+  static const successOnLight = Color(0xFF166534);
+  static const warningOnLight = Color(0xFF92400E);
+  static const dangerOnLight = Color(0xFFB91C1C);
+  static const secondaryAction = Color(0xFF0F766E);
+
   static const primaryDark = Color(0xFF818CF8);
+  // Brand hues are interaction cues, never uncontrolled readable text foregrounds.
+  static const primaryActionHoverLight = Color(0xFF4338CA);
+  static const primaryActionPressedLight = Color(0xFF3730A3);
+  static const primaryTintLight = Color(0xFFE0E7FF);
+  static const primaryBorderLight = Color(0xFFA5B4FC);
+  static const primaryTintDark = Color(0x2B6366F1);
+  static const primaryBorderDark = Color(0x59818CF8);
   static const secondary = Color(0xFF14B8A6);
   static const secondaryStrong = Color(0xFF0D9488);
   static const secondaryDark = Color(0xFF5EEAD4);
+  // Legacy generic accent stays amber and aliases the warning ramp below.
   static const accent = Color(0xFFF59E0B);
+  static const editorialClay = Color(0xFFD0A16D);
   /// Focus accent for featured/recommended work surfaces; use sparingly.
   static const orange = Color(0xFFF97316);
   static const orangeDark = Color(0xFFFF9A4D);
-  static const inkSoft = Color(0xFF26223A);
-  static const backgroundWarm = Color(0xFFF4F0FB);
-  static const ink = Color(0xFF151326);
-  static const muted = Color(0xFF6B6780);
-  static const surface = Color(0xFFFFFFFF);
-  static const background = Color(0xFFF0ECF8);
+  static const inkSoft = Color(0xFF344238);
+  static const backgroundWarm = Color(0xFFF4F0E5);
+  static const ink = Color(0xFF18221C);
+  static const muted = Color(0xFF5B665A);
+  static const surface = Color(0xFFFFFCF5);
+  static const background = Color(0xFFE9E5D9);
   // Match the canonical reference semantic green used for trust/success.
-  static const success = Color(0xFF10B981);
-  static const successDark = Color(0xFF34D8C8);
-  static const warning = Color(0xFFF59E0B);
-  static const warningDark = Color(0xFFFBBF24);
-  static const danger = Color(0xFFEF4444);
-  static const dangerDark = Color(0xFFF87171);
+  static const success = Color(0xFF166534);
+  static const successDark = Color(0xFFBBF7D0);
+  static const warning = Color(0xFF92400E);
+  static const warningDark = Color(0xFFFDE68A);
+  static const danger = Color(0xFFB91C1C);
+  static const dangerDark = Color(0xFFFECACA);
   static const softPrimary = Color(0xFFE0E7FF);
   static const darkBackground = Color(0xFF070A12);
   static const darkSurface = Color(0xFF0F111A);
   static const darkCard = Color(0xFF111827);
-  static const darkText = Color(0xFFF8FAFC);
-  static const darkMuted = Color(0xFFA5ADBD);
+  static const darkText = Color(0xFFF1F3EC);
+  static const darkMuted = Color(0xFFAEB7AC);
 
-  static const pageLight = Color(0xFFF1EDF8);
-  static const pageDark = Color(0xFF0B0F18);
-  static const panelLight = Color(0xFFFFFFFF);
+  // Navigation labels are deliberately achromatic, unlike olive-muted body text.
+  static const navigationLabelDark = Color(0xFFF4F4F5);
+  static const navigationLabelMutedDark = Color(0xFFBDBDC3);
+  static const navigationLabelLight = Color(0xFF27272A);
+  static const navigationLabelMutedLight = Color(0xFF68686F);
+
+  // Text roles must remain independent from brand-action hues.
+  static const moneyTextLight = Color(0xFF18221C);
+  static const moneyTextDark = Color(0xFFF1F3EC);
+  static const infoTextLight = Color(0xFF115E59);
+  static const infoTextDark = Color(0xFF5EEAD4);
+  // Dedicated blue identity/trust roles: separate from teal information and indigo brand actions.
+  static const trustTextLight = Color(0xFF1E40AF);
+  static const trustTextDark = Color(0xFFBFDBFE);
+  static const trustSurfaceLight = Color(0xFFEFF6FF);
+  static const trustSurfaceDark = Color(0xFF14253A);
+
+  // Featured/recommended content uses a dedicated warm foreground, never the
+  // brand-action hue. Its surface stays distinct from readable foregrounds.
+  static const accentTextLight = Color(0xFF9A3412);
+  static const accentTextDark = Color(0xFFFDBA74);
+  static const accentSurfaceLight = Color(0xFFFFF1E6);
+  static const accentSurfaceDark = Color(0xFF332316);
+
+  // Low-intensity state backgrounds are separate from their text foregrounds.
+  static const successSurfaceLight = Color(0xFFE8F5E9);
+  static const successSurfaceDark = Color(0xFF172A22);
+  static const warningSurfaceLight = Color(0xFFFFF3D6);
+  static const warningSurfaceDark = Color(0xFF302617);
+  static const dangerSurfaceLight = Color(0xFFFDEBEC);
+  static const dangerSurfaceDark = Color(0xFF351D22);
+  static const infoSurfaceLight = Color(0xFFDDF5F0);
+  static const infoSurfaceDark = Color(0xFF142C2C);
+
+  static const pageLight = Color(0xFFF4F0E5);
+  static const pageDark = Color(0xFF070A12);
+  static const panelLight = Color(0xFFFFFCF5);
   static const panelDark = Color(0xFF101522);
-  static const panelSoftLight = Color(0xFFFBF9FE);
-  static const panelSoftDark = Color(0xFF151B2A);
-  static const chipLight = Color(0xFFEFEBF8);
+  static const panelSoftLight = Color(0xFFF9F6ED);
+  static const panelSoftDark = Color(0xFF121726);
+  static const chipLight = Color(0xFFE9E5D9);
   static const chipDark = Color(0x20FFFFFF);
-  static const chipSelectedDark = Color(0x356366F1);
-  static const disabledLight = Color(0xFFE8E3F0);
-  static const borderControlLight = Color(0xFFDED9E8);
-  static const dividerLight = Color(0xFFE4E0EA);
-  static const outlinedButtonBorderLight = Color(0xFFDAD4E5);
-  static const navigationLight = Color(0xFFF7F4FC);
-  static const navigationDark = Color(0xF9080B14);
-  static const navigationIndicatorLight = Color(0xFFE5DFFF);
-  static const navigationIndicatorDark = Color(0x3A6366F1);
-  static const inputDark = Color(0xFF0D1320);
-  static const darkBorder = Color(0x20FFFFFF);
-  static const darkBorderStrong = Color(0x2DFFFFFF);
-  static const darkDivider = Color(0x16FFFFFF);
-  static const cardBorderLight = Color(0xFFE5E0EF);
-  /// Light warm-brown accent used only as a restrained atmospheric underlay.
-  static const warmHalo = Color(0xFFC2A487);
+  static const chipSelectedDark = Color(0x2B6366F1);
+  static const disabledLight = Color(0xFFE5E2D9);
+  static const borderControlLight = Color(0xFFD8D4C8);
+  static const dividerLight = Color(0xFFE6E2D9);
+  static const outlinedButtonBorderLight = Color(0xFFD6D1C4);
+  static const navigationLight = Color(0xFFF9F8F3);
+  static const navigationDark = Color(0xF90B0F18);
+  static const navigationIndicatorLight = Color(0xFFE0E7FF);
+  static const navigationIndicatorDark = Color(0x2B6366F1);
+  static const inputDark = Color(0xFF0F111A);
+  static const darkBorder = Color(0x1FFFFFFF);
+  static const darkBorderStrong = Color(0x2BFFFFFF);
+  static const darkDivider = Color(0x18FFFFFF);
+  static const cardBorderLight = Color(0xFFE1DDD2);
+  /// Muted forest-green glow for rare decorative underlays, never a global surface.
+  static const darkGreenGlow = Color(0xFF264C36);
+  static const warmHalo = Color(0xFFD0A16D);
   static const warmHaloDark = Color(0xFF826D59);
+
+  // Wallet balance hero roles restore the prior slate/navy surface hierarchy.
+  // The semantic status ramps remain independent from this neutral hero.
+  static const walletBalanceHeroStart = Color(0xFF121726);
+  static const walletBalanceHeroMiddle = Color(0xFF1B2748);
+  static const walletBalanceHeroEnd = Color(0xFF0E131E);
+  static const walletBalanceOnHero = Color(0xFFFFFFFF);
+  static const walletBalanceOnHeroMuted = Color(0xB3FFFFFF);
+  static const walletBalanceOnHeroSubtle = Color(0x99FFFFFF);
+  static const walletBalanceMetricFill = Color(0x0BFFFFFF);
+  static const walletBalanceMetricBorder = Color(0x0FFFFFFF);
+  static const walletBalanceMetricBorderEmphasized = Color(0x3DFFFFFF);
 }
+
+/// Muted decorative identities for opportunity artwork and its matching card
+/// accent rail. These colors are never readable text and never represent a
+/// lifecycle, money, verification, or trust state.
+class HopeV2OpportunityAccents {
+  const HopeV2OpportunityAccents._();
+
+  static const software = Color(0xFF557D75);
+  static const design = Color(0xFF9B805A);
+  static const marketing = Color(0xFFAD735B);
+  static const content = Color(0xFF65827D);
+  static const finance = Color(0xFF4F805D);
+  static const education = Color(0xFF728B91);
+  static const support = Color(0xFF718E87);
+  static const construction = Color(0xFFB27A55);
+  static const media = Color(0xFF9E7782);
+  static const data = Color(0xFF4E817B);
+  static const sales = Color(0xFF6B895D);
+}
+
+/// A complete, stable tonal ramp. Consumers should request named stops rather
+/// than interpolate UI colors at runtime; interaction hues and text roles stay
+/// separately defined in [HopeV2Colors].
+class HopeV2TonalPalette {
+  const HopeV2TonalPalette({
+    required this.shade50,
+    required this.shade100,
+    required this.shade200,
+    required this.shade300,
+    required this.shade400,
+    required this.shade500,
+    required this.shade600,
+    required this.shade700,
+    required this.shade800,
+    required this.shade900,
+    required this.shade950,
+  });
+
+  static const steps = <int>[50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+
+  final Color shade50;
+  final Color shade100;
+  final Color shade200;
+  final Color shade300;
+  final Color shade400;
+  final Color shade500;
+  final Color shade600;
+  final Color shade700;
+  final Color shade800;
+  final Color shade900;
+  final Color shade950;
+
+  Color shade(int step) => switch (step) {
+        50 => shade50,
+        100 => shade100,
+        200 => shade200,
+        300 => shade300,
+        400 => shade400,
+        500 => shade500,
+        600 => shade600,
+        700 => shade700,
+        800 => shade800,
+        900 => shade900,
+        950 => shade950,
+        _ => throw ArgumentError.value(step, 'step', 'Expected a defined tonal step'),
+      };
+
+  List<Color> get values => [
+        shade50, shade100, shade200, shade300, shade400, shade500,
+        shade600, shade700, shade800, shade900, shade950,
+      ];
+}
+
+/// Ten ramps form the HOPE color genome: indigo brand actions, restrained botanical accents,
+/// slate-neutral surfaces, teal information, blue trust, green success, amber warning,
+/// featured orange, and red danger. Each family owns a distinct semantic role.
+class HopeV2TonalPalettes {
+  const HopeV2TonalPalettes._();
+
+  static const brand = indigo;
+
+  /// Indigo action ramp restored from the prior HOPE dark identity.
+  static const indigo = HopeV2TonalPalette(
+    shade50: Color(0xFFEEF2FF),
+    shade100: Color(0xFFE0E7FF),
+    shade200: Color(0xFFC7D2FE),
+    shade300: Color(0xFFA5B4FC),
+    shade400: Color(0xFF818CF8),
+    shade500: Color(0xFF6366F1),
+    shade600: Color(0xFF4F46E5),
+    shade700: Color(0xFF4338CA),
+    shade800: Color(0xFF3730A3),
+    shade900: Color(0xFF312E81),
+    shade950: Color(0xFF1E1B4B),
+  );
+
+  /// Supporting botanical ramp for low-emphasis category artwork, not global actions.
+  static const forest = HopeV2TonalPalette(
+    shade50: Color(0xFFF0F5EE),
+    shade100: Color(0xFFDDE9D8),
+    shade200: Color(0xFFC0D7B8),
+    shade300: Color(0xFF9FBF91),
+    shade400: Color(0xFF789F6B),
+    shade500: Color(0xFF557D4D),
+    shade600: Color(0xFF3E673F),
+    shade700: Color(0xFF31583C),
+    shade800: Color(0xFF244D38),
+    shade900: Color(0xFF193A2A),
+    shade950: Color(0xFF0E2419),
+  );
+
+  /// Legacy lichen ramp is a sparing decorative accent, not the selected/action color.
+  static const lichen = HopeV2TonalPalette(
+    shade50: Color(0xFFF7FAE9),
+    shade100: Color(0xFFEEF5D0),
+    shade200: Color(0xFFDCEBA8),
+    shade300: Color(0xFFCCE477),
+    shade400: Color(0xFFB8D86C),
+    shade500: Color(0xFF9FBF67),
+    shade600: Color(0xFF88A96A),
+    shade700: Color(0xFF6F9659),
+    shade800: Color(0xFF4E713F),
+    shade900: Color(0xFF354D2B),
+    shade950: Color(0xFF1C2A18),
+  );
+
+  static const neutral = HopeV2TonalPalette(
+    shade50: Color(0xFFFAF9F4),
+    shade100: Color(0xFFF2F0E8),
+    shade200: Color(0xFFE9E5D9),
+    shade300: Color(0xFFD6D1C4),
+    shade400: Color(0xFFB4AE9E),
+    shade500: Color(0xFF8B8779),
+    shade600: Color(0xFF5B665A),
+    shade700: Color(0xFF4A574A),
+    shade800: Color(0xFF344238),
+    shade900: Color(0xFF18221C),
+    shade950: Color(0xFF12140F),
+  );
+
+  static const info = HopeV2TonalPalette(
+    shade50: Color(0xFFE6FFFB),
+    shade100: Color(0xFFCCFBF1),
+    shade200: Color(0xFF99F6E4),
+    shade300: Color(0xFF5EEAD4),
+    shade400: Color(0xFF2DD4BF),
+    shade500: Color(0xFF14B8A6),
+    shade600: Color(0xFF0D9488),
+    shade700: Color(0xFF0F766E),
+    shade800: Color(0xFF115E59),
+    shade900: Color(0xFF134E4A),
+    shade950: Color(0xFF042F2E),
+  );
+
+  static const trust = HopeV2TonalPalette(
+    shade50: Color(0xFFEFF6FF),
+    shade100: Color(0xFFDBEAFE),
+    shade200: Color(0xFFBFDBFE),
+    shade300: Color(0xFF93C5FD),
+    shade400: Color(0xFF60A5FA),
+    shade500: Color(0xFF3B82F6),
+    shade600: Color(0xFF2563EB),
+    shade700: Color(0xFF1D4ED8),
+    shade800: Color(0xFF1E40AF),
+    shade900: Color(0xFF1E3A8A),
+    shade950: Color(0xFF172554),
+  );
+
+  static const success = HopeV2TonalPalette(
+    shade50: Color(0xFFF0FDF4),
+    shade100: Color(0xFFDCFCE7),
+    shade200: Color(0xFFBBF7D0),
+    shade300: Color(0xFF86EFAC),
+    shade400: Color(0xFF4ADE80),
+    shade500: Color(0xFF22C55E),
+    shade600: Color(0xFF16A34A),
+    shade700: Color(0xFF15803D),
+    shade800: Color(0xFF166534),
+    shade900: Color(0xFF14532D),
+    shade950: Color(0xFF052E16),
+  );
+
+  static const warning = HopeV2TonalPalette(
+    shade50: Color(0xFFFFFBEB),
+    shade100: Color(0xFFFEF3C7),
+    shade200: Color(0xFFFDE68A),
+    shade300: Color(0xFFFCD34D),
+    shade400: Color(0xFFFBBF24),
+    shade500: Color(0xFFF59E0B),
+    shade600: Color(0xFFD97706),
+    shade700: Color(0xFFB45309),
+    shade800: Color(0xFF92400E),
+    shade900: Color(0xFF78350F),
+    shade950: Color(0xFF451A03),
+  );
+
+  static const featured = HopeV2TonalPalette(
+    shade50: Color(0xFFFFF7ED),
+    shade100: Color(0xFFFFEDD5),
+    shade200: Color(0xFFFDBA74),
+    shade300: Color(0xFFFF9A4D),
+    shade400: Color(0xFFFB923C),
+    shade500: Color(0xFFF97316),
+    shade600: Color(0xFFEA580C),
+    shade700: Color(0xFFC2410C),
+    shade800: Color(0xFF9A3412),
+    shade900: Color(0xFF7C2D12),
+    shade950: Color(0xFF431407),
+  );
+
+  static const danger = HopeV2TonalPalette(
+    shade50: Color(0xFFFEF2F2),
+    shade100: Color(0xFFFEE2E2),
+    shade200: Color(0xFFFECACA),
+    shade300: Color(0xFFFCA5A5),
+    shade400: Color(0xFFF87171),
+    shade500: Color(0xFFEF4444),
+    shade600: Color(0xFFDC2626),
+    shade700: Color(0xFFB91C1C),
+    shade800: Color(0xFF991B1B),
+    shade900: Color(0xFF7F1D1D),
+    shade950: Color(0xFF450A0A),
+  );
+}
+
 
 /// Canonical icon vocabulary. Keep navigation and recurring product concepts
 /// on this set so the interface reads as one designed system rather than a
@@ -136,6 +425,24 @@ class HopeV2Icons {
   static const arrowRight = HugeIcons.strokeRoundedArrowRight01;
 }
 
+/// Editorial navigation uses one deliberately distinct Cupertino icon family.
+/// The rest of the product keeps its HugeIcons vocabulary; these five
+/// high-frequency destinations share familiar outline/filled pairs.
+class HopeV2NavigationIcons {
+  const HopeV2NavigationIcons._();
+
+  static const home = CupertinoIcons.house;
+  static const homeSelected = CupertinoIcons.house_fill;
+  static const explore = CupertinoIcons.compass;
+  static const exploreSelected = CupertinoIcons.compass_fill;
+  static const workshop = CupertinoIcons.briefcase;
+  static const workshopSelected = CupertinoIcons.briefcase_fill;
+  static const wallet = CupertinoIcons.creditcard;
+  static const walletSelected = CupertinoIcons.creditcard_fill;
+  static const profile = CupertinoIcons.person_crop_circle;
+  static const profileSelected = CupertinoIcons.person_crop_circle_fill;
+}
+
 class HopeV2Spacing {
   const HopeV2Spacing._();
   static const xs = 4.0;
@@ -144,8 +451,8 @@ class HopeV2Spacing {
   static const lg = 16.0;
   static const xl = 24.0;
   static const xxl = 32.0;
-  static const section = 28.0;
-  static const display = 48.0;
+  static const section = 24.0;
+  static const display = 40.0;
 }
 
 class HopeV2Radii {
@@ -154,7 +461,7 @@ class HopeV2Radii {
   static const md = 14.0;
   static const lg = 16.0;
   static const xl = 20.0;
-  static const hero = 24.0;
+  static const hero = 18.0;
   static const input = 12.0;
   static const button = 12.0;
   static const navigation = 12.0;
@@ -197,9 +504,28 @@ class HopeV2Touch {
 class HopeV2Navigation {
   const HopeV2Navigation._();
 
-  static const barHeight = 61.0;
-  static const dockRadius = 16.0;
-  static const itemRadius = 10.0;
+  static const barHeight = 68.0;
+  /// Scroll tail for the final meaningful item above the fixed dock.
+  static const scrollEndGap = 12.0;
+
+  /// Tail padding for scrollable content. Scaffold reserves the dock height;
+  /// this adds final breathing room and any system inset not consumed by SafeArea.
+  static EdgeInsets scrollEndPadding(
+    BuildContext context, {
+    double horizontal = 0,
+    double top = 0,
+  }) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return EdgeInsets.fromLTRB(
+      horizontal,
+      top,
+      horizontal,
+      bottomInset + scrollEndGap,
+    );
+  }
+
+  static const dockRadius = 18.0;
+  static const itemRadius = 12.0;
   static const itemWidth = 42.0;
   static const itemHeight = 28.0;
   static const railMinWidth = 88.0;
@@ -236,10 +562,11 @@ class HopeV2Surfaces {
       begin: AlignmentDirectional.topEnd,
       end: AlignmentDirectional.bottomStart,
       colors: [
-        HopeV2Colors.warmHalo,
+        Color(0x0DD0A16D),
+        Colors.transparent,
         Colors.transparent,
       ],
-      stops: [0.0, 0.42],
+      stops: [0.0, 0.42, 1.0],
     );
   }
 
@@ -304,24 +631,23 @@ class HopeV2Gradients {
 
   static const hero = LinearGradient(
     colors: [
-      Color(0xFF5D43E8),
-      Color(0xFF8B73FF),
-      Color(0xFFB09FFF),
+      Color(0xFF5B5343),
+      Color(0xFF827252),
+      Color(0xFFB9A77C),
     ],
     stops: [0, .55, 1],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
 
-  // Runtime visual certification target: flat dark canvas + violet-led hero.
+  // Restore the prior restrained slate/navy hero; indigo remains reserved for action and selection.
   static const heroDark = LinearGradient(
     colors: [
-      Color(0xFF171A36),
-      Color(0xFF37318C),
-      Color(0xFF161A32),
-      Color(0xFF0B0E16),
+      Color(0xFF121726),
+      Color(0xFF1B2748),
+      Color(0xFF121726),
     ],
-    stops: [0, .38, .72, 1],
+    stops: [0, .55, 1],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
@@ -330,21 +656,176 @@ class HopeV2Gradients {
 class HopeV2SemanticColors {
   const HopeV2SemanticColors._();
 
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  /// Indigo owns brand actions and selection. Forest and lichen are supporting decorative accents, never readable text roles.
   static Color primary(BuildContext context) => Theme.of(context).colorScheme.primary;
   static Color secondary(BuildContext context) => Theme.of(context).colorScheme.secondary;
   static Color surface(BuildContext context) => Theme.of(context).colorScheme.surface;
   static Color elevated(BuildContext context) => HopeV2Surfaces.panel(context);
   static Color background(BuildContext context) => HopeV2Surfaces.page(context);
   static Color border(BuildContext context) => HopeV2Surfaces.border(context);
-  static Color textPrimary(BuildContext context) => Theme.of(context).colorScheme.onSurface;
-  static Color textSecondary(BuildContext context) => Theme.of(context).colorScheme.onSurfaceVariant;
-  static Color success(BuildContext context) => HopeV2Colors.success;
+
+  static Color textPrimary(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.darkText : HopeV2Colors.ink;
+  static Color textSecondary(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.darkMuted : HopeV2Colors.muted;
+
+  /// Navigation labels use neutral grayscale instead of the olive-muted
+  /// general text role. Selection remains legible without coloring the copy.
+  static Color navigationLabel(
+    BuildContext context, {
+    required bool selected,
+  }) {
+    if (_isDark(context)) {
+      return selected
+          ? HopeV2Colors.navigationLabelDark
+          : HopeV2Colors.navigationLabelMutedDark;
+    }
+    return selected
+        ? HopeV2Colors.navigationLabelLight
+        : HopeV2Colors.navigationLabelMutedLight;
+  }
+
+  static Color amount(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.moneyTextDark : HopeV2Colors.moneyTextLight;
+
+  /// Financial values and their labels have separate foreground roles.
+  static Color price(BuildContext context) => amount(context);
+  static Color priceLabel(BuildContext context) => textSecondary(context);
+
+  /// Verified identity/security is blue, not the forest/lichen brand action hue.
+  static Color trust(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.trustTextDark : HopeV2Colors.trustTextLight;
+  static Color verified(BuildContext context) => trust(context);
+  static Color secure(BuildContext context) => trust(context);
+  static Color link(BuildContext context) => info(context);
+  static Color info(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.infoTextDark : HopeV2Colors.infoTextLight;
+  static Color success(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.successDark : HopeV2Colors.successOnLight;
   static Color warning(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
-          ? HopeV2Colors.warningDark
-          : HopeV2Colors.warning;
+      _isDark(context) ? HopeV2Colors.warningDark : HopeV2Colors.warningOnLight;
   static Color error(BuildContext context) => Theme.of(context).colorScheme.error;
-  static Color info(BuildContext context) => Theme.of(context).colorScheme.primary;
+
+  /// Neutral labels and values retain their contrast in both theme modes.
+  static Color neutral(BuildContext context) => textSecondary(context);
+
+  /// Recommended/featured state uses warm orange, never the brand action hue as text.
+  static Color featured(BuildContext context) =>
+      _isDark(context) ? HopeV2Colors.accentTextDark : HopeV2Colors.accentTextLight;
+
+  /// Named state roles make intent explicit at product call sites.
+  static Color pending(BuildContext context) => warning(context);
+  static Color processing(BuildContext context) => info(context);
+  static Color incomingAmount(BuildContext context) => success(context);
+  static Color pendingAmount(BuildContext context) => warning(context);
+  static Color outgoingAmount(BuildContext context) => error(context);
+  static Color negativeAmount(BuildContext context) => error(context);
+
+  /// Contrast-safe text foreground for semantic chips; never pass a raw brand action hue.
+  static Color statusSurface(BuildContext context, Color accent) {
+    if (accent == HopeV2Colors.primary ||
+        accent == HopeV2Colors.primaryDark ||
+        accent == HopeV2Colors.primaryAction ||
+        accent == HopeV2Colors.secondary ||
+        accent == HopeV2Colors.secondaryStrong ||
+        accent == HopeV2Colors.secondaryDark ||
+        accent == HopeV2Colors.secondaryAction) {
+      return _isDark(context)
+          ? HopeV2Colors.infoSurfaceDark
+          : HopeV2Colors.infoSurfaceLight;
+    }
+    if (accent == HopeV2Colors.trustTextLight ||
+        accent == HopeV2Colors.trustTextDark) {
+      return _isDark(context)
+          ? HopeV2Colors.trustSurfaceDark
+          : HopeV2Colors.trustSurfaceLight;
+    }
+    if (accent == HopeV2Colors.success ||
+        accent == HopeV2Colors.successDark ||
+        accent == HopeV2Colors.successOnLight) {
+      return _isDark(context)
+          ? HopeV2Colors.successSurfaceDark
+          : HopeV2Colors.successSurfaceLight;
+    }
+    if (accent == HopeV2Colors.warning ||
+        accent == HopeV2Colors.warningDark ||
+        accent == HopeV2Colors.warningOnLight) {
+      return _isDark(context)
+          ? HopeV2Colors.warningSurfaceDark
+          : HopeV2Colors.warningSurfaceLight;
+    }
+    if (accent == HopeV2Colors.danger ||
+        accent == HopeV2Colors.dangerDark ||
+        accent == HopeV2Colors.dangerOnLight) {
+      return _isDark(context)
+          ? HopeV2Colors.dangerSurfaceDark
+          : HopeV2Colors.dangerSurfaceLight;
+    }
+    if (accent == HopeV2Colors.accent ||
+        accent == HopeV2Colors.orange ||
+        accent == HopeV2Colors.orangeDark) {
+      return _isDark(context)
+          ? HopeV2Colors.accentSurfaceDark
+          : HopeV2Colors.accentSurfaceLight;
+    }
+    return accent.withValues(alpha: _isDark(context) ? .12 : .08);
+  }
+
+  static Color readableAccent(BuildContext context, Color accent) {
+    if (accent == HopeV2Colors.primary ||
+        accent == HopeV2Colors.primaryDark ||
+        accent == HopeV2Colors.primaryAction ||
+        accent == HopeV2Colors.secondary ||
+        accent == HopeV2Colors.secondaryStrong ||
+        accent == HopeV2Colors.secondaryDark ||
+        accent == HopeV2Colors.secondaryAction) {
+      return info(context);
+    }
+    if (accent == HopeV2Colors.trustTextLight ||
+        accent == HopeV2Colors.trustTextDark) return trust(context);
+    if (accent == HopeV2Colors.success ||
+        accent == HopeV2Colors.successDark ||
+        accent == HopeV2Colors.successOnLight) return success(context);
+    if (accent == HopeV2Colors.warning ||
+        accent == HopeV2Colors.warningDark ||
+        accent == HopeV2Colors.warningOnLight) return warning(context);
+    if (accent == HopeV2Colors.danger ||
+        accent == HopeV2Colors.dangerDark ||
+        accent == HopeV2Colors.dangerOnLight) return error(context);
+    if (accent == HopeV2Colors.accent ||
+        accent == HopeV2Colors.orange ||
+        accent == HopeV2Colors.orangeDark) return featured(context);
+    if (accent == HopeV2Colors.muted || accent == HopeV2Colors.darkMuted) {
+      return textSecondary(context);
+    }
+    return textPrimary(context);
+  }
+}
+
+
+/// Theme-aware identities for the financial chart series. These are data-series
+/// colors (not text colors): incoming funds use the success family, outgoing
+/// cash flow has a distinct negative-flow family, and reserved funds use amber.
+class HopeV2ChartColors {
+  const HopeV2ChartColors._();
+
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color cashIn(BuildContext context) => _isDark(context)
+      ? HopeV2TonalPalettes.success.shade400
+      : HopeV2TonalPalettes.success.shade700;
+
+  static Color cashOut(BuildContext context) => _isDark(context)
+      ? HopeV2TonalPalettes.danger.shade400
+      : HopeV2TonalPalettes.danger.shade700;
+
+  static Color reserved(BuildContext context) => _isDark(context)
+      ? HopeV2TonalPalettes.warning.shade300
+      : HopeV2TonalPalettes.warning.shade700;
 }
 
 class HopeV2Shadows {
@@ -353,38 +834,38 @@ class HopeV2Shadows {
   static const card = [
     BoxShadow(
       color: Color(0x0D1B1638),
-      blurRadius: 28,
-      offset: Offset(0, 12),
+      blurRadius: 18,
+      offset: Offset(0, 6),
     ),
   ];
 
   static const hero = [
     BoxShadow(
-      color: Color(0x241C1738),
-      blurRadius: 36,
-      offset: Offset(0, 18),
+      color: Color(0x1A1C1738),
+      blurRadius: 16,
+      offset: Offset(0, 5),
     ),
   ];
 
   // Runtime visual certification target: no cyan spill on dark hero edges.
   static const heroDark = [
     BoxShadow(
-      color: Color(0x3A2E2A72),
-      blurRadius: 30,
-      offset: Offset(0, 14),
+      color: Color(0x12333B70),
+      blurRadius: 14,
+      offset: Offset(0, 4),
     ),
     BoxShadow(
-      color: Color(0x173F3AA0),
-      blurRadius: 42,
-      offset: Offset(-8, 18),
+      color: Color(0x062B345F),
+      blurRadius: 18,
+      offset: Offset(-3, 5),
     ),
   ];
 
   static const gradientHero = [
     BoxShadow(
-      color: Color(0x2E6366F1),
-      blurRadius: 28,
-      offset: Offset(0, 12),
+      color: Color(0x1A2C3372),
+      blurRadius: 12,
+      offset: Offset(0, 4),
     ),
   ];
 }
@@ -405,30 +886,30 @@ class HopeV2Type {
   static TextStyle display(BuildContext context) => Theme.of(context)
       .textTheme
       .displaySmall!
-      .copyWith(fontSize: 28, letterSpacing: -.65, height: 1.08);
+      .copyWith(fontSize: 28, letterSpacing: -.6, height: 1.12);
 
   static TextStyle hero(BuildContext context) => Theme.of(context)
       .textTheme
       .headlineMedium!
-      .copyWith(fontSize: 25, letterSpacing: -.55, height: 1.08);
+      .copyWith(fontSize: 23, letterSpacing: -.45, height: 1.12);
 
   static TextStyle metric(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
       .copyWith(
         fontSize: 18,
-        fontWeight: FontWeight.w900,
-        letterSpacing: -.45,
-        height: 1.0,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -.3,
+        height: 1.08,
       );
 
   static TextStyle section(BuildContext context) => Theme.of(context)
       .textTheme
       .titleLarge!
-      .copyWith(fontSize: 17, letterSpacing: -.15);
+      .copyWith(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -.15, height: 1.22);
 
   static TextStyle eyebrow(BuildContext context) => Theme.of(context)
       .textTheme
       .labelLarge!
-      .copyWith(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: .65);
+      .copyWith(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: .4);
 }

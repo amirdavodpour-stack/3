@@ -57,11 +57,11 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
     _kv(_t('مبلغ','Amount'),'${d['paymentAmount']??d['context']?['payment']?['amount']??'—'} تومان'),
     _section(_t('گزارش','Report'), '${d['aiReport']?['summary']??''}'),
     _section(_t('مبنای پرداخت','Payment rationale'), '${d['aiReport']?['paymentRationale']??''}'),
-    _section(_t('یافته‌های واقعی','Factual findings'), '${(d['aiReport']?['factualFindings'] as List? ?? const []).join('\n• ')}'),
-    _section(_t('مدارک ناقص','Missing evidence'), '${(d['aiReport']?['missingEvidence'] as List? ?? const []).join('\n• ')}'),
-    _section(_t('مبنای حقوقی','Legal basis'), '${(d['aiReport']?['legalBasis'] as List? ?? const []).map((x)=>'${x['source']} ماده ${x['article']}: ${x['principle']}').join('\n')}'),
-    _section(_t('اقدامات پیشنهادی سیستم','System-suggested admin actions'), '${(d['aiReport']?['adminActions'] as List? ?? const []).join('\n• ')}'),
-    _section(_t('شواهد ثبت‌شده','Recorded evidence'), '${(d['context']?['evidence'] as List? ?? const []).map((x)=>'${x['action'] ?? '—'} • ${x['createdAt'] ?? '—'}').join('\n')}'),
+    _section(_t('یافته‌های واقعی','Factual findings'), (d['aiReport']?['factualFindings'] as List? ?? const []).join('\n• ')),
+    _section(_t('مدارک ناقص','Missing evidence'), (d['aiReport']?['missingEvidence'] as List? ?? const []).join('\n• ')),
+    _section(_t('مبنای حقوقی','Legal basis'), (d['aiReport']?['legalBasis'] as List? ?? const []).map((x)=>'${x['source']} ماده ${x['article']}: ${x['principle']}').join('\n')),
+    _section(_t('اقدامات پیشنهادی سیستم','System-suggested admin actions'), (d['aiReport']?['adminActions'] as List? ?? const []).join('\n• ')),
+    _section(_t('شواهد ثبت‌شده','Recorded evidence'), (d['context']?['evidence'] as List? ?? const []).map((x)=>'${x['action'] ?? '—'} • ${x['createdAt'] ?? '—'}').join('\n')),
     const SizedBox(height:10),
     Wrap(spacing:8, runSpacing:8, children:[
       _action(d,'RELEASE',_t('پرداخت','Release'),Icons.payments),
@@ -70,7 +70,35 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
     ])
   ]))));
 
-  Widget _kv(String a,String b)=>Padding(padding:const EdgeInsets.only(bottom:7),child:Text('$a: $b',style:const TextStyle(fontWeight:FontWeight.w700)));
+  Widget _kv(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: HopeV2SemanticColors.textSecondary(context),
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 6,
+              child: Text(
+                value,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: HopeV2SemanticColors.textPrimary(context),
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      );
   Widget _section(String title,String body)=>Padding(padding:const EdgeInsets.only(top:10),child:PremiumPanel(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:6),Text(body.isEmpty?'—':body)])));
   Widget _action(Map<String,dynamic> d,String resolution,String label,IconData icon)=>OutlinedButton.icon(onPressed:_busy||!_hasPermission('admin.resolve_disputes')||'${d['status']??''}'=='RESOLVED'?null:()=>_resolve(d,resolution,label),icon:Icon(icon),label:Text(label));
 
@@ -78,10 +106,11 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
     final id='${d['id']??''}';
     final reasonController=TextEditingController();
     try {
+      final repository = context.read<AdminRepository>();
       final ok=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(title:Text(_t('تأیید اقدام','Confirm action')),content:Column(mainAxisSize:MainAxisSize.min,children:[Text(_t('اقدام انتخابی: $label. دلیل ادمین را ثبت کنید.','Selected action: $label. Record the admin reason.')),const SizedBox(height:10),TextField(controller:reasonController,maxLines:4,decoration:InputDecoration(labelText:_t('دلیل','Reason')))]),actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:Text(_t('انصراف','Cancel'))),FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(_t('اجرا','Execute')))]));
       if(ok!=true) return;
       setState(()=>_busy=true);
-      await context.read<AdminRepository>().resolveDispute(id,resolution:resolution,reason:reasonController.text);
+      await repository.resolveDispute(id,resolution:resolution,reason:reasonController.text);
       if(mounted) { Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(_t('اقدام ثبت شد.','Action recorded.')))); _load(); }
     } catch(e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(apiErrorMessage(e)))); } finally { reasonController.dispose(); if(mounted) setState(()=>_busy=false); }
   }
@@ -94,7 +123,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
       child: Scaffold(
         body: PremiumPageFrame(
           maxWidth: 1200,
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 48),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
           child: FutureBuilder<List<Map<String, dynamic>>>(
             future: _future,
             builder: (context, snapshot) {
@@ -159,7 +188,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                             tooltip: _t('بازخوانی', 'Refresh'),
                             onPressed: _busy ? null : _load,
                           ),
-                          HopeIconTile(
+                          const HopeIconTile(
                             HopeV2Icons.secure,
                             size: 50,
                             filled: true,
@@ -180,12 +209,12 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                     else
                       ...rows.map(
                         (row) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 8),
                           child: InkWell(
                             onTap: () => _open(row),
                             borderRadius: BorderRadius.circular(HopeV2Radii.lg),
                             child: PremiumPanel(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(14),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -194,10 +223,10 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                     children: [
                                       const HopeIconTile(
                                         Icons.gavel_outlined,
-                                        size: 44,
+                                        size: 36,
                                         filled: true,
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: 8),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +253,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 8),
                                   Row(
                                     children: [
                                       Expanded(
@@ -235,7 +264,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                           '${row['status'] ?? '—'}',
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: 8),
                                       Expanded(
                                         child: _caseMeta(
                                           context,
@@ -292,7 +321,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
   ) {
     return Container(
       constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
         color: HopeV2Surfaces.panelSoft(context),
         borderRadius: BorderRadius.circular(HopeV2Radii.md),

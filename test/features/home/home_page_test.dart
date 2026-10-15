@@ -90,9 +90,10 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
-    expect(find.text('HOPE Pulse'), findsOneWidget);
-    expect(find.bySemanticsLabel('منو'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('تطابق'), findsOneWidget);
+    expect(find.text('جدید'), findsOneWidget);
+    expect(find.bySemanticsLabel('منوی برنامه'), findsOneWidget);
+    expect(find.byType(PremiumNavigationBar), findsOneWidget);
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.byType(HopeNavigationGlyph), findsWidgets);
     final selectedHome = tester.widget<HopeNavigationGlyph>(
@@ -165,5 +166,25 @@ void main() {
 
     expect(find.text('ورود'), findsOneWidget);
     expect(find.text('ساخت حساب'), findsOneWidget);
+  });
+
+  testWidgets('tab navigation animates between pages instead of snapping', (tester) async {
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
+
+    final pager = find.byKey(const ValueKey('hope-tab-pager'));
+    expect(pager, findsOneWidget);
+    final scrollable = find.descendant(
+      of: pager,
+      matching: find.byType(Scrollable),
+    ).first;
+
+    await tester.tap(find.text('کاوش'));
+    await tester.pump(const Duration(milliseconds: 140));
+
+    final position = tester.state<ScrollableState>(scrollable).position;
+    expect(position.pixels, greaterThan(0));
+    expect(position.pixels, lessThan(position.maxScrollExtent));
+    expect(tester.takeException(), isNull);
   });
 }

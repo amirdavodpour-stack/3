@@ -5,15 +5,25 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
+import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/transactions/wallet_repository.dart';
-import 'package:hope_mobile/features/wallet/wallet_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/features/wallet/wallet_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _WalletEnabledCapabilities implements BackendCapabilitiesRepository {
+  @override
+  Future<BackendCapabilities> load() async => const BackendCapabilities(
+        wallet: true,
+        walletWithdraw: true,
+      );
+}
 
 class _FakeWallet implements WalletRepository {
   _FakeWallet({
@@ -22,6 +32,12 @@ class _FakeWallet implements WalletRepository {
     this.payoutCurrency = 'TOMAN',
     this.payoutStatus = 'REQUESTED',
     this.entryType = 'TRANSFER',
+    this.direction = 'CREDIT',
+    this.pendingWithdrawalBalance = 0,
+    this.availableBalance = 2500000,
+    this.lockedBalance = 1000000,
+    this.escrowBalance = 1000000,
+    this.totalBalance = 3500000,
   });
 
   final String currency;
@@ -29,6 +45,12 @@ class _FakeWallet implements WalletRepository {
   final String payoutCurrency;
   final String payoutStatus;
   final String entryType;
+  final String direction;
+  final int pendingWithdrawalBalance;
+  final int availableBalance;
+  final int lockedBalance;
+  final int escrowBalance;
+  final int totalBalance;
   Object? transferError;
   bool failLoad = false;
 
@@ -39,8 +61,11 @@ class _FakeWallet implements WalletRepository {
         'id': 'wallet-1',
         'userId': 'u1',
         'currency': currency,
-        'availableBalance': 2500000,
-        'lockedBalance': 1000000,
+        'availableBalance': availableBalance,
+        'lockedBalance': lockedBalance,
+        'escrowBalance': escrowBalance,
+        'pendingWithdrawalBalance': pendingWithdrawalBalance,
+        'totalBalance': totalBalance,
         'status': 'ACTIVE',
       });
   }
@@ -55,10 +80,11 @@ class _FakeWallet implements WalletRepository {
           HopeWalletTransaction.fromMap({
             'id': 'tx-1',
             'entryType': entryType,
-            'direction': 'CREDIT',
+            'direction': direction,
             'amount': 500000,
             'currency': transactionCurrency,
             'referenceType': 'TRANSFER',
+            'referenceId': 'ref-1',
             'financialOperationId': 'op-1',
             'createdAt': '2026-09-21T00:00:00Z',
           }),
@@ -237,6 +263,108 @@ class _AuthRepo implements AuthRepository {
 }
 
 void main() {
+  testWidgets(
+    'Wave 43 payout amount and status stay consistent between history row and details',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet(payoutStatus: 'REQUESTED');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Withdrawals'),
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final historyAmount = find.text('400,000 TOMAN');
+      final historyStatus = find.text('Requested');
+      expect(historyAmount, findsOneWidget);
+      expect(historyStatus, findsOneWidget);
+
+      await tester.tap(historyStatus);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Withdrawal details'), findsOneWidget);
+      expect(find.text('Amount'), findsOneWidget);
+      expect(find.text('Status'), findsOneWidget);
+      expect(find.text('400,000 TOMAN'), findsOneWidget);
+      expect(find.text('Requested'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'pending withdrawal summary agrees with the reserved payout row',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet(
+        payoutStatus: 'RESERVED',
+        pendingWithdrawalBalance: 400000,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final pendingMetric =
+          find.byKey(const ValueKey('wallet-balance-metric-pending'));
+      expect(pendingMetric, findsOneWidget);
+      expect(
+        find.descendant(
+          of: pendingMetric,
+          matching: find.text('۴۰۰٬۰۰۰ تومان'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('برداشت‌ها'),
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('۴۰۰٬۰۰۰ تومان'), findsNWidgets(2));
+      expect(find.text('رزروشده'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'an older refresh response cannot overwrite a newer refresh result',
@@ -266,7 +394,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
+      expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
 
       final refreshIndicator =
           tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
@@ -382,12 +510,19 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('3,500,000 تومان'), findsOneWidget);
-      expect(find.textContaining('2,500,000 تومان'), findsWidgets);
+      expect(find.textContaining('۳٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
+      expect(find.textContaining('۲٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
       expect(find.text('قابل استفاده'), findsOneWidget);
-      expect(find.text('محافظت‌شده'), findsOneWidget);
+      expect(find.text('در امانت HOPE'), findsOneWidget);
+      expect(find.text('محافظت‌شده'), findsNothing);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
-      expect(find.text('درخواست‌های برداشت'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('برداشت‌ها'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('برداشت‌ها'), findsOneWidget);
     },
   );
 
@@ -419,14 +554,113 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
       expect(find.text('کل موجودی'), findsOneWidget);
+      expect(find.text('شامل مبالغ قفل‌شده است'), findsOneWidget);
       expect(find.text('قفل‌شده'), findsWidgets);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
-      expect(find.text('درخواست‌های برداشت'), findsOneWidget);
-      expect(find.text('برداشت در انتظار'), findsOneWidget);
       expect(find.text('موجودی مادام‌العمر'), findsNothing);
+
+      await tester.scrollUntilVisible(
+        find.text('برداشت‌ها'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('برداشت‌ها'), findsOneWidget);
     },
   );
+
+  testWidgets('very large wallet balances keep the compact hero in a two-column metric grid',
+      (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 640);
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    const large = 9123456789123456789;
+    final wallet = _FakeWallet(
+      availableBalance: large,
+      lockedBalance: 1000000,
+      escrowBalance: 1000000,
+      totalBalance: 3500000,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final hero = find.byKey(const ValueKey('wallet-balance-hero'));
+    final available = find.byKey(const ValueKey('wallet-balance-metric-available'));
+    final held = find.byKey(const ValueKey('wallet-balance-metric-protected'));
+    expect(hero, findsOneWidget);
+    expect(available, findsOneWidget);
+    expect(held, findsOneWidget);
+    expect(tester.getSize(available).width, lessThan(240));
+    expect(tester.getSize(held).width, lessThan(240));
+    expect(tester.getSize(hero).height, lessThan(320));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('wallet initial error state keeps recovery near the first fold',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final auth = AuthController(_AuthRepo(), SecureStore());
+    await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+    final wallet = _FakeWallet()..failLoad = true;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: auth),
+            Provider<WalletRepository>.value(value: wallet),
+          ],
+          child: WalletPage(repository: wallet),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final errorTitle = find.text('Wallet could not be loaded');
+    expect(errorTitle, findsOneWidget);
+    expect(
+      tester.getTopLeft(errorTitle).dy,
+      lessThan(120),
+      reason: 'The initial error state should not push recovery below a 160dp spacer.',
+    );
+    expect(find.text('Try again'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('wallet refresh failure keeps stale wallet visible with retry error',
       (tester) async {
@@ -455,7 +689,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
+    expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
     wallet.failLoad = true;
 
     await tester.fling(
@@ -466,7 +700,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.textContaining('3,500,000 TOMAN'), findsWidgets);
+    expect(find.textContaining('2,500,000 TOMAN'), findsWidgets);
     expect(find.text('Wallet refresh failed'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
@@ -520,7 +754,7 @@ void main() {
       isTrue,
     );
     expect(
-      labels.any((label) => label.contains('500,000 تومان')),
+      labels.any((label) => label.contains('\u2066+۵۰۰٬۰۰۰ تومان\u2069')),
       isTrue,
     );
     } finally {
@@ -568,7 +802,7 @@ void main() {
         matching: find.byType(Semantics),
       ).first;
       final node = tester.getSemantics(row);
-      expect(node.label, '400,000 تومان، کیف پول داخلی، درخواست‌شده');
+      expect(node.label, '۴۰۰٬۰۰۰ تومان، کیف پول داخلی، درخواست‌شده');
     } finally {
       semantics.dispose();
     }
@@ -628,6 +862,123 @@ void main() {
     expect(find.text('400,000 TOMAN'), findsOneWidget);
     expect(find.text('400,000 IRR'), findsNothing);
   });
+  testWidgets('wallet credit and debit amounts use semantic foregrounds in light and dark themes',
+      (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      for (final isCredit in [true, false]) {
+        final auth = AuthController(_AuthRepo(), SecureStore());
+        await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+        final wallet = _FakeWallet(direction: isCredit ? 'CREDIT' : 'DEBIT');
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: brightness == Brightness.dark
+                ? ThemeData.dark()
+                : ThemeData.light(),
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: auth),
+                Provider<WalletRepository>.value(value: wallet),
+              ],
+              child: WalletPage(repository: wallet),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
+        await tester.scrollUntilVisible(
+          find.text(amountLabel),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        final amountFinder = find.text(amountLabel);
+        final amountText = tester.widget<Text>(amountFinder);
+        final amountContext = tester.element(amountFinder);
+        expect(
+          amountText.style?.color,
+          isCredit
+              ? HopeV2SemanticColors.incomingAmount(amountContext)
+              : HopeV2SemanticColors.negativeAmount(amountContext),
+          reason: 'Credit/debit amounts must use semantic foreground roles in $brightness mode.',
+        );
+        expect(
+          amountText.style?.color,
+          isNot(Theme.of(amountContext).colorScheme.primary),
+          reason: 'Ledger amounts must not use the brand action foreground in $brightness mode.',
+        );
+      }
+    }
+  });
+
+  testWidgets('pending payout amount and label use warning semantics in light and dark themes',
+      (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet(payoutStatus: 'RESERVED');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: brightness == Brightness.dark
+              ? ThemeData.dark()
+              : ThemeData.light(),
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Reserved'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      final amountFinder = find.text('400,000 TOMAN');
+      final statusFinder = find.text('Reserved');
+      final context = tester.element(statusFinder);
+      expect(
+        tester.widget<Text>(amountFinder).style?.color,
+        HopeV2SemanticColors.pendingAmount(context),
+      );
+      expect(
+        tester.widget<Text>(statusFinder).style?.color,
+        HopeV2SemanticColors.pending(context),
+      );
+      expect(
+        tester.widget<Text>(statusFinder).style?.color,
+        isNot(Theme.of(context).colorScheme.primary),
+        reason: 'Pending payout status is semantic state, not a brand action label.',
+      );
+      expect(
+        tester.widget<Text>(amountFinder).style?.color,
+        isNot(Theme.of(context).colorScheme.primary),
+        reason: 'Pending payout amounts must not be colored as primary actions.',
+      );
+    }
+  });
+
   testWidgets('wallet presents backend enums as localized user-facing labels',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
@@ -674,6 +1025,8 @@ void main() {
     expect(find.text('CREDIT'), findsNothing);
     expect(find.text('Entry type'), findsOneWidget);
     expect(find.text('Reference type'), findsOneWidget);
+    expect(find.text('ref-1'), findsNothing);
+    expect(find.text('op-1'), findsNothing);
   });
 
   testWidgets('wallet does not expose raw unknown ledger entry types',
@@ -788,13 +1141,13 @@ void main() {
     expect(find.textContaining('cursor'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.text('400,000 تومان'),
+      find.text('۴۰۰٬۰۰۰ تومان'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('400,000 تومان'));
+    await tester.tap(find.text('۴۰۰٬۰۰۰ تومان'));
     await tester.pumpAndSettle();
 
     expect(find.text('کیف پول داخلی'), findsOneWidget);
@@ -836,7 +1189,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Transfer'));
+    await tester.tap(find.byTooltip('Wallet actions')); await tester.pumpAndSettle(); await tester.tap(find.text('Transfer'));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Destination wallet ID'), findsOneWidget);
     expect(find.bySemanticsLabel('Amount in Toman'), findsOneWidget);
@@ -890,7 +1243,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Transfer').first);
+    await tester.tap(find.byTooltip('Wallet actions')); await tester.pumpAndSettle(); await tester.tap(find.text('Transfer').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Maximum: 2,500,000 TOMAN'), findsOneWidget);
@@ -932,14 +1285,24 @@ void main() {
 
     final header = find.byKey(const ValueKey('wallet-finance-header'));
     expect(header, findsOneWidget);
-    expect(tester.getSize(header).height, lessThan(76));
+    expect(tester.getSize(header).height, lessThan(120));
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+      12,
+      reason: 'The wallet ListView already owns navigation-aware end padding; its outer frame should stay compact.',
+    );
 
     expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
     expect(find.byKey(const ValueKey('wallet-provider-status')), findsOneWidget);
+    final historyGap = find.byKey(
+      const ValueKey('wallet-history-transition-gap'),
+    );
+    expect(historyGap, findsOneWidget);
+    expect(tester.getSize(historyGap).height, 4);
     final availableMetric =
         find.byKey(const ValueKey('wallet-balance-metric-available'));
     expect(availableMetric, findsOneWidget);
-    expect(tester.getSize(availableMetric).height, greaterThanOrEqualTo(46));
+    expect(tester.getSize(availableMetric).height, greaterThanOrEqualTo(42));
 
     expect(tester.takeException(), isNull);
   });
@@ -985,6 +1348,187 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'wallet transaction detail amounts retain semantic foregrounds in light and dark themes',
+    (tester) async {
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        for (final isCredit in [true, false]) {
+          SharedPreferences.setMockInitialValues({});
+          final auth = AuthController(_AuthRepo(), SecureStore());
+          await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+          final wallet = _FakeWallet(direction: isCredit ? 'CREDIT' : 'DEBIT');
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: brightness == Brightness.dark
+                  ? ThemeData.dark()
+                  : ThemeData.light(),
+              locale: const Locale('en'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: MultiProvider(
+                providers: [
+                  ChangeNotifierProvider.value(value: auth),
+                  Provider<WalletRepository>.value(value: wallet),
+                ],
+                child: WalletPage(repository: wallet),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
+          await tester.scrollUntilVisible(
+            find.text(amountLabel),
+            500,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(amountLabel));
+          await tester.pumpAndSettle();
+
+          final detailAmount = find.byWidgetPredicate(
+            (widget) =>
+                widget is SelectableText && widget.data == amountLabel,
+          );
+          expect(detailAmount, findsOneWidget);
+          final detailContext = tester.element(detailAmount);
+          expect(
+            tester.widget<SelectableText>(detailAmount).style?.color,
+            isCredit
+                ? HopeV2SemanticColors.incomingAmount(detailContext)
+                : HopeV2SemanticColors.negativeAmount(detailContext),
+            reason:
+                'Transaction detail amount must preserve direction semantics in $brightness mode.',
+          );
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'pending payout detail amount retains warning foreground in light and dark themes',
+    (tester) async {
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        SharedPreferences.setMockInitialValues({});
+        final auth = AuthController(_AuthRepo(), SecureStore());
+        await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+        final wallet = _FakeWallet(payoutStatus: 'RESERVED');
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: brightness == Brightness.dark
+                ? ThemeData.dark()
+                : ThemeData.light(),
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: auth),
+                Provider<WalletRepository>.value(value: wallet),
+              ],
+              child: WalletPage(repository: wallet),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(
+          find.text('Reserved'),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Reserved'));
+        await tester.pumpAndSettle();
+
+        final detailAmount = find.byWidgetPredicate(
+          (widget) =>
+              widget is SelectableText && widget.data == '400,000 TOMAN',
+        );
+        expect(detailAmount, findsOneWidget);
+        final detailContext = tester.element(detailAmount);
+        expect(
+          tester.widget<SelectableText>(detailAmount).style?.color,
+          HopeV2SemanticColors.pendingAmount(detailContext),
+          reason:
+              'Pending withdrawal detail amount must remain semantically pending in $brightness mode.',
+        );
+      }
+    },
+  );
+
+  testWidgets(
+    'wallet withdraw action label uses a readable semantic foreground',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const brandIndigo = Color(0xFF6750A4);
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(
+            colorScheme: const ColorScheme.light(primary: brandIndigo),
+          ),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final withdraw = find.text('Withdraw');
+      expect(withdraw, findsOneWidget);
+      final text = tester.widget<Text>(withdraw);
+      final context = tester.element(withdraw);
+      expect(
+        text.style?.color,
+        HopeV2SemanticColors.readableAccent(
+          context,
+          Theme.of(context).colorScheme.primary,
+        ),
+        reason: 'The primary wallet action label must resolve through semantic readable colors.',
+      );
+      expect(
+        text.style?.color,
+        isNot(Theme.of(context).colorScheme.primary),
+        reason: 'The withdraw action label must not reuse the raw indigo action color.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   // Runtime certification trigger: grouped Wave G-2 after compile-scope repair.
 }

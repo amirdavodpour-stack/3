@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/auth/auth_controller.dart';
 import 'core/auth/auth_repository.dart';
+import 'core/config/backend_capabilities.dart';
 import 'core/auth/google_sign_in_service.dart';
 import 'core/chat/chat_repository.dart';
 import 'core/account/account_privacy_repository.dart';
@@ -145,6 +146,9 @@ Future<void> main() async {
             },
           ),
         ),
+      ),
+      Provider<BackendCapabilitiesRepository>(
+        create: (_) => ApiBackendCapabilitiesRepository(api),
       ),
       Provider<ApiClient>.value(value: api),
       Provider<AccountPrivacyRepository>(create: (_) => AccountPrivacyRepository(api)),

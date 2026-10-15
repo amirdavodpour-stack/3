@@ -31,6 +31,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final PageController _pageController = PageController();
   int tab = 0;
   late final List<Widget?> _tabs = List<Widget?>.filled(5, null);
 
@@ -64,6 +65,22 @@ class _HomePageState extends State<HomePage> {
   void _selectTab(int value) {
     if (value == tab) return;
     setState(() => tab = value);
+    if (!_pageController.hasClients) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pageController.jumpToPage(value);
+      return;
+    }
+    _pageController.animateToPage(
+      value,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -75,12 +92,12 @@ class _HomePageState extends State<HomePage> {
       NavigationDestination(
         icon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-home'),
-          icon: HopeV2Icons.home,
+          icon: HopeV2NavigationIcons.home,
           selected: false,
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-home-selected'),
-          icon: HopeV2Icons.home,
+          icon: HopeV2NavigationIcons.homeSelected,
           selected: true,
         ),
         label: _t(context, 'خانه', 'Home'),
@@ -88,12 +105,12 @@ class _HomePageState extends State<HomePage> {
       NavigationDestination(
         icon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-explore'),
-          icon: HopeV2Icons.search,
+          icon: HopeV2NavigationIcons.explore,
           selected: false,
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-explore-selected'),
-          icon: HopeV2Icons.search,
+          icon: HopeV2NavigationIcons.exploreSelected,
           selected: true,
         ),
         label: _t(context, 'کاوش', 'Explore'),
@@ -101,12 +118,12 @@ class _HomePageState extends State<HomePage> {
       NavigationDestination(
         icon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-work'),
-          icon: HopeV2Icons.workshop,
+          icon: HopeV2NavigationIcons.workshop,
           selected: false,
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-work-selected'),
-          icon: HopeV2Icons.workshop,
+          icon: HopeV2NavigationIcons.workshopSelected,
           selected: true,
         ),
         label: _t(context, 'کار', 'Work'),
@@ -114,12 +131,12 @@ class _HomePageState extends State<HomePage> {
       NavigationDestination(
         icon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-wallet'),
-          icon: HopeV2Icons.wallet,
+          icon: HopeV2NavigationIcons.wallet,
           selected: false,
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-wallet-selected'),
-          icon: HopeV2Icons.wallet,
+          icon: HopeV2NavigationIcons.walletSelected,
           selected: true,
         ),
         label: _t(context, 'کیف پول', 'Wallet'),
@@ -127,21 +144,45 @@ class _HomePageState extends State<HomePage> {
       NavigationDestination(
         icon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-profile'),
-          icon: HopeV2Icons.profile,
+          icon: HopeV2NavigationIcons.profile,
           selected: false,
         ),
         selectedIcon: const HopeNavigationGlyph(
           key: ValueKey('hope-nav-profile-selected'),
-          icon: HopeV2Icons.profile,
+          icon: HopeV2NavigationIcons.profileSelected,
           selected: true,
         ),
         label: _t(context, 'پروفایل', 'Profile'),
       ),
     ];
 
-    final content = IndexedStack(
-      index: tab,
-      children: List.generate(5, (i) => _tabs[i] ?? (i == tab ? _buildTab(tab) : const SizedBox.shrink())),
+    final content = PageView.builder(
+      key: const ValueKey('hope-tab-pager'),
+      controller: _pageController,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 5,
+      itemBuilder: (context, index) => _KeepAliveTab(
+        key: ValueKey('hope-tab-keepalive-$index'),
+        active: index == tab,
+        builder: () => AnimatedBuilder(
+          animation: _pageController,
+          child: _buildTab(index),
+          builder: (context, child) {
+            final page = _pageController.hasClients
+                ? (_pageController.page ?? _pageController.initialPage.toDouble())
+                : _pageController.initialPage.toDouble();
+            final distance = (page - index).abs().clamp(0.0, 1.0).toDouble();
+            return Opacity(
+              opacity: 1.0 - distance * .12,
+              child: Transform.scale(
+                scale: 1.0 - distance * .025,
+                alignment: Alignment.topCenter,
+                child: child,
+              ),
+            );
+          },
+        ),
+      ),
     );
 
     return Scaffold(
@@ -340,6 +381,37 @@ class _HomePageState extends State<HomePage> {
       return;
     }
     Navigator.push(context, HopeRoutes.createJob());
+  }
+}
+
+class _KeepAliveTab extends StatefulWidget {
+  const _KeepAliveTab({
+    super.key,
+    required this.active,
+    required this.builder,
+  });
+
+  final bool active;
+  final Widget Function() builder;
+
+  @override
+  State<_KeepAliveTab> createState() => _KeepAliveTabState();
+}
+
+class _KeepAliveTabState extends State<_KeepAliveTab>
+    with AutomaticKeepAliveClientMixin<_KeepAliveTab> {
+  Widget? _child;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    // Do not initialize off-screen domains until a user visits them. Once
+    // visited, keep the subtree mounted so scroll and form state survive tabs.
+    _child ??= widget.active ? widget.builder() : null;
+    return _child ?? const SizedBox.shrink();
   }
 }
 
