@@ -57,7 +57,7 @@ void main() {
     await tester.pumpWidget(_app(const Locale('en')));
     await tester.pumpAndSettle();
 
-    expect(tester.getSize(find.byType(PremiumHero)).height, 168);
+    expect(tester.getSize(find.byType(PremiumHero)).height, 192);
     expect(
       tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
       24,
@@ -84,7 +84,7 @@ void main() {
 
     final hero = find.byType(PremiumHero);
     final mark = find.byType(HopeMark);
-    expect(tester.getSize(hero).height, 168);
+    expect(tester.getSize(hero).height, 176);
     expect(tester.widget<HopeMark>(mark).size, 48);
     expect(
       tester.getRect(mark).top - tester.getRect(hero).bottom,
