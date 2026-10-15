@@ -28,7 +28,7 @@ void main() {
   test('FilledButton theme roles meet WCAG AA contrast in light and dark modes', () {
     final light = AppTheme.light().colorScheme;
     expect(light.primary, AppColors.primaryAction);
-    expect(light.onPrimary, Colors.white);
+    expect(light.onPrimary, AppColors.surface);
     expect(
       _contrastRatio(light.onPrimary, light.primary),
       greaterThanOrEqualTo(4.5),
@@ -44,16 +44,16 @@ void main() {
   });
 
   test('HOPE palette restores navy-charcoal surfaces, indigo actions, and restrained forest accents', () {
-    expect(HopeV2Colors.primary, const Color(0xFF6366F1));
-    expect(HopeV2Colors.primaryAction, const Color(0xFF4F46E5));
-    expect(HopeV2Colors.primaryDark, const Color(0xFF818CF8));
+    expect(HopeV2Colors.primary, const Color(0xFF31583C));
+    expect(HopeV2Colors.primaryAction, const Color(0xFF244D38));
+    expect(HopeV2Colors.primaryDark, const Color(0xFFB8D86C));
     expect(HopeV2Colors.secondaryAction, const Color(0xFF0F766E));
-    expect(HopeV2Colors.secondary, const Color(0xFF14B8A6));
-    expect(HopeV2Colors.success, const Color(0xFF27764C));
-    expect(HopeV2Colors.darkGreenGlow, const Color(0xFF264C36));
-    expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
-    expect(HopeV2Colors.darkCard, const Color(0xFF111827));
-    expect(HopeV2Colors.darkText, const Color(0xFFF1F3EC));
+    expect(HopeV2Colors.secondary, const Color(0xFF0F766E));
+    expect(HopeV2Colors.success, const Color(0xFF166534));
+    expect(HopeV2Colors.darkGreenGlow, const Color(0xFF31583C));
+    expect(HopeV2Colors.darkSurface, const Color(0xFF141F18));
+    expect(HopeV2Colors.darkCard, const Color(0xFF1C2B21));
+    expect(HopeV2Colors.darkText, const Color(0xFFEFF3E8));
     expect(HopeV2Gradients.hero.colors, isNot(contains(const Color(0xFF5D43E8))));
     expect(HopeV2Gradients.heroDark.colors, isNot(contains(const Color(0xFF37318C))));
   });
@@ -165,9 +165,9 @@ void main() {
   });
 
   test('HOPE light surfaces use restrained warm neutrals', () {
-    expect(HopeV2Colors.backgroundWarm, const Color(0xFFF5F3EA));
-    expect(HopeV2Colors.pageLight, const Color(0xFFF2F0E8));
-    expect(HopeV2Colors.panelSoftLight, const Color(0xFFFAF9F4));
+    expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0E5));
+    expect(HopeV2Colors.pageLight, const Color(0xFFF4F0E5));
+    expect(HopeV2Colors.panelSoftLight, const Color(0xFFF9F6ED));
     expect(HopeV2Colors.navigationLight, const Color(0xFFF9F8F3));
     expect(HopeV2Colors.navigationIndicatorLight, const Color(0xFFE9E1D0));
   });
@@ -227,13 +227,13 @@ void main() {
 
   test('HOPE dark surfaces stay navy-charcoal with a subdued forest-green halo token', () {
     expect(HopeV2Colors.pageDark, HopeV2Colors.darkBackground);
-    expect(HopeV2Colors.darkBackground, const Color(0xFF070A12));
+    expect(HopeV2Colors.darkBackground, const Color(0xFF0D1510));
     expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
     expect(HopeV2Colors.darkCard, const Color(0xFF111827));
-    expect(HopeV2Colors.panelDark, const Color(0xFF101522));
-    expect(HopeV2Colors.panelSoftDark, const Color(0xFF121726));
-    expect(HopeV2Colors.inputDark, const Color(0xFF0F111A));
-    expect(HopeV2Colors.navigationIndicatorDark, const Color(0x2B6366F1));
+    expect(HopeV2Colors.panelDark, const Color(0xFF141F18));
+    expect(HopeV2Colors.panelSoftDark, const Color(0xFF1C2B21));
+    expect(HopeV2Colors.inputDark, const Color(0xFF141F18));
+    expect(HopeV2Colors.navigationIndicatorDark, const Color(0x29B8D86C));
     expect(HopeV2Colors.darkGreenGlow, const Color(0xFF264C36));
   });
 
@@ -499,10 +499,11 @@ void main() {
     }
   });
 
-  test('HOPE color genome provides eight complete 50–950 tonal scales', () {
+  test('HOPE color genome provides forest, lichen and semantic 50–950 tonal scales', () {
     const expectedSteps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
     final palettes = <HopeV2TonalPalette>[
-      HopeV2TonalPalettes.brand,
+      HopeV2TonalPalettes.forest,
+      HopeV2TonalPalettes.lichen,
       HopeV2TonalPalettes.neutral,
       HopeV2TonalPalettes.info,
       HopeV2TonalPalettes.trust,
@@ -513,10 +514,16 @@ void main() {
     ];
     const expectedValues = <List<Color>>[
       [
-        Color(0xFFEEF2FF), Color(0xFFE0E7FF), Color(0xFFC7D2FE),
-        Color(0xFFA5B4FC), Color(0xFF818CF8), Color(0xFF6366F1),
-        Color(0xFF4F46E5), Color(0xFF4338CA), Color(0xFF3730A3),
-        Color(0xFF312E81), Color(0xFF1E1B4B),
+        Color(0xFFF0F5EE), Color(0xFFDDE9D8), Color(0xFFC0D7B8),
+        Color(0xFF9FBF91), Color(0xFF789F6B), Color(0xFF557D4D),
+        Color(0xFF3E673F), Color(0xFF31583C), Color(0xFF244D38),
+        Color(0xFF193A2A), Color(0xFF0E2419),
+      ],
+      [
+        Color(0xFFF7FAE9), Color(0xFFEEF5D0), Color(0xFFDCEBA8),
+        Color(0xFFCCE477), Color(0xFFB8D86C), Color(0xFF9FBF67),
+        Color(0xFF88A96A), Color(0xFF6F9659), Color(0xFF4E713F),
+        Color(0xFF354D2B), Color(0xFF1C2A18),
       ],
       [
         Color(0xFFFAF9F4), Color(0xFFF2F0E8), Color(0xFFE9E5D9),
@@ -571,7 +578,7 @@ void main() {
       }
     }
     expect(() => HopeV2TonalPalettes.brand.shade(75), throwsArgumentError);
-    expect(HopeV2TonalPalettes.brand.shade(500), HopeV2Colors.primary);
+    expect(HopeV2TonalPalettes.forest.shade(700), HopeV2Colors.primary);
     expect(HopeV2TonalPalettes.neutral.shade(900), HopeV2Colors.ink);
     expect(HopeV2TonalPalettes.info.shade(700), HopeV2Colors.secondaryAction);
     expect(HopeV2TonalPalettes.warning.shade(500), HopeV2Colors.accent);
@@ -840,13 +847,13 @@ void main() {
 
     // These compatibility tokens are still consumed by existing screens.
     // Keep them synchronized with the canonical ramps during migration.
-    expect(HopeV2Colors.primary, HopeV2TonalPalettes.brand.shade500);
-    expect(HopeV2Colors.primaryDark, HopeV2TonalPalettes.brand.shade400);
-    expect(HopeV2Colors.primaryAction, HopeV2TonalPalettes.brand.shade600);
-    expect(HopeV2Colors.primaryActionHoverLight, HopeV2TonalPalettes.brand.shade700);
-    expect(HopeV2Colors.primaryActionPressedLight, HopeV2TonalPalettes.brand.shade800);
-    expect(HopeV2Colors.primaryTintLight, HopeV2TonalPalettes.brand.shade50);
-    expect(HopeV2Colors.primaryBorderLight, HopeV2TonalPalettes.brand.shade200);
+    expect(HopeV2Colors.primary, HopeV2TonalPalettes.forest.shade700);
+    expect(HopeV2Colors.primaryDark, HopeV2TonalPalettes.lichen.shade400);
+    expect(HopeV2Colors.primaryAction, HopeV2TonalPalettes.forest.shade800);
+    expect(HopeV2Colors.primaryActionHoverLight, HopeV2TonalPalettes.forest.shade900);
+    expect(HopeV2Colors.primaryActionPressedLight, HopeV2TonalPalettes.forest.shade950);
+    expect(HopeV2Colors.primaryTintLight, HopeV2TonalPalettes.forest.shade100);
+    expect(HopeV2Colors.primaryBorderLight, HopeV2TonalPalettes.forest.shade300);
     expect(HopeV2Colors.ink, HopeV2TonalPalettes.neutral.shade900);
     expect(HopeV2Colors.muted, HopeV2TonalPalettes.neutral.shade600);
     expect(HopeV2Colors.orange, HopeV2TonalPalettes.featured.shade500);
@@ -854,8 +861,8 @@ void main() {
     expect(HopeV2Colors.accentTextLight, HopeV2TonalPalettes.featured.shade800);
     expect(HopeV2Colors.accentTextDark, HopeV2TonalPalettes.featured.shade200);
     expect(HopeV2Colors.inkSoft, HopeV2TonalPalettes.neutral.shade800);
-    expect(HopeV2Colors.secondary, HopeV2TonalPalettes.info.shade500);
-    expect(HopeV2Colors.secondaryStrong, HopeV2TonalPalettes.info.shade600);
+    expect(HopeV2Colors.secondary, HopeV2TonalPalettes.info.shade700);
+    expect(HopeV2Colors.secondaryStrong, HopeV2TonalPalettes.info.shade800);
     expect(HopeV2Colors.secondaryDark, HopeV2TonalPalettes.info.shade300);
     expect(HopeV2Colors.secondaryAction, HopeV2TonalPalettes.info.shade700);
     expect(HopeV2Colors.warningOnLight, HopeV2TonalPalettes.warning.shade800);
