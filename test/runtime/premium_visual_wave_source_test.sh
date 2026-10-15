@@ -38,7 +38,7 @@ grep -Fq 'static const darkDivider = Color(0x18FFFFFF);' "$theme"
 grep -Fq 'static const barHeight = 68.0;' "$theme"
 grep -Fq '_HeroEditorialFallback(' "$premium"
 
-grep -Fq 'padding: const EdgeInsets.fromLTRB(16, 6, 16, 24)' "$home"
+grep -Fq 'padding: const EdgeInsets.fromLTRB(14, 4, 14, 24)' "$home"
 grep -Fq 'fontSize: compact ? 20.5 : 27' "$premium"
 grep -Fq 'class PremiumEmptyState extends StatelessWidget' "$premium"
 grep -Fq 'maxLines: 2,' "$opportunity"
