@@ -152,7 +152,6 @@ class PremiumNavigationBar extends StatelessWidget {
                       Expanded(
                         child: _PremiumNavigationItem(
                           destination: destinations[index],
-                          index: index,
                           selected: index == activeIndex,
                           onPressed: () => onDestinationSelected(index),
                           compact: compactLabels,
@@ -173,7 +172,6 @@ class PremiumNavigationBar extends StatelessWidget {
 class _PremiumNavigationItem extends StatelessWidget {
   const _PremiumNavigationItem({
     required this.destination,
-    required this.index,
     required this.selected,
     required this.onPressed,
     required this.compact,
@@ -181,7 +179,6 @@ class _PremiumNavigationItem extends StatelessWidget {
   });
 
   final NavigationDestination destination;
-  final int index;
   final bool selected;
   final VoidCallback onPressed;
   final bool compact;
