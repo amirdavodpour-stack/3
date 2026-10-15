@@ -827,12 +827,12 @@ class HopeV2Shadows {
   // Runtime visual certification target: no cyan spill on dark hero edges.
   static const heroDark = [
     BoxShadow(
-      color: Color(0x18315A3C),
+      color: Color(0x18333B70),
       blurRadius: 20,
       offset: Offset(0, 8),
     ),
     BoxShadow(
-      color: Color(0x0C315A3C),
+      color: Color(0x0C2B345F),
       blurRadius: 28,
       offset: Offset(-5, 12),
     ),
@@ -840,7 +840,7 @@ class HopeV2Shadows {
 
   static const gradientHero = [
     BoxShadow(
-      color: Color(0x25244D38),
+      color: Color(0x252C3372),
       blurRadius: 18,
       offset: Offset(0, 6),
     ),
