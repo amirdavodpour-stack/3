@@ -20,6 +20,7 @@ import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/ui/copy.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/home/premium_home_feed.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -431,6 +432,11 @@ void main() {
     final harness = await _host(_SequencedMarketplaceRepository());
     await tester.pumpWidget(harness.widget);
     await tester.pumpAndSettle();
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame).first).padding.bottom,
+      12,
+      reason: 'The home ListView already owns navigation-aware end padding; its outer frame should not reserve another dead band.',
+    );
     final pulse = find.byKey(const ValueKey('home-pulse-panel'));
     final featured = find.text('Best match for you');
     expect(pulse, findsOneWidget);
