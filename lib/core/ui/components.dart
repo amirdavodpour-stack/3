@@ -265,8 +265,8 @@ class StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolved = _accessible(context, color);
     return Container(
-      constraints: const BoxConstraints(minHeight: 30),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      constraints: const BoxConstraints(minHeight: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: HopeV2SemanticColors.statusSurface(context, color),
         borderRadius: BorderRadius.circular(HopeV2Radii.pill),
@@ -278,8 +278,8 @@ class StatusPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            HopeIcon(icon!, size: 14, color: resolved, strokeWidth: 1.9),
-            const SizedBox(width: 5),
+            HopeIcon(icon!, size: 13, color: resolved, strokeWidth: 1.8),
+            const SizedBox(width: 4),
           ],
           Flexible(
             child: Semantics(
@@ -291,7 +291,7 @@ class StatusPill extends StatelessWidget {
                 style: TextStyle(
                   color: resolved,
                   fontSize: 11,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -309,7 +309,7 @@ class HopeIconTile extends StatelessWidget {
   const HopeIconTile(this.icon,
       {super.key,
       this.color = HopeV2Colors.primary,
-      this.size = 44,
+      this.size = 40,
       this.filled = false,
       this.semanticLabel});
   final Object icon;
@@ -338,9 +338,9 @@ class HopeIconTile extends StatelessWidget {
       boxShadow: filled
           ? [
               BoxShadow(
-                color: color.withValues(alpha: dark ? .035 : .05),
-                blurRadius: size * .12,
-                offset: Offset(0, size * .05),
+                color: color.withValues(alpha: dark ? .025 : .035),
+                blurRadius: size * .08,
+                offset: Offset(0, size * .035),
               ),
             ]
           : const [],
@@ -408,7 +408,7 @@ class MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => HopeSurface(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Row(children: [
           if (icon != null) ...[
             HopeIconTile(icon!, color: color),
