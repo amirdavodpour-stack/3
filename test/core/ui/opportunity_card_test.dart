@@ -2222,4 +2222,62 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'Persian media category label shares the canonical accent across the card and fallback artwork',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'persian-media-category-accent',
+        'title': 'تولید ویدیو برای برند',
+        'category': 'تولید ویدیو و صدا',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData.dark(),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(job: job),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rail = tester.widget<Container>(
+        find.byKey(const ValueKey('opportunity-card-accent-rail')),
+      );
+      final railGradient = (rail.decoration! as BoxDecoration).gradient!
+          as LinearGradient;
+      expect(
+        railGradient.colors[1],
+        HopeV2OpportunityAccents.media.withValues(alpha: .88),
+      );
+
+      final fallback = tester.widget<DecoratedBox>(
+        find.byKey(const ValueKey('opportunity-fallback-media-surface')),
+      );
+      final fallbackGradient =
+          fallback.decoration.gradient! as LinearGradient;
+      expect(
+        fallbackGradient.colors.first,
+        HopeV2OpportunityAccents.media.withValues(alpha: .13),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
