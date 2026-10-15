@@ -7,7 +7,7 @@ import 'package:hugeicons/hugeicons.dart';
 /// This is intentionally token-first: screens should consume these values
 /// instead of inventing per-page spacing, radii, or breakpoints.
 
-/// Canonical HOPE contract: forest-led identity, lichen-green signature accent, warm editorial paper, and deep canopy surfaces.
+/// Canonical HOPE contract: indigo-led actions, near-black navy-charcoal surfaces, warm editorial paper, and disciplined semantic accents.
 /// Runtime certification batch: compact home, deterministic glass, restrained bloom.
 /// Certification round three: opaque premium surfaces + controlled wallet hero.
 /// Final visual checkpoint: wallet/profile bloom removed; home remains compact.
@@ -16,24 +16,24 @@ import 'package:hugeicons/hugeicons.dart';
 class HopeV2Colors {
   const HopeV2Colors._();
 
-  static const primary = Color(0xFF31583C);
-  static const primaryAction = Color(0xFF244D38);
-  static const primaryOnLight = Color(0xFF244D38);
+  static const primary = Color(0xFF6366F1);
+  static const primaryAction = Color(0xFF4F46E5);
+  static const primaryOnLight = Color(0xFF4F46E5);
   static const successOnLight = Color(0xFF166534);
   static const warningOnLight = Color(0xFF92400E);
   static const dangerOnLight = Color(0xFFB91C1C);
   static const secondaryAction = Color(0xFF0F766E);
 
-  static const primaryDark = Color(0xFFB8D86C);
+  static const primaryDark = Color(0xFF818CF8);
   // Brand hues are interaction cues, never uncontrolled readable text foregrounds.
-  static const primaryActionHoverLight = Color(0xFF193A2A);
-  static const primaryActionPressedLight = Color(0xFF0E2419);
-  static const primaryTintLight = Color(0xFFDDE9D8);
-  static const primaryBorderLight = Color(0xFF9FBF91);
-  static const primaryTintDark = Color(0x29B8D86C);
-  static const primaryBorderDark = Color(0x59B8D86C);
-  static const secondary = Color(0xFF0F766E);
-  static const secondaryStrong = Color(0xFF115E59);
+  static const primaryActionHoverLight = Color(0xFF4338CA);
+  static const primaryActionPressedLight = Color(0xFF3730A3);
+  static const primaryTintLight = Color(0xFFE0E7FF);
+  static const primaryBorderLight = Color(0xFFA5B4FC);
+  static const primaryTintDark = Color(0x2B6366F1);
+  static const primaryBorderDark = Color(0x59818CF8);
+  static const secondary = Color(0xFF14B8A6);
+  static const secondaryStrong = Color(0xFF0D9488);
   static const secondaryDark = Color(0xFF5EEAD4);
   // Legacy generic accent stays amber and aliases the warning ramp below.
   static const accent = Color(0xFFF59E0B);
@@ -54,12 +54,12 @@ class HopeV2Colors {
   static const warningDark = Color(0xFFFDE68A);
   static const danger = Color(0xFFB91C1C);
   static const dangerDark = Color(0xFFFECACA);
-  static const softPrimary = Color(0xFFDDE9D8);
-  static const darkBackground = Color(0xFF0D1510);
-  static const darkSurface = Color(0xFF141F18);
-  static const darkCard = Color(0xFF1C2B21);
-  static const darkText = Color(0xFFEFF3E8);
-  static const darkMuted = Color(0xFFADB8A8);
+  static const softPrimary = Color(0xFFE0E7FF);
+  static const darkBackground = Color(0xFF070A12);
+  static const darkSurface = Color(0xFF0F111A);
+  static const darkCard = Color(0xFF111827);
+  static const darkText = Color(0xFFF1F3EC);
+  static const darkMuted = Color(0xFFAEB7AC);
 
   // Navigation labels are deliberately achromatic, unlike olive-muted body text.
   static const navigationLabelDark = Color(0xFFF4F4F5);
@@ -69,7 +69,7 @@ class HopeV2Colors {
 
   // Text roles must remain independent from brand-action hues.
   static const moneyTextLight = Color(0xFF18221C);
-  static const moneyTextDark = Color(0xFFEFF3E8);
+  static const moneyTextDark = Color(0xFFF1F3EC);
   static const infoTextLight = Color(0xFF115E59);
   static const infoTextDark = Color(0xFF5EEAD4);
   // Dedicated blue identity/trust roles: separate from teal information and forest/lichen brand actions.
@@ -96,37 +96,37 @@ class HopeV2Colors {
   static const infoSurfaceDark = Color(0xFF142C2C);
 
   static const pageLight = Color(0xFFF4F0E5);
-  static const pageDark = Color(0xFF0D1510);
+  static const pageDark = Color(0xFF070A12);
   static const panelLight = Color(0xFFFFFCF5);
-  static const panelDark = Color(0xFF141F18);
+  static const panelDark = Color(0xFF101522);
   static const panelSoftLight = Color(0xFFF9F6ED);
-  static const panelSoftDark = Color(0xFF1C2B21);
+  static const panelSoftDark = Color(0xFF121726);
   static const chipLight = Color(0xFFE9E5D9);
   static const chipDark = Color(0x20FFFFFF);
-  static const chipSelectedDark = Color(0x29B8D86C);
+  static const chipSelectedDark = Color(0x2B6366F1);
   static const disabledLight = Color(0xFFE5E2D9);
   static const borderControlLight = Color(0xFFD8D4C8);
   static const dividerLight = Color(0xFFE6E2D9);
   static const outlinedButtonBorderLight = Color(0xFFD6D1C4);
   static const navigationLight = Color(0xFFF9F8F3);
-  static const navigationDark = Color(0xF9141F18);
-  static const navigationIndicatorLight = Color(0xFFDDE9D8);
-  static const navigationIndicatorDark = Color(0x29B8D86C);
-  static const inputDark = Color(0xFF141F18);
+  static const navigationDark = Color(0xF9080D0B);
+  static const navigationIndicatorLight = Color(0xFFE0E7FF);
+  static const navigationIndicatorDark = Color(0x2B6366F1);
+  static const inputDark = Color(0xFF0F111A);
   static const darkBorder = Color(0x1FFFFFFF);
   static const darkBorderStrong = Color(0x2BFFFFFF);
   static const darkDivider = Color(0x18FFFFFF);
   static const cardBorderLight = Color(0xFFE1DDD2);
   /// Muted editorial-clay accent used only as a restrained atmospheric underlay.
-  static const darkGreenGlow = Color(0xFF31583C);
+  static const darkGreenGlow = Color(0xFF264C36);
   static const warmHalo = Color(0xFFD0A16D);
   static const warmHaloDark = Color(0xFF826D59);
 
-  // Wallet balance hero roles. The canopy gradient is shared by wallet and
-  // finance surfaces so the editorial identity stays consistent across features.
-  static const walletBalanceHeroStart = Color(0xFF0D1510);
-  static const walletBalanceHeroMiddle = Color(0xFF193A2A);
-  static const walletBalanceHeroEnd = Color(0xFF141F18);
+  // Wallet balance hero roles restore the prior slate/navy surface hierarchy.
+  // The semantic status ramps remain independent from this neutral hero.
+  static const walletBalanceHeroStart = Color(0xFF121726);
+  static const walletBalanceHeroMiddle = Color(0xFF1B2748);
+  static const walletBalanceHeroEnd = Color(0xFF0E131E);
   static const walletBalanceOnHero = Color(0xFFFFFFFF);
   static const walletBalanceOnHeroMuted = Color(0xB3FFFFFF);
   static const walletBalanceOnHeroSubtle = Color(0x99FFFFFF);
@@ -207,15 +207,30 @@ class HopeV2TonalPalette {
       ];
 }
 
-/// Nine shared ramps form the HOPE color genome. Forest and lichen define the brand; the warm featured-orange
-/// ramp is distinct from amber warning, and blue trust is distinct from teal info.
-/// Forest is the identity ramp; lichen is the signature action accent in dark mode. Semantic roles stay independent.
+/// Ten ramps form the HOPE color genome: indigo brand actions, restrained botanical accents,
+/// slate-neutral surfaces, teal information, blue trust, green success, amber warning,
+/// featured orange, and red danger. Each family owns a distinct semantic role.
 class HopeV2TonalPalettes {
   const HopeV2TonalPalettes._();
 
-  static const brand = forest;
+  static const brand = indigo;
 
-  /// Primary identity ramp: deep botanical greens with warm, low-chroma steps.
+  /// Indigo action ramp restored from the prior HOPE dark identity.
+  static const indigo = HopeV2TonalPalette(
+    shade50: Color(0xFFEEF2FF),
+    shade100: Color(0xFFE0E7FF),
+    shade200: Color(0xFFC7D2FE),
+    shade300: Color(0xFFA5B4FC),
+    shade400: Color(0xFF818CF8),
+    shade500: Color(0xFF6366F1),
+    shade600: Color(0xFF4F46E5),
+    shade700: Color(0xFF4338CA),
+    shade800: Color(0xFF3730A3),
+    shade900: Color(0xFF312E81),
+    shade950: Color(0xFF1E1B4B),
+  );
+
+  /// Supporting botanical ramp for low-emphasis category artwork, not global actions.
   static const forest = HopeV2TonalPalette(
     shade50: Color(0xFFF0F5EE),
     shade100: Color(0xFFDDE9D8),
@@ -230,7 +245,7 @@ class HopeV2TonalPalettes {
     shade950: Color(0xFF0E2419),
   );
 
-  /// Signature lichen ramp: high-visibility accent, not a success/status color.
+  /// Legacy lichen ramp is a sparing decorative accent, not the selected/action color.
   static const lichen = HopeV2TonalPalette(
     shade50: Color(0xFFF7FAE9),
     shade100: Color(0xFFEEF5D0),
