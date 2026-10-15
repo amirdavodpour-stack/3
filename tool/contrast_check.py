@@ -134,7 +134,7 @@ palette_token_bindings = {
     "ink": ("neutral", "900"),
     "muted": ("neutral", "600"),
     "moneyTextLight": ("neutral", "900"),
-    "infoTextLight": ("info", "700"),
+    "infoTextLight": ("info", "800"),
     "infoTextDark": ("info", "300"),
     "successOnLight": ("success", "800"),
     "successDark": ("success", "200"),
