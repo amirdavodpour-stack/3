@@ -43,7 +43,26 @@ void main() {
     );
   });
 
-  test('HOPE palette restores navy-charcoal surfaces, indigo actions, and restrained forest accents', () {
+  test('forest and lichen action pairings meet WCAG AA with editorial surfaces', () {
+    expect(
+      _contrastRatio(HopeV2Colors.surface, HopeV2Colors.primaryAction),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      _contrastRatio(HopeV2Colors.ink, HopeV2Colors.primaryDark),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      _contrastRatio(HopeV2Colors.primaryDark, HopeV2Colors.darkBackground),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(HopeV2TonalPalettes.brand, HopeV2TonalPalettes.forest);
+    expect(HopeV2TonalPalettes.lichen.shade(400), HopeV2Colors.primaryDark);
+    expect(HopeV2Colors.backgroundWarm, const Color(0xFFF4F0E5));
+    expect(HopeV2Colors.darkBackground, const Color(0xFF0D1510));
+  });
+
+  test('HOPE palette uses forest identity, lichen action accents, and canopy surfaces', () {
     expect(HopeV2Colors.primary, const Color(0xFF31583C));
     expect(HopeV2Colors.primaryAction, const Color(0xFF244D38));
     expect(HopeV2Colors.primaryDark, const Color(0xFFB8D86C));
