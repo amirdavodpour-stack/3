@@ -25,7 +25,7 @@ class HopeV2Colors {
   static const secondaryAction = Color(0xFF0F766E);
 
   static const primaryDark = Color(0xFFB8D86C);
-  // Indigo is an interaction cue, never a readable text foreground.
+  // Brand hues are interaction cues, never uncontrolled readable text foregrounds.
   static const primaryActionHoverLight = Color(0xFF193A2A);
   static const primaryActionPressedLight = Color(0xFF0E2419);
   static const primaryTintLight = Color(0xFFDDE9D8);
@@ -122,11 +122,11 @@ class HopeV2Colors {
   static const warmHalo = Color(0xFFC2A487);
   static const warmHaloDark = Color(0xFF826D59);
 
-  // Wallet balance hero roles. These aliases preserve the established deep
-  // slate-blue identity while keeping page-specific colors out of widgets.
-  static const walletBalanceHeroStart = Color(0xFF121726);
-  static const walletBalanceHeroMiddle = Color(0xFF1B2748);
-  static const walletBalanceHeroEnd = Color(0xFF0E131E);
+  // Wallet balance hero roles. The canopy gradient is shared by wallet and
+  // finance surfaces so the editorial identity stays consistent across features.
+  static const walletBalanceHeroStart = Color(0xFF0D1510);
+  static const walletBalanceHeroMiddle = Color(0xFF193A2A);
+  static const walletBalanceHeroEnd = Color(0xFF141F18);
   static const walletBalanceOnHero = Color(0xFFFFFFFF);
   static const walletBalanceOnHeroMuted = Color(0xB3FFFFFF);
   static const walletBalanceOnHeroSubtle = Color(0x99FFFFFF);
