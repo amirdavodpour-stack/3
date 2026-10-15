@@ -8,8 +8,14 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class _AdminDisputesRepository extends Fake implements AdminRepository {
+  List<Map<String, dynamic>> disputes = const [];
+  Map<String, dynamic> detail = const {};
+
   @override
-  Future<List<Map<String, dynamic>>> listDisputes() async => const [];
+  Future<List<Map<String, dynamic>>> listDisputes() async => disputes;
+
+  @override
+  Future<Map<String, dynamic>> getDispute(String id) async => detail;
 
   @override
   Future<Map<String, dynamic>> getPanelAccess() async => const {
@@ -51,4 +57,65 @@ void main() {
     expect(find.text('No dispute cases need attention'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('admin dispute detail separates metadata labels from values on mobile',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _AdminDisputesRepository()
+      ..disputes = const [
+        {
+          'id': 'd1',
+          'jobTitle': 'Mobile detail role',
+          'workerName': 'Worker',
+          'ownerName': 'Employer',
+          'aiDecision': 'HOLD',
+          'status': 'REVIEWING',
+          'paymentStatus': 'HELD',
+        },
+      ]
+      ..detail = const {
+        'id': 'd1',
+        'jobTitle': 'Mobile detail role',
+        'status': 'REVIEWING',
+        'aiDecision': 'HOLD',
+        'aiConfidence': '0.72',
+        'legalRulesetVersion': 'v1',
+        'jobStatus': 'OPEN',
+        'ownerName': 'Employer',
+        'workerName': 'Worker',
+        'paymentStatus': 'HELD',
+        'paymentAmount': '250000',
+      };
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en'), Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Provider<AdminRepository>.value(
+          value: repository,
+          child: const AdminDisputesPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mobile detail role').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI status'), findsOneWidget);
+    expect(find.text('REVIEWING'), findsOneWidget);
+    expect(find.text('Legal ruleset'), findsOneWidget);
+    expect(find.text('v1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }
