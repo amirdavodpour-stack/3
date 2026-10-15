@@ -63,3 +63,12 @@ A 128dp compact hero with no redundant eyebrow/icon tile. Google sign-in uses th
 - Picsart image preflight returned insufficient credits; no generation was run.
 - Maestro is available as a repository workflow, but the connected Remote Desktop Commander device is offline and local Flutter/Maestro binaries are absent. Run verification through GitHub CI.
 - NVIDIA BioNeMo, Swift Concurrency and FLOWSTACK UI are not directly applicable to the Flutter/Dart implementation; do not introduce unrelated dependencies merely to invoke them.
+
+
+## Editorial navigation and page motion — 2026-10-15
+
+- Primary navigation uses one coherent Cupertino outline/filled icon family, deliberately distinct from the HugeIcons vocabulary used by domain actions.
+- Destination labels are always neutral semantic text. Teal/green is reserved for genuine information/trust/success states, never for navigation copy or decorative ordinals; the colored ordinal has been removed.
+- The mobile dock uses direction-aware asymmetrical geometry. Its selected folio has a reverse-cut silhouette and a short action-colored top rule, not a generic pill or a full green text treatment.
+- Changing destinations animates the page horizontally with a restrained fade/depth shift. The PageView keeps visited tabs alive, disables direct swiping so navigation semantics remain stable, and jumps without animation when the system requests reduced motion.
+- RTL/LTR direction, compact widths, text scaling, selected-label contrast, and reduced-motion behavior remain required regression gates. Runtime screenshot review is still required before visual acceptance.
