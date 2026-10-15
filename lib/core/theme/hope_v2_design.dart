@@ -68,7 +68,7 @@ class HopeV2Colors {
   static const navigationLabelMutedLight = Color(0xFF68686F);
 
   // Text roles must remain independent from brand-action hues.
-  static const moneyTextLight = Color(0xFF24271F);
+  static const moneyTextLight = Color(0xFF18221C);
   static const moneyTextDark = Color(0xFFF1F3EC);
   static const infoTextLight = Color(0xFF0F766E);
   static const infoTextDark = Color(0xFF5EEAD4);
