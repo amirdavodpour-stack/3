@@ -85,18 +85,18 @@ class PremiumNavigationBar extends StatelessWidget {
           color: dark
               ? HopeV2Colors.navigationDark.withValues(alpha: .985)
               : surface.withValues(alpha: .98),
-          // A shelf-like rail reads as one editorial structure, rather than a
-          // floating capsule. The flatter lower edge visually anchors it.
+          // A restrained, full-width navigation rail: the page content is
+          // the visual focus, not a floating decorative container.
           borderRadius: const BorderRadiusDirectional.only(
-            topStart: Radius.circular(24),
-            topEnd: Radius.circular(7),
-            bottomStart: Radius.circular(4),
-            bottomEnd: Radius.circular(18),
+            topStart: Radius.circular(14),
+            topEnd: Radius.circular(14),
           ),
-          border: Border.all(
-            color: dark
-                ? Colors.white.withValues(alpha: .10)
-                : HopeV2Surfaces.border(context).withValues(alpha: .85),
+          border: Border(
+            top: BorderSide(
+              color: dark
+                  ? Colors.white.withValues(alpha: .10)
+                  : HopeV2Surfaces.border(context).withValues(alpha: .85),
+            ),
           ),
         ),
         child: LayoutBuilder(
@@ -117,16 +117,13 @@ class PremiumNavigationBar extends StatelessWidget {
                   child: DecoratedBox(
                     key: const ValueKey('hope-navigation-selection-plate'),
                     decoration: ShapeDecoration(
-                      color: HopeV2Surfaces.panel(context),
-                      shape: BeveledRectangleBorder(
-                        borderRadius: const BorderRadiusDirectional.only(
-                          topStart: Radius.circular(14),
-                          topEnd: Radius.circular(4),
-                          bottomStart: Radius.circular(4),
-                          bottomEnd: Radius.circular(14),
-                        ),
+                      color: dark
+                          ? HopeV2Colors.navigationIndicatorDark
+                          : HopeV2Colors.navigationIndicatorLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                         side: BorderSide(
-                          color: primary.withValues(alpha: dark ? .30 : .22),
+                          color: primary.withValues(alpha: dark ? .22 : .16),
                         ),
                       ),
                     ),
@@ -144,7 +141,7 @@ class PremiumNavigationBar extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: primary.withValues(alpha: dark ? .88 : .78),
+                      color: primary.withValues(alpha: dark ? .72 : .68),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
