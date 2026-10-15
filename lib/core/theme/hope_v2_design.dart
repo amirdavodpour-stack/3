@@ -22,7 +22,7 @@ class HopeV2Colors {
   static const successOnLight = Color(0xFF166534);
   static const warningOnLight = Color(0xFF92400E);
   static const dangerOnLight = Color(0xFFB91C1C);
-  static const secondaryAction = Color(0xFF31583C);
+  static const secondaryAction = Color(0xFF0F766E);
 
   static const primaryDark = Color(0xFFB8D86C);
   // Indigo is an interaction cue, never a readable text foreground.
