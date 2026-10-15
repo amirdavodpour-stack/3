@@ -810,10 +810,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
         page: HopePageId.opportunityDetail,
         maxWidth: 1180,
         padding: EdgeInsets.fromLTRB(
-          compactViewport ? 14 : 18,
-          8,
-          compactViewport ? 14 : 18,
-          compactViewport ? 24 : 32,
+          compactViewport ? 12 : 16,
+          6,
+          compactViewport ? 12 : 16,
+          compactViewport ? 20 : 28,
         ),
         child: ListView(
           key: const ValueKey('opportunity-detail-content-list'),

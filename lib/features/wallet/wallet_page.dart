@@ -828,7 +828,7 @@ class _WalletPageState extends State<WalletPage> {
                 overflow: TextOverflow.visible,
                 style: TextStyle(
                   color: HopeV2Colors.walletBalanceOnHero,
-                  fontSize: compact ? 24 : (denseViewport ? 27 : 36),
+                  fontSize: compact ? 22 : (denseViewport ? 26 : 32),
                   height: 1.02,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -.7,
@@ -879,7 +879,7 @@ class _WalletPageState extends State<WalletPage> {
           key: ValueKey(item.key),
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 6 : 7,
-            vertical: compact ? 3 : 4,
+            vertical: compact ? 2 : 3,
           ),
           decoration: BoxDecoration(
             color: item.emphasized
@@ -930,8 +930,7 @@ class _WalletPageState extends State<WalletPage> {
       Widget metricsBlock() => LayoutBuilder(
             builder: (context, constraints) {
               const gap = 4.0;
-              final singleColumnMetrics = enlargedText ||
-                  items.any((item) => item.value.length > 18);
+              final singleColumnMetrics = enlargedText || constraints.maxWidth < 280;
               final cellWidth = singleColumnMetrics
                   ? constraints.maxWidth
                   : (constraints.maxWidth - gap) / 2;
@@ -953,9 +952,9 @@ class _WalletPageState extends State<WalletPage> {
         key: const ValueKey('wallet-balance-hero'),
         padding: EdgeInsets.fromLTRB(
           14,
-          compact ? 2 : 10,
+          compact ? 2 : 8,
           14,
-          compact ? 2 : 10,
+          compact ? 2 : 8,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
@@ -1192,10 +1191,10 @@ class _WalletPageState extends State<WalletPage> {
         page: HopePageId.wallet,
         maxWidth: 1020,
         padding: EdgeInsets.fromLTRB(
-            tightViewport ? 14 : 20,
-            tightViewport ? 8 : 18,
-            tightViewport ? 14 : 20,
-            tightViewport ? 24 : 32,
+            tightViewport ? 12 : 16,
+            tightViewport ? 6 : 14,
+            tightViewport ? 12 : 16,
+            tightViewport ? 20 : 28,
           ),
         child: ListView(
           padding: HopeV2Navigation.scrollEndPadding(context),

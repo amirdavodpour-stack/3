@@ -104,7 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return PremiumPageFrame(
       maxWidth: 920,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
       child: ListView(
         padding: HopeV2Navigation.scrollEndPadding(context),
         children: [

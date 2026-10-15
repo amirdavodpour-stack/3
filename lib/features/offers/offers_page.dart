@@ -110,7 +110,7 @@ class _OffersPageState extends State<OffersPage> {
       body: RefreshIndicator(
         onRefresh: _reload,
         child: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 48),
           child: ListView(
             padding: HopeV2Navigation.scrollEndPadding(context),
             children: [

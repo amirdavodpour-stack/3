@@ -401,10 +401,10 @@ class _JobsPageState extends State<JobsPage> {
           return PremiumPageFrame(
             page: HopePageId.explore,
             padding: EdgeInsets.fromLTRB(
-              compact ? 16 : 20,
-              compact ? 6 : 14,
-              compact ? 16 : 20,
-              24,
+              compact ? 14 : 18,
+              compact ? 4 : 10,
+              compact ? 14 : 18,
+              20,
             ),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
