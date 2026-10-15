@@ -1379,10 +1379,10 @@ class PremiumHero extends StatelessWidget {
     final maxHeroHeight = compactHero
         ? 148.0
         : action != null
-            ? (compact ? 196.0 : 216.0)
+            ? (compact ? 184.0 : 208.0)
             : message.trim().isEmpty
-                ? (compact ? 144.0 : 160.0)
-                : (compact ? 176.0 : 192.0);
+                ? (compact ? 132.0 : 152.0)
+                : (compact ? 164.0 : 184.0);
     final minHeroHeight = compactHero ? 88.0 : (compact ? 112.0 : 152.0);
     final heroHeight = height.clamp(minHeroHeight, maxHeroHeight).toDouble();
     final horizontal = compactHero
@@ -1592,13 +1592,13 @@ class PremiumHero extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white70,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11,
-                              letterSpacing: .9,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10.5,
+                              letterSpacing: .7,
                             ),
                           ),
                           SizedBox(
-                            height: dense ? 5 : HopeV2Spacing.sm,
+                            height: dense ? 4 : HopeV2Spacing.sm,
                           ),
                           Text(
                             title,
@@ -1606,10 +1606,10 @@ class PremiumHero extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: compactHero ? 19 : (dense ? 21 : 22),
-                              height: 1.03,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -.9,
+                              fontSize: compactHero ? 19 : (dense ? 20 : 21),
+                              height: 1.08,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -.6,
                             ),
                           ),
                           if (message.trim().isNotEmpty) ...[
