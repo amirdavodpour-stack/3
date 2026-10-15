@@ -69,7 +69,7 @@ class HopeV2Colors {
 
   // Text roles must remain independent from brand-action hues.
   static const moneyTextLight = Color(0xFF18221C);
-  static const moneyTextDark = Color(0xFFF1F3EC);
+  static const moneyTextDark = Color(0xFFEFF3E8);
   static const infoTextLight = Color(0xFF115E59);
   static const infoTextDark = Color(0xFF5EEAD4);
   // Dedicated blue identity/trust roles: separate from teal information and forest/lichen brand actions.
