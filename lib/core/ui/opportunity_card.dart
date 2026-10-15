@@ -799,8 +799,8 @@ class OpportunityCard extends StatelessWidget {
       key: const ValueKey('opportunity-compact-media'),
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 64,
-        height: 64,
+        width: 72,
+        height: 72,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
