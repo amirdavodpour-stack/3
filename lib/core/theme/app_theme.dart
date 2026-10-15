@@ -126,10 +126,10 @@ class AppTheme {
         titleSpacing: 16,
         iconTheme: IconThemeData(color: textColor, size: 23),
         titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w900,
+          fontSize: 19,
+          fontWeight: FontWeight.w800,
           color: textColor,
-          letterSpacing: -.3,
+          letterSpacing: -.35,
         ),
       ),
       tabBarTheme: TabBarThemeData(
@@ -141,9 +141,9 @@ class AppTheme {
         ),
         labelColor: textColor,
         unselectedLabelColor: mutedColor,
-        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
         unselectedLabelStyle:
-            const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
       chipTheme: ChipThemeData(
@@ -158,7 +158,7 @@ class AppTheme {
         ),
         labelStyle: TextStyle(
           color: textColor,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           fontSize: 12,
         ),
         secondaryLabelStyle: TextStyle(
@@ -211,7 +211,7 @@ class AppTheme {
         color: dark ? AppColors.darkCard : AppColors.surface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.lg)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.md)),
       ),
       dividerTheme: DividerThemeData(
           color: dark ? HopeV2Colors.darkDivider : HopeV2Colors.dividerLight, space: 1),
@@ -244,7 +244,7 @@ class AppTheme {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
           textStyle:
-              const TextStyle(fontWeight: FontWeight.w900, letterSpacing: -.1),
+              const TextStyle(fontWeight: FontWeight.w700, letterSpacing: -.1),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -255,14 +255,14 @@ class AppTheme {
               color: dark ? HopeV2Colors.darkBorder : HopeV2Colors.outlinedButtonBorderLight),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(HopeV2Radii.button)),
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
               foregroundColor: textColor,
               minimumSize: const Size(48, 48),
-              textStyle: const TextStyle(fontWeight: FontWeight.w800))),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700))),
       iconButtonTheme: IconButtonThemeData(
           style: IconButton.styleFrom(
               minimumSize: const Size(48, 48),
