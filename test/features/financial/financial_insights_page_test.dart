@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/financial/financial_insights_repository.dart';
 import 'package:hope_mobile/features/financial/financial_insights_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -1223,6 +1225,83 @@ void main() {
         reason: 'The balance plot must reserve the full 2x-scaled x-axis label height.',
       );
       expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'cash-flow chart series use distinct HOPE semantic tones in light and dark themes',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      Future<void> verifySeries(Brightness brightness) async {
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _Wave24InsightsRepository(),
+            child: MaterialApp(
+              theme: brightness == Brightness.dark
+                  ? AppTheme.dark()
+                  : AppTheme.light(),
+              locale: const Locale('fa'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final legend = find.byKey(const ValueKey('financial-cashflow-legend'));
+        await tester.scrollUntilVisible(
+          legend,
+          140,
+          scrollable: find.byType(Scrollable).first,
+        );
+
+        final dark = brightness == Brightness.dark;
+        final expectedInflow = dark
+            ? HopeV2TonalPalettes.success.shade400
+            : HopeV2TonalPalettes.success.shade700;
+        final expectedOutflow = dark
+            ? HopeV2TonalPalettes.danger.shade400
+            : HopeV2TonalPalettes.danger.shade700;
+        final expectedReserved = dark
+            ? HopeV2TonalPalettes.warning.shade300
+            : HopeV2TonalPalettes.warning.shade700;
+
+        Color? legendColor(IconData icon) => tester
+            .widget<Icon>(
+              find.descendant(of: legend, matching: find.byIcon(icon)),
+            )
+            .color;
+
+        expect(
+          legendColor(Icons.call_received_rounded),
+          expectedInflow,
+          reason: 'Cash inflow uses the success family, not the brand action hue.',
+        );
+        expect(
+          legendColor(Icons.call_made_rounded),
+          expectedOutflow,
+          reason: 'Cash outflow has a distinct danger/negative-flow series.',
+        );
+        expect(
+          legendColor(Icons.lock_outline_rounded),
+          expectedReserved,
+          reason: 'Reserved cash uses the amber pending family.',
+        );
+        expect(tester.takeException(), isNull);
+      }
+
+      await verifySeries(Brightness.light);
+      await verifySeries(Brightness.dark);
     },
   );
 
