@@ -194,7 +194,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         profile = _controller.loadProfile();
                       });
                     },
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: const Icon(HopeV2Icons.refresh),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),
                 );

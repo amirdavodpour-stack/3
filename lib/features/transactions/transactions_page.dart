@@ -149,7 +149,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       _t('تحویل شده', 'Delivered'),
       _t('تکمیل شده', 'Completed'),
     ];
-    const icons = <Object>[Icons.campaign_rounded, Icons.assignment_ind_rounded, Icons.play_circle_rounded, Icons.file_upload_rounded, HopeV2Icons.completed];
+    const icons = <Object>[HopeV2Icons.campaign, HopeV2Icons.assign, HopeV2Icons.play, HopeV2Icons.upload, HopeV2Icons.completed];
     return List.generate(order.length, (i) => PremiumLifecycleStep(
       label: labels[i],
       icon: icons[i],
