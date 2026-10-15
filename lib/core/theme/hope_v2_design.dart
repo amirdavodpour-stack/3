@@ -810,7 +810,7 @@ class HopeV2Shadows {
 
   static const card = [
     BoxShadow(
-      color: Color(0x0D193A2A),
+      color: Color(0x0D1B1638),
       blurRadius: 18,
       offset: Offset(0, 6),
     ),
@@ -818,7 +818,7 @@ class HopeV2Shadows {
 
   static const hero = [
     BoxShadow(
-      color: Color(0x24193A2A),
+      color: Color(0x241C1738),
       blurRadius: 24,
       offset: Offset(0, 10),
     ),
