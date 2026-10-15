@@ -206,6 +206,48 @@ void main() {
     expect(HopeV2Radii.hero, greaterThan(HopeV2Radii.lg));
   });
 
+  testWidgets('editorial heroes stay bounded on compact, compact-auth, and wide layouts',
+      (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 640);
+
+    Widget renderHero({bool compactHero = false}) => MaterialApp(
+          theme: AppTheme.dark(),
+          home: Scaffold(
+            body: PremiumHero(
+              eyebrow: 'EDITORIAL',
+              title: 'A concise headline',
+              message: 'Supporting information remains secondary.',
+              compactHero: compactHero,
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(renderHero());
+    expect(
+      tester.getSize(find.byType(PremiumHero)).height,
+      lessThanOrEqualTo(204),
+      reason: 'A standard mobile hero must not consume more than one editorial band.',
+    );
+
+    await tester.pumpWidget(renderHero(compactHero: true));
+    expect(
+      tester.getSize(find.byType(PremiumHero)).height,
+      lessThanOrEqualTo(148),
+      reason: 'Auth and compact heroes should stay visibly subordinate to the form.',
+    );
+
+    tester.view.physicalSize = const Size(1280, 800);
+    await tester.pumpWidget(renderHero());
+    expect(
+      tester.getSize(find.byType(PremiumHero)).height,
+      lessThanOrEqualTo(224),
+      reason: 'Wide layouts should not scale a hero into a billboard.',
+    );
+  });
+
   testWidgets('premium hero renders with the shared expressive surface', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
