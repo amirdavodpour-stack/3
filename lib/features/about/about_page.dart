@@ -133,15 +133,56 @@ class AboutHopePage extends StatelessWidget {
           ]));
   Widget _feeRow(
           BuildContext context, String title, String value, Object icon) =>
-      Row(children: [
-        HopeIconTile(icon, size: 42),
-        const SizedBox(width: 12),
-        Expanded(
-            child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
-        Text(value,
-            textAlign: TextAlign.end,
-            style: Theme.of(context).textTheme.bodyMedium)
-      ]);
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final titleStyle = Theme.of(context).textTheme.titleMedium;
+          final valueStyle = Theme.of(context).textTheme.bodyMedium;
+          if (constraints.maxWidth < 420) {
+            // Long Persian fee labels and values cannot share a single compact
+            // row with the icon. Stack the amount below the label instead of
+            // clipping or horizontally overflowing real financial copy.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    HopeIconTile(icon, size: 42),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(title, style: titleStyle)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 54),
+                  child: Text(
+                    value,
+                    softWrap: true,
+                    textAlign: TextAlign.end,
+                    style: valueStyle,
+                  ),
+                ),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              HopeIconTile(icon, size: 42),
+              const SizedBox(width: 12),
+              Expanded(child: Text(title, style: titleStyle)),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  value,
+                  softWrap: true,
+                  textAlign: TextAlign.end,
+                  style: valueStyle,
+                ),
+              ),
+            ],
+          );
+        },
+      );
   Widget _bullet(BuildContext context, Object icon, String text) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
