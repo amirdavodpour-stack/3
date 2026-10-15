@@ -72,7 +72,7 @@ class HopeV2Colors {
   static const moneyTextDark = Color(0xFFF1F3EC);
   static const infoTextLight = Color(0xFF115E59);
   static const infoTextDark = Color(0xFF5EEAD4);
-  // Dedicated blue identity/trust roles: separate from teal information and forest/lichen brand actions.
+  // Dedicated blue identity/trust roles: separate from teal information and indigo brand actions.
   static const trustTextLight = Color(0xFF1E40AF);
   static const trustTextDark = Color(0xFFBFDBFE);
   static const trustSurfaceLight = Color(0xFFEFF6FF);
@@ -117,7 +117,7 @@ class HopeV2Colors {
   static const darkBorderStrong = Color(0x2BFFFFFF);
   static const darkDivider = Color(0x18FFFFFF);
   static const cardBorderLight = Color(0xFFE1DDD2);
-  /// Muted editorial-clay accent used only as a restrained atmospheric underlay.
+  /// Muted forest-green glow for rare decorative underlays, never a global surface.
   static const darkGreenGlow = Color(0xFF264C36);
   static const warmHalo = Color(0xFFD0A16D);
   static const warmHaloDark = Color(0xFF826D59);
