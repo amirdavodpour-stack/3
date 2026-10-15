@@ -237,6 +237,11 @@ void main() {
     await _pump(tester, repo, guest: true);
     expect(find.byType(TransactionsPage), findsOneWidget);
     expect(find.textContaining('شخصی'), findsOneWidget);
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+      24,
+      reason: 'The page frame must not duplicate the navigation-aware scroll tail.',
+    );
   });
 
   testWidgets('empty authenticated transactions show the empty state',
@@ -244,6 +249,11 @@ void main() {
     final repo = _Transactions()..jobs = [];
     await _pump(tester, repo);
     expect(find.text('هنوز فعالیتی ثبت نشده است'), findsOneWidget);
+    expect(
+      tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
+      24,
+      reason: 'The empty state keeps a compact outer page tail.',
+    );
   });
 
   testWidgets('activity metrics fit three compact cells on one narrow row',

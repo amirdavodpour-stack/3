@@ -388,7 +388,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     if (auth.isGuest) {
       return PremiumPageFrame(
                 page: HopePageId.workCenter,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
         child: ListView(
           padding: HopeV2Navigation.scrollEndPadding(context),
           children: [
@@ -435,7 +435,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
                 child: ListView(
                   padding: HopeV2Navigation.scrollEndPadding(context),
                   children: [
@@ -483,7 +483,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               onRefresh: reload,
               child: PremiumPageFrame(
                 page: HopePageId.workCenter,
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
                 child: ListView(
                   padding: HopeV2Navigation.scrollEndPadding(context),
                   children: [

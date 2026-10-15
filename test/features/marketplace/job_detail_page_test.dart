@@ -432,8 +432,8 @@ void main() {
     expect(find.byType(PremiumHero), findsOneWidget);
     expect(
       tester.getSize(find.byType(PremiumHero)).height,
-      lessThanOrEqualTo(224),
-      reason: 'Even wide-screen opportunity heroes stay within the editorial height budget.',
+      lessThanOrEqualTo(160),
+      reason: 'A title-only opportunity hero should not reserve height for absent supporting copy or actions.',
     );
     expect(tester.takeException(), isNull);
   });
