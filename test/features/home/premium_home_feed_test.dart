@@ -693,6 +693,17 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
+      final opportunityCards = tester.widgetList<OpportunityCard>(
+        find.byType(OpportunityCard),
+      );
+      expect(
+        opportunityCards.any(
+          (card) => card.variant == OpportunityCardVariant.featured,
+        ),
+        isTrue,
+        reason: 'At 1.5x text scale, the proven featured layout must replace the compressed first-fold scan card.',
+      );
+
       final keys = [
         'home-pulse-stat-matches',
         'home-pulse-stat-new',
