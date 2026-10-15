@@ -74,8 +74,24 @@ void main() {
     expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
     expect(HopeV2Colors.darkCard, const Color(0xFF111827));
     expect(HopeV2Colors.darkText, const Color(0xFFF1F3EC));
-    expect(HopeV2Gradients.hero.colors, isNot(contains(const Color(0xFF5D43E8))));
-    expect(HopeV2Gradients.heroDark.colors, isNot(contains(const Color(0xFF37318C))));
+    expect(
+      HopeV2Gradients.hero.colors,
+      const [
+        Color(0xFF5B5343),
+        Color(0xFF827252),
+        Color(0xFFB9A77C),
+      ],
+      reason: 'Light-mode editorial heroes retain the prior restrained warm-neutral ramp.',
+    );
+    expect(
+      HopeV2Gradients.heroDark.colors,
+      const [
+        Color(0xFF121726),
+        Color(0xFF1B2748),
+        Color(0xFF121726),
+      ],
+      reason: 'Dark-mode heroes must retain the prior slate/navy ramp rather than a green wash.',
+    );
   });
 
   test('opportunity artwork accents stay unique and separate from semantic states', () {
