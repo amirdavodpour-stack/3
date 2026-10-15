@@ -106,9 +106,9 @@ void main() {
   });
 
   test('wallet balance hero palette is centralized without visual drift', () {
-    expect(HopeV2Colors.walletBalanceHeroStart, const Color(0xFF121726));
-    expect(HopeV2Colors.walletBalanceHeroMiddle, const Color(0xFF1B2748));
-    expect(HopeV2Colors.walletBalanceHeroEnd, const Color(0xFF0E131E));
+    expect(HopeV2Colors.walletBalanceHeroStart, const Color(0xFF0D1510));
+    expect(HopeV2Colors.walletBalanceHeroMiddle, const Color(0xFF193A2A));
+    expect(HopeV2Colors.walletBalanceHeroEnd, const Color(0xFF141F18));
     expect(HopeV2Colors.walletBalanceOnHero, const Color(0xFFFFFFFF));
     expect(HopeV2Colors.walletBalanceOnHeroMuted, const Color(0xB3FFFFFF));
     expect(HopeV2Colors.walletBalanceOnHeroSubtle, const Color(0x99FFFFFF));
