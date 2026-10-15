@@ -36,12 +36,7 @@ class AboutHopePage extends StatelessWidget {
             const SizedBox(height: 20),
             Text(HopeCopy.of(context).copy_what_is_hope_83013ad,
                 style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 9),
-            Text(
-              HopeCopy.of(context).copy_about_mission_description,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             _infoCard(
                 context,
                 HopeV2Icons.mission,

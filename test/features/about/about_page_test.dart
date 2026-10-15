@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/features/about/about_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/ui/hope_l10n.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 
 Widget _app(Locale locale) => MaterialApp(
@@ -59,6 +60,14 @@ void main() {
     expect(
       tester.widget<PremiumPageFrame>(find.byType(PremiumPageFrame)).padding.bottom,
       24,
+    );
+    final missionCopy = HopeCopy.of(
+      tester.element(find.byType(AboutHopePage)),
+    ).copy_about_mission_description;
+    expect(
+      find.text(missionCopy),
+      findsOneWidget,
+      reason: 'The mission description belongs in the Hero and should not be repeated below.',
     );
     expect(tester.takeException(), isNull);
   });
