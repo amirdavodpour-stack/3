@@ -648,7 +648,7 @@ class _PremiumQuickActionButton extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
             child: Ink(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -678,7 +678,7 @@ class _PremiumQuickActionButton extends StatelessWidget {
                       fontSize: 12,
                       height: 1.05,
                       fontWeight:
-                          action.primary ? FontWeight.w900 : FontWeight.w700,
+                          action.primary ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
                 ),
@@ -753,8 +753,8 @@ class PremiumQuickActionStrip extends StatelessWidget {
           ],
           const SizedBox(height: HopeV2Spacing.sm),
           Wrap(
-            spacing: HopeV2Spacing.sm,
-            runSpacing: HopeV2Spacing.sm,
+            spacing: HopeV2Spacing.xs,
+            runSpacing: HopeV2Spacing.xs,
             children: [
               for (final action in actions)
                 _PremiumQuickActionButton(
@@ -2083,7 +2083,7 @@ class PremiumFilterChip extends StatelessWidget {
           child: AnimatedContainer(
             duration: reduceMotion ? Duration.zero : HopeV2Motion.fast,
             constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
             decoration: BoxDecoration(
               color: selected
                   ? (base == HopeV2Colors.primary ||
@@ -2144,7 +2144,9 @@ class PremiumFilterChip extends StatelessWidget {
                   label,
                   style: TextStyle(
                     color: foreground,
-                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                    fontSize: 13,
+                    height: 1.05,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ],
