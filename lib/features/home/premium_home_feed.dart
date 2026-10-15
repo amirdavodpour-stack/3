@@ -765,7 +765,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 72;
+          final compact = constraints.maxWidth < 72 ||
+              MediaQuery.textScalerOf(context).scale(1) > 1.2;
           final metric = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
