@@ -6,6 +6,7 @@ import 'package:hope_mobile/core/admin/admin_repository.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/features/admin/admin_operations_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:provider/provider.dart';
 
 class _FakeAdminOperations implements AdminRepository {
@@ -125,6 +126,25 @@ Widget _host(_FakeAdminOperations repository) => MaterialApp(
     );
 
 void main() {
+  testWidgets('admin operations preserves vertical workspace on a phone viewport',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_host(_FakeAdminOperations()));
+    await tester.pumpAndSettle();
+
+    final frame = tester.widget<PremiumPageFrame>(
+      find.byType(PremiumPageFrame),
+    );
+    expect(frame.padding.bottom, 24);
+    expect(find.byType(TabBarView), findsOneWidget);
+    expect(tester.getSize(find.byType(TabBarView)).height, greaterThan(300));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('trust report enum fields use localized presentation', (tester) async {
     final repository = _FakeAdminOperations();
     await tester.pumpWidget(_host(repository));
