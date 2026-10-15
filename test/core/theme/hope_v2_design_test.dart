@@ -362,6 +362,7 @@ void main() {
     expect(HopeV2Colors.panelSoftDark, const Color(0xFF121726));
     expect(HopeV2Colors.inputDark, const Color(0xFF0F111A));
     expect(HopeV2Colors.navigationIndicatorDark, const Color(0x2B6366F1));
+    expect(HopeV2Colors.navigationDark, const Color(0xF90B0F18));
     expect(HopeV2Colors.darkGreenGlow, const Color(0xFF264C36));
   });
 
