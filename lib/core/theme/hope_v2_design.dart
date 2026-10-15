@@ -36,7 +36,8 @@ class HopeV2Colors {
   static const secondaryStrong = Color(0xFF115E59);
   static const secondaryDark = Color(0xFF5EEAD4);
   // Legacy generic accent stays amber and aliases the warning ramp below.
-  static const accent = Color(0xFFD0A16D);
+  static const accent = Color(0xFFF59E0B);
+  static const editorialClay = Color(0xFFD0A16D);
   /// Focus accent for featured/recommended work surfaces; use sparingly.
   static const orange = Color(0xFFF97316);
   static const orangeDark = Color(0xFFFF9A4D);
