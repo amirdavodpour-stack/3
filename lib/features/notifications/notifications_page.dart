@@ -286,16 +286,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ],
           );
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
         key: ValueKey('notification-card-${n.id}'),
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(12),
         quiet: !unread,
         highlight: unread,
         semanticLabel: n.title,
         child: InkWell(
           onTap: n.hasAction || unread ? () => _openNotification(n) : null,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
           onLongPress: unread ? () => _read(n.id) : null,
           child: Semantics(
             button: unread,
@@ -314,7 +314,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.outline,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 9),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,7 +332,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       if (n.hasAction) ...[
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         FilledButton.icon(
                           onPressed: () => _openNotification(n),
                           icon: const HopeIcon(HopeV2Icons.arrowRight, size: 18),
