@@ -285,18 +285,19 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
               const SizedBox(height: 8),
             if (_loading)
               const PremiumPanel(
+                padding: EdgeInsets.all(12),
                 child: SizedBox(
-                  height: 180,
+                  height: 128,
                   child: Center(child: CircularProgressIndicator()),
                 ),
               )
             else if (_error != null)
               PremiumPanel(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   children: [
-                    const HopeIcon(HopeV2Icons.pending, size: 36),
-                    const SizedBox(height: 10),
+                    const HopeIcon(HopeV2Icons.pending, size: 30),
+                    const SizedBox(height: 8),
                     Text(_error!, textAlign: TextAlign.center),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
@@ -326,10 +327,10 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
                   children: _items.map((item) {
                     final busy = _busyId == item.id;
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                      leading: const HopeIconTile(HopeV2Icons.savedSearches, filled: true),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+                      leading: const HopeIconTile(HopeV2Icons.savedSearches, size: 34, filled: true),
                       title: Text(item.name,
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(_scope(item)),
