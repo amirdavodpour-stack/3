@@ -491,11 +491,11 @@ class _JobsPageState extends State<JobsPage> {
       context: context,
       showDragHandle: true,
       builder: (_) => ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         shrinkWrap: true,
         children: [
           Text(HopeCopy.of(context).copy_choose_a_city_a93b334,
-              style: Theme.of(context).textTheme.headlineSmall),
+              style: HopeV2Type.section(context)),
           ...[...HopeSettingsController.cities, 'همه'].map((city) => ListTile(
                 title: Text(
                   city == 'همه' ? HopeCopy.of(context).copy_all_cities : city,
@@ -526,10 +526,10 @@ class _JobsPageState extends State<JobsPage> {
         showDragHandle: true,
         builder: (_) => ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(14),
                 children: [
                   Text(HopeCopy.of(context).copy_professional_field_4c6b94e,
-                      style: Theme.of(context).textTheme.headlineSmall),
+                      style: HopeV2Type.section(context)),
                   ListTile(
                       title: Text(HopeCopy.of(context).copy_all_fields_4f77401),
                       onTap: () => Navigator.pop(context, 'ALL')),
