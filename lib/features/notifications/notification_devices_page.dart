@@ -107,7 +107,7 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: PremiumPageFrame(
-        padding: const EdgeInsets.fromLTRB(14, 6, 14, 16),
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 24),
         child: RefreshIndicator(
           onRefresh: _load,
           child: ListView(
