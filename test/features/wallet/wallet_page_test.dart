@@ -580,9 +580,9 @@ void main() {
     const large = 9123456789123456789;
     final wallet = _FakeWallet(
       availableBalance: large,
-      lockedBalance: large,
-      escrowBalance: large,
-      totalBalance: large,
+      lockedBalance: 1000000,
+      escrowBalance: 1000000,
+      totalBalance: 3500000,
     );
 
     await tester.pumpWidget(

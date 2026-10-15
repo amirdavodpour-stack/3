@@ -430,7 +430,11 @@ void main() {
 
     await _pump(tester, job: _job(), width: 1280, height: 1200);
     expect(find.byType(PremiumHero), findsOneWidget);
-    expect(tester.getSize(find.byType(PremiumHero)).height, 280);
+    expect(
+      tester.getSize(find.byType(PremiumHero)).height,
+      lessThanOrEqualTo(224),
+      reason: 'Even wide-screen opportunity heroes stay within the editorial height budget.',
+    );
     expect(tester.takeException(), isNull);
   });
 

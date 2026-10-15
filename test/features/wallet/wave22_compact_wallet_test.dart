@@ -346,8 +346,8 @@ void main() {
       final heroRect = tester.getRect(hero);
       expect(
         tester.getRect(availableMetric).width,
-        greaterThan(heroRect.width - 44),
-        reason: 'Long real ledger amounts should use the full hero content width.',
+        lessThan(220),
+        reason: 'A single long amount should wrap inside its metric cell rather than stacking every wallet signal.',
       );
       expect(tester.takeException(), isNull);
     },

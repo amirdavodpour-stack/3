@@ -930,7 +930,9 @@ class _WalletPageState extends State<WalletPage> {
       Widget metricsBlock() => LayoutBuilder(
             builder: (context, constraints) {
               const gap = 4.0;
-              final singleColumnMetrics = enlargedText || constraints.maxWidth < 280;
+              final longMetricCount = items.where((item) => item.value.length > 18).length;
+                final singleColumnMetrics = enlargedText ||
+                    constraints.maxWidth < 280 || longMetricCount >= 3;
               final cellWidth = singleColumnMetrics
                   ? constraints.maxWidth
                   : (constraints.maxWidth - gap) / 2;
