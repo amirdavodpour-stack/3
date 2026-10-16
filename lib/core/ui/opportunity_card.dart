@@ -976,8 +976,10 @@ class OpportunityCard extends StatelessWidget {
                 : Text(
                     _formatAmount(amount, context),
                     key: const ValueKey('opportunity-card-standard-budget'),
-                    maxLines: 3,
-                    overflow: TextOverflow.clip,
+                    maxLines: enlargedText ? null : 3,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.clip,
                     softWrap: true,
                     textAlign: TextAlign.end,
                     style: HopeV2Type.metric(context).copyWith(
