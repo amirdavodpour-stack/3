@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -36,9 +38,12 @@ class _Transactions implements TransactionRepository {
   List<HopeJob> jobs = const [];
   bool paymentUnavailable = false;
   bool failList = false;
+  Completer<List<HopeJob>>? listCompleter;
   @override
   Future<List<HopeJob>> listMyJobs() async {
     if (failList) throw StateError('activity unavailable');
+    final pending = listCompleter;
+    if (pending != null) return pending.future;
     return jobs;
   }
   @override
@@ -85,6 +90,8 @@ Future<void> _pump(
   double height = 2400,
   double textScale = 1,
   Locale locale = const Locale('fa'),
+  bool settle = true,
+  bool disableAnimations = false,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -112,6 +119,7 @@ Future<void> _pump(
     home: MediaQuery(
       data: MediaQueryData.fromView(tester.view).copyWith(
         textScaler: TextScaler.linear(textScale),
+        disableAnimations: disableAnimations,
       ),
       child: MultiProvider(
         providers: [ChangeNotifierProvider.value(value: auth)],
@@ -119,7 +127,11 @@ Future<void> _pump(
       ),
     ),
   ));
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 HopeJob _job(
@@ -263,6 +275,32 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'Work Center initial loading uses a content-shaped skeleton instead of a spinner',
+    (tester) async {
+      final repo = _Transactions()
+        ..listCompleter = Completer<List<HopeJob>>();
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        settle: false,
+        disableAnimations: true,
+      );
+
+      expect(
+        find.byKey(const ValueKey('work-center-loading-skeleton')),
+        findsOneWidget,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
 
   testWidgets('empty authenticated transactions show the empty state',
       (tester) async {
