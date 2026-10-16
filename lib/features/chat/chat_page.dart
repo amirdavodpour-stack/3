@@ -212,15 +212,20 @@ class _ChatPageState extends State<ChatPage> {
                 PremiumPanel(
                   key: const ValueKey('chat-conversation-header'),
                   glass: true,
-                  padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                  padding: EdgeInsets.fromLTRB(
+                    12,
+                    expandableHeaderText ? 6 : 10,
+                    8,
+                    expandableHeaderText ? 6 : 10,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Row(
                         children: [
                           Container(
-                            width: 42,
-                            height: 42,
+                            width: expandableHeaderText ? 32 : 42,
+                            height: expandableHeaderText ? 32 : 42,
                             decoration: BoxDecoration(
                               color: colors.primary.withValues(alpha: .10),
                               borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -240,17 +245,21 @@ class _ChatPageState extends State<ChatPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  widget.adminRoom ? _t('اتاق مدیران', 'ADMIN ROOM') : _t('گفتگو', 'CONVERSATION'),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: colors.primary,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: .35,
+                                if (!expandableHeaderText) ...[
+                                  Text(
+                                    widget.adminRoom
+                                        ? _t('اتاق مدیران', 'ADMIN ROOM')
+                                        : _t('گفتگو', 'CONVERSATION'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: colors.primary,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: .35,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
+                                  const SizedBox(height: 2),
+                                ],
                                 Text(
                                   title,
                                   key: const ValueKey('chat-conversation-title'),
@@ -284,7 +293,7 @@ class _ChatPageState extends State<ChatPage> {
                         ],
                       ),
                       if (conversation != null) ...[
-                        const SizedBox(height: 9),
+                        SizedBox(height: expandableHeaderText ? 4 : 9),
                         Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: PremiumTag(
@@ -372,7 +381,7 @@ class _ChatPageState extends State<ChatPage> {
                             ),
                           ),
                         ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: expandableHeaderText ? 4 : 8),
                       Expanded(
                         child: _thread == null
                             ? _error != null
@@ -514,7 +523,10 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 if (conversationStatus == 'OPEN')
                   Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 4),
+                    padding: EdgeInsets.only(
+                      top: expandableHeaderText ? 4 : 8,
+                      bottom: expandableHeaderText ? 2 : 4,
+                    ),
                     child: PremiumPanel(
                       key: const ValueKey('chat-composer-panel'),
                       quiet: true,
