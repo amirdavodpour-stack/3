@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/notifications/notification.dart';
 import 'package:hope_mobile/core/notifications/notification_repository.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/features/notifications/notification_devices_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
