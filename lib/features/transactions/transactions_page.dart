@@ -242,6 +242,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   Widget _workItemCard(HopeJob job) {
     final status = job.status ?? '—';
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final settled = _isWorkCenterSettled(status);
     final dark = Theme.of(context).brightness == Brightness.dark;
     final statusAccent = settled
@@ -273,8 +274,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     children: [
                       Text(
                         job.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: enlargedText ? null : 2,
+                        softWrap: true,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           height: 1.2,
