@@ -399,9 +399,10 @@ class _OffersPageState extends State<OffersPage> {
         showDragHandle: true,
         isScrollControlled: true,
         builder: (ctx) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: Column(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -451,7 +452,8 @@ class _OffersPageState extends State<OffersPage> {
                     icon: const HopeIcon(HopeV2Icons.completed, size: 19),
                     label: Text(_t('پذیرش پیشنهاد','Accept offer')),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
