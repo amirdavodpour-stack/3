@@ -385,6 +385,98 @@ void main() {
   );
 
   testWidgets(
+    'candidate comparison matrix fully wraps long names and skills at 1.5x',
+    (tester) async {
+      const longName =
+          'Senior financial systems analyst responsible for marketplace settlement operations';
+      const longSkills =
+          'Flutter, Dart, accessibility audits, financial workflow reconciliation and responsive interface engineering';
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-long-matrix-values',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-long-matrix-name',
+            displayName: longName,
+            score: 94,
+            reasons: ['SKILL_MATCH'],
+            components: {'experience': 90, 'location': 82},
+            applicationId: 'app-long-matrix-name',
+            status: 'PENDING',
+            skills: longSkills,
+          ),
+          HopeEmployerCandidateMatch(
+            rank: 2,
+            userId: 'worker-second-matrix',
+            displayName: 'Candidate Two',
+            score: 86,
+            reasons: ['CATEGORY_MATCH'],
+            components: {'experience': 84, 'location': 80},
+            applicationId: 'app-second-matrix',
+            status: 'PENDING',
+            skills: 'Flutter',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final matrix = find.byKey(
+        const ValueKey('candidate-comparison-matrix'),
+      );
+      expect(matrix, findsOneWidget);
+
+      for (final wording in [longName, longSkills]) {
+        final valueFinder = find.descendant(
+          of: matrix,
+          matching: find.text(wording),
+        );
+        expect(valueFinder, findsOneWidget);
+        final value = tester.widget<Text>(valueFinder);
+        expect(
+          value.maxLines,
+          isNull,
+          reason:
+              'Candidate names and skills inside the comparison matrix must retain their full wording at enlarged text.',
+        );
+        expect(value.overflow, TextOverflow.visible);
+        expect(
+          tester.renderObject<RenderParagraph>(valueFinder).didExceedMaxLines,
+          isFalse,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'candidate match loader uses a single compact page shell in loading and loaded states',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
