@@ -352,6 +352,57 @@ void main() {
     expect(find.text('عنوان اعلان'), findsNothing);
   });
 
+  testWidgets(
+    'read actionable notification cards expose their action as a semantic button',
+    (tester) async {
+      final repo = _Repo()
+        ..items = [
+          const HopeNotification(
+            id: 'read-action',
+            type: 'JOB_APPLICATION_RECEIVED',
+            title: 'به‌روزرسانی درخواست',
+            body: 'یک درخواست جدید برای بررسی وجود دارد.',
+            createdAt: '2026-10-15T10:30:00Z',
+            readAt: '2026-10-15T11:00:00Z',
+            data: {'jobId': 'job-42'},
+          ),
+        ];
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(_app(repo));
+        await tester.pumpAndSettle();
+
+        final card = find.byKey(
+          const ValueKey('notification-card-read-action'),
+        );
+        expect(card, findsOneWidget);
+
+        final actionableSemantics = find.descendant(
+          of: card,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.button == true &&
+                (widget.label ?? '').contains('به‌روزرسانی درخواست') &&
+                (widget.label ?? '').contains('مشاهده پروژه'),
+          ),
+        );
+        expect(
+          actionableSemantics,
+          findsOneWidget,
+          reason: 'A read notification with a valid route must remain exposed as an actionable control to screen readers.',
+        );
+        final semanticLabel =
+            tester.getSemantics(actionableSemantics).label;
+        expect(semanticLabel, contains('به‌روزرسانی درخواست'));
+        expect(semanticLabel, contains('مشاهده پروژه'));
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
   testWidgets('notifications page renders unread content', (tester) async {
     final repo = _Repo();
     await tester.pumpWidget(_app(repo));
