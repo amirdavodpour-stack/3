@@ -64,3 +64,11 @@ No production branch is targeted directly. This specification is reviewed with t
 - Notification-device loading now mirrors the compact device row (platform tile, text rails, action placeholder), announces the loading state through a live region, and remains under the compact panel-height budget.
 - Wallet's history transition uses viewport height as well as compact width: a short phone preserves every bit of first-fold space, while a taller compact screen retains 4dp separation before history.
 - Static verification on exact HEAD `ae1a3434afe28d4a3f335266b162934b2598bc36`: [run 38918058048](https://github.com/amirdavodpour-stack/3/actions/runs/38918058048), **440 tests passed**. Runtime visual acceptance remains pending; its workflow was skipped and no screenshot was captured.
+
+
+## Admin summary and operations metric cards — 2026-10-16
+
+- The operations metric surface no longer forces backend values into fixed 82/96dp cells. Metric cards have width-responsive columns and natural content height; full values wrap and long labels stop using ellipsis when text scale exceeds 1.2.
+- The main admin summary retains the existing compact aspect-ratio grid at default text scale. At enlarged text scale (>1.2), it switches to content-sized cards using the roomier stat presentation so labels and values are not squeezed into the compact one-line row.
+- Regression evidence: at 390×844 and 1.5× text, the old admin summary tile was only **71.84dp** high and its internal column overflowed by **7.2dp**. The operations metric test also reproduced a 30-digit backend value overflowing a fixed-height card. Both regressions pass on the current source.
+- Exact-HEAD Static PASS: [run 38920230225](https://github.com/amirdavodpour-stack/3/actions/runs/38920230225), SHA `d67f46720830438258d4199d1f284ee05c41c0db`, **442 tests passed**. Runtime evidence workflow [38920230858](https://github.com/amirdavodpour-stack/3/actions/runs/38920230858) was SKIPPED; no new runtime screenshot was taken, so visual/device acceptance remains pending.
