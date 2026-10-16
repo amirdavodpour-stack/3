@@ -8,6 +8,7 @@ import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/ui/hope_async_state.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/applications/my_applications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -234,6 +235,71 @@ void main() {
     expect(find.text('Needs review'), findsOneWidget);
     expect(find.text('UNKNOWN_APPLICATION_STATE'), findsNothing);
   });
+
+  testWidgets(
+    'application card keeps timeline and withdrawal action within the compact 1.5x layout',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const title =
+          'Senior product design lead for editorial systems and accessibility';
+      const application = HopeApplication(
+        id: 'dense-app',
+        jobId: 'job-1',
+        jobTitle: title,
+        jobCity: 'Frankfurt am Main',
+        jobKind: 'JOB',
+        resumeText: '',
+        skills: '',
+        status: 'PENDING',
+        createdAt: null,
+        updatedAt: null,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Provider<ApplicationRegistry>.value(
+              value: ApplicationRegistry(
+                profile: _FakeProfileRepository(application),
+              ),
+              child: const MyApplicationsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(title);
+      expect(titleFinder, findsOneWidget);
+      final cardFinder = find.ancestor(
+        of: titleFinder,
+        matching: find.byType(PremiumPanel),
+      );
+      expect(cardFinder, findsOneWidget);
+      expect(
+        tester.getSize(cardFinder).height,
+        lessThanOrEqualTo(340),
+        reason: 'A compact application card should keep its timeline and actions content-sized at 1.5x text.',
+      );
+      expect(find.byTooltip('Withdraw'), findsOneWidget);
+      expect(find.text('View opportunity'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('applications load failure shows explicit error state with retry',
       (tester) async {
