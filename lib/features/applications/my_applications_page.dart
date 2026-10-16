@@ -386,30 +386,28 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
         quiet: true,
-        padding: EdgeInsets.all(
-          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 11 : 13,
+        padding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.sizeOf(context).width <
+                  HopeV2Breakpoints.compact
+              ? 11
+              : 13,
+          vertical: compactLargeText
+              ? 7
+              : (MediaQuery.sizeOf(context).width <
+                      HopeV2Breakpoints.compact
+                  ? 11
+                  : 13),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (compactLargeText) ...[
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: HopeIconTile(
-                  item.status == 'ACCEPTED'
-                      ? HopeV2Icons.completed
-                      : HopeV2Icons.mission,
-                  size: 30,
-                  filled: true,
-                ),
-              ),
-              const SizedBox(height: 4),
+            if (compactLargeText)
               Tooltip(
                 message: title,
                 child: Text(
                   title,
-                  // Use the full card width at large text sizes: the page scrolls,
-                  // so complete titles are preferable to a tall, narrow text rail.
+                  // The status is already conveyed by the semantic status tag
+                  // below; use the full width for the complete, readable title.
                   softWrap: true,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontSize: 14,
@@ -417,8 +415,8 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     height: 1.15,
                   ),
                 ),
-              ),
-            ] else
+              )
+            else
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -445,7 +443,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   ),
                 ],
               ),
-            const SizedBox(height: 6),
+            SizedBox(height: compactLargeText ? 4 : 6),
             Wrap(
               spacing: 6,
               runSpacing: 4,
@@ -463,7 +461,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   ),
               ],
             ),
-            const SizedBox(height: 9),
+            SizedBox(height: compactLargeText ? 6 : 9),
             _timeline(item),
             if (item.status.toUpperCase() == 'ACCEPTED' &&
                 item.jobId.trim().isNotEmpty) ...[
@@ -480,7 +478,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ),
               ),
             ],
-            const SizedBox(height: 8),
+            SizedBox(height: compactLargeText ? 4 : 8),
             Row(
               children: [
                 Expanded(
@@ -564,9 +562,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               return SizedBox(
                 width: itemWidth,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 4,
-                    vertical: 6,
+                    vertical: textScale > 1.2 ? 4 : 6,
                   ),
                   decoration: BoxDecoration(
                     color: active
