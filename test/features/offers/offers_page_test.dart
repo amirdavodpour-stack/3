@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
@@ -262,6 +263,51 @@ void main() {
       }
     },
   );
+
+testWidgets(
+  'offer message avoids ellipsis at 1.5x on a compact viewport',
+  (tester) async {
+    tester.view.physicalSize = const Size(320, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final message = List.filled(
+      10,
+      'Every milestone includes a clear deliverable, review window, and acceptance criteria.',
+    ).join(' ');
+    final offer = HopeOffer(
+      id: 'long-message-offer',
+      jobId: 'job-1',
+      providerId: 'provider-1',
+      price: '2500000',
+      message: message,
+      status: 'PENDING',
+      createdAt: null,
+      updatedAt: null,
+      jobTitle: 'Compact offer',
+    );
+
+    await tester.pumpWidget(
+      _host(
+        _FixedOfferRepository([offer]),
+        locale: const Locale('en'),
+        textScale: 1.5,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final messageFinder = find.text(message);
+    expect(messageFinder, findsOneWidget);
+    final paragraph = tester.renderObject<RenderParagraph>(messageFinder);
+    expect(
+      paragraph.didExceedMaxLines,
+      isFalse,
+      reason: 'The full offer message must stay readable when system text is enlarged on a compact viewport.',
+    );
+    expect(tester.takeException(), isNull);
+  },
+);
 
 testWidgets(
   'Wave46 offers loading and empty states remain mutually exclusive',
