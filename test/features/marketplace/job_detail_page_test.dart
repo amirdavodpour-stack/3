@@ -609,12 +609,15 @@ void main() {
         locale: const Locale('en'),
       );
 
-      final locationFact = find.byKey(
-        const ValueKey('opportunity-snapshot-fact-location'),
+      final decisionStrip = find.byKey(
+        const ValueKey('opportunity-decision-strip'),
       );
-      expect(locationFact, findsOneWidget);
+      expect(decisionStrip, findsOneWidget);
+      await tester.ensureVisible(decisionStrip);
+      await tester.pumpAndSettle();
+
       final valueFinder = find.descendant(
-        of: locationFact,
+        of: decisionStrip,
         matching: find.text(longLocation),
       );
       expect(valueFinder, findsOneWidget);
