@@ -314,6 +314,65 @@ void main() {
     },
   );
 
+  testWidgets(
+    'compact application cards preserve full opportunity titles at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const title = 'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, component governance, and cross-functional delivery';
+      const application = HopeApplication(
+        id: 'full-title-app',
+        jobId: 'job-1',
+        jobTitle: title,
+        jobCity: 'Frankfurt am Main',
+        jobKind: 'JOB',
+        resumeText: '',
+        skills: '',
+        status: 'PENDING',
+        createdAt: null,
+        updatedAt: null,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Provider<ApplicationRegistry>.value(
+              value: ApplicationRegistry(
+                profile: _FakeProfileRepository(application),
+              ),
+              child: const MyApplicationsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(title);
+      expect(titleFinder, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(titleFinder);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'On a scrollable page, a long application title should wrap naturally instead of being truncated at large text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('applications load failure shows explicit error state with retry',
       (tester) async {
     final profile = _FailingProfileRepository();
