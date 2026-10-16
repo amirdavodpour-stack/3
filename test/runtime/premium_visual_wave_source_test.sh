@@ -14,6 +14,7 @@ home="lib/features/home/premium_home_feed.dart"
 jobs_widgets="lib/features/jobs/jobs_widgets.part.dart"
 admin_operations="lib/features/admin/admin_operations_page.dart"
 notification_devices="lib/features/notifications/notification_devices_page.dart"
+admin_page="lib/features/admin/admin_page.dart"
 android_theme="android/app/src/main/res/values/styles.xml"
 android_theme_v26="android/app/src/main/res/values-v26/styles.xml"
 runtime_driver="integration_test/runtime/critical_screens_evidence_test.dart"
@@ -179,6 +180,10 @@ grep -Fq 'final metricWidth =' "$admin_operations"
 grep -Fq 'maxLines: enlargedText ? null : 2' "$admin_operations"
 grep -Fq 'maxLines: null' "$admin_operations"
 grep -Fq 'admin metric cards preserve long financial values at 1.5x text scale' 'test/features/admin/admin_operations_page_test.dart'
+grep -Fq 'admin summary metric cards adapt height and retain labels at 1.5x text scale' 'test/features/admin/admin_page_test.dart'
+grep -Fq 'final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;' "$admin_page"
+grep -Fq 'final cardWidth =' "$admin_page"
+grep -Fq 'child: summaryCard(item, compact: false)' "$admin_page"
 if grep -Fq 'mainAxisExtent: columns == 1 ? 82 : 96' "$admin_operations"; then
   echo "FAIL: admin metric cards still reserve fixed-height cells for arbitrary values" >&2
   exit 1

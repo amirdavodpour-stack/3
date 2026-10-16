@@ -487,24 +487,59 @@ class _AdminPageState extends State<AdminPage>
         'icon': HopeV2Icons.completed,
       },
     ];
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
 
-    return GridView.extent(
-      maxCrossAxisExtent: 340,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 2.45,
-      children: items.map((item) {
-        final key = item['key']! as String;
-        return PremiumStatCard(
-          label: item['label']! as String,
-          value: '${m?[key] ?? 0}',
-          icon: item['icon']!,
-          accent: Theme.of(context).colorScheme.primary,
-          compact: MediaQuery.sizeOf(context).width < 600,
+    Widget summaryCard(Map<String, Object> item, {required bool compact}) {
+      final key = item['key']! as String;
+      return PremiumStatCard(
+        label: item['label']! as String,
+        value: '${m?[key] ?? 0}',
+        icon: item['icon']!,
+        accent: Theme.of(context).colorScheme.primary,
+        compact: compact,
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (enlargedText) {
+          const gap = 10.0;
+          final columns =
+              (constraints.maxWidth / (340 + gap)).ceil().clamp(1, 4).toInt();
+          final cardWidth =
+              (constraints.maxWidth - gap * (columns - 1)) / columns;
+          // Longer labels need room to wrap; fixed-aspect compact tiles hide
+          // meaningful text at enlarged system scales.
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: [
+              for (final item in items)
+                SizedBox(
+                  width: cardWidth,
+                  child: summaryCard(item, compact: false),
+                ),
+            ],
+          );
+        }
+
+        return GridView.extent(
+          maxCrossAxisExtent: 340,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 2.45,
+          children: items
+              .map(
+                (item) => summaryCard(
+                  item,
+                  compact: MediaQuery.sizeOf(context).width < 600,
+                ),
+              )
+              .toList(),
         );
-      }).toList(),
+      },
     );
   }
   Widget _errorState(BuildContext context, Object? error,
