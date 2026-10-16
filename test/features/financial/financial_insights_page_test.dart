@@ -47,6 +47,28 @@ class _Wave24InsightsRepository implements FinancialInsightsRepository {
       );
 }
 
+class _LongSummaryInsightsRepository implements FinancialInsightsRepository {
+  const _LongSummaryInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      const HopeFinancialInsights(
+        currency: 'TOMAN',
+        months: 6,
+        summary: HopeFinancialSummary(
+          availableBalance: '987654321098765432',
+          lockedBalance: '876543210987654321',
+          totalInflow: '765432109876543210',
+          totalOutflow: '654321098765432109',
+          totalReserved: '543210987654321098',
+          netCashFlow: '432109876543210987',
+        ),
+        monthlyCashFlow: [],
+        balanceTrend: [],
+        bySource: [],
+      );
+}
+
 class _EmptyBalanceInsightsRepository implements FinancialInsightsRepository {
   const _EmptyBalanceInsightsRepository();
 
@@ -239,6 +261,66 @@ class _NonFiniteCashFlowInsightsRepository implements FinancialInsightsRepositor
 }
 
 void main() {
+  testWidgets(
+    'financial snapshot preserves long metric labels and amounts at 1.5x',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _LongSummaryInsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final summary = find.byType(PremiumPanel).first;
+      final metricTexts = tester.widgetList<Text>(
+        find.descendant(of: summary, matching: find.byType(Text)),
+      ).where((text) {
+        final value = text.data ?? '';
+        return value.contains('TOMAN') ||
+            const {
+              'Available',
+              'Locked',
+              'Inflow',
+              'Outflow',
+              'Total reserved',
+              'Net cash flow',
+            }.contains(value);
+      }).toList(growable: false);
+
+      expect(metricTexts, hasLength(12));
+      expect(
+        metricTexts.every(
+          (text) => text.maxLines == null && text.overflow == TextOverflow.visible,
+        ),
+        isTrue,
+        reason: 'Large text must never clip a recorded financial label or amount in the summary card.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
     (tester) async {
