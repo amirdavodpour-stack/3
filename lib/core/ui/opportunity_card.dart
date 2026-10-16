@@ -1597,8 +1597,11 @@ class OpportunityCard extends StatelessWidget {
     bool emphasize = false,
   }) {
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final metadataMaxWidth = enlargedText
+        ? (MediaQuery.sizeOf(context).width * 0.62).clamp(180.0, 260.0)
+        : 260.0;
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 260),
+      constraints: BoxConstraints(maxWidth: metadataMaxWidth),
       child: Row(
         // At enlarged text sizes, metadata occupies the available line width
         // so the label wraps inside the card instead of sizing the Row to its
