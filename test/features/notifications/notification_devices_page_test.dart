@@ -100,30 +100,32 @@ Widget _host(
     );
 
 void main() {
-  testWidgets('notification device loading state uses a compact editorial panel',
-      (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'notification device loading uses a card-shaped skeleton instead of a lone spinner',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final repository = _PendingDeviceRepository();
-    await tester.pumpWidget(_host(repository));
-    await tester.pump();
+      final repository = _PendingDeviceRepository();
+      await tester.pumpWidget(_host(repository));
+      await tester.pump();
 
-    final spinner = find.byType(CircularProgressIndicator);
-    final panel = find.byType(PremiumPanel).first;
-    expect(spinner, findsOneWidget);
-    expect(
-      tester.getTopLeft(spinner).dy - tester.getTopLeft(panel).dy,
-      lessThan(70),
-      reason: 'Loading feedback should not sit in an oversized 180dp placeholder.',
-    );
+      final panel = find.byType(PremiumPanel).first;
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(SkeletonBox), findsAtLeastNWidgets(3));
+      expect(
+        tester.getSize(panel).height,
+        lessThanOrEqualTo(112),
+        reason: 'Device loading should preview the same compact row shape as the loaded device card.',
+      );
+      expect(tester.takeException(), isNull);
 
-    repository.pending.complete(const []);
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-  });
+      repository.pending.complete(const []);
+      await tester.pumpAndSettle();
+    },
+  );
 
   testWidgets('latest device refresh wins over an older in-flight load',
       (tester) async {
