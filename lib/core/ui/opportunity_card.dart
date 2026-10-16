@@ -1598,7 +1598,9 @@ class OpportunityCard extends StatelessWidget {
   }) {
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final metadataMaxWidth = enlargedText
-        ? (MediaQuery.sizeOf(context).width * 0.62).clamp(180.0, 260.0)
+        ? (MediaQuery.sizeOf(context).width * 0.62)
+            .clamp(180.0, 260.0)
+            .toDouble()
         : 260.0;
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: metadataMaxWidth),
