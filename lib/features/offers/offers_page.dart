@@ -312,13 +312,20 @@ class _OffersPageState extends State<OffersPage> {
                   if (o.message.trim().isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        o.message,
-                        maxLines:
-                            MediaQuery.textScalerOf(context).scale(1) > 1.2
-                                ? null
-                                : 3,
-                        overflow: TextOverflow.ellipsis,
+                      child: Builder(
+                        builder: (context) {
+                          final preserveFullMessage =
+                              MediaQuery.sizeOf(context).width < 380 ||
+                              MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                          return Text(
+                            o.message,
+                            softWrap: true,
+                            maxLines: preserveFullMessage ? null : 3,
+                            overflow: preserveFullMessage
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ),
                   const SizedBox(height: 8),
