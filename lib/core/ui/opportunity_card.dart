@@ -1505,8 +1505,11 @@ class OpportunityCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       company,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: enlargedText ? null : 1,
+                      softWrap: true,
+                      overflow: enlargedText
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
