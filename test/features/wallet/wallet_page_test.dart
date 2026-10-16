@@ -1463,7 +1463,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      for (final label in ['Deposit', 'Withdraw', 'History']) {
+      // This fixture enables withdrawal; deposit is disabled by its backend capability state.
+      for (final label in ['Withdraw', 'History']) {
         final finder = find.text(label);
         expect(finder, findsOneWidget);
         final paragraph = tester.renderObject<RenderParagraph>(finder);
