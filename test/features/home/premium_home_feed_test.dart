@@ -19,6 +19,7 @@ import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/ui/copy.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/home/premium_home_feed.dart';
@@ -158,6 +159,29 @@ HopeJob _job(String id, String title, {bool recommended = false}) =>
       'recommendationReasons':
           recommended ? ['SKILL_MATCH'] : const <String>[],
     });
+
+class _LoadingMarketplaceRepository extends _SequencedMarketplaceRepository {
+  final Completer<List<HopeJob>> pendingOpportunities =
+      Completer<List<HopeJob>>();
+
+  @override
+  Future<List<HopeCategory>> listCategories() async => const [];
+
+  @override
+  Future<HopeJob> getOpportunity(String id) => Future.value(initial);
+
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) => pendingOpportunities.future;
+}
 
 class _ImmediateTransactions implements TransactionRepository {
   @override
@@ -422,6 +446,43 @@ void main() {
     expect(find.text('Best match for you'), findsOneWidget);
     expect(find.text('Matches'), findsNothing);
   });
+
+  testWidgets(
+    'compact home loading uses one compact skeleton matching the featured opportunity',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _LoadingMarketplaceRepository();
+      final harness = await _host(repository);
+      await tester.pumpWidget(harness.widget);
+      await tester.pump();
+
+      final skeleton = find.byType(OpportunitySkeletonCard);
+      expect(
+        skeleton,
+        findsOneWidget,
+        reason: 'A compact first fold should reserve one primary opportunity skeleton, not two full cards.',
+      );
+      expect(
+        tester.getSize(skeleton).height,
+        lessThanOrEqualTo(200),
+        reason: 'The loading placeholder must respect the compact featured-card height budget.',
+      );
+
+      final cardRect = tester.getRect(skeleton);
+      final viewportRect = tester.getRect(find.byType(ListView).first);
+      expect(cardRect.top, greaterThanOrEqualTo(viewportRect.top));
+      expect(
+        cardRect.bottom,
+        lessThanOrEqualTo(viewportRect.bottom),
+        reason: 'The compact loading card should not overflow the initial viewport.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('compact home fold prioritizes the featured opportunity before the pulse',
       (tester) async {
