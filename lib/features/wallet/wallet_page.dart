@@ -1635,7 +1635,11 @@ class _WalletPageState extends State<WalletPage> {
             ),
             SizedBox(
               key: const ValueKey('wallet-history-transition-gap'),
-              height: tightViewport ? 0 : 16,
+              // Short phones spend this gap on first-fold financial content;
+              // taller compact screens retain a small editorial separation.
+              height: compact
+                  ? (MediaQuery.sizeOf(context).height <= 700 ? 0 : 4)
+                  : (tightViewport ? 0 : 16),
             ),
             Container(
               key: _historyKey,
