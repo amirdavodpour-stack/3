@@ -1065,6 +1065,8 @@ class _WalletPageState extends State<WalletPage> {
     }
 
     Widget actionsPanel() {
+      final stackActions = enlargedText && denseViewport;
+
       Widget action({
         required Object icon,
         required String fa,
@@ -1077,22 +1079,24 @@ class _WalletPageState extends State<WalletPage> {
             : HopeV2Colors.secondaryDark;
         final enabled = onPressed != null;
 
-        return Expanded(
-          child: Semantics(
-            button: true,
-            enabled: enabled,
-            label: _t(fa, en),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onPressed,
-                borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: HopeV2Touch.minimum,
+        return Semantics(
+          button: true,
+          enabled: enabled,
+          label: _t(fa, en),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: HopeV2Touch.minimum,
+                ),
+                child: Ink(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 7,
                   ),
-                  child: Ink(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   decoration: BoxDecoration(
                     color: primary
                         ? color.withValues(alpha: .15)
@@ -1137,52 +1141,75 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
           ),
+        );
+      }
+
+      final actionWidgets = <Widget>[];
+      if (_canDeposit) {
+        actionWidgets.add(
+          action(
+            icon: HopeV2Icons.transferIn,
+            fa: 'واریز',
+            en: 'Deposit',
+            onPressed: canAct ? _openTopUp : null,
+          ),
+        );
+      }
+      if (_canWithdraw) {
+        actionWidgets.add(
+          action(
+            icon: HopeV2Icons.transferOut,
+            fa: 'برداشت',
+            en: 'Withdraw',
+            onPressed: canAct ? _openWithdraw : null,
+            primary: true,
+          ),
+        );
+      }
+      actionWidgets.add(
+        action(
+          icon: HopeV2Icons.completed,
+          fa: 'تاریخچه',
+          en: 'History',
+          onPressed: () {
+            final target = _historyKey.currentContext;
+            if (target != null) {
+              Scrollable.ensureVisible(
+                target,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+              );
+            }
+          },
         ),
       );
-      }
 
       return PremiumPanel(
         key: const ValueKey('wallet-actions-panel'),
         quiet: true,
         padding: EdgeInsets.zero,
-        child: Row(
-          children: [
-            if (_canDeposit) ...[
-              action(
-                icon: HopeV2Icons.transferIn,
-                fa: 'واریز',
-                en: 'Deposit',
-                onPressed: canAct ? _openTopUp : null,
+        child: stackActions
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var index = 0; index < actionWidgets.length; index++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == actionWidgets.length - 1 ? 0 : 6,
+                      ),
+                      child: actionWidgets[index],
+                    ),
+                ],
+              )
+            : Row(
+                children: [
+                  for (var index = 0; index < actionWidgets.length; index++) ...[
+                    Expanded(child: actionWidgets[index]),
+                    if (index < actionWidgets.length - 1)
+                      const SizedBox(width: 6),
+                  ],
+                ],
               ),
-              const SizedBox(width: 6),
-            ],
-            if (_canWithdraw) ...[
-              action(
-                icon: HopeV2Icons.transferOut,
-                fa: 'برداشت',
-                en: 'Withdraw',
-                onPressed: canAct ? _openWithdraw : null,
-                primary: true,
-              ),
-              const SizedBox(width: 6),
-            ],
-            action(
-              icon: HopeV2Icons.completed,
-              fa: 'تاریخچه',
-              en: 'History',
-              onPressed: () {
-                final target = _historyKey.currentContext;
-                if (target != null) {
-                  Scrollable.ensureVisible(
-                    target,
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                  );
-                }
-              },
-            ),
-          ],
-        ),
       );
     }
 
