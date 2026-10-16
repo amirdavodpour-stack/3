@@ -319,6 +319,72 @@ void main() {
     },
   );
   testWidgets(
+    'candidate names preserve their full wording at 1.5x text scale',
+    (tester) async {
+      const longName =
+          'Senior financial systems analyst responsible for marketplace settlement operations';
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-long-candidate-name',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-long-name',
+            displayName: longName,
+            score: 94,
+            reasons: ['SKILL_MATCH'],
+            components: {'skills': 98, 'experience': 90},
+            applicationId: 'app-long-name',
+            status: 'PENDING',
+            skills: 'Flutter and financial workflows',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(longName);
+      expect(titleFinder, findsNWidgets(2));
+      for (final title in tester.widgetList<Text>(titleFinder)) {
+        expect(
+          title.maxLines,
+          isNull,
+          reason:
+              'Both the best-match overview and ranked candidate card must preserve the full display name at enlarged system text.',
+        );
+        expect(title.overflow, TextOverflow.visible);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'candidate match loader uses a single compact page shell in loading and loaded states',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
