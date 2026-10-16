@@ -125,6 +125,10 @@ if grep -Fq '\${(value * 100).round()}%' "$premium"; then
   exit 1
 fi
 grep -Fq 'compactHero: denseViewport' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'expandForAccessibilityText: true' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'final accessibilityTitleExpansion =' "$premium"
+grep -Fq 'StackFit.loose' "$premium"
+grep -Fq 'Job Detail hero expands to preserve long titles at 1.5x system text' "test/features/marketplace/job_detail_page_test.dart"
 grep -Fq 'end: 10,' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'includeMatch: false' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'if (includeMatch)' "lib/core/ui/hope_signature_components.dart"

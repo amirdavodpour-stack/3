@@ -1368,6 +1368,7 @@ class PremiumHero extends StatelessWidget {
     this.semanticLabel,
     this.domain,
     this.page,
+    this.expandForAccessibilityText = false,
   });
   final String eyebrow;
   final String title;
@@ -1382,11 +1383,15 @@ class PremiumHero extends StatelessWidget {
   final String? semanticLabel;
   final HopeProductDomain? domain;
   final HopePageId? page;
+  /// Lets a long title grow naturally only when users enlarge system text.
+  final bool expandForAccessibilityText;
 
   @override
   Widget build(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final accessibilityTitleExpansion = expandForAccessibilityText &&
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final resolvedDomain = domain ?? page?.spec.domain;
     // Editorial density is content-aware: informational heroes without an
     // action should not reserve the same vertical budget as a conversion hero.
@@ -1410,7 +1415,7 @@ class PremiumHero extends StatelessWidget {
       container: true,
       label: semanticLabel ?? title,
       child: Container(
-        height: heroHeight,
+        height: accessibilityTitleExpansion ? null : heroHeight,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           boxShadow: Theme.of(context).brightness == Brightness.dark
@@ -1419,7 +1424,9 @@ class PremiumHero extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
-          fit: StackFit.expand,
+          fit: accessibilityTitleExpansion
+              ? StackFit.loose
+              : StackFit.expand,
           children: [
             if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
               Positioned.fill(
@@ -1617,8 +1624,13 @@ class PremiumHero extends StatelessWidget {
                           ),
                           Text(
                             title,
-                            maxLines: compactHero ? 2 : (dense ? 2 : 3),
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: accessibilityTitleExpansion
+                                ? null
+                                : (compactHero ? 2 : (dense ? 2 : 3)),
+                            softWrap: true,
+                            overflow: accessibilityTitleExpansion
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: compactHero ? 19 : (dense ? 20 : 21),

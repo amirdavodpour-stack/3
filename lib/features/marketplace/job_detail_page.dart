@@ -838,6 +838,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           ? 148
                           : 214,
                   compactHero: denseViewport,
+                  expandForAccessibilityText: true,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
