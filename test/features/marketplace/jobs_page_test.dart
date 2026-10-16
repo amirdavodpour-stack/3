@@ -411,6 +411,30 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Explore loading follows the padded content width at the 420dp breakpoint',
+    (tester) async {
+      tester.view.physicalSize = const Size(440, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _LoadingExploreRepo());
+      await tester.pump();
+
+      final skeletons = find.byType(OpportunitySkeletonCard);
+      expect(skeletons, findsNWidgets(2));
+      for (var index = 0; index < 2; index++) {
+        expect(
+          tester.getSize(skeletons.at(index)).height,
+          lessThanOrEqualTo(132),
+          reason: 'A 440dp window loses 28dp to the compact page frame, so its 412dp content uses the horizontal phone card layout.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('jobs page requests categories and opportunities',
       (tester) async {
     final repo = _Repo();
