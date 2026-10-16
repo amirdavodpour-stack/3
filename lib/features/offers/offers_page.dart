@@ -314,7 +314,10 @@ class _OffersPageState extends State<OffersPage> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         o.message,
-                        maxLines: 3,
+                        maxLines:
+                            MediaQuery.textScalerOf(context).scale(1) > 1.2
+                                ? null
+                                : 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
