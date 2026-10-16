@@ -871,14 +871,61 @@ class _SkeletonBoxState extends State<SkeletonBox>
 }
 
 class OpportunitySkeletonCard extends StatelessWidget {
-  const OpportunitySkeletonCard({super.key, this.compact = false});
+  const OpportunitySkeletonCard({
+    super.key,
+    this.compact = false,
+    this.horizontal = false,
+  });
 
   /// Uses a short media band and a single metadata rail for first-fold cards.
   /// The default keeps the richer placeholder used by non-compact surfaces.
   final bool compact;
 
+  /// Mirrors the horizontal, media-leading summary used by phone Explore cards.
+  final bool horizontal;
+
   @override
   Widget build(BuildContext context) {
+    if (horizontal) {
+      return HopeSurface(
+        child: Padding(
+          padding: const EdgeInsets.all(HopeV2Spacing.sm),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SkeletonBox(
+                width: 72,
+                height: 72,
+                radius: HopeV2Radii.md,
+              ),
+              const SizedBox(width: HopeV2Spacing.sm),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final titleWidth = width < 220 ? width : 220.0;
+                    final subtitleWidth = width < 160 ? width : 160.0;
+                    final budgetWidth = width < 140 ? width : 140.0;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonBox(height: 18, width: titleWidth),
+                        const SizedBox(height: 5),
+                        SkeletonBox(height: 12, width: subtitleWidth),
+                        const SizedBox(height: 8),
+                        SkeletonBox(height: 14, width: budgetWidth),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (compact) {
       return HopeSurface(
         child: Column(

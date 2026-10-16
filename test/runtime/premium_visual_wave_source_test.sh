@@ -165,6 +165,10 @@ grep -Fq 'final compactBottomPadding = size.height < 560' "$premium"
 grep -Fq "premium-page-frame-content-padding" "$premium"
 grep -Fq 'wave18-compact-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'framePadding.padding.resolve(TextDirection.rtl).bottom, 16' 'test/core/ui/premium_visual_wave_15_test.dart'
+grep -Fq 'horizontal: horizontalSkeleton' "$jobs_widgets"
+grep -Fq 'final horizontalSkeleton =' "$jobs_widgets"
+grep -Fq 'final bool horizontal;' 'lib/core/ui/components.dart'
+grep -Fq 'if (horizontal)' 'lib/core/ui/components.dart'
 grep -Fq 'EdgeInsets.fromLTRB(0, 0, 0, 56)' 'lib/features/jobs/jobs_widgets.part.dart'
 grep -Fq 'tightViewport ? 12 : 20' 'lib/features/wallet/wallet_page.dart'
 grep -Fq 'The wallet ListView already owns navigation-aware end padding; its outer frame should stay compact.' 'test/features/wallet/wallet_page_test.dart'
