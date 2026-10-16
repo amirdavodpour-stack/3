@@ -111,6 +111,23 @@ class _Repo implements MarketplaceRepository {
   Future<void> publishOpportunity(String id) async {}
 }
 
+class _LoadingExploreRepo extends _Repo {
+  final Completer<List<HopeJob>> pendingJobs =
+      Completer<List<HopeJob>>();
+
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) => pendingJobs.future;
+}
+
 class _RankedExploreRepo extends _Repo {
   @override
   Future<List<HopeJob>> listOpportunities({
@@ -361,6 +378,34 @@ void main() {
         lessThanOrEqualTo(320),
         reason: 'Wide Explore opportunity cards should not reserve a fixed-aspect grid cell when their content is short.',
       );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Explore loading placeholders match horizontal compact cards on phones',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _LoadingExploreRepo());
+      await tester.pump();
+
+      final skeletons = find.byType(OpportunitySkeletonCard);
+      expect(skeletons, findsNWidgets(2));
+      for (var index = 0; index < 2; index++) {
+        expect(
+          tester.getSize(skeletons.at(index)).height,
+          lessThanOrEqualTo(132),
+          reason: 'Phone Explore loading should reserve a horizontal compact summary, not a tall image-first card.',
+        );
+        expect(
+          tester.getSize(skeletons.at(index)).width,
+          greaterThan(300),
+        );
+      }
       expect(tester.takeException(), isNull);
     },
   );
