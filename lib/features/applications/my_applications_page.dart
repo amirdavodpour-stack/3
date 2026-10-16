@@ -575,10 +575,11 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                           child: Tooltip(
                             message: label,
                             child: Text(
+                              // Enlarged text uses two responsive rows; allow a
+                              // longer localized stage name to wrap fully rather
+                              // than clipping it inside an intentionally compact tile.
                               label,
-                              maxLines: 2,
                               softWrap: true,
-                              overflow: TextOverflow.ellipsis,
                               style: Theme.of(context)
                                   .textTheme
                                   .labelSmall
