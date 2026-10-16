@@ -365,7 +365,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               future: _opportunities,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const _PulseSkeleton();
+                  return _PulseSkeleton(compact: compactFold);
                 }
                 if (snapshot.hasError || _error != null) {
                   return HopeAsyncState(
@@ -1093,11 +1093,21 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 }
 
 class _PulseSkeleton extends StatelessWidget {
-  const _PulseSkeleton();
+  const _PulseSkeleton({this.compact = false});
+
+  final bool compact;
+
   @override
-  Widget build(BuildContext context) => const Column(children: [
-    OpportunitySkeletonCard(),
-    SizedBox(height: HopeV2Spacing.md),
-    OpportunitySkeletonCard(),
-  ]);
+  Widget build(BuildContext context) {
+    if (compact) {
+      return const OpportunitySkeletonCard(compact: true);
+    }
+    return const Column(
+      children: [
+        OpportunitySkeletonCard(),
+        SizedBox(height: HopeV2Spacing.md),
+        OpportunitySkeletonCard(),
+      ],
+    );
+  }
 }
