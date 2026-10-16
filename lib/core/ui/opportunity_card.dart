@@ -723,8 +723,9 @@ class OpportunityCard extends StatelessWidget {
         SizedBox(height: enlargedText ? 2 : 4),
         Text(
           title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+          maxLines: enlargedText ? null : 2,
+          softWrap: true,
+          overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontSize: 14,
             height: 1.18,
@@ -736,8 +737,9 @@ class OpportunityCard extends StatelessWidget {
           Text(
             category,
             key: const ValueKey('opportunity-card-compact-grid-category'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : 1,
+            softWrap: true,
+            overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontSize: enlargedText ? 10.5 : 11.5,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -754,8 +756,9 @@ class OpportunityCard extends StatelessWidget {
               child: Text(
                 city,
                 key: const ValueKey('opportunity-card-compact-grid-location'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: enlargedText ? null : 1,
+                softWrap: true,
+                overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
               ),
             ),
@@ -793,6 +796,7 @@ class OpportunityCard extends StatelessWidget {
     HopeCopy copy,
   ) {
     final locationColor = Theme.of(context).colorScheme.onSurfaceVariant;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final media = ClipRRect(
       key: const ValueKey('opportunity-compact-media'),
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -820,8 +824,9 @@ class OpportunityCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                maxLines: enlargedText ? null : 2,
+                softWrap: true,
+                overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
@@ -837,8 +842,9 @@ class OpportunityCard extends StatelessWidget {
                     child: Text(
                       city,
                       key: const ValueKey('opportunity-card-compact-location'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: enlargedText ? null : 1,
+                      softWrap: true,
+                      overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: locationColor,
                             fontSize: 12,

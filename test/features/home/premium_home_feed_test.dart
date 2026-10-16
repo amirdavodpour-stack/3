@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -183,6 +184,9 @@ class _LoadingMarketplaceRepository extends _SequencedMarketplaceRepository {
   }) => pendingOpportunities.future;
 }
 
+const _wideGridLongTitle =
+    'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, component governance, and cross-functional delivery';
+
 class _WideGridMarketplaceRepository extends _SequencedMarketplaceRepository {
   @override
   Future<List<HopeJob>> listOpportunities({
@@ -198,7 +202,7 @@ class _WideGridMarketplaceRepository extends _SequencedMarketplaceRepository {
       [
         HopeJob.fromMap({
           'id': 'wide-grid-a',
-          'title': 'Design and research opportunity',
+          'title': _wideGridLongTitle,
           'description': 'A short description.',
           'kind': 'MISSION',
           'visibility': 'PUBLIC',
@@ -543,7 +547,7 @@ void main() {
   );
 
   testWidgets(
-    'wide Home switches to readable opportunity cards at 1.5x system text',
+    'wide Home opportunity titles remain complete at 1.5x system text',
     (tester) async {
       tester.view.physicalSize = const Size(1024, 1200);
       tester.view.devicePixelRatio = 1;
@@ -557,19 +561,43 @@ void main() {
       await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
-      final cards = tester.widgetList<OpportunityCard>(
-        find.byType(OpportunityCard),
-      ).toList(growable: false);
-      expect(cards, hasLength(3));
+      final title = find.text(_wideGridLongTitle);
+      expect(title, findsOneWidget);
       expect(
-        cards.any((card) => card.variant == OpportunityCardVariant.compactGrid),
+        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
         isFalse,
-        reason: 'Wide Home must not use two-column cards that cap titles and locations when system text is enlarged.',
+        reason: 'Wide Home compact-grid cards must wrap long titles instead of truncating them when system text is enlarged.',
       );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact Home opportunity titles remain complete at 1.5x system text',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _WideGridMarketplaceRepository(),
+        textScale: 1.5,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final title = find.text(_wideGridLongTitle);
+      await tester.scrollUntilVisible(
+        title,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(title, findsOneWidget);
       expect(
-        cards.every((card) => card.variant == OpportunityCardVariant.standard),
-        isTrue,
-        reason: 'At 1.5x text, opportunity cards should preserve their complete text in the natural-height standard variant.',
+        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+        isFalse,
+        reason: 'Compact Home summaries must wrap the full opportunity title at enlarged text scale.',
       );
       expect(tester.takeException(), isNull);
     },
