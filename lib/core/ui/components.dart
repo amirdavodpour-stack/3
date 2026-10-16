@@ -871,55 +871,42 @@ class _SkeletonBoxState extends State<SkeletonBox>
 }
 
 class OpportunitySkeletonCard extends StatelessWidget {
-  const OpportunitySkeletonCard({super.key});
+  const OpportunitySkeletonCard({super.key, this.compact = false});
+
+  /// Uses a short media band and a single metadata rail for first-fold cards.
+  /// The default keeps the richer placeholder used by non-compact surfaces.
+  final bool compact;
 
   @override
-  Widget build(BuildContext context) => HopeSurface(
+  Widget build(BuildContext context) {
+    if (compact) {
+      return HopeSurface(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SkeletonBox(height: 110, radius: HopeV2Radii.xl),
+            const SkeletonBox(height: 72, radius: HopeV2Radii.md),
             Padding(
-              padding: const EdgeInsets.all(HopeV2Spacing.lg),
+              padding: const EdgeInsets.all(HopeV2Spacing.sm),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  final titleWidth = width < 240 ? width : 240.0;
+                  final titleWidth = width < 220 ? width : 220.0;
                   final subtitleWidth = width < 180 ? width : 180.0;
-                  final detailWidth = width < 150 ? width : 150.0;
-                  final stack = width < 240;
-                  const items = [
-                    SkeletonBox(height: 28, width: 100),
-                    SkeletonBox(height: 28, width: 118),
-                  ];
+                  final chipWidth = width > 6 ? (width - 6) / 2 : width;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SkeletonBox(height: 20, width: titleWidth),
-                      const SizedBox(height: 9),
-                      SkeletonBox(height: 14, width: subtitleWidth),
-                      const SizedBox(height: 15),
-                      SkeletonBox(height: 14, width: detailWidth),
+                      SkeletonBox(height: 18, width: titleWidth),
+                      const SizedBox(height: 5),
+                      SkeletonBox(height: 12, width: subtitleWidth),
                       const SizedBox(height: 8),
-                      SkeletonBox(height: 20, width: detailWidth),
-                      const SizedBox(height: 12),
-                      if (stack)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            items[0],
-                            const SizedBox(height: 8),
-                            items[1],
-                          ],
-                        )
-                      else
-                        Row(
-                          children: [
-                            items[0],
-                            const SizedBox(width: 8),
-                            items[1],
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          SkeletonBox(height: 20, width: chipWidth),
+                          const SizedBox(width: 6),
+                          SkeletonBox(height: 20, width: chipWidth),
+                        ],
+                      ),
                     ],
                   );
                 },
@@ -928,5 +915,61 @@ class OpportunitySkeletonCard extends StatelessWidget {
           ],
         ),
       );
-}
+    }
 
+    return HopeSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SkeletonBox(height: 110, radius: HopeV2Radii.xl),
+          Padding(
+            padding: const EdgeInsets.all(HopeV2Spacing.lg),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final titleWidth = width < 240 ? width : 240.0;
+                final subtitleWidth = width < 180 ? width : 180.0;
+                final detailWidth = width < 150 ? width : 150.0;
+                final stack = width < 240;
+                const items = [
+                  SkeletonBox(height: 28, width: 100),
+                  SkeletonBox(height: 28, width: 118),
+                ];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBox(height: 20, width: titleWidth),
+                    const SizedBox(height: 9),
+                    SkeletonBox(height: 14, width: subtitleWidth),
+                    const SizedBox(height: 15),
+                    SkeletonBox(height: 14, width: detailWidth),
+                    const SizedBox(height: 8),
+                    SkeletonBox(height: 20, width: detailWidth),
+                    const SizedBox(height: 12),
+                    if (stack)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          items[0],
+                          const SizedBox(height: 8),
+                          items[1],
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          items[0],
+                          const SizedBox(width: 8),
+                          items[1],
+                        ],
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
