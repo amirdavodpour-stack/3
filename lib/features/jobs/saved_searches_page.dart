@@ -284,11 +284,54 @@ class _SavedSearchesPageState extends State<SavedSearchesPage> {
             if (!_loading && _error == null && _items.isNotEmpty)
               const SizedBox(height: 8),
             if (_loading)
-              const PremiumPanel(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                  height: 128,
-                  child: Center(child: CircularProgressIndicator()),
+              Semantics(
+                container: true,
+                liveRegion: true,
+                label: _t(
+                  'در حال بارگذاری جست‌وجوهای ذخیره‌شده',
+                  'Loading saved searches',
+                ),
+                child: PremiumPanel(
+                  key: const ValueKey('saved-search-loading-skeleton'),
+                  quiet: true,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SkeletonBox(
+                        width: 34,
+                        height: 34,
+                        radius: HopeV2Radii.md,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SkeletonBox(height: 14, width: 112),
+                            SizedBox(height: 6),
+                            SkeletonBox(height: 10, width: 96),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const SkeletonBox(
+                        width: 32,
+                        height: 32,
+                        radius: HopeV2Radii.md,
+                      ),
+                      const SizedBox(width: 4),
+                      const SkeletonBox(
+                        width: 32,
+                        height: 32,
+                        radius: HopeV2Radii.md,
+                      ),
+                    ],
+                  ),
                 ),
               )
             else if (_error != null)
