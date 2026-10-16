@@ -1591,7 +1591,11 @@ class OpportunityCard extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 260),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        // At enlarged text sizes, metadata occupies the available line width
+        // so the label wraps inside the card instead of sizing the Row to its
+        // intrinsic text width. Keep compact intrinsic sizing at normal scale.
+        mainAxisSize:
+            enlargedText ? MainAxisSize.max : MainAxisSize.min,
         children: [
           HopeIcon(
             icon,
@@ -1601,6 +1605,7 @@ class OpportunityCard extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Flexible(
+            fit: enlargedText ? FlexFit.tight : FlexFit.loose,
             child: Text(
               label,
               maxLines: enlargedText ? null : 1,
