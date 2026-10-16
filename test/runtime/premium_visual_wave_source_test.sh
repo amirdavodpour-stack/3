@@ -207,12 +207,16 @@ grep -Fq 'The wallet ListView already owns navigation-aware end padding; its out
 grep -Fq 'compactViewport ? 12 : 20' 'lib/features/marketplace/job_detail_page.dart'
 grep -Fq 'The opportunity detail ListView owns navigation-aware end padding; its outer frame should stay compact.' 'test/features/marketplace/job_detail_page_test.dart'
 
-# Wave 19: the financial range uses the full card width and must not be ellipsized.
+# Wave 19: scan amounts remain uncapped; featured amounts cap only at normal scale.
 grep -Fq "opportunity-card-budget-amount" "$opportunity"
-grep -Fq 'maxLines: 3,' "$opportunity"
-grep -Fq 'overflow: TextOverflow.clip' "$opportunity"
 grep -Fq "budgetText.data, contains('۲٬۵۰۰٬۰۰۰ تومان')" 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'didExceedMaxLines' 'test/core/ui/premium_visual_wave_15_test.dart'
+featured_budget_block="$(sed -n '/Widget _featuredStandard(/,/Widget _standard(/p' "$opportunity")"
+printf '%s\\n' "$featured_budget_block" | grep -Fq "ValueKey('opportunity-card-standard-budget')"
+printf '%s\\n' "$featured_budget_block" | grep -Fq 'maxLines: enlargedText ? null : 3,'
+printf '%s\\n' "$featured_budget_block" | grep -Fq 'overflow: enlargedText'
+printf '%s\\n' "$featured_budget_block" | grep -Fq 'TextOverflow.visible'
+printf '%s\\n' "$featured_budget_block" | grep -Fq 'TextOverflow.clip'
 
 # Wave 21: locale-safe date output, compact hero layering, visible filters,
 # compact financial metrics, and truthful exact-source evidence metadata.
