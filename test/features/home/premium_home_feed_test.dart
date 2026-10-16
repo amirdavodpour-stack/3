@@ -543,6 +543,39 @@ void main() {
   );
 
   testWidgets(
+    'wide Home switches to readable opportunity cards at 1.5x system text',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _WideGridMarketplaceRepository(),
+        textScale: 1.5,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final cards = tester.widgetList<OpportunityCard>(
+        find.byType(OpportunityCard),
+      ).toList(growable: false);
+      expect(cards, hasLength(3));
+      expect(
+        cards.any((card) => card.variant == OpportunityCardVariant.compactGrid),
+        isFalse,
+        reason: 'Wide Home must not use two-column cards that cap titles and locations when system text is enlarged.',
+      );
+      expect(
+        cards.every((card) => card.variant == OpportunityCardVariant.standard),
+        isTrue,
+        reason: 'At 1.5x text, opportunity cards should preserve their complete text in the natural-height standard variant.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'wide Home opportunity cards size to content instead of square grid cells',
     (tester) async {
       tester.view.physicalSize = const Size(1024, 1200);
