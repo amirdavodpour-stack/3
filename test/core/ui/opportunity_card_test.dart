@@ -101,6 +101,80 @@ void main() {
   );
 
   testWidgets(
+    'opportunity scan location metadata wraps fully at 1.5x text scale',
+    (tester) async {
+      const longCity =
+          'Greater Metropolitan District North-East Administrative Corridor';
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'scan-long-city-large-text',
+        'title': 'Senior product designer for a multilingual platform',
+        'description': 'Long location metadata regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'MISSION',
+        'jobType': 'FIXED',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1500000',
+        'budgetMax': '2500000',
+        'recommendationScore': 0.94,
+        'city': longCity,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featuredScan,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cityFinder = find.text(longCity);
+      expect(cityFinder, findsOneWidget);
+      final cityText = tester.widget<Text>(cityFinder);
+      expect(
+        cityText.maxLines,
+        isNull,
+        reason:
+            'Opportunity location metadata must not remain one-line ellipsized when text is enlarged.',
+      );
+      expect(cityText.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(cityFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
       'featured scan opportunity cards prioritize real category, match and budget in a compact composition',
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
