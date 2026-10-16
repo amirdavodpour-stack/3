@@ -524,6 +524,70 @@ testWidgets('accepting an offer disables the financial action until completion',
     },
   );
 
+  testWidgets(
+    'offer details remain scrollable without overflow at 1.5x on a compact viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final message = List.filled(
+        16,
+        'Each delivery includes a documented outcome, review window, acceptance conditions, and a clear handoff.',
+      ).join(' ');
+      final offer = HopeOffer(
+        id: 'long-details-offer',
+        jobId: 'job-1',
+        providerId: 'provider-1',
+        price: '2500000',
+        message: message,
+        status: 'PENDING',
+        createdAt: '2020-01-02T03:04:05.000Z',
+        updatedAt: null,
+        jobTitle: 'A detailed collaboration offer',
+      );
+
+      await tester.pumpWidget(
+        _host(
+          _FixedOfferRepository([offer]),
+          locale: const Locale('en'),
+          textScale: 1.5,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('A detailed collaboration offer').first);
+      await tester.pumpAndSettle();
+
+      final sheet = find.byType(BottomSheet);
+      expect(sheet, findsOneWidget);
+      final detailScroll = find.descendant(
+        of: sheet,
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(
+        detailScroll,
+        findsOneWidget,
+        reason: 'Long offer details must scroll within the sheet on a short viewport.',
+      );
+
+      final messageFinder = find.descendant(
+        of: sheet,
+        matching: find.text(message),
+      );
+      expect(messageFinder, findsOneWidget);
+      await tester.scrollUntilVisible(
+        messageFinder,
+        120,
+        scrollable: find.descendant(
+          of: sheet,
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('offers empty state is explicit when repository returns zero rows',
       (tester) async {
     final repository = _FixedOfferRepository(const []);
