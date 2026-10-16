@@ -706,6 +706,78 @@ void main() {
     expect(find.text('Try again'), findsOneWidget);
   });
 
+  testWidgets(
+    'wallet history cards avoid duplicate reference text and expose date to assistive tech',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: auth),
+                Provider<WalletRepository>.value(value: wallet),
+              ],
+              child: WalletPage(repository: wallet),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final card = find.byKey(
+          const ValueKey('wallet-history-entry-tx-1'),
+        );
+        await tester.scrollUntilVisible(
+          card,
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        final tile = tester.widget<ListTile>(
+          find.descendant(of: card, matching: find.byType(ListTile)),
+        );
+        final subtitle = tile.subtitle as Text;
+        expect(subtitle.data, isNotEmpty);
+        expect(subtitle.data, isNot(contains('انتقال داخلی')));
+        expect(subtitle.data, isNot(contains('\n')));
+
+        final rowSemantics = find.ancestor(
+          of: card,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Semantics && widget.button,
+          ),
+        ).first;
+        final semanticLabel = tester.getSemantics(rowSemantics).label;
+        expect(
+          semanticLabel,
+          contains(subtitle.data),
+          reason: 'The date shown in the ledger row must also be present in its grouped screen-reader label.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
   testWidgets('wallet transaction rows expose grouped finance semantics',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
