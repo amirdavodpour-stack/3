@@ -377,25 +377,19 @@ void main() {
         );
         expect(card, findsOneWidget);
 
-        final actionableSemantics = find.descendant(
-          of: card,
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics &&
-                widget.button == true &&
-                (widget.label ?? '').contains('به‌روزرسانی درخواست') &&
-                (widget.label ?? '').contains('مشاهده پروژه'),
-          ),
+        final actionableSemantics = find.bySemanticsLabel(
+          RegExp('به‌روزرسانی درخواست.*مشاهده پروژه'),
         );
         expect(
           actionableSemantics,
           findsOneWidget,
-          reason: 'A read notification with a valid route must remain exposed as an actionable control to screen readers.',
+          reason: 'A read notification with a valid route must expose its title and action to screen readers.',
         );
-        final semanticLabel =
-            tester.getSemantics(actionableSemantics).label;
-        expect(semanticLabel, contains('به‌روزرسانی درخواست'));
-        expect(semanticLabel, contains('مشاهده پروژه'));
+        final semanticData = tester.getSemantics(actionableSemantics);
+        expect(semanticData.label, contains('به‌روزرسانی درخواست'));
+        expect(semanticData.label, contains('مشاهده پروژه'));
+        expect(semanticData.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(semanticData.hasAction(SemanticsAction.tap), isTrue);
         expect(tester.takeException(), isNull);
       } finally {
         semantics.dispose();
