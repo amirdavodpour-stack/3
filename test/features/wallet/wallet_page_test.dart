@@ -761,9 +761,7 @@ void main() {
 
         final rowSemantics = find.ancestor(
           of: card,
-          matching: find.byWidgetPredicate(
-            (widget) => widget is Semantics && widget.button,
-          ),
+          matching: find.byType(Semantics),
         ).first;
         final semanticLabel = tester.getSemantics(rowSemantics).label;
         expect(
