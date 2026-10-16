@@ -201,43 +201,68 @@ class _TransactionsPageState extends State<TransactionsPage> {
     required Object icon,
     required Color accent,
   }) {
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: HopeV2Colors.muted,
+          fontWeight: FontWeight.w800,
+        );
+    final valueStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w900,
+        );
     return Container(
       constraints: const BoxConstraints(minHeight: 58),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      child: Row(
-          children: [
-            HopeIcon(icon, size: 18, color: accent, strokeWidth: 1.9),
-            const SizedBox(width: 7),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: HopeV2Colors.muted,
-                          fontWeight: FontWeight.w800,
-                        ),
+      child: enlargedText
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HopeIcon(icon, size: 18, color: accent, strokeWidth: 1.9),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                  style: labelStyle,
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  value,
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                  style: valueStyle,
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                HopeIcon(icon, size: 18, color: accent, strokeWidth: 1.9),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        style: labelStyle,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: valueStyle,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 1),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
+    );
   }
 
   Widget _workItemCard(HopeJob job) {
@@ -564,7 +589,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ],
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final metricWidth = (constraints.maxWidth - 16) / 3;
+                        final enlargedText =
+                            MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                        const gap = 8.0;
+                        final columns = enlargedText ? 2 : 3;
+                        final metricWidth =
+                            (constraints.maxWidth - gap * (columns - 1)) /
+                                columns;
                         final metrics = [
                           _workCenterMetric(
                             label: _t('همکاری‌ها', 'Collaborations'),
@@ -586,14 +617,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           ),
                         ];
 
-                        return Row(
+                        return Wrap(
                           key: const ValueKey('work-center-metrics'),
+                          spacing: gap,
+                          runSpacing: 8,
                           children: [
-                            for (var index = 0; index < metrics.length; index++) ...[
-                              SizedBox(width: metricWidth, child: metrics[index]),
-                              if (index != metrics.length - 1)
-                                const SizedBox(width: 8),
-                            ],
+                            for (final metric in metrics)
+                              SizedBox(width: metricWidth, child: metric),
                           ],
                         );
                       },
