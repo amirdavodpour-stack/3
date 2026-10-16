@@ -268,6 +268,16 @@ class _WalletPageState extends State<WalletPage> {
   String _entryTitle(HopeWalletTransaction item) =>
       _referenceTypeLabel(item.referenceType);
 
+  String _transactionSemanticsLabel(HopeWalletTransaction item) {
+    final date = _date(item.createdAt);
+    return [
+      _entryTitle(item),
+      _directionLabel(item.direction),
+      _signedMoney(item),
+      if (date.isNotEmpty) date,
+    ].join('، ');
+  }
+
   Color _directionColor(BuildContext context, bool credit) => credit
       ? HopeV2SemanticColors.incomingAmount(context)
       : HopeV2SemanticColors.negativeAmount(context);
@@ -1427,8 +1437,7 @@ class _WalletPageState extends State<WalletPage> {
                     button: true,
                     explicitChildNodes: false,
                     excludeSemantics: true,
-                    label:
-                        '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${_signedMoney(item)}',
+                    label: _transactionSemanticsLabel(item),
                     onTap: () => _showTransaction(item),
                     child: ExcludeSemantics(
                       child: PremiumPanel(
@@ -1458,11 +1467,11 @@ class _WalletPageState extends State<WalletPage> {
                             ),
                           ),
                           subtitle: Text(
-                            '${_date(item.createdAt)}\n${_referenceTypeLabel(item.referenceType)}',
+                            _date(item.createdAt),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          isThreeLine: true,
+                          isThreeLine: false,
                           trailing: Text(
                             '${_signedMoney(item)}',
                             textAlign: TextAlign.end,
