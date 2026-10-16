@@ -54,3 +54,13 @@ Green is restored as a frequent complementary identity hue beside indigo, not as
 - Review icon ambiguity at 16–24dp before considering the migration complete.
 
 No production branch is targeted directly. This specification is reviewed with the feature branch and must pass its CI and runtime evidence gate before merge.
+
+
+## Card-density continuation — 2026-10-16
+
+- Home loading placeholders now follow the compact viewport contract. Home opportunity grids use width-calculated tiles with natural content height rather than fixed-aspect cells. A regression test covers a 1024×1200 layout and prevents cards with short content from expanding into oversized square tiles.
+- Explore uses content-sized two/three-column opportunity tiles while retaining full-width compact summaries on phones. The test previously reproduced a 509.30dp card against a 320dp budget; the corrected layout passes.
+- Explore loading placeholders follow the content-width breakpoint: horizontal skeletons for phone-width compact summaries, compact-grid placeholders for two-column content, and standard placeholders where the loaded card is standard.
+- Notification-device loading now mirrors the compact device row (platform tile, text rails, action placeholder), announces the loading state through a live region, and remains under the compact panel-height budget.
+- Wallet's history transition uses viewport height as well as compact width: a short phone preserves every bit of first-fold space, while a taller compact screen retains 4dp separation before history.
+- Static verification on exact HEAD `ae1a3434afe28d4a3f335266b162934b2598bc36`: [run 38918058048](https://github.com/amirdavodpour-stack/3/actions/runs/38918058048), **440 tests passed**. Runtime visual acceptance remains pending; its workflow was skipped and no screenshot was captured.

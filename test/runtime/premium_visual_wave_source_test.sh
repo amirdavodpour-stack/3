@@ -12,6 +12,7 @@ premium="lib/core/ui/premium_components.dart"
 theme="lib/core/theme/hope_v2_design.dart"
 home="lib/features/home/premium_home_feed.dart"
 jobs_widgets="lib/features/jobs/jobs_widgets.part.dart"
+notification_devices="lib/features/notifications/notification_devices_page.dart"
 android_theme="android/app/src/main/res/values/styles.xml"
 android_theme_v26="android/app/src/main/res/values-v26/styles.xml"
 runtime_driver="integration_test/runtime/critical_screens_evidence_test.dart"
@@ -310,6 +311,14 @@ grep -Fq 'variant: textScale > 1.2' "$jobs_widgets"
 grep -Fq 'return Wrap(' "$jobs_widgets"
 grep -Fq 'variant: columns == 2' "$jobs_widgets"
 grep -Fq 'OpportunityCardVariant.compactGrid' "$jobs_widgets"
+# Device-management loading previews the actual compact row structure, not a lone spinner.
+grep -Fq "label: _t('در حال بارگذاری دستگاه‌های اعلان', 'Loading notification devices')" "$notification_devices"
+grep -Fq 'SkeletonBox(' "$notification_devices"
+grep -Fq 'liveRegion: true' "$notification_devices"
+if grep -Fq 'SizedBox(height: 72, child: Center(child: CircularProgressIndicator()))' "$notification_devices"; then
+  echo "FAIL: notification-device loading regressed to a spinner-only placeholder" >&2
+  exit 1
+fi
 grep -Fq 'wide Explore opportunity cards size to content instead of square grid cells' 'test/features/marketplace/jobs_page_test.dart'
 if grep -Fq 'childAspectRatio: columns == 3 ? 1.04 : 0.86' "$jobs_widgets"; then
   echo "FAIL: Explore still reserves fixed-aspect opportunity grid cells" >&2
