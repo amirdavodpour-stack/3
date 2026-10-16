@@ -124,6 +124,84 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     );
   }
 
+  Widget _candidateOverviewContent(
+    BuildContext context, {
+    required HopeEmployerCandidateMatch best,
+    required String gapValue,
+    required bool enlargedText,
+    required int candidateCount,
+  }) {
+    final identity = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _t(context, 'بهترین تطابق', 'Best fit'),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? HopeV2Colors.darkMuted
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          best.displayName,
+          maxLines: enlargedText ? null : 1,
+          softWrap: true,
+          overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+        ),
+      ],
+    );
+    final scoreTag = PremiumTag(
+      key: const ValueKey('candidate-comparison-best-score'),
+      icon: HopeV2Icons.match,
+      label: _candidateScoreLabel(context, best.score),
+      color: Theme.of(context).colorScheme.primary,
+    );
+    final gapTag = candidateCount > 1
+        ? PremiumTag(
+            label: _t(
+              context,
+              'اختلاف $gapValue واحد درصد',
+              '$gapValue percentage-point gap',
+            ),
+            color: HopeV2Colors.secondary,
+          )
+        : null;
+
+    if (enlargedText) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          identity,
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 7,
+            runSpacing: 6,
+            children: [
+              scoreTag,
+              if (gapTag != null) gapTag,
+            ],
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(child: identity),
+        scoreTag,
+        if (gapTag != null) ...[
+          const SizedBox(width: 7),
+          gapTag,
+        ],
+      ],
+    );
+  }
+
   Widget _comparisonMatrix(BuildContext context) {
     final candidates = data.candidates.take(3).toList(growable: false);
     const keys = ['skills', 'experience', 'location', 'salary'];
@@ -307,54 +385,12 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                 key: const ValueKey('candidate-comparison-overview'),
                 quiet: true,
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _t(context, 'بهترین تطابق', 'Best fit'),
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: Theme.of(context).brightness == Brightness.dark
-                                      ? HopeV2Colors.darkMuted
-                                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            best.displayName,
-                            maxLines: enlargedText ? null : 1,
-                            softWrap: true,
-                            overflow: enlargedText
-                                ? TextOverflow.visible
-                                : TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PremiumTag(
-                      key: const ValueKey('candidate-comparison-best-score'),
-                      icon: HopeV2Icons.match,
-                      label: _candidateScoreLabel(context, best.score),
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    if (data.candidates.length > 1) ...[
-                      const SizedBox(width: 7),
-                      PremiumTag(
-                        label: _t(
-                          context,
-                          'اختلاف $gapValue واحد درصد',
-                          '$gapValue percentage-point gap',
-                        ),
-                        color: HopeV2Colors.secondary,
-                      ),
-                    ],
-                  ],
+                child: _candidateOverviewContent(
+                  context,
+                  best: best,
+                  gapValue: gapValue,
+                  enlargedText: enlargedText,
+                  candidateCount: data.candidates.length,
                 ),
               );
             },
