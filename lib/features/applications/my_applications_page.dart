@@ -473,7 +473,12 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                           textScaler: MediaQuery.textScalerOf(context),
                           maxLines: 1,
                         )..layout(maxWidth: availableWidth);
-                        final requiresWrap = painter.didExceedMaxLines;
+                        // Keep common short city names in the compact tag.
+                        // Only the longer names need the wrap-capable surface,
+                        // and only when actual measured text width confirms it.
+                        final requiresWrap =
+                            item.jobCity!.trim().length > 24 &&
+                                painter.didExceedMaxLines;
                         painter.dispose();
 
                         if (!requiresWrap) {
