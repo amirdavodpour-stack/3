@@ -118,6 +118,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
   @override
   Widget build(BuildContext context) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return Directionality(
       textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
       child: Scaffold(
@@ -234,8 +235,11 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                             Text(
                                               '${row['jobTitle'] ?? _t('اختلاف همکاری', 'Work dispute')}',
                                               style: HopeV2Type.section(context),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: enlargedText ? null : 2,
+                                              softWrap: true,
+                                              overflow: enlargedText
+                                                  ? TextOverflow.visible
+                                                  : TextOverflow.ellipsis,
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
