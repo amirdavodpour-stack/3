@@ -653,7 +653,7 @@ class OpportunityCard extends StatelessWidget {
         ? ''
         : hopeCategoryLabel(context, categoryValue);
     final match = _matchLabel(context);
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (enlargedText)
@@ -783,6 +783,17 @@ class OpportunityCard extends StatelessWidget {
           ),
         ],
       ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Natural-height cards remain fully expanded in a Wrap. If a parent
+        // imposes a finite tile height, large-text content becomes scrollable
+        // rather than overflowing or truncating its title/financial range.
+        if (enlargedText && constraints.hasBoundedHeight) {
+          return SingleChildScrollView(child: content);
+        }
+        return content;
+      },
     );
   }
 

@@ -392,7 +392,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               ? 11
               : 13,
           vertical: compactLargeText
-              ? 7
+              ? 5
               : (MediaQuery.sizeOf(context).width <
                       HopeV2Breakpoints.compact
                   ? 11
