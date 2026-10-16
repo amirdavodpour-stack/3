@@ -121,9 +121,14 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
-HopeJob _job(String id, {String status = 'OPEN'}) => HopeJob.fromMap({
+HopeJob _job(
+  String id, {
+  String status = 'OPEN',
+  String? title,
+}) =>
+    HopeJob.fromMap({
       'id': id,
-      'title': 'پروژه $id',
+      'title': title ?? 'پروژه $id',
       'description': '',
       'status': status,
       'kind': 'MISSION',
@@ -325,6 +330,45 @@ void main() {
     await _pump(tester, repo);
     expect(find.byType(BackdropFilter), findsNothing);
   });
+
+  testWidgets(
+    'Work Center keeps the full opportunity title at 1.5x system text',
+    (tester) async {
+      const title =
+          'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, component governance, and cross-functional delivery';
+      final repo = _Transactions()
+        ..jobs = [
+          _job(
+            'long-work-center-title',
+            status: 'IN_PROGRESS',
+            title: title,
+          ),
+        ];
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+      );
+
+      final titleFinder = find.text(title);
+      await tester.scrollUntilVisible(
+        titleFinder,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(titleFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'The Work Center card should allow its complete project title to wrap at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('loaded work center uses dense header hierarchy', (tester) async {
     final repo = _Transactions()
