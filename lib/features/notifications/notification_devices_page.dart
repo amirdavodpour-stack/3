@@ -158,8 +158,43 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               ),
             if (!_loading && _error == null) const SizedBox(height: 8),
             if (_loading)
-              const PremiumPanel(
-                child: SizedBox(height: 72, child: Center(child: CircularProgressIndicator())),
+              Semantics(
+                container: true,
+                liveRegion: true,
+                label: _t('در حال بارگذاری دستگاه‌های اعلان', 'Loading notification devices'),
+                child: PremiumPanel(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      const SkeletonBox(
+                        width: 36,
+                        height: 36,
+                        radius: HopeV2Radii.md,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SkeletonBox(height: 14, width: 112),
+                            SizedBox(height: 6),
+                            SkeletonBox(height: 10, width: 76),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const SkeletonBox(
+                        width: 64,
+                        height: 28,
+                        radius: HopeV2Radii.md,
+                      ),
+                    ],
+                  ),
+                ),
               )
             else if (_error != null)
               PremiumPanel(
