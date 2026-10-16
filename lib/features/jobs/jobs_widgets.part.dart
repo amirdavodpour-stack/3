@@ -167,25 +167,37 @@ class _JobsResultsSliver extends StatelessWidget {
                   ),
                 if (featuredJob != null && remaining.isNotEmpty)
                   const SizedBox(height: HopeV2Spacing.sm),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: remaining.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: HopeV2Spacing.md,
-                    mainAxisSpacing: HopeV2Spacing.sm,
-                    childAspectRatio: columns == 3 ? 1.04 : 0.86,
-                  ),
-                  itemBuilder: (context, index) => AnimatedEntrance(
-                    delay: Duration(milliseconds: 35 * index.clamp(0, 10)),
-                    child: OpportunityCard(
-                      job: remaining[index],
-                      variant: columns == 2
-                          ? OpportunityCardVariant.compactGrid
-                          : OpportunityCardVariant.standard,
-                    ),
-                  ),
+                Builder(
+                  builder: (context) {
+                    final columnGap = HopeV2Spacing.md;
+                    final rowGap = HopeV2Spacing.sm;
+                    final cardWidth = (constraints.maxWidth -
+                            columnGap * (columns - 1)) /
+                        columns;
+                    // Let each tile fit its actual metadata and budget instead
+                    // of reserving a tall fixed-aspect cell in a scroll view.
+                    return Wrap(
+                      spacing: columnGap,
+                      runSpacing: rowGap,
+                      children: [
+                        for (var index = 0; index < remaining.length; index++)
+                          SizedBox(
+                            width: cardWidth,
+                            child: AnimatedEntrance(
+                              delay: Duration(
+                                milliseconds: 35 * index.clamp(0, 10),
+                              ),
+                              child: OpportunityCard(
+                                job: remaining[index],
+                                variant: columns == 2
+                                    ? OpportunityCardVariant.compactGrid
+                                    : OpportunityCardVariant.standard,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
               ],
             );

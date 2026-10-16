@@ -290,7 +290,15 @@ grep -Fq 'String _formatCompactGridAmount(' "$opportunity"
 grep -Fq '_formatCompactGridAmount(amount, context)' "$opportunity"
 grep -Fq 'variant: columns == 2' "$jobs_widgets"
 grep -Fq 'variant: textScale > 1.2' "$jobs_widgets"
-grep -Fq 'childAspectRatio: columns == 3 ? 1.04 : 0.86' "$jobs_widgets"
+# Explore opportunity tiles are content-sized; grid width remains responsive.
+grep -Fq 'return Wrap(' "$jobs_widgets"
+grep -Fq 'variant: columns == 2' "$jobs_widgets"
+grep -Fq 'OpportunityCardVariant.compactGrid' "$jobs_widgets"
+grep -Fq 'wide Explore opportunity cards size to content instead of square grid cells' 'test/features/marketplace/jobs_page_test.dart'
+if grep -Fq 'childAspectRatio: columns == 3 ? 1.04 : 0.86' "$jobs_widgets"; then
+  echo "FAIL: Explore still reserves fixed-aspect opportunity grid cells" >&2
+  exit 1
+fi
 grep -Fq 'final columns = textScale > 1.2' "$jobs_widgets"
 grep -Fq "Wave 26 Explore falls back to a single column at enlarged text scale" "test/features/marketplace/jobs_page_test.dart"
 grep -Fq 'minimumSize: WidgetStatePropertyAll(' "lib/features/jobs/jobs_filter_bar.part.dart"
