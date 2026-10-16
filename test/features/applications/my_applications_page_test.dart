@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
@@ -464,6 +465,67 @@ void main() {
           reason: 'The ${entry.value} marker needs a visible stage label.',
         );
         expect(find.descendant(of: label, matching: find.text(entry.value)), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'application timeline labels do not truncate at 1.5x text on a compact viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Provider<ApplicationRegistry>.value(
+              value: ApplicationRegistry(
+                profile: _ManyApplicationsRepository(),
+              ),
+              child: const MyApplicationsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      const stages = <String, String>{
+        'PENDING': 'Pending',
+        'SHORTLISTED': 'Shortlist',
+        'FORWARDED': 'Forwarded',
+        'INTERVIEW': 'Interview',
+        'OFFERED': 'Offer',
+        'ACCEPTED': 'Accepted',
+      };
+      for (final entry in stages.entries) {
+        final label = find.byKey(
+          ValueKey('application-timeline-pending-app-${entry.key}'),
+        );
+        expect(label, findsOneWidget);
+        final textFinder = find.descendant(
+          of: label,
+          matching: find.text(entry.value),
+        );
+        final paragraph = tester.renderObject<RenderParagraph>(textFinder);
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: '${entry.value} must remain fully visible when system text is scaled to 1.5x.',
+        );
       }
       expect(tester.takeException(), isNull);
     },
