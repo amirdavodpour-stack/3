@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -559,6 +560,40 @@ void main() {
     expect(widget.maxLines, 2);
     expect(widget.overflow, TextOverflow.ellipsis);
   });
+
+  testWidgets(
+    'Job Detail hero expands to preserve long titles at 1.5x system text',
+    (tester) async {
+      const title =
+          'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل';
+      await _pump(
+        tester,
+        job: _job(title: title),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+
+      final titleFinder = find.text(title);
+      final heroFinder = find.byType(PremiumHero);
+      expect(titleFinder, findsOneWidget);
+      expect(heroFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'At enlarged system text, the Job Detail hero must show the entire opportunity title instead of clipping it to two lines.',
+      );
+      final titleRect = tester.getRect(titleFinder);
+      final heroRect = tester.getRect(heroFinder);
+      expect(
+        titleRect.bottom,
+        lessThanOrEqualTo(heroRect.bottom),
+        reason: 'The expanded title must remain inside the hero surface.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('owner job with forwarded candidates renders candidate actions',
       (tester) async {
