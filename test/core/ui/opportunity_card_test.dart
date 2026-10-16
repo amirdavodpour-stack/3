@@ -1454,6 +1454,85 @@ void main() {
   );
 
   testWidgets(
+    'standard, featured, featured-scan and expanded cards preserve full titles at 1.5x',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const title =
+          'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, component governance, and cross-functional delivery';
+      final job = HopeJob.fromMap({
+        'id': 'all-card-variants-long-title',
+        'title': title,
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'MISSION',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Frankfurt am Main',
+      });
+      const variants = [
+        OpportunityCardVariant.standard,
+        OpportunityCardVariant.featured,
+        OpportunityCardVariant.featuredScan,
+        OpportunityCardVariant.expanded,
+      ];
+      final clippedVariants = <String>[];
+
+      for (final variant in variants) {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: OpportunityCard(job: job, variant: variant),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final titleFinder = find.text(title);
+        if (titleFinder.evaluate().isEmpty) {
+          clippedVariants.add('${variant.name}: title missing');
+        } else if (tester
+            .renderObject<RenderParagraph>(titleFinder.first)
+            .didExceedMaxLines) {
+          clippedVariants.add(variant.name);
+        }
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '${variant.name} should reflow without layout overflow at 1.5x.',
+        );
+      }
+
+      expect(
+        clippedVariants,
+        isEmpty,
+        reason: 'Large-text titles must not be silently truncated in card variants: ${clippedVariants.join(', ')}',
+      );
+    },
+  );
+
+  testWidgets(
     'Wave 34 compact-grid card remains usable at 1.5x text scale with legible key metadata',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
