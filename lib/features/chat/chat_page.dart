@@ -451,6 +451,28 @@ class _ChatPageState extends State<ChatPage> {
                                         final timestamp = MaterialLocalizations.of(context).formatTimeOfDay(
                                           TimeOfDay.fromDateTime(message.createdAt.toLocal()),
                                         );
+                                        final senderNameText = Text(
+                                          message.senderName,
+                                          key: ValueKey('chat-sender-${message.id}'),
+                                          maxLines: expandableHeaderText ? null : 1,
+                                          softWrap: true,
+                                          overflow: expandableHeaderText
+                                              ? TextOverflow.visible
+                                              : TextOverflow.ellipsis,
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                        );
+                                        final timestampText = Text(
+                                          timestamp,
+                                          key: ValueKey('chat-message-timestamp-${message.id}'),
+                                          textDirection: TextDirection.ltr,
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: colors.onSurfaceVariant,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        );
                                         return Padding(
                                           padding: const EdgeInsets.only(bottom: 6),
                                           child: Align(
@@ -476,34 +498,36 @@ class _ChatPageState extends State<ChatPage> {
                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
                                                       if (showSender)
-                                                        Row(
-                                                          children: [
-                                                            Expanded(
-                                                              child: Text(
-                                                                message.senderName,
-                                                                key: ValueKey('chat-sender-${message.id}'),
-                                                                maxLines: 1,
-                                                                overflow: TextOverflow.ellipsis,
-                                                                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+                                                        if (expandableHeaderText)
+                                                          Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                            children: [
+                                                              senderNameText,
+                                                              const SizedBox(height: 3),
+                                                              Align(
+                                                                alignment: AlignmentDirectional.centerEnd,
+                                                                child: timestampText,
                                                               ),
-                                                            ),
-                                                            const SizedBox(width: 8),
-                                                            Text(
-                                                              timestamp,
-                                                              key: ValueKey('chat-message-timestamp-${message.id}'),
-                                                              textDirection: TextDirection.ltr,
-                                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                                color: colors.onSurfaceVariant,
-                                                                fontSize: 12,
-                                                                fontWeight: FontWeight.w600,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        )
+                                                            ],
+                                                          )
+                                                        else
+                                                          Row(
+                                                            children: [
+                                                              Expanded(child: senderNameText),
+                                                              const SizedBox(width: 8),
+                                                              timestampText,
+                                                            ],
+                                                          )
                                                       else
                                                         Align(
                                                           alignment: AlignmentDirectional.centerEnd,
-                                                          child: Text(timestamp, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
+                                                          child: Text(
+                                                            timestamp,
+                                                            textDirection: TextDirection.ltr,
+                                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                                  color: colors.onSurfaceVariant,
+                                                                ),
+                                                          ),
                                                         ),
                                                       if (showSender) const SizedBox(height: 5),
                                                       Text(message.body, style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.42)),
