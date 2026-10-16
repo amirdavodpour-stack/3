@@ -2709,4 +2709,74 @@ void main() {
     },
   );
 
+  testWidgets(
+    'standard opportunity company metadata wraps fully at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const company =
+          'International Product Design and Engineering Consortium';
+      final job = HopeJob.fromMap({
+        'id': 'standard-company-large-text',
+        'title': 'Product designer',
+        'description': 'Company metadata wrapping regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'companyName': company,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.standard,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final companyFinder = find.text(company);
+      expect(companyFinder, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(companyFinder);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Company identity must remain readable instead of ellipsized at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
