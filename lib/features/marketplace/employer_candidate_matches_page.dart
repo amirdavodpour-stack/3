@@ -266,6 +266,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return PremiumPageFrame(
       page: HopePageId.candidateMatches,
       domain: HopeProductDomain.intelligence,
@@ -324,8 +325,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             best.displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: enlargedText ? null : 1,
+                            softWrap: true,
+                            overflow: enlargedText
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -436,8 +440,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                                 candidate.displayName.isEmpty
                                     ? _t(context, 'کارگر', 'Worker')
                                     : candidate.displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: enlargedText ? null : 1,
+                                softWrap: true,
+                                overflow: enlargedText
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
