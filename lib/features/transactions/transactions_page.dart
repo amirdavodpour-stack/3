@@ -338,10 +338,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
               compact: MediaQuery.textScalerOf(context).scale(1) <= 1.2,
               steps: _stepsForStatus(status),
               title: _t('مسیر همکاری', 'Work flow'),
-              subtitle: _t(
-                'وضعیت فعلی همکاری را در یک نگاه دنبال کنید.',
-                'Follow the current collaboration state at a glance.',
-              ),
+              subtitle: enlargedText
+                  ? _t(
+                      'وضعیت فعلی همکاری را در یک نگاه دنبال کنید.',
+                      'Follow the current collaboration state at a glance.',
+                    )
+                  : null,
             ),
             FutureBuilder<HopePayment?>(
               future: _tryGetPayment(job.id),
