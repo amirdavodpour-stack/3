@@ -701,8 +701,11 @@ Widget _buildPage(BuildContext context) {
                       Text(
                         job?.title ??
                             HopeCopy.of(context).copy_transaction_7e0ea3b,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: enlargedText ? null : 2,
+                        softWrap: true,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       if (payment?.id == null) ...[
