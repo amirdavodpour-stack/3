@@ -167,6 +167,8 @@ grep -Fq 'wave18-compact-scroll-viewport' 'test/core/ui/premium_visual_wave_15_t
 grep -Fq 'framePadding.padding.resolve(TextDirection.rtl).bottom, 16' 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'horizontal: horizontalSkeleton' "$jobs_widgets"
 grep -Fq 'final horizontalSkeleton =' "$jobs_widgets"
+grep -Fq 'SliverLayoutBuilder(' "$jobs_widgets"
+grep -Fq 'constraints.crossAxisExtent' "$jobs_widgets"
 grep -Fq 'final bool horizontal;' 'lib/core/ui/components.dart'
 grep -Fq 'if (horizontal)' 'lib/core/ui/components.dart'
 grep -Fq 'EdgeInsets.fromLTRB(0, 0, 0, 56)' 'lib/features/jobs/jobs_widgets.part.dart'

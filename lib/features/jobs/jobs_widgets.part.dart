@@ -22,28 +22,33 @@ class _JobsResultsSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      final viewportWidth = MediaQuery.sizeOf(context).width;
-      final textScale = MediaQuery.textScalerOf(context).scale(1);
-      final horizontalSkeleton =
-          viewportWidth < 420 && textScale <= 1.2;
-      final compactGridSkeleton = viewportWidth >= 420 &&
-          viewportWidth < HopeV2Breakpoints.expanded &&
-          textScale <= 1.2;
-      return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 56),
-        sliver: SliverList(
-          delegate: SliverChildListDelegate([
-            OpportunitySkeletonCard(
-              horizontal: horizontalSkeleton,
-              compact: compactGridSkeleton,
+      return SliverLayoutBuilder(
+        builder: (context, constraints) {
+          // Match the same padded content width used by the loaded results.
+          final viewportWidth = constraints.crossAxisExtent;
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final horizontalSkeleton =
+              viewportWidth < 420 && textScale <= 1.2;
+          final compactGridSkeleton = viewportWidth >= 420 &&
+              viewportWidth < HopeV2Breakpoints.expanded &&
+              textScale <= 1.2;
+          return SliverPadding(
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 56),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                OpportunitySkeletonCard(
+                  horizontal: horizontalSkeleton,
+                  compact: compactGridSkeleton,
+                ),
+                const SizedBox(height: 12),
+                OpportunitySkeletonCard(
+                  horizontal: horizontalSkeleton,
+                  compact: compactGridSkeleton,
+                ),
+              ]),
             ),
-            const SizedBox(height: 12),
-            OpportunitySkeletonCard(
-              horizontal: horizontalSkeleton,
-              compact: compactGridSkeleton,
-            ),
-          ]),
-        ),
+          );
+        },
       );
     }
 
