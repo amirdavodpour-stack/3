@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -105,10 +106,10 @@ class _FakeTx implements TransactionRepository {
       });
 }
 
-HopeJob _job(String id, String status, {String? providerId}) =>
+HopeJob _job(String id, String status, {String? providerId, String? title}) =>
     HopeJob.fromMap({
       'id': id,
-      'title': 'Design landing page',
+      'title': title ?? 'Design landing page',
       'description': 'Deliver a landing page.',
       'categoryId': 'c1',
       'kind': 'MISSION',
@@ -483,6 +484,46 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo2.calls, contains('refund:j1'));
   });
+
+  testWidgets(
+    'transaction detail preserves a long opportunity title at 1.5x',
+    (tester) async {
+      const longTitle =
+          'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, and cross-functional delivery';
+      final repo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'p1',
+          'status': 'HELD',
+          'amount': '9000000000',
+          'providerRef': 'ref-1',
+          'job': _job(
+            'j1',
+            'FUNDED',
+            providerId: 'u1',
+            title: longTitle,
+          ).toMap(),
+        }));
+
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        textScale: 1.5,
+        useActualViewportMetrics: true,
+      );
+
+      final titleFinder = find.text(longTitle);
+      expect(titleFinder, findsOneWidget);
+      final titleText = tester.widget<Text>(titleFinder);
+      expect(titleText.maxLines, isNull);
+      expect(titleText.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'Wave 45 transaction summary preserves full TOMAN amount and fee values at 1.5x',
