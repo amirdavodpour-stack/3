@@ -2312,8 +2312,11 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 1,
+                    softWrap: true,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Theme.of(context).brightness == Brightness.dark
                               ? HopeV2Colors.darkMuted
@@ -2324,8 +2327,11 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     value,
-                    maxLines: compact ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : (compact ? 2 : 1),
+                    softWrap: true,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
@@ -2504,15 +2510,42 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 5,
-                    children: [
-                      fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
-                      fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
-                      fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
-                    ],
-                  ),
+                  if (enlargedText)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        fact(
+                          _t(context, 'بودجه', 'Budget'),
+                          budget,
+                          HopeV2Icons.payments,
+                          primary,
+                        ),
+                        const SizedBox(height: 6),
+                        fact(
+                          _t(context, 'دسته‌بندی', 'Category'),
+                          category,
+                          HopeV2Icons.category,
+                          HopeV2Colors.secondary,
+                        ),
+                        const SizedBox(height: 6),
+                        fact(
+                          _t(context, 'مکان', 'Location'),
+                          location,
+                          HopeV2Icons.location,
+                          HopeV2Colors.secondary,
+                        ),
+                      ],
+                    )
+                  else
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 5,
+                      children: [
+                        fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
+                        fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
+                        fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
+                      ],
+                    ),
                   if (matchRationaleTag != null) ...[
                     const SizedBox(height: 6),
                     Align(
