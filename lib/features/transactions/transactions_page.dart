@@ -416,6 +416,184 @@ class _TransactionsPageState extends State<TransactionsPage> {
     }
   }
 
+  Widget _workCenterLoadingSkeleton(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    const gap = 8.0;
+    final columns = enlargedText ? 2 : 3;
+
+    Widget metricSkeleton(double cellWidth, int index) => Container(
+          constraints: const BoxConstraints(minHeight: 58),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: HopeV2Surfaces.panelSoft(context),
+            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+            border: Border.all(
+              color: HopeV2Surfaces.border(context).withValues(alpha: .24),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SkeletonBox(
+                height: 10,
+                width: cellWidth * (index == 0 ? .48 : .58),
+                radius: HopeV2Radii.sm,
+              ),
+              const SizedBox(height: 6),
+              SkeletonBox(
+                height: 16,
+                width: cellWidth * (index == 1 ? .28 : .38),
+                radius: HopeV2Radii.sm,
+              ),
+            ],
+          ),
+        );
+
+    Widget workItemSkeleton(int index) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: PremiumPanel(
+            key: ValueKey('work-center-loading-job-$index'),
+            quiet: true,
+            padding: EdgeInsets.all(compact ? 12 : 14),
+            child: Row(
+              children: [
+                SkeletonBox(
+                  width: compact ? 34 : 36,
+                  height: compact ? 34 : 36,
+                  radius: HopeV2Radii.md,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonBox(
+                        height: 12,
+                        width: compact ? 124 : 174,
+                        radius: HopeV2Radii.sm,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          SkeletonBox(
+                            height: 18,
+                            width: compact ? 58 : 68,
+                            radius: HopeV2Radii.sm,
+                          ),
+                          const SizedBox(width: 6),
+                          SkeletonBox(
+                            height: 18,
+                            width: compact ? 62 : 78,
+                            radius: HopeV2Radii.sm,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+    return Semantics(
+      key: const ValueKey('work-center-loading-skeleton'),
+      container: true,
+      liveRegion: true,
+      label: _t('در حال بارگذاری کارگاه و امور مالی', 'Loading workshop and finance'),
+      child: ExcludeSemantics(
+        child: PremiumPageFrame(
+          page: HopePageId.workCenter,
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 20),
+          child: ListView(
+            padding: HopeV2Navigation.scrollEndPadding(context),
+            children: [
+              PremiumHeader(
+                page: HopePageId.workCenter,
+                domain: HopeProductDomain.work,
+                eyebrow: _t('مرکز کار', 'WORK CENTER'),
+                title: _t('کارگاه و امور مالی', 'Workshop and finance'),
+                subtitle: _t(
+                  'کارهای فعال و تسویه مالی را پیگیری کنید.',
+                  'Track active work and settlement.',
+                ),
+                trailing: const HopeIconTile(
+                  HopeV2Icons.workshop,
+                  size: 42,
+                  filled: true,
+                ),
+              ),
+              const SizedBox(height: 6),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final metricWidth =
+                      (constraints.maxWidth - gap * (columns - 1)) / columns;
+                  return Wrap(
+                    key: const ValueKey('work-center-loading-metrics'),
+                    spacing: gap,
+                    runSpacing: 8,
+                    children: [
+                      for (var index = 0; index < 3; index++)
+                        SizedBox(
+                          width: metricWidth,
+                          child: metricSkeleton(metricWidth, index),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              PremiumPanel(
+                key: const ValueKey('work-center-loading-focus-strip'),
+                glass: false,
+                quiet: true,
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                child: Row(
+                  children: [
+                    SkeletonBox(
+                      width: compact ? 36 : 38,
+                      height: compact ? 36 : 38,
+                      radius: HopeV2Radii.md,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SkeletonBox(height: 10, width: 94),
+                          const SizedBox(height: 6),
+                          SkeletonBox(
+                            height: 12,
+                            width: compact ? 154 : 220,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              PremiumSectionHeader(
+                page: HopePageId.workCenter,
+                domain: HopeProductDomain.work,
+                title: _t('جریان همکاری‌ها', 'Work stream'),
+                subtitle: _t(
+                  'وضعیت جاری همکاری‌ها',
+                  'Current collaboration status',
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (var index = 0; index < 2; index++) workItemSkeleton(index),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent(BuildContext context) {
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
@@ -452,16 +630,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
       );
     }
     if (future == null) {
-      return const PremiumPageFrame(
-                page: HopePageId.workCenter,
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return _workCenterLoadingSkeleton(context);
     }
     return FutureBuilder<List<HopeJob>>(
         future: future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return _workCenterLoadingSkeleton(context);
           }
           if (snap.hasError) {
             return RefreshIndicator(
