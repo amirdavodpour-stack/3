@@ -490,6 +490,7 @@ class OpportunityCard extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final hasMedia = mediaUrl?.trim().isNotEmpty == true;
     final percent = HopeDisplayFormatter.matchPercentage(score);
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
@@ -551,7 +552,7 @@ class OpportunityCard extends StatelessWidget {
                 inverse: true,
               ),
             ),
-            if (showTitle && hasMedia)
+            if (showTitle && hasMedia && !enlargedText)
               PositionedDirectional(
                 start: 12,
                 end: 12,
@@ -902,6 +903,7 @@ class OpportunityCard extends StatelessWidget {
     final matchReasonTag = _compactMatchReasonTag(context, reasons);
     final company = _companyName();
     final mode = _workMode(context);
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -913,15 +915,16 @@ class OpportunityCard extends StatelessWidget {
           mediaUrl: mediaUrl,
           score: score,
           featured: true,
-          showTitle: hasMedia,
+          showTitle: hasMedia && !enlargedText,
         ),
-        if (!hasMedia) ...[
+        if (!hasMedia || enlargedText) ...[
           const SizedBox(height: 8),
           Text(
             title,
             key: const ValueKey('opportunity-featured-fallback-title'),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : 2,
+            softWrap: true,
+            overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontSize: MediaQuery.sizeOf(context).width <
                           HopeV2Breakpoints.medium
@@ -1177,6 +1180,7 @@ class OpportunityCard extends StatelessWidget {
   }) {
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final mediaSize = compactViewport ? 56.0 : 68.0;
     final categoryValue = _categoryValue();
     final category = categoryValue == null
@@ -1271,8 +1275,9 @@ class OpportunityCard extends StatelessWidget {
                   Text(
                     title,
                     key: const ValueKey('opportunity-featured-scan-title'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 2,
+                    softWrap: true,
+                    overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontSize: compactViewport ? 15 : 16,
                           height: 1.12,
@@ -1356,6 +1361,7 @@ class OpportunityCard extends StatelessWidget {
         : null;
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final mediaSize = compactViewport ? 56.0 : 88.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -1476,8 +1482,9 @@ class OpportunityCard extends StatelessWidget {
                   const SizedBox(height: HopeV2Spacing.xs),
                   Text(
                     title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 2,
+                    softWrap: true,
+                    overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                           height: 1.12,
@@ -1619,6 +1626,7 @@ class OpportunityCard extends StatelessWidget {
   }) {
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final reasonLabels = reasons
         .map((reason) => _reason(context, reason))
         .whereType<String>()
@@ -1698,8 +1706,9 @@ class OpportunityCard extends StatelessWidget {
                   const SizedBox(height: HopeV2Spacing.sm),
                   Text(
                     title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 2,
+                    softWrap: true,
+                    overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ],
