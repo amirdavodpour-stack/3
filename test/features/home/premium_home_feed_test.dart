@@ -183,6 +183,64 @@ class _LoadingMarketplaceRepository extends _SequencedMarketplaceRepository {
   }) => pendingOpportunities.future;
 }
 
+class _WideGridMarketplaceRepository extends _SequencedMarketplaceRepository {
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async =>
+      [
+        HopeJob.fromMap({
+          'id': 'wide-grid-a',
+          'title': 'Design and research opportunity',
+          'description': 'A short description.',
+          'kind': 'MISSION',
+          'visibility': 'PUBLIC',
+          'city': 'تهران',
+          'distanceKm': 1.0,
+          'status': 'PUBLISHED',
+          'categoryId': 'tech',
+          'category': 'فناوری',
+          'budgetMin': 1200000,
+          'budgetMax': 2400000,
+        }),
+        HopeJob.fromMap({
+          'id': 'wide-grid-b',
+          'title': 'Product interface review',
+          'description': 'A short description.',
+          'kind': 'MISSION',
+          'visibility': 'PUBLIC',
+          'city': 'تهران',
+          'distanceKm': 2.0,
+          'status': 'PUBLISHED',
+          'categoryId': 'tech',
+          'category': 'فناوری',
+          'budgetMin': 1500000,
+          'budgetMax': 2600000,
+        }),
+        HopeJob.fromMap({
+          'id': 'wide-grid-c',
+          'title': 'Editorial visual design',
+          'description': 'A short description.',
+          'kind': 'MISSION',
+          'visibility': 'PUBLIC',
+          'city': 'تهران',
+          'distanceKm': 3.0,
+          'status': 'PUBLISHED',
+          'categoryId': 'design',
+          'category': 'طراحی',
+          'budgetMin': 1800000,
+          'budgetMax': 3000000,
+        }),
+      ];
+}
+
 class _ImmediateTransactions implements TransactionRepository {
   @override
   Future<List<HopeJob>> listMyJobs() async => const <HopeJob>[];
@@ -480,6 +538,31 @@ void main() {
         lessThanOrEqualTo(viewportRect.bottom),
         reason: 'The compact loading card should not overflow the initial viewport.',
       );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'wide Home opportunity cards size to content instead of square grid cells',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(_WideGridMarketplaceRepository());
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final cards = find.byType(OpportunityCard);
+      expect(cards, findsNWidgets(3));
+      for (var index = 0; index < 3; index++) {
+        expect(
+          tester.getSize(cards.at(index)).height,
+          lessThanOrEqualTo(320),
+          reason: 'Wide Home opportunity cards should not reserve a square fixed-height cell when their content is short.',
+        );
+      }
       expect(tester.takeException(), isNull);
     },
   );
