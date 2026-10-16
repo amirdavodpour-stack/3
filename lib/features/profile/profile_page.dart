@@ -766,7 +766,13 @@ padding: const EdgeInsets.symmetric(vertical: 6),
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth < 500) {
-                final itemWidth = (constraints.maxWidth - 10) / 2;
+                final enlargedText =
+                    MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                // A single column gives enlarged setting labels enough width;
+                // the ordinary compact layout remains the denser two-column grid.
+                final itemWidth = enlargedText
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - 10) / 2;
 
                 Widget compactToggle({
                   required Object icon,
@@ -781,8 +787,11 @@ padding: const EdgeInsets.symmetric(vertical: 6),
                       secondary: HopeIconTile(icon, size: 36),
                       title: Text(
                         title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: enlargedText ? null : 2,
+                        softWrap: true,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
