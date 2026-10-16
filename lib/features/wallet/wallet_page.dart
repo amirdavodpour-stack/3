@@ -1635,7 +1635,7 @@ class _WalletPageState extends State<WalletPage> {
             ),
             SizedBox(
               key: const ValueKey('wallet-history-transition-gap'),
-              height: tightViewport ? 4 : 16,
+              height: tightViewport ? 0 : 16,
             ),
             Container(
               key: _historyKey,
@@ -1670,7 +1670,9 @@ class _WalletPageState extends State<WalletPage> {
                   ),
               ],
             ),
-            SizedBox(height: compact ? 8 : 12),
+            SizedBox(
+              height: tightViewport ? 4 : (compact ? 8 : 12),
+            ),
             if (_visibleTransactions().isEmpty)
               HopeAsyncState(
                 kind: HopeStateKind.empty,
