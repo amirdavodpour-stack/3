@@ -408,8 +408,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     message: title,
                     child: Text(
                       title,
-                      maxLines: compactLargeText ? 3 : null,
-                      overflow: compactLargeText ? TextOverflow.ellipsis : null,
+                      // The page scrolls, so retain the complete opportunity title
+                      // instead of truncating it when the user enlarges text.
+                      softWrap: true,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         height: 1.15,
