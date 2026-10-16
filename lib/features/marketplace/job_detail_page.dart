@@ -80,6 +80,7 @@ class _OpportunitySnapshot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isJob = job.isJob;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final facts = <({String id, Object icon, String label, String value, Color color})>[
       (
         id: 'budget',
@@ -128,7 +129,11 @@ class _OpportunitySnapshot extends StatelessWidget {
           const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 720 ? 4 : constraints.maxWidth >= 360 ? 2 : 1;
+              final columns = enlargedText
+                  ? 1
+                  : (constraints.maxWidth >= 720
+                      ? 4
+                      : (constraints.maxWidth >= 360 ? 2 : 1));
               const gap = 8.0;
               final width = columns == 1 ? constraints.maxWidth : (constraints.maxWidth - gap * (columns - 1)) / columns;
               return Wrap(
@@ -154,9 +159,28 @@ class _OpportunitySnapshot extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(fact.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall),
+                                  Text(
+                                    fact.label,
+                                    maxLines: enlargedText ? null : 1,
+                                    softWrap: true,
+                                    overflow: enlargedText
+                                        ? TextOverflow.visible
+                                        : TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.labelSmall,
+                                  ),
                                   const SizedBox(height: 2),
-                                  Text(fact.value, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800)),
+                                  Text(
+                                    fact.value,
+                                    maxLines: enlargedText ? null : 2,
+                                    softWrap: true,
+                                    overflow: enlargedText
+                                        ? TextOverflow.visible
+                                        : TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w800),
+                                  ),
                                 ],
                               ),
                             ),
