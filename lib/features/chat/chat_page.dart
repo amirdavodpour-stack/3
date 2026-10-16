@@ -195,6 +195,9 @@ class _ChatPageState extends State<ChatPage> {
         ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.onSurfaceVariant;
     final colors = Theme.of(context).colorScheme;
+    final expandableHeaderText =
+        MediaQuery.sizeOf(context).width < 380 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
 
     return Directionality(
       textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
@@ -251,16 +254,22 @@ class _ChatPageState extends State<ChatPage> {
                                 Text(
                                   title,
                                   key: const ValueKey('chat-conversation-title'),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: expandableHeaderText ? null : 1,
+                                  softWrap: true,
+                                  overflow: expandableHeaderText
+                                      ? TextOverflow.visible
+                                      : TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
                                   contextLine,
                                   key: const ValueKey('chat-conversation-context'),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: expandableHeaderText ? null : 1,
+                                  softWrap: true,
+                                  overflow: expandableHeaderText
+                                      ? TextOverflow.visible
+                                      : TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               ],
