@@ -212,11 +212,11 @@ grep -Fq "opportunity-card-budget-amount" "$opportunity"
 grep -Fq "budgetText.data, contains('۲٬۵۰۰٬۰۰۰ تومان')" 'test/core/ui/premium_visual_wave_15_test.dart'
 grep -Fq 'didExceedMaxLines' 'test/core/ui/premium_visual_wave_15_test.dart'
 featured_budget_block="$(sed -n '/Widget _featuredStandard(/,/Widget _standard(/p' "$opportunity")"
-printf '%s\\n' "$featured_budget_block" | grep -Fq "ValueKey('opportunity-card-standard-budget')"
-printf '%s\\n' "$featured_budget_block" | grep -Fq 'maxLines: enlargedText ? null : 3,'
-printf '%s\\n' "$featured_budget_block" | grep -Fq 'overflow: enlargedText'
-printf '%s\\n' "$featured_budget_block" | grep -Fq 'TextOverflow.visible'
-printf '%s\\n' "$featured_budget_block" | grep -Fq 'TextOverflow.clip'
+printf '%s\n' "$featured_budget_block" | grep -Fq "ValueKey('opportunity-card-standard-budget')"
+printf '%s\n' "$featured_budget_block" | grep -Fq 'maxLines: enlargedText ? null : 3,'
+printf '%s\n' "$featured_budget_block" | grep -Fq 'overflow: enlargedText'
+printf '%s\n' "$featured_budget_block" | grep -Fq 'TextOverflow.visible'
+printf '%s\n' "$featured_budget_block" | grep -Fq 'TextOverflow.clip'
 
 # Wave 21: locale-safe date output, compact hero layering, visible filters,
 # compact financial metrics, and truthful exact-source evidence metadata.
