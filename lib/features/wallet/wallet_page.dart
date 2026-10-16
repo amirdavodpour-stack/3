@@ -702,13 +702,13 @@ class _WalletPageState extends State<WalletPage> {
               SkeletonBox(
                 height: 9,
                 width: cellWidth * (index.isEven ? .54 : .66),
-                radius: HopeV2Radii.xs,
+                radius: HopeV2Radii.sm,
               ),
               const SizedBox(height: 4),
               SkeletonBox(
                 height: 13,
                 width: cellWidth * (index == 0 ? .72 : .58),
-                radius: HopeV2Radii.xs,
+                radius: HopeV2Radii.sm,
               ),
             ],
           ),
@@ -838,7 +838,7 @@ class _WalletPageState extends State<WalletPage> {
                       const SkeletonBox(
                         width: 126,
                         height: 12,
-                        radius: HopeV2Radii.xs,
+                        radius: HopeV2Radii.sm,
                       ),
                       const SizedBox(height: 5),
                       const SkeletonBox(
