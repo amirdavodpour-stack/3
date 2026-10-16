@@ -301,6 +301,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Work Center metrics reflow and preserve full labels at 1.5x in RTL and LTR',
+    (tester) async {
+      for (final locale in const [Locale('fa'), Locale('en')]) {
+        final repo = _Transactions()
+          ..jobs = [
+            _job('metric-active', status: 'IN_PROGRESS'),
+            _job('metric-settled', status: 'COMPLETED'),
+          ];
+        await _pump(
+          tester,
+          repo,
+          width: 320,
+          height: 640,
+          textScale: 1.5,
+          locale: locale,
+        );
+
+        final metrics = find.byKey(const ValueKey('work-center-metrics'));
+        expect(metrics, findsOneWidget);
+        final metricTexts = tester.widgetList<Text>(
+          find.descendant(of: metrics, matching: find.byType(Text)),
+        ).toList(growable: false);
+        expect(metricTexts, hasLength(6));
+        expect(
+          metricTexts.every(
+            (text) =>
+                text.maxLines == null &&
+                text.overflow == TextOverflow.visible &&
+                text.softWrap,
+          ),
+          isTrue,
+          reason:
+              'Work Center summary labels and counts must remain fully readable at 1.5x in ${locale.languageCode}.',
+        );
+        expect(tester.takeException(), isNull);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      }
+    },
+  );
+
   testWidgets('compact work-center metrics hide secondary captions on narrow screens',
       (tester) async {
     final repo = _Transactions()
