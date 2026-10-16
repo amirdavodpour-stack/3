@@ -235,6 +235,40 @@ void main() {
     }
   });
 
+  testWidgets(
+    'transaction detail initial loading previews its financial card hierarchy',
+    (tester) async {
+      final pending = Completer<HopePayment>();
+      final repo = _FakeTx()..paymentResponses.add(pending.future);
+
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        textScale: 1.5,
+        disableAnimations: true,
+        useActualViewportMetrics: true,
+      );
+
+      expect(
+        find.byKey(const ValueKey('transaction-detail-loading-skeleton')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('transaction-loading-financial-summary')),
+        findsOneWidget,
+      );
+      expect(find.text('Loading financial status'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      pending.complete(_FakeTx._data('j1', 'HELD'));
+      await tester.pump();
+    },
+  );
+
   testWidgets('financial summary leads into the payment lifecycle', (tester) async {
     final repo = _FakeTx()
       ..payment = Future.value(HopePayment.fromMap({
