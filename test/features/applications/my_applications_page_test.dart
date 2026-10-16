@@ -373,6 +373,66 @@ void main() {
     },
   );
 
+  testWidgets(
+    'application location names preserve full wording at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const longCity =
+          'Northern Metropolitan Administrative and Financial District';
+      const application = HopeApplication(
+        id: 'long-city-app',
+        jobId: 'job-1',
+        jobTitle: 'Product designer',
+        jobCity: longCity,
+        jobKind: 'JOB',
+        resumeText: '',
+        skills: '',
+        status: 'PENDING',
+        createdAt: null,
+        updatedAt: null,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Provider<ApplicationRegistry>.value(
+              value: ApplicationRegistry(
+                profile: _FakeProfileRepository(application),
+              ),
+              child: const MyApplicationsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cityFinder = find.text(longCity);
+      expect(cityFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(cityFinder).didExceedMaxLines,
+        isFalse,
+        reason:
+            'A long opportunity location should wrap naturally on the application card instead of being clipped by a one-line tag.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('applications load failure shows explicit error state with retry',
       (tester) async {
     final profile = _FailingProfileRepository();
