@@ -392,34 +392,59 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HopeIconTile(
+            if (compactLargeText) ...[
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: HopeIconTile(
                   item.status == 'ACCEPTED'
                       ? HopeV2Icons.completed
                       : HopeV2Icons.mission,
-                  size: compactLargeText ? 30 : 36,
+                  size: 30,
                   filled: true,
                 ),
-                SizedBox(width: compactLargeText ? 6 : 8),
-                Expanded(
-                  child: Tooltip(
-                    message: title,
-                    child: Text(
-                      title,
-                      // The page scrolls, so retain the complete opportunity title
-                      // instead of truncating it when the user enlarges text.
-                      softWrap: true,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
+              ),
+              const SizedBox(height: 4),
+              Tooltip(
+                message: title,
+                child: Text(
+                  title,
+                  // Use the full card width at large text sizes: the page scrolls,
+                  // so complete titles are preferable to a tall, narrow text rail.
+                  softWrap: true,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+            ] else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HopeIconTile(
+                    item.status == 'ACCEPTED'
+                        ? HopeV2Icons.completed
+                        : HopeV2Icons.mission,
+                    size: 36,
+                    filled: true,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Tooltip(
+                      message: title,
+                      child: Text(
+                        title,
+                        softWrap: true,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.15,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             const SizedBox(height: 6),
             Wrap(
               spacing: 6,
