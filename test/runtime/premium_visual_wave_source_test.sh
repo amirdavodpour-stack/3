@@ -355,8 +355,9 @@ grid_money_block="$(sed -n '/Widget _compactGrid(/,/Widget _compact(/p' "$opport
 printf '%s\n' "$grid_money_block" | grep -Fq "ValueKey('opportunity-card-compact-grid-budget')"
 printf '%s\n' "$grid_money_block" | grep -Fq 'maxLines: enlargedText ? null : 5,'
 printf '%s\n' "$grid_money_block" | grep -Fq 'overflow: enlargedText ? TextOverflow.visible : TextOverflow.clip,'
-grep -Fq "ValueKey('opportunity-card-compact-budget')" "$opportunity"
-compact_budget_text_block="$(sed -n '/_formatCompactRangeAmount(amount, context)/,/style: TextStyle/p' "$opportunity")"
+compact_layout_block="$(sed -n '/Widget _compact(/,/Widget _featuredStandard(/p' "$opportunity")"
+printf '%s\n' "$compact_layout_block" | grep -Fq "ValueKey('opportunity-card-compact-budget')"
+compact_budget_text_block="$(printf '%s\n' "$compact_layout_block" | sed -n '/_formatCompactRangeAmount(amount, context)/,/style: TextStyle/p')"
 printf '%s\n' "$compact_budget_text_block" | grep -Fq '_formatCompactRangeAmount(amount, context)'
 printf '%s\n' "$compact_budget_text_block" | grep -Fq 'softWrap: true'
 if printf '%s\n' "$compact_budget_text_block" | grep -Eq 'maxLines:|TextOverflow\.clip'; then
