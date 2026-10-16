@@ -1574,8 +1574,10 @@ class OpportunityCard extends StatelessWidget {
                         : (job.isMission
                             ? copy.copy_view_and_act_on_mission
                             : copy.copy_view_details_and_act),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 2,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: TextStyle(
                       color: HopeV2SemanticColors.textPrimary(context),
                       fontWeight: FontWeight.w900,
