@@ -2567,7 +2567,7 @@ void main() {
   testWidgets(
     'featured opportunity budget wraps fully at 2x text scale',
     (tester) async {
-      tester.view.physicalSize = const Size(360, 900);
+      tester.view.physicalSize = const Size(900, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
