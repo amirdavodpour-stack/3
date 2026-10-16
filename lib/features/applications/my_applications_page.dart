@@ -500,6 +500,95 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     final current = stages.indexOf(item.status);
     final stageColor = _statusColor(context, item.status);
     final colors = Theme.of(context).colorScheme;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+
+    // On enlarged text, a six-column rail compresses stage names into ellipses.
+    // Reflow to two rows of three compact editorial steps while keeping the
+    // same status semantics, ordering, tooltips and reached/active colors.
+    if (textScale > 1.2) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          const gap = 6.0;
+          final itemWidth = (constraints.maxWidth - gap * 2) / 3;
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: List.generate(stages.length, (index) {
+              final stage = stages[index];
+              final reached = current >= 0 && index <= current;
+              final active = index == current;
+              final label = _timelineStageLabel(stage);
+              return SizedBox(
+                width: itemWidth,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: active
+                        ? stageColor.withValues(alpha: .08)
+                        : colors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: active
+                          ? stageColor.withValues(alpha: .36)
+                          : colors.outlineVariant.withValues(alpha: .62),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              reached ? stageColor : colors.outlineVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Semantics(
+                          key: ValueKey(
+                            'application-timeline-${item.id}-$stage',
+                          ),
+                          label: label,
+                          selected: active,
+                          child: Tooltip(
+                            message: label,
+                            child: Text(
+                              label,
+                              maxLines: 2,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    fontSize: 10.5,
+                                    height: 1.1,
+                                    fontWeight: active
+                                        ? FontWeight.w900
+                                        : FontWeight.w700,
+                                    color: active
+                                        ? stageColor
+                                        : colors.onSurfaceVariant,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          );
+        },
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(stages.length, (index) {
