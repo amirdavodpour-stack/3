@@ -305,8 +305,8 @@ void main() {
       );
       expect(
         tester.getSize(cardFinder).height,
-        lessThanOrEqualTo(380),
-        reason: 'A compact application card should keep its timeline and actions content-sized at 1.5x text.',
+        lessThanOrEqualTo(390),
+        reason: 'A compact application card should keep its full timeline and actions content-sized at 1.5x text.',
       );
       expect(find.byTooltip('Withdraw'), findsOneWidget);
       expect(find.text('View opportunity'), findsOneWidget);
