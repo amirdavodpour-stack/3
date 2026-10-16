@@ -320,6 +320,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();
+    final compactViewport =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final compactFold = MediaQuery.sizeOf(context).height < 760 ||
         MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final displayName = auth.user?['displayName']?.toString().trim() ?? '';
@@ -365,7 +367,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
               future: _opportunities,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return _PulseSkeleton(compact: compactFold);
+                  return _PulseSkeleton(
+                    compact: compactViewport,
+                    single: compactFold || compactViewport,
+                  );
                 }
                 if (snapshot.hasError || _error != null) {
                   return HopeAsyncState(
@@ -1093,14 +1098,15 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 }
 
 class _PulseSkeleton extends StatelessWidget {
-  const _PulseSkeleton({this.compact = false});
+  const _PulseSkeleton({this.compact = false, this.single = false});
 
   final bool compact;
+  final bool single;
 
   @override
   Widget build(BuildContext context) {
-    if (compact) {
-      return const OpportunitySkeletonCard(compact: true);
+    if (single) {
+      return OpportunitySkeletonCard(compact: compact);
     }
     return const Column(
       children: [

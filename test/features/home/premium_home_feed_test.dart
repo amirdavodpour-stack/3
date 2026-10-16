@@ -448,9 +448,9 @@ void main() {
   });
 
   testWidgets(
-    'compact home loading uses one compact skeleton matching the featured opportunity',
+    'compact home loading follows width-based density on a tall phone',
     (tester) async {
-      tester.view.physicalSize = const Size(360, 640);
+      tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -464,7 +464,7 @@ void main() {
       expect(
         skeleton,
         findsOneWidget,
-        reason: 'A compact first fold should reserve one primary opportunity skeleton, not two full cards.',
+        reason: 'A compact phone should reserve one primary opportunity skeleton, not two full cards.',
       );
       expect(
         tester.getSize(skeleton).height,
