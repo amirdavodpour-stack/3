@@ -205,6 +205,7 @@ Future<void> _pump(
   _FakeAdmin repo, {
   double width = 900,
   double height = 2400,
+  double textScale = 1,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -212,6 +213,13 @@ Future<void> _pump(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(MaterialApp(
     theme: ThemeData.light(),
+    builder: (context, child) {
+      final media = MediaQuery.of(context);
+      return MediaQuery(
+        data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      );
+    },
     locale: const Locale('en'),
     supportedLocales: const [Locale('en'), Locale('fa')],
     localizationsDelegates: const [
@@ -372,6 +380,28 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'admin summary metric cards adapt height and retain labels at 1.5x text scale',
+    (tester) async {
+      await _pump(
+        tester,
+        _FakeAdmin(),
+        width: 390,
+        height: 844,
+        textScale: 1.5,
+      );
+
+      final stats = find.byType(PremiumStatCard);
+      expect(stats, findsNWidgets(6));
+      expect(
+        tester.getSize(stats.first).height,
+        greaterThan(80),
+        reason: 'Enlarged text must not be forced into the short fixed-aspect summary cells.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('admin renders summary metrics and moderation actions',
       (tester) async {
