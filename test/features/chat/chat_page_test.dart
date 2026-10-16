@@ -143,6 +143,86 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Chat header keeps full participant and job titles visible at 1.5x on compact phones',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      for (final locale in const [Locale('fa'), Locale('en')]) {
+        final isEnglish = locale.languageCode == 'en';
+        final participantName = isEnglish
+            ? 'Senior product designer responsible for international delivery'
+            : 'طراح ارشد محصول مسئول تحویل و هماهنگی بین‌المللی';
+        final jobTitle = isEnglish
+            ? 'Cross-functional mobile product redesign and acceptance review'
+            : 'بازطراحی محصول موبایل و بازبینی معیارهای پذیرش';
+        final repository = FakeChatRepository()
+          ..threadOverride = HopeChatThread(
+            conversation: HopeChatConversation(
+              id: 'chat-1',
+              kind: 'JOB',
+              jobId: 'job-1',
+              status: 'OPEN',
+              title: jobTitle,
+              otherUserName: participantName,
+            ),
+            messages: const [],
+          );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: locale,
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: ChatPage(repository: repository, jobId: 'job-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final titleFinder = find.byKey(
+          const ValueKey('chat-conversation-title'),
+        );
+        final contextFinder = find.byKey(
+          const ValueKey('chat-conversation-context'),
+        );
+        expect(titleFinder, findsOneWidget);
+        expect(contextFinder, findsOneWidget);
+        expect(
+          tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+          isFalse,
+          reason: 'The full participant name must wrap rather than truncate in the compact 320dp / 1.5x layout.',
+        );
+        expect(
+          tester.renderObject<RenderParagraph>(contextFinder).didExceedMaxLines,
+          isFalse,
+          reason: 'The full job context must wrap rather than truncate in the compact 320dp / 1.5x layout.',
+        );
+        expect(tester.getRect(titleFinder).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(titleFinder).right, lessThanOrEqualTo(320));
+        expect(tester.getRect(contextFinder).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(contextFinder).right, lessThanOrEqualTo(320));
+        expect(
+          tester.getRect(find.byKey(const ValueKey('chat-composer-panel'))).bottom,
+          lessThanOrEqualTo(640),
+        );
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('ChatPage sends a human message', (tester) async {
     final repository = FakeChatRepository();
 
