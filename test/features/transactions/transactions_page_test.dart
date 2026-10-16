@@ -330,7 +330,7 @@ void main() {
             (text) =>
                 text.maxLines == null &&
                 text.overflow == TextOverflow.visible &&
-                text.softWrap,
+                text.softWrap == true,
           ),
           isTrue,
           reason:
