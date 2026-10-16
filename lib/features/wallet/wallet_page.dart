@@ -1611,7 +1611,7 @@ class _WalletPageState extends State<WalletPage> {
                       SizedBox(height: compact ? 4 : 12),
                       actions,
                       SizedBox(height: compact ? 4 : 12),
-                      if (!compact)
+                      if (!compact || enlargedText)
                         HopeWalletFlowSignature(wallet: wallet),
                     ],
                   );
@@ -1713,7 +1713,7 @@ class _WalletPageState extends State<WalletPage> {
                             label: _entryTitle(item),
                             child: Text(
                               _entryTitle(item),
-                              maxLines: enlargedText ? null : 2,
+                              maxLines: enlargedText ? null : 1,
                               softWrap: true,
                               overflow: enlargedText
                                   ? TextOverflow.visible
@@ -1723,23 +1723,38 @@ class _WalletPageState extends State<WalletPage> {
                           ),
                           subtitle: Text(
                             _date(item.createdAt),
-                            maxLines: enlargedText ? null : 2,
+                            maxLines: enlargedText ? null : 1,
                             softWrap: true,
                             overflow: enlargedText
                                 ? TextOverflow.visible
                                 : TextOverflow.ellipsis,
                           ),
                           isThreeLine: enlargedText,
-                          trailing: Text(
-                            _signedMoney(item),
-                            softWrap: true,
-                            overflow: TextOverflow.visible,
-                            textAlign: TextAlign.end,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: _directionColor(context, item.isCredit),
-                            ),
-                          ),
+                          trailing: enlargedText
+                              ? Text(
+                                  _signedMoney(item),
+                                  softWrap: true,
+                                  overflow: TextOverflow.visible,
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: _directionColor(context, item.isCredit),
+                                  ),
+                                )
+                              : FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    _signedMoney(item),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    textAlign: TextAlign.end,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color: _directionColor(context, item.isCredit),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -1763,7 +1778,7 @@ class _WalletPageState extends State<WalletPage> {
                     : _t('تراکنش‌های بیشتر', 'Load more transactions')),
               ),
             ],
-            if (compact) ...[
+            if (compact && !enlargedText) ...[
               const SizedBox(height: 8),
               HopeWalletFlowSignature(wallet: wallet),
             ],
