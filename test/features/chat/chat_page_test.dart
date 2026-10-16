@@ -415,6 +415,79 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Chat sender name wraps instead of truncating on a compact large-text viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const senderName =
+          'Senior product designer responsible for international delivery';
+      final repository = FakeChatRepository()
+        ..threadOverride = HopeChatThread(
+          conversation: const HopeChatConversation(
+            id: 'chat-1',
+            kind: 'JOB',
+            jobId: 'job-1',
+            status: 'OPEN',
+            title: 'Test job',
+            otherUserName: 'Worker',
+          ),
+          messages: [
+            HopeChatMessage(
+              id: 'long-sender',
+              conversationId: 'chat-1',
+              senderId: 'worker-1',
+              senderName: senderName,
+              body: 'Please review the attached delivery.',
+              createdAt: DateTime(2026, 1, 1, 13, 45),
+            ),
+          ],
+        );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: ChatPage(repository: repository, jobId: 'job-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final senderFinder = find.byKey(
+        const ValueKey('chat-sender-long-sender'),
+      );
+      final timestampFinder = find.byKey(
+        const ValueKey('chat-message-timestamp-long-sender'),
+      );
+      expect(senderFinder, findsOneWidget);
+      expect(timestampFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(senderFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'The full sender name must be readable when the sender/timestamp row is narrow and text is enlarged.',
+      );
+      expect(tester.getRect(senderFinder).left, greaterThanOrEqualTo(0));
+      expect(tester.getRect(senderFinder).right, lessThanOrEqualTo(320));
+      expect(tester.getRect(timestampFinder).left, greaterThanOrEqualTo(0));
+      expect(tester.getRect(timestampFinder).right, lessThanOrEqualTo(320));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Wave 28 groups consecutive messages from the same sender',
       (tester) async {
     final repository = FakeChatRepository()
