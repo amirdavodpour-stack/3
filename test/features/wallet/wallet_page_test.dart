@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -1348,6 +1349,63 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'wallet action labels do not truncate at 1.5x on a compact viewport',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final label in ['Deposit', 'Withdraw', 'History']) {
+        final finder = find.text(label);
+        expect(finder, findsOneWidget);
+        final paragraph = tester.renderObject<RenderParagraph>(finder);
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: '$label must remain fully readable at 1.5x in a 320dp wallet.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'wallet transaction detail amounts retain semantic foregrounds in light and dark themes',
