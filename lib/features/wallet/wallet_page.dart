@@ -1471,7 +1471,7 @@ class _WalletPageState extends State<WalletPage> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          isThreeLine: false,
+                          isThreeLine: true,
                           trailing: Text(
                             '${_signedMoney(item)}',
                             textAlign: TextAlign.end,
