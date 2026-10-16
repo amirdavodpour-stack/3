@@ -298,7 +298,7 @@ void main() {
         find.descendant(of: summary, matching: find.byType(Text)),
       ).where((text) {
         final value = text.data ?? '';
-        return RegExp(r'-?[\\d,]+\\s*TOMAN').hasMatch(value) ||
+        return RegExp(r'-?[\d,]+\s*TOMAN').hasMatch(value) ||
             const {
               'Available',
               'Locked',
