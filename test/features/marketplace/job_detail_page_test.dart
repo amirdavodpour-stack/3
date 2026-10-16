@@ -595,6 +595,45 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Job Detail snapshot facts fully wrap long values at 1.5x text scale',
+    (tester) async {
+      const longLocation =
+          'Greater Metropolitan District North-East Administrative Corridor';
+      await _pump(
+        tester,
+        job: _job(city: longLocation),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+
+      final locationFact = find.byKey(
+        const ValueKey('opportunity-snapshot-fact-location'),
+      );
+      expect(locationFact, findsOneWidget);
+      final valueFinder = find.descendant(
+        of: locationFact,
+        matching: find.text(longLocation),
+      );
+      expect(valueFinder, findsOneWidget);
+      final value = tester.widget<Text>(valueFinder);
+      expect(
+        value.maxLines,
+        isNull,
+        reason:
+            'Snapshot facts must not truncate the real location at enlarged system text.',
+      );
+      expect(value.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(valueFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('owner job with forwarded candidates renders candidate actions',
       (tester) async {
     final detail = _FakeDetail(candidates: const [
