@@ -509,7 +509,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       return LayoutBuilder(
         builder: (context, constraints) {
           const gap = 6.0;
-          final itemWidth = (constraints.maxWidth - gap * 2) / 3;
+          final columns = textScale >= 1.4 ? 2 : 3;
+          final itemWidth =
+              (constraints.maxWidth - gap * (columns - 1)) / columns;
           return Wrap(
             spacing: gap,
             runSpacing: gap,
