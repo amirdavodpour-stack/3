@@ -1024,12 +1024,25 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       LayoutBuilder(builder: (context, constraints) {
         final columns = constraints.maxWidth >= 1080 ? 3 : constraints.maxWidth >= HopeV2Breakpoints.medium ? 2 : 1;
         if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm), child: OpportunityCard(job: j, variant: OpportunityCardVariant.compact))]);
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: jobs.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: columns, crossAxisSpacing: HopeV2Spacing.md, mainAxisSpacing: HopeV2Spacing.md, childAspectRatio: columns == 3 ? 0.92 : 1.02),
-          itemBuilder: (_, i) => OpportunityCard(job: jobs[i]),
+        final gap = HopeV2Spacing.md;
+        final cardWidth =
+            (constraints.maxWidth - gap * (columns - 1)) / columns;
+        // A fixed-aspect GridView reserved ~480dp for these wide cards even
+        // when their content needed much less. Use content-sized grid tiles:
+        // the compactGrid variant keeps metadata scannable without blank tails.
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final job in jobs)
+              SizedBox(
+                width: cardWidth,
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.compactGrid,
+                ),
+              ),
+          ],
         );
       }),
     ]);
