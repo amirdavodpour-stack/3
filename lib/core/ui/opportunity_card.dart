@@ -1320,14 +1320,23 @@ class OpportunityCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisSize:
+                        enlargedText ? MainAxisSize.max : MainAxisSize.min,
                     children: [
-                      Text(
-                        _t(context, 'مشاهده جزئیات', 'View details'),
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: HopeV2SemanticColors.textPrimary(context),
-                              fontWeight: FontWeight.w900,
-                            ),
+                      Flexible(
+                        fit: enlargedText ? FlexFit.tight : FlexFit.loose,
+                        child: Text(
+                          _t(context, 'مشاهده جزئیات', 'View details'),
+                          maxLines: enlargedText ? null : 1,
+                          softWrap: true,
+                          overflow: enlargedText
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: HopeV2SemanticColors.textPrimary(context),
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
                       ),
                       const SizedBox(width: 4),
                       _actionAffordance(context),
