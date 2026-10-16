@@ -454,11 +454,71 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   color: color,
                 ),
                 if (item.jobCity?.isNotEmpty == true)
-                  PremiumTag(
-                    icon: HopeV2Icons.location,
-                    label: item.jobCity!,
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                  if (textScale > 1.2)
+                    Semantics(
+                      container: true,
+                      label: item.jobCity!,
+                      excludeSemantics: true,
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 24),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withValues(alpha: .07),
+                          borderRadius: BorderRadius.circular(HopeV2Radii.chip),
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withValues(alpha: .16),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: ExcludeSemantics(
+                                child: HopeIcon(
+                                  HopeV2Icons.location,
+                                  size: 14,
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                item.jobCity!,
+                                softWrap: true,
+                                overflow: TextOverflow.visible,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    PremiumTag(
+                      icon: HopeV2Icons.location,
+                      label: item.jobCity!,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
               ],
             ),
             SizedBox(height: compactLargeText ? 6 : 9),
