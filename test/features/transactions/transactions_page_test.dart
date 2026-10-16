@@ -465,12 +465,18 @@ void main() {
         locale: const Locale('en'),
       );
 
-      expect(
-        find.byKey(
-          const ValueKey('work-center-lifecycle-compact-lifecycle-copy'),
-        ),
-        findsOneWidget,
+      final lifecycle = find.byKey(
+        const ValueKey('work-center-lifecycle-compact-lifecycle-copy'),
       );
+      await tester.scrollUntilVisible(
+        lifecycle,
+        180,
+        scrollable: find.byType(Scrollable).last,
+        maxScrolls: 35,
+      );
+      await tester.pumpAndSettle();
+
+      expect(lifecycle, findsOneWidget);
       expect(find.text('Work flow'), findsOneWidget);
       expect(
         find.text('Follow the current collaboration state at a glance.'),
