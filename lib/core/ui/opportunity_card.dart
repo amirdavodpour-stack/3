@@ -1587,12 +1587,14 @@ class OpportunityCard extends StatelessWidget {
     Color color, {
     bool emphasize = false,
   }) {
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 260),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          HopeIcon( icon,
+          HopeIcon(
+            icon,
             size: 15,
             color: color,
             strokeWidth: 1.8,
@@ -1601,8 +1603,11 @@ class OpportunityCard extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: enlargedText ? null : 1,
+              softWrap: true,
+              overflow: enlargedText
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: emphasize ? color : null,
                     fontWeight: emphasize ? FontWeight.w900 : FontWeight.w700,
