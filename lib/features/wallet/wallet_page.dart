@@ -1713,19 +1713,27 @@ class _WalletPageState extends State<WalletPage> {
                             label: _entryTitle(item),
                             child: Text(
                               _entryTitle(item),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: enlargedText ? null : 2,
+                              softWrap: true,
+                              overflow: enlargedText
+                                  ? TextOverflow.visible
+                                  : TextOverflow.ellipsis,
                               style: const TextStyle(fontWeight: FontWeight.w800),
                             ),
                           ),
                           subtitle: Text(
                             _date(item.createdAt),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: enlargedText ? null : 2,
+                            softWrap: true,
+                            overflow: enlargedText
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
                           ),
-                          isThreeLine: true,
+                          isThreeLine: enlargedText,
                           trailing: Text(
-                            '${_signedMoney(item)}',
+                            _signedMoney(item),
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
