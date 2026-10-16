@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/notifications/notification.dart';
@@ -385,7 +386,7 @@ void main() {
           findsOneWidget,
           reason: 'A read notification with a valid route must expose its title and action to screen readers.',
         );
-        final semanticData = tester.getSemantics(actionableSemantics);
+        final semanticData = tester.getSemantics(actionableSemantics).getSemanticsData();
         expect(semanticData.label, contains('به‌روزرسانی درخواست'));
         expect(semanticData.label, contains('مشاهده پروژه'));
         expect(semanticData.hasFlag(SemanticsFlag.isButton), isTrue);
