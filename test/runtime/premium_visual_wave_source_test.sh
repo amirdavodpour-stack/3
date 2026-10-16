@@ -157,7 +157,10 @@ grep -Fq 'maxLines: 2,' "lib/features/wallet/wallet_page.dart"
 grep -Fq 'softWrap: true' "lib/features/wallet/wallet_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/transactions/transactions_page.dart"
 grep -Fq 'final compactViewport =' "$opportunity"
-grep -Fq 'maxLines: compactViewport ? 3 : 2' "$opportunity"
+expanded_budget_block="$(sed -n '/Widget _expandedStandard(/,/^  }/p' "$opportunity")"
+printf '%s\n' "$expanded_budget_block" | grep -Fq 'maxLines: enlargedText'
+printf '%s\n' "$expanded_budget_block" | grep -Fq ': (compactViewport ? 3 : 2)'
+printf '%s\n' "$expanded_budget_block" | grep -Fq 'overflow: enlargedText'
 grep -Fq 'String _budgetRangeLabel(BuildContext context, HopeJob job)' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq '_budgetRangeLabel(context, j)' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'wave17-filled-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
