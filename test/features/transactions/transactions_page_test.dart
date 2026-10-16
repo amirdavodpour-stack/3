@@ -452,6 +452,36 @@ void main() {
     },
   );
 
+  testWidgets(
+    'compact Work Center cards omit repeated lifecycle helper copy',
+    (tester) async {
+      final repo = _Transactions()
+        ..jobs = [_job('compact-lifecycle-copy', status: 'IN_PROGRESS')];
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        locale: const Locale('en'),
+      );
+
+      expect(
+        find.byKey(
+          const ValueKey('work-center-lifecycle-compact-lifecycle-copy'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Work flow'), findsOneWidget);
+      expect(
+        find.text('Follow the current collaboration state at a glance.'),
+        findsNothing,
+        reason:
+            'The generic lifecycle helper sentence repeats in every compact job card and consumes vertical space without adding job-specific information.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('loaded work center uses dense header hierarchy', (tester) async {
     final repo = _Transactions()
       ..jobs = [_job('dense-header', status: 'IN_PROGRESS')];
