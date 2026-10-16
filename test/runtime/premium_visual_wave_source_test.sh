@@ -44,7 +44,14 @@ grep -Fq 'fontSize: compact ? 19.5 : 25.5' "$premium"
 grep -Fq 'class PremiumEmptyState extends StatelessWidget' "$premium"
 grep -Fq 'maxLines: 2,' "$opportunity"
 grep -Fq 'softWrap: true' "$opportunity"
-grep -Fq 'childAspectRatio: columns == 3 ? 0.92 : 1.02' "$home"
+# Home discovery tiles should size to their content, not reserve square fixed-aspect cells.
+grep -Fq 'return Wrap(' "$home"
+grep -Fq 'variant: OpportunityCardVariant.compactGrid' "$home"
+grep -Fq 'wide Home opportunity cards size to content instead of square grid cells' 'test/features/home/premium_home_feed_test.dart'
+if grep -Fq 'childAspectRatio: columns == 3 ? 0.92 : 1.02' "$home"; then
+  echo "FAIL: Home opportunity cards still reserve fixed-aspect grid cells" >&2
+  exit 1
+fi
 grep -Fq 'PremiumEmptyState(' "lib/features/jobs/saved_searches_page.dart"
 grep -Fq 'PremiumEmptyState(' "lib/features/applications/my_applications_page.dart"
 grep -Fq 'PremiumEmptyState(' "lib/features/notifications/notifications_page.dart"
