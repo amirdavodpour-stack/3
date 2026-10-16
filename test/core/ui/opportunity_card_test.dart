@@ -2488,4 +2488,80 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'expanded opportunity budget keeps the full range at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'expanded-budget-range-large-text',
+        'title': 'طراحی محصول',
+        'description': 'Expanded card large-budget regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'jobType': 'FIXED',
+        'budgetMin': '123456789012',
+        'budgetMax': '987654321098',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.expanded,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final amount = find.byKey(
+        const ValueKey('opportunity-card-expanded-budget'),
+      );
+      expect(amount, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(amount);
+      expect(
+        paragraph.maxLines,
+        isNull,
+        reason: 'Expanded financial ranges must wrap naturally at enlarged text scales.',
+      );
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'The full Toman range must remain visible without a line cap.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
