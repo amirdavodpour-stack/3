@@ -707,6 +707,64 @@ void main() {
   });
 
   testWidgets(
+    'wallet history rows stay compact when the visible facts fit on two lines',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(360, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final card = find.byKey(const ValueKey('wallet-history-entry-tx-1'));
+      await tester.scrollUntilVisible(
+        card,
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(card, findsOneWidget);
+      expect(find.text('Internal transfer'), findsOneWidget);
+      expect(find.text('+500,000 TOMAN'), findsOneWidget);
+      expect(
+        tester.getSize(card).height,
+        lessThan(100),
+        reason:
+            'When title, date and amount fit, a compact wallet row should not reserve a third line.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'wallet history cards avoid duplicate reference text and expose date to assistive tech',
     (tester) async {
       final auth = AuthController(_AuthRepo(), SecureStore());
