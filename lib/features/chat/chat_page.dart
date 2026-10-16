@@ -214,9 +214,9 @@ class _ChatPageState extends State<ChatPage> {
                   glass: true,
                   padding: EdgeInsets.fromLTRB(
                     12,
-                    expandableHeaderText ? 6 : 10,
+                    expandableHeaderText ? 4 : 10,
                     8,
-                    expandableHeaderText ? 6 : 10,
+                    expandableHeaderText ? 4 : 10,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
