@@ -205,6 +205,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
   Widget _comparisonMatrix(BuildContext context) {
     final candidates = data.candidates.take(3).toList(growable: false);
     const keys = ['skills', 'experience', 'location', 'salary'];
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final widths = <int, TableColumnWidth>{
       0: const FixedColumnWidth(86),
     };
@@ -233,8 +234,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
               : null,
           child: Text(
             value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : 2,
+            softWrap: true,
+            overflow: enlargedText
+                ? TextOverflow.visible
+                : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: heading
                       ? HopeV2SemanticColors.textPrimary(context)
