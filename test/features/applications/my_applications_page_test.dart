@@ -300,8 +300,8 @@ void main() {
       expect(timelineWrap, findsOneWidget);
       expect(
         tester.getSize(timelineWrap).height,
-        lessThanOrEqualTo(125),
-        reason: 'The six stages should occupy two responsive rows without clipping their labels.',
+        lessThanOrEqualTo(145),
+        reason: 'Full stage labels may wrap up to three lines on enlarged text, while keeping the timeline within a compact two-row budget.',
       );
       expect(
         tester.getSize(cardFinder).height,
