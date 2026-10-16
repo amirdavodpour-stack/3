@@ -355,9 +355,14 @@ grid_money_block="$(sed -n '/Widget _compactGrid(/,/Widget _compact(/p' "$opport
 printf '%s\n' "$grid_money_block" | grep -Fq "ValueKey('opportunity-card-compact-grid-budget')"
 printf '%s\n' "$grid_money_block" | grep -Fq 'maxLines: enlargedText ? null : 5,'
 printf '%s\n' "$grid_money_block" | grep -Fq 'overflow: enlargedText ? TextOverflow.visible : TextOverflow.clip,'
-compact_money_block="$(sed -n '/Widget _compact(/,/Widget _standard(/p' "$opportunity")"
-printf '%s\n' "$compact_money_block" | grep -Fq "ValueKey('opportunity-card-compact-budget')"
-printf '%s\n' "$compact_money_block" | grep -Fq 'overflow: TextOverflow.clip,'
+compact_budget_text_block="$(sed -n "/ValueKey('opportunity-card-compact-budget')/,/style: TextStyle/p" "$opportunity")"
+printf '%s\n' "$compact_budget_text_block" | grep -Fq "ValueKey('opportunity-card-compact-budget')"
+printf '%s\n' "$compact_budget_text_block" | grep -Fq '_formatCompactRangeAmount(amount, context)'
+printf '%s\n' "$compact_budget_text_block" | grep -Fq 'softWrap: true'
+if printf '%s\n' "$compact_budget_text_block" | grep -Eq 'maxLines:|TextOverflow\.clip'; then
+  echo "FAIL: compact financial amount can be line-capped or clipped" >&2
+  exit 1
+fi
 
 echo "PASS: Wave 23 superwave + Wave 22 compact-first-fold source contracts"
 echo "PASS: Wave 21 shared visual + locale + evidence integrity contracts"
