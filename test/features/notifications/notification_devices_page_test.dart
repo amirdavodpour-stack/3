@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/notifications/notification.dart';
@@ -23,6 +24,12 @@ class _PendingDeviceRepository extends _SequencedDeviceRepository {
 
   @override
   Future<List<HopeNotificationDevice>> listDevices() => pending.future;
+}
+
+class _LongDeviceRepository extends _SequencedDeviceRepository {
+  @override
+  Future<List<HopeNotificationDevice>> listDevices() async =>
+      [_device('compact-ios', 'IOS')];
 }
 
 class _SequencedDeviceRepository implements NotificationRepository {
@@ -66,8 +73,13 @@ class _SequencedDeviceRepository implements NotificationRepository {
       throw UnimplementedError();
 }
 
-Widget _host(_SequencedDeviceRepository repository) => MaterialApp(
-      locale: const Locale('en'),
+Widget _host(
+  _SequencedDeviceRepository repository, {
+  Locale locale = const Locale('en'),
+  double textScale = 1,
+}) =>
+    MaterialApp(
+      locale: locale,
       supportedLocales: const [Locale('fa'), Locale('en')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -75,6 +87,12 @@ Widget _host(_SequencedDeviceRepository repository) => MaterialApp(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+        ),
+        child: child!,
+      ),
       home: Provider<NotificationRepository>.value(
         value: repository,
         child: const NotificationDevicesPage(),
@@ -136,4 +154,42 @@ void main() {
     expect(find.text('iPhone / iPad'), findsOneWidget);
     expect(find.text('Android'), findsNothing);
   });
+  testWidgets(
+    'notification device title retains usable width beside disable action at 1.5x',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _LongDeviceRepository();
+      await tester.pumpWidget(
+        _host(
+          repository,
+          locale: const Locale('fa'),
+          textScale: 1.5,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text('iPhone / iPad');
+      final actionFinder = find.text('غیرفعال کنید');
+      expect(titleFinder, findsOneWidget);
+      expect(actionFinder, findsOneWidget);
+
+      final titleRect = tester.getRect(titleFinder);
+      final actionRect = tester.getRect(actionFinder);
+      expect(
+        titleRect.width,
+        greaterThanOrEqualTo(96),
+        reason: 'The device title must not be squeezed into a narrow sliver by the trailing action.',
+      );
+      expect(titleRect.left, greaterThanOrEqualTo(0));
+      expect(titleRect.right, lessThanOrEqualTo(320));
+      expect(actionRect.left, greaterThanOrEqualTo(0));
+      expect(actionRect.right, lessThanOrEqualTo(320));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
