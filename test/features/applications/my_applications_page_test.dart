@@ -290,6 +290,24 @@ void main() {
         matching: find.byType(PremiumPanel),
       );
       expect(cardFinder, findsOneWidget);
+      final timelineStage = find.byKey(
+        const ValueKey('application-timeline-dense-app-PENDING'),
+      );
+      final timelineWrap = find.ancestor(
+        of: timelineStage,
+        matching: find.byType(Wrap),
+      );
+      final titleRow = find.ancestor(
+        of: titleFinder,
+        matching: find.byType(Row),
+      );
+      debugPrint(
+        'APPLICATION CARD DIAGNOSTICS '
+        'panel=${tester.getSize(cardFinder).height} '
+        'timelineWrap=${timelineWrap.evaluate().isEmpty ? -1 : tester.getSize(timelineWrap.first).height} '
+        'titleRow=${titleRow.evaluate().isEmpty ? -1 : tester.getSize(titleRow.first).height} '
+        'outlinedButtonHeights=${tester.widgetList<OutlinedButton>(find.byType(OutlinedButton)).length}',
+      );
       expect(
         tester.getSize(cardFinder).height,
         lessThanOrEqualTo(340),
