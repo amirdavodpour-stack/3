@@ -343,6 +343,28 @@ void main() {
     },
   );
 
+  testWidgets(
+    'wide Explore opportunity cards size to content instead of square grid cells',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo());
+      await tester.pumpAndSettle();
+
+      final cards = find.byType(OpportunityCard);
+      expect(cards, findsWidgets);
+      expect(
+        tester.getSize(cards.first).height,
+        lessThanOrEqualTo(320),
+        reason: 'Wide Explore opportunity cards should not reserve a fixed-aspect grid cell when their content is short.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('jobs page requests categories and opportunities',
       (tester) async {
     final repo = _Repo();
