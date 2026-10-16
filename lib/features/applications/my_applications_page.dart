@@ -375,6 +375,13 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
   Widget _applicationCard(HopeApplication item) {
     final color = _statusColor(context, item.status);
+    final title = item.jobTitle.isEmpty
+        ? _t('فرصت', 'Opportunity')
+        : item.jobTitle;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactLargeText =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium &&
+            textScale > 1.2;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
@@ -392,34 +399,42 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   item.status == 'ACCEPTED'
                       ? HopeV2Icons.completed
                       : HopeV2Icons.mission,
-                  size: 36,
+                  size: compactLargeText ? 30 : 36,
                   filled: true,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: compactLargeText ? 6 : 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          height: 1.15,
-                        ),
+                  child: Tooltip(
+                    message: title,
+                    child: Text(
+                      title,
+                      maxLines: compactLargeText ? 3 : null,
+                      overflow: compactLargeText ? TextOverflow.ellipsis : null,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
                       ),
-                      const SizedBox(height: 5),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          PremiumTag(icon: HopeV2Icons.activity, label: item.statusLabelFor(english: _isEnglish), color: color),
-                          if (item.jobCity?.isNotEmpty == true)
-                            PremiumTag(icon: HopeV2Icons.location, label: item.jobCity!, color: Theme.of(context).colorScheme.outline),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                PremiumTag(
+                  icon: HopeV2Icons.activity,
+                  label: item.statusLabelFor(english: _isEnglish),
+                  color: color,
+                ),
+                if (item.jobCity?.isNotEmpty == true)
+                  PremiumTag(
+                    icon: HopeV2Icons.location,
+                    label: item.jobCity!,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
               ],
             ),
             const SizedBox(height: 9),
@@ -509,7 +524,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       return LayoutBuilder(
         builder: (context, constraints) {
           const gap = 6.0;
-          final columns = textScale >= 1.4 ? 2 : 3;
+          const columns = 3;
           final itemWidth =
               (constraints.maxWidth - gap * (columns - 1)) / columns;
           return Wrap(

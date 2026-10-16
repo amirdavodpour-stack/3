@@ -297,20 +297,15 @@ void main() {
         of: timelineStage,
         matching: find.byType(Wrap),
       );
-      final titleRow = find.ancestor(
-        of: titleFinder,
-        matching: find.byType(Row),
-      );
-      debugPrint(
-        'APPLICATION CARD DIAGNOSTICS '
-        'panel=${tester.getSize(cardFinder).height} '
-        'timelineWrap=${timelineWrap.evaluate().isEmpty ? -1 : tester.getSize(timelineWrap.first).height} '
-        'titleRow=${titleRow.evaluate().isEmpty ? -1 : tester.getSize(titleRow.first).height} '
-        'outlinedButtonHeights=${tester.widgetList<OutlinedButton>(find.byType(OutlinedButton)).length}',
+      expect(timelineWrap, findsOneWidget);
+      expect(
+        tester.getSize(timelineWrap).height,
+        lessThanOrEqualTo(125),
+        reason: 'The six stages should occupy two responsive rows without clipping their labels.',
       );
       expect(
         tester.getSize(cardFinder).height,
-        lessThanOrEqualTo(340),
+        lessThanOrEqualTo(380),
         reason: 'A compact application card should keep its timeline and actions content-sized at 1.5x text.',
       );
       expect(find.byTooltip('Withdraw'), findsOneWidget);
