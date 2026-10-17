@@ -49,6 +49,7 @@ class MainActivity : FlutterActivity() {
     @Volatile private var hopeScreenshotCapturePhase = "idle"
     @Volatile private var hopeScreenshotRequestName = "unlabelled"
     @Volatile private var hopeScreenshotFreshFramesRemaining = 0
+    @Volatile private var hopeScreenshotFrameRequestCount = 0
     private var hopeScreenshotFrameRetryRunnable: Runnable? = null
     private var hopeScreenshotTimeoutRunnable: Runnable? = null
 
@@ -263,6 +264,7 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotCapturePhase = "surface-acquisition"
         hopeScreenshotRequestName = screenshotName
         hopeScreenshotFreshFramesRemaining = if (forceFreshFrame) 2 else 0
+        hopeScreenshotFrameRequestCount = 0
         Log.i(HOPE_SCREENSHOT_LOG_TAG, "HOPE_SCREENSHOT_CAPTURE_REQUEST:$screenshotName:forceFreshFrame=$forceFreshFrame")
 
         val flutterView = findViewById<FlutterView>(FlutterActivity.FLUTTER_VIEW_ID)
@@ -313,6 +315,10 @@ class MainActivity : FlutterActivity() {
                     if (!hopeScreenshotInProgress.get()) {
                         return@post
                     }
+                    Log.i(
+                        HOPE_SCREENSHOT_LOG_TAG,
+                        "HOPE_SCREENSHOT_IMAGE_AVAILABLE:$hopeScreenshotRequestName:phase=$hopeScreenshotCapturePhase:remaining=$hopeScreenshotFreshFramesRemaining",
+                    )
                     tryAcquireHopeScreenshotFrame(
                         flutterView,
                         imageReader,
@@ -437,6 +443,11 @@ class MainActivity : FlutterActivity() {
         if (hopeScreenshotInProgress.get() && !hopeScreenshotFrameCaptured.get()) {
             hopeScreenshotCapturePhase = "waiting-for-new-flutter-frame"
         }
+        hopeScreenshotFrameRequestCount += 1
+        Log.i(
+            HOPE_SCREENSHOT_LOG_TAG,
+            "HOPE_SCREENSHOT_FRAME_REQUEST_SENT:$hopeScreenshotRequestName:count=$hopeScreenshotFrameRequestCount:phase=$hopeScreenshotCapturePhase",
+        )
         MethodChannel(
             flutterEngine?.dartExecutor?.binaryMessenger
                 ?: return,

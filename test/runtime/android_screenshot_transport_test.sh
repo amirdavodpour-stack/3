@@ -102,6 +102,9 @@ if grep -Fq 'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED' "$main_activity"; th
   exit 1
 fi
 grep -Fq 'HOPE_SCREENSHOT_STALE_FRAME_REJECTED:' "$main_activity"
+grep -Fq 'HOPE_SCREENSHOT_IMAGE_AVAILABLE:$hopeScreenshotRequestName:phase=' "$main_activity"
+grep -Fq 'HOPE_SCREENSHOT_FRAME_REQUEST_SENT:$hopeScreenshotRequestName:count=' "$main_activity"
+grep -Fq "HOPE_SCREENSHOT_SCHEDULE_FRAME_RECEIVED:\$marker" "$test_file"
 if grep -Fq -- '--use-application-binary' "$script_file"; then
   echo "FAIL: runtime evidence must not use --use-application-binary" >&2
   exit 1

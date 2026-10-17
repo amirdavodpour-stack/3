@@ -899,6 +899,7 @@ Future<void> _captureHopeNativeScreenshot(
       MethodChannel('plugins.flutter.io/integration_test');
   integrationTestChannel.setMethodCallHandler((call) async {
     if (call.method == 'scheduleFrame') {
+      print('HOPE_SCREENSHOT_SCHEDULE_FRAME_RECEIVED:$marker');
       PlatformDispatcher.instance.scheduleFrame();
     }
   });
