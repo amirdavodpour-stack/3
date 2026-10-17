@@ -2001,12 +2001,16 @@ class PremiumTag extends StatelessWidget {
     this.icon,
     this.color,
     this.inverse = false,
+    this.allowWrap = false,
   });
 
   final String label;
   final Object? icon;
   final Color? color;
   final bool inverse;
+  /// Allows labels to grow naturally at enlarged accessibility text scales.
+  /// Defaults to the compact one-line contract for existing callers.
+  final bool allowWrap;
 
   @override
   Widget build(BuildContext context) {
@@ -2049,8 +2053,11 @@ class PremiumTag extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: allowWrap ? null : 1,
+                softWrap: allowWrap,
+                overflow: allowWrap
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
                   fontSize: 11,
