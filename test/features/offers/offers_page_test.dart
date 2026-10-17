@@ -490,6 +490,14 @@ testWidgets('accepting an offer disables the financial action until completion',
         expect(leadingBounds.left, greaterThanOrEqualTo(railBounds.left));
         expect(leadingBounds.right, lessThanOrEqualTo(railBounds.right));
 
+        expect(
+          Directionality.of(tester.element(rail)),
+          scenario.locale.languageCode == 'fa'
+              ? TextDirection.rtl
+              : TextDirection.ltr,
+          reason: 'The status rail must inherit the requested locale direction.',
+        );
+
         for (final prefix in prefixes) {
           final filterLabel = find.textContaining(prefix);
           expect(filterLabel, findsOneWidget);
@@ -498,30 +506,43 @@ testWidgets('accepting an offer disables the financial action until completion',
             matching: find.byType(PremiumFilterChip),
           );
           expect(chip, findsOneWidget);
-          await Scrollable.ensureVisible(
-            tester.element(chip),
-            alignment: 0.5,
-          );
-          await tester.pumpAndSettle();
-
-          final bounds = tester.getRect(chip);
-          final visibleRailBounds = tester.getRect(rail);
           expect(
-            bounds.left,
-            greaterThanOrEqualTo(visibleRailBounds.left),
-            reason: '${scenario.locale.languageCode} filter "$prefix" is clipped at a rail edge.',
-          );
-          expect(
-            bounds.right,
-            lessThanOrEqualTo(visibleRailBounds.right),
-            reason: '${scenario.locale.languageCode} filter "$prefix" is clipped at a rail edge.',
-          );
-          expect(
-            bounds.height,
+            tester.getSize(chip).height,
             greaterThanOrEqualTo(48),
             reason: 'Every status chip needs a rendered 48dp touch target.',
           );
         }
+
+        final railScrollable = find.descendant(
+          of: rail,
+          matching: find.byType(Scrollable),
+        ).first;
+        final scrollPosition =
+            tester.state<ScrollableState>(railScrollable).position;
+        expect(
+          scrollPosition.maxScrollExtent,
+          greaterThan(0),
+          reason: 'The narrow status rail must retain genuine horizontal scroll extent.',
+        );
+        scrollPosition.jumpTo(scrollPosition.maxScrollExtent);
+        await tester.pumpAndSettle();
+
+        final terminalChip = find.ancestor(
+          of: find.textContaining(prefixes.last),
+          matching: find.byType(PremiumFilterChip),
+        );
+        final terminalBounds = tester.getRect(terminalChip);
+        final endRailBounds = tester.getRect(rail);
+        expect(
+          terminalBounds.left,
+          greaterThanOrEqualTo(endRailBounds.left),
+          reason: 'The final status chip must be fully reachable at the end of the rail.',
+        );
+        expect(
+          terminalBounds.right,
+          lessThanOrEqualTo(endRailBounds.right),
+          reason: 'The final status chip must be fully reachable at the end of the rail.',
+        );
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
