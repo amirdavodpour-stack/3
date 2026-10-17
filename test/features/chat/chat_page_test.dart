@@ -83,6 +83,15 @@ class RacingChatRepository extends FakeChatRepository
   }
 
   @override
+  Future<HopeChatMessage> sendMessageWithAttachments(
+    String conversationId,
+    String message, {
+    required String messageType,
+    required List<Map<String, String>> attachments,
+  }) async =>
+      sendMessage(conversationId, message);
+
+  @override
   Future<Map<String, dynamic>> uploadChatFile(File file) async =>
       {'key': 'uploaded/file', 'filename': file.uri.pathSegments.last};
 
