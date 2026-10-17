@@ -91,7 +91,7 @@ class OpportunityCard extends StatelessWidget {
       key: const ValueKey('opportunity-card-match-reason'),
       icon: HopeV2Icons.insights,
       label: label,
-      color: HopeV2Colors.secondary,
+      color: HopeV2SemanticColors.info(context),
       allowWrap: allowWrap,
     );
   }
