@@ -1,9 +1,15 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/chat/chat_repository.dart';
+import '../../core/chat/chat_voice_bridge.dart';
 import '../../core/network/api_error_presenter.dart';
+import '../../core/router/app_routes.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/components.dart';
@@ -14,11 +20,13 @@ class ChatPage extends StatefulWidget {
     super.key,
     this.repository,
     this.jobId,
+    this.conversationId,
     this.adminRoom = false,
   });
 
   final ChatRepository? repository;
   final String? jobId;
+  final String? conversationId;
   final bool adminRoom;
 
   @override
@@ -31,8 +39,24 @@ class _ChatPageState extends State<ChatPage> {
   late final ChatRepository _repository;
 
   HopeChatThread? _thread;
+  List<HopeChatConversation> _conversations = const [];
+  List<HopeChatPresence> _presence = const [];
   bool _busy = false;
+  bool _loadingInbox = true;
+  bool _typing = false;
+  bool _recordingVoice = false;
+  String? _playingVoiceMessageId;
   String? _error;
+  String _searchQuery = '';
+  String _inboxFilter = 'ALL';
+  Timer? _liveTimer;
+  Timer? _typingTimer;
+  bool _pollingLive = false;
+  final List<Directory> _voiceTempDirs = [];
+
+  bool get _isInbox => widget.conversationId == null && widget.jobId == null && !widget.adminRoom;
+  ChatCapabilitiesRepository? get _capabilities =>
+      _repository is ChatCapabilitiesRepository ? _repository as ChatCapabilitiesRepository : null;
 
   @override
   void initState() {
@@ -43,53 +67,359 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    _liveTimer?.cancel();
+    _typingTimer?.cancel();
+    final thread = _thread;
+    final capabilities = _capabilities;
+    if (thread != null && capabilities != null) {
+      unawaited(capabilities.updatePresence(thread.conversation.id, online: false, typing: false).catchError((Object _) {}));
+    }
+    unawaited(HopeChatVoiceBridge.stopPlayback().catchError((Object _) {}));
+    for (final directory in _voiceTempDirs) {
+      unawaited(directory.delete(recursive: true).catchError((Object _) {}));
+    }
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
-  Future<void> _load() async {
-    if (mounted) {
-      setState(() => _error = null);
+  Future<void> _loadConversations({bool silent = false}) async {
+    if (!silent && mounted) setState(() { _loadingInbox = true; _error = null; });
+    try {
+      final items = await _repository.listConversations();
+      if (!mounted) return;
+      setState(() { _conversations = items; _loadingInbox = false; _error = null; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingInbox = false;
+        _error = apiErrorMessage(e, fallback: _t('فهرست گفتگوها بارگذاری نشد.', 'Could not load conversations.'));
+      });
     }
+  }
 
+  Future<void> _load() async {
+    if (_isInbox) { await _loadConversations(); return; }
+    if (mounted) setState(() => _error = null);
     try {
       final items = await _repository.listConversations();
       HopeChatConversation? conversation;
-
       for (final item in items) {
-        final matches = widget.adminRoom
-            ? item.kind.toUpperCase() == 'ADMIN'
-            : item.kind.toUpperCase() == 'JOB' && item.jobId == widget.jobId;
-        if (matches) {
-          conversation = item;
-          break;
-        }
+        final matches = widget.conversationId != null
+            ? item.id == widget.conversationId
+            : widget.adminRoom
+                ? item.kind.toUpperCase() == 'ADMIN'
+                : item.kind.toUpperCase() == 'JOB' && item.jobId == widget.jobId;
+        if (matches) { conversation = item; break; }
       }
-
-      if (conversation == null) {
-        throw StateError('Conversation is not available');
-      }
-
+      if (conversation == null) throw StateError('Conversation is not available');
       final thread = await _repository.getMessages(conversation.id);
       if (!mounted) return;
-      setState(() {
-        _thread = thread;
-        _error = null;
-      });
+      setState(() { _thread = thread; _error = null; });
+      _startLiveUpdates();
+      final capabilities = _capabilities;
+      if (capabilities != null) {
+        await capabilities.markRead(conversation.id);
+        await capabilities.updatePresence(conversation.id, online: true, typing: false);
+        final presence = await capabilities.listPresence(conversation.id);
+        if (mounted) setState(() => _presence = presence);
+      }
     } catch (e) {
       if (!mounted) return;
-      setState(
-        () => _error = apiErrorMessage(
-          e,
-          fallback: _t(
-            'گفتگو در دسترس نیست.',
-            'Conversation is not available.',
-          ),
-        ),
-      );
+      setState(() => _error = apiErrorMessage(e, fallback: _t('گفتگو در دسترس نیست.', 'Conversation is not available.')));
     }
   }
+
+  void _startLiveUpdates() {
+    _liveTimer?.cancel();
+    if (_capabilities != null && _thread != null) {
+      _liveTimer = Timer.periodic(const Duration(seconds: 6), (_) => _pollLive());
+    }
+  }
+
+  Future<void> _pollLive() async {
+    final thread = _thread;
+    final capabilities = _capabilities;
+    if (!mounted || _pollingLive || thread == null || capabilities == null) return;
+    _pollingLive = true;
+    try {
+      final next = await _repository.getMessages(thread.conversation.id);
+      final userId = context.read<AuthController?>()?.user?['id']?.toString();
+      final unreadIncoming = next.messages.any((message) =>
+        message.senderId != userId && !message.readReceipts.any((receipt) => receipt.userId == userId));
+      if (mounted) setState(() => _thread = next);
+      if (unreadIncoming) await capabilities.markRead(thread.conversation.id);
+      final presence = await capabilities.listPresence(thread.conversation.id);
+      await capabilities.updatePresence(thread.conversation.id, online: true, typing: _typing);
+      if (mounted) setState(() => _presence = presence);
+    } catch (_) {
+      // Poll failures are transient; keep already loaded history visible.
+    } finally {
+      _pollingLive = false;
+    }
+  }
+
+  void _onComposerChanged(String value) {
+    final thread = _thread;
+    final capabilities = _capabilities;
+    if (thread == null || capabilities == null) return;
+    _typingTimer?.cancel();
+    final nextTyping = value.trim().isNotEmpty;
+    _typing = nextTyping;
+    unawaited(capabilities.updatePresence(thread.conversation.id, online: true, typing: nextTyping).catchError((Object _) {}));
+    if (nextTyping) {
+      _typingTimer = Timer(const Duration(seconds: 2), () {
+        _typing = false;
+        unawaited(capabilities.updatePresence(thread.conversation.id, online: true, typing: false).catchError((Object _) {}));
+      });
+    }
+  }
+
+  Future<void> _setPreference(HopeChatConversation conversation, String action) async {
+    final capabilities = _capabilities;
+    if (capabilities == null) return;
+    try {
+      switch (action) {
+        case 'pin':
+          await capabilities.updatePreferences(conversation.id, isPinned: !conversation.isPinned);
+          break;
+        case 'important':
+          await capabilities.updatePreferences(conversation.id, isImportant: !conversation.isImportant);
+          break;
+        case 'archive':
+          await capabilities.updatePreferences(conversation.id, isArchived: !conversation.isArchived);
+          break;
+      }
+      await _loadConversations(silent: true);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('تغییر گفتگو ذخیره نشد.', 'Could not update conversation.')));
+    }
+  }
+
+  Future<void> _pickAndSendAttachments() async {
+    if (_capabilities == null || _busy) return;
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+        allowMultiple: true, type: FileType.custom,
+        allowedExtensions: const ['pdf','png','jpg','jpeg','webp','txt','m4a','mp3','wav'],
+      );
+      if (picked == null) return;
+      if (picked.files.length > 5) {
+        setState(() => _error = _t('در هر پیام حداکثر ۵ فایل مجاز است.', 'You can attach up to five files per message.'));
+        return;
+      }
+      final files = picked.files.where((f) => f.path != null).map((f) => File(f.path!)).toList();
+      if (files.isNotEmpty) await _sendFiles(files, messageType: 'ATTACHMENT');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('انتخاب فایل انجام نشد.', 'Could not select files.')));
+    }
+  }
+
+  Future<void> _toggleVoiceRecording() async {
+    if (_busy || _capabilities == null) return;
+    if (!_recordingVoice) {
+      try {
+        await HopeChatVoiceBridge.startRecording();
+        if (!mounted) return;
+        setState(() { _recordingVoice = true; _error = null; });
+      } catch (e) {
+        if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('ضبط صدا ممکن نشد. مجوز میکروفون را بررسی کنید.', 'Could not record audio. Check microphone permission.')));
+      }
+      return;
+    }
+    try {
+      final path = await HopeChatVoiceBridge.stopRecording();
+      if (!mounted) return;
+      setState(() => _recordingVoice = false);
+      await _sendFiles([File(path)], messageType: 'VOICE', removeSourcesOnSuccess: true);
+    } catch (e) {
+      if (mounted) setState(() { _recordingVoice = false; _error = apiErrorMessage(e, fallback: _t('پیام صوتی آماده نشد.', 'Voice message could not be prepared.')); });
+    }
+  }
+
+  Future<void> _sendFiles(List<File> files, {required String messageType, bool removeSourcesOnSuccess = false}) async {
+    final capabilities = _capabilities;
+    final thread = _thread;
+    if (capabilities == null || thread == null || _busy || files.isEmpty) return;
+    setState(() { _busy = true; _error = null; });
+    try {
+      final uploaded = <Map<String,String>>[];
+      for (final file in files) {
+        final result = await capabilities.uploadChatFile(file);
+        uploaded.add({'key': result['key'].toString(), 'filename': (result['filename'] ?? file.uri.pathSegments.last).toString()});
+      }
+      final message = await capabilities.sendMessageWithAttachments(
+        thread.conversation.id, _controller.text,
+        messageType: messageType, attachments: uploaded,
+      );
+      if (!mounted) return;
+      setState(() {
+        _thread = HopeChatThread(conversation: thread.conversation, messages: [...thread.messages, message]);
+        _error = null;
+      });
+      _controller.clear();
+      if (removeSourcesOnSuccess) {
+        for (final file in files) { try { await file.delete(); } catch (_) {} }
+      }
+      _scrollToLatest();
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('پیوست ارسال نشد.', 'Attachment could not be sent.')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _scrollToLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds:180), curve: Curves.easeOut);
+    });
+  }
+
+  Future<void> _saveAttachment(HopeChatAttachment attachment) async {
+    final capabilities = _capabilities;
+    if (capabilities == null) return;
+    try {
+      final bytes = await capabilities.downloadAttachment(attachment.downloadPath);
+      await FilePicker.platform.saveFile(fileName: attachment.filename, bytes: bytes);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('دریافت فایل ناموفق بود.', 'Could not download attachment.')));
+    }
+  }
+
+  Future<void> _playVoiceMessage(HopeChatMessage message) async {
+    final capabilities = _capabilities;
+    if (capabilities == null || message.attachments.isEmpty) return;
+    if (_playingVoiceMessageId == message.id) {
+      await HopeChatVoiceBridge.stopPlayback();
+      if (mounted) setState(() => _playingVoiceMessageId = null);
+      return;
+    }
+    try {
+      final attachment = message.attachments.first;
+      final bytes = await capabilities.downloadAttachment(attachment.downloadPath);
+      final directory = await Directory.systemTemp.createTemp('hope-chat-voice-');
+      _voiceTempDirs.add(directory);
+      final extension = attachment.filename.contains('.') ? attachment.filename.split('.').last : 'm4a';
+      final file = File('${directory.path}/voice.$extension');
+      await file.writeAsBytes(bytes, flush: true);
+      await HopeChatVoiceBridge.playFile(file.path);
+      if (mounted) setState(() => _playingVoiceMessageId = message.id);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('پخش پیام صوتی ممکن نشد.', 'Could not play voice message.')));
+    }
+  }
+
+  Widget _buildInbox(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final query = _searchQuery.trim().toLowerCase();
+    final visible = _conversations.where((conversation) {
+      if (conversation.isArchived) return false;
+      final haystack = '${conversation.otherUserName} ${conversation.title} ${conversation.lastMessageBody}'.toLowerCase();
+      if (query.isNotEmpty && !haystack.contains(query)) return false;
+      switch (_inboxFilter) {
+        case 'UNREAD': return conversation.unreadCount > 0;
+        case 'IMPORTANT': return conversation.isImportant;
+        case 'PROJECTS': return conversation.kind.toUpperCase() == 'JOB';
+        default: return true;
+      }
+    }).toList(growable:false);
+    return Scaffold(
+      backgroundColor: HopeV2Colors.darkBackground,
+      body: SafeArea(child: PremiumPageFrame(
+        maxWidth: 920, padding: const EdgeInsets.fromLTRB(12,12,12,8),
+        child: Column(crossAxisAlignment:CrossAxisAlignment.stretch, children:[
+          Row(children:[
+            Container(width:42,height:42,decoration:BoxDecoration(
+              color:colors.primary.withValues(alpha:.13),borderRadius:BorderRadius.circular(HopeV2Radii.md),
+              border:Border.all(color:colors.primary.withValues(alpha:.26))),
+              child:Center(child:HopeIcon(HopeV2Icons.message,color:colors.primary,size:21))),
+            const SizedBox(width:12),
+            Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              Text(_t('گفتگوها','Chats'),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w900)),
+              Text(_t('فضای امن همکاری‌های HOPE','Your HOPE collaboration space'),style:Theme.of(context).textTheme.bodySmall?.copyWith(color:colors.onSurfaceVariant)),
+            ])),
+            PremiumIconButton(icon:HopeV2Icons.close,tooltip:_t('بستن','Close'),onPressed:()=>Navigator.maybePop(context)),
+          ]),
+          const SizedBox(height:16),
+          TextField(key:const ValueKey('chat-inbox-search'),onChanged:(value)=>setState(()=>_searchQuery=value),
+            decoration:InputDecoration(prefixIcon:const HopeIcon(HopeV2Icons.search,size:19),
+              hintText:_t('جست‌وجوی نام، پروژه یا پیام','Search people, projects or messages'),
+              filled:true,fillColor:HopeV2Colors.darkSurface,border:OutlineInputBorder(borderRadius:BorderRadius.circular(15)),isDense:true)),
+          const SizedBox(height:10),
+          SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[
+            _inboxChip(_t('همه','All'),'ALL'),const SizedBox(width:7),
+            _inboxChip(_t('خوانده‌نشده','Unread'),'UNREAD'),const SizedBox(width:7),
+            _inboxChip(_t('مهم','Important'),'IMPORTANT'),const SizedBox(width:7),
+            _inboxChip(_t('پروژه‌ها','Projects'),'PROJECTS'),
+          ])),
+          const SizedBox(height:10),
+          if (_error != null) Padding(padding:const EdgeInsets.only(bottom:8),child:Text(_error!,style:TextStyle(color:colors.error))),
+          Expanded(child:_loadingInbox
+            ? const Center(child:CircularProgressIndicator())
+            : visible.isEmpty
+              ? Center(child:Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,children:[
+                  HopeIcon(HopeV2Icons.empty,size:36,color:colors.onSurfaceVariant),const SizedBox(height:12),
+                  Text(query.isEmpty?_t('گفتگویی برای نمایش نیست.','No conversations to show.'):_t('نتیجه‌ای پیدا نشد.','No matching conversations.'),textAlign:TextAlign.center),
+                ])))
+              : RefreshIndicator(onRefresh:()=>_loadConversations(),child:ListView.separated(
+                key:const ValueKey('chat-inbox-list'),padding:const EdgeInsets.only(bottom:18),itemCount:visible.length,
+                separatorBuilder:(_,__)=>const SizedBox(height:8),
+                itemBuilder:(context,index){
+                  final item=visible[index];
+                  final name=item.otherUserName.trim().isNotEmpty?item.otherUserName:(item.kind.toUpperCase()=='ADMIN'?_t('اتاق مدیران','Admin room'):item.title);
+                  final preview=item.lastMessageType=='VOICE'?_t('پیام صوتی','Voice message'):item.lastMessageType=='ATTACHMENT'?_t('پیوست','Attachment'):(item.lastMessageBody.isNotEmpty?item.lastMessageBody:item.title);
+                  return Container(decoration:BoxDecoration(color:HopeV2Colors.darkSurface,borderRadius:BorderRadius.circular(17),
+                    border:Border.all(color:item.isPinned?colors.primary.withValues(alpha:.65):colors.outlineVariant.withValues(alpha:.25))),
+                    child:InkWell(borderRadius:BorderRadius.circular(17),
+                      onTap:() async { await Navigator.push(context,HopeRoutes.chatConversation(item.id)); if(mounted) await _loadConversations(silent:true); },
+                      child:Padding(padding:const EdgeInsetsDirectional.fromSTEB(12,13,8,13),child:Row(children:[
+                        CircleAvatar(radius:23,backgroundColor:colors.primary.withValues(alpha:.18),
+                          child:Text(name.isNotEmpty?name.characters.first:'H',style:TextStyle(color:colors.primary,fontWeight:FontWeight.w800))),
+                        const SizedBox(width:11),
+                        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                          Row(children:[
+                            Expanded(child:Text(name,maxLines:1,overflow:TextOverflow.ellipsis,style:Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight:FontWeight.w800))),
+                            if(item.isPinned) Padding(padding:const EdgeInsetsDirectional.only(start:4),child:HopeIcon(HopeV2Icons.save,size:14,color:colors.primary)),
+                            if(item.isImportant) Padding(padding:const EdgeInsetsDirectional.only(start:4),child:HopeIcon(HopeV2Icons.featured,size:14,color:HopeV2Colors.secondaryDark)),
+                          ]),
+                          const SizedBox(height:3),Text(preview,maxLines:2,overflow:TextOverflow.ellipsis,style:Theme.of(context).textTheme.bodySmall?.copyWith(color:colors.onSurfaceVariant)),
+                          const SizedBox(height:7),
+                          Row(children:[
+                            Container(width:7,height:7,decoration:BoxDecoration(color:item.status.toUpperCase()=='OPEN'?HopeV2Colors.successDark:colors.onSurfaceVariant,shape:BoxShape.circle)),
+                            const SizedBox(width:5),Text(item.status.toUpperCase()=='OPEN'?_t('باز','Open'):_t('بسته','Closed'),style:Theme.of(context).textTheme.labelSmall?.copyWith(color:colors.onSurfaceVariant)),
+                            if(item.unreadCount>0)...[
+                              const SizedBox(width:8),
+                              Container(padding:const EdgeInsets.symmetric(horizontal:7,vertical:2),decoration:BoxDecoration(color:colors.primary,borderRadius:BorderRadius.circular(10)),
+                                child:Text(item.unreadCount.toString(),style:Theme.of(context).textTheme.labelSmall?.copyWith(color:HopeV2Colors.darkBackground,fontWeight:FontWeight.w900))),
+                            ],
+                          ]),
+                        ])),
+                        PopupMenuButton<String>(tooltip:_t('سازمان‌دهی','Organize'),icon:HopeIcon(HopeV2Icons.menu,size:18,color:colors.onSurfaceVariant),
+                          onSelected:(action)=>_setPreference(item,action),
+                          itemBuilder:(_)=>[
+                            PopupMenuItem(value:'pin',child:Text(item.isPinned?_t('برداشتن سنجاق','Unpin'):_t('سنجاق گفتگو','Pin conversation'))),
+                            PopupMenuItem(value:'important',child:Text(item.isImportant?_t('حذف از مهم‌ها','Remove importance'):_t('علامت‌گذاری مهم','Mark important'))),
+                            PopupMenuItem(value:'archive',child:Text(_t('بایگانی گفتگو','Archive conversation'))),
+                          ]),
+                      ])),
+                    ),
+                  );
+                },
+              )),
+          ),
+        ]),
+      )),
+    );
+  }
+
+  Widget _inboxChip(String label,String filter) {
+    final selected=_inboxFilter==filter;
+    return ChoiceChip(label:Text(label),selected:selected,onSelected:(_)=>setState(()=>_inboxFilter=filter),
+      selectedColor:HopeV2Colors.primaryAction,backgroundColor:HopeV2Colors.darkSurface,
+      labelStyle:TextStyle(color:selected?Colors.white:HopeV2Colors.darkText,fontWeight:FontWeight.w700),
+      side:BorderSide(color:selected?HopeV2Colors.primaryDark:HopeV2Colors.darkBorderStrong));
+  }
+
 
   Future<void> _send() async {
     final text = _controller.text.trim();
@@ -156,6 +486,12 @@ class _ChatPageState extends State<ChatPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  String _formatBytes(int size) {
+    if (size < 1024) return '$size B';
+    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
+    return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
   String _chatStatusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'OPEN':
@@ -169,8 +505,29 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  ThemeData _indigoTheme(BuildContext context) {
+    final base = Theme.of(context);
+    final scheme = base.colorScheme.copyWith(
+      brightness: Brightness.dark, primary: HopeV2Colors.primaryDark,
+      secondary: HopeV2Colors.secondaryDark, surface: HopeV2Colors.darkSurface,
+      surfaceContainerHighest: HopeV2Colors.darkCard, error: HopeV2Colors.dangerDark,
+    );
+    return base.copyWith(
+      brightness: Brightness.dark, colorScheme: scheme,
+      scaffoldBackgroundColor: HopeV2Colors.darkBackground,
+      dividerColor: HopeV2Colors.darkBorder,
+      textTheme: base.textTheme.apply(bodyColor: HopeV2Colors.darkText, displayColor: HopeV2Colors.darkText),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = _indigoTheme(context);
+    if (_isInbox) return Theme(data: theme, child: Builder(builder: _buildInbox));
+    return Theme(data: theme, child: Builder(builder: _buildConversation));
+  }
+
+  Widget _buildConversation(BuildContext context) {
     final conversation = _thread?.conversation;
     final isEn = Localizations.localeOf(context).languageCode == 'en';
     final pageId = widget.adminRoom
@@ -530,7 +887,36 @@ class _ChatPageState extends State<ChatPage> {
                                                           ),
                                                         ),
                                                       if (showSender) const SizedBox(height: 5),
-                                                      Text(message.body, style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.42)),
+                                                      if (message.body.trim().isNotEmpty && message.body != 'Attachment' && message.body != 'Voice message')
+                                                        Text(message.body, style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.42)),
+                                                      if (message.messageType.toUpperCase() == 'VOICE' && message.attachments.isNotEmpty)
+                                                        Align(
+                                                          alignment: AlignmentDirectional.centerStart,
+                                                          child: TextButton.icon(
+                                                            key: ValueKey('chat-voice-${message.id}'),
+                                                            onPressed: () => _playVoiceMessage(message),
+                                                            icon: HopeIcon(_playingVoiceMessageId == message.id ? HopeV2Icons.pause : HopeV2Icons.play, size:18),
+                                                            label: Text(_t('پیام صوتی', 'Voice message')),
+                                                          ),
+                                                        ),
+                                                      for (final attachment in message.attachments)
+                                                        if (message.messageType.toUpperCase() != 'VOICE')
+                                                          Padding(
+                                                            padding: const EdgeInsets.only(top: 5),
+                                                            child: OutlinedButton.icon(
+                                                              key: ValueKey('chat-attachment-${attachment.id}'),
+                                                              onPressed: () => _saveAttachment(attachment),
+                                                              icon: HopeIcon(HopeV2Icons.download, size:16),
+                                                              label: Text('${attachment.filename} · ${_formatBytes(attachment.size)}', maxLines:2, overflow:TextOverflow.ellipsis),
+                                                            ),
+                                                          ),
+                                                      if (mine && message.readReceipts.any((receipt) => receipt.userId != currentUserId))
+                                                        Align(
+                                                          alignment: AlignmentDirectional.centerEnd,
+                                                          child: Text(_t('خوانده شد', 'Seen'),
+                                                            key: ValueKey('chat-read-${message.id}'),
+                                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: HopeV2Colors.secondaryDark)),
+                                                        ),
                                                     ],
                                                   ),
                                                 ),
@@ -555,7 +941,11 @@ class _ChatPageState extends State<ChatPage> {
                       key: const ValueKey('chat-composer-panel'),
                       quiet: true,
                       padding: const EdgeInsets.all(6),
-                      child: Row(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Expanded(
@@ -567,6 +957,7 @@ class _ChatPageState extends State<ChatPage> {
                               enabled: !_busy,
                               textInputAction: TextInputAction.send,
                               onSubmitted: (_) => _send(),
+                              onChanged: _onComposerChanged,
                               decoration: InputDecoration(
                                 hintText: _t('پیام خود را بنویسید', 'Write a message'),
                                 isDense: true,
@@ -585,6 +976,34 @@ class _ChatPageState extends State<ChatPage> {
                               onPressed: _busy || value.text.trim().isEmpty ? null : _send,
                             ),
                           ),
+                        ],
+                      ),
+                          if (_repository is ChatCapabilitiesRepository)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Row(
+                                children: [
+                                  IconButton(
+                                    key: const ValueKey('chat-attachment-button'),
+                                    tooltip: _t('افزودن فایل', 'Attach files'),
+                                    onPressed: _busy ? null : _pickAndSendAttachments,
+                                    icon: HopeIcon(HopeV2Icons.attachment, color: colors.secondary, size:20),
+                                    constraints: const BoxConstraints(minWidth:48,minHeight:48),
+                                  ),
+                                  IconButton(
+                                    key: const ValueKey('chat-voice-record-button'),
+                                    tooltip: _recordingVoice ? _t('پایان ضبط', 'Finish recording') : _t('ضبط پیام صوتی', 'Record voice message'),
+                                    onPressed: _busy ? null : _toggleVoiceRecording,
+                                    icon: HopeIcon(_recordingVoice ? HopeV2Icons.pause : HopeV2Icons.activity, color: _recordingVoice ? colors.error : colors.secondary, size:20),
+                                    constraints: const BoxConstraints(minWidth:48,minHeight:48),
+                                  ),
+                                  if (_recordingVoice)
+                                    Expanded(child: Text(_t('در حال ضبط… برای ارسال دوباره بزنید.', 'Recording… tap to send.'), maxLines:2, style:Theme.of(context).textTheme.labelSmall?.copyWith(color:colors.error))),
+                                  if (_busy)
+                                    const Padding(padding: EdgeInsetsDirectional.only(start:8), child:SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2))),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ),
