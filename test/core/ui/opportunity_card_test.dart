@@ -2780,7 +2780,7 @@ void main() {
   );
 
   testWidgets(
-    'featured scan match rationale remains fully readable at 2x text scale',
+    'featured scan match score tag remains fully readable at 2x text scale',
     (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1;
@@ -2800,7 +2800,6 @@ void main() {
         'budgetMax': '2400000',
         'city': 'Tehran',
         'recommendationScore': 0.94,
-        'recommendationReasons': ['SKILL_MATCH'],
       });
 
       await tester.pumpWidget(
@@ -2832,20 +2831,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final rationale = find.byKey(
-        const ValueKey('opportunity-card-match-reason'),
-      );
-      expect(rationale, findsOneWidget);
-      final rationaleText = find.descendant(
-        of: rationale,
-        matching: find.byType(Text),
-      );
-      expect(rationaleText, findsOneWidget);
-      final paragraph = tester.renderObject<RenderParagraph>(rationaleText);
+      final matchScore = find.text('94% match');
+      expect(matchScore, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(matchScore);
       expect(
         paragraph.didExceedMaxLines,
         isFalse,
-        reason: 'Large-text users must be able to read the full recommendation rationale inside the tag.',
+        reason: 'Large-text users must be able to read the complete match score tag.',
       );
       expect(tester.takeException(), isNull);
     },
