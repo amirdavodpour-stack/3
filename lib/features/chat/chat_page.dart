@@ -413,44 +413,275 @@ class _ChatPageState extends State<ChatPage> {
               : RefreshIndicator(onRefresh:()=>_loadConversations(),child:ListView.separated(
                 key:const ValueKey('chat-inbox-list'),padding:const EdgeInsets.only(bottom:18),itemCount:visible.length,
                 separatorBuilder:(_,__)=>const SizedBox(height:8),
-                itemBuilder:(context,index){
-                  final item=visible[index];
-                  final name=item.otherUserName.trim().isNotEmpty?item.otherUserName:(item.kind.toUpperCase()=='ADMIN'?_t('اتاق مدیران','Admin room'):item.title);
-                  final preview=item.lastMessageType=='VOICE'?_t('پیام صوتی','Voice message'):item.lastMessageType=='ATTACHMENT'?_t('پیوست','Attachment'):(item.lastMessageBody.isNotEmpty?item.lastMessageBody:item.title);
-                  return Container(decoration:BoxDecoration(color:HopeV2Colors.darkSurface,borderRadius:BorderRadius.circular(17),
-                    border:Border.all(color:item.isPinned?colors.primary.withValues(alpha:.65):colors.outlineVariant.withValues(alpha:.25))),
-                    child:InkWell(borderRadius:BorderRadius.circular(17),
-                      onTap:() async { await Navigator.push(context,HopeRoutes.chatConversation(item.id)); if(mounted) await _loadConversations(silent:true); },
-                      child:Padding(padding:const EdgeInsetsDirectional.fromSTEB(12,13,8,13),child:Row(children:[
-                        CircleAvatar(radius:23,backgroundColor:colors.primary.withValues(alpha:.18),
-                          child:Text(name.isNotEmpty?name.characters.first:'H',style:TextStyle(color:colors.primary,fontWeight:FontWeight.w800))),
-                        const SizedBox(width:11),
-                        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-                          Row(children:[
-                            Expanded(child:Text(name,maxLines:1,overflow:TextOverflow.ellipsis,style:Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight:FontWeight.w800))),
-                            if(item.isPinned) Padding(padding:const EdgeInsetsDirectional.only(start:4),child:HopeIcon(HopeV2Icons.save,size:14,color:colors.primary)),
-                            if(item.isImportant) Padding(padding:const EdgeInsetsDirectional.only(start:4),child:HopeIcon(HopeV2Icons.featured,size:14,color:HopeV2Colors.secondaryDark)),
-                          ]),
-                          const SizedBox(height:3),Text(preview,maxLines:2,overflow:TextOverflow.ellipsis,style:Theme.of(context).textTheme.bodySmall?.copyWith(color:colors.onSurfaceVariant)),
-                          const SizedBox(height:7),
-                          Row(children:[
-                            Container(width:7,height:7,decoration:BoxDecoration(color:item.status.toUpperCase()=='OPEN'?HopeV2Colors.successDark:colors.onSurfaceVariant,shape:BoxShape.circle)),
-                            const SizedBox(width:5),Text(item.status.toUpperCase()=='OPEN'?_t('باز','Open'):_t('بسته','Closed'),style:Theme.of(context).textTheme.labelSmall?.copyWith(color:colors.onSurfaceVariant)),
-                            if(item.unreadCount>0)...[
-                              const SizedBox(width:8),
-                              Container(padding:const EdgeInsets.symmetric(horizontal:7,vertical:2),decoration:BoxDecoration(color:colors.primary,borderRadius:BorderRadius.circular(10)),
-                                child:Text(item.unreadCount.toString(),style:Theme.of(context).textTheme.labelSmall?.copyWith(color:HopeV2Colors.darkBackground,fontWeight:FontWeight.w900))),
+                itemBuilder: (context, index) {
+                  final item = visible[index];
+                  final name = item.otherUserName.trim().isNotEmpty
+                      ? item.otherUserName
+                      : (item.kind.toUpperCase() == 'ADMIN'
+                          ? _t('اتاق مدیران', 'Admin room')
+                          : item.title);
+                  final preview = item.lastMessageType.toUpperCase() == 'VOICE'
+                      ? _t('پیام صوتی', 'Voice message')
+                      : item.lastMessageType.toUpperCase() == 'ATTACHMENT'
+                          ? _t('پیوست', 'Attachment')
+                          : (item.lastMessageBody.trim().isNotEmpty
+                              ? item.lastMessageBody
+                              : _t('هنوز پیامی ارسال نشده است.', 'No messages yet.'));
+                  final isAdmin = item.kind.toUpperCase() == 'ADMIN';
+                  final hasContext = item.title.trim().isNotEmpty &&
+                      item.title.trim().toLowerCase() != name.trim().toLowerCase();
+                  final timeLabel = _formatConversationTime(context, item.lastMessageAt);
+                  final unread = item.unreadCount > 0;
+                  final cardAccent = unread
+                      ? colors.primary
+                      : item.isPinned
+                          ? HopeV2Colors.secondaryDark
+                          : colors.outlineVariant.withValues(alpha: .28);
+                  return Container(
+                    key: ValueKey('chat-inbox-card-${item.id}'),
+                    decoration: BoxDecoration(
+                      color: HopeV2Colors.darkCard,
+                      borderRadius: BorderRadius.circular(19),
+                      border: Border.all(
+                        color: cardAccent.withValues(alpha: unread || item.isPinned ? .72 : .30),
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(19),
+                        onTap: () async {
+                          await Navigator.push(context, HopeRoutes.chatConversation(item.id));
+                          if (mounted) await _loadConversations(silent: true);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 7, 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withValues(alpha: .13),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: colors.primary.withValues(alpha: .27)),
+                                ),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Text(
+                                      name.isNotEmpty ? name.characters.first.toUpperCase() : 'H',
+                                      style: TextStyle(
+                                        color: colors.primary,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    if (unread)
+                                      PositionedDirectional(
+                                        end: -3,
+                                        top: -3,
+                                        child: Container(
+                                          width: 10,
+                                          height: 10,
+                                          decoration: BoxDecoration(
+                                            color: HopeV2Colors.secondaryDark,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: HopeV2Colors.darkCard, width: 2),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 11),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            isAdmin ? _t('تیم HOPE', 'HOPE TEAM') : _t('گفتگوی پروژه', 'PROJECT CHAT'),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: colors.secondary,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: .8,
+                                            ),
+                                          ),
+                                        ),
+                                        if (timeLabel.isNotEmpty) ...[
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            timeLabel,
+                                            key: ValueKey('chat-inbox-time-${item.id}'),
+                                            textDirection: TextDirection.ltr,
+                                            maxLines: 1,
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: colors.onSurfaceVariant,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            key: ValueKey('chat-inbox-name-${item.id}'),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              height: 1.15,
+                                            ),
+                                          ),
+                                        ),
+                                        if (item.isPinned)
+                                          Padding(
+                                            padding: const EdgeInsetsDirectional.only(start: 4, top: 2),
+                                            child: Tooltip(
+                                              message: _t('گفتگوی سنجاق‌شده', 'Pinned conversation'),
+                                              child: HopeIcon(HopeV2Icons.save, size: 14, color: colors.primary),
+                                            ),
+                                          ),
+                                        if (item.isImportant)
+                                          Padding(
+                                            padding: const EdgeInsetsDirectional.only(start: 4, top: 2),
+                                            child: Tooltip(
+                                              message: _t('گفتگوی مهم', 'Important conversation'),
+                                              child: HopeIcon(HopeV2Icons.featured, size: 14, color: HopeV2Colors.secondaryDark),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    if (hasContext) ...[
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        item.title,
+                                        key: ValueKey('chat-inbox-context-${item.id}'),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: colors.onSurfaceVariant,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: HopeV2Colors.darkSurface,
+                                        borderRadius: BorderRadius.circular(11),
+                                        border: Border.all(color: HopeV2Colors.darkBorder),
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            width: 3,
+                                            height: 20,
+                                            decoration: BoxDecoration(
+                                              color: unread ? colors.primary : colors.secondary.withValues(alpha: .8),
+                                              borderRadius: BorderRadius.circular(3),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              preview,
+                                              key: ValueKey('chat-inbox-preview-${item.id}'),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: unread ? colors.onSurface : colors.onSurfaceVariant,
+                                                fontWeight: unread ? FontWeight.w700 : FontWeight.w500,
+                                                height: 1.3,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 7,
+                                      runSpacing: 5,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: item.status.toUpperCase() == 'OPEN'
+                                                ? HopeV2Colors.success.withValues(alpha: .15)
+                                                : colors.onSurfaceVariant.withValues(alpha: .10),
+                                            borderRadius: BorderRadius.circular(7),
+                                          ),
+                                          child: Text(
+                                            item.status.toUpperCase() == 'OPEN'
+                                                ? _t('باز', 'OPEN')
+                                                : _t('بسته', 'CLOSED'),
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: item.status.toUpperCase() == 'OPEN'
+                                                  ? HopeV2Colors.successDark
+                                                  : colors.onSurfaceVariant,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: .45,
+                                            ),
+                                          ),
+                                        ),
+                                        if (item.isPinned)
+                                          Text(_t('سنجاق‌شده', 'PINNED'),
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: colors.primary, fontWeight: FontWeight.w800)),
+                                        if (item.isImportant)
+                                          Text(_t('مهم', 'IMPORTANT'),
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: HopeV2Colors.secondaryDark, fontWeight: FontWeight.w800)),
+                                        if (unread)
+                                          Container(
+                                            key: ValueKey('chat-inbox-unread-${item.id}'),
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: colors.primary,
+                                              borderRadius: BorderRadius.circular(7),
+                                            ),
+                                            child: Text(
+                                              _t('${item.unreadCount} خوانده‌نشده', '${item.unreadCount} UNREAD'),
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                color: Colors.white, fontWeight: FontWeight.w900),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuButton<String>(
+                                tooltip: _t('سازمان‌دهی گفتگو', 'Organize conversation'),
+                                icon: HopeIcon(HopeV2Icons.menu, size: 18, color: colors.onSurfaceVariant),
+                                onSelected: (action) => _setPreference(item, action),
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(value: 'pin', child: Text(item.isPinned ? _t('برداشتن سنجاق', 'Unpin') : _t('سنجاق گفتگو', 'Pin conversation'))),
+                                  PopupMenuItem(value: 'important', child: Text(item.isImportant ? _t('حذف از مهم‌ها', 'Remove importance') : _t('علامت‌گذاری مهم', 'Mark important'))),
+                                  PopupMenuItem(value: 'archive', child: Text(item.isArchived ? _t('از بایگانی خارج کن', 'Unarchive conversation') : _t('بایگانی گفتگو', 'Archive conversation'))),
+                                ],
+                              ),
                             ],
-                          ]),
-                        ])),
-                        PopupMenuButton<String>(tooltip:_t('سازمان‌دهی','Organize'),icon:HopeIcon(HopeV2Icons.menu,size:18,color:colors.onSurfaceVariant),
-                          onSelected:(action)=>_setPreference(item,action),
-                          itemBuilder:(_)=>[
-                            PopupMenuItem(value:'pin',child:Text(item.isPinned?_t('برداشتن سنجاق','Unpin'):_t('سنجاق گفتگو','Pin conversation'))),
-                            PopupMenuItem(value:'important',child:Text(item.isImportant?_t('حذف از مهم‌ها','Remove importance'):_t('علامت‌گذاری مهم','Mark important'))),
-                            PopupMenuItem(value:'archive',child:Text(item.isArchived ? _t('از بایگانی خارج کن','Unarchive conversation') : _t('بایگانی گفتگو','Archive conversation'))),
-                          ]),
-                      ])),
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 },
@@ -459,6 +690,16 @@ class _ChatPageState extends State<ChatPage> {
         ]),
       )),
     );
+  }
+
+  String _formatConversationTime(BuildContext context, DateTime? value) {
+    if (value == null) return '';
+    final local = value.toLocal();
+    final now = DateTime.now();
+    final sameDay = local.year == now.year && local.month == now.month && local.day == now.day;
+    return sameDay
+        ? MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(local))
+        : MaterialLocalizations.of(context).formatShortDate(local);
   }
 
   Widget _inboxChip(String label,String filter) {
