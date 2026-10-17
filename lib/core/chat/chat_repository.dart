@@ -128,7 +128,6 @@ class ApiChatRepository implements ChatRepository, ChatCapabilitiesRepository {
     if(raw is! Map || raw['id']==null) throw const FormatException('Invalid chat response');
     return HopeChatMessage.fromMap(Map<String,dynamic>.from(raw));
   }
-}
   @override
   Future<HopeChatMessage> sendMessageWithAttachments(String conversationId, String message, {required String messageType, required List<Map<String, String>> attachments}) async {
     final raw = await _api.request('POST', '/messaging/conversations/$conversationId', auth: true,

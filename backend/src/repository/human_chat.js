@@ -110,7 +110,7 @@ export async function postChatMessage(conversationId,userId,role,body,options={}
       if(used.length){const e=new Error('CHAT_ATTACHMENT_ALREADY_USED');e.code='CHAT_ATTACHMENT_ALREADY_USED';throw e;}
       uploads=rows;
     } else if(!canAttachToChat({messageType,contentTypes:[],text})){const e=new Error('CHAT_MESSAGE_INVALID');e.code='CHAT_MESSAGE_INVALID';throw e;}
-    const placeholder=messageType==='VOICE'?'Voice message':messageType==='ATTACHMENT'?'Attachment':text;
+    const placeholder=messageType==='VOICE'?'Voice message':messageType==='ATTACHMENT'?(text||'Attachment'):text;
     const {rows:messageRows}=await client.query('INSERT INTO chat_messages(id,conversation_id,sender_id,body,message_type) VALUES(gen_random_uuid(),$1,$2,$3,$4) RETURNING *',[conversationId,userId,placeholder,messageType]);
     const message=messageRows[0],inserted=[];
     for(const upload of uploads){

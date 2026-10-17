@@ -75,12 +75,24 @@ class _ChatPageState extends State<ChatPage> {
       unawaited(capabilities.updatePresence(thread.conversation.id, online: false, typing: false).catchError((Object _) {}));
     }
     unawaited(HopeChatVoiceBridge.stopPlayback().catchError((Object _) {}));
+    if (_recordingVoice) unawaited(_discardActiveRecording());
     for (final directory in _voiceTempDirs) {
-      unawaited(directory.delete(recursive: true).catchError((Object _) {}));
+      unawaited(_deleteVoiceTempDirectory(directory));
     }
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  Future<void> _deleteVoiceTempDirectory(Directory directory) async {
+    try { await directory.delete(recursive: true); } catch (_) {}
+  }
+
+  Future<void> _discardActiveRecording() async {
+    try {
+      final path = await HopeChatVoiceBridge.stopRecording();
+      await File(path).delete();
+    } catch (_) {}
   }
 
   Future<void> _loadConversations({bool silent = false}) async {

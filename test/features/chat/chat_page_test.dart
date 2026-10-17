@@ -536,4 +536,20 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  
+  testWidgets('Indigo inbox filters by participant and context text', (tester) async {
+    final repository = FakeChatRepository();
+    await tester.pumpWidget(MaterialApp(home: ChatPage(repository: repository)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('chat-inbox-search')), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-inbox-list')), findsOneWidget);
+    expect(find.text('Worker'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const ValueKey('chat-inbox-search')), 'missing-conversation');
+    await tester.pumpAndSettle();
+    expect(find.text('No matching conversations.'), findsOneWidget);
+    expect(find.text('Worker'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
 }
