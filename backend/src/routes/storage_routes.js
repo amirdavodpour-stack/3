@@ -8,6 +8,9 @@ const MIME_EXTENSIONS = new Map([
   ['image/jpeg', new Set(['.jpg', '.jpeg'])],
   ['image/webp', new Set(['.webp'])],
   ['text/plain', new Set(['.txt', '.text', '.log'])],
+  ['audio/mp4', new Set(['.m4a', '.mp4'])],
+  ['audio/mpeg', new Set(['.mp3'])],
+  ['audio/wav', new Set(['.wav', '.wave'])],
 ]);
 
 export function createStorageRoutes({ authUser, storage, config, readBody, readMultipartSingleFile, requireFields, stringField, sendJson, HttpError, repo, legacy, id, now, logEvent }) {
@@ -26,6 +29,7 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
       const file = await readMultipartSingleFile(req);
       try {
         const contentType = String(file.contentType || '').toLowerCase();
+        if (!MIME_EXTENSIONS.has(contentType)) throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported content type');
         validateFilenameForContentType(file.filename, contentType);
         await storage.put(file);
       } finally {
