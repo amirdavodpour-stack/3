@@ -131,10 +131,15 @@ class _ChatPageState extends State<ChatPage> {
       _startLiveUpdates();
       final capabilities = _capabilities;
       if (capabilities != null) {
-        await capabilities.markRead(conversation.id);
-        await capabilities.updatePresence(conversation.id, online: true, typing: false);
-        final presence = await capabilities.listPresence(conversation.id);
-        if (mounted) setState(() => _presence = presence);
+        try {
+          await capabilities.markRead(conversation.id);
+          await capabilities.updatePresence(conversation.id, online: true, typing: false);
+          final presence = await capabilities.listPresence(conversation.id);
+          if (mounted) setState(() => _presence = presence);
+        } catch (_) {
+          // The conversation itself remains readable if an optional presence
+          // capability is temporarily unavailable.
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -325,13 +330,18 @@ class _ChatPageState extends State<ChatPage> {
     final colors = Theme.of(context).colorScheme;
     final query = _searchQuery.trim().toLowerCase();
     final visible = _conversations.where((conversation) {
-      if (conversation.isArchived) return false;
+      if (_inboxFilter == 'ARCHIVED') {
+        if (!conversation.isArchived) return false;
+      } else if (conversation.isArchived) {
+        return false;
+      }
       final haystack = '${conversation.otherUserName} ${conversation.title} ${conversation.lastMessageBody}'.toLowerCase();
       if (query.isNotEmpty && !haystack.contains(query)) return false;
       switch (_inboxFilter) {
         case 'UNREAD': return conversation.unreadCount > 0;
         case 'IMPORTANT': return conversation.isImportant;
         case 'PROJECTS': return conversation.kind.toUpperCase() == 'JOB';
+        case 'ARCHIVED': return true;
         default: return true;
       }
     }).toList(growable:false);
@@ -362,7 +372,8 @@ class _ChatPageState extends State<ChatPage> {
             _inboxChip(_t('همه','All'),'ALL'),const SizedBox(width:7),
             _inboxChip(_t('خوانده‌نشده','Unread'),'UNREAD'),const SizedBox(width:7),
             _inboxChip(_t('مهم','Important'),'IMPORTANT'),const SizedBox(width:7),
-            _inboxChip(_t('پروژه‌ها','Projects'),'PROJECTS'),
+            _inboxChip(_t('پروژه‌ها','Projects'),'PROJECTS'),const SizedBox(width:7),
+            _inboxChip(_t('بایگانی','Archived'),'ARCHIVED'),
           ])),
           const SizedBox(height:10),
           if (_error != null) Padding(padding:const EdgeInsets.only(bottom:8),child:Text(_error!,style:TextStyle(color:colors.error))),
@@ -411,7 +422,7 @@ class _ChatPageState extends State<ChatPage> {
                           itemBuilder:(_)=>[
                             PopupMenuItem(value:'pin',child:Text(item.isPinned?_t('برداشتن سنجاق','Unpin'):_t('سنجاق گفتگو','Pin conversation'))),
                             PopupMenuItem(value:'important',child:Text(item.isImportant?_t('حذف از مهم‌ها','Remove importance'):_t('علامت‌گذاری مهم','Mark important'))),
-                            PopupMenuItem(value:'archive',child:Text(_t('بایگانی گفتگو','Archive conversation'))),
+                            PopupMenuItem(value:'archive',child:Text(item.isArchived ? _t('از بایگانی خارج کن','Unarchive conversation') : _t('بایگانی گفتگو','Archive conversation'))),
                           ]),
                       ])),
                     ),
@@ -650,6 +661,18 @@ class _ChatPageState extends State<ChatPage> {
                                       : TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
+                                if (_presence.any((person) => person.online))
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 3),
+                                    child: Text(
+                                      _presence.any((person) => person.typing)
+                                          ? _t('در حال نوشتن…', 'Typing…')
+                                          : _t('آنلاین', 'Online'),
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: HopeV2Colors.secondaryDark,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
