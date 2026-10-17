@@ -15,6 +15,48 @@ import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 
+String _normalizeChatSearchText(String input) {
+  var value = input.toLowerCase();
+  const letterMap = {
+    'ي': 'ی',
+    'ك': 'ک',
+    'ة': 'ه',
+    'ؤ': 'و',
+    'إ': 'ا',
+    'أ': 'ا',
+    'آ': 'ا',
+    'ۀ': 'ه',
+  };
+  letterMap.forEach((from, to) => value = value.replaceAll(from, to));
+  value = value
+      .replaceAll(RegExp(r'[\u064B-\u065F\u0670\u200f]'), ' ')
+      .replaceAll('\u200c', '');
+  const digitMap = {
+    '۰': '0',
+    '۱': '1',
+    '۲': '2',
+    '۳': '3',
+    '۴': '4',
+    '۵': '5',
+    '۶': '6',
+    '۷': '7',
+    '۸': '8',
+    '۹': '9',
+    '٠': '0',
+    '١': '1',
+    '٢': '2',
+    '٣': '3',
+    '٤': '4',
+    '٥': '5',
+    '٦': '6',
+    '٧': '7',
+    '٨': '8',
+    '٩': '9',
+  };
+  digitMap.forEach((from, to) => value = value.replaceAll(from, to));
+  return value.replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
 class ChatPage extends StatefulWidget {
   const ChatPage({
     super.key,
@@ -367,14 +409,16 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildInbox(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final query = _searchQuery.trim().toLowerCase();
+    final query = _normalizeChatSearchText(_searchQuery);
     final visible = _conversations.where((conversation) {
       if (_inboxFilter == 'ARCHIVED') {
         if (!conversation.isArchived) return false;
       } else if (conversation.isArchived) {
         return false;
       }
-      final haystack = '${conversation.otherUserName} ${conversation.title} ${conversation.lastMessageBody}'.toLowerCase();
+      final haystack = _normalizeChatSearchText(
+        '${conversation.otherUserName} ${conversation.title} ${conversation.lastMessageBody}',
+      );
       if (query.isNotEmpty && !haystack.contains(query)) return false;
       switch (_inboxFilter) {
         case 'UNREAD': return conversation.unreadCount > 0;
