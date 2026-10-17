@@ -2987,4 +2987,76 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'expanded opportunity description remains fully readable at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const description =
+          'This opportunity needs a product designer to shape accessible financial workflows, define a multilingual editorial system, collaborate with engineering and research, document reusable components, review responsive layouts across compact and large screens, and deliver a complete implementation with clear rationale, acceptance criteria, and handoff notes for the product team.';
+
+      final job = HopeJob.fromMap({
+        'id': 'expanded-description-large-text',
+        'title': 'Product designer',
+        'description': description,
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.expanded,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final descriptionFinder = find.text(description);
+      expect(descriptionFinder, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(descriptionFinder);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Expanded opportunity descriptions must not be silently truncated at 2x text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
