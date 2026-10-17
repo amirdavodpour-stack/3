@@ -254,14 +254,19 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                       ),
                       const SizedBox(width: HopeV2Spacing.sm),
                       PremiumIconButton(
-                        icon: HopeV2Icons.arrowRight,
-                        tooltip: isEn ? 'Send' : 'ارسال',
-                        onPressed: (_loading ||
-                                _sending ||
-                                _saving ||
-                                _complete)
+                        icon: _complete
+                            ? HopeV2Icons.retry
+                            : HopeV2Icons.arrowRight,
+                        tooltip: _complete
+                            ? (isEn
+                                ? 'Retry saving'
+                                : 'تلاش دوباره برای ذخیره')
+                            : (isEn ? 'Send' : 'ارسال'),
+                        onPressed: (_loading || _sending || _saving)
                             ? null
-                            : _send,
+                            : _complete
+                                ? _save
+                                : _send,
                       ),
                     ],
                   ),
