@@ -187,8 +187,13 @@ class _ChatPageState extends State<ChatPage> {
     if (thread == null || capabilities == null) return;
     _typingTimer?.cancel();
     final nextTyping = value.trim().isNotEmpty;
+    final typingChanged = nextTyping != _typing;
     _typing = nextTyping;
-    unawaited(capabilities.updatePresence(thread.conversation.id, online: true, typing: nextTyping).catchError((Object _) {}));
+    if (typingChanged) {
+      unawaited(capabilities.updatePresence(
+        thread.conversation.id, online: true, typing: nextTyping,
+      ).catchError((Object _) {}));
+    }
     if (nextTyping) {
       _typingTimer = Timer(const Duration(seconds: 2), () {
         _typing = false;
