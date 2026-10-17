@@ -39,6 +39,9 @@ case "$command_line" in
   "settings put secure accessibility_enabled 1")
     exit 0
     ;;
+  "settings put secure touch_exploration_enabled 1")
+    exit 0
+    ;;
   "settings get secure accessibility_enabled")
     printf '%s\n' '1'
     ;;
@@ -46,29 +49,30 @@ case "$command_line" in
     printf '%s\n' "$FAKE_TALKBACK_COMPONENT"
     ;;
   "dumpsys accessibility")
-    if [[ "$FAKE_TALKBACK_MODE" == "bound" ]]; then
-      cat <<EOF
+    local_touch_exploration=false
+    local_bound_services=""
+    local_binding_services="{}"
+    case "$FAKE_TALKBACK_MODE" in
+      bound)
+        local_touch_exploration=true
+        local_bound_services="Service[label=TalkBack_TfP, feedbackType[FEEDBACK_SPOKEN, FEEDBACK_HAPTIC, FEEDBACK_AUDIBLE], capabilities=251, eventTypes=TYPES_ALL_MASK, notificationTimeout=0, requestA11yBtn=false]"
+        ;;
+      bound-no-touch)
+        local_bound_services="Service[label=TalkBack_TfP, feedbackType[FEEDBACK_SPOKEN, FEEDBACK_HAPTIC, FEEDBACK_AUDIBLE], capabilities=251, eventTypes=TYPES_ALL_MASK, notificationTimeout=0, requestA11yBtn=false]"
+        ;;
+      *)
+        local_binding_services="{$FAKE_TALKBACK_COMPONENT}"
+        ;;
+    esac
+    cat <<EOF
 ACCESSIBILITY MANAGER (dumpsys accessibility)
 User state[
- attributes:{id=0, touchExplorationEnabled=true}
- Bound services:{
-   Service[label=TalkBack_TfP, feedbackType[FEEDBACK_SPOKEN, FEEDBACK_HAPTIC, FEEDBACK_AUDIBLE], capabilities=251, eventTypes=TYPES_ALL_MASK, notificationTimeout=0, requestA11yBtn=false]
- }
+ attributes:{id=0, touchExplorationEnabled=$local_touch_exploration}
+ Bound services:{ $local_bound_services }
  Enabled services:{{$FAKE_TALKBACK_COMPONENT}}
- Binding services:{}
+ Binding services:$local_binding_services
  Crashed services:{}
 EOF
-    else
-      cat <<EOF
-ACCESSIBILITY MANAGER (dumpsys accessibility)
-User state[
- attributes:{id=0, touchExplorationEnabled=false}
- Bound services:{}
- Enabled services:{{$FAKE_TALKBACK_COMPONENT}}
- Binding services:{{$FAKE_TALKBACK_COMPONENT}}
- Crashed services:{}
-EOF
-    fi
     ;;
   *)
     printf 'Unexpected mocked adb command: %s\n' "$command_line" >&2
@@ -109,14 +113,24 @@ if ! run_scenario bound; then
   exit 1
 fi
 grep -Fxq 'true' "$tmp/repo-bound/docs/audit/evidence/android-runtime/talkback-service-bound.txt"
+grep -Fxq 'true' "$tmp/repo-bound/docs/audit/evidence/android-runtime/touch-exploration-enabled.txt"
 grep -Fq 'HOPE_TALKBACK_SERVICE_BOUND:true' "$tmp/bound.log"
-grep -Fq 'am start -W' "$tmp/repo-bound/docs/audit/evidence/android-runtime/talkback-launch.txt" || true
+grep -Fq 'HOPE_TOUCH_EXPLORATION_ENABLED:true' "$tmp/bound.log"
+
+if run_scenario bound-no-touch; then
+  echo "FAIL: a bound TalkBack service with touch exploration disabled must not be accepted." >&2
+  exit 1
+fi
+grep -Fxq 'true' "$tmp/repo-bound-no-touch/docs/audit/evidence/android-runtime/talkback-service-bound.txt"
+grep -Fxq 'false' "$tmp/repo-bound-no-touch/docs/audit/evidence/android-runtime/touch-exploration-enabled.txt"
+grep -Fq 'FAIL: TalkBack is bound but touch exploration remains disabled; refusing T10 interaction evidence.' "$tmp/bound-no-touch.log"
 
 if run_scenario binding-only; then
   echo "FAIL: a service listed only under Binding services must not be accepted as bound." >&2
   exit 1
 fi
 grep -Fxq 'false' "$tmp/repo-binding-only/docs/audit/evidence/android-runtime/talkback-service-bound.txt"
+grep -Fxq 'false' "$tmp/repo-binding-only/docs/audit/evidence/android-runtime/touch-exploration-enabled.txt"
 grep -Fq 'FAIL: TalkBack did not bind; secure setting values are insufficient evidence.' "$tmp/binding-only.log"
 
-printf '%s\n' 'PASS: TalkBack validator requires the exact service inside Bound services and rejects Binding-only state.'
+printf '%s\n' 'PASS: TalkBack validator requires a bound service AND enabled touch exploration; rejects Binding-only state.'

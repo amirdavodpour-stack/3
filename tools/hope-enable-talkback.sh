@@ -11,6 +11,7 @@ component="$talkback_package/com.google.android.marvin.talkback.TalkBackService"
 preferences_activity="$talkback_package/com.android.talkback.TalkBackPreferencesActivity"
 mkdir -p "$evidence_dir"
 printf '%s\n' 'false' > "$evidence_dir/talkback-service-bound.txt"
+printf '%s\n' 'false' > "$evidence_dir/touch-exploration-enabled.txt"
 if [[ "${HOPE_TALKBACK_REQUIRED:-0}" != "1" ]]; then
   echo "FAIL: T10 requires HOPE_TALKBACK_REQUIRED=1; refusing an uninstrumented runtime." >&2
   exit 2
@@ -49,13 +50,23 @@ adb -s "$serial" shell dumpsys package "$talkback_package" > "$evidence_dir/talk
 # not proof that Android has connected the accessibility service.
 adb -s "$serial" shell settings put secure enabled_accessibility_services "$component"
 adb -s "$serial" shell settings put secure accessibility_enabled 1
+# A bound service is not sufficient for touch exploration. Ask Android to enable
+# the secure setting, then independently verify the authoritative dumpsys state.
+adb -s "$serial" shell settings put secure touch_exploration_enabled 1
 bound=false
+touch_exploration_enabled=false
 for attempt in $(seq 1 30); do
   adb -s "$serial" shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled.txt" 2>&1 || true
   adb -s "$serial" shell settings get secure enabled_accessibility_services > "$evidence_dir/accessibility-services.txt" 2>&1 || true
   adb -s "$serial" shell dumpsys accessibility > "$evidence_dir/accessibility-bound-services.txt" 2>&1 || true
   enabled_value="$(tr -d '\r\n' < "$evidence_dir/accessibility-enabled.txt" 2>/dev/null || true)"
   services_value="$(tr -d '\r\n' < "$evidence_dir/accessibility-services.txt" 2>/dev/null || true)"
+  touch_exploration_value="$(grep -Eo 'touchExplorationEnabled=(true|false)' "$evidence_dir/accessibility-bound-services.txt" | tail -n 1 | cut -d= -f2 || true)"
+  if [[ "$touch_exploration_value" == "true" ]]; then
+    touch_exploration_enabled=true
+  else
+    touch_exploration_enabled=false
+  fi
   bound_services_block="$(
     awk '
       /^[[:space:]]*Bound services:/ { in_bound = 1; print; next }
@@ -80,16 +91,25 @@ for attempt in $(seq 1 30); do
      grep -Fq 'com.google.android.marvin.talkback.TalkBackService' <<<"$services_value" &&
      [[ "$bound_service_confirmed" == "true" ]]; then
     bound=true
-    break
+    if [[ "$touch_exploration_enabled" == "true" ]]; then
+      break
+    fi
   fi
   sleep 1
 done
 printf '%s\n' "$bound" > "$evidence_dir/talkback-service-bound.txt"
+printf '%s\n' "$touch_exploration_enabled" > "$evidence_dir/touch-exploration-enabled.txt"
 if [[ "$bound" != "true" ]]; then
   echo "FAIL: TalkBack did not bind; secure setting values are insufficient evidence." >&2
   grep -Ei -C 3 'accessibility|talkback|bound service' "$evidence_dir/accessibility-bound-services.txt" >&2 || true
   exit 8
 fi
+if [[ "$touch_exploration_enabled" != "true" ]]; then
+  echo "FAIL: TalkBack is bound but touch exploration remains disabled; refusing T10 interaction evidence." >&2
+  grep -Ei -C 3 'touchExplorationEnabled|accessibility|talkback|bound service' "$evidence_dir/accessibility-bound-services.txt" >&2 || true
+  exit 9
+fi
 echo "HOPE_TALKBACK_SERVICE_BOUND:true"
+echo "HOPE_TOUCH_EXPLORATION_ENABLED:true"
 echo "HOPE_TALKBACK_SOURCE_SHA:$source_sha"
 echo "HOPE_TALKBACK_APK_SHA256:$(cat "$evidence_dir/talkback-apk-sha256.txt")"

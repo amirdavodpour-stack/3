@@ -384,7 +384,12 @@ run_host_batch_session() {
     capture_status=1
     echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-connect:$mode" >&2
     kill "$process_pid" >/dev/null 2>&1 || true
+  elif ! assert_hope_focused "$mode" || ! assert_hope_rendered "$mode"; then
+    capture_status=1
+    echo "HOPE_HOST_RUNTIME_FOCUS_OR_SURFACE_FAILED:$mode" >&2
+    kill "$process_pid" >/dev/null 2>&1 || true
   else
+    echo "HOPE_HOST_RUNTIME_FOCUS_AND_SURFACE_VERIFIED:$mode"
     # integration_test's onScreenshot callback owns the host-side PNG write.
     # Waiting on each marker here creates a race with the Flutter Driver
     # command/response cycle. The final capture-set validator below checks all
@@ -637,8 +642,18 @@ fi
 # Then run the same screen set with real TalkBack attached, emitting no PNG payloads.
 talkback_setup_status=0
 if ! bash tools/hope-enable-talkback.sh; then
-  echo "HOPE_TALKBACK_SETUP_FAILED: the required TalkBack service could not be installed and bound." >&2
+  echo "HOPE_TALKBACK_SETUP_FAILED: TalkBack must be bound with touch exploration enabled." >&2
   talkback_setup_status=1
+fi
+if [[ "$talkback_setup_status" -eq 0 ]]; then
+  if ! adb shell am start -W -n com.hope.marketplace/.MainActivity > "$evidence_dir/hope-talkback-return-to-app.txt" 2>&1 ||
+     ! grep -Fq 'Status: ok' "$evidence_dir/hope-talkback-return-to-app.txt"; then
+    cat "$evidence_dir/hope-talkback-return-to-app.txt" >&2 || true
+    echo "HOPE_TALKBACK_FOREGROUND_RETURN_FAILED: MainActivity did not return to foreground after TalkBack setup." >&2
+    talkback_setup_status=1
+  else
+    echo "HOPE_RUNTIME_APP_FOREGROUND_AFTER_TALKBACK:true"
+  fi
 fi
 semantics_status=0
 if [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$talkback_setup_status" -eq 0 ]; then
@@ -735,6 +750,10 @@ talkback_service_bound=false
 if [[ "$(tr -d '\r\n' < "$evidence_dir/talkback-service-bound.txt" 2>/dev/null || true)" == "true" ]]; then
   talkback_service_bound=true
 fi
+talkback_touch_exploration_enabled=false
+if [[ "$(tr -d '\r\n' < "$evidence_dir/touch-exploration-enabled.txt" 2>/dev/null || true)" == "true" ]]; then
+  talkback_touch_exploration_enabled=true
+fi
 talkback_semantics_screens=0
 talkback_semantics_output="$(grep -h 'HOPE_T10_SEMANTICS_PASS:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
 if [[ -n "$talkback_semantics_output" ]]; then
@@ -750,8 +769,8 @@ talkback_apk_sha256="$(tr -d '\r\n' < "$evidence_dir/talkback-apk-sha256.txt" 2>
 talkback_required=false
 if [[ "${HOPE_TALKBACK_REQUIRED:-0}" == "1" ]]; then
   talkback_required=true
-  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 6 ]]; then
-    echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens" >&2
+  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_touch_exploration_enabled" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 6 ]]; then
+    echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound touch_exploration=$talkback_touch_exploration_enabled semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens" >&2
     test_status=1
   fi
 fi
@@ -805,6 +824,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "talkback_required": $talkback_required,
   "talkback_enabled": $talkback_enabled,
   "talkback_service_bound": $talkback_service_bound,
+  "talkback_touch_exploration_enabled": $talkback_touch_exploration_enabled,
   "talkback_package": "com.android.talkback",
   "talkback_service_component": "com.android.talkback/com.google.android.marvin.talkback.TalkBackService",
   "talkback_source_sha": "$talkback_source_sha",
