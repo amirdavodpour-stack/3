@@ -1743,6 +1743,7 @@ class OpportunityCard extends StatelessWidget {
                       ),
                       if (matchPercent != null)
                         PremiumTag(
+                          key: const ValueKey('opportunity-card-expanded-match-score'),
                           icon: HopeV2Icons.match,
                           label: '${HopeDisplayFormatter.percent(
                             matchPercent.round(),
