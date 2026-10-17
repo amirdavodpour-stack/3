@@ -127,7 +127,7 @@ export async function markChatConversationRead(conversationId,userId,role){
   const conversation=await getChatConversationForUser(conversationId,userId,role);if(!conversation)return null;
   const {rows}=await requirePool().query(`INSERT INTO chat_message_reads(message_id,user_id,read_at)
     SELECT m.id,$2,NOW() FROM chat_messages m WHERE m.conversation_id=$1 AND m.sender_id IS DISTINCT FROM $2
-    ON CONFLICT(message_id,user_id) DO UPDATE SET read_at=EXCLUDED.read_at RETURNING read_at`,[conversationId,userId]);
+    ON CONFLICT(message_id,user_id) DO NOTHING RETURNING read_at`,[conversationId,userId]);
   const latest=rows.reduce((v,r)=>!v||new Date(r.read_at).getTime()>new Date(v).getTime()?r.read_at:v,null);
   return {conversationId,readCount:rows.length,readAt:latest?.toISOString?.()??latest??new Date().toISOString()};
 }
