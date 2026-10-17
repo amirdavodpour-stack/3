@@ -66,7 +66,6 @@ require_line "$test_file" "_runtimeScreenshotSurfacePrepared = true;"
 require_line "$test_file" "required bool forceFreshFrame,"
 require_line "$test_file" "'forceFreshFrame': forceFreshFrame,"
 require_line "$test_file" "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-'),"
-require_line "$test_file" "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-'),"
 
 require_line "$test_file" "HOPE_T10_SEMANTICS_ONLY_SCREEN_COMPLETE:"
 require_line "$test_file" "'HOPE_T10_SEMANTICS_ONLY',"
