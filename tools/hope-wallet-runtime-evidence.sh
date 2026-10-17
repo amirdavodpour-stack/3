@@ -663,7 +663,8 @@ if [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$talkback_setup_status" -eq 0 ]; then
   if [ "$CAPTURE_LOCALE" = "fa" ]; then scroll_suffix="fa-rtl"; fi
   semantics_scroll_end_screens=(
     "home-$scroll_suffix" "jobs-$scroll_suffix" "job-detail-$scroll_suffix"
-    "transactions-$scroll_suffix" "wallet-$scroll_suffix" "profile-$scroll_suffix"
+    "transactions-$scroll_suffix" "transaction-detail-$scroll_suffix"
+    "wallet-$scroll_suffix" "profile-$scroll_suffix" "create-job-$scroll_suffix"
   )
   if [ "$semantics_status" -eq 0 ] && ! validate_scroll_end_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-semantics-only-runtime.log" "${semantics_scroll_end_screens[@]}"; then semantics_status=1; fi
 
@@ -769,7 +770,7 @@ talkback_apk_sha256="$(tr -d '\r\n' < "$evidence_dir/talkback-apk-sha256.txt" 2>
 talkback_required=false
 if [[ "${HOPE_TALKBACK_REQUIRED:-0}" == "1" ]]; then
   talkback_required=true
-  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_touch_exploration_enabled" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 6 ]]; then
+  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_touch_exploration_enabled" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 8 ]]; then
     echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound touch_exploration=$talkback_touch_exploration_enabled semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens" >&2
     test_status=1
   fi

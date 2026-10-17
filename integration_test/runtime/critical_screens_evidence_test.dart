@@ -1003,6 +1003,7 @@ Future<void> _captureRuntimeScreenshot(
 bool _runtimeNeedsScrollEnd(String marker) {
   const auditedPages = <String>{
     'home', 'jobs', 'job-detail', 'transactions', 'wallet', 'profile',
+    'transaction-detail', 'create-job',
   };
   final localeSuffix = _captureLocale == 'en' ? '-en-ltr' : '-fa-rtl';
   return !marker.startsWith('responsive-') &&
