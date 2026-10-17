@@ -1219,14 +1219,16 @@ class OpportunityCard extends StatelessWidget {
         ),
       if (category.isNotEmpty)
         PremiumTag(
-          icon: HopeV2Icons.category,
+          // On compact scan cards, the category is already explicit in copy;
+          // suppress its decorative glyph so the full match score can remain visible.
+          icon: compactViewport ? null : HopeV2Icons.category,
           label: category,
           color: HopeV2Colors.muted,
           allowWrap: enlargedText,
         ),
       if (match != null)
         PremiumTag(
-          icon: HopeV2Icons.match,
+          icon: compactViewport ? null : HopeV2Icons.match,
           label: match,
           color: HopeV2Colors.success,
           allowWrap: enlargedText,
