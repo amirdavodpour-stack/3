@@ -274,6 +274,15 @@ components:
         readReceipts:
           type: array
           items: {$ref: '#/components/schemas/ChatReadReceipt'}
+    ChatPresenceUpdate:
+      type: object
+      required: [conversationId, userId, online, typing]
+      properties:
+        conversationId: {type: string, format: uuid}
+        userId: {type: string, format: uuid}
+        online: {type: boolean}
+        typing: {type: boolean}
+        lastSeenAt: {type: string, format: date-time, nullable: true}
     ChatConversationPreferences:
       type: object
       required: [conversationId, isPinned, isImportant, isArchived, updatedAt]
@@ -416,11 +425,15 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required: [data]
                 properties:
-                  items:
-                    type: array
-                    items: {$ref: '#/components/schemas/ChatConversation'}
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatConversation'}
         '401': {description: Authentication required}
   /messaging/conversations/{conversationId}:
     parameters:
@@ -435,12 +448,16 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [conversation, messages]
+                required: [data]
                 properties:
-                  conversation: {$ref: '#/components/schemas/ChatConversation'}
-                  messages:
-                    type: array
-                    items: {$ref: '#/components/schemas/ChatMessage'}
+                  data:
+                    type: object
+                    required: [conversation, messages]
+                    properties:
+                      conversation: {$ref: '#/components/schemas/ChatConversation'}
+                      messages:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatMessage'}
         '404': {description: Conversation not found or not visible to the participant}
     post:
       security: [{bearerAuth: []}]
@@ -471,7 +488,11 @@ paths:
           description: Created message with associated attachments and initial read receipts
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ChatMessage'}
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatMessage'}
         '400': {description: Invalid message, attachment, or message type}
         '403': {description: Conversation is closed or caller is not a participant}
         '404': {description: Conversation not found}
@@ -488,11 +509,15 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [conversationId, readCount, readAt]
+                required: [data]
                 properties:
-                  conversationId: {type: string, format: uuid}
-                  readCount: {type: integer, minimum: 0}
-                  readAt: {type: string, format: date-time}
+                  data:
+                    type: object
+                    required: [conversationId, readCount, readAt]
+                    properties:
+                      conversationId: {type: string, format: uuid}
+                      readCount: {type: integer, minimum: 0}
+                      readAt: {type: string, format: date-time}
         '404': {description: Conversation not found or not visible to the participant}
   /messaging/conversations/{conversationId}/presence:
     parameters:
@@ -507,11 +532,15 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required: [data]
                 properties:
-                  items:
-                    type: array
-                    items: {$ref: '#/components/schemas/ChatPresence'}
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatPresence'}
         '404': {description: Conversation not found or not visible to the participant}
     post:
       security: [{bearerAuth: []}]
@@ -526,7 +555,15 @@ paths:
                 online: {type: boolean, default: true}
                 typing: {type: boolean, default: false}
       responses:
-        '200': {description: Presence state updated}
+        '200':
+          description: Presence state updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatPresenceUpdate'}
         '404': {description: Conversation not found or not visible to the participant}
   /messaging/conversations/{conversationId}/preferences:
     parameters:
@@ -550,7 +587,11 @@ paths:
           description: Updated per-user conversation preferences
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ChatConversationPreferences'}
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatConversationPreferences'}
         '400': {description: Conversation preferences must be boolean}
         '404': {description: Conversation not found or not visible to the participant}
   /messaging/attachments/{attachmentId}/content:
