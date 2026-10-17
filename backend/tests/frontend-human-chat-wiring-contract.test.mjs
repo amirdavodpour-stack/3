@@ -45,7 +45,7 @@ test('chat attachments and voice notes are connected to native Android recording
   assert.match(bridge,/MethodChannel\('hope\.chat\/voice'\)/);
   assert.match(page,/HopeChatVoiceBridge\.playbackCompleted\.listen/);
   assert.match(page,/_playingVoiceMessageId = null/);
-  assert.match(bridge,/call\.method === 'playbackCompleted'/);
+  assert.match(bridge,/call\.method\s*={1,2}\s*'playbackCompleted'/);
   assert.match(native,/invokeMethod\("playbackCompleted"/);
   for(const marker of ['startRecording','stopRecording','playFile','stopPlayback'])
     assert.ok(native.includes('"'+marker+'"'),marker);
