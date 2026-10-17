@@ -1219,16 +1219,14 @@ class OpportunityCard extends StatelessWidget {
         ),
       if (category.isNotEmpty)
         PremiumTag(
-          // The scan rail prioritizes literal metadata; category identity is already
-          // clear from its label and semantic color, so the decorative glyph is omitted.
-          icon: null,
+          icon: HopeV2Icons.category,
           label: category,
           color: HopeV2Colors.muted,
           allowWrap: enlargedText,
         ),
       if (match != null)
         PremiumTag(
-          icon: null,
+          icon: HopeV2Icons.match,
           label: match,
           color: HopeV2Colors.success,
           allowWrap: enlargedText,
@@ -1269,24 +1267,19 @@ class OpportunityCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SingleChildScrollView(
+                  Wrap(
                     key: const ValueKey('opportunity-featured-scan-tag-rail'),
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final tag in visibleTags)
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(
-                              end: HopeV2Spacing.xs,
-                            ),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxWidth: compactViewport ? 92 : 130),
-                              child: tag,
-                            ),
+                    spacing: HopeV2Spacing.xs,
+                    runSpacing: 3,
+                    children: [
+                      for (final tag in visibleTags)
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: compactViewport ? 92 : 130,
                           ),
-                      ],
-                    ),
+                          child: tag,
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 5),
                   Text(

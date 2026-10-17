@@ -6,6 +6,7 @@ import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
@@ -2024,7 +2025,7 @@ void main() {
 
 
   testWidgets(
-    'featured scan tags scroll on one line without increasing card height',
+    'featured scan tags wrap within the compact metadata rail without changing row count by visibility',
     (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -2075,10 +2076,18 @@ void main() {
         const ValueKey('opportunity-featured-scan-tag-rail'),
       );
       expect(rail, findsOneWidget);
-      expect(
-        tester.widget<SingleChildScrollView>(rail).scrollDirection,
-        Axis.horizontal,
+      expect(tester.widget<Wrap>(rail), isA<Wrap>());
+      final tags = find.descendant(
+        of: rail,
+        matching: find.byType(PremiumTag),
       );
+      expect(tags, findsNWidgets(3));
+      final railRect = tester.getRect(rail);
+      for (var index = 0; index < tags.evaluate().length; index++) {
+        final tagRect = tester.getRect(tags.at(index));
+        expect(tagRect.left, greaterThanOrEqualTo(railRect.left));
+        expect(tagRect.right, lessThanOrEqualTo(railRect.right));
+      }
 
       await tester.pumpWidget(host('SPECIALIZED'));
       await tester.pumpAndSettle();
