@@ -200,6 +200,7 @@ validate_capture_set() {
   local source
   local screenshot_magic
   local screenshot_hash
+  local native_screenshot_hash
   declare -A seen_screenshot_hashes=()
 
   for marker in "$@"; do

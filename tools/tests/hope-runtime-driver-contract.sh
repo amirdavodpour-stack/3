@@ -43,13 +43,16 @@ grep_fixed -Fq -- 'IntegrationTestWidgetsFlutterBinding.ensureInitialized' "$tes
 grep_fixed -Fq -- 'await binding.convertFlutterSurfaceToImage();' "$test_file"
 grep_fixed -Fq -- "MethodChannel('hope.runtime/screenshot')" "$test_file"
 grep_fixed -Fq -- "'captureScreenshot'," "$test_file"
-grep_fixed -Fq -- "forceFreshFrame: _runtimeHasCapturedScreenshot || marker.startsWith('password-reset-')," "$test_file"
+grep_fixed -Fq -- "forceFreshFrame: marker.startsWith('password-reset-')," "$test_file"
 grep_fixed -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
 grep_fixed -Fq -- 'TextScaler.linear(_captureTextScale)' "$test_file"
 grep_fixed -Fq -- 'HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale' "$test_file"
 grep_fixed -Fq -- 'find.byType(SkeletonBox).evaluate().isNotEmpty' "$test_file"
 grep_fixed -Fq -- 'HOPE_SCREENSHOT_READY:$marker' "$test_file"
-grep_fixed -Fq -- 'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
+grep_fixed -Fq -- 'HOPE_SCREENSHOT_STALE_FRAME_DRAINED:' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
+grep_fixed -Fq -- 'HOPE_SCREENSHOT_STALE_FRAME_REJECTED:' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
+grep_fixed -Fq -- 'hopeScreenshotFreshFramesRemaining > 1' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
+grep_fixed -Fq -- 'HOPE_SCREENSHOT_CAPTURE_COMPLETE:' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
 grep_fixed -Fq -- 'HOPE_SCREENSHOT_TIMEOUT:phase=' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
 grep_fixed -Fq -- 'stableAtBottomFrames < 2' "$test_file"
 grep_fixed -Fq -- 'stableFrames=$stableAtBottomFrames' "$test_file"

@@ -303,10 +303,10 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotTimeoutRunnable = captureTimeout
         mainHandler.postDelayed(captureTimeout, HOPE_SCREENSHOT_FRAME_TIMEOUT_MS)
 
-        // Install the listener before probing the already-committed target frame.
-        // The Dart integration test pumps and settles each page before requesting
-        // capture. Draining that target frame and then waiting for an additional
-        // frame deadlocked static surfaces such as Home in headless Android.
+        // Register the listener before checking or draining reader state so callbacks
+        // from racing frames are not lost. Normal captures retain the committed-frame
+        // fast path; strict Password Reset capture drains that candidate and waits for
+        // later ImageReader deliveries without changing policy for other static screens.
         imageReader.setOnImageAvailableListener(
             {
                 mainHandler.post {
