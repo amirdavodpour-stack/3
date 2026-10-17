@@ -463,4 +463,38 @@ void main() {
     },
   );
 
+  testWidgets(
+    'new assistant replies are exposed as an announced live region',
+    (tester) async {
+      _setCompactViewport(tester);
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+      final repository = _FakeRecommendationProfileRepository(
+        replies: [
+          _reply('چه مهارت‌هایی دارید؟'),
+          _reply('پاسخ تازه برای دسترس‌پذیری'),
+        ],
+      );
+      await tester.pumpWidget(_pageHost(repository));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'تجربه کاربری');
+      await tester.tap(find.byTooltip('ارسال'));
+      await tester.pumpAndSettle();
+
+      final liveReply = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.liveRegion &&
+            widget.label == 'پاسخ تازه برای دسترس‌پذیری',
+      );
+      expect(liveReply, findsOneWidget);
+      expect(
+        tester.getSemantics(liveReply).hasFlag(SemanticsFlag.isLiveRegion),
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
