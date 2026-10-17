@@ -400,6 +400,16 @@ void main() {
       expect(availableText.overflow, TextOverflow.visible);
 
       final heroRect = tester.getRect(hero);
+      final lockedMetric = find.byKey(
+        const ValueKey('wallet-balance-metric-locked-total'),
+      );
+      expect(lockedMetric, findsOneWidget);
+      expect(
+        heroRect.bottom - tester.getRect(lockedMetric).bottom,
+        greaterThanOrEqualTo(8),
+        reason:
+            'Compact Wallet balance metrics need visible bottom breathing room inside the hero.',
+      );
       expect(
         tester.getRect(availableMetric).width,
         lessThan(220),

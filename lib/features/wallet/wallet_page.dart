@@ -1217,7 +1217,7 @@ class _WalletPageState extends State<WalletPage> {
           14,
           compact ? 2 : 8,
           14,
-          compact ? 2 : 8,
+          8,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
@@ -1927,6 +1927,7 @@ class _TransferDialogState extends State<_TransferDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
+              key: const ValueKey('wallet-transfer-destination'),
               controller: destination,
               autofocus: true,
               textInputAction: TextInputAction.next,
@@ -1934,6 +1935,7 @@ class _TransferDialogState extends State<_TransferDialog> {
             ),
             const SizedBox(height: 12),
             TextField(
+              key: const ValueKey('wallet-transfer-amount'),
               controller: amount,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],
