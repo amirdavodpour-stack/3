@@ -80,7 +80,11 @@ class OpportunityCard extends StatelessWidget {
   String? _knownCompactReasonLabel(BuildContext context, List<String> reasons) =>
       hopeFirstRecommendationReasonLabel(context, reasons);
 
-  Widget? _compactMatchReasonTag(BuildContext context, List<String> reasons) {
+  Widget? _compactMatchReasonTag(
+    BuildContext context,
+    List<String> reasons, {
+    bool allowWrap = false,
+  }) {
     final label = _knownCompactReasonLabel(context, reasons);
     if (label == null || label.trim().isEmpty) return null;
     return PremiumTag(
@@ -88,6 +92,7 @@ class OpportunityCard extends StatelessWidget {
       icon: HopeV2Icons.insights,
       label: label,
       color: HopeV2Colors.secondary,
+      allowWrap: allowWrap,
     );
   }
 
@@ -1190,7 +1195,7 @@ class OpportunityCard extends StatelessWidget {
         : hopeCategoryLabel(context, categoryValue);
     final match = _matchLabel(context);
     final mode = _workMode(context);
-    final matchReasonTag = _compactMatchReasonTag(context, reasons);
+    final matchReasonTag = _compactMatchReasonTag(context, reasons, allowWrap: enlargedText);
     // Keep the first scan-line calm on phone widths. Type, specialized
     // visibility, category and match remain the highest-signal metadata;
     // secondary rationale is available lower in the card when space allows.
@@ -1199,24 +1204,28 @@ class OpportunityCard extends StatelessWidget {
         icon: job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
         label: job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
         color: primary,
+        allowWrap: enlargedText,
       ),
       if (job.visibility == 'SPECIALIZED')
         PremiumTag(
           icon: HopeV2Icons.secure,
           label: copy.copy_specialized_5d1ca04,
           color: HopeV2Colors.warning,
+          allowWrap: enlargedText,
         ),
       if (category.isNotEmpty)
         PremiumTag(
           icon: HopeV2Icons.category,
           label: category,
           color: HopeV2Colors.muted,
+          allowWrap: enlargedText,
         ),
       if (match != null)
         PremiumTag(
           icon: HopeV2Icons.match,
           label: match,
           color: HopeV2Colors.success,
+          allowWrap: enlargedText,
         ),
       if (matchReasonTag != null) matchReasonTag,
     ];
