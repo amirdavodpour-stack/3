@@ -11,10 +11,12 @@ class FakeChatRepository implements ChatRepository {
   bool failSend = false;
   String conversationStatus = 'OPEN';
   HopeChatThread? threadOverride;
+  List<HopeChatConversation>? conversationsOverride;
 
   @override
   Future<List<HopeChatConversation>> listConversations() async {
     if (failList) throw StateError('list failed');
+    if (conversationsOverride != null) return conversationsOverride!;
     return [
       HopeChatConversation(
         id: 'chat-1',
@@ -551,5 +553,153 @@ void main() {
     expect(find.text('Worker'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+
+  testWidgets(
+    'Indigo Atelier inbox cards show editorial context and search/filter correctly',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = FakeChatRepository()
+        ..conversationsOverride = [
+          HopeChatConversation(
+            id: 'orion',
+            kind: 'JOB',
+            jobId: 'job-orion',
+            status: 'OPEN',
+            title: 'Orion Website Refresh',
+            otherUserName: 'Mina Rahimi',
+            lastMessageBody: 'Deliverables are ready for review.',
+            lastMessageAt: DateTime.now(),
+            unreadCount: 2,
+            isPinned: true,
+          ),
+          HopeChatConversation(
+            id: 'atlas',
+            kind: 'JOB',
+            jobId: 'job-atlas',
+            status: 'OPEN',
+            title: 'Atlas Mobile App',
+            otherUserName: 'Daniel Reed',
+            lastMessageBody: 'The schedule was updated.',
+            lastMessageAt: DateTime.now().subtract(const Duration(days: 1)),
+          ),
+          const HopeChatConversation(
+            id: 'admin',
+            kind: 'ADMIN',
+            jobId: '',
+            status: 'OPEN',
+            title: 'HOPE Admin Room',
+            otherUserName: '',
+            lastMessageBody: 'Operations check-in.',
+          ),
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: ChatPage(repository: repository),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsOneWidget);
+      expect(find.text('PROJECT CHAT'), findsNWidgets(2));
+      expect(find.text('HOPE TEAM'), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-context-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-preview-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-time-orion')), findsOneWidget);
+      expect(find.text('2 UNREAD'), findsOneWidget);
+      expect(find.text('PINNED'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      final search = find.byKey(const ValueKey('chat-inbox-search'));
+      await tester.enterText(search, 'Atlas');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsNothing);
+      expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsNothing);
+
+      await tester.enterText(search, '');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Unread'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsNothing);
+      expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsNothing);
+
+      await tester.tap(find.text('Projects'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Indigo Atelier inbox cards remain inside a compact RTL viewport at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = FakeChatRepository()
+        ..conversationsOverride = [
+          HopeChatConversation(
+            id: 'compact',
+            kind: 'JOB',
+            jobId: 'job-compact',
+            status: 'OPEN',
+            title: 'بازطراحی محصول موبایل و هماهنگی بین‌المللی',
+            otherUserName: 'طراح ارشد محصول مسئول تحویل نهایی',
+            lastMessageBody: 'نسخه نهایی برای بازبینی و تأیید ارسال شده است.',
+            lastMessageAt: DateTime.now(),
+            unreadCount: 3,
+            isPinned: true,
+            isImportant: true,
+          ),
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: ChatPage(repository: repository),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final card = find.byKey(const ValueKey('chat-inbox-card-compact'));
+      expect(card, findsOneWidget);
+      expect(tester.getRect(card).left, greaterThanOrEqualTo(0));
+      expect(tester.getRect(card).right, lessThanOrEqualTo(320));
+      expect(find.byKey(const ValueKey('chat-inbox-name-compact')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-preview-compact')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
 }
