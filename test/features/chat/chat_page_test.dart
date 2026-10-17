@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+import 'package:hope_mobile/core/auth/auth_controller.dart';
 
 import 'package:hope_mobile/core/chat/chat_repository.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
@@ -163,7 +166,12 @@ void main() {
     (tester) async {
       final repository = RacingChatRepository()..holdTextSend = true;
       await tester.pumpWidget(
-        MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+        Provider<AuthController?>.value(
+          value: null,
+          child: MaterialApp(
+            home: ChatPage(repository: repository, jobId: 'job-1'),
+          ),
+        ),
       );
       await tester.pumpAndSettle();
       expect(repository.getMessagesCalls, 1);
