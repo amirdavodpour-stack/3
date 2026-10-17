@@ -47,6 +47,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
         _complete = response.complete;
         _loading = false;
       });
+      if (response.complete) await _save();
     } catch (error) {
       if (!mounted) return;
       setState(() => _loading = false);
