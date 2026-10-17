@@ -277,4 +277,57 @@ grep -Fq 'hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_
   exit 1
 }
 
+
+# Exercise the real capture-set validator against missing, matching, and mismatching
+# native-return digests. This keeps byte provenance fail-closed without requiring an emulator.
+grep -Fq 'HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:native-digest-missing' "$script_file"
+digest_test_tmp="$(mktemp -d)"
+trap 'rm -rf "$digest_test_tmp"' EXIT
+digest_test_evidence="$digest_test_tmp/evidence"
+mkdir -p "$digest_test_evidence"
+printf '\211PNG\r\n\032\nHOPE_TEST_PNG' > "$digest_test_evidence/register-fa-rtl.png"
+evidence_dir="$digest_test_evidence"
+validator_function="$(sed -n '/^validate_capture_set() {/,/^}/p' "$script_file")"
+if [ -z "$validator_function" ]; then
+  echo "FAIL: could not extract validate_capture_set for digest contract verification." >&2
+  exit 1
+fi
+eval "$validator_function"
+
+digest_test_log="$digest_test_tmp/native.log"
+: > "$digest_test_log"
+if validate_capture_set "digest-missing" "$digest_test_log" "register-fa-rtl" > "$digest_test_tmp/missing.log" 2>&1; then
+  echo "FAIL: capture validation accepted a named PNG without a native-return digest." >&2
+  exit 1
+fi
+grep -Fq 'HOPE_HOST_CAPTURE_FAILED:digest-missing:register-fa-rtl:native-digest-missing' "$digest_test_tmp/missing.log" || {
+  echo "FAIL: missing native digest was not classified as a hard capture failure." >&2
+  exit 1
+}
+
+# Combined integrity-only checks intentionally use /dev/null after per-batch validation.
+validate_capture_set "digest-integrity-only" "/dev/null" "register-fa-rtl" > /dev/null
+
+expected_digest="$(sha256sum "$digest_test_evidence/register-fa-rtl.png" | awk '{print $1}')"
+expected_bytes="$(wc -c < "$digest_test_evidence/register-fa-rtl.png" | tr -d '[:space:]')"
+printf 'I/HopeRuntimeScreenshot( 1): HOPE_SCREENSHOT_CAPTURE_COMPLETE:register-fa-rtl:bytes=%s:sha256=%s\n' "$expected_bytes" "$expected_digest" > "$digest_test_log"
+validate_capture_set "digest-match" "$digest_test_log" "register-fa-rtl" > "$digest_test_tmp/match.log"
+grep -Fq "HOPE_HOST_CAPTURE_DIGEST_MATCH:register-fa-rtl:$expected_digest" "$digest_test_tmp/match.log" || {
+  echo "FAIL: matching native-return and host PNG digests were not accepted." >&2
+  exit 1
+}
+
+printf 'I/HopeRuntimeScreenshot( 1): HOPE_SCREENSHOT_CAPTURE_COMPLETE:register-fa-rtl:bytes=%s:sha256=%064d\n' "$expected_bytes" 0 > "$digest_test_log"
+if validate_capture_set "digest-mismatch" "$digest_test_log" "register-fa-rtl" > "$digest_test_tmp/mismatch.log" 2>&1; then
+  echo "FAIL: capture validation accepted a mismatching native-return digest." >&2
+  exit 1
+fi
+grep -Fq 'native-host-digest-mismatch' "$digest_test_tmp/mismatch.log" || {
+  echo "FAIL: mismatching native-return digest was not classified correctly." >&2
+  exit 1
+}
+rm -rf "$digest_test_tmp"
+trap - EXIT
+
+
 echo "PASS: Flutter rendered-screenshot transport contract"

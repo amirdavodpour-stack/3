@@ -230,6 +230,10 @@ validate_capture_set() {
       echo "HOPE_HOST_CAPTURE_DIGEST_MATCH:$marker:$screenshot_hash"
     else
       echo "HOPE_HOST_CAPTURE_DIGEST_UNAVAILABLE:$marker"
+      if [ "$log_path" != "/dev/null" ]; then
+        echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:native-digest-missing" >&2
+        return 1
+      fi
     fi
     if [ -n "${seen_screenshot_hashes[$screenshot_hash]+x}" ]; then
       echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:duplicate-png-hash:$screenshot_hash:matches:${seen_screenshot_hashes[$screenshot_hash]}" >&2
