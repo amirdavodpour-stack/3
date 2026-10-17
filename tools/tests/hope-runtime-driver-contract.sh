@@ -170,4 +170,5 @@ grep_fixed -Fq -- 'ndk;28.2.13676358' "$workflow_file"
 grep_fixed -Fq -- "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 
 bash test/runtime/hope_disable_talkback_test.sh
-echo "PASS: official Flutter integration_test screenshot transport contract"
+bash test/runtime/android_runtime_adb_recovery_test.sh
+echo "PASS: official Flutter integration_test screenshot transport and Android launcher recovery contracts"
