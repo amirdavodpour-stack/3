@@ -40,6 +40,20 @@ test('valid PDF upload is content-sniffed, stored, and associated with the uploa
   assert.equal(api.db.collection.uploads.some((x) => x.storageKey === body.data.key && x.uploadedBy === user.user.id), true);
 });
 
+test('multipart upload bounds long sanitized filenames while preserving the content extension', async () => {
+  const user = await register(api.json, 'storage-long-name@example.com');
+  const filename = `${'transcript'.repeat(45)}.pdf`;
+  const {response, body} = await multipartUpload(user.accessToken, {
+    filename,
+    contentType: 'application/pdf',
+    content: '%PDF-1.7\\nsmall valid test document',
+  });
+  assert.equal(response.status, 201);
+  assert.ok(body.data.filename.length <= 180);
+  assert.ok(body.data.filename.endsWith('.pdf'));
+  assert.ok(body.data.key.length <= 217);
+});
+
 test('spoofed image MIME with non-image bytes is rejected by signature validation', async () => {
   const user = await register(api.json, 'storage-spoof@example.com');
   const {response, body} = await multipartUpload(user.accessToken, {
