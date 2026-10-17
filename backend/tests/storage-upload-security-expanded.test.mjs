@@ -103,13 +103,13 @@ test('voice-note and audio uploads pass the multipart signature gate', async () 
       filename: 'voice.mp3',
       contentType: 'audio/mpeg',
       expectedType: 'audio/mpeg',
-      content: Buffer.from('ID3\\x04\\x00\\x00\\x00\\x00\\x00\\x00audio-frame'),
+      content: Buffer.from([0x49, 0x44, 0x33, 0x04, 0, 0, 0, 0, 0, 0, 0x61, 0x75, 0x64, 0x69, 0x6f]),
     },
     {
       filename: 'voice.wav',
       contentType: 'audio/wav',
       expectedType: 'audio/wav',
-      content: Buffer.from('RIFF$\\x00\\x00\\x00WAVEfmt '),
+      content: Buffer.from([0x52, 0x49, 0x46, 0x46, 0x24, 0, 0, 0, 0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74, 0x20]),
     },
   ];
 
