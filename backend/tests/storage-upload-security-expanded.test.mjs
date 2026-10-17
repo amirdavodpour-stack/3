@@ -84,4 +84,53 @@ test('upload endpoint requires authentication before touching the multipart body
   assert.equal(body.error.code, 'UNAUTHORIZED');
 });
 
+test('voice-note and audio uploads pass the multipart signature gate', async () => {
+  const user = await register(api.json, 'storage-chat-audio@example.com');
+  const examples = [
+    {
+      filename: 'voice.m4a',
+      contentType: 'audio/mp4',
+      expectedType: 'audio/mp4',
+      content: Buffer.from([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x4d, 0x34, 0x41, 0x20, 0, 0, 2, 0, 0x4d, 0x34, 0x41, 0x20, 0x69, 0x73, 0x6f, 0x6d]),
+    },
+    {
+      filename: 'voice-multipart-default.m4a',
+      contentType: 'application/octet-stream',
+      expectedType: 'audio/mp4',
+      content: Buffer.from([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x4d, 0x34, 0x41, 0x20, 0, 0, 2, 0, 0x4d, 0x34, 0x41, 0x20, 0x69, 0x73, 0x6f, 0x6d]),
+    },
+    {
+      filename: 'voice.mp3',
+      contentType: 'audio/mpeg',
+      expectedType: 'audio/mpeg',
+      content: Buffer.from('ID3\\x04\\x00\\x00\\x00\\x00\\x00\\x00audio-frame'),
+    },
+    {
+      filename: 'voice.wav',
+      contentType: 'audio/wav',
+      expectedType: 'audio/wav',
+      content: Buffer.from('RIFF$\\x00\\x00\\x00WAVEfmt '),
+    },
+  ];
+
+  for (const example of examples) {
+    const {response, body} = await multipartUpload(user.accessToken, example);
+    assert.equal(response.status, 201, example.filename);
+    assert.equal(body.data.contentType, example.expectedType, example.filename);
+    assert.equal(body.data.uploadedBy, user.user.id, example.filename);
+  }
+});
+
+test('audio upload rejects bytes that do not match the declared audio container', async () => {
+  const user = await register(api.json, 'storage-chat-audio-spoof@example.com');
+  const {response, body} = await multipartUpload(user.accessToken, {
+    filename: 'voice.m4a',
+    contentType: 'audio/mp4',
+    content: 'not-an-mp4-container',
+  });
+  assert.equal(response.status, 415);
+  assert.equal(body.error.code, 'UNSUPPORTED_FILE');
+  assert.equal(api.db.collection.uploads.some((x) => x.uploadedBy === user.user.id), false);
+});
+
 after(async () => closeApi({...api, tmp}));
