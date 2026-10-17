@@ -752,6 +752,57 @@ void main() {
   });
 
   
+  testWidgets(
+    'Persian inbox search normalizes Arabic Yeh and Kaf variants',
+    (tester) async {
+      final repository = FakeChatRepository()
+        ..conversationsOverride = [
+          HopeChatConversation(
+            id: 'persian-search',
+            kind: 'JOB',
+            jobId: 'job-persian-search',
+            status: 'OPEN',
+            title: 'پروژه طراحی محصول',
+            otherUserName: 'علی رضایی',
+            lastMessageBody: 'پیام درباره تحویل کار',
+            lastMessageAt: DateTime(2026, 10, 17, 12),
+          ),
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: ChatPage(repository: repository),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('chat-inbox-card-persian-search')),
+        findsOneWidget,
+      );
+      // Arabic Yeh (U+064A), commonly present in pasted text, should match
+      // the Persian Yeh (U+06CC) used in the stored participant name.
+      await tester.enterText(
+        find.byKey(const ValueKey('chat-inbox-search')),
+        'علي',
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('chat-inbox-card-persian-search')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Indigo inbox filters by participant and context text', (tester) async {
     final repository = FakeChatRepository();
     await tester.pumpWidget(MaterialApp(home: ChatPage(repository: repository)));
