@@ -1876,8 +1876,11 @@ class OpportunityCard extends StatelessWidget {
           const SizedBox(height: HopeV2Spacing.md),
           Text(
             job.description.trim(),
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : 5,
+            softWrap: true,
+            overflow: enlargedText
+                ? TextOverflow.visible
+                : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
