@@ -2967,8 +2967,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final matchScore = find.text('94% match');
+      final scoreTag = find.byKey(
+        const ValueKey('opportunity-card-expanded-match-score'),
+      );
+      expect(scoreTag, findsOneWidget);
+      final matchScore = find.descendant(
+        of: scoreTag,
+        matching: find.byType(Text),
+      );
       expect(matchScore, findsOneWidget);
+      expect(tester.widget<Text>(matchScore).data, '94% match');
       final paragraph = tester.renderObject<RenderParagraph>(matchScore);
       expect(
         paragraph.didExceedMaxLines,
