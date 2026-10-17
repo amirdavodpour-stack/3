@@ -203,7 +203,8 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                       itemBuilder: (context, index) {
                         final item = _messages[index];
                         final user = item['role'] == 'user';
-                        return Align(
+                        final content = item['content'] ?? '';
+                        final bubble = Align(
                           alignment: user
                               ? AlignmentDirectional.centerEnd
                               : AlignmentDirectional.centerStart,
@@ -217,11 +218,21 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                                   horizontal: 14,
                                   vertical: 11,
                                 ),
-                                child: Text(item['content'] ?? ''),
+                                child: Text(content),
                               ),
                             ),
                           ),
                         );
+                        if (!user && index == _messages.length - 1) {
+                          return Semantics(
+                            container: true,
+                            excludeSemantics: true,
+                            liveRegion: true,
+                            label: content,
+                            child: bubble,
+                          );
+                        }
+                        return bubble;
                       },
                     ),
                   ),
