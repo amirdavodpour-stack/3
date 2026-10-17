@@ -70,7 +70,7 @@ require_line "$test_file" "'freshFramesRequired': freshFramesRequired,"
 require_line "$test_file" "int _runtimeFreshFrameCount(String marker)"
 require_line "$test_file" "if (marker.startsWith('register-')) return 2;"
 require_line "$test_file" "if (marker.startsWith('password-reset-')) return 1;"
-require_line "$test_file" "freshFrameCount: freshFrameCount,"
+require_line "$test_file" "freshFramesRequired: freshFrameCount,"
 require_line "$main_activity" "call.argument<Int>(\"freshFramesRequired\")"
 require_line "$main_activity" "freshFramesRequired.coerceIn(1, 2)"
 
