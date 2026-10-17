@@ -43,7 +43,7 @@ grep_fixed -Fq -- 'IntegrationTestWidgetsFlutterBinding.ensureInitialized' "$tes
 grep_fixed -Fq -- 'await binding.convertFlutterSurfaceToImage();' "$test_file"
 grep_fixed -Fq -- "MethodChannel('hope.runtime/screenshot')" "$test_file"
 grep_fixed -Fq -- "'captureScreenshot'," "$test_file"
-grep_fixed -Fq -- "forceFreshFrame: marker.startsWith('password-reset-')," "$test_file"
+grep_fixed -Fq -- "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-')," "$test_file"
 grep_fixed -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
 grep_fixed -Fq -- 'TextScaler.linear(_captureTextScale)' "$test_file"
 grep_fixed -Fq -- 'HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale' "$test_file"

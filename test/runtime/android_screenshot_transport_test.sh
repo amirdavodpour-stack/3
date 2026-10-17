@@ -54,7 +54,7 @@ for contract in "${dart_contracts[@]}"; do
 done
 
 
-grep -Fq "forceFreshFrame: marker.startsWith('password-reset-')," "$test_file"
+grep -Fq "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-')," "$test_file"
 grep -Fq 'call.argument<String>("name") ?: "unlabelled"' "$main_activity"
 grep -Fq 'call.argument<Boolean>("forceFreshFrame") ?: false' "$main_activity"
 grep -Fq 'HOPE_HOST_CAPTURE_DIGEST_MATCH:' "$script_file"

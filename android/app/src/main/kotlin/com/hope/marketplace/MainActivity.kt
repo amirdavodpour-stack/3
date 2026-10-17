@@ -327,7 +327,7 @@ class MainActivity : FlutterActivity() {
 
         if (forceFreshFrame) {
             // HOPE_SCREENSHOT_FORCE_FRESH_FRAME
-            // The frame already queued at this marker boundary is untrusted.
+            // The frame already queued at this auth marker boundary is untrusted.
             // Drain it, then require two later ImageReader deliveries before PixelCopy.
             val queuedFrameDrained = flutterView.acquireLatestImageViewFrame()
             Log.i(

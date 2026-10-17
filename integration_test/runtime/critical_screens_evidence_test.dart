@@ -1047,7 +1047,7 @@ Future<void> _captureRuntimeScreenshot(
     await _captureHopeNativeScreenshot(
       binding,
       marker,
-      forceFreshFrame: marker.startsWith('password-reset-'),
+      forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-'),
     ).timeout(
       _nativeScreenshotCaptureTimeout,
       onTimeout: () {
