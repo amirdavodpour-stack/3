@@ -20,12 +20,16 @@ class _FakeRecommendationProfileRepository
   _FakeRecommendationProfileRepository({
     required this.replies,
     Set<int>? failingInterviewCalls,
-  }) : failingInterviewCalls = failingInterviewCalls ?? <int>{};
+    Set<int>? failingSaveCalls,
+  }) : failingInterviewCalls = failingInterviewCalls ?? <int>{},
+       failingSaveCalls = failingSaveCalls ?? <int>{};
 
   final List<RecommendationInterviewReply> replies;
   final Set<int> failingInterviewCalls;
+  final Set<int> failingSaveCalls;
   final List<_InterviewCall> calls = [];
   final List<HopeRecommendationProfile> savedProfiles = [];
+  int saveAttempts = 0;
 
   @override
   Future<HopeRecommendationProfile> get() async =>
@@ -35,6 +39,10 @@ class _FakeRecommendationProfileRepository
   Future<HopeRecommendationProfile> save(
     HopeRecommendationProfile profile,
   ) async {
+    final attempt = saveAttempts++;
+    if (failingSaveCalls.contains(attempt)) {
+      throw StateError('profile save unavailable');
+    }
     savedProfiles.add(profile);
     return profile;
   }
@@ -412,4 +420,47 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'a failed completion save can be retried without losing the profile',
+    (tester) async {
+      _setCompactViewport(tester);
+      final repository = _FakeRecommendationProfileRepository(
+        replies: [
+          _reply(
+            'ترجیحات شما کامل است.',
+            complete: true,
+            profilePatch: const HopeRecommendationProfile(
+              skills: ['Flutter'],
+              preferredCities: ['تهران'],
+            ),
+          ),
+        ],
+        failingSaveCalls: {0},
+      );
+      final result = Completer<bool?>();
+      await tester.pumpWidget(_navigatorHost(repository, result));
+      await tester.tap(find.byKey(const ValueKey('open-recommendation-interview')));
+      await tester.pumpAndSettle();
+
+      expect(repository.saveAttempts, 1);
+      expect(repository.savedProfiles, isEmpty);
+      expect(
+        find.byTooltip('تلاش دوباره برای ذخیره'),
+        findsOneWidget,
+      );
+      expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+
+      await tester.tap(find.byTooltip('تلاش دوباره برای ذخیره'));
+      await tester.pumpAndSettle();
+
+      expect(await result.future, isTrue);
+      expect(repository.saveAttempts, 2);
+      expect(repository.savedProfiles, hasLength(1));
+      expect(repository.savedProfiles.single.skills, ['Flutter']);
+      expect(repository.savedProfiles.single.preferredCities, ['تهران']);
+      expect(repository.savedProfiles.single.onboardingCompleted, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
