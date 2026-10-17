@@ -94,7 +94,7 @@ run_app_activity_recovery_case() {
   export PATH="$tmp/bin:$PATH"
   : > "$LOG"
   echo 0 > "$STATE_FILE"
-  : > "$tmp/runtime.apk"
+  printf 'fake-apk' > "$tmp/runtime.apk"
 
   cat > "$tmp/bin/adb" <<'ADB'
 #!/usr/bin/env bash
@@ -152,7 +152,7 @@ run_app_package_missing_case() {
   export LOG="$tmp/adb.log"
   export PATH="$tmp/bin:$PATH"
   : > "$LOG"
-  : > "$tmp/runtime.apk"
+  printf 'fake-apk' > "$tmp/runtime.apk"
 
   cat > "$tmp/bin/adb" <<'ADB'
 #!/usr/bin/env bash
