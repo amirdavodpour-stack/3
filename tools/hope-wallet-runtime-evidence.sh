@@ -9,6 +9,8 @@ rm -f "$log_file"
 : > "$log_file"
 
 RUNTIME_SERIAL="${ANDROID_SERIAL:-emulator-5554}"
+TALKBACK_PACKAGE="${HOPE_TALKBACK_PACKAGE:-com.android.talkback}"
+TALKBACK_SERVICE_COMPONENT="${TALKBACK_PACKAGE}/com.google.android.marvin.talkback.TalkBackService"
 export ANDROID_SERIAL="$RUNTIME_SERIAL"
 source "${GITHUB_WORKSPACE:-$PWD}/tools/android-runtime-device-recovery.sh"
 hope_android_device_ready "$RUNTIME_SERIAL"
@@ -361,7 +363,7 @@ run_host_batch_session() {
   # scoped to this debug evidence lane; product builds retain their normal renderer.
   HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s" \
-  flutter drive --no-pub --no-dds --no-enable-impeller \
+  flutter drive --keep-app-running --no-pub --no-dds --no-enable-impeller \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_TEXT_SCALE="${CAPTURE_TEXT_SCALE}" \
@@ -861,8 +863,8 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "talkback_target_bounds_failures": $talkback_target_bounds_failures,
   "talkback_target_bounds_min_width_dp": $talkback_target_bounds_min_width_dp,
   "talkback_target_bounds_min_height_dp": $talkback_target_bounds_min_height_dp,
-  "talkback_package": "com.android.talkback",
-  "talkback_service_component": "com.android.talkback/com.google.android.marvin.talkback.TalkBackService",
+  "talkback_package": "$TALKBACK_PACKAGE",
+  "talkback_service_component": "$TALKBACK_SERVICE_COMPONENT",
   "talkback_source_sha": "$talkback_source_sha",
   "talkback_apk_sha256": "$talkback_apk_sha256",
   "talkback_semantics_screens": $talkback_semantics_screens,

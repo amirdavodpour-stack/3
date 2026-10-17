@@ -12,6 +12,7 @@ else
 fi
 
 grep_fixed -Fq -- 'flutter drive' "$script"
+grep_fixed -Fq -- "flutter drive --keep-app-running --no-pub --no-dds --no-enable-impeller" "$script"
 grep_fixed -Fq -- '--driver=test_driver/hope_runtime_screenshot_driver.dart' "$script"
 grep_fixed -Fq -- '--target=integration_test/runtime/critical_screens_evidence_test.dart' "$script"
 grep_fixed -Fq -- 'HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir"' "$script"
@@ -95,6 +96,8 @@ grep_fixed -Fq -- 'visual_capture_accessibility_service": "disabled' "$script"
 grep_fixed -Fq -- 'visual_capture_talkback_enabled": false' "$script"
 grep_fixed -Fq -- 'visual_capture_accessibility_disable_verified": $visual_capture_accessibility_disabled' "$script"
 grep_fixed -Fq -- 'talkback_semantics_mode": "separate_bound_service_pass' "$script"
+grep_fixed -Fq -- '"talkback_package": "$TALKBACK_PACKAGE"' "$script"
+grep_fixed -Fq -- '"talkback_service_component": "$TALKBACK_SERVICE_COMPONENT"' "$script"
 talkback_helper="tools/hope-enable-talkback.sh"
 if [[ ! -s "$talkback_helper" ]]; then
   echo "FAIL: T10 needs a TalkBack install/enable/verify helper" >&2
