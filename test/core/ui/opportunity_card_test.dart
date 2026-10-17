@@ -2911,4 +2911,72 @@ void main() {
     },
   );
 
+  testWidgets(
+    'expanded opportunity match score tag wraps fully at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'expanded-match-score-large-text',
+        'title': 'Product designer',
+        'description': 'Expanded match-score tag wrapping regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.expanded,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final matchScore = find.text('94% match');
+      expect(matchScore, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(matchScore);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Expanded cards must keep the full match score visible at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
