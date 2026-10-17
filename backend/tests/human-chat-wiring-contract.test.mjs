@@ -92,3 +92,9 @@ test('direct chat uploads normalize known extensions when multipart MIME default
   assert.ok(routeSource.includes('application/octet-stream'));
   assert.ok(routeSource.includes('file.contentType = contentType'));
 });
+
+test('chat message history returns the newest bounded window in chronological display order',()=>{
+  const repository=read('backend/src/repository/human_chat.js');
+  assert.match(repository,/SELECT latest\.\* FROM chat_messages latest[\s\S]*?WHERE latest\.conversation_id=\$1[\s\S]*?ORDER BY latest\.created_at DESC,latest\.id DESC LIMIT \$2/);
+  assert.match(repository,/\) m LEFT JOIN users u ON u\.id=m\.sender_id[\s\S]*?ORDER BY m\.created_at ASC,m\.id ASC/);
+});
