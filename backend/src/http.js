@@ -155,7 +155,13 @@ export async function readMultipartSingleFile(req) {
     const content = body.subarray(headerEnd + 4, nextBoundary);
     if (!content.length) throw new HttpError(400, 'EMPTY_FILE', 'Uploaded file is empty');
     if (content.length > config.maxUploadBytes) throw new HttpError(413, 'FILE_TOO_LARGE', 'File is too large');
-    const safeName = path.basename(disposition[2]).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const rawSafeName = path.basename(disposition[2]).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const rawExtension = path.extname(rawSafeName);
+    // Bound the filename/key length while preserving the extension needed for
+    // allowlist inference and route-level MIME/extension consistency checks.
+    const safeName = rawSafeName.length <= 180
+      ? rawSafeName
+      : `${path.basename(rawSafeName, rawExtension).slice(0, 180 - rawExtension.length)}${rawExtension}`;
     const extension = path.extname(safeName).toLowerCase();
     const inferredType = new Map([
       ['.pdf', 'application/pdf'],
