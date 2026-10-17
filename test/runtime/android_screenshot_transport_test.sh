@@ -99,9 +99,9 @@ if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evi
 fi
 grep -Fq ': > "$log_path"' "$script_file"
 
-# Regression: strict Password Reset capture must not accept an already-queued image.
-# Drain the image at the marker boundary; reject the first later ImageReader delivery and only
-# accept a subsequent delivery. Other screenshots keep the committed-frame fast path.
+# Regression: strict auth capture must not accept an already-queued pre-target image.
+# Drain at the marker boundary. Register requires two later deliveries to let its async Google CTA settle;
+# Password Reset requires one later delivery for its static surface. Other screenshots keep the committed-frame fast path.
 grep -Fq 'if (forceFreshFrame) freshFramesRequired.coerceIn(1, 2) else 0' "$main_activity"
 grep -Fq 'HOPE_SCREENSHOT_STALE_FRAME_DRAINED:$screenshotName:available=$queuedFrameDrained' "$main_activity"
 grep -Fq 'hopeScreenshotFreshFramesRemaining > 1' "$main_activity"

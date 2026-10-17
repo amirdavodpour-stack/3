@@ -578,10 +578,16 @@ grep -Fq "expanded opportunity omits unknown match reason values" "test/core/ui/
 grep -Fq "test/core/ui/opportunity_card_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
 echo "PASS: Wave52 expanded OpportunityCard reason hygiene"
 
-# Wave51: include comprehensive Wallet page widget regressions in the consolidated gate.
-grep -Fq -- '--plain-name "pending withdrawal summary agrees with the reserved payout row" test/features/wallet/wallet_page_test.dart' ".github/workflows/hope-ui-wave-1-static.yml"
+# Wave51: include the full Wallet page suite in the consolidated gate so later tests are not skipped after a different widget assertion fails.
+grep -Fq 'test/features/wallet/wallet_page_test.dart' ".github/workflows/hope-ui-wave-1-static.yml"
 grep -Fq "pending withdrawal summary agrees with the reserved payout row" "test/features/wallet/wallet_page_test.dart"
-echo "PASS: Wave51 pending-withdrawal summary and payout fixture coverage"
+grep -Fq "wallet withdraw action label uses a readable semantic foreground" "test/features/wallet/wallet_page_test.dart"
+grep -Fq "wallet initial error state keeps recovery near the first fold" "test/features/wallet/wallet_page_test.dart"
+grep -Fq "wallet uses a compact finance header on narrow surfaces" "test/features/wallet/wallet_page_test.dart"
+grep -Fq "wallet action labels do not truncate at 1.5x on a compact viewport" "test/features/wallet/wallet_page_test.dart"
+grep -Fq "wallet history cards avoid duplicate reference text and expose date to assistive tech" "test/features/wallet/wallet_page_test.dart"
+grep -Fq "wallet history rows stay compact when the visible facts fit on two lines" "test/features/wallet/wallet_page_test.dart"
+echo "PASS: Wave51 consolidated full Wallet page regression coverage"
 
 # Wave49: adaptive Offers, Notifications and Chat rows across locale/viewport combinations.
 grep -Fq "final compactHeading =" "lib/features/offers/offers_page.dart"
