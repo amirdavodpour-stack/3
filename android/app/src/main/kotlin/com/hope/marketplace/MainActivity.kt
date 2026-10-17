@@ -95,11 +95,17 @@ class MainActivity : FlutterActivity() {
             HOPE_SCREENSHOT_CHANNEL,
         ).setMethodCallHandler { call, result ->
             when (call.method) {
-                "captureScreenshot" -> captureHopeScreenshot(
-                    result,
-                    call.argument<String>("screenshotName") ?: "unlabelled",
-                    call.argument<Boolean>("forceFreshFrame") ?: false,
-                )
+                "captureScreenshot" -> {
+                    val forceFreshFrame = call.argument<Boolean>("forceFreshFrame") ?: false
+                    val freshFramesRequired = call.argument<Int>("freshFramesRequired")
+                        ?: if (forceFreshFrame) 2 else 0
+                    captureHopeScreenshot(
+                        result,
+                        call.argument<String>("screenshotName") ?: "unlabelled",
+                        forceFreshFrame,
+                        freshFramesRequired,
+                    )
+                }
                 else -> result.notImplemented()
             }
         }
@@ -249,6 +255,7 @@ class MainActivity : FlutterActivity() {
         result: MethodChannel.Result,
         screenshotName: String = "unlabelled",
         forceFreshFrame: Boolean = false,
+        freshFramesRequired: Int = 0,
     ) {
         if (!hopeScreenshotInProgress.compareAndSet(false, true)) {
             result.error(
@@ -263,9 +270,13 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotFrameCaptured.set(false)
         hopeScreenshotCapturePhase = "surface-acquisition"
         hopeScreenshotRequestName = screenshotName
-        hopeScreenshotFreshFramesRemaining = if (forceFreshFrame) 2 else 0
+        hopeScreenshotFreshFramesRemaining =
+            if (forceFreshFrame) freshFramesRequired.coerceIn(1, 2) else 0
         hopeScreenshotFrameRequestCount = 0
-        Log.i(HOPE_SCREENSHOT_LOG_TAG, "HOPE_SCREENSHOT_CAPTURE_REQUEST:$screenshotName:forceFreshFrame=$forceFreshFrame")
+        Log.i(
+            HOPE_SCREENSHOT_LOG_TAG,
+            "HOPE_SCREENSHOT_CAPTURE_REQUEST:$screenshotName:forceFreshFrame=$forceFreshFrame:freshFramesRequired=$freshFramesRequired",
+        )
 
         val flutterView = findViewById<FlutterView>(FlutterActivity.FLUTTER_VIEW_ID)
         val imageView: FlutterImageView? = flutterView?.getCurrentImageSurface()
@@ -334,7 +345,7 @@ class MainActivity : FlutterActivity() {
         if (forceFreshFrame) {
             // HOPE_SCREENSHOT_FORCE_FRESH_FRAME
             // The frame already queued at this auth marker boundary is untrusted.
-            // Drain it, then require two later ImageReader deliveries before PixelCopy.
+            // Drain it, then require the configured number of later ImageReader deliveries before PixelCopy.
             val queuedFrameDrained = flutterView.acquireLatestImageViewFrame()
             Log.i(
                 HOPE_SCREENSHOT_LOG_TAG,

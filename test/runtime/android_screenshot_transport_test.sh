@@ -53,7 +53,11 @@ for contract in "${dart_contracts[@]}"; do
 done
 
 
-grep -Fq "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-')," "$test_file"
+grep -Fq "int _runtimeFreshFrameCount(String marker)" "$test_file"
+grep -Fq "if (marker.startsWith('register-')) return 2;" "$test_file"
+grep -Fq "if (marker.startsWith('password-reset-')) return 1;" "$test_file"
+grep -Fq "final freshFrameCount = _runtimeFreshFrameCount(marker);" "$test_file"
+grep -Fq "forceFreshFrame: freshFrameCount > 0," "$test_file"
 # Inspect only the invokeMethod payload. A whole-file grep is insufficient because
 # reportData also has a screenshotName field unrelated to the native method call.
 capture_payload="$(sed -n '/final bytes = await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(/,/^[[:space:]]*);/p' "$test_file")"
@@ -65,8 +69,14 @@ if grep -Fq "'name': marker" <<<"$capture_payload"; then
   echo "FAIL: stale name key found in native screenshot channel payload." >&2
   exit 1
 fi
+if ! grep -Fq "'freshFramesRequired': freshFramesRequired" <<<"$capture_payload"; then
+  echo "FAIL: native screenshot payload must carry the screen-specific fresh frame count." >&2
+  exit 1
+fi
 grep -Fq 'call.argument<String>("screenshotName") ?: "unlabelled"' "$main_activity"
 grep -Fq 'call.argument<Boolean>("forceFreshFrame") ?: false' "$main_activity"
+grep -Fq 'call.argument<Int>("freshFramesRequired")' "$main_activity"
+grep -Fq 'freshFramesRequired.coerceIn(1, 2)' "$main_activity"
 grep -Fq 'HOPE_HOST_CAPTURE_DIGEST_MATCH:' "$script_file"
 grep -Fq 'HOPE_SCREENSHOT_CAPTURE_COMPLETE:$marker:bytes=' "$script_file"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:native-primary:' "$test_file"

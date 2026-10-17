@@ -894,6 +894,7 @@ Future<void> _captureHopeNativeScreenshot(
   IntegrationTestWidgetsFlutterBinding binding,
   String marker, {
   required bool forceFreshFrame,
+  required int freshFramesRequired,
 }) async {
   const integrationTestChannel =
       MethodChannel('plugins.flutter.io/integration_test');
@@ -909,6 +910,7 @@ Future<void> _captureHopeNativeScreenshot(
     <String, Object?>{
       'screenshotName': marker,
       'forceFreshFrame': forceFreshFrame,
+      'freshFramesRequired': freshFramesRequired,
     },
   );
   if (bytes == null || bytes.isEmpty) {
@@ -958,6 +960,12 @@ Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView) {
   final rootInverse = Matrix4.copy(renderView.configuration.toMatrix())..invert();
   transform = rootInverse * transform as Matrix4;
   return MatrixUtils.transformRect(transform, node.rect);
+}
+
+int _runtimeFreshFrameCount(String marker) {
+  if (marker.startsWith('register-')) return 2;
+  if (marker.startsWith('password-reset-')) return 1;
+  return 0;
 }
 
 Future<void> _captureRuntimeScreenshot(
@@ -1079,10 +1087,12 @@ Future<void> _captureRuntimeScreenshot(
   try {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+    final freshFrameCount = _runtimeFreshFrameCount(marker);
     await _captureHopeNativeScreenshot(
       binding,
       marker,
-      forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-'),
+      forceFreshFrame: freshFrameCount > 0,
+      freshFramesRequired: freshFrameCount,
     ).timeout(
       _nativeScreenshotCaptureTimeout,
       onTimeout: () {
