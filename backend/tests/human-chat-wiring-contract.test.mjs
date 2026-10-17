@@ -58,6 +58,28 @@ test('chat attachment objects are excluded from ordinary user-upload cleanup',()
   assert.match(uploadRepository,/chat_message_attachments a WHERE a\.upload_id=u\.id/);
 });
 
+test('OpenAPI documents every implemented human messaging endpoint and capability schema',()=>{
+  const contract=read('backend/openapi/openapi.yaml');
+  for(const marker of [
+    '  /messaging/conversations:',
+    '  /messaging/conversations/{conversationId}:',
+    '  /messaging/conversations/{conversationId}/read:',
+    '  /messaging/conversations/{conversationId}/presence:',
+    '  /messaging/conversations/{conversationId}/preferences:',
+    '  /messaging/attachments/{attachmentId}/content:',
+    '    ChatConversation:',
+    '    ChatMessage:',
+    '    ChatAttachment:',
+    '    ChatReadReceipt:',
+    '    ChatPresence:',
+    '    ChatConversationPreferences:',
+    'audio/mp4',
+    'audio/mpeg',
+    'audio/wav',
+  ]) assert.ok(contract.includes(marker),marker);
+  assert.match(contract,/\/messaging\/attachments\/\{attachmentId\}\/content:[\s\S]*?security:\s*\[\{bearerAuth:\s*\[\]\}\]/);
+});
+
 test('direct chat uploads normalize known extensions when multipart MIME defaults to octet-stream',()=>{
   const routeSource=read('backend/src/routes/storage_routes.js');
   assert.ok(routeSource.includes('normalizeUploadContentType'));
