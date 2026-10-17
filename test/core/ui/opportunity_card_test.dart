@@ -2779,4 +2779,76 @@ void main() {
     },
   );
 
+  testWidgets(
+    'featured scan match rationale remains fully readable at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'featured-scan-rationale-large-text',
+        'title': 'Product designer',
+        'description': 'Recommendation rationale wrapping regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'recommendationScore': 0.94,
+        'recommendationReasons': ['SKILL_MATCH'],
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featuredScan,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rationale = find.byKey(
+        const ValueKey('opportunity-card-match-reason'),
+      );
+      expect(rationale, findsOneWidget);
+      final rationaleText = find.descendant(
+        of: rationale,
+        matching: find.byType(Text),
+      );
+      expect(rationaleText, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(rationaleText);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Large-text users must be able to read the full recommendation rationale inside the tag.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
