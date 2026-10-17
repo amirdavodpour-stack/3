@@ -60,11 +60,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     _ => key,
   };
 
+  double? _componentValue(HopeEmployerCandidateMatch candidate, String key) =>
+      candidate.components[key] ??
+      (key == 'salary' ? candidate.components['compensation'] : null);
+
   Widget _componentBreakdown(BuildContext context, HopeEmployerCandidateMatch candidate) {
     const keys = ['skills', 'experience', 'location', 'salary'];
     final values = <MapEntry<String, double>>[];
     for (final key in keys) {
-      final value = candidate.components[key];
+      final value = _componentValue(candidate, key);
       if (value != null) values.add(MapEntry(key, value <= 1 ? value : value / 100));
     }
     if (values.isEmpty) return const SizedBox.shrink();
@@ -255,7 +259,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     }
 
     String valueFor(HopeEmployerCandidateMatch candidate, String key) {
-      final value = candidate.components[key];
+      final value = _componentValue(candidate, key);
       if (value != null) {
         final normalized = value <= 1 ? value * 100 : value;
         return _percent(context, normalized.clamp(0.0, 100.0).round());
