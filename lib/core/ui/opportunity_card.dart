@@ -905,7 +905,7 @@ class OpportunityCard extends StatelessWidget {
     required List<String> reasons,
   }) {
     final hasMedia = mediaUrl?.trim().isNotEmpty == true;
-    final matchReasonTag = _compactMatchReasonTag(context, reasons);
+    final matchReasonTag = _compactMatchReasonTag(context, reasons, allowWrap: enlargedText);
     final company = _companyName();
     final mode = _workMode(context);
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
@@ -954,6 +954,7 @@ class OpportunityCard extends StatelessWidget {
                       ? copy.copy_mission_fb4c5e1
                       : copy.copy_job_ce2feba,
                   color: primary,
+                  allowWrap: enlargedText,
                 ),
                 if (matchReasonTag != null) matchReasonTag,
                 if (company != null)
@@ -961,17 +962,20 @@ class OpportunityCard extends StatelessWidget {
                     icon: HopeV2Icons.profile,
                     label: company,
                     color: HopeV2Colors.muted,
+                    allowWrap: enlargedText,
                   ),
                 if (mode != null && mode != city)
                   PremiumTag(
                     icon: HopeV2Icons.workshop,
                     label: mode,
                     color: secondaryAccent(context),
+                    allowWrap: enlargedText,
                   ),
                 PremiumTag(
                   icon: HopeV2Icons.location,
                   label: city,
                   color: secondaryAccent(context),
+                  allowWrap: enlargedText,
                 ),
               ],
             );
@@ -1377,7 +1381,7 @@ class OpportunityCard extends StatelessWidget {
     final mode = _workMode(context);
     final match = _matchLabel(context);
     final matchReasonTag = showMatchRationale
-        ? _compactMatchReasonTag(context, reasons)
+        ? _compactMatchReasonTag(context, reasons, allowWrap: enlargedText)
         : null;
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
@@ -1409,12 +1413,14 @@ class OpportunityCard extends StatelessWidget {
             icon: HopeV2Icons.category,
             label: hopeCategoryLabel(context, _categoryValue()!),
             color: HopeV2Colors.muted,
+            allowWrap: enlargedText,
           ),
         if (job.visibility == 'SPECIALIZED')
           PremiumTag(
             icon: HopeV2Icons.secure,
             label: copy.copy_specialized_5d1ca04,
             color: HopeV2Colors.warning,
+            allowWrap: enlargedText,
           ),
       ],
     );
@@ -1469,6 +1475,7 @@ class OpportunityCard extends StatelessWidget {
                                   ? HopeV2Icons.mission
                                   : HopeV2Icons.job,
                               color: primary,
+                              allowWrap: enlargedText,
                             ),
                           ),
                         ),
@@ -1483,6 +1490,7 @@ class OpportunityCard extends StatelessWidget {
                                 icon: HopeV2Icons.match,
                                 label: match,
                                 color: HopeV2Colors.success,
+                                allowWrap: enlargedText,
                               ),
                             ),
                           ),
@@ -1731,6 +1739,7 @@ class OpportunityCard extends StatelessWidget {
                             ? HopeV2Icons.mission
                             : HopeV2Icons.job,
                         color: primary,
+                        allowWrap: enlargedText,
                       ),
                       if (matchPercent != null)
                         PremiumTag(
@@ -1740,6 +1749,7 @@ class OpportunityCard extends StatelessWidget {
                             locale: Localizations.localeOf(context).languageCode,
                           )} ${_t(context, 'تطابق', 'match')}',
                           color: HopeV2Colors.success,
+                          allowWrap: enlargedText,
                         ),
                     ],
                   ),
@@ -1765,18 +1775,21 @@ class OpportunityCard extends StatelessWidget {
               icon: HopeV2Icons.location,
               label: city,
               color: secondaryAccent(context),
+              allowWrap: enlargedText,
             ),
             if (_categoryValue() != null)
               PremiumTag(
                 icon: HopeV2Icons.category,
                 label: hopeCategoryLabel(context, _categoryValue()!),
                 color: HopeV2Colors.muted,
+                allowWrap: enlargedText,
               ),
             if (job.visibility == 'SPECIALIZED')
               PremiumTag(
                 icon: HopeV2Icons.secure,
                 label: copy.copy_specialized_5d1ca04,
                 color: HopeV2Colors.warning,
+                allowWrap: enlargedText,
               ),
           ],
         ),
@@ -1852,6 +1865,7 @@ class OpportunityCard extends StatelessWidget {
                     icon: HopeV2Icons.completed,
                     label: label,
                     color: primary,
+                    allowWrap: enlargedText,
                   ),
                 )
                 .toList(growable: false),
