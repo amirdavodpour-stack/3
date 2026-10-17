@@ -42,7 +42,6 @@ done
 dart_contracts=(
   "const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');"
   "invokeMethod<Uint8List>("
-  "'screenshotName': marker"
   "'forceFreshFrame': forceFreshFrame"
   'required WidgetTester tester'
 )
@@ -55,7 +54,17 @@ done
 
 
 grep -Fq "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-')," "$test_file"
-grep -Fq "'screenshotName': marker" "$test_file"
+# Inspect only the invokeMethod payload. A whole-file grep is insufficient because
+# reportData also has a screenshotName field unrelated to the native method call.
+capture_payload="$(sed -n '/final bytes = await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(/,/^[[:space:]]*);/p' "$test_file")"
+if ! grep -Fq "'screenshotName': marker" <<<"$capture_payload"; then
+  echo "FAIL: Dart screenshot channel payload must send screenshotName to match MainActivity." >&2
+  exit 1
+fi
+if grep -Fq "'name': marker" <<<"$capture_payload"; then
+  echo "FAIL: stale name key found in native screenshot channel payload." >&2
+  exit 1
+fi
 grep -Fq 'call.argument<String>("screenshotName") ?: "unlabelled"' "$main_activity"
 grep -Fq 'call.argument<Boolean>("forceFreshFrame") ?: false' "$main_activity"
 grep -Fq 'HOPE_HOST_CAPTURE_DIGEST_MATCH:' "$script_file"

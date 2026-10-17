@@ -906,7 +906,7 @@ Future<void> _captureHopeNativeScreenshot(
   final bytes = await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(
     'captureScreenshot',
     <String, Object?>{
-      'name': marker,
+      'screenshotName': marker,
       'forceFreshFrame': forceFreshFrame,
     },
   );
