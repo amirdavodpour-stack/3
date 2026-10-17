@@ -53,6 +53,11 @@ test('chat attachments belong to the sender and only conversation participants c
   assert.match(routes,/X-Content-Type-Options':'nosniff'/);
 });
 
+test('chat attachment objects are excluded from ordinary user-upload cleanup',()=>{
+  const uploadRepository=read('backend/src/repository/storage.js');
+  assert.match(uploadRepository,/chat_message_attachments a WHERE a\.upload_id=u\.id/);
+});
+
 test('direct chat uploads normalize known extensions when multipart MIME defaults to octet-stream',()=>{
   const routeSource=read('backend/src/routes/storage_routes.js');
   assert.ok(routeSource.includes('normalizeUploadContentType'));
