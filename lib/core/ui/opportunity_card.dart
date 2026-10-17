@@ -905,10 +905,10 @@ class OpportunityCard extends StatelessWidget {
     required List<String> reasons,
   }) {
     final hasMedia = mediaUrl?.trim().isNotEmpty == true;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final matchReasonTag = _compactMatchReasonTag(context, reasons, allowWrap: enlargedText);
     final company = _companyName();
     final mode = _workMode(context);
-    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1380,12 +1380,12 @@ class OpportunityCard extends StatelessWidget {
     final company = _companyName();
     final mode = _workMode(context);
     final match = _matchLabel(context);
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final matchReasonTag = showMatchRationale
         ? _compactMatchReasonTag(context, reasons, allowWrap: enlargedText)
         : null;
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final mediaSize = compactViewport ? 56.0 : 88.0;
     final media = ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
