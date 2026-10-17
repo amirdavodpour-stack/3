@@ -45,6 +45,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _loadingInbox = true;
   bool _typing = false;
   bool _recordingVoice = false;
+  String? _pendingVoicePath;
   String? _playingVoiceMessageId;
   String? _error;
   String _searchQuery = '';
@@ -76,6 +77,10 @@ class _ChatPageState extends State<ChatPage> {
     }
     unawaited(HopeChatVoiceBridge.stopPlayback().catchError((Object _) {}));
     if (_recordingVoice) unawaited(_discardActiveRecording());
+    final pendingVoice = _pendingVoicePath;
+    if (!_recordingVoice && pendingVoice != null) {
+      unawaited(File(pendingVoice).delete().catchError((Object _) => File(pendingVoice)));
+    }
     for (final directory in _voiceTempDirs) {
       unawaited(_deleteVoiceTempDirectory(directory));
     }
@@ -236,9 +241,13 @@ class _ChatPageState extends State<ChatPage> {
     if (_busy || _capabilities == null) return;
     if (!_recordingVoice) {
       try {
-        await HopeChatVoiceBridge.startRecording();
-        if (!mounted) return;
-        setState(() { _recordingVoice = true; _error = null; });
+        final path = await HopeChatVoiceBridge.startRecording();
+        if (!mounted) {
+          try { await HopeChatVoiceBridge.stopRecording(); } catch (_) {}
+          try { await File(path).delete(); } catch (_) {}
+          return;
+        }
+        setState(() { _pendingVoicePath = path; _recordingVoice = true; _error = null; });
       } catch (e) {
         if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('ضبط صدا ممکن نشد. مجوز میکروفون را بررسی کنید.', 'Could not record audio. Check microphone permission.')));
       }
@@ -246,8 +255,8 @@ class _ChatPageState extends State<ChatPage> {
     }
     try {
       final path = await HopeChatVoiceBridge.stopRecording();
-      if (!mounted) return;
-      setState(() => _recordingVoice = false);
+      if (!mounted) { try { await File(path).delete(); } catch (_) {} return; }
+      setState(() { _recordingVoice = false; _pendingVoicePath = path; });
       await _sendFiles([File(path)], messageType: 'VOICE', removeSourcesOnSuccess: true);
     } catch (e) {
       if (mounted) setState(() { _recordingVoice = false; _error = apiErrorMessage(e, fallback: _t('پیام صوتی آماده نشد.', 'Voice message could not be prepared.')); });
@@ -277,6 +286,7 @@ class _ChatPageState extends State<ChatPage> {
       _controller.clear();
       if (removeSourcesOnSuccess) {
         for (final file in files) { try { await file.delete(); } catch (_) {} }
+        if (messageType == 'VOICE' && mounted) setState(() => _pendingVoicePath = null);
       }
       _scrollToLatest();
     } catch (e) {
@@ -290,6 +300,17 @@ class _ChatPageState extends State<ChatPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds:180), curve: Curves.easeOut);
     });
+  }
+
+  Future<void> _retryPendingVoiceMessage() async {
+    final path = _pendingVoicePath;
+    if (path == null || _busy || _recordingVoice) return;
+    final file = File(path);
+    if (!await file.exists()) {
+      if (mounted) setState(() { _pendingVoicePath = null; _error = _t('فایل ضبط‌شده پیدا نشد؛ دوباره ضبط کنید.', 'The recorded voice file is missing. Please record again.'); });
+      return;
+    }
+    await _sendFiles([file], messageType: 'VOICE', removeSourcesOnSuccess: true);
   }
 
   Future<void> _saveAttachment(HopeChatAttachment attachment) async {
@@ -365,7 +386,7 @@ class _ChatPageState extends State<ChatPage> {
           const SizedBox(height:16),
           TextField(key:const ValueKey('chat-inbox-search'),onChanged:(value)=>setState(()=>_searchQuery=value),
             decoration:InputDecoration(prefixIcon:const HopeIcon(HopeV2Icons.search,size:19),
-              hintText:_t('جست‌وجوی نام، پروژه یا پیام','Search people, projects or messages'),
+              hintText:_t('جست‌وجوی نام، پروژه یا آخرین پیام','Search people, projects or latest message'),
               filled:true,fillColor:HopeV2Colors.darkSurface,border:OutlineInputBorder(borderRadius:BorderRadius.circular(15)),isDense:true)),
           const SizedBox(height:10),
           SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[
@@ -1034,6 +1055,14 @@ class _ChatPageState extends State<ChatPage> {
                                   ),
                                   if (_recordingVoice)
                                     Expanded(child: Text(_t('در حال ضبط… برای ارسال دوباره بزنید.', 'Recording… tap to send.'), maxLines:2, style:Theme.of(context).textTheme.labelSmall?.copyWith(color:colors.error))),
+                                  if (_pendingVoicePath != null && !_recordingVoice)
+                                    IconButton(
+                                      key: const ValueKey('chat-retry-voice-button'),
+                                      tooltip: _t('ارسال دوباره پیام صوتی', 'Retry voice send'),
+                                      onPressed: _busy ? null : _retryPendingVoiceMessage,
+                                      icon: HopeIcon(HopeV2Icons.upload, color: colors.secondary, size: 20),
+                                      constraints: const BoxConstraints(minWidth:48,minHeight:48),
+                                    ),
                                   if (_busy)
                                     const Padding(padding: EdgeInsetsDirectional.only(start:8), child:SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2))),
                                 ],

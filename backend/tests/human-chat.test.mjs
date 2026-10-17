@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { canAccessConversation, canSendToConversation, normalizeChatMessageType, isSupportedChatAttachment, canAttachToChat } from '../src/services/human_chat.js';
+import { normalizeUploadContentType } from '../src/routes/storage_routes.js';
 
 test('job chat is accessible only to its owner and assigned worker', () => {
   const c = { kind: 'JOB', status: 'OPEN', ownerId: 'owner', workerId: 'worker' };
@@ -31,4 +32,13 @@ test('chat attachment policy accepts supported files and audio voice notes only'
   assert.equal(canAttachToChat({messageType:'VOICE',contentTypes:['application/pdf'],text:''}),false);
   assert.equal(canAttachToChat({messageType:'VOICE',contentTypes:['audio/mp4','audio/mp4'],text:''}),false);
   assert.equal(canAttachToChat({messageType:'ATTACHMENT',contentTypes:[],text:''}),false);
+});
+
+
+test('direct multipart upload resolves only supported extensions for octet-stream clients', () => {
+  assert.equal(normalizeUploadContentType('application/octet-stream','voice.m4a'), 'audio/mp4');
+  assert.equal(normalizeUploadContentType('application/octet-stream','voice.mp3'), 'audio/mpeg');
+  assert.equal(normalizeUploadContentType('application/octet-stream','brief.pdf'), 'application/pdf');
+  assert.equal(normalizeUploadContentType('application/octet-stream','payload.exe'), 'application/octet-stream');
+  assert.equal(normalizeUploadContentType('application/pdf','voice.m4a'), 'application/pdf');
 });
