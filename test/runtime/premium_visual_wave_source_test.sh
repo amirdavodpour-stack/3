@@ -77,6 +77,11 @@ register_capture_block="$(printf '%s\n' "$register_block" | sed '/if (child is R
 printf '%s\n' "$register_capture_block" | grep -Fq "HOPE_RUNTIME_REGISTER_READY_CAPTURE"
 printf '%s\n' "$register_capture_block" | grep -Fq 'await _waitForRuntimeRegisterGoogleCta(tester)'
 printf '%s\n' "$register_capture_block" | grep -Fq "find.byKey(const ValueKey('auth-google-sign-in'))"
+grep -Fq 'HOPE_RUNTIME_REGISTER_GOOGLE_CTA_VISIBLE:' "$runtime_driver"
+grep -Fq 'await tester.ensureVisible(googleButton)' "$runtime_driver"
+grep -Fq 'final visibleBounds = bounds.intersect(viewport);' "$runtime_driver"
+grep -Fq 'visibleBounds.height + 0.5 < bounds.height' "$runtime_driver"
+grep -Fq "register shows configured Google sign-in visibly within a compact viewport" "test/features/auth/auth_pages_test.dart"
 printf '%s\n' "$register_capture_block" | grep -Fq 'await _captureRuntimeScreenshot(marker, tester: tester)'
 if printf '%s\n' "$register_capture_block" | grep -Eq 'Future<void>\.delayed'; then
   echo "FAIL: Register capture must use the bounded readiness helper, not a timed settle" >&2
@@ -85,6 +90,11 @@ fi
 
 password_reset_block="$(sed -n '/if (child is PasswordResetPage)/,/if (child is WalletPage)/p' "$runtime_driver")"
 password_reset_capture_block="$(printf '%s\n' "$password_reset_block" | sed '/if (child is PasswordResetPage)/,/return;/p')"
+printf '%s\n' "$password_reset_capture_block" | grep -Fq "HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED"
+printf '%s\n' "$password_reset_capture_block" | grep -Fq "expect(find.byType(PasswordResetPage), findsOneWidget"
+printf '%s\n' "$password_reset_capture_block" | grep -Fq "expect(find.byType(RegisterPage), findsNothing"
+printf '%s\n' "$password_reset_capture_block" | grep -Fq "expect(find.byType(TextField), findsOneWidget"
+printf '%s\n' "$password_reset_capture_block" | grep -Fq "password-reset-\$localeMarker"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq "HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq 'await _captureRuntimeScreenshot(marker, tester: tester)'
 if printf '%s\n' "$password_reset_capture_block" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
@@ -564,6 +574,8 @@ echo "PASS: Wave51 pending-withdrawal summary and payout fixture coverage"
 grep -Fq "final compactHeading =" "lib/features/offers/offers_page.dart"
 grep -Fq 'offer-status-${o.id}' "lib/features/offers/offers_page.dart"
 grep -Fq "Wave49 Offers card title and status fit FA-RTL/EN-LTR responsive matrix" "test/features/offers/offers_page_test.dart"
+grep -Fq "offer status rail keeps every filter fully reachable in RTL/LTR and enlarged text" "test/features/offers/offers_page_test.dart"
+grep -Fq "padding: const EdgeInsetsDirectional.symmetric(horizontal: 8)" "lib/features/offers/offers_page.dart"
 grep -Fq "final compactText =" "lib/features/notifications/notifications_page.dart"
 grep -Fq 'notification-title-${n.id}' "lib/features/notifications/notifications_page.dart"
 grep -Fq "Wave49 Notifications preserve title/body at narrow FA-RTL and EN-LTR 1.5x" "test/features/notifications/notifications_page_test.dart"

@@ -49,7 +49,7 @@ for contract in "${dart_contracts[@]}"; do
 done
 
 
-grep -Fq 'forceFreshFrame: _runtimeHasCapturedScreenshot,' "$test_file"
+grep -Fq "forceFreshFrame: _runtimeHasCapturedScreenshot || marker.startsWith('password-reset-')," "$test_file"
 grep -Fq 'var _runtimeHasCapturedScreenshot = false;' "$test_file"
 grep -Fq 'call.argument<Boolean>("forceFreshFrame") ?: false' "$main_activity"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:native-primary:' "$test_file"

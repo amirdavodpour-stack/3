@@ -428,51 +428,101 @@ testWidgets('accepting an offer disables the financial action until completion',
   });
 
   testWidgets(
-    'offer status filters stay in one horizontal rail within a 360dp viewport',
+    'offer status rail keeps every filter fully reachable in RTL/LTR and enlarged text',
     (tester) async {
-      tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      final repository = _SequencedOfferRepository();
-      await tester.pumpWidget(_host(repository));
-      await tester.pumpAndSettle();
 
-      final rail = find.byKey(
-        const ValueKey('offers-status-filter-scroll'),
-      );
-      expect(rail, findsOneWidget);
-      expect(
-        tester.widget<SingleChildScrollView>(rail).scrollDirection,
-        Axis.horizontal,
-      );
-      final scrollbar = find.ancestor(
-        of: rail,
-        matching: find.byType(Scrollbar),
-      );
-      expect(scrollbar, findsOneWidget);
-      expect(tester.widget<Scrollbar>(scrollbar).thumbVisibility, isTrue);
-      expect(
-        tester.getSize(rail).height,
-        lessThan(64),
-        reason: 'The status filters should not wrap into a second row above offers.',
-      );
-
-      final filterLabels = [
-        find.textContaining('All ('),
-        find.textContaining('Pending ('),
-        find.textContaining('Accepted ('),
-        find.textContaining('Rejected ('),
+      const scenarios = [
+        (locale: Locale('en'), width: 320.0, textScale: 1.0),
+        (locale: Locale('fa'), width: 320.0, textScale: 1.0),
+        (locale: Locale('en'), width: 360.0, textScale: 1.5),
+        (locale: Locale('fa'), width: 360.0, textScale: 1.5),
       ];
-      for (final filter in filterLabels) {
-        expect(filter, findsOneWidget);
-        await tester.ensureVisible(filter);
+      for (final scenario in scenarios) {
+        tester.view.physicalSize = Size(scenario.width, 640);
+        await tester.pumpWidget(
+          _host(
+            _SequencedOfferRepository(),
+            locale: scenario.locale,
+            textScale: scenario.textScale,
+          ),
+        );
         await tester.pumpAndSettle();
-        final bounds = tester.getRect(filter);
-        expect(bounds.left, greaterThanOrEqualTo(0));
-        expect(bounds.right, lessThanOrEqualTo(360));
+
+        final rail = find.byKey(
+          const ValueKey('offers-status-filter-scroll'),
+        );
+        expect(rail, findsOneWidget);
+        expect(
+          tester.widget<SingleChildScrollView>(rail).scrollDirection,
+          Axis.horizontal,
+        );
+        final scrollbar = find.ancestor(
+          of: rail,
+          matching: find.byType(Scrollbar),
+        );
+        expect(scrollbar, findsOneWidget);
+        expect(tester.widget<Scrollbar>(scrollbar).thumbVisibility, isTrue);
+        final railBounds = tester.getRect(rail);
+        expect(
+          railBounds.height,
+          lessThan(64),
+          reason: 'The status filters should stay in one compact horizontal rail.',
+        );
+
+        final prefixes = scenario.locale.languageCode == 'en'
+            ? const ['All (', 'Pending (', 'Accepted (', 'Rejected (']
+            : const ['همه (', 'در انتظار بررسی (', 'پذیرفته‌شده (', 'رد شده ('];
+
+        final leadingChip = find.ancestor(
+          of: find.textContaining(prefixes.first),
+          matching: find.byType(PremiumFilterChip),
+        );
+        expect(leadingChip, findsOneWidget);
+        expect(
+          tester.widget<PremiumFilterChip>(leadingChip).selected,
+          isTrue,
+          reason: 'The logical leading All filter remains active in both directions.',
+        );
+        final leadingBounds = tester.getRect(leadingChip);
+        expect(leadingBounds.left, greaterThanOrEqualTo(railBounds.left));
+        expect(leadingBounds.right, lessThanOrEqualTo(railBounds.right));
+
+        for (final prefix in prefixes) {
+          final filterLabel = find.textContaining(prefix);
+          expect(filterLabel, findsOneWidget);
+          final chip = find.ancestor(
+            of: filterLabel,
+            matching: find.byType(PremiumFilterChip),
+          );
+          expect(chip, findsOneWidget);
+          await tester.ensureVisible(chip);
+          await tester.pumpAndSettle();
+
+          final bounds = tester.getRect(chip);
+          final visibleRailBounds = tester.getRect(rail);
+          expect(
+            bounds.left,
+            greaterThanOrEqualTo(visibleRailBounds.left),
+            reason: '${scenario.locale.languageCode} filter "$prefix" is clipped at a rail edge.',
+          );
+          expect(
+            bounds.right,
+            lessThanOrEqualTo(visibleRailBounds.right),
+            reason: '${scenario.locale.languageCode} filter "$prefix" is clipped at a rail edge.',
+          );
+          expect(
+            bounds.height,
+            greaterThanOrEqualTo(48),
+            reason: 'Every status chip needs a rendered 48dp touch target.',
+          );
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
       }
-      expect(tester.takeException(), isNull);
     },
   );
 

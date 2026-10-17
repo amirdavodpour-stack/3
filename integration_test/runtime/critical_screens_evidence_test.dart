@@ -983,7 +983,7 @@ Future<void> _captureRuntimeScreenshot(
     await _captureHopeNativeScreenshot(
       binding,
       marker,
-      forceFreshFrame: _runtimeHasCapturedScreenshot,
+      forceFreshFrame: _runtimeHasCapturedScreenshot || marker.startsWith('password-reset-'),
     ).timeout(
       _nativeScreenshotCaptureTimeout,
       onTimeout: () {
@@ -1161,7 +1161,28 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
 Future<void> _waitForRuntimeRegisterGoogleCta(WidgetTester tester) async {
   final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
   for (var attempt = 0; attempt < 6; attempt++) {
-    if (googleButton.evaluate().isNotEmpty) return;
+    if (googleButton.evaluate().isNotEmpty) {
+      await tester.ensureVisible(googleButton);
+      await tester.pump();
+
+      final element = tester.element(googleButton);
+      final viewport = Offset.zero & MediaQuery.sizeOf(element);
+      final bounds = tester.getRect(googleButton);
+      final visibleBounds = bounds.intersect(viewport);
+      final renderBox = tester.renderObject<RenderBox>(googleButton);
+      if (!renderBox.attached ||
+          !renderBox.hasSize ||
+          renderBox.size.isEmpty ||
+          visibleBounds.width + 0.5 < bounds.width ||
+          visibleBounds.height + 0.5 < bounds.height) {
+        throw StateError(
+          'Register Google CTA exists but is not fully painted inside the capture viewport: '
+          'button=$bounds viewport=$viewport visible=$visibleBounds.',
+        );
+      }
+      print('HOPE_RUNTIME_REGISTER_GOOGLE_CTA_VISIBLE:$bounds');
+      return;
+    }
     await tester.pump();
   }
   throw StateError(
@@ -1225,6 +1246,22 @@ Future<void> _captureRuntimeScreen(
   // already commits the initial target frame, so keep the capture boundary
   // deterministic and avoid an extra timed/async pump.
   if (child is PasswordResetPage) {
+    final localeMarker = locale.languageCode == 'fa' ? 'fa-rtl' : 'en-ltr';
+    final expectedMarker = 'password-reset-$localeMarker';
+    if (marker != expectedMarker) {
+      throw StateError(
+        'Password Reset capture marker mismatch: expected $expectedMarker, got $marker.',
+      );
+    }
+    expect(find.byType(PasswordResetPage), findsOneWidget,
+        reason: 'Password Reset must be mounted before native capture.');
+    expect(find.byType(RegisterPage), findsNothing,
+        reason: 'Registration content must never be labelled as Password Reset evidence.');
+    expect(find.byType(TextField), findsOneWidget,
+        reason: 'Password Reset runtime surface must contain exactly one email field.');
+    expect(find.byType(FilledButton), findsOneWidget,
+        reason: 'Password Reset runtime surface must expose its submit action.');
+    print('HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);
     if (_runtimeNeedsScrollEnd(marker)) {
