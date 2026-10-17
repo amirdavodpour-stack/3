@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -65,7 +69,100 @@ class FakeChatRepository implements ChatRepository {
   }
 }
 
+
+class RacingChatRepository extends FakeChatRepository
+    implements ChatCapabilitiesRepository {
+  final Completer<HopeChatThread> stalePoll = Completer<HopeChatThread>();
+  int getMessagesCalls = 0;
+
+  @override
+  Future<HopeChatThread> getMessages(String conversationId) async {
+    getMessagesCalls++;
+    if (getMessagesCalls == 2) return stalePoll.future;
+    return super.getMessages(conversationId);
+  }
+
+  @override
+  Future<Map<String, dynamic>> uploadChatFile(File file) async =>
+      {'key': 'uploaded/file', 'filename': file.uri.pathSegments.last};
+
+  @override
+  Future<Uint8List> downloadAttachment(String downloadPath) async =>
+      Uint8List(0);
+
+  @override
+  Future<void> markRead(String conversationId) async {}
+
+  @override
+  Future<void> updatePresence(
+    String conversationId, {
+    required bool online,
+    required bool typing,
+  }) async {}
+
+  @override
+  Future<List<HopeChatPresence>> listPresence(String conversationId) async =>
+      const [];
+
+  @override
+  Future<void> updatePreferences(
+    String conversationId, {
+    bool? isPinned,
+    bool? isImportant,
+    bool? isArchived,
+  }) async {}
+}
+
 void main() {
+
+  testWidgets(
+    'a stale live poll cannot replace a newly sent message',
+    (tester) async {
+      final repository = RacingChatRepository();
+      await tester.pumpWidget(
+        MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+      );
+      await tester.pumpAndSettle();
+      expect(repository.getMessagesCalls, 1);
+
+      // Start a live refresh and hold its stale snapshot until after send commits.
+      await tester.pump(const Duration(seconds: 6));
+      expect(repository.getMessagesCalls, 2);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('chat-message-input')),
+        'message sent during refresh',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('chat-send-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('message sent during refresh'), findsOneWidget);
+
+      repository.stalePoll.complete(
+        HopeChatThread(
+          conversation: const HopeChatConversation(
+            id: 'chat-1',
+            kind: 'JOB',
+            jobId: 'job-1',
+            status: 'OPEN',
+            title: 'Test job',
+            otherUserName: 'Worker',
+          ),
+          messages: const [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('message sent during refresh'),
+        findsOneWidget,
+        reason: 'An older in-flight poll must not replace the locally newer thread state.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
   testWidgets(
     'Wave49 Chat send failure keeps full error and Retry reachable at 1.5x in both directions',
     (tester) async {
