@@ -13,6 +13,74 @@ import 'package:hope_mobile/core/marketplace/employer_candidate_matching_reposit
 import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
 
 void main() {
+  testWidgets(
+    'candidate card preserves the full skills summary at 1.5x text scale',
+    (tester) async {
+      const longSkills =
+          'Flutter, Dart, accessibility audits, financial workflow reconciliation and responsive interface engineering';
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-long-card-skills',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-long-card-skills',
+            displayName: 'Candidate One',
+            score: 94,
+            reasons: ['SKILL_MATCH'],
+            components: {'skills': 98, 'experience': 90},
+            applicationId: 'app-long-card-skills',
+            status: 'PENDING',
+            skills: longSkills,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final skillsFinder = find.text(longSkills);
+      expect(skillsFinder, findsOneWidget);
+      final skills = tester.widget<Text>(skillsFinder);
+      expect(
+        skills.maxLines,
+        isNull,
+        reason: 'The ranked candidate card should not hard-truncate a skills summary when system text is enlarged.',
+      );
+      expect(skills.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(skillsFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 
   testWidgets(
     'candidate component progress bars remain safe for out-of-range API values',
