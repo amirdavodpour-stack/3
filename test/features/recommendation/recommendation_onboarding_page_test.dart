@@ -404,12 +404,11 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('open-recommendation-interview')));
       await tester.pumpAndSettle();
 
+      expect(await result.future, isTrue);
       expect(repository.savedProfiles, hasLength(1));
       expect(repository.savedProfiles.single.skills, ['Flutter']);
       expect(repository.savedProfiles.single.preferredCities, ['تهران']);
       expect(repository.savedProfiles.single.onboardingCompleted, isTrue);
-      expect(result.isCompleted, isTrue);
-      expect(result.isCompleted ? result.future : null, isNotNull);
       expect(tester.takeException(), isNull);
     },
   );
