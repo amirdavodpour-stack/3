@@ -176,7 +176,11 @@ class _ChatPageState extends State<ChatPage> {
       final userId = context.read<AuthController?>()?.user?['id']?.toString();
       final unreadIncoming = next.messages.any((message) =>
         message.senderId != userId && !message.readReceipts.any((receipt) => receipt.userId == userId));
-      if (mounted) setState(() => _thread = next);
+      // A live GET may have started before a successful send or another
+      // thread refresh. Do not let that older snapshot replace newer UI state.
+      if (mounted && identical(_thread, thread)) {
+        setState(() => _thread = next);
+      }
       if (unreadIncoming) await capabilities.markRead(thread.conversation.id);
       final presence = await capabilities.listPresence(thread.conversation.id);
       await capabilities.updatePresence(thread.conversation.id, online: true, typing: _typing);
