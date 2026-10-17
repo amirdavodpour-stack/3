@@ -498,7 +498,10 @@ testWidgets('accepting an offer disables the financial action until completion',
             matching: find.byType(PremiumFilterChip),
           );
           expect(chip, findsOneWidget);
-          await tester.ensureVisible(chip);
+          await Scrollable.ensureVisible(
+            tester.element(chip),
+            alignment: 0.5,
+          );
           await tester.pumpAndSettle();
 
           final bounds = tester.getRect(chip);
