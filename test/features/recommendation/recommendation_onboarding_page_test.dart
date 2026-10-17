@@ -382,4 +382,35 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'an initially complete interview saves the profile and dismisses with true',
+    (tester) async {
+      _setCompactViewport(tester);
+      final repository = _FakeRecommendationProfileRepository(
+        replies: [
+          _reply(
+            'ترجیحات شما کامل است.',
+            complete: true,
+            profilePatch: const HopeRecommendationProfile(
+              skills: ['Flutter'],
+              preferredCities: ['تهران'],
+            ),
+          ),
+        ],
+      );
+      final result = Completer<bool?>();
+      await tester.pumpWidget(_navigatorHost(repository, result));
+      await tester.tap(find.byKey(const ValueKey('open-recommendation-interview')));
+      await tester.pumpAndSettle();
+
+      expect(repository.savedProfiles, hasLength(1));
+      expect(repository.savedProfiles.single.skills, ['Flutter']);
+      expect(repository.savedProfiles.single.preferredCities, ['تهران']);
+      expect(repository.savedProfiles.single.onboardingCompleted, isTrue);
+      expect(result.isCompleted, isTrue);
+      expect(result.isCompleted ? result.future : null, isNotNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
