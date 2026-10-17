@@ -169,7 +169,13 @@ grep_fixed -Fq -- '"transaction-detail-$scroll_suffix"' "$script"
 grep_fixed -Fq -- '"create-job-$scroll_suffix"' "$script"
 grep_fixed -Fq -- '"profile-$scroll_suffix"' "$script"
 grep_fixed -Fq -- "'transaction-detail', 'create-job'" "$test_file"
-grep_fixed -Fq -- '"$scroll_end_screens" -ne 8' "$script"
+grep_fixed -Fq -- '"financial-insights-$scroll_suffix" "job-satisfaction-$scroll_suffix"' "$script"
+scroll_end_policy="$(sed -n '/bool _runtimeNeedsScrollEnd(String marker)/,/^}/p' "$test_file")"
+if ! grep_fixed -Fq -- "'financial-insights'" <<<"$scroll_end_policy" || ! grep_fixed -Fq -- "'job-satisfaction'" <<<"$scroll_end_policy"; then
+  echo "FAIL: T10 scroll-end policy must include Financial Insights and Job Satisfaction." >&2
+  exit 1
+fi
+grep_fixed -Fq -- '"$scroll_end_screens" -ne 10' "$script"
 workflow_file=".github/workflows/hope-ui-runtime-evidence.yml"
 static_workflow_file=".github/workflows/hope-ui-wave-1-static.yml"
 grep_fixed -Fq -- "github.event.action == 'synchronize'" "$static_workflow_file"

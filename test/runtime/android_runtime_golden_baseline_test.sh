@@ -137,6 +137,11 @@ fi
 require_line "$runtime" 'duplicate-png-hash'
 require_line "$runtime" 'validate_semantics_set'
 require_line "$runtime" 'validate_scroll_end_set'
+require_line "$test_file" "'transaction-detail', 'create-job', 'financial-insights',"
+require_line "$runtime" '"financial-insights-$scroll_suffix" "job-satisfaction-$scroll_suffix"'
+require_line "$runtime" '"$scroll_end_screens" -ne 10'
+require_line "$workflow" 'test "${png_count}" -ge 35'
+require_line "$workflow" '.scroll_end_screens == 10'
 require_line "$runtime" 'talkback_semantics_mode": "separate_bound_service_pass'
 require_line "$runtime" 'HOPE_T10_RESPONSIVE_SEMANTICS_VIEWPORT_BEGIN:720x1280:320dpi'
 require_line "$runtime" 'HOPE_T10_RESPONSIVE_SEMANTICS_VIEWPORT_END'

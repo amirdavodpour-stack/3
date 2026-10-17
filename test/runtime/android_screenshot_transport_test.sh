@@ -102,7 +102,7 @@ grep -Fq ': > "$log_path"' "$script_file"
 # Regression: strict Password Reset capture must not accept an already-queued image.
 # Drain the image at the marker boundary; reject the first later ImageReader delivery and only
 # accept a subsequent delivery. Other screenshots keep the committed-frame fast path.
-grep -Fq 'hopeScreenshotFreshFramesRemaining = if (forceFreshFrame) 2 else 0' "$main_activity"
+grep -Fq 'if (forceFreshFrame) freshFramesRequired.coerceIn(1, 2) else 0' "$main_activity"
 grep -Fq 'HOPE_SCREENSHOT_STALE_FRAME_DRAINED:$screenshotName:available=$queuedFrameDrained' "$main_activity"
 grep -Fq 'hopeScreenshotFreshFramesRemaining > 1' "$main_activity"
 grep -Fq 'hopeScreenshotFreshFramesRemaining -= 1' "$main_activity"

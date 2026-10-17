@@ -697,6 +697,7 @@ if [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$talkback_setup_status" -eq 0 ]; then
     "home-$scroll_suffix" "jobs-$scroll_suffix" "job-detail-$scroll_suffix"
     "transactions-$scroll_suffix" "transaction-detail-$scroll_suffix"
     "wallet-$scroll_suffix" "profile-$scroll_suffix" "create-job-$scroll_suffix"
+    "financial-insights-$scroll_suffix" "job-satisfaction-$scroll_suffix"
   )
   if [ "$semantics_status" -eq 0 ] && ! validate_scroll_end_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-semantics-only-runtime.log" "${semantics_scroll_end_screens[@]}"; then semantics_status=1; fi
 
@@ -825,7 +826,7 @@ talkback_apk_sha256="$(tr -d '\r\n' < "$evidence_dir/talkback-apk-sha256.txt" 2>
 talkback_required=false
 if [[ "${HOPE_TALKBACK_REQUIRED:-0}" == "1" ]]; then
   talkback_required=true
-  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_touch_exploration_enabled" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 8 || "$talkback_target_bounds_screens" -ne 25 || "$talkback_target_bounds_checked" -lt 1 || "$talkback_target_bounds_failures" -ne 0 || "$talkback_target_bounds_minimum_size_ok" != "true" ]]; then
+  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_touch_exploration_enabled" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 10 || "$talkback_target_bounds_screens" -ne 25 || "$talkback_target_bounds_checked" -lt 1 || "$talkback_target_bounds_failures" -ne 0 || "$talkback_target_bounds_minimum_size_ok" != "true" ]]; then
     echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound touch_exploration=$talkback_touch_exploration_enabled semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens target_bounds_screens=$talkback_target_bounds_screens target_bounds_checked=$talkback_target_bounds_checked target_bounds_failures=$talkback_target_bounds_failures target_min_width_dp=$talkback_target_bounds_min_width_dp target_min_height_dp=$talkback_target_bounds_min_height_dp" >&2
     test_status=1
   fi
