@@ -72,6 +72,7 @@ test('OpenAPI documents every implemented human messaging endpoint and capabilit
     '    ChatAttachment:',
     '    ChatReadReceipt:',
     '    ChatPresence:',
+    '    ChatPresenceUpdate:',
     '    ChatConversationPreferences:',
     '    ChatUpload:',
     'multipart/form-data:',
@@ -81,6 +82,8 @@ test('OpenAPI documents every implemented human messaging endpoint and capabilit
     'audio/wav',
   ]) assert.ok(contract.includes(marker),marker);
   assert.match(contract,/\/messaging\/attachments\/\{attachmentId\}\/content:[\s\S]*?security:\s*\[\{bearerAuth:\s*\[\]\}\]/);
+  assert.match(contract,/\/messaging\/conversations:[\s\S]*?required:\s*\[data\][\s\S]*?items:/);
+  assert.match(contract,/\/messaging\/conversations\/\{conversationId\}\/read:[\s\S]*?required:\s*\[data\][\s\S]*?readCount:/);
 });
 
 test('direct chat uploads normalize known extensions when multipart MIME defaults to octet-stream',()=>{
