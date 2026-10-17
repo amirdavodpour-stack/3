@@ -931,9 +931,15 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        final matchReasonFinder = find.byKey(
+          const ValueKey('opportunity-card-match-reason'),
+        );
+        expect(matchReasonFinder, findsOneWidget);
+        final matchReasonTag = tester.widget<PremiumTag>(matchReasonFinder);
         expect(
-          find.byKey(const ValueKey('opportunity-card-match-reason')),
-          findsOneWidget,
+          matchReasonTag.color,
+          HopeV2SemanticColors.info(tester.element(matchReasonFinder)),
+          reason: 'Match rationale uses the theme-aware informational color role.',
         );
         expect(
           find.text(locale.languageCode == 'fa' ? 'مهارت مرتبط' : 'Skill match'),
