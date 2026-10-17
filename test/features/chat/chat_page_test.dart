@@ -73,7 +73,18 @@ class FakeChatRepository implements ChatRepository {
 class RacingChatRepository extends FakeChatRepository
     implements ChatCapabilitiesRepository {
   final Completer<HopeChatThread> stalePoll = Completer<HopeChatThread>();
+  final Completer<HopeChatMessage> pendingTextSend = Completer<HopeChatMessage>();
+  bool holdTextSend = false;
   int getMessagesCalls = 0;
+
+  @override
+  Future<HopeChatMessage> sendMessage(
+    String conversationId,
+    String message,
+  ) {
+    if (holdTextSend) return pendingTextSend.future;
+    return super.sendMessage(conversationId, message);
+  }
 
   @override
   Future<HopeChatThread> getMessages(String conversationId) async {
@@ -123,6 +134,75 @@ class RacingChatRepository extends FakeChatRepository
 }
 
 void main() {
+
+  testWidgets(
+    'a send completing after a live refresh preserves newly received messages',
+    (tester) async {
+      final repository = RacingChatRepository()..holdTextSend = true;
+      await tester.pumpWidget(
+        MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+      );
+      await tester.pumpAndSettle();
+      expect(repository.getMessagesCalls, 1);
+
+      // Start a live poll and hold both requests so the reverse ordering is deterministic.
+      await tester.pump(const Duration(seconds: 6));
+      expect(repository.getMessagesCalls, 2);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('chat-message-input')),
+        'outgoing message in flight',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('chat-send-button')));
+      await tester.pump();
+      expect(repository.pendingTextSend.isCompleted, isFalse);
+
+      final incoming = HopeChatMessage(
+        id: 'incoming-during-send',
+        conversationId: 'chat-1',
+        senderId: 'worker-1',
+        senderName: 'Worker',
+        body: 'incoming while send is pending',
+        createdAt: DateTime(2026, 10, 17, 13, 0),
+      );
+      repository.stalePoll.complete(
+        HopeChatThread(
+          conversation: const HopeChatConversation(
+            id: 'chat-1',
+            kind: 'JOB',
+            jobId: 'job-1',
+            status: 'OPEN',
+            title: 'Test job',
+            otherUserName: 'Worker',
+          ),
+          messages: [incoming],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('incoming while send is pending'), findsOneWidget);
+
+      repository.pendingTextSend.complete(
+        HopeChatMessage(
+          id: 'outgoing-during-poll',
+          conversationId: 'chat-1',
+          senderId: 'me',
+          senderName: 'Me',
+          body: 'outgoing message in flight',
+          createdAt: DateTime(2026, 10, 17, 13, 1),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('outgoing message in flight'), findsOneWidget);
+      expect(
+        find.text('incoming while send is pending'),
+        findsOneWidget,
+        reason: 'Completing a send must merge into current thread state, not replace a message received while the send was awaiting the server.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'a stale live poll cannot replace a newly sent message',
