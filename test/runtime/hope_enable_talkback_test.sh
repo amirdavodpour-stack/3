@@ -4,7 +4,9 @@ set -euo pipefail
 repo_root="${GITHUB_WORKSPACE:-$PWD}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-component="com.android.talkback/com.google.android.marvin.talkback.TalkBackService"
+talkback_package="com.hopev2.ci.talkback"
+component="$talkback_package/com.google.android.marvin.talkback.TalkBackService"
+preferences_activity="$talkback_package/com.android.talkback.TalkBackPreferencesActivity"
 source_sha="229212fdf5842191d0a93fc95d9ca1423b346866"
 mkdir -p "$tmp/bin" "$tmp/runner"
 printf '%s\n' 'built TalkBack APK placeholder' > "$tmp/runner/hope-talkback.apk"
@@ -20,15 +22,15 @@ fi
 if [[ "${1:-}" == "shell" ]]; then shift; fi
 command_line="$*"
 case "$command_line" in
-  "pm path com.android.talkback")
-    printf '%s\n' 'package:/data/app/com.android.talkback/base.apk'
+  "pm path $FAKE_TALKBACK_PACKAGE")
+    printf 'package:/data/app/%s/base.apk\n' "$FAKE_TALKBACK_PACKAGE"
     ;;
-  "am start -W -n com.android.talkback/com.android.talkback.TalkBackPreferencesActivity")
-    printf '%s\n' 'Starting: Intent { cmp=com.android.talkback/com.android.talkback.TalkBackPreferencesActivity }'
+  "am start -W -n $FAKE_TALKBACK_PACKAGE/com.android.talkback.TalkBackPreferencesActivity")
+    printf 'Starting: Intent { cmp=%s/com.android.talkback.TalkBackPreferencesActivity }\n' "$FAKE_TALKBACK_PACKAGE"
     printf '%s\n' 'Status: ok'
-    printf '%s\n' 'Activity: com.android.talkback/com.android.talkback.TalkBackPreferencesActivity'
+    printf 'Activity: %s/com.android.talkback.TalkBackPreferencesActivity\n' "$FAKE_TALKBACK_PACKAGE"
     ;;
-  "dumpsys package com.android.talkback")
+  "dumpsys package $FAKE_TALKBACK_PACKAGE")
     printf '%s\n' 'User 0: installed=true hidden=false stopped=false notLaunched=false enabled=0'
     ;;
   "settings put secure enabled_accessibility_services "*)
@@ -94,8 +96,10 @@ run_scenario() {
     HOPE_TALKBACK_REQUIRED="1" \
     HOPE_TALKBACK_APK="$tmp/runner/hope-talkback.apk" \
     HOPE_TALKBACK_SOURCE_SHA="$source_sha" \
+    HOPE_TALKBACK_PACKAGE="$talkback_package" \
     FAKE_TALKBACK_MODE="$mode" \
     FAKE_TALKBACK_COMPONENT="$component" \
+    FAKE_TALKBACK_PACKAGE="$talkback_package" \
     bash "$repo_root/tools/hope-enable-talkback.sh" > "$tmp/$mode.log" 2>&1
 }
 

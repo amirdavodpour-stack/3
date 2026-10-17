@@ -6,7 +6,9 @@ serial="${ANDROID_SERIAL:-emulator-5554}"
 apk_path="${HOPE_TALKBACK_APK:-$runner_temp/hope-talkback.apk}"
 expected_source_sha="229212fdf5842191d0a93fc95d9ca1423b346866"
 source_sha="${HOPE_TALKBACK_SOURCE_SHA:-}"
-component="com.android.talkback/com.google.android.marvin.talkback.TalkBackService"
+talkback_package="${HOPE_TALKBACK_PACKAGE:-com.android.talkback}"
+component="$talkback_package/com.google.android.marvin.talkback.TalkBackService"
+preferences_activity="$talkback_package/com.android.talkback.TalkBackPreferencesActivity"
 mkdir -p "$evidence_dir"
 printf '%s\n' 'false' > "$evidence_dir/talkback-service-bound.txt"
 if [[ "${HOPE_TALKBACK_REQUIRED:-0}" != "1" ]]; then
@@ -27,21 +29,21 @@ if ! adb -s "$serial" install -r "$apk_path" > "$evidence_dir/talkback-install.t
   cat "$evidence_dir/talkback-install.txt" >&2
   exit 5
 fi
-adb -s "$serial" shell pm path com.android.talkback > "$evidence_dir/talkback-package-path.txt" 2>&1
+adb -s "$serial" shell pm path "$talkback_package" > "$evidence_dir/talkback-package-path.txt" 2>&1
 if ! grep -Fq 'package:' "$evidence_dir/talkback-package-path.txt"; then
-  echo "FAIL: com.android.talkback is not installed on the emulator." >&2
+  echo "FAIL: $talkback_package is not installed on the emulator." >&2
   exit 6
 fi
 # A sideloaded APK starts in Android's stopped/not-launched state. Explicitly open
 # its exported service-settings activity before enabling it, so the system can
 # start the service rather than leaving it indefinitely in "Binding services".
-if ! adb -s "$serial" shell am start -W -n "com.android.talkback/com.android.talkback.TalkBackPreferencesActivity" > "$evidence_dir/talkback-launch.txt" 2>&1 ||
+if ! adb -s "$serial" shell am start -W -n "$preferences_activity" > "$evidence_dir/talkback-launch.txt" 2>&1 ||
    ! grep -Fq 'Status: ok' "$evidence_dir/talkback-launch.txt"; then
   cat "$evidence_dir/talkback-launch.txt" >&2 || true
   echo "FAIL: TalkBack settings activity could not be launched to clear fresh-install stopped state." >&2
   exit 7
 fi
-adb -s "$serial" shell dumpsys package com.android.talkback > "$evidence_dir/talkback-package-info.txt" 2>&1 || true
+adb -s "$serial" shell dumpsys package "$talkback_package" > "$evidence_dir/talkback-package-info.txt" 2>&1 || true
 # Secure settings alone are not accepted; verify the exact component inside the
 # Bound services block. A component listed only under Binding services is pending,
 # not proof that Android has connected the accessibility service.
@@ -74,7 +76,7 @@ for attempt in $(seq 1 30); do
     bound_service_confirmed=true
   fi
   if [[ "$enabled_value" == "1" ]] &&
-     grep -Fq 'com.android.talkback' <<<"$services_value" &&
+     grep -Fq "$talkback_package" <<<"$services_value" &&
      grep -Fq 'com.google.android.marvin.talkback.TalkBackService' <<<"$services_value" &&
      [[ "$bound_service_confirmed" == "true" ]]; then
     bound=true

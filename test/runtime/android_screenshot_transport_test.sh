@@ -226,6 +226,7 @@ if [ ! -s "$talkback_helper" ]; then
   exit 1
 fi
 grep -Fq 'com.android.talkback' "$talkback_helper"
+grep -Fq 'HOPE_TALKBACK_PACKAGE' "$talkback_helper"
 grep -Fq 'com.google.android.marvin.talkback.TalkBackService' "$talkback_helper"
 grep -Fq 'settings put secure enabled_accessibility_services' "$talkback_helper"
 grep -Fq 'settings put secure accessibility_enabled 1' "$talkback_helper"
@@ -246,6 +247,8 @@ workflow_file="$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'Checkout pinned Google TalkBack source' "$workflow_file"
 grep -Fq '229212fdf5842191d0a93fc95d9ca1423b346866' "$workflow_file"
 grep -Fq 'Build pinned Google TalkBack accessibility service' "$workflow_file"
+grep -Fq 'com.hopev2.ci.talkback' "$workflow_file"
+grep -Fq 'HOPE_TALKBACK_PACKAGE: com.hopev2.ci.talkback' "$workflow_file"
 grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 
 # A static candidate-match fixture intentionally exposes no tap callbacks; its
