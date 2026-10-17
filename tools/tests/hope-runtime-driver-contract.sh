@@ -45,7 +45,13 @@ grep_fixed -Fq -- "MethodChannel('hope.runtime/screenshot')" "$test_file"
 grep_fixed -Fq -- "'screenshotName': marker" "$test_file"
 grep_fixed -Fq -- 'call.argument<String>("screenshotName") ?: "unlabelled"' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
 grep_fixed -Fq -- "'captureScreenshot'," "$test_file"
-grep_fixed -Fq -- "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-')," "$test_file"
+grep_fixed -Fq -- "int _runtimeFreshFrameCount(String marker)" "$test_file"
+grep_fixed -Fq -- "if (marker.startsWith('register-')) return 2;" "$test_file"
+grep_fixed -Fq -- "if (marker.startsWith('password-reset-')) return 1;" "$test_file"
+grep_fixed -Fq -- "freshFramesRequired: freshFrameCount," "$test_file"
+grep_fixed -Fq -- "'freshFramesRequired': freshFramesRequired" "$test_file"
+grep_fixed -Fq -- 'call.argument<Int>("freshFramesRequired")' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
+grep_fixed -Fq -- 'freshFramesRequired.coerceIn(1, 2)' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
 grep_fixed -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
 grep_fixed -Fq -- 'TextScaler.linear(_captureTextScale)' "$test_file"
 grep_fixed -Fq -- 'HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale' "$test_file"
