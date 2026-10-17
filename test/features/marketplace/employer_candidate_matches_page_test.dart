@@ -14,6 +14,58 @@ import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page
 
 void main() {
   testWidgets(
+    'candidate compensation component renders in the localized salary breakdown',
+    (tester) async {
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'candidate-compensation',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-compensation',
+            displayName: 'Candidate Compensation',
+            score: 91,
+            components: {'skills': 90, 'compensation': 85},
+            applicationId: 'app-compensation',
+            status: 'PENDING',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final salarySignal = find.byKey(
+        const ValueKey('candidate-signal-salary'),
+      );
+      expect(salarySignal, findsOneWidget);
+      expect(
+        find.descendant(of: salarySignal, matching: find.text('Salary')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: salarySignal, matching: find.text('85%')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'candidate card preserves the full skills summary at 1.5x text scale',
     (tester) async {
       const longSkills =
