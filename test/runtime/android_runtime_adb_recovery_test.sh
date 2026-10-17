@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'status=$?; printf "FAIL: Android ADB recovery test at line %s (status=%s): %s\\n" "$LINENO" "$status" "$BASH_COMMAND" >&2; exit "$status"' ERR
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT/tools/android-runtime-device-recovery.sh"
