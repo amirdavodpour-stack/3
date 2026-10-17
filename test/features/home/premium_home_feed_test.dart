@@ -87,15 +87,20 @@ class _AuthRepo implements AuthRepository {
 }
 
 class _SequencedMarketplaceRepository implements MarketplaceRepository {
+  _SequencedMarketplaceRepository({HopeJob? initial, HopeJob? fresh})
+      : initial = initial ??
+            _job(
+              'initial',
+              'Initial opportunity',
+              recommended: true,
+            ),
+        fresh = fresh ?? _job('fresh', 'Fresh opportunity');
+
   int calls = 0;
   final Completer<List<HopeJob>> staleRefresh =
       Completer<List<HopeJob>>();
-  final initial = _job(
-    'initial',
-    'Initial opportunity',
-    recommended: true,
-  );
-  final fresh = _job('fresh', 'Fresh opportunity');
+  final HopeJob initial;
+  final HopeJob fresh;
 
   @override
   Future<List<HopeCategory>> listCategories() async => const [];
@@ -682,6 +687,71 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'compact fa-RTL Home keeps every featured tag inside the visible rail',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final featured = HopeJob.fromMap({
+        'id': 'compact-home-match-rail',
+        'title': 'طراحی رابط موبایل حرفه‌ای',
+        'description': 'Responsive match-score rail fixture.',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'PUBLISHED',
+        'categoryId': 'software',
+        'category': 'نرم افزار',
+        'isRecommended': true,
+        'recommendationScore': 0.94,
+        'recommendationReasons': const <String>[],
+        'budgetMin': '15000000',
+        'budgetMax': '25000000',
+        'city': 'تهران',
+      });
+      final harness = await _host(
+        _SequencedMarketplaceRepository(initial: featured),
+        locale: 'fa',
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(
+        const ValueKey('opportunity-featured-scan-tag-rail'),
+      );
+      expect(rail, findsOneWidget);
+      final tags = find.descendant(
+        of: rail,
+        matching: find.byType(PremiumTag),
+      );
+      expect(tags, findsNWidgets(3));
+      expect(
+        tester.widgetList<PremiumTag>(tags).map((tag) => tag.label),
+        contains('۹۴٪ تطابق'),
+      );
+
+      final railRect = tester.getRect(rail);
+      for (var index = 0; index < tags.evaluate().length; index++) {
+        final tagRect = tester.getRect(tags.at(index));
+        expect(
+          tagRect.left,
+          greaterThanOrEqualTo(railRect.left),
+          reason:
+              'Featured tag $index must not be clipped at the rail left edge.',
+        );
+        expect(
+          tagRect.right,
+          lessThanOrEqualTo(railRect.right),
+          reason:
+              'Featured tag $index must not be clipped at the rail right edge.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'late wallet result from an old Home load cannot overwrite the newest refresh',
