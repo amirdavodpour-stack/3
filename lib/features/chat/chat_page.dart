@@ -352,10 +352,15 @@ class _ChatPageState extends State<ChatPage> {
       final extension = attachment.filename.contains('.') ? attachment.filename.split('.').last : 'm4a';
       final file = File('${directory.path}/voice.$extension');
       await file.writeAsBytes(bytes, flush: true);
+      // Set the active ID before starting native playback so an extremely short
+      // clip cannot finish and emit playbackCompleted before the state is set.
+      if (mounted) setState(() { _playingVoiceMessageId = message.id; _error = null; });
       await HopeChatVoiceBridge.playFile(file.path);
-      if (mounted) setState(() => _playingVoiceMessageId = message.id);
     } catch (e) {
-      if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('پخش پیام صوتی ممکن نشد.', 'Could not play voice message.')));
+      if (mounted) setState(() {
+        if (_playingVoiceMessageId == message.id) _playingVoiceMessageId = null;
+        _error = apiErrorMessage(e, fallback: _t('پخش پیام صوتی ممکن نشد.', 'Could not play voice message.'));
+      });
     }
   }
 
