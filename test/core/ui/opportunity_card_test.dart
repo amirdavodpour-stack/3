@@ -738,6 +738,17 @@ void main() {
     );
 
     expect(find.text('94% match'), findsOneWidget);
+    final matchTagFinder = find.ancestor(
+      of: find.text('94% match'),
+      matching: find.byType(PremiumTag),
+    );
+    expect(matchTagFinder, findsOneWidget);
+    final matchTag = tester.widget<PremiumTag>(matchTagFinder);
+    expect(
+      matchTag.color,
+      HopeV2SemanticColors.info(tester.element(find.text('94% match'))),
+      reason: 'Match is an informational signal, not a successful lifecycle state.',
+    );
   });
 
   testWidgets('featured job opportunity uses the warm-neutral focal accent',
