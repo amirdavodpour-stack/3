@@ -65,7 +65,7 @@ hope_android_app_activity_ready() {
   fi
 
   package_path="$(adb -s "$serial" shell pm path "$package" 2>&1 | tr -d '\r' || true)"
-  if ! grep -Fq 'package:' <<<"$package_path"; then
+  if ! grep -Eq '^package:' <<<"$package_path"; then
     echo "HOPE_APP_PACKAGE_MISSING: reinstalling exact runtime APK for $package"
     if ! adb -s "$serial" install -r "$apk"; then
       echo "FAIL: could not reinstall HOPE runtime APK after package disappeared." >&2
