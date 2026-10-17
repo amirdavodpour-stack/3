@@ -1,8 +1,13 @@
 package com.hope.marketplace
 
 import android.graphics.Bitmap
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.media.ImageReader
+import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
@@ -15,11 +20,14 @@ import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : FlutterActivity() {
     companion object {
         private const val HOPE_SCREENSHOT_CHANNEL = "hope.runtime/screenshot"
+        private const val HOPE_CHAT_VOICE_CHANNEL = "hope.chat/voice"
+        private const val CHAT_VOICE_PERMISSION_REQUEST = 7406
         private const val INTEGRATION_TEST_CHANNEL = "plugins.flutter.io/integration_test"
         private const val HOPE_SCREENSHOT_FRAME_TIMEOUT_MS = 15_000L
         private const val HOPE_SCREENSHOT_FRAME_RETRY_INTERVAL_MS = 250L
@@ -29,6 +37,10 @@ class MainActivity : FlutterActivity() {
     private var hopeScreenshotThread: HandlerThread? = null
     private var hopeScreenshotBackgroundHandler: Handler? = null
     private var hopeScreenshotMainHandler: Handler? = null
+    private var chatVoiceRecorder: MediaRecorder? = null
+    private var chatVoicePlayer: MediaPlayer? = null
+    private var chatVoiceOutputPath: String? = null
+    private var pendingChatVoiceStartResult: MethodChannel.Result? = null
     private val hopeScreenshotInProgress = AtomicBoolean(false)
     private val hopeScreenshotFrameCaptured = AtomicBoolean(false)
     private val hopeScreenshotResultCompleted = AtomicBoolean(false)
@@ -53,9 +65,20 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        if (!BuildConfig.DEBUG) {
-            return
-        }
+
+        // Product voice controls are available in release; screenshot plumbing remains debug-only.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, HOPE_CHAT_VOICE_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "startRecording" -> startChatVoiceRecording(result)
+                    "stopRecording" -> stopChatVoiceRecording(result)
+                    "playFile" -> playChatVoiceFile(call.argument<String>("path"), result)
+                    "stopPlayback" -> stopChatVoicePlayback(result)
+                    else -> result.notImplemented()
+                }
+            }
+
+        if (!BuildConfig.DEBUG) return
 
         hopeScreenshotMainHandler = Handler(Looper.getMainLooper())
         hopeScreenshotThread = HandlerThread("hope-runtime-screenshot").also { it.start() }
@@ -76,6 +99,13 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        try { chatVoiceRecorder?.stop() } catch (_: Throwable) {}
+        try { chatVoiceRecorder?.release() } catch (_: Throwable) {}
+        chatVoiceRecorder = null
+        try { chatVoicePlayer?.stop() } catch (_: Throwable) {}
+        try { chatVoicePlayer?.release() } catch (_: Throwable) {}
+        chatVoicePlayer = null
+        pendingChatVoiceStartResult = null
         clearHopeScreenshotCaptureWatchdogs()
         hopeScreenshotBackgroundHandler?.post {
             hopeScreenshotThread?.quitSafely()
@@ -84,6 +114,124 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotBackgroundHandler = null
         hopeScreenshotMainHandler = null
         super.onDestroy()
+    }
+
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != CHAT_VOICE_PERMISSION_REQUEST) return
+        val result = pendingChatVoiceStartResult ?: return
+        pendingChatVoiceStartResult = null
+        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            startChatVoiceRecording(result)
+        } else {
+            result.error("MICROPHONE_PERMISSION_DENIED", "Microphone permission was denied.", null)
+        }
+    }
+
+    private fun startChatVoiceRecording(result: MethodChannel.Result) {
+        if (chatVoiceRecorder != null) {
+            result.error("VOICE_RECORDING_ACTIVE", "A voice message is already being recorded.", null)
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingChatVoiceStartResult = result
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), CHAT_VOICE_PERMISSION_REQUEST)
+            return
+        }
+        val output = File(cacheDir, "hope-chat-" + System.currentTimeMillis() + ".m4a")
+        var recorder: MediaRecorder? = null
+        try {
+            recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(this) else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }
+            recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+            recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            recorder.setAudioEncodingBitRate(96000)
+            recorder.setAudioSamplingRate(44100)
+            recorder.setOutputFile(output.absolutePath)
+            recorder.prepare()
+            recorder.start()
+            chatVoiceOutputPath = output.absolutePath
+            chatVoiceRecorder = recorder
+            result.success(output.absolutePath)
+        } catch (error: Throwable) {
+            try { recorder?.release() } catch (_: Throwable) {}
+            try { output.delete() } catch (_: Throwable) {}
+            chatVoiceOutputPath = null
+            chatVoiceRecorder = null
+            result.error("VOICE_RECORDING_FAILED", error.message ?: "Could not start recording.", null)
+        }
+    }
+
+    private fun stopChatVoiceRecording(result: MethodChannel.Result) {
+        val recorder = chatVoiceRecorder
+        val outputPath = chatVoiceOutputPath
+        if (recorder == null || outputPath.isNullOrEmpty()) {
+            result.error("VOICE_RECORDING_NOT_ACTIVE", "No voice message is being recorded.", null)
+            return
+        }
+        try {
+            recorder.stop()
+            recorder.release()
+            chatVoiceRecorder = null
+            chatVoiceOutputPath = null
+            val output = File(outputPath)
+            if (!output.exists() || output.length() <= 0L) {
+                output.delete()
+                result.error("VOICE_RECORDING_EMPTY", "The voice message is empty.", null)
+            } else {
+                result.success(output.absolutePath)
+            }
+        } catch (error: Throwable) {
+            try { recorder.release() } catch (_: Throwable) {}
+            chatVoiceRecorder = null
+            chatVoiceOutputPath = null
+            try { File(outputPath).delete() } catch (_: Throwable) {}
+            result.error("VOICE_RECORDING_FAILED", error.message ?: "Could not finish recording.", null)
+        }
+    }
+
+    private fun playChatVoiceFile(path: String?, result: MethodChannel.Result) {
+        if (path.isNullOrBlank()) {
+            result.error("VOICE_PATH_REQUIRED", "A voice message path is required.", null)
+            return
+        }
+        try {
+            chatVoicePlayer?.let {
+                try { it.stop() } catch (_: Throwable) {}
+                it.release()
+            }
+            chatVoicePlayer = MediaPlayer().apply {
+                setDataSource(path)
+                setOnCompletionListener { player ->
+                    try { player.release() } catch (_: Throwable) {}
+                    if (chatVoicePlayer === player) chatVoicePlayer = null
+                }
+                prepare()
+                start()
+            }
+            result.success(true)
+        } catch (error: Throwable) {
+            try { chatVoicePlayer?.release() } catch (_: Throwable) {}
+            chatVoicePlayer = null
+            result.error("VOICE_PLAYBACK_FAILED", error.message ?: "Could not play the voice message.", null)
+        }
+    }
+
+    private fun stopChatVoicePlayback(result: MethodChannel.Result) {
+        try { chatVoicePlayer?.stop() } catch (_: Throwable) {}
+        try { chatVoicePlayer?.release() } catch (_: Throwable) {}
+        chatVoicePlayer = null
+        result.success(true)
     }
 
     private fun captureHopeScreenshot(
