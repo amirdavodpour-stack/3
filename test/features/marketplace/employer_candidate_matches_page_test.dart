@@ -13,6 +13,62 @@ import 'package:hope_mobile/core/marketplace/employer_candidate_matching_reposit
 import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
 
 void main() {
+
+  testWidgets(
+    'fractional candidate scores normalize before display and gap calculation',
+    (tester) async {
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'fractional-scores',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-94',
+            displayName: 'Candidate 94',
+            score: 0.94,
+          ),
+          HopeEmployerCandidateMatch(
+            rank: 2,
+            userId: 'worker-91',
+            displayName: 'Candidate 91',
+            score: 0.91,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(
+              data: data,
+              onRetry: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('candidate-comparison-best-score')),
+          matching: find.text('94%'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('91%'), findsWidgets);
+      expect(find.text('3 percentage-point gap'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
   testWidgets('renders ranked candidates with compatibility score and reasons',
       (tester) async {
     const data = HopeEmployerCandidateMatchList(
