@@ -124,6 +124,14 @@ class _FakeAdminOperations implements AdminRepository {
   @override Future<Map<String, dynamic>> resolveDispute(String id, {required String resolution, String? reason}) async => const {};
 }
 
+class _DelayedPanelAccessAdminOperations extends _FakeAdminOperations {
+  final Completer<Map<String, dynamic>> panelAccess =
+      Completer<Map<String, dynamic>>();
+
+  @override
+  Future<Map<String, dynamic>> getPanelAccess() => panelAccess.future;
+}
+
 Widget _host(_FakeAdminOperations repository, {double textScale = 1}) => MaterialApp(
       builder: (context, child) {
         final media = MediaQuery.of(context);
@@ -140,6 +148,40 @@ Widget _host(_FakeAdminOperations repository, {double textScale = 1}) => Materia
     );
 
 void main() {
+
+  testWidgets(
+    'admin operations does not show false empty reports while initial access is pending',
+    (tester) async {
+      final repository = _DelayedPanelAccessAdminOperations();
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Trust & Safety'));
+      await tester.pumpAndSettle();
+
+      // Resolve the held access request after recording the visible interim state,
+      // so the pending future cannot leak beyond this test if the assertion fails.
+      final renderedFalseEmptyState =
+          find.text('No reports').evaluate().isNotEmpty;
+      repository.panelAccess.complete(const {
+        'verified': true,
+        'primaryAdmin': true,
+        'permissions': ['admin.resolve_payouts'],
+      });
+      await tester.pumpAndSettle();
+
+      expect(
+        renderedFalseEmptyState,
+        isFalse,
+        reason: 'An initial Future.value([]) is only a placeholder; no reports should not be claimed before the access-gated fetch starts.',
+      );
+      expect(find.text('Spam'), findsOneWidget);
+      expect(find.text('No reports'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
   testWidgets(
     'admin metric cards preserve long financial values at 1.5x text scale',
     (tester) async {
