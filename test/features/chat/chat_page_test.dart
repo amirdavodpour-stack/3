@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/chat/chat_repository.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/features/chat/chat_page.dart';
 
 class FakeChatRepository implements ChatRepository {
@@ -621,6 +622,13 @@ void main() {
       expect(find.byKey(const ValueKey('chat-inbox-preview-orion')), findsOneWidget);
       expect(find.byKey(const ValueKey('chat-inbox-time-orion')), findsOneWidget);
       expect(find.text('2 UNREAD'), findsOneWidget);
+      final unreadBadge = tester.widget<Container>(
+        find.byKey(const ValueKey('chat-inbox-unread-orion')),
+      );
+      expect(
+        (unreadBadge.decoration as BoxDecoration).color,
+        HopeV2Colors.primaryAction,
+      );
       expect(find.text('PINNED'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
