@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show SemanticsFlag;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -482,11 +483,8 @@ void main() {
       await tester.tap(find.byTooltip('ارسال'));
       await tester.pumpAndSettle();
 
-      final liveReply = find.byWidgetPredicate(
-        (widget) =>
-            widget is Semantics &&
-            widget.liveRegion &&
-            widget.label == 'پاسخ تازه برای دسترس‌پذیری',
+      final liveReply = find.bySemanticsLabel(
+        'پاسخ تازه برای دسترس‌پذیری',
       );
       expect(liveReply, findsOneWidget);
       expect(
