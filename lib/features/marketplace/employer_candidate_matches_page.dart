@@ -26,11 +26,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
         fractionDigits: fractionDigits,
       );
 
-  String _candidateScoreLabel(BuildContext context, num score) => _percent(
-        context,
-        score,
-        fractionDigits: score == score.roundToDouble() ? 0 : 1,
-      );
+  String _candidateScoreLabel(BuildContext context, num score) {
+    final normalized = HopeDisplayFormatter.matchPercentage(score);
+    if (normalized == null) return '—';
+    return _percent(
+      context,
+      normalized,
+      fractionDigits: normalized == normalized.roundToDouble() ? 0 : 1,
+    );
+  }
 
   String? _reason(BuildContext context, String value) {
     final code = value.trim().toUpperCase();
@@ -127,7 +131,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
   Widget _candidateOverviewContent(
     BuildContext context, {
     required HopeEmployerCandidateMatch best,
-    required String gapValue,
+    required String? gapValue,
     required bool enlargedText,
     required int candidateCount,
   }) {
@@ -161,7 +165,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       label: _candidateScoreLabel(context, best.score),
       color: Theme.of(context).colorScheme.primary,
     );
-    final gapTag = candidateCount > 1
+    final gapTag = candidateCount > 1 && gapValue != null
         ? PremiumTag(
             label: _t(
               context,
@@ -376,15 +380,22 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
           Builder(
             builder: (context) {
               final best = data.candidates.first;
-              final gap = data.candidates.length > 1
-                  ? (best.score - data.candidates[1].score)
-                      .abs()
-                      .clamp(0.0, 100.0)
-                  : 0.0;
-              final gapValue = HopeDisplayFormatter.integer(
-                gap.round(),
-                locale: Localizations.localeOf(context).languageCode,
-              );
+              final bestScore =
+                  HopeDisplayFormatter.matchPercentage(best.score);
+              final secondScore = data.candidates.length > 1
+                  ? HopeDisplayFormatter.matchPercentage(
+                      data.candidates[1].score,
+                    )
+                  : null;
+              final gap = bestScore != null && secondScore != null
+                  ? (bestScore - secondScore).abs().clamp(0.0, 100.0)
+                  : null;
+              final gapValue = gap == null
+                  ? null
+                  : HopeDisplayFormatter.integer(
+                      gap.round(),
+                      locale: Localizations.localeOf(context).languageCode,
+                    );
               return PremiumPanel(
                 key: const ValueKey('candidate-comparison-overview'),
                 quiet: true,
