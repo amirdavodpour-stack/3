@@ -179,7 +179,10 @@ void main() {
           messages: [incoming],
         ),
       );
-      await tester.pumpAndSettle();
+      // Keep pumping without settling: the send is still held pending, so its
+      // busy indicator is expected to keep animating.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(find.text('incoming while send is pending'), findsOneWidget);
 
       repository.pendingTextSend.complete(
