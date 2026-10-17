@@ -59,9 +59,13 @@ fi
 # Screenshot production is locked to the current Flutter integration_test callback path.
 driver_file="test_driver/hope_runtime_screenshot_driver.dart"
 
+require_line "$test_file" "var _runtimeScreenshotSurfacePrepared = false;"
+require_line "$test_file" "if (_runtimeScreenshotSurfacePrepared) {"
 require_line "$test_file" "await binding.convertFlutterSurfaceToImage();"
+require_line "$test_file" "_runtimeScreenshotSurfacePrepared = true;"
 require_line "$test_file" "required bool forceFreshFrame,"
 require_line "$test_file" "'forceFreshFrame': forceFreshFrame,"
+require_line "$test_file" "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-'),"
 require_line "$test_file" "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-'),"
 
 require_line "$test_file" "HOPE_T10_SEMANTICS_ONLY_SCREEN_COMPLETE:"

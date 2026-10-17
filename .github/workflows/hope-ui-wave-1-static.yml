@@ -62,6 +62,8 @@ jobs:
       - name: Runtime driver contract
         run: bash tools/tests/hope-runtime-driver-contract.sh
       - name: Android runtime screenshot and TalkBack contract
+      - name: Test Android runtime golden baseline contract
+        run: bash test/runtime/android_runtime_golden_baseline_test.sh
         run: bash test/runtime/android_screenshot_transport_test.sh
       - name: TalkBack exact-bound-service regression
         run: bash test/runtime/hope_enable_talkback_test.sh
