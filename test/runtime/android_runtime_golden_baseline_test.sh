@@ -75,13 +75,13 @@ require_line "$test_file" "String.fromEnvironment('HOPE_CAPTURE_MODE', defaultVa
 require_line "$driver_file" "integrationDriver("
 require_line "$driver_file" "onScreenshot:"
 require_line "$driver_file" "writeAsBytes(image, flush: true)"
-require_line "$runtime" 'flutter drive --no-pub --no-dds --no-enable-impeller'
+require_line "$runtime" 'flutter drive --keep-app-running --no-pub --no-dds --no-enable-impeller'
 if ! awk '
 /timeout --foreground --signal=TERM/ {
   continued=(substr($0, length($0), 1) == "\\")
   next
 }
-continued && /flutter drive --no-pub --no-dds --no-enable-impeller/ {
+continued && /flutter drive --keep-app-running --no-pub --no-dds --no-enable-impeller/ {
   found=1
   exit
 }
