@@ -154,10 +154,12 @@ void main() {
     (tester) async {
       final repository = _DelayedPanelAccessAdminOperations();
       await tester.pumpWidget(_host(repository));
-      await tester.pumpAndSettle();
+      // Access is intentionally held pending; do not pumpAndSettle while the
+      // expected loading indicator is animating.
+      await tester.pump();
 
       await tester.tap(find.text('Trust & Safety'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Resolve the held access request after recording the visible interim state,
       // so the pending future cannot leak beyond this test if the assertion fails.
