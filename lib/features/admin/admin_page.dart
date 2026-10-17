@@ -265,8 +265,17 @@ class _AdminPageState extends State<AdminPage>
                   ),
                 const SizedBox(height: 10),
                 FutureBuilder<HopeAdminSummary>(
-                    future: _summary,
-                    builder: (context, s) => _summaryGrid(context, s.data)),
+                  future: _summary,
+                  builder: (context, s) {
+                    if (s.connectionState == ConnectionState.waiting) {
+                      return _summaryGrid(context, null);
+                    }
+                    if (s.hasError) {
+                      return _errorState(context, s.error, retry: _reload);
+                    }
+                    return _summaryGrid(context, s.data);
+                  },
+                ),
                 const SizedBox(height: 8),
                 PremiumQuickActionStrip(
                   domain: HopeProductDomain.control,
@@ -392,7 +401,7 @@ class _AdminPageState extends State<AdminPage>
         future: _users,
         builder: (context, snapshot) {
           final admins = (snapshot.data ?? const <HopeAdminUser>[])
-              .where((u) => u.role.toUpperCase() == 'ADMIN')
+              .where((u) => u.role.trim().toUpperCase() == 'ADMIN')
               .toList(growable: false);
           return PremiumPanel(
             padding: const EdgeInsets.all(14),
@@ -401,7 +410,33 @@ class _AdminPageState extends State<AdminPage>
               const SizedBox(height: 6),
               Text(_t('افزودن، لغو نقش و خروج اجباری نشست‌های مدیران فقط در اختیار مالک است.', 'Promoting admins, revoking their role, and forcing session revocation are owner-only controls.')),
               const SizedBox(height: 10),
-              if (admins.isEmpty) Text(_t('مدیر دیگری ثبت نشده است.', 'No administrators found.'))
+              if (snapshot.connectionState == ConnectionState.waiting)
+                Semantics(
+                  liveRegion: true,
+                  child: Padding(
+                    key: const ValueKey('admin-management-loading'),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(_t('در حال بارگذاری مدیران', 'Loading administrators')),
+                      ],
+                    ),
+                  ),
+                )
+              else if (snapshot.hasError)
+                KeyedSubtree(
+                  key: const ValueKey('admin-management-error'),
+                  child: _errorState(context, snapshot.error, retry: _reload),
+                )
+              else if (admins.isEmpty)
+                Text(_t('مدیر دیگری ثبت نشده است.', 'No administrators found.'))
               else ...admins.map((u) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
@@ -493,7 +528,7 @@ class _AdminPageState extends State<AdminPage>
       final key = item['key']! as String;
       return PremiumStatCard(
         label: item['label']! as String,
-        value: '${m?[key] ?? 0}',
+        value: m == null ? '—' : '${m[key] ?? 0}',
         icon: item['icon']!,
         accent: Theme.of(context).colorScheme.primary,
         compact: compact,
@@ -501,6 +536,7 @@ class _AdminPageState extends State<AdminPage>
     }
 
     return LayoutBuilder(
+      key: m == null ? const ValueKey('admin-summary-loading') : null,
       builder: (context, constraints) {
         if (enlargedText) {
           const gap = 10.0;
