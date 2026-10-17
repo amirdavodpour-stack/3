@@ -1011,6 +1011,7 @@ void main() {
         final wallet = _FakeWallet(direction: isCredit ? 'CREDIT' : 'DEBIT');
         await tester.pumpWidget(
           MaterialApp(
+            key: ValueKey('wallet-row-color-$brightness-$isCredit'),
             theme: brightness == Brightness.dark
                 ? ThemeData.dark()
                 : ThemeData.light(),
@@ -1042,9 +1043,17 @@ void main() {
           scrollable: find.byType(Scrollable).first,
         );
         await tester.pumpAndSettle();
-        final amountFinder = find.textContaining('500,000 TOMAN');
+        final amountFinder = find.descendant(
+          of: transactionRow,
+          matching: find.textContaining('500,000 TOMAN'),
+        );
         expect(amountFinder, findsOneWidget);
         final amountText = tester.widget<Text>(amountFinder);
+        expect(
+          amountText.data?.startsWith(isCredit ? '+' : '-'),
+          isTrue,
+          reason: 'Signed transaction row must match its direction: ${amountText.data}',
+        );
         final amountContext = tester.element(amountFinder);
         expect(
           amountText.style?.color,
@@ -1588,6 +1597,7 @@ void main() {
           final wallet = _FakeWallet(direction: isCredit ? 'CREDIT' : 'DEBIT');
           await tester.pumpWidget(
             MaterialApp(
+              key: ValueKey('wallet-detail-color-$brightness-$isCredit'),
               theme: brightness == Brightness.dark
                   ? ThemeData.dark()
                   : ThemeData.light(),
@@ -1634,6 +1644,12 @@ void main() {
                 (widget.data?.contains('500,000 TOMAN') ?? false),
           );
           expect(detailAmount, findsOneWidget);
+          final detailValue = tester.widget<SelectableText>(detailAmount).data;
+          expect(
+            detailValue?.startsWith(isCredit ? '+' : '-'),
+            isTrue,
+            reason: 'Signed detail amount must match its direction: $detailValue',
+          );
           final detailContext = tester.element(detailAmount);
           expect(
             tester.widget<SelectableText>(detailAmount).style?.color,
