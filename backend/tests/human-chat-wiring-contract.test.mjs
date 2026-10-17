@@ -55,7 +55,7 @@ test('chat attachments belong to the sender and only conversation participants c
 
 test('direct chat uploads normalize known extensions when multipart MIME defaults to octet-stream',()=>{
   const routeSource=read('backend/src/routes/storage_routes.js');
-  assert.match(routeSource,/normalizeUploadContentType/);
-  assert.match(routeSource,/application\\/octet-stream/);
-  assert.match(routeSource,/file\\.contentType = contentType/);
+  assert.ok(routeSource.includes('normalizeUploadContentType'));
+  assert.ok(routeSource.includes('application/octet-stream'));
+  assert.ok(routeSource.includes('file.contentType = contentType'));
 });
