@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/semantics.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart' show MatrixUtils;
+import 'package:flutter/rendering.dart' show RenderView;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -923,6 +925,24 @@ Future<void> _captureHopeNativeScreenshot(
   binding.reportData!['screenshots'] = screenshots;
 }
 
+Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView) {
+  // SemanticsNode.rect is in the node's own coordinate system. Compose node
+  // transforms up to the root and undo the RenderView root transform so these
+  // bounds are expressed in actual logical viewport coordinates (dp).
+  var transform = Matrix4.identity();
+  SemanticsNode? current = node;
+  while (current != null) {
+    final nodeTransform = current.transform;
+    if (nodeTransform != null) {
+      transform = nodeTransform * transform as Matrix4;
+    }
+    current = current.parent;
+  }
+  final rootInverse = Matrix4.copy(renderView.configuration.toMatrix())..invert();
+  transform = rootInverse * transform as Matrix4;
+  return MatrixUtils.transformRect(transform, node.rect);
+}
+
 Future<void> _captureRuntimeScreenshot(
   String marker, {
   required WidgetTester tester,
@@ -936,6 +956,12 @@ Future<void> _captureRuntimeScreenshot(
       if (root == null) {
         throw StateError('T10 semantics tree is missing for $marker.');
       }
+      final renderView = tester.binding.renderViews.firstWhere(
+        (view) => identical(view.owner?.semanticsOwner, root.owner),
+        orElse: () => throw StateError(
+          'T10 could not find the RenderView for semantics tree $marker.',
+        ),
+      );
       var nodeCount = 0;
       var labelledNodeCount = 0;
       var actionableNodeCount = 0;
@@ -955,7 +981,7 @@ Future<void> _captureRuntimeScreenshot(
         }
         if (data.hasAction(SemanticsAction.tap)) {
           actionableNodeCount++;
-          final targetBounds = node.rect;
+          final targetBounds = _globalSemanticsNodeBounds(node, renderView);
           if (targetBounds.width < minimumTapTargetWidth) {
             minimumTapTargetWidth = targetBounds.width;
           }
