@@ -415,13 +415,40 @@ class _ChatPageState extends State<ChatPage> {
             _inboxChip(_t('بایگانی','Archived'),'ARCHIVED'),
           ])),
           const SizedBox(height:10),
-          if (_error != null) Padding(padding:const EdgeInsets.only(bottom:8),child:Text(_error!,style:TextStyle(color:colors.error))),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: TextStyle(color: colors.error),
+                    ),
+                  ),
+                  TextButton.icon(
+                    key: const ValueKey('chat-inbox-retry'),
+                    onPressed: _loadingInbox ? null : () => _loadConversations(),
+                    icon: const HopeIcon(HopeV2Icons.refresh, size: 18),
+                    label: Text(_t('تلاش دوباره', 'Retry')),
+                  ),
+                ],
+              ),
+            ),
           Expanded(child:_loadingInbox
             ? const Center(child:CircularProgressIndicator())
             : visible.isEmpty
               ? Center(child:Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,children:[
                   HopeIcon(HopeV2Icons.empty,size:36,color:colors.onSurfaceVariant),const SizedBox(height:12),
-                  Text(query.isEmpty?_t('گفتگویی برای نمایش نیست.','No conversations to show.'):_t('نتیجه‌ای پیدا نشد.','No matching conversations.'),textAlign:TextAlign.center),
+                  Text(
+                    _error != null
+                        ? _t('بارگیری گفتگوها ناموفق بود.', 'Could not load conversations.')
+                        : query.isEmpty
+                            ? _t('گفتگویی برای نمایش نیست.', 'No conversations to show.')
+                            : _t('نتیجه‌ای پیدا نشد.', 'No matching conversations.'),
+                    textAlign: TextAlign.center,
+                  ),
                 ])))
               : RefreshIndicator(onRefresh:()=>_loadConversations(),child:ListView.separated(
                 key:const ValueKey('chat-inbox-list'),padding:const EdgeInsets.only(bottom:18),itemCount:visible.length,
