@@ -633,12 +633,14 @@ void main() {
 
       await tester.enterText(search, '');
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Unread'));
       await tester.tap(find.text('Unread'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsOneWidget);
       expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsNothing);
       expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsNothing);
 
+      await tester.ensureVisible(find.text('Projects'));
       await tester.tap(find.text('Projects'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsOneWidget);
