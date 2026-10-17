@@ -60,6 +60,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
             context,
             message,
             tone: HopeFeedbackTone.error,
+            bottomClearance: 64,
           );
         }
       });
@@ -112,7 +113,14 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
       _jumpToEnd();
       if (response.complete) await _save();
     } catch (error) {
-      if (mounted) HopeFeedback.show(context, apiErrorMessage(error, fallback: 'پاسخ هوش مصنوعی دریافت نشد.'), tone: HopeFeedbackTone.error);
+      if (mounted) {
+        HopeFeedback.show(
+          context,
+          apiErrorMessage(error, fallback: 'پاسخ هوش مصنوعی دریافت نشد.'),
+          tone: HopeFeedbackTone.error,
+          bottomClearance: 64,
+        );
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -125,7 +133,14 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
       await context.read<RecommendationProfileRepository>().save(_profile);
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
-      if (mounted) HopeFeedback.show(context, apiErrorMessage(error, fallback: 'پروفایل ذخیره نشد.'), tone: HopeFeedbackTone.error);
+      if (mounted) {
+        HopeFeedback.show(
+          context,
+          apiErrorMessage(error, fallback: 'پروفایل ذخیره نشد.'),
+          tone: HopeFeedbackTone.error,
+          bottomClearance: 64,
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }

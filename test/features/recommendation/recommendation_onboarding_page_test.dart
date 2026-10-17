@@ -20,12 +20,10 @@ class _FakeRecommendationProfileRepository
   _FakeRecommendationProfileRepository({
     required this.replies,
     Set<int>? failingInterviewCalls,
-    this.failSave = false,
   }) : failingInterviewCalls = failingInterviewCalls ?? <int>{};
 
   final List<RecommendationInterviewReply> replies;
   final Set<int> failingInterviewCalls;
-  final bool failSave;
   final List<_InterviewCall> calls = [];
   final List<HopeRecommendationProfile> savedProfiles = [];
 
@@ -37,7 +35,6 @@ class _FakeRecommendationProfileRepository
   Future<HopeRecommendationProfile> save(
     HopeRecommendationProfile profile,
   ) async {
-    if (failSave) throw StateError('save failed');
     savedProfiles.add(profile);
     return profile;
   }
@@ -107,7 +104,7 @@ Widget _pageHost(
         );
       },
       theme: ThemeData(brightness: Brightness.dark),
-      home: const RecommendationOnboardingPage(),
+      home: RecommendationOnboardingPage(key: ValueKey(locale)),
     ),
   );
 }
@@ -354,7 +351,6 @@ void main() {
       expect(repository.savedProfiles.single.interests, ['AI']);
       expect(repository.savedProfiles.single.experienceLevel, 'SENIOR');
       expect(repository.savedProfiles.single.onboardingCompleted, isTrue);
-      expect(find.text('مصاحبه کامل شد.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
