@@ -29,6 +29,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   late Future<Map<String, dynamic>> _funnel;
   late Future<Map<String, dynamic>> _crashes;
   bool _operationBusy = false;
+  bool _initialLoadPending = true;
   Set<String> _permissions = <String>{};
   bool _hasPermission(String permission) => _permissions.contains(permission);
 
@@ -70,7 +71,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     _analytics = r.getAnalyticsSummary(days: _days);
     _funnel = r.getFunnel(days: _days);
     _crashes = r.getCrashSummary(days: _days);
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _initialLoadPending = false);
   }
 
   String _t(String fa, String en) =>
@@ -198,7 +199,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   }
 
   Widget _loadingOrError<T>(AsyncSnapshot<T> s, Widget Function(T data) child) {
-    if (s.connectionState == ConnectionState.waiting) {
+    if (_initialLoadPending || s.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
     if (s.hasError) {
