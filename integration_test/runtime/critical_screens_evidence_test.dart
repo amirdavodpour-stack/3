@@ -924,6 +924,23 @@ Future<void> _captureHopeNativeScreenshot(
   binding.reportData!['screenshots'] = screenshots;
 }
 
+String _preciseSemanticsMatrix(Matrix4? matrix) {
+  if (matrix == null) return 'identity';
+  return matrix.storage
+      .map((value) => value.toStringAsPrecision(17))
+      .join(',');
+}
+
+String _semanticsTransformChain(SemanticsNode node) {
+  final transforms = <String>[];
+  SemanticsNode? current = node;
+  while (current != null) {
+    transforms.add(_preciseSemanticsMatrix(current.transform));
+    current = current.parent;
+  }
+  return transforms.join(' <- ');
+}
+
 Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView) {
   // SemanticsNode.rect is in the node's own coordinate system. Compose node
   // transforms up to the root and undo the RenderView root transform so these
@@ -995,8 +1012,25 @@ Future<void> _captureRuntimeScreenshot(
               final targetLabel = data.label.trim().isEmpty
                   ? 'unlabelled'
                   : data.label.trim().replaceAll(RegExp(r'\s+'), ' ');
+              final preciseTargetBounds = [
+                targetBounds.left,
+                targetBounds.top,
+                targetBounds.right,
+                targetBounds.bottom,
+              ].map((value) => value.toStringAsPrecision(17)).join(',');
+              final preciseLocalRect = [
+                node.rect.left,
+                node.rect.top,
+                node.rect.right,
+                node.rect.bottom,
+              ].map((value) => value.toStringAsPrecision(17)).join(',');
               undersizedTargetExamples.add(
-                '$targetLabel:${targetBounds.width.toStringAsFixed(1)}x${targetBounds.height.toStringAsFixed(1)}',
+                '$targetLabel:widthDp=${targetBounds.width.toStringAsPrecision(17)}'
+                ':heightDp=${targetBounds.height.toStringAsPrecision(17)}'
+                ':boundsDp=[$preciseTargetBounds]'
+                ':nodeRect=[$preciseLocalRect]'
+                ':transformChain=${_semanticsTransformChain(node)}'
+                ':rootMatrix=${_preciseSemanticsMatrix(renderView.configuration.toMatrix())}',
               );
             }
           }

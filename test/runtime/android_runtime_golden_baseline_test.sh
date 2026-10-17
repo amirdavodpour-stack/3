@@ -133,6 +133,14 @@ require_line "$runtime" 'talkback_semantics_mode": "separate_bound_service_pass'
 require_line "$runtime" 'HOPE_T10_RESPONSIVE_SEMANTICS_VIEWPORT_BEGIN:720x1280:320dpi'
 require_line "$runtime" 'HOPE_T10_RESPONSIVE_SEMANTICS_VIEWPORT_END'
 
+# Preserve full-precision diagnostics for transformed semantics bounds; keep the exact 48dp gate.
+require_line "$test_file" "targetBounds.width.toStringAsPrecision(17)"
+require_line "$test_file" "targetBounds.height.toStringAsPrecision(17)"
+require_line "$test_file" "_semanticsTransformChain(node)"
+require_line "$test_file" "rootMatrix="
+require_line "$test_file" "targetBounds.width < 48 ||"
+require_line "$test_file" "targetBounds.height < 48"
+
 echo "PASS: Android runtime screenshot baseline contract is locked."
 
 # [runtime-capture-fa] validate Vulkan-disabled emulator capture after native surface-conversion failure.
