@@ -96,7 +96,7 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "captureScreenshot" -> captureHopeScreenshot(
                     result,
-                    call.argument<String>("name") ?: "unlabelled",
+                    call.argument<String>("screenshotName") ?: "unlabelled",
                     call.argument<Boolean>("forceFreshFrame") ?: false,
                 )
                 else -> result.notImplemented()

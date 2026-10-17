@@ -55,7 +55,8 @@ done
 
 
 grep -Fq "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-')," "$test_file"
-grep -Fq 'call.argument<String>("name") ?: "unlabelled"' "$main_activity"
+grep -Fq "'screenshotName': marker" "$test_file"
+grep -Fq 'call.argument<String>("screenshotName") ?: "unlabelled"' "$main_activity"
 grep -Fq 'call.argument<Boolean>("forceFreshFrame") ?: false' "$main_activity"
 grep -Fq 'HOPE_HOST_CAPTURE_DIGEST_MATCH:' "$script_file"
 grep -Fq 'HOPE_SCREENSHOT_CAPTURE_COMPLETE:$marker:bytes=' "$script_file"

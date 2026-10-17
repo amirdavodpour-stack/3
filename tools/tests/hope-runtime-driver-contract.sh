@@ -42,6 +42,8 @@ grep_fixed -Fq -- 'docs/audit/evidence/android-runtime' "$driver"
 grep_fixed -Fq -- 'IntegrationTestWidgetsFlutterBinding.ensureInitialized' "$test_file"
 grep_fixed -Fq -- 'await binding.convertFlutterSurfaceToImage();' "$test_file"
 grep_fixed -Fq -- "MethodChannel('hope.runtime/screenshot')" "$test_file"
+grep_fixed -Fq -- "'screenshotName': marker" "$test_file"
+grep_fixed -Fq -- 'call.argument<String>("screenshotName") ?: "unlabelled"' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
 grep_fixed -Fq -- "'captureScreenshot'," "$test_file"
 grep_fixed -Fq -- "forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-')," "$test_file"
 grep_fixed -Fq -- 'await _prepareRuntimeScreenshotSurface(tester);' "$test_file"
