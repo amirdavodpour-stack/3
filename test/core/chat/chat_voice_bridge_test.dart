@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/chat/chat_voice_bridge.dart';
@@ -25,6 +27,24 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
+  });
+
+  test('native playback completion is forwarded to Dart listeners', () async {
+    final completed = Completer<void>();
+    final subscription = HopeChatVoiceBridge.playbackCompleted.listen((_) {
+      if (!completed.isCompleted) completed.complete();
+    });
+    addTearDown(subscription.cancel);
+
+    const codec = StandardMethodCodec();
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+      'hope.chat/voice',
+      codec.encodeMethodCall(const MethodCall('playbackCompleted')),
+      (_) {},
+    );
+
+    await completed.future.timeout(const Duration(seconds: 1));
   });
 
   test('voice bridge dispatches native recording and playback controls', () async {

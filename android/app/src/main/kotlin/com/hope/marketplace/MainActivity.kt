@@ -39,6 +39,7 @@ class MainActivity : FlutterActivity() {
     private var hopeScreenshotMainHandler: Handler? = null
     private var chatVoiceRecorder: MediaRecorder? = null
     private var chatVoicePlayer: MediaPlayer? = null
+    private var chatVoiceMethodChannel: MethodChannel? = null
     private var chatVoiceOutputPath: String? = null
     private var pendingChatVoiceStartResult: MethodChannel.Result? = null
     private val hopeScreenshotInProgress = AtomicBoolean(false)
@@ -67,8 +68,9 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
 
         // Product voice controls are available in release; screenshot plumbing remains debug-only.
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, HOPE_CHAT_VOICE_CHANNEL)
-            .setMethodCallHandler { call, result ->
+        val chatVoiceChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, HOPE_CHAT_VOICE_CHANNEL)
+        chatVoiceMethodChannel = chatVoiceChannel
+        chatVoiceChannel.setMethodCallHandler { call, result ->
                 when (call.method) {
                     "startRecording" -> startChatVoiceRecording(result)
                     "stopRecording" -> stopChatVoiceRecording(result)
@@ -105,6 +107,7 @@ class MainActivity : FlutterActivity() {
         try { chatVoicePlayer?.stop() } catch (_: Throwable) {}
         try { chatVoicePlayer?.release() } catch (_: Throwable) {}
         chatVoicePlayer = null
+        chatVoiceMethodChannel = null
         pendingChatVoiceStartResult = null
         clearHopeScreenshotCaptureWatchdogs()
         hopeScreenshotBackgroundHandler?.post {
@@ -214,7 +217,10 @@ class MainActivity : FlutterActivity() {
                 setDataSource(path)
                 setOnCompletionListener { player ->
                     try { player.release() } catch (_: Throwable) {}
-                    if (chatVoicePlayer === player) chatVoicePlayer = null
+                    if (chatVoicePlayer === player) {
+                        chatVoicePlayer = null
+                        chatVoiceMethodChannel?.invokeMethod("playbackCompleted", null)
+                    }
                 }
                 prepare()
                 start()

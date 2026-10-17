@@ -47,6 +47,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _recordingVoice = false;
   String? _pendingVoicePath;
   String? _playingVoiceMessageId;
+  StreamSubscription<void>? _voicePlaybackSubscription;
   String? _error;
   String _searchQuery = '';
   String _inboxFilter = 'ALL';
@@ -63,6 +64,10 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _repository = widget.repository ?? context.read<ChatRepository>();
+    _voicePlaybackSubscription = HopeChatVoiceBridge.playbackCompleted.listen((_) {
+      if (!mounted || _playingVoiceMessageId == null) return;
+      setState(() => _playingVoiceMessageId = null);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
@@ -70,6 +75,8 @@ class _ChatPageState extends State<ChatPage> {
   void dispose() {
     _liveTimer?.cancel();
     _typingTimer?.cancel();
+    final voicePlaybackSubscription = _voicePlaybackSubscription;
+    if (voicePlaybackSubscription != null) unawaited(voicePlaybackSubscription.cancel());
     final thread = _thread;
     final capabilities = _capabilities;
     if (thread != null && capabilities != null) {
