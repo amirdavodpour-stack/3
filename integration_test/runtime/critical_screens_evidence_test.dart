@@ -939,6 +939,10 @@ Future<void> _captureRuntimeScreenshot(
       var nodeCount = 0;
       var labelledNodeCount = 0;
       var actionableNodeCount = 0;
+      var undersizedTargetCount = 0;
+      var minimumTapTargetWidth = double.infinity;
+      var minimumTapTargetHeight = double.infinity;
+      final undersizedTargetExamples = <String>[];
       final pending = <SemanticsNode>[root];
       while (pending.isNotEmpty) {
         final node = pending.removeLast();
@@ -951,6 +955,26 @@ Future<void> _captureRuntimeScreenshot(
         }
         if (data.hasAction(SemanticsAction.tap)) {
           actionableNodeCount++;
+          final targetBounds = node.rect;
+          if (targetBounds.width < minimumTapTargetWidth) {
+            minimumTapTargetWidth = targetBounds.width;
+          }
+          if (targetBounds.height < minimumTapTargetHeight) {
+            minimumTapTargetHeight = targetBounds.height;
+          }
+          if (targetBounds.isEmpty ||
+              targetBounds.width < 48 ||
+              targetBounds.height < 48) {
+            undersizedTargetCount++;
+            if (undersizedTargetExamples.length < 8) {
+              final targetLabel = data.label.trim().isEmpty
+                  ? 'unlabelled'
+                  : data.label.trim().replaceAll(RegExp(r'\s+'), ' ');
+              undersizedTargetExamples.add(
+                '$targetLabel:${targetBounds.width.toStringAsFixed(1)}x${targetBounds.height.toStringAsFixed(1)}',
+              );
+            }
+          }
         }
         pending.addAll(node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder));
       }
@@ -962,6 +986,21 @@ Future<void> _captureRuntimeScreenshot(
           'T10 semantics incomplete for $marker: nodes=$nodeCount labels=$labelledNodeCount actions=$actionableNodeCount.',
         );
       }
+      if (undersizedTargetCount > 0) {
+        final examples = undersizedTargetExamples.join('; ');
+        print(
+          'HOPE_T10_TARGET_BOUNDS_FAIL:$marker:undersized=$undersizedTargetCount:examples=$examples',
+        );
+        throw StateError(
+          'T10 target bounds below 48dp for $marker: '
+          'undersized=$undersizedTargetCount examples=$examples.',
+        );
+      }
+      final minimumWidth = actionableNodeCount == 0 ? 0.0 : minimumTapTargetWidth;
+      final minimumHeight = actionableNodeCount == 0 ? 0.0 : minimumTapTargetHeight;
+      print(
+        'HOPE_T10_TARGET_BOUNDS_PASS:$marker:targets=$actionableNodeCount:minWidthDp=${minimumWidth.toStringAsFixed(1)}:minHeightDp=${minimumHeight.toStringAsFixed(1)}',
+      );
       print(
         'HOPE_T10_SEMANTICS_PASS:$marker:nodes=$nodeCount:labels=$labelledNodeCount:actions=$actionableNodeCount',
       );

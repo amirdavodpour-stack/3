@@ -757,6 +757,29 @@ if [[ "$(tr -d '\r\n' < "$evidence_dir/touch-exploration-enabled.txt" 2>/dev/nul
 fi
 talkback_semantics_screens=0
 talkback_semantics_output="$(grep -h 'HOPE_T10_SEMANTICS_PASS:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
+talkback_target_bounds_screens=0
+talkback_target_bounds_checked=0
+talkback_target_bounds_failures=0
+talkback_target_bounds_min_width_dp=0
+talkback_target_bounds_min_height_dp=0
+talkback_target_bounds_pass_output="$(grep -h 'HOPE_T10_TARGET_BOUNDS_PASS:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
+talkback_target_bounds_fail_output="$(grep -h 'HOPE_T10_TARGET_BOUNDS_FAIL:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
+if [[ -n "$talkback_target_bounds_pass_output" ]]; then
+  talkback_target_bounds_screens="$(printf '%s\n' "$talkback_target_bounds_pass_output" | sed -n 's/.*HOPE_T10_TARGET_BOUNDS_PASS:\([^:]*\).*/\1/p' | grep -v '^scroll-end-' | sort -u | wc -l | tr -d ' ')"
+  talkback_target_bounds_checked="$(printf '%s\n' "$talkback_target_bounds_pass_output" | sed -n 's/.*targets=\([0-9][0-9]*\):.*/\1/p' | awk '{ total += $1 } END { print total + 0 }')"
+  target_bounds_with_controls="$(printf '%s\n' "$talkback_target_bounds_pass_output" | grep -E 'targets=[1-9][0-9]*:' || true)"
+  if [[ -n "$target_bounds_with_controls" ]]; then
+    talkback_target_bounds_min_width_dp="$(printf '%s\n' "$target_bounds_with_controls" | sed -n 's/.*minWidthDp=\([0-9.]*\).*/\1/p' | sort -n | head -n 1)"
+    talkback_target_bounds_min_height_dp="$(printf '%s\n' "$target_bounds_with_controls" | sed -n 's/.*minHeightDp=\([0-9.]*\).*/\1/p' | sort -n | head -n 1)"
+  fi
+fi
+if [[ -n "$talkback_target_bounds_fail_output" ]]; then
+  talkback_target_bounds_failures="$(printf '%s\n' "$talkback_target_bounds_fail_output" | wc -l | tr -d ' ')"
+fi
+talkback_target_bounds_minimum_size_ok=false
+if awk -v width="$talkback_target_bounds_min_width_dp" -v height="$talkback_target_bounds_min_height_dp" 'BEGIN { exit !(width >= 48 && height >= 48) }'; then
+  talkback_target_bounds_minimum_size_ok=true
+fi
 if [[ -n "$talkback_semantics_output" ]]; then
   talkback_semantics_screens="$(printf '%s\n' "$talkback_semantics_output" | sed -n 's/.*HOPE_T10_SEMANTICS_PASS:\([^:]*\).*/\1/p' | grep -v '^scroll-end-' | sort -u | wc -l | tr -d ' ')"
 fi
@@ -770,8 +793,8 @@ talkback_apk_sha256="$(tr -d '\r\n' < "$evidence_dir/talkback-apk-sha256.txt" 2>
 talkback_required=false
 if [[ "${HOPE_TALKBACK_REQUIRED:-0}" == "1" ]]; then
   talkback_required=true
-  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_touch_exploration_enabled" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 8 ]]; then
-    echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound touch_exploration=$talkback_touch_exploration_enabled semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens" >&2
+  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_touch_exploration_enabled" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 8 || "$talkback_target_bounds_screens" -ne 25 || "$talkback_target_bounds_checked" -lt 1 || "$talkback_target_bounds_failures" -ne 0 || "$talkback_target_bounds_minimum_size_ok" != "true" ]]; then
+    echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound touch_exploration=$talkback_touch_exploration_enabled semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens target_bounds_screens=$talkback_target_bounds_screens target_bounds_checked=$talkback_target_bounds_checked target_bounds_failures=$talkback_target_bounds_failures target_min_width_dp=$talkback_target_bounds_min_width_dp target_min_height_dp=$talkback_target_bounds_min_height_dp" >&2
     test_status=1
   fi
 fi
@@ -826,6 +849,11 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "talkback_enabled": $talkback_enabled,
   "talkback_service_bound": $talkback_service_bound,
   "talkback_touch_exploration_enabled": $talkback_touch_exploration_enabled,
+  "talkback_target_bounds_screens": $talkback_target_bounds_screens,
+  "talkback_target_bounds_checked": $talkback_target_bounds_checked,
+  "talkback_target_bounds_failures": $talkback_target_bounds_failures,
+  "talkback_target_bounds_min_width_dp": $talkback_target_bounds_min_width_dp,
+  "talkback_target_bounds_min_height_dp": $talkback_target_bounds_min_height_dp,
   "talkback_package": "com.android.talkback",
   "talkback_service_component": "com.android.talkback/com.google.android.marvin.talkback.TalkBackService",
   "talkback_source_sha": "$talkback_source_sha",
