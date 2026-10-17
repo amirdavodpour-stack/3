@@ -15,6 +15,61 @@ import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page
 void main() {
 
   testWidgets(
+    'candidate component progress bars remain safe for out-of-range API values',
+    (tester) async {
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'invalid-components',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-invalid-components',
+            displayName: 'Candidate with stale scoring data',
+            score: 92,
+            components: {
+              'skills': 150,
+              'experience': -25,
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(
+              data: data,
+              onRetry: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final indicators = tester
+          .widgetList<LinearProgressIndicator>(
+            find.byType(LinearProgressIndicator),
+          )
+          .where((indicator) => indicator.value != null)
+          .toList(growable: false);
+      expect(indicators, hasLength(2));
+      for (final indicator in indicators) {
+        expect(indicator.value, inInclusiveRange(0.0, 1.0));
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+
+  testWidgets(
     'fractional candidate scores normalize before display and gap calculation',
     (tester) async {
       const data = HopeEmployerCandidateMatchList(
