@@ -1043,10 +1043,8 @@ void main() {
           scrollable: find.byType(Scrollable).first,
         );
         await tester.pumpAndSettle();
-        final amountFinder = find.descendant(
-          of: transactionRow,
-          matching: find.text(amountLabel),
-        );
+        final amountFinder = find.text(amountLabel);
+        expect(amountFinder, findsOneWidget);
         final amountText = tester.widget<Text>(amountFinder);
         final amountContext = tester.element(amountFinder);
         expect(
@@ -1623,9 +1621,15 @@ void main() {
           );
           await tester.pumpAndSettle();
           final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
-          await tester.tap(transactionRow);
+          final transactionTitle = find.descendant(
+            of: transactionRow,
+            matching: find.text('Internal transfer'),
+          );
+          expect(transactionTitle, findsOneWidget);
+          await tester.tap(transactionTitle);
           await tester.pumpAndSettle();
 
+          expect(find.byType(BottomSheet), findsOneWidget);
           final detailAmount = find.byWidgetPredicate(
             (widget) =>
                 widget is SelectableText && widget.data == amountLabel,
