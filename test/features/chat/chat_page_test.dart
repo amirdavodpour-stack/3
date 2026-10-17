@@ -134,6 +134,29 @@ class RacingChatRepository extends FakeChatRepository
 }
 
 void main() {
+  testWidgets(
+    'chat inbox initial load failure exposes an actionable retry',
+    (tester) async {
+      final repository = FakeChatRepository()..failList = true;
+      await tester.pumpWidget(
+        MaterialApp(home: ChatPage(repository: repository)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('chat-inbox-retry')), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      repository.failList = false;
+      await tester.tap(find.byKey(const ValueKey('chat-inbox-retry')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Worker'), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-retry')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 
   testWidgets(
     'a send completing after a live refresh preserves newly received messages',
