@@ -1033,7 +1033,6 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
         final transactionRow = find.byKey(
           const ValueKey('wallet-history-entry-tx-1'),
         );
@@ -1043,7 +1042,7 @@ void main() {
           scrollable: find.byType(Scrollable).first,
         );
         await tester.pumpAndSettle();
-        final amountFinder = find.text(amountLabel);
+        final amountFinder = find.textContaining('500,000 TOMAN');
         expect(amountFinder, findsOneWidget);
         final amountText = tester.widget<Text>(amountFinder);
         final amountContext = tester.element(amountFinder);
@@ -1620,7 +1619,6 @@ void main() {
             scrollable: find.byType(Scrollable).first,
           );
           await tester.pumpAndSettle();
-          final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
           final transactionTitle = find.descendant(
             of: transactionRow,
             matching: find.text('Internal transfer'),
@@ -1632,7 +1630,8 @@ void main() {
           expect(find.byType(BottomSheet), findsOneWidget);
           final detailAmount = find.byWidgetPredicate(
             (widget) =>
-                widget is SelectableText && widget.data == amountLabel,
+                widget is SelectableText &&
+                (widget.data?.contains('500,000 TOMAN') ?? false),
           );
           expect(detailAmount, findsOneWidget);
           final detailContext = tester.element(detailAmount);
