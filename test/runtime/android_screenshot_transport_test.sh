@@ -278,6 +278,14 @@ grep -Fq 'hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_
 }
 
 
+# If auth-tail recovery overwrites named PNGs, its native SHA log must feed the final validator.
+auth_recovery_run_line="$(grep -nF 'run_host_batch_session baseline-d "\${auth_tail_screens[@]}" || true' "$script_file" | head -n1 | cut -d: -f1)"
+auth_recovery_merge_line="$(grep -nF 'cat "$runner_temp/hope-baseline-d-runtime.log" >> "$runner_temp/hope-baseline-runtime.log"' "$script_file" | head -n1 | cut -d: -f1)"
+if [ -z "$auth_recovery_run_line" ] || [ -z "$auth_recovery_merge_line" ] || [ "$auth_recovery_merge_line" -le "$auth_recovery_run_line" ]; then
+  echo "FAIL: auth-tail recovery's native marker/digest log must be merged before final baseline capture validation." >&2
+  exit 1
+fi
+
 # Exercise the real capture-set validator against missing, matching, and mismatching
 # native-return digests. This keeps byte provenance fail-closed without requiring an emulator.
 grep -Fq 'HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:native-digest-missing' "$script_file"

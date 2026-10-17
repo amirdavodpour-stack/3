@@ -536,6 +536,10 @@ else
       echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
       hope_android_device_ready "$RUNTIME_SERIAL"
       run_host_batch_session baseline-d "${auth_tail_screens[@]}" || true
+      # Preserve native marker + SHA-256 evidence for auth PNGs rewritten by recovery.
+      if [ -s "$runner_temp/hope-baseline-d-runtime.log" ]; then
+        cat "$runner_temp/hope-baseline-d-runtime.log" >> "$runner_temp/hope-baseline-runtime.log"
+      fi
     fi
   fi
 
