@@ -111,7 +111,7 @@ if grep -Fq 'swiftshader_indirect' ".github/workflows/hope-ui-runtime-evidence.y
   exit 1
 fi
 grep -Fq "contains(github.event.pull_request.title, '[runtime-capture-fa]')" ".github/workflows/hope-ui-runtime-evidence.yml"
-grep -Fq 'test "${png_count}" -ge 31' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'test "${png_count}" -ge 35' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'Build pinned Google TalkBack accessibility service' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq '.talkback_service_bound == true' ".github/workflows/hope-ui-runtime-evidence.yml"
@@ -120,7 +120,7 @@ grep -Fq "'transaction-detail', 'create-job'" "$runtime_driver"
 grep -Fq '"transaction-detail-$scroll_suffix"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"create-job-$scroll_suffix"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"profile-$scroll_suffix"' "tools/hope-wallet-runtime-evidence.sh"
-grep -Fq '.scroll_end_screens == 8' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq '.scroll_end_screens == 10' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'HOPE_T10_TARGET_BOUNDS_PASS:' "$runtime_driver"
 grep -Fq 'HOPE_T10_TARGET_BOUNDS_FAIL:' "$runtime_driver"
 grep -Fq 'Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView)' "$runtime_driver"
