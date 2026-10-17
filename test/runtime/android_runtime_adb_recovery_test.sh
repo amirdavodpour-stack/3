@@ -157,7 +157,7 @@ run_app_package_missing_case() {
   cat > "$tmp/bin/adb" <<'ADB'
 #!/usr/bin/env bash
 set -u
-printf '%s\\n' "$*" >> "${LOG:?}"
+printf '%s\n' "$*" >> "${LOG:?}"
 case "$*" in
   *" shell pm path com.hope.marketplace")
     echo "Unknown package: com.hope.marketplace"

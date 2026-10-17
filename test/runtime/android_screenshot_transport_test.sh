@@ -60,7 +60,7 @@ if grep -Fq 'await binding.takeScreenshot(marker)' "$test_file"; then
 fi
 grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
-grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
+grep -Fq 'flutter drive --keep-app-running --no-pub --no-dds' "$script_file"
 grep -Fq 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build' "$script_file"
 # Self-build includes Flutter/Gradle compilation before VM-service connection.
 grep -Fq 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"' "$script_file"
