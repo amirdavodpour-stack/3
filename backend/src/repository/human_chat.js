@@ -81,8 +81,12 @@ export async function listChatMessages(conversationId,userId,role,limit=100){
         FROM chat_message_attachments a WHERE a.message_id=m.id),'[]'::jsonb) AS attachments,
       COALESCE((SELECT jsonb_agg(jsonb_build_object('userId',r.user_id,'userName',reader.display_name,'readAt',r.read_at) ORDER BY r.read_at)
         FROM chat_message_reads r JOIN users reader ON reader.id=r.user_id WHERE r.message_id=m.id),'[]'::jsonb) AS read_receipts
-    FROM chat_messages m LEFT JOIN users u ON u.id=m.sender_id
-    WHERE m.conversation_id=$1 ORDER BY m.created_at ASC,m.id ASC LIMIT $2`,[conversationId,safeLimit]);
+    FROM (
+      SELECT latest.* FROM chat_messages latest
+      WHERE latest.conversation_id=$1
+      ORDER BY latest.created_at DESC,latest.id DESC LIMIT $2
+    ) m LEFT JOIN users u ON u.id=m.sender_id
+    ORDER BY m.created_at ASC,m.id ASC`,[conversationId,safeLimit]);
   return {conversation,messages:rows.map(messageFromRow)};
 }
 export async function postChatMessage(conversationId,userId,role,body,options={}){
