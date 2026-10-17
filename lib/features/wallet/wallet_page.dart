@@ -1140,7 +1140,7 @@ class _WalletPageState extends State<WalletPage> {
           key: ValueKey(item.key),
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 6 : 7,
-            vertical: compact ? 2 : 3,
+            vertical: compact ? 1 : 3,
           ),
           decoration: BoxDecoration(
             color: item.emphasized
@@ -1190,7 +1190,7 @@ class _WalletPageState extends State<WalletPage> {
 
       Widget metricsBlock() => LayoutBuilder(
             builder: (context, constraints) {
-              const gap = 4.0;
+              final gap = compact ? 2.0 : 4.0;
               final longMetricCount = items.where((item) => item.value.length > 18).length;
                 final singleColumnMetrics = enlargedText ||
                     constraints.maxWidth < 280 || longMetricCount >= 3;

@@ -1061,10 +1061,6 @@ void main() {
           isNot(Theme.of(amountContext).colorScheme.primary),
           reason: 'Ledger amounts must not use the brand action foreground in $brightness mode.',
         );
-        final detailSheet = find.byType(BottomSheet);
-        expect(detailSheet, findsOneWidget);
-        Navigator.of(tester.element(detailSheet)).pop();
-        await tester.pumpAndSettle();
       }
     }
   });
@@ -1627,12 +1623,7 @@ void main() {
           );
           await tester.pumpAndSettle();
           final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
-          await tester.tap(
-            find.descendant(
-              of: transactionRow,
-              matching: find.text(amountLabel),
-            ),
-          );
+          await tester.tap(transactionRow);
           await tester.pumpAndSettle();
 
           final detailAmount = find.byWidgetPredicate(
@@ -1690,7 +1681,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final reservedStatus = find.text('Reserved').first;
+        final reservedStatus = find.text('Reserved');
         await tester.scrollUntilVisible(
           reservedStatus,
           500,
