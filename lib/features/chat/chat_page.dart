@@ -295,10 +295,7 @@ class _ChatPageState extends State<ChatPage> {
         messageType: messageType, attachments: uploaded,
       );
       if (!mounted) return;
-      setState(() {
-        _thread = HopeChatThread(conversation: thread.conversation, messages: [...thread.messages, message]);
-        _error = null;
-      });
+      _mergeSentMessage(thread, message);
       _controller.clear();
       if (removeSourcesOnSuccess) {
         for (final file in files) { try { await file.delete(); } catch (_) {} }
@@ -727,6 +724,32 @@ class _ChatPageState extends State<ChatPage> {
   }
 
 
+  void _mergeSentMessage(
+    HopeChatThread requestThread,
+    HopeChatMessage sentMessage,
+  ) {
+    final current = _thread;
+    if (!mounted ||
+        current == null ||
+        current.conversation.id != requestThread.conversation.id) {
+      return;
+    }
+
+    // Polling can apply newer inbound messages while a send request is pending.
+    // Merge into the current same-conversation snapshot, not the pre-await one.
+    final messages = <HopeChatMessage>[
+      ...current.messages.where((message) => message.id != sentMessage.id),
+      sentMessage,
+    ];
+    setState(() {
+      _thread = HopeChatThread(
+        conversation: current.conversation,
+        messages: messages,
+      );
+      _error = null;
+    });
+  }
+
   Future<void> _send() async {
     final text = _controller.text.trim();
     final thread = _thread;
@@ -750,12 +773,7 @@ class _ChatPageState extends State<ChatPage> {
       );
       if (!mounted) return;
 
-      setState(
-        () => _thread = HopeChatThread(
-          conversation: thread.conversation,
-          messages: [...thread.messages, message],
-        ),
-      );
+      _mergeSentMessage(thread, message);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scroll.hasClients) {
