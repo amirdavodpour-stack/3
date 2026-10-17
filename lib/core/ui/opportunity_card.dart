@@ -718,7 +718,7 @@ class OpportunityCard extends StatelessWidget {
                       child: PremiumTag(
                         icon: HopeV2Icons.match,
                         label: match,
-                        color: HopeV2Colors.success,
+                        color: HopeV2SemanticColors.info(context),
                         inverse: true,
                       ),
                     ),
@@ -1228,7 +1228,7 @@ class OpportunityCard extends StatelessWidget {
         PremiumTag(
           icon: HopeV2Icons.match,
           label: match,
-          color: HopeV2Colors.success,
+          color: HopeV2SemanticColors.info(context),
           allowWrap: enlargedText,
         ),
       if (matchReasonTag != null) matchReasonTag,
@@ -1484,7 +1484,7 @@ class OpportunityCard extends StatelessWidget {
                               child: PremiumTag(
                                 icon: HopeV2Icons.match,
                                 label: match,
-                                color: HopeV2Colors.success,
+                                color: HopeV2SemanticColors.info(context),
                                 allowWrap: enlargedText,
                               ),
                             ),
@@ -1744,7 +1744,7 @@ class OpportunityCard extends StatelessWidget {
                             matchPercent.round(),
                             locale: Localizations.localeOf(context).languageCode,
                           )} ${_t(context, 'تطابق', 'match')}',
-                          color: HopeV2Colors.success,
+                          color: HopeV2SemanticColors.info(context),
                           allowWrap: enlargedText,
                         ),
                     ],
