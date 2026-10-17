@@ -188,8 +188,12 @@ ADB
 }
 
 run_recovery_case
+echo "PASS: ADB online recovery case"
 run_failure_case
+echo "PASS: ADB offline failure case"
 run_app_activity_recovery_case
+echo "PASS: launcher activity resolution recovery case"
 run_app_package_missing_case
+echo "PASS: missing package reinstall case"
 
 echo "PASS: Android ADB recovery, launcher-activity, and package-reinstall contracts"
