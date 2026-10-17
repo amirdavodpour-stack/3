@@ -559,8 +559,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         candidate.skills!.trim(),
-                        maxLines: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 1 : 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: enlargedText
+                            ? null
+                            : MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium
+                                ? 1
+                                : 2,
+                        softWrap: true,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
