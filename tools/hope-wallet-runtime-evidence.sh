@@ -216,6 +216,20 @@ validate_capture_set() {
     fi
 
     screenshot_hash="$(sha256sum "$source" | awk '{print $1}')"
+    native_screenshot_hash=""
+    if [ "$log_path" != "/dev/null" ] && [ -r "$log_path" ]; then
+      native_screenshot_hash="$(grep -F "HOPE_SCREENSHOT_CAPTURE_COMPLETE:$marker:bytes=" "$log_path" |
+        sed -nE 's/.*:sha256=([0-9a-f]{64}).*/\1/p' | tail -n 1 || true)"
+    fi
+    if [ -n "$native_screenshot_hash" ]; then
+      if [ "$native_screenshot_hash" != "$screenshot_hash" ]; then
+        echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:native-host-digest-mismatch:native=$native_screenshot_hash:host=$screenshot_hash" >&2
+        return 1
+      fi
+      echo "HOPE_HOST_CAPTURE_DIGEST_MATCH:$marker:$screenshot_hash"
+    else
+      echo "HOPE_HOST_CAPTURE_DIGEST_UNAVAILABLE:$marker"
+    fi
     if [ -n "${seen_screenshot_hashes[$screenshot_hash]+x}" ]; then
       echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:duplicate-png-hash:$screenshot_hash:matches:${seen_screenshot_hashes[$screenshot_hash]}" >&2
       return 1

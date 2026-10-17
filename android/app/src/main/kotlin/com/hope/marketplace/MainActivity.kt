@@ -21,6 +21,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : FlutterActivity() {
@@ -46,6 +47,8 @@ class MainActivity : FlutterActivity() {
     private val hopeScreenshotFrameCaptured = AtomicBoolean(false)
     private val hopeScreenshotResultCompleted = AtomicBoolean(false)
     @Volatile private var hopeScreenshotCapturePhase = "idle"
+    @Volatile private var hopeScreenshotRequestName = "unlabelled"
+    @Volatile private var hopeScreenshotFreshFramesRemaining = 0
     private var hopeScreenshotFrameRetryRunnable: Runnable? = null
     private var hopeScreenshotTimeoutRunnable: Runnable? = null
 
@@ -93,6 +96,7 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "captureScreenshot" -> captureHopeScreenshot(
                     result,
+                    call.argument<String>("name") ?: "unlabelled",
                     call.argument<Boolean>("forceFreshFrame") ?: false,
                 )
                 else -> result.notImplemented()
@@ -242,6 +246,7 @@ class MainActivity : FlutterActivity() {
 
     private fun captureHopeScreenshot(
         result: MethodChannel.Result,
+        screenshotName: String = "unlabelled",
         forceFreshFrame: Boolean = false,
     ) {
         if (!hopeScreenshotInProgress.compareAndSet(false, true)) {
@@ -256,6 +261,9 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotResultCompleted.set(false)
         hopeScreenshotFrameCaptured.set(false)
         hopeScreenshotCapturePhase = "surface-acquisition"
+        hopeScreenshotRequestName = screenshotName
+        hopeScreenshotFreshFramesRemaining = if (forceFreshFrame) 2 else 0
+        Log.i(HOPE_SCREENSHOT_LOG_TAG, "HOPE_SCREENSHOT_CAPTURE_REQUEST:$screenshotName:forceFreshFrame=$forceFreshFrame")
 
         val flutterView = findViewById<FlutterView>(FlutterActivity.FLUTTER_VIEW_ID)
         val imageView: FlutterImageView? = flutterView?.getCurrentImageSurface()
@@ -319,31 +327,18 @@ class MainActivity : FlutterActivity() {
 
         if (forceFreshFrame) {
             // HOPE_SCREENSHOT_FORCE_FRESH_FRAME
-            hopeScreenshotCapturePhase = "checking-current-target-frame"
-            val currentTargetFrameAvailable = flutterView.acquireLatestImageViewFrame()
-            if (currentTargetFrameAvailable &&
-                hopeScreenshotFrameCaptured.compareAndSet(false, true)
-            ) {
-                // HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED
-                hopeScreenshotCapturePhase = "waiting-for-pixelcopy"
-                imageReader.setOnImageAvailableListener(null, null)
-                Log.i(
-                    HOPE_SCREENSHOT_LOG_TAG,
-                    "HOPE_SCREENSHOT_FRAME_ACQUIRED:source=current-target-frame",
-                )
-                scheduleHopePixelCopy(
-                    flutterView,
-                    mainHandler,
-                    backgroundHandler,
-                    result,
-                )
-            } else {
-                hopeScreenshotCapturePhase = "waiting-for-new-flutter-frame"
-                requestHopeFrame()
-                scheduleHopeFreshFrameRetry(
-                    flutterView, imageReader, mainHandler, backgroundHandler, result,
-                )
-            }
+            // The frame already queued at this marker boundary is untrusted.
+            // Drain it, then require two later ImageReader deliveries before PixelCopy.
+            val queuedFrameDrained = flutterView.acquireLatestImageViewFrame()
+            Log.i(
+                HOPE_SCREENSHOT_LOG_TAG,
+                "HOPE_SCREENSHOT_STALE_FRAME_DRAINED:$screenshotName:available=$queuedFrameDrained",
+            )
+            hopeScreenshotCapturePhase = "waiting-for-new-flutter-frame"
+            requestHopeFrame()
+            scheduleHopeFreshFrameRetry(
+                flutterView, imageReader, mainHandler, backgroundHandler, result,
+            )
         } else {
             // HOPE_SCREENSHOT_IMMEDIATE_FRAME_ATTEMPT
             hopeScreenshotCapturePhase = "checking-initial-frame"
@@ -403,25 +398,38 @@ class MainActivity : FlutterActivity() {
         if (!hopeScreenshotInProgress.get() || hopeScreenshotFrameCaptured.get()) {
             return
         }
-        if (flutterView.acquireLatestImageViewFrame() &&
-            hopeScreenshotFrameCaptured.compareAndSet(false, true)
-        ) {
-            hopeScreenshotCapturePhase = "waiting-for-pixelcopy"
-            Log.i(HOPE_SCREENSHOT_LOG_TAG, "HOPE_SCREENSHOT_FRAME_ACQUIRED:source=image-reader-callback")
-            imageReader.setOnImageAvailableListener(null, null)
-            hopeScreenshotFrameRetryRunnable?.let { mainHandler.removeCallbacks(it) }
-            hopeScreenshotFrameRetryRunnable = null
-            scheduleHopePixelCopy(
-                flutterView,
-                mainHandler,
-                backgroundHandler,
-                result,
-            )
-            return
+        val frameAvailable = flutterView.acquireLatestImageViewFrame()
+        if (frameAvailable) {
+            if (hopeScreenshotFreshFramesRemaining > 1) {
+                hopeScreenshotFreshFramesRemaining -= 1
+                Log.i(
+                    HOPE_SCREENSHOT_LOG_TAG,
+                    "HOPE_SCREENSHOT_STALE_FRAME_REJECTED:$hopeScreenshotRequestName:remaining=$hopeScreenshotFreshFramesRemaining",
+                )
+                requestHopeFrame()
+                return
+            }
+            if (hopeScreenshotFrameCaptured.compareAndSet(false, true)) {
+                hopeScreenshotFreshFramesRemaining = 0
+                hopeScreenshotCapturePhase = "waiting-for-pixelcopy"
+                Log.i(
+                    HOPE_SCREENSHOT_LOG_TAG,
+                    "HOPE_SCREENSHOT_FRAME_ACQUIRED:$hopeScreenshotRequestName:source=image-reader-callback",
+                )
+                imageReader.setOnImageAvailableListener(null, null)
+                hopeScreenshotFrameRetryRunnable?.let { mainHandler.removeCallbacks(it) }
+                hopeScreenshotFrameRetryRunnable = null
+                scheduleHopePixelCopy(
+                    flutterView,
+                    mainHandler,
+                    backgroundHandler,
+                    result,
+                )
+                return
+            }
         }
 
-        // No queued frame yet. Keep the listener armed and ask Flutter to commit
-        // one; the listener will re-enter this method on availability.
+        // No eligible frame yet. Keep the listener armed and request another frame.
         requestHopeFrame()
     }
 
@@ -476,7 +484,7 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotCapturePhase = "pixelcopy-pending"
         Log.i(
             HOPE_SCREENSHOT_LOG_TAG,
-            "HOPE_SCREENSHOT_PIXELCOPY_START:${flutterView.width}x${flutterView.height}",
+            "HOPE_SCREENSHOT_PIXELCOPY_START:${flutterView.width}x${flutterView.height}:marker=$hopeScreenshotRequestName",
         )
         val bitmap = try {
             Bitmap.createBitmap(
@@ -560,7 +568,13 @@ class MainActivity : FlutterActivity() {
         hopeScreenshotInProgress.set(false)
         hopeScreenshotCapturePhase = "completed"
         clearHopeScreenshotCaptureWatchdogs()
-        Log.i(HOPE_SCREENSHOT_LOG_TAG, "HOPE_SCREENSHOT_CAPTURE_COMPLETE:bytes=${bytes.size}")
+        val digest = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { byte ->
+            (byte.toInt() and 0xff).toString(16).padStart(2, '0')
+        }
+        Log.i(
+            HOPE_SCREENSHOT_LOG_TAG,
+            "HOPE_SCREENSHOT_CAPTURE_COMPLETE:$hopeScreenshotRequestName:bytes=${bytes.size}:sha256=$digest",
+        )
         result.success(bytes)
     }
 

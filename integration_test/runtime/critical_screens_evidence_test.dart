@@ -888,7 +888,6 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
 
 const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');
 
-var _runtimeHasCapturedScreenshot = false;
 const _nativeScreenshotCaptureTimeout = Duration(seconds: 18);
 
 Future<void> _captureHopeNativeScreenshot(
@@ -1048,7 +1047,7 @@ Future<void> _captureRuntimeScreenshot(
     await _captureHopeNativeScreenshot(
       binding,
       marker,
-      forceFreshFrame: _runtimeHasCapturedScreenshot || marker.startsWith('password-reset-'),
+      forceFreshFrame: marker.startsWith('password-reset-'),
     ).timeout(
       _nativeScreenshotCaptureTimeout,
       onTimeout: () {
@@ -1057,7 +1056,6 @@ Future<void> _captureRuntimeScreenshot(
         );
       },
     );
-    _runtimeHasCapturedScreenshot = true;
     print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
     print('HOPE_SCREENSHOT_READY:$marker');
   } finally {

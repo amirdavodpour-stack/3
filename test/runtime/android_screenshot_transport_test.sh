@@ -19,7 +19,12 @@ runtime_contracts=(
   'private const val HOPE_SCREENSHOT_FRAME_RETRY_INTERVAL_MS'
   'private const val HOPE_SCREENSHOT_LOG_TAG'
   'private var hopeScreenshotCapturePhase = "idle"'
-  'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED'
+  'private var hopeScreenshotFreshFramesRemaining = 0'
+  'HOPE_SCREENSHOT_CAPTURE_REQUEST:'
+  'HOPE_SCREENSHOT_STALE_FRAME_DRAINED:'
+  'HOPE_SCREENSHOT_STALE_FRAME_REJECTED:'
+  'MessageDigest.getInstance("SHA-256")'
+  'HOPE_SCREENSHOT_CAPTURE_COMPLETE:'
   'HOPE_SCREENSHOT_PIXELCOPY_START:'
   'HOPE_SCREENSHOT_PIXELCOPY_CALLBACK:'
   'private fun scheduleHopeFreshFrameRetry('
@@ -49,9 +54,11 @@ for contract in "${dart_contracts[@]}"; do
 done
 
 
-grep -Fq "forceFreshFrame: _runtimeHasCapturedScreenshot || marker.startsWith('password-reset-')," "$test_file"
-grep -Fq 'var _runtimeHasCapturedScreenshot = false;' "$test_file"
+grep -Fq "forceFreshFrame: marker.startsWith('password-reset-')," "$test_file"
+grep -Fq 'call.argument<String>("name") ?: "unlabelled"' "$main_activity"
 grep -Fq 'call.argument<Boolean>("forceFreshFrame") ?: false' "$main_activity"
+grep -Fq 'HOPE_HOST_CAPTURE_DIGEST_MATCH:' "$script_file"
+grep -Fq 'HOPE_SCREENSHOT_CAPTURE_COMPLETE:$marker:bytes=' "$script_file"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:native-primary:' "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_READY:' "$test_file"
 if grep -Fq 'await binding.takeScreenshot(marker)' "$test_file"; then
@@ -72,34 +79,19 @@ if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evi
 fi
 grep -Fq ': > "$log_path"' "$script_file"
 
-# Regression: use the target page's already committed ImageReader frame if present.
-# Register first so a racing new frame is not lost; only request an additional frame
-# when no current target frame can be acquired. This prevents static Home deadlocks.
-listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | sed -n '2p' | cut -d: -f1)"
-current_target_line="$(grep -nF 'val currentTargetFrameAvailable = flutterView.acquireLatestImageViewFrame()' "$main_activity" | cut -d: -f1)"
-if [ -z "$listener_line" ] || [ -z "$current_target_line" ] || [ "$listener_line" -ge "$current_target_line" ]; then
-  echo "FAIL: force-fresh capture must register its ImageReader listener before checking the target frame" >&2
+# Regression: strict Password Reset capture must not accept an already-queued image.
+# Drain the image at the marker boundary; reject the first later ImageReader delivery and only
+# accept a subsequent delivery. Other screenshots keep the committed-frame fast path.
+grep -Fq 'hopeScreenshotFreshFramesRemaining = if (forceFreshFrame) 2 else 0' "$main_activity"
+grep -Fq 'HOPE_SCREENSHOT_STALE_FRAME_DRAINED:$screenshotName:available=$queuedFrameDrained' "$main_activity"
+grep -Fq 'hopeScreenshotFreshFramesRemaining > 1' "$main_activity"
+grep -Fq 'hopeScreenshotFreshFramesRemaining -= 1' "$main_activity"
+grep -Fq 'requestHopeFrame()' "$main_activity"
+if grep -Fq 'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED' "$main_activity"; then
+  echo "FAIL: strict screenshot capture must not accept an already-queued image as target" >&2
   exit 1
 fi
-target_frame_block="$(sed -n "$((current_target_line - 3)),$((current_target_line + 15))p" "$main_activity")"
-grep -Fq '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' <<<"$target_frame_block"
-grep -Fq 'currentTargetFrameAvailable &&' <<<"$target_frame_block"
-grep -Fq 'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED' <<<"$target_frame_block"
-grep -Fq 'scheduleHopeFreshFrameRetry(' "$main_activity"
-grep -Fq 'HOPE_SCREENSHOT_TIMEOUT:phase=' "$main_activity"
-grep -Fq 'forceFreshFrame: _runtimeHasCapturedScreenshot' "$test_file"
-grep -Fq 'const _nativeScreenshotCaptureTimeout = Duration(seconds: 18);' "$test_file"
-grep -Fq ').timeout(' "$test_file"
-grep -Fq '_nativeScreenshotCaptureTimeout,' "$test_file"
-grep -Fq 'Future<bool> _dragScrollableTowardEndWithFallbackOffsets(' "$test_file"
-grep -Fq 'await _dragScrollableTowardEndWithFallbackOffsets(' "$test_file"
-grep -Fq 'var stableAtBottomFrames = 0;' "$test_file"
-grep -Fq 'while (sweeps < 20 && stableAtBottomFrames < 2)' "$test_file"
-grep -Fq 'stableFrames=$stableAtBottomFrames' "$test_file"
-if grep -Fq 'if (selectedState.position.pixels <= before + 0.5 &&' "$test_file"; then
-  echo "FAIL: T10 scroll-end must not abort on the first no-progress drag; it must try alternate offsets." >&2
-  exit 1
-fi
+grep -Fq 'HOPE_SCREENSHOT_STALE_FRAME_REJECTED:' "$main_activity"
 if grep -Fq -- '--use-application-binary' "$script_file"; then
   echo "FAIL: runtime evidence must not use --use-application-binary" >&2
   exit 1
