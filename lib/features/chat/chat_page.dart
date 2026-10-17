@@ -654,7 +654,7 @@ class _ChatPageState extends State<ChatPage> {
                                             key: ValueKey('chat-inbox-unread-${item.id}'),
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: colors.primary,
+                                              color: HopeV2Colors.primaryAction,
                                               borderRadius: BorderRadius.circular(7),
                                             ),
                                             child: Text(
