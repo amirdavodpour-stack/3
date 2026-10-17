@@ -315,6 +315,15 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     _drawerTile(
                       context,
+                      HopeV2Icons.message,
+                      _t(context, 'گفتگوها', 'Chats'),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(context, HopeRoutes.chats());
+                      },
+                    ),
+                    _drawerTile(
+                      context,
                       HopeV2Icons.notifications,
                       _t(context, 'اعلان‌ها', 'Notifications'),
                       () {
