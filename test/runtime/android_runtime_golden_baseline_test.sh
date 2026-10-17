@@ -4,6 +4,7 @@ set -euo pipefail
 workflow=".github/workflows/hope-ui-runtime-evidence.yml"
 runtime="tools/hope-wallet-runtime-evidence.sh"
 test_file="integration_test/runtime/critical_screens_evidence_test.dart"
+main_activity="android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt"
 
 require_line() {
   local file="$1" expected="$2"
