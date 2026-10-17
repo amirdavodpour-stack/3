@@ -45,6 +45,17 @@ if grep -Fq -- '-gpu software' "$workflow"; then
   exit 1
 fi
 
+require_line "$runtime" 'hope_android_app_activity_ready "$RUNTIME_SERIAL" com.hope.marketplace'
+require_line "$runtime" "assert_hope_focused talkback-return"
+require_line "$runtime" "HOPE_TALKBACK_FOREGROUND_RETURN_FAILED: launcher activity could not be resolved"
+require_line "tools/android-runtime-device-recovery.sh" "cmd package resolve-activity --brief"
+require_line "tools/android-runtime-device-recovery.sh" "HOPE_APP_ACTIVITY_LAUNCHED:"
+require_line "test/runtime/android_runtime_adb_recovery_test.sh" "run_app_activity_recovery_case"
+if grep -Fq 'adb shell am start -W -n com.hope.marketplace/.MainActivity' "$runtime"; then
+  printf 'FAIL: TalkBack return path must resolve the installed launcher activity instead of hard-coding MainActivity.\\n' >&2
+  exit 1
+fi
+
 # Screenshot production is locked to the current Flutter integration_test callback path.
 driver_file="test_driver/hope_runtime_screenshot_driver.dart"
 

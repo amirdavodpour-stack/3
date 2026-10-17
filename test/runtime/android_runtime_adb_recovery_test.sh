@@ -82,7 +82,68 @@ ADB
   grep -Fq -- "start-server" "$LOG"
 }
 
+
+run_app_activity_recovery_case() {
+  local tmp
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' RETURN
+
+  mkdir -p "$tmp/bin"
+  export LOG="$tmp/adb.log"
+  export STATE_FILE="$tmp/resolve-state"
+  export PATH="$tmp/bin:$PATH"
+  : > "$LOG"
+  echo 0 > "$STATE_FILE"
+  : > "$tmp/runtime.apk"
+
+  cat > "$tmp/bin/adb" <<'ADB'
+#!/usr/bin/env bash
+set -u
+printf '%s\n' "$*" >> "${LOG:?}"
+case "$*" in
+  *" shell pm path com.hope.marketplace")
+    echo "package:/data/app/com.hope.marketplace/base.apk"
+    ;;
+  *" shell cmd package resolve-activity --brief "*)
+    n="$(cat "${STATE_FILE:?}")"
+    n=$((n + 1))
+    echo "$n" > "$STATE_FILE"
+    if [ "$n" -eq 1 ]; then
+      echo "No activity found"
+    else
+      echo "com.hope.marketplace/.MainActivity"
+    fi
+    ;;
+  *" install -r "*)
+    echo "Success"
+    ;;
+  *" shell am start -W -n com.hope.marketplace/.MainActivity")
+    echo "Starting: Intent { cmp=com.hope.marketplace/.MainActivity }"
+    echo "Status: ok"
+    ;;
+  *" shell dumpsys package com.hope.marketplace")
+    echo "Package [com.hope.marketplace]"
+    ;;
+  *" shell cmd package query-activities "*)
+    echo "com.hope.marketplace/.MainActivity"
+    ;;
+  *)
+    echo "unexpected adb command: $*" >&2
+    exit 1
+    ;;
+esac
+ADB
+  chmod +x "$tmp/bin/adb"
+
+  hope_android_app_activity_ready emulator-5554 com.hope.marketplace "$tmp/runtime.apk" > "$tmp/result.txt"
+  grep -Fq "HOPE_APP_ACTIVITY_UNRESOLVED: reinstalling exact runtime APK once" "$tmp/result.txt"
+  grep -Fq "HOPE_APP_ACTIVITY_LAUNCHED:com.hope.marketplace/.MainActivity" "$tmp/result.txt"
+  grep -Fq -- "install -r $tmp/runtime.apk" "$LOG"
+  grep -Fq -- "shell am start -W -n com.hope.marketplace/.MainActivity" "$LOG"
+}
+
 run_recovery_case
 run_failure_case
+run_app_activity_recovery_case
 
-echo "PASS: Android ADB recovery contract"
+echo "PASS: Android ADB recovery and launcher-activity recovery contract"

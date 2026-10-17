@@ -646,13 +646,20 @@ if ! bash tools/hope-enable-talkback.sh; then
   talkback_setup_status=1
 fi
 if [[ "$talkback_setup_status" -eq 0 ]]; then
-  if ! adb shell am start -W -n com.hope.marketplace/.MainActivity > "$evidence_dir/hope-talkback-return-to-app.txt" 2>&1 ||
-     ! grep -Fq 'Status: ok' "$evidence_dir/hope-talkback-return-to-app.txt"; then
+  if ! hope_android_app_activity_ready "$RUNTIME_SERIAL" com.hope.marketplace \
+    "build/app/outputs/flutter-apk/app-debug.apk" > "$evidence_dir/hope-talkback-return-to-app.txt" 2>&1; then
     cat "$evidence_dir/hope-talkback-return-to-app.txt" >&2 || true
-    echo "HOPE_TALKBACK_FOREGROUND_RETURN_FAILED: MainActivity did not return to foreground after TalkBack setup." >&2
+    echo "HOPE_TALKBACK_FOREGROUND_RETURN_FAILED: launcher activity could not be resolved and foregrounded after TalkBack setup." >&2
+    capture_android_diagnostics talkback-return
     talkback_setup_status=1
   else
-    echo "HOPE_RUNTIME_APP_FOREGROUND_AFTER_TALKBACK:true"
+    cat "$evidence_dir/hope-talkback-return-to-app.txt"
+    if ! assert_hope_focused talkback-return; then
+      echo "HOPE_TALKBACK_FOREGROUND_RETURN_FAILED: MainActivity did not gain verified foreground focus after TalkBack setup." >&2
+      talkback_setup_status=1
+    else
+      echo "HOPE_RUNTIME_APP_FOREGROUND_AFTER_TALKBACK:true"
+    fi
   fi
 fi
 semantics_status=0
